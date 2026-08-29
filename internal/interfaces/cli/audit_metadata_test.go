@@ -210,15 +210,16 @@ func TestAuditCommandUsesMySQLCompatibleDatabaseAsSchemaAlias(t *testing.T) {
 		explicitDialect bool
 		database        string
 		explicitSchema  string
+		wantDatabase    string
 		wantSource      string
 	}{
-		{name: "mysql database only", dialect: spec.DialectMySQL, explicitDialect: true, database: "app", wantSource: "database"},
-		{name: "mysql auto-detected database only", dialect: spec.DialectMySQL, database: "app", wantSource: "database"},
-		{name: "mysql schema only", dialect: spec.DialectMySQL, explicitDialect: true, explicitSchema: "app", wantSource: "flag"},
-		{name: "mysql matching values", dialect: spec.DialectMySQL, explicitDialect: true, database: "app", explicitSchema: "app", wantSource: "flag"},
-		{name: "tidb database only", dialect: spec.DialectTiDB, explicitDialect: true, database: "app", wantSource: "database"},
-		{name: "tidb schema only", dialect: spec.DialectTiDB, explicitDialect: true, explicitSchema: "app", wantSource: "flag"},
-		{name: "tidb matching values", dialect: spec.DialectTiDB, explicitDialect: true, database: "app", explicitSchema: "app", wantSource: "flag"},
+		{name: "mysql database only", dialect: spec.DialectMySQL, explicitDialect: true, database: "app", wantDatabase: "app", wantSource: "database"},
+		{name: "mysql auto-detected database only", dialect: spec.DialectMySQL, database: "app", wantDatabase: "app", wantSource: "database"},
+		{name: "mysql schema only", dialect: spec.DialectMySQL, explicitDialect: true, explicitSchema: "app", wantDatabase: "app", wantSource: "flag"},
+		{name: "mysql matching values", dialect: spec.DialectMySQL, explicitDialect: true, database: "app", explicitSchema: "app", wantDatabase: "app", wantSource: "flag"},
+		{name: "tidb database only", dialect: spec.DialectTiDB, explicitDialect: true, database: "app", wantDatabase: "app", wantSource: "database"},
+		{name: "tidb schema only", dialect: spec.DialectTiDB, explicitDialect: true, explicitSchema: "app", wantDatabase: "app", wantSource: "flag"},
+		{name: "tidb matching values", dialect: spec.DialectTiDB, explicitDialect: true, database: "app", explicitSchema: "app", wantDatabase: "app", wantSource: "flag"},
 	}
 
 	for _, tt := range tests {
@@ -252,8 +253,8 @@ func TestAuditCommandUsesMySQLCompatibleDatabaseAsSchemaAlias(t *testing.T) {
 			if code != exitAudit {
 				t.Fatalf("expected audit exit code %d, got %d (stderr=%q)", exitAudit, code, stderr.String())
 			}
-			if client.options.Database != tt.database {
-				t.Fatalf("expected database %q in metadata options, got %q", tt.database, client.options.Database)
+			if client.options.Database != tt.wantDatabase {
+				t.Fatalf("expected database %q in metadata options, got %q", tt.wantDatabase, client.options.Database)
 			}
 			if len(client.instanceCalls) != 1 || client.instanceCalls[0] != "app" {
 				t.Fatalf("expected app instance-facts schema, got %#v", client.instanceCalls)
@@ -278,15 +279,44 @@ func TestAuditCommandUsesMySQLCompatibleDatabaseAsSchemaAlias(t *testing.T) {
 	}
 }
 
-func TestAuditCommandRejectsConflictingMySQLCompatibleDatabaseAndSchemaBeforeConnect(t *testing.T) {
+func TestPrepareMetadataAuditPreservesAutoDetectedPostgreSQLDatabaseAndSchema(t *testing.T) {
+	previous := newMetadataClient
+	client := &fakeMetadataClient{detectDialect: spec.DialectPostgreSQL}
+	newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+		if options.Database != "app" {
+			t.Fatalf("expected PostgreSQL database app, got %q", options.Database)
+		}
+		return client, nil
+	}
+	t.Cleanup(func() { newMetadataClient = previous })
+
+	gotClient, dialect, schema, runContext, err := prepareMetadataAudit(
+		context.Background(),
+		"delete from users",
+		auditConnectionOptions{Host: "127.0.0.1", User: "root", Database: "app", Schema: "public"},
+		spec.DialectMySQL,
+		false,
+	)
+	if err != nil {
+		t.Fatalf("prepare metadata audit: %v", err)
+	}
+	t.Cleanup(func() { _ = gotClient.Close() })
+
+	if dialect != spec.DialectPostgreSQL || schema != "public" || runContext.SchemaSource != "flag" {
+		t.Fatalf("unexpected auto-detected PostgreSQL context: dialect=%q schema=%q context=%#v", dialect, schema, runContext)
+	}
+}
+
+func TestAuditCommandRejectsConflictingMySQLCompatibleDatabaseAndSchema(t *testing.T) {
 	for _, tt := range []struct {
 		name            string
 		dialect         spec.Dialect
 		explicitDialect bool
+		wantOpenCalls   int
 	}{
-		{name: "mysql", dialect: spec.DialectMySQL, explicitDialect: true},
-		{name: "tidb", dialect: spec.DialectTiDB, explicitDialect: true},
-		{name: "mysql auto-detected", dialect: spec.DialectMySQL},
+		{name: "mysql", dialect: spec.DialectMySQL, explicitDialect: true, wantOpenCalls: 0},
+		{name: "tidb", dialect: spec.DialectTiDB, explicitDialect: true, wantOpenCalls: 0},
+		{name: "mysql auto-detected", dialect: spec.DialectMySQL, wantOpenCalls: 1},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			previous := newMetadataClient
@@ -322,8 +352,8 @@ func TestAuditCommandRejectsConflictingMySQLCompatibleDatabaseAndSchemaBeforeCon
 			if strings.Contains(message, "app") || strings.Contains(message, "archive") {
 				t.Fatalf("conflict error should not echo selected values: %q", stderr.String())
 			}
-			if openCalls != 0 {
-				t.Fatalf("expected conflict validation before metadata opener, got %d calls", openCalls)
+			if openCalls != tt.wantOpenCalls {
+				t.Fatalf("expected %d metadata opener calls for conflict validation, got %d", tt.wantOpenCalls, openCalls)
 			}
 		})
 	}

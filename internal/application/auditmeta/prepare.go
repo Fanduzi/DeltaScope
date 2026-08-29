@@ -66,7 +66,7 @@ type PreparedAudit struct {
 
 // Prepare opens a metadata client, resolves dialect and schema, and returns prepared audit context.
 func Prepare(ctx context.Context, request Request) (*PreparedAudit, error) {
-	if err := validateKnownDatabaseSchema(request); err != nil {
+	if err := normalizeKnownDatabaseSchema(&request); err != nil {
 		return nil, err
 	}
 
@@ -130,16 +130,22 @@ func Prepare(ctx context.Context, request Request) (*PreparedAudit, error) {
 	}, nil
 }
 
-func validateKnownDatabaseSchema(request Request) error {
+func normalizeKnownDatabaseSchema(request *Request) error {
 	dialect := request.Connection.Dialect
-	if dialect == "" {
+	if dialect == "" && request.ExplicitDialect {
 		dialect = request.RequestedDialect
 	}
 	if !isMySQLCompatible(dialect) {
 		return nil
 	}
-	_, _, err := normalizeDatabaseSchema(dialect, request.Connection.Database, request.ExplicitSchema, request.ExplicitSchemaSource)
-	return err
+	explicitSchema, _, err := normalizeDatabaseSchema(dialect, request.Connection.Database, request.ExplicitSchema, request.ExplicitSchemaSource)
+	if err != nil {
+		return err
+	}
+	if strings.TrimSpace(request.Connection.Database) == "" {
+		request.Connection.Database = explicitSchema
+	}
+	return nil
 }
 
 func normalizeDatabaseSchema(dialect spec.Dialect, database, explicitSchema, source string) (string, string, error) {

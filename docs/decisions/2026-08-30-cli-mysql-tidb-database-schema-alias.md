@@ -3,12 +3,12 @@
 Date: 2026-08-30
 Status: Accepted
 Related milestone/version: issue #45
-Related commits: implementation commit for issue #45
+Related commits: `3f8f4b0` (initial implementation; follow-up fixes are in the same branch history)
 Related tests:
 - `TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias`
-- `TestPrepareRejectsConflictingMySQLCompatibleDatabaseAndSchemaBeforeOpen`
+- `TestPrepareRejectsConflictingMySQLCompatibleDatabaseAndSchema`
 - `TestAuditCommandUsesMySQLCompatibleDatabaseAsSchemaAlias`
-- `TestAuditCommandRejectsConflictingMySQLCompatibleDatabaseAndSchemaBeforeConnect`
+- `TestAuditCommandRejectsConflictingMySQLCompatibleDatabaseAndSchema`
 Related docs:
 - `docs/reference/cli.md`
 - `docs/reference/cli.zh-CN.md`
@@ -30,10 +30,9 @@ The shared `auditmeta.Prepare` seam treats `ConnectionConfig.Database` as the
 MySQL/TiDB catalog alias when no explicit schema is supplied. Equal
 `--database` and `--schema` values are accepted; conflicting values produce a
 typed, bounded usage error without echoing either value. When the request
-identifies a MySQL/TiDB path, including the CLI's MySQL-default auto-detection
-path, this validation runs before the metadata opener; callers that leave the
-requested dialect completely unspecified validate the same rule once server
-identity is known.
+identifies a MySQL/TiDB path, this validation runs before the metadata opener;
+callers that leave dialect selection to detection validate the same rule once
+server identity is known.
 The CLI MySQL/TiDB opener forwards `Database` to the driver so the selected
 catalog is also the connection database. PostgreSQL continues to pass database
 and schema independently through the existing #31 validation.
@@ -81,5 +80,6 @@ errors for adapter-specific classification.
 ## Links
 
 - Issue: https://github.com/Fanduzi/DeltaScope/issues/45
+- Commits: `3f8f4b0` (initial implementation; follow-up fixes are in the same branch history)
 - Tests: `internal/application/auditmeta/prepare_test.go`, `internal/interfaces/cli/audit_metadata_test.go`
 - Docs: `docs/reference/cli.md`, `docs/reference/cli.zh-CN.md`, `README.md`, `README_ZH.md`

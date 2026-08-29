@@ -7,7 +7,7 @@ Shared preparation helpers for metadata-aware audit requests before they enter t
 | File | Responsibility |
 |------|---------------|
 | `errors.go` | Defines typed metadata-preparation errors, including MySQL/TiDB alias conflicts and PostgreSQL schema/database validation, for adapter-level classification |
-| `prepare.go` | Opens metadata clients, detects dialect, normalizes MySQL/TiDB database/schema aliases, validates PostgreSQL database/schema selection, resolves schema, and returns prepared audit context |
+| `prepare.go` | Opens metadata clients, detects dialect, normalizes known MySQL/TiDB database/schema catalog selection before opening and detected aliases after identity, validates PostgreSQL database/schema selection, resolves schema, and returns prepared audit context |
 | `targets.go` | Infers target tables from SQL statements for schema resolution |
 | `client.go` | Bridges MySQL-compatible infrastructure providers into the shared preparation client contract |
 | `prepare_test.go` | Verifies shared metadata-aware preparation behavior for CLI and future MCP adapters |

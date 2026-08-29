@@ -132,16 +132,17 @@ func TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias(t *testing.T) {
 		explicitDialect bool
 		database        string
 		explicitSchema  string
+		wantDatabase    string
 		wantSchema      string
 		wantSource      string
 	}{
-		{name: "mysql database only", dialect: spec.DialectMySQL, explicitDialect: true, database: "app", wantSchema: "app", wantSource: "database"},
-		{name: "mysql auto-detected database only", dialect: spec.DialectMySQL, database: "app", wantSchema: "app", wantSource: "database"},
-		{name: "mysql schema only", dialect: spec.DialectMySQL, explicitDialect: true, explicitSchema: "app", wantSchema: "app", wantSource: "request"},
-		{name: "mysql matching values", dialect: spec.DialectMySQL, explicitDialect: true, database: "app", explicitSchema: "app", wantSchema: "app", wantSource: "request"},
-		{name: "tidb database only", dialect: spec.DialectTiDB, explicitDialect: true, database: "app", wantSchema: "app", wantSource: "database"},
-		{name: "tidb schema only", dialect: spec.DialectTiDB, explicitDialect: true, explicitSchema: "app", wantSchema: "app", wantSource: "request"},
-		{name: "tidb matching values", dialect: spec.DialectTiDB, explicitDialect: true, database: "app", explicitSchema: "app", wantSchema: "app", wantSource: "request"},
+		{name: "mysql database only", dialect: spec.DialectMySQL, explicitDialect: true, database: "app", wantDatabase: "app", wantSchema: "app", wantSource: "database"},
+		{name: "mysql auto-detected database only", dialect: spec.DialectMySQL, database: "app", wantDatabase: "app", wantSchema: "app", wantSource: "database"},
+		{name: "mysql schema only", dialect: spec.DialectMySQL, explicitDialect: true, explicitSchema: "app", wantDatabase: "app", wantSchema: "app", wantSource: "request"},
+		{name: "mysql matching values", dialect: spec.DialectMySQL, explicitDialect: true, database: "app", explicitSchema: "app", wantDatabase: "app", wantSchema: "app", wantSource: "request"},
+		{name: "tidb database only", dialect: spec.DialectTiDB, explicitDialect: true, database: "app", wantDatabase: "app", wantSchema: "app", wantSource: "database"},
+		{name: "tidb schema only", dialect: spec.DialectTiDB, explicitDialect: true, explicitSchema: "app", wantDatabase: "app", wantSchema: "app", wantSource: "request"},
+		{name: "tidb matching values", dialect: spec.DialectTiDB, explicitDialect: true, database: "app", explicitSchema: "app", wantDatabase: "app", wantSchema: "app", wantSource: "request"},
 	}
 
 	for _, tt := range tests {
@@ -175,8 +176,8 @@ func TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias(t *testing.T) {
 			if prepared.Schema != tt.wantSchema || prepared.SchemaSource != tt.wantSource {
 				t.Fatalf("unexpected schema selection: schema=%q source=%q", prepared.Schema, prepared.SchemaSource)
 			}
-			if captured.Database != tt.database {
-				t.Fatalf("expected database %q in connection config, got %q", tt.database, captured.Database)
+			if captured.Database != tt.wantDatabase {
+				t.Fatalf("expected database %q in connection config, got %q", tt.wantDatabase, captured.Database)
 			}
 			if len(client.findSchemaCalls) != 0 {
 				t.Fatalf("expected alias selection to skip schema inference, got %#v", client.findSchemaCalls)
@@ -185,7 +186,7 @@ func TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias(t *testing.T) {
 	}
 }
 
-func TestPrepareRejectsConflictingMySQLCompatibleDatabaseAndSchemaBeforeOpen(t *testing.T) {
+func TestPrepareRejectsConflictingMySQLCompatibleDatabaseAndSchema(t *testing.T) {
 	t.Parallel()
 
 	for _, tt := range []struct {
@@ -194,10 +195,11 @@ func TestPrepareRejectsConflictingMySQLCompatibleDatabaseAndSchemaBeforeOpen(t *
 		requestedDialect  spec.Dialect
 		explicitDialect   bool
 		connectionDialect spec.Dialect
+		wantOpenCalls     int
 	}{
-		{name: "mysql", dialect: spec.DialectMySQL, requestedDialect: spec.DialectMySQL, explicitDialect: true, connectionDialect: spec.DialectMySQL},
-		{name: "tidb", dialect: spec.DialectTiDB, requestedDialect: spec.DialectTiDB, explicitDialect: true, connectionDialect: spec.DialectTiDB},
-		{name: "mysql auto-detected", dialect: spec.DialectMySQL, requestedDialect: spec.DialectMySQL},
+		{name: "mysql", dialect: spec.DialectMySQL, requestedDialect: spec.DialectMySQL, explicitDialect: true, connectionDialect: spec.DialectMySQL, wantOpenCalls: 0},
+		{name: "tidb", dialect: spec.DialectTiDB, requestedDialect: spec.DialectTiDB, explicitDialect: true, connectionDialect: spec.DialectTiDB, wantOpenCalls: 0},
+		{name: "mysql auto-detected", dialect: spec.DialectMySQL, requestedDialect: spec.DialectMySQL, wantOpenCalls: 1},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
@@ -234,8 +236,8 @@ func TestPrepareRejectsConflictingMySQLCompatibleDatabaseAndSchemaBeforeOpen(t *
 			if strings.Contains(message, "app") || strings.Contains(message, "archive") {
 				t.Fatalf("conflict error should not echo selected values: %q", err.Error())
 			}
-			if openCalls != 0 {
-				t.Fatalf("expected conflict validation before open, got %d open calls", openCalls)
+			if openCalls != tt.wantOpenCalls {
+				t.Fatalf("expected %d open calls for conflict validation, got %d", tt.wantOpenCalls, openCalls)
 			}
 		})
 	}
