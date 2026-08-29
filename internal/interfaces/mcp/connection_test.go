@@ -1,6 +1,6 @@
 // Package mcpapi verifies MCP connection resolution and validation behavior.
-// input: direct MCP connection parameters, named connection configs, and secret sources
-// output: regression coverage for MCP connection normalization and safety rules
+// input: direct MCP connection parameters, named connection configs, database/schema selections, and secret sources
+// output: regression coverage for MCP connection normalization, database preservation, and safety rules
 // pos: interface-layer tests for MCP metadata-aware connection handling
 // note: if this file changes, update this header and module README.md.
 package mcpapi
@@ -104,6 +104,7 @@ func TestResolveAuditConnectionResolvesDirectPasswordEnv(t *testing.T) {
 			Host:        "127.0.0.1",
 			Port:        3307,
 			User:        "root",
+			Database:    "analytics",
 			Schema:      "app",
 			Dialect:     "mysql",
 			PasswordEnv: "DB_PASSWORD",
@@ -126,7 +127,7 @@ func TestResolveAuditConnectionResolvesDirectPasswordEnv(t *testing.T) {
 	if resolved.Password != "from-env" {
 		t.Fatalf("expected resolved env password, got %q", resolved.Password)
 	}
-	if resolved.Host != "127.0.0.1" || resolved.Port != 3307 || resolved.User != "root" || resolved.Schema != "app" || resolved.Dialect != "mysql" {
+	if resolved.Host != "127.0.0.1" || resolved.Port != 3307 || resolved.User != "root" || resolved.Database != "analytics" || resolved.Schema != "app" || resolved.Dialect != "mysql" {
 		t.Fatalf("unexpected resolved connection: %#v", resolved)
 	}
 }
@@ -142,6 +143,7 @@ connections:
     host: 10.0.0.12
     port: 3306
     user: audit_bot
+    database: analytics
     schema: app
     dialect: mysql
     password_env: PROD_DB_PASSWORD
@@ -170,7 +172,7 @@ connections:
 	if resolved.Password != "secret-from-env" {
 		t.Fatalf("expected password from env, got %q", resolved.Password)
 	}
-	if resolved.Host != "10.0.0.12" || resolved.Port != 3306 || resolved.User != "audit_bot" || resolved.Schema != "app" {
+	if resolved.Host != "10.0.0.12" || resolved.Port != 3306 || resolved.User != "audit_bot" || resolved.Database != "analytics" || resolved.Schema != "app" {
 		t.Fatalf("unexpected resolved connection: %#v", resolved)
 	}
 }

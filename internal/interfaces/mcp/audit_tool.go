@@ -1,6 +1,6 @@
 // Package mcpapi exposes the MCP adapter for DeltaScope.
 // input: audit_sql MCP requests, shared DeltaScope public audit API, and resolved run-context metadata
-// output: structured MCP audit_sql responses plus a compact finding-summary text surface with offline existence caveats
+// output: structured MCP audit_sql responses plus a compact finding-summary text surface with offline existence caveats and resolved catalog-aware metadata audits
 // pos: MCP audit tool adapter between tool invocations and the shared audit engine
 // note: if this file changes, update this header and module README.md.
 package mcpapi
@@ -124,6 +124,7 @@ func auditSQLWithMetadata(ctx context.Context, input AuditSQLParams, connection 
 			Socket:         connection.Socket,
 			User:           connection.User,
 			Password:       connection.Password,
+			Database:       connection.Database,
 			ConnectTimeout: connectTimeout,
 			Dialect: func() spec.Dialect {
 				if explicitDialectValue != "" {

@@ -12,7 +12,7 @@ Shared helpers for metadata-aware and offline interface adapters.
 
 ## Exports
 
-- `ConnectionInput` — includes `connect_timeout` field for metadata connection timeout
+- `ConnectionInput` — includes separate `database`/`schema` fields and `connect_timeout` for metadata connection selection
 - `ErrorKind`
 - `ConnectionInputError`
 - `ResolveConnectionOptions`

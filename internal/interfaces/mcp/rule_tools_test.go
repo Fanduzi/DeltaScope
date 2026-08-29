@@ -1,6 +1,6 @@
 // Package mcpapi verifies MCP rule-discovery tool behavior.
-// input: MCP rule tool handlers plus shipped rule catalog expectations
-// output: focused coverage for compact list_rules rows, list_rules text surface, describe_rule, and get_capabilities
+// input: MCP rule tool handlers plus shipped rule catalog and connection capability expectations
+// output: focused coverage for compact list_rules rows, list_rules text surface, describe_rule, and database-aware get_capabilities
 // pos: interface-layer tests for MCP rule-discovery behavior
 // note: if this file changes, update this header and module README.md.
 package mcpapi
@@ -248,7 +248,7 @@ func TestGetCapabilitiesToolReturnsKnownSummary(t *testing.T) {
 		AuditModes:                []string{"offline", "metadata-aware"},
 		Dialects:                  []string{"mysql", "tidb", "postgresql"},
 		TopLevelInputs:            []string{"sql", "dialect", "config_path", "connection_ref", "connection"},
-		ConnectionInputs:          []string{"connection.host", "connection.port", "connection.socket", "connection.user", "connection.schema", "connection.dialect", "connection.password", "connection.password_env", "connection.password_file"},
+		ConnectionInputs:          []string{"connection.host", "connection.port", "connection.socket", "connection.user", "connection.database", "connection.schema", "connection.dialect", "connection.password", "connection.password_env", "connection.password_file"},
 		InputRules:                []string{"connection_ref and connection are mutually exclusive", "top-level dialect overrides connection.dialect when both are set", "connection inputs support mysql, tidb, and postgresql metadata-aware audit"},
 		ConnectionRefPath:         "~/.config/deltascope/connections.yaml",
 		ConnectionRefOverrideFlag: "-connections-path",

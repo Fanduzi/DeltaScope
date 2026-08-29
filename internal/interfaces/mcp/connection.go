@@ -1,6 +1,6 @@
 // Package mcpapi exposes the MCP adapter for DeltaScope.
-// input: audit tool connection parameters, local connection config files, and password lookup sources
-// output: normalized metadata-aware connection settings for MCP audit requests
+// input: audit tool connection parameters, local connection config files, password lookup sources, and optional database/catalog selection
+// output: normalized metadata-aware connection settings for MCP audit requests with database and schema preserved separately
 // pos: MCP connection resolution layer between tool inputs and metadata provider wiring
 // note: if this file changes, update this header and module README.md.
 package mcpapi
@@ -51,6 +51,7 @@ type ResolvedConnection struct {
 	Port           int
 	Socket         string
 	User           string
+	Database       string
 	Schema         string
 	Dialect        string
 	Password       string
@@ -116,6 +117,7 @@ func buildResolvedConnection(input ConnectionInput, source MetadataSource, refNa
 		Port:           input.Port,
 		Socket:         strings.TrimSpace(input.Socket),
 		User:           strings.TrimSpace(input.User),
+		Database:       strings.TrimSpace(input.Database),
 		Schema:         strings.TrimSpace(input.Schema),
 		Dialect:        strings.TrimSpace(input.Dialect),
 		Password:       password,

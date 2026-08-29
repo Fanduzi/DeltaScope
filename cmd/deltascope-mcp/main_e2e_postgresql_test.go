@@ -2,7 +2,7 @@
 
 // Package main verifies Docker-backed MCP metadata-aware end-to-end behavior for PostgreSQL.
 // input: real PostgreSQL fixtures, the MCP stdio entrypoint, and a PG-capable MCP binary
-// output: end-to-end proof that deltascope-mcp can audit through the live PG metadata path
+// output: end-to-end proof that deltascope-mcp can audit through the live PG metadata path with distinct database/schema inputs
 // pos: slower external e2e verification kept outside the default go test loop
 // note: if this file changes, update this header and module README.md.
 package main
@@ -94,6 +94,7 @@ func TestRunServesMetadataAwareAuditOverRealPostgreSQL(t *testing.T) {
 					"port":     5500,
 					"user":     "root",
 					"password": "root",
+					"database": "postgres",
 					"schema":   "archive",
 					"dialect":  "postgresql",
 				},
@@ -119,7 +120,44 @@ func TestRunServesMetadataAwareAuditOverRealPostgreSQL(t *testing.T) {
 		}
 	})
 
-	// Case 3: table existence check
+	// Case 3: supplied database selects the catalog used for table metadata
+	t.Run("database_selection", func(t *testing.T) {
+		cmd := createMCPServerCommandPG(t)
+
+		client := sdkmcp.NewClient(&sdkmcp.Implementation{Name: "test-client", Version: "v0.0.1"}, nil)
+		session, err := client.Connect(ctx, &sdkmcp.CommandTransport{Command: cmd}, nil)
+		if err != nil {
+			t.Fatalf("connect stdio mcp server: %v", err)
+		}
+		t.Cleanup(func() { _ = session.Close() })
+
+		result, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
+			Name: "audit_sql",
+			Arguments: map[string]any{
+				"sql": "create table app.query_access_only (id bigint)",
+				"connection": map[string]any{
+					"host":     "127.0.0.1",
+					"port":     5500,
+					"user":     "root",
+					"password": "root",
+					"database": "query_access_e2e",
+					"schema":   "app",
+					"dialect":  "postgresql",
+				},
+			},
+		})
+		if err != nil {
+			t.Fatalf("call audit_sql over stdio: %v", err)
+		}
+		if result == nil || result.IsError {
+			t.Fatalf("expected successful tool result, got %#v", result)
+		}
+
+		body := result.StructuredContent.(map[string]any)
+		assertMCPFindingPresent(t, body, "ddl.table.exists.create.forbid")
+	})
+
+	// Case 4: table existence check
 	t.Run("table_exists", func(t *testing.T) {
 		cmd := createMCPServerCommandPG(t)
 
@@ -154,7 +192,7 @@ func TestRunServesMetadataAwareAuditOverRealPostgreSQL(t *testing.T) {
 		assertMCPFindingPresent(t, body, "ddl.table.exists.create.forbid")
 	})
 
-	// Case 4: DELETE with plan estimation
+	// Case 5: DELETE with plan estimation
 	t.Run("plan_delete", func(t *testing.T) {
 		cmd := createMCPServerCommandPG(t)
 
@@ -189,7 +227,7 @@ func TestRunServesMetadataAwareAuditOverRealPostgreSQL(t *testing.T) {
 		assertMCPImpactSource(t, body, "plan")
 	})
 
-	// Case 5: UPDATE with plan estimation
+	// Case 6: UPDATE with plan estimation
 	t.Run("plan_update", func(t *testing.T) {
 		cmd := createMCPServerCommandPG(t)
 
@@ -224,7 +262,7 @@ func TestRunServesMetadataAwareAuditOverRealPostgreSQL(t *testing.T) {
 		assertMCPImpactSource(t, body, "plan")
 	})
 
-	// Case 6: DROP CONSTRAINT → primary key mapping
+	// Case 7: DROP CONSTRAINT → primary key mapping
 	t.Run("drop_pk", func(t *testing.T) {
 		cmd := createMCPServerCommandPG(t)
 
@@ -259,7 +297,7 @@ func TestRunServesMetadataAwareAuditOverRealPostgreSQL(t *testing.T) {
 		assertMCPFindingPresent(t, body, "ddl.alter.drop_primary_key.forbid")
 	})
 
-	// Case 7: rename column — column does not exist
+	// Case 8: rename column — column does not exist
 	t.Run("rename_col_missing", func(t *testing.T) {
 		cmd := createMCPServerCommandPG(t)
 
@@ -294,7 +332,7 @@ func TestRunServesMetadataAwareAuditOverRealPostgreSQL(t *testing.T) {
 		assertMCPFindingPresent(t, body, "ddl.alter.rename_column.exists.require")
 	})
 
-	// Case 8: rename index forbid for existing index
+	// Case 9: rename index forbid for existing index
 	t.Run("rename_idx_forbid", func(t *testing.T) {
 		cmd := createMCPServerCommandPG(t)
 
@@ -315,6 +353,7 @@ func TestRunServesMetadataAwareAuditOverRealPostgreSQL(t *testing.T) {
 					"port":     5500,
 					"user":     "root",
 					"password": "root",
+					"database": "postgres",
 					"schema":   "app",
 					"dialect":  "postgresql",
 				},
@@ -331,7 +370,7 @@ func TestRunServesMetadataAwareAuditOverRealPostgreSQL(t *testing.T) {
 		assertMCPFindingPresent(t, body, "ddl.pg.alter_index.rename.notice")
 	})
 
-	// Case 9: drop column — column does not exist
+	// Case 10: drop column — column does not exist
 	t.Run("drop_col_missing", func(t *testing.T) {
 		cmd := createMCPServerCommandPG(t)
 

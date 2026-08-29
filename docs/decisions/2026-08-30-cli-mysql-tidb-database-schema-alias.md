@@ -2,7 +2,7 @@
 
 Date: 2026-08-30
 Status: Accepted
-Related milestone/version: issue #45
+Related milestone/version: issue #45; MCP follow-up issue #39
 Related commits: `3f8f4b0`, `421fcea`, `89b98df`
 Related tests:
 - `TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias`
@@ -68,8 +68,10 @@ compatibility, equal values, bounded conflicts, no-opener conflict rejection,
 auto-detected MySQL aliasing, and PostgreSQL database/schema separation.
 `make test`, `make lint`, `make docs-example-gates`,
 `make pg-unit-test-gates`, and `make test-e2e-cli` pass. The PostgreSQL CLI and
-HTTP legs of `make pg-confidence-gates` pass; its MCP leg still fails the
-pre-existing #31 fixture cases that omit PostgreSQL `--database`.
+HTTP legs of `make pg-confidence-gates` pass. At the time of this decision,
+the MCP leg still exposed the pre-existing #31 fixture cases that omitted
+PostgreSQL `--database`; MCP issue #39 supplies that field and closes the
+follow-up without changing this CLI alias decision.
 
 ## Consequences
 

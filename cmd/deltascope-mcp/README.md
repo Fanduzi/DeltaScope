@@ -9,12 +9,14 @@ Native stdio runtime for the official DeltaScope MCP server. For client onboardi
 | `main.go` | Parses process flags, loads runtime config, merges logging settings, and starts the MCP stdio service |
 | `main_test.go` | Verifies command bootstrap, version fast-path, logging config, runtime config merge, and stdio smoke behavior |
 | `main_e2e_test.go` | Verifies tagged Docker-backed metadata-aware MCP smoke against real MySQL/TiDB fixtures for direct and connection_ref flows |
+| `main_e2e_postgresql_test.go` | Verifies tagged Docker-backed PostgreSQL MCP metadata audits with separate database and schema selections |
 
 ## Notes
 
 - This command is intentionally thin and delegates MCP wiring to `internal/interfaces/mcp`.
 - The exposed MCP surface includes `audit_sql`, `describe_rule`, `list_rules`, and `get_capabilities`.
 - `connection_ref` reads `~/.config/deltascope/connections.yaml` by default and can be overridden with `-connections-path`.
+- MCP PostgreSQL metadata audits keep the database catalog and schema namespace as separate connection fields; the PG confidence fixture exercises explicit `database` plus `schema` inputs.
 - After startup, stdout is reserved for MCP stdio protocol traffic.
 - `-version` prints only the semantic version string and defaults to the release/source version from `pkg/deltascope.DefaultVersion` in source builds.
 - `-log-level` sets log verbosity: `debug`, `info` (default), `warn`, `error`.

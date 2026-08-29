@@ -1,5 +1,10 @@
 //go:build postgresql
 
+// Package mcpapi verifies PostgreSQL metadata-aware MCP audit behavior.
+// input: in-process MCP audit_sql calls, separate PostgreSQL database/schema inputs, and fake metadata clients
+// output: PostgreSQL metadata-aware result context, rule findings, planner behavior, and connection propagation
+// pos: PostgreSQL-tagged interface tests for the MCP adapter
+// note: if this file changes, update this header and module README.md.
 package mcpapi
 
 import (
@@ -17,6 +22,12 @@ func TestAuditSQLToolSupportsPostgreSQLMetadataAwareMode(t *testing.T) {
 	prepareMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
 		if request.Connection.Dialect != spec.DialectPostgreSQL {
 			t.Fatalf("expected postgresql dialect hint to flow into shared prepare, got %#v", request.Connection)
+		}
+		if request.Connection.Database != "analytics" {
+			t.Fatalf("expected postgresql database to flow into shared prepare, got %#v", request.Connection)
+		}
+		if request.ExplicitSchema != "public" {
+			t.Fatalf("expected postgresql schema to remain separate, got %q", request.ExplicitSchema)
 		}
 		return &auditmeta.PreparedAudit{
 			Client:        client,
@@ -41,8 +52,10 @@ func TestAuditSQLToolSupportsPostgreSQLMetadataAwareMode(t *testing.T) {
 			"sql":     "delete from public.users where id = 1",
 			"dialect": "postgresql",
 			"connection": map[string]any{
-				"host": "127.0.0.1",
-				"user": "root",
+				"host":     "127.0.0.1",
+				"user":     "root",
+				"database": "analytics",
+				"schema":   "public",
 			},
 		},
 	})

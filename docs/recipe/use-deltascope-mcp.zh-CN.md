@@ -115,11 +115,31 @@ export DELTASCOPE_MCP_BASE_URL=https://mirror.example.com/deltascope/releases/do
 }
 ```
 
+### PostgreSQL Direct Connection
+
+```json
+{
+  "sql": "delete from users where id = 1",
+  "connection": {
+    "host": "127.0.0.1",
+    "port": 5432,
+    "user": "deltascope",
+    "database": "app",
+    "schema": "public",
+    "dialect": "postgresql",
+    "password_env": "DELTASCOPE_PASSWORD"
+  }
+}
+```
+
+PostgreSQL 的 `database` 是 catalog，`schema` 是命名空间，两者应分别填写。
+
 注意：
 
 - `connection` 和 `connection_ref` 互斥。
 - 如果同时提供 `dialect` 和 `connection.dialect`，以顶层 `dialect` 为准。
 - direct connection 适合一次性审核，或者客户端本来就知道目标数据库详情的场景。
+- PostgreSQL 需要明确填写 `dialect: "postgresql"`；`database` 和 `schema` 是不同的连接字段。
 
 ## `connection_ref`
 
@@ -145,12 +165,20 @@ connections:
     schema: app
     dialect: mysql
     password_env: PROD_DB_PASSWORD
+  pg_readonly:
+    host: 10.0.0.20
+    port: 5432
+    user: audit_bot
+    database: app
+    schema: public
+    dialect: postgresql
+    password_env: PG_DB_PASSWORD
 ```
 
 适合 `connection_ref` 的场景：
 
 - 多个客户端共享同一个保存好的 profile
-- 不想把 host、user、schema、secret lookup 放进请求体
+- 不想把 host、user、database、schema、secret lookup 放进请求体
 - 需要一个可在多次 agent run 间复用的稳定名字
 
 ## 常见错误

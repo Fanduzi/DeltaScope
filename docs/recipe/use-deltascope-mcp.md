@@ -124,6 +124,7 @@ Use direct connection when the client can send metadata inline with the request 
     "host": "127.0.0.1",
     "port": 5432,
     "user": "deltascope",
+    "database": "app",
     "schema": "public",
     "dialect": "postgresql",
     "password_env": "DELTASCOPE_PASSWORD"
@@ -166,6 +167,7 @@ connections:
     host: 10.0.0.20
     port: 5432
     user: audit_bot
+    database: app
     schema: public
     dialect: postgresql
     password_env: PG_DB_PASSWORD
@@ -174,7 +176,7 @@ connections:
 Use `connection_ref` when:
 
 - several clients should share the same saved profile
-- you want to keep host, user, schema, and secret lookup out of the request body
+- you want to keep host, user, database, schema, and secret lookup out of the request body
 - you need a stable name that can be reused across agent runs
 
 ## Common Errors

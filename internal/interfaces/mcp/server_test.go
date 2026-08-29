@@ -1,12 +1,13 @@
 // Package mcpapi verifies the MCP interface bootstrap and tool surface.
-// input: MCP server construction, in-memory transports, and tool discovery requests
-// output: regression coverage for the official DeltaScope MCP server bootstrap
+// input: MCP server construction, in-memory transports, tool discovery requests, and inline metadata connection fields
+// output: regression coverage for the official DeltaScope MCP server bootstrap and database-aware audit wiring
 // pos: interface-level tests for the MCP adapter module
 // note: if this file changes, update this header and module README.md.
 package mcpapi
 
 import (
 	"context"
+	"encoding/json"
 	"iter"
 	"maps"
 	"os"
@@ -154,6 +155,28 @@ func TestNewServerPublishesOutputSchemasForCoreTools(t *testing.T) {
 		if _, ok := impactProps[prop]; !ok {
 			t.Fatalf("audit_sql schema impact missing property %q: %#v", prop, impactProps)
 		}
+	}
+}
+
+func TestAuditSQLInputSchemaIncludesConnectionDatabase(t *testing.T) {
+	t.Parallel()
+
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test-version"}))
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	tools, err := collectTools(context.Background(), session.Tools(context.Background(), nil))
+	if err != nil {
+		t.Fatalf("list tools: %v", err)
+	}
+	schema, err := json.Marshal(tools["audit_sql"].InputSchema)
+	if err != nil {
+		t.Fatalf("marshal audit_sql input schema: %v", err)
+	}
+	if !strings.Contains(string(schema), `"database"`) || !strings.Contains(string(schema), `"schema"`) {
+		t.Fatalf("audit_sql input schema must advertise separate database/schema fields: %s", schema)
 	}
 }
 
@@ -899,7 +922,7 @@ func TestAuditSQLToolReturnsStructuredErrorForIncompleteDirectConnection(t *test
 	}
 }
 
-func TestAuditSQLToolPassesConnectionConnectTimeout(t *testing.T) {
+func TestAuditSQLToolPassesConnectionDatabaseAndConnectTimeout(t *testing.T) {
 	previous := prepareMetadataAudit
 	var capturedConfig auditmeta.ConnectionConfig
 	prepareMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
@@ -930,6 +953,7 @@ func TestAuditSQLToolPassesConnectionConnectTimeout(t *testing.T) {
 				"port":            3306,
 				"user":            "root",
 				"password":        "secret",
+				"database":        "analytics",
 				"schema":          "app",
 				"connect_timeout": "5s",
 			},
@@ -943,6 +967,9 @@ func TestAuditSQLToolPassesConnectionConnectTimeout(t *testing.T) {
 	}
 	if capturedConfig.ConnectTimeout != 5*time.Second {
 		t.Fatalf("expected ConnectTimeout=5s, got %v", capturedConfig.ConnectTimeout)
+	}
+	if capturedConfig.Database != "analytics" {
+		t.Fatalf("expected Database=analytics, got %q", capturedConfig.Database)
 	}
 }
 
