@@ -53,7 +53,7 @@ avoids exposing untrusted bodies in installer diagnostics.
 
 ## Verification Evidence
 
-`bash scripts/test_install.sh` runs 26 hermetic assertions across curl and wget:
+`bash scripts/test_install.sh` runs 27 hermetic assertions across curl and wget:
 API success, API failure and invalid API fallback, invalid/empty/non-release
 redirect rejection, bounded total failure, and pinned discovery bypass. The
 tests use only local fake clients and a local archive fixture.
