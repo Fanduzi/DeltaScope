@@ -1,8 +1,3 @@
-// Package deltascope verifies the public library audit API.
-// input: inline SQL text, optional YAML policy overrides, and the public request contract
-// output: regression coverage for public audit orchestration and stable result mapping
-// pos: public API test coverage for pkg/deltascope
-// note: if this file changes, update this header and module README.md.
 // Package deltascope verifies the public SQL audit API.
 // input: public audit requests across dialect, parser, metadata, and policy boundaries
 // output: stable public result, partial-result, error, finding, and metadata contract coverage
