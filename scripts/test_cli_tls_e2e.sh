@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# input: Docker TLS fixtures, SQL cases, and built DeltaScope CLI
+# output: live audit/query-access TLS results with bounded cleanup
+# pos: CLI Docker end-to-end verification harness
+# note: if this file changes, update this header and scripts/README.md.
 # TLS E2E tests for DeltaScope CLI audit and query-access.
 # Generates certs, starts TLS database fixtures (no server), builds CLI,
 # runs 12 test cases (MySQL 8.4 + PostgreSQL 17 x audit + query-access
@@ -483,7 +487,7 @@ run_mysql_query_access_suite() {
   local untrusted_ca="${TLS_CERTS_DIR}/untrusted/untrusted-ca-cert.pem"
   local port="${MYSQL_TLS_PORT}"
   local untrusted_port="${MYSQL_TLS_UNTRUSTED_PORT}"
-  local qa_sql="SELECT count(id) FROM app.users"
+  local qa_sql="SELECT id FROM users"
 
   # Trusted CA — expect success (exit 0)
   run_tls_case \

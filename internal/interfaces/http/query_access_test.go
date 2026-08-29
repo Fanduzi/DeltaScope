@@ -1,6 +1,6 @@
 // Package httpapi verifies HTTP query access request binding and response mapping.
-// input: synthetic HTTP requests against offline analysis and unified online-session routing
-// output: focused coverage for JSON behavior, unified entry use, bounded failures including the PostgreSQL PG17 version boundary, zero-open authorization, and close ownership
+// input: synthetic HTTP requests with schema hints against offline analysis and unified online-session routing
+// output: focused coverage for JSON behavior, schema binding, unified entry use, bounded failures including the PostgreSQL PG17 version boundary, zero-open authorization, and close ownership
 // pos: HTTP adapter behavior and unified online migration coverage for query access
 // note: if this file changes, update this header and module README.md.
 package httpapi
@@ -80,6 +80,183 @@ func TestHandlerQueryAccessOnlineUsesUnifiedEntryWithEmptyDialectAndOneClose(t *
 	}
 	if constructorCalls != 1 || analysisCalls != 1 || closeCalls != 1 {
 		t.Fatalf("calls = constructor:%d analysis:%d close:%d, want 1 each", constructorCalls, analysisCalls, closeCalls)
+	}
+}
+
+func TestHandlerQueryAccessOnlineBindsMySQLTiDBSchema(t *testing.T) {
+	for _, testCase := range []struct {
+		name          string
+		dialect       string
+		defaultSchema string
+		sql           string
+	}{
+		{name: "mysql schema only", dialect: "mysql"},
+		{name: "mysql matching default schema", dialect: "mysql", defaultSchema: "app"},
+		{name: "mysql qualified relation", dialect: "mysql", sql: "SELECT id FROM app.users"},
+		{name: "tidb schema only", dialect: "tidb"},
+		{name: "tidb matching default schema", dialect: "tidb", defaultSchema: "app"},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			previousOpener := openOnlineSession
+			previousConstructor := newOnlineQueryAccessSessionFromConn
+			previousAnalyzer := analyzeOnlineQueryAccessWithSession
+			t.Cleanup(func() {
+				openOnlineSession = previousOpener
+				newOnlineQueryAccessSessionFromConn = previousConstructor
+				analyzeOnlineQueryAccessWithSession = previousAnalyzer
+			})
+
+			var sessionConfig online.SessionConfig
+			var request deltascope.QueryAccessRequest
+			openOnlineSession = func(_ context.Context, cfg online.SessionConfig) (*online.Session, error) {
+				sessionConfig = cfg
+				return &online.Session{Conn: &sql.Conn{}, Close: func() error { return nil }}, nil
+			}
+			newOnlineQueryAccessSessionFromConn = func(context.Context, *sql.Conn) (*deltascope.OnlineQueryAccessSession, error) {
+				return nil, nil
+			}
+			analyzeOnlineQueryAccessWithSession = func(_ context.Context, _ *deltascope.OnlineQueryAccessSession, got deltascope.QueryAccessRequest) (*deltascope.QueryAccessResult, error) {
+				request = got
+				return &deltascope.QueryAccessResult{
+					Dialect:            testCase.dialect,
+					Mode:               deltascope.QueryAccessModeStrict,
+					ReadClassification: deltascope.QueryAccessReadOnly,
+					Admission:          deltascope.QueryAccessAdmissible,
+				}, nil
+			}
+
+			sqlText := testCase.sql
+			if sqlText == "" {
+				sqlText = "SELECT id FROM users"
+			}
+			payload := fmt.Sprintf(`{"sql":%q,"connection_id":"test-conn"}`, sqlText)
+			if testCase.defaultSchema != "" {
+				payload = fmt.Sprintf(`{"sql":%q,"connection_id":"test-conn","default_schema":%q}`, sqlText, testCase.defaultSchema)
+			}
+			handler, err := NewHandler("", "test-build", WithRegistry(newQueryAccessTestRegistryWithDialect(t, "test-conn", testCase.dialect, "", "app")))
+			if err != nil {
+				t.Fatalf("new handler: %v", err)
+			}
+			req := httptest.NewRequest(http.MethodPost, "/v1/query-access/analyze", bytes.NewBufferString(payload))
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("X-API-Key", "test-key-value")
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+
+			if rec.Code != http.StatusOK {
+				t.Fatalf("status = %d, want 200; body=%s", rec.Code, rec.Body.String())
+			}
+			if sessionConfig.Database != "app" {
+				t.Fatalf("session database = %q, want app", sessionConfig.Database)
+			}
+			if request.DefaultSchema != "app" {
+				t.Fatalf("request default schema = %q, want app", request.DefaultSchema)
+			}
+			if request.SQL != sqlText {
+				t.Fatalf("request SQL = %q, want %q unchanged", request.SQL, sqlText)
+			}
+		})
+	}
+}
+
+func TestHandlerQueryAccessOnlineRejectsConflictingMySQLTiDBSchemaBeforeOpen(t *testing.T) {
+	for _, dialect := range []string{"mysql", "tidb"} {
+		t.Run(dialect, func(t *testing.T) {
+			previousOpener := openOnlineSession
+			previousAnalyzer := analyzeOnlineQueryAccessWithSession
+			t.Cleanup(func() {
+				openOnlineSession = previousOpener
+				analyzeOnlineQueryAccessWithSession = previousAnalyzer
+			})
+
+			var openCalls, analysisCalls int
+			openOnlineSession = func(context.Context, online.SessionConfig) (*online.Session, error) {
+				openCalls++
+				return nil, fmt.Errorf("unexpected session open")
+			}
+			analyzeOnlineQueryAccessWithSession = func(context.Context, *deltascope.OnlineQueryAccessSession, deltascope.QueryAccessRequest) (*deltascope.QueryAccessResult, error) {
+				analysisCalls++
+				return nil, fmt.Errorf("unexpected analysis")
+			}
+
+			handler, err := NewHandler("", "test-build", WithRegistry(newQueryAccessTestRegistryWithDialect(t, "test-conn", dialect, "", "app")))
+			if err != nil {
+				t.Fatalf("new handler: %v", err)
+			}
+			req := httptest.NewRequest(http.MethodPost, "/v1/query-access/analyze", bytes.NewBufferString(`{"sql":"SELECT id FROM users","connection_id":"test-conn","default_schema":"archive"}`))
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("X-API-Key", "test-key-value")
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+
+			if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), `"invalid_request"`) {
+				t.Fatalf("status/body = %d/%s, want bounded invalid_request", rec.Code, rec.Body.String())
+			}
+			message := strings.ToLower(rec.Body.String())
+			for _, token := range []string{"schema", "default_schema", "match"} {
+				if !strings.Contains(message, token) {
+					t.Fatalf("conflict guidance missing %q: %s", token, rec.Body.String())
+				}
+			}
+			for _, value := range []string{"app", "archive"} {
+				if strings.Contains(message, value) {
+					t.Fatalf("conflict guidance leaked selected value %q: %s", value, rec.Body.String())
+				}
+			}
+			if openCalls != 0 || analysisCalls != 0 {
+				t.Fatalf("conflict must stop before open/analysis: opens=%d analyses=%d", openCalls, analysisCalls)
+			}
+		})
+	}
+}
+
+func TestHandlerQueryAccessOnlinePreservesPostgreSQLDatabaseAndSchema(t *testing.T) {
+	previousOpener := openOnlineSession
+	previousConstructor := newOnlineQueryAccessSessionFromConn
+	previousAnalyzer := analyzeOnlineQueryAccessWithSession
+	t.Cleanup(func() {
+		openOnlineSession = previousOpener
+		newOnlineQueryAccessSessionFromConn = previousConstructor
+		analyzeOnlineQueryAccessWithSession = previousAnalyzer
+	})
+
+	var sessionConfig online.SessionConfig
+	var request deltascope.QueryAccessRequest
+	openOnlineSession = func(_ context.Context, cfg online.SessionConfig) (*online.Session, error) {
+		sessionConfig = cfg
+		return &online.Session{Conn: &sql.Conn{}, Close: func() error { return nil }}, nil
+	}
+	newOnlineQueryAccessSessionFromConn = func(context.Context, *sql.Conn) (*deltascope.OnlineQueryAccessSession, error) {
+		return nil, nil
+	}
+	analyzeOnlineQueryAccessWithSession = func(_ context.Context, _ *deltascope.OnlineQueryAccessSession, got deltascope.QueryAccessRequest) (*deltascope.QueryAccessResult, error) {
+		request = got
+		return &deltascope.QueryAccessResult{
+			Dialect:            "postgresql",
+			Mode:               deltascope.QueryAccessModeStrict,
+			ReadClassification: deltascope.QueryAccessReadOnly,
+			Admission:          deltascope.QueryAccessAdmissible,
+		}, nil
+	}
+
+	handler, err := NewHandler("", "test-build", WithRegistry(newQueryAccessTestRegistryWithDialect(t, "test-conn", "postgresql", "app", "public")))
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/v1/query-access/analyze", bytes.NewBufferString(`{"sql":"SELECT id FROM users","connection_id":"test-conn"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "test-key-value")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body=%s", rec.Code, rec.Body.String())
+	}
+	if sessionConfig.Database != "app" || sessionConfig.Schema != "public" {
+		t.Fatalf("session database/schema = %q/%q, want app/public", sessionConfig.Database, sessionConfig.Schema)
+	}
+	if request.DefaultSchema != "public" {
+		t.Fatalf("request default schema = %q, want public", request.DefaultSchema)
 	}
 }
 
@@ -844,6 +1021,10 @@ func TestHandleQueryAccessOnlineProfileAndConnectionIDRejected(t *testing.T) {
 }
 
 func newQueryAccessTestRegistry(t *testing.T, connID string, purposes ...string) *runtimeconfig.Registry {
+	return newQueryAccessTestRegistryWithDialect(t, connID, "mysql", "", "app", purposes...)
+}
+
+func newQueryAccessTestRegistryWithDialect(t *testing.T, connID, dialect, database, schema string, purposes ...string) *runtimeconfig.Registry {
 	t.Helper()
 	t.Setenv("TEST_QA_DB_PASSWORD", "secret")
 	t.Setenv("TEST_QA_API_KEY_SECRET", "test-key-value")
@@ -862,12 +1043,13 @@ func newQueryAccessTestRegistry(t *testing.T, connID string, purposes ...string)
 			Connections: []runtimeconfig.ConnectionConfig{
 				{
 					ID:               connID,
-					Dialect:          "mysql",
+					Dialect:          dialect,
 					Host:             "127.0.0.1",
 					Port:             3306,
 					User:             "root",
 					PasswordEnv:      "TEST_QA_DB_PASSWORD",
-					Schema:           "app",
+					Database:         database,
+					Schema:           schema,
 					Purposes:         purposes,
 					AllowedAPIKeyIDs: []string{"default-key"},
 				},

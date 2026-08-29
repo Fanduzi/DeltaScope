@@ -1,6 +1,6 @@
 // Package cli exposes the command-line adapter for DeltaScope.
-// input: query-access command flags including dialect-aware connection flags, flag-presence-aware SQL text from --sql/--file/stdin, and the unified public online query access API
-// output: rendered offline or identity-routed online query access results in JSON format, exit-code mapping, and shared bounded connection/authentication/timeout/TLS/version-boundary errors
+// input: query-access command flags including dialect-aware connection and schema hints, flag-presence-aware SQL text from --sql/--file/stdin, and the unified public online query access API
+// output: rendered offline or schema-bound identity-routed online query access results in JSON format, exit-code mapping, and shared bounded connection/authentication/timeout/TLS/version-boundary errors
 // pos: CLI query-access command implementation above offline analysis and the opaque unified online session boundary
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/application/online"
+	appqa "github.com/Fanduzi/DeltaScope/internal/application/queryaccess"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
 	"github.com/spf13/cobra"
@@ -59,7 +60,7 @@ func newQueryAccessAnalyzeCmd(options *cliOptions, exitCode *int) *cobra.Command
 			"  deltascope query-access analyze --sql \"SELECT id, name FROM users WHERE id = 1\" --dialect mysql\n" +
 			"  deltascope query-access analyze --file ./query.sql --dialect postgresql --mode projection_only\n" +
 			"  cat ./query.sql | deltascope query-access analyze --dialect mysql\n\n" +
-			"Online example:\n" +
+			"Online MySQL/TiDB example (--schema supplies the catalog and default qualifier):\n" +
 			"  deltascope query-access analyze --sql \"SELECT id, name FROM users WHERE id = 1\" --host 127.0.0.1 --port 3306 --user root --ask-password --schema app",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			sql, err := resolveQueryAccessSQL(cmd.Context(), cmd.InOrStdin(), inlineSQL, filePath, cmd.ErrOrStderr(), stdinIsTerminal(cmd), cmd.Flags().Changed("sql"))
@@ -83,6 +84,11 @@ func newQueryAccessAnalyzeCmd(options *cliOptions, exitCode *int) *cobra.Command
 				*exitCode = exitQueryAccessUsageError
 				return err
 			}
+			defaultSchema, err = appqa.ResolveMySQLTiDBDefaultSchema(string(dialect), connection.Schema, defaultSchema)
+			if err != nil {
+				*exitCode = exitQueryAccessUsageError
+				return newUserError("--schema and --default-schema must match; use one schema value")
+			}
 
 			if !connection.Enabled() {
 				return runQueryAccessOffline(cmd, sql, dialect, accessMode, defaultSchema, exitCode)
@@ -102,7 +108,7 @@ func newQueryAccessAnalyzeCmd(options *cliOptions, exitCode *int) *cobra.Command
 	cmd.Flags().StringVar(&options.PasswordEnv, "password-env", "", "environment variable that contains the database password for online query access")
 	cmd.Flags().StringVar(&options.PasswordFile, "password-file", "", "file path that contains the database password for online query access")
 	cmd.Flags().BoolVar(&options.AskPassword, "ask-password", false, "prompt for a database password without echo")
-	cmd.Flags().StringVarP(&options.Schema, "schema", "D", "", "database schema for online query access")
+	cmd.Flags().StringVarP(&options.Schema, "schema", "D", "", "schema/catalog for online query access (MySQL/TiDB also uses it as the default qualifier)")
 	cmd.Flags().StringVar(&options.Database, "database", "", "database name for online query access (PostgreSQL)")
 	cmd.Flags().StringVarP(&options.Socket, "socket", "S", "", "database Unix socket for online query access")
 	cmd.Flags().StringVar(&options.MetadataConnectTimeout, "metadata-connect-timeout", "", "connection timeout for online query access, for example 5s or 500ms")
@@ -197,6 +203,8 @@ func buildOnlineSessionConfig(connection auditConnectionOptions, dialect spec.Di
 	}
 	if dialect == spec.DialectPostgreSQL {
 		cfg.Database = connection.Database
+	} else if dialect == spec.DialectMySQL || dialect == spec.DialectTiDB {
+		cfg.Database = connection.Schema
 	}
 	return cfg
 }

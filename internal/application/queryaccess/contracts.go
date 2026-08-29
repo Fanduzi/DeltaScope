@@ -1,15 +1,41 @@
-// Package queryaccess defines application-level contracts for query access analysis.
-// input: SQL text, dialect, mode, profile, and optional schema resolver
-// output: domain-typed query access results for transport adapters
-// pos: application contract layer for the query access analysis foundation
+// Package queryaccess defines application-level query access contracts.
+// input: query access requests, results, resolvers, and online schema hints
+// output: domain-typed query access contracts and MySQL/TiDB schema binding
+// pos: application contract layer above parsing and transport adapters
 // note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (
 	"context"
+	"errors"
+	"strings"
 
 	domain "github.com/Fanduzi/DeltaScope/internal/domain/queryaccess"
 )
+
+// ErrMySQLTiDBDefaultSchemaConflict indicates that an online MySQL/TiDB
+// connection schema and an explicit default schema disagree.
+var ErrMySQLTiDBDefaultSchemaConflict = errors.New("MySQL/TiDB connection schema and default schema must match; use one schema value")
+
+// ResolveMySQLTiDBDefaultSchema binds a connection schema to the online
+// analysis default for MySQL/TiDB. Other dialects keep their existing request
+// default unchanged.
+func ResolveMySQLTiDBDefaultSchema(dialect, connectionSchema, requestedSchema string) (string, error) {
+	dialect = strings.ToLower(strings.TrimSpace(dialect))
+	requestedSchema = strings.TrimSpace(requestedSchema)
+	if dialect != "mysql" && dialect != "tidb" {
+		return requestedSchema, nil
+	}
+
+	connectionSchema = strings.TrimSpace(connectionSchema)
+	if connectionSchema != "" && requestedSchema != "" && connectionSchema != requestedSchema {
+		return "", ErrMySQLTiDBDefaultSchemaConflict
+	}
+	if requestedSchema != "" {
+		return requestedSchema, nil
+	}
+	return connectionSchema, nil
+}
 
 // SchemaResolver resolves relation metadata for name resolution.
 type SchemaResolver interface {

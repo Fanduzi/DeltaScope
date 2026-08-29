@@ -1,6 +1,6 @@
 // Package cli verifies CLI query access command behavior.
-// input: synthetic CLI invocations covering audit-only flag boundaries in both command positions, fixed JSON output, admission exits, explicit-empty/non-EOF stdin, file, unified online-session routing, and the PostgreSQL PG17 version boundary
-// output: coverage for query access JSON output, exit codes, input-source validation, bounded connection/authentication/version messages, and close ownership
+// input: synthetic CLI invocations covering audit-only flag boundaries, SQL sources, schema hints, unified online-session routing, and the PostgreSQL PG17 version boundary
+// output: coverage for query access JSON output, exit codes, input-source validation, schema binding, bounded connection/authentication/version messages, and close ownership
 // pos: CLI adapter behavior and unified online migration coverage for query access
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -226,6 +226,125 @@ func TestQueryAccessOnlineUsesUnifiedEntryWithEmptyRequestDialect(t *testing.T) 
 	}
 }
 
+func TestQueryAccessOnlineBindsMySQLTiDBSchema(t *testing.T) {
+	for _, testCase := range []struct {
+		name          string
+		dialect       string
+		defaultSchema string
+		sql           string
+	}{
+		{name: "mysql schema only", dialect: "mysql"},
+		{name: "mysql matching default schema", dialect: "mysql", defaultSchema: "app"},
+		{name: "mysql qualified relation", dialect: "mysql", sql: "SELECT id FROM app.users"},
+		{name: "tidb schema only", dialect: "tidb"},
+		{name: "tidb matching default schema", dialect: "tidb", defaultSchema: "app"},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
+			previousOpener := openOnlineSession
+			previousConstructor := newOnlineQueryAccessSessionFromConn
+			previousAnalyzer := analyzeOnlineQueryAccessWithSession
+			t.Cleanup(func() {
+				openOnlineSession = previousOpener
+				newOnlineQueryAccessSessionFromConn = previousConstructor
+				analyzeOnlineQueryAccessWithSession = previousAnalyzer
+			})
+
+			sqlText := testCase.sql
+			if sqlText == "" {
+				sqlText = "SELECT id FROM users"
+			}
+			var sessionConfig online.SessionConfig
+			var request deltascope.QueryAccessRequest
+			openOnlineSession = func(_ context.Context, cfg online.SessionConfig) (*online.Session, error) {
+				sessionConfig = cfg
+				return &online.Session{Conn: &sql.Conn{}, Close: func() error { return nil }}, nil
+			}
+			newOnlineQueryAccessSessionFromConn = func(context.Context, *sql.Conn) (*deltascope.OnlineQueryAccessSession, error) {
+				return nil, nil
+			}
+			analyzeOnlineQueryAccessWithSession = func(_ context.Context, _ *deltascope.OnlineQueryAccessSession, got deltascope.QueryAccessRequest) (*deltascope.QueryAccessResult, error) {
+				request = got
+				return &deltascope.QueryAccessResult{
+					Dialect:            testCase.dialect,
+					Mode:               deltascope.QueryAccessModeStrict,
+					ReadClassification: deltascope.QueryAccessReadOnly,
+					Admission:          deltascope.QueryAccessAdmissible,
+				}, nil
+			}
+
+			args := []string{
+				"query-access", "analyze", "--sql", sqlText,
+				"--dialect", testCase.dialect,
+				"--host", "127.0.0.1", "--user", "root", "--schema", "app",
+			}
+			if testCase.defaultSchema != "" {
+				args = append(args, "--default-schema", testCase.defaultSchema)
+			}
+
+			var stdout, stderr bytes.Buffer
+			if exitCode := Execute(t.Context(), args, &bytes.Buffer{}, &stdout, &stderr); exitCode != exitQueryAccessAdmissible {
+				t.Fatalf("exit code = %d, want %d; stderr=%q", exitCode, exitQueryAccessAdmissible, stderr.String())
+			}
+			if sessionConfig.Database != "app" {
+				t.Fatalf("session database = %q, want app", sessionConfig.Database)
+			}
+			if request.DefaultSchema != "app" {
+				t.Fatalf("request default schema = %q, want app", request.DefaultSchema)
+			}
+			if request.SQL != sqlText {
+				t.Fatalf("request SQL = %q, want unchanged SQL", request.SQL)
+			}
+		})
+	}
+}
+
+func TestQueryAccessOnlineRejectsConflictingMySQLTiDBSchemaBeforeAnalysis(t *testing.T) {
+	for _, dialect := range []string{"mysql", "tidb"} {
+		t.Run(dialect, func(t *testing.T) {
+			previousOpener := openOnlineSession
+			previousAnalyzer := analyzeOnlineQueryAccessWithSession
+			t.Cleanup(func() {
+				openOnlineSession = previousOpener
+				analyzeOnlineQueryAccessWithSession = previousAnalyzer
+			})
+
+			var openCalls, analysisCalls int
+			openOnlineSession = func(context.Context, online.SessionConfig) (*online.Session, error) {
+				openCalls++
+				return nil, errors.New("unexpected session open")
+			}
+			analyzeOnlineQueryAccessWithSession = func(context.Context, *deltascope.OnlineQueryAccessSession, deltascope.QueryAccessRequest) (*deltascope.QueryAccessResult, error) {
+				analysisCalls++
+				return nil, errors.New("unexpected analysis")
+			}
+
+			var stdout, stderr bytes.Buffer
+			exitCode := Execute(t.Context(), []string{
+				"query-access", "analyze", "--sql", "SELECT id FROM users",
+				"--dialect", dialect, "--host", "127.0.0.1", "--user", "root",
+				"--schema", "app", "--default-schema", "archive",
+			}, &bytes.Buffer{}, &stdout, &stderr)
+			if exitCode != exitQueryAccessUsageError {
+				t.Fatalf("exit code = %d, want %d; stderr=%q", exitCode, exitQueryAccessUsageError, stderr.String())
+			}
+			if stdout.Len() != 0 || openCalls != 0 || analysisCalls != 0 {
+				t.Fatalf("conflict must stop before open/analysis: stdout=%q opens=%d analyses=%d", stdout.String(), openCalls, analysisCalls)
+			}
+			message := strings.ToLower(stderr.String())
+			for _, token := range []string{"--schema", "--default-schema", "match"} {
+				if !strings.Contains(message, token) {
+					t.Fatalf("conflict guidance missing %q: %q", token, stderr.String())
+				}
+			}
+			for _, value := range []string{"app", "archive"} {
+				if strings.Contains(message, value) {
+					t.Fatalf("conflict guidance leaked selected value %q: %q", value, stderr.String())
+				}
+			}
+		})
+	}
+}
+
 func TestQueryAccessAnalyzeMySQLSelect(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	exitCode := Execute(t.Context(), []string{"query-access", "analyze", "--sql", "SELECT id, name FROM users WHERE id = 1", "--dialect", "mysql"}, &bytes.Buffer{}, &stdout, &stderr)
@@ -342,6 +461,9 @@ func TestQueryAccessAnalyzeHelpShowsConnectionFlags(t *testing.T) {
 	}
 	if !bytes.Contains(stdout.Bytes(), []byte("online PostgreSQL Query Access requires PostgreSQL 17")) {
 		t.Fatalf("expected PostgreSQL online version requirement in help output:\n%s", stdout.String())
+	}
+	if !bytes.Contains(stdout.Bytes(), []byte("--schema supplies the catalog and default qualifier")) {
+		t.Fatalf("expected online schema-binding example in help output:\n%s", stdout.String())
 	}
 }
 
