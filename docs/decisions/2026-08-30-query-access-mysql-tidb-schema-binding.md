@@ -3,7 +3,9 @@
 Date: 2026-08-30
 Status: Accepted
 Related issue: [#34](https://github.com/Fanduzi/DeltaScope/issues/34)
-Implementation commit: [`0766cd6d79cb39d438202756df3e050f5b4b22fe`](https://github.com/Fanduzi/DeltaScope/commit/0766cd6d79cb39d438202756df3e050f5b4b22fe)
+Implementation commits:
+- [`0766cd6d79cb39d438202756df3e050f5b4b22fe`](https://github.com/Fanduzi/DeltaScope/commit/0766cd6d79cb39d438202756df3e050f5b4b22fe)
+- [`70ec6dd46db7c0ab1b8d338c14d37477c147fdc6`](https://github.com/Fanduzi/DeltaScope/commit/70ec6dd46db7c0ab1b8d338c14d37477c147fdc6)
 Related decisions:
 - [Scope CLI rendering and threshold flags to audit](2026-08-30-query-access-cli-flag-ownership.md)
 - [Treat MySQL/TiDB database as the catalog alias](2026-08-30-cli-mysql-tidb-database-schema-alias.md)
