@@ -167,13 +167,17 @@ func prepareMetadataAudit(ctx context.Context, sqlText string, options auditConn
 		ExplicitSchema:       options.Schema,
 		ExplicitSchemaSource: "flag",
 		OpenClient: func(config auditmeta.ConnectionConfig) (auditmeta.Client, error) {
+			database := config.Database
+			if config.Dialect == "" && strings.TrimSpace(database) == "" {
+				database = options.Schema
+			}
 			return newMetadataClient(auditConnectionOptions{
 				Host:           config.Host,
 				Port:           config.Port,
 				Socket:         config.Socket,
 				User:           config.User,
 				Password:       config.Password,
-				Database:       config.Database,
+				Database:       database,
 				Dialect:        string(config.Dialect),
 				ConnectTimeout: config.ConnectTimeout,
 				TLSMode:        config.TLSMode,

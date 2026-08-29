@@ -215,6 +215,7 @@ func TestAuditCommandUsesMySQLCompatibleDatabaseAsSchemaAlias(t *testing.T) {
 	}{
 		{name: "mysql database only", dialect: spec.DialectMySQL, explicitDialect: true, database: "app", wantDatabase: "app", wantSource: "database"},
 		{name: "mysql auto-detected database only", dialect: spec.DialectMySQL, database: "app", wantDatabase: "app", wantSource: "database"},
+		{name: "mysql auto-detected schema only", dialect: spec.DialectMySQL, explicitSchema: "app", wantDatabase: "app", wantSource: "flag"},
 		{name: "mysql schema only", dialect: spec.DialectMySQL, explicitDialect: true, explicitSchema: "app", wantDatabase: "app", wantSource: "flag"},
 		{name: "mysql matching values", dialect: spec.DialectMySQL, explicitDialect: true, database: "app", explicitSchema: "app", wantDatabase: "app", wantSource: "flag"},
 		{name: "tidb database only", dialect: spec.DialectTiDB, explicitDialect: true, database: "app", wantDatabase: "app", wantSource: "database"},

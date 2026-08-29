@@ -589,12 +589,18 @@ func isBoundedApplicationError(err error) bool {
 	}
 	var auditMetaErr *auditmeta.Error
 	if errors.As(err, &auditMetaErr) {
-		switch auditMetaErr.Kind {
-		case auditmeta.ErrorDialectMismatch, auditmeta.ErrorSchemaHintRequired, auditmeta.ErrorPostgreSQLDatabaseRequired, auditmeta.ErrorMySQLDatabaseSchemaConflict:
-			return true
-		}
+		return isUserFacingAuditMetaErrorKind(auditMetaErr.Kind)
 	}
 	return false
+}
+
+func isUserFacingAuditMetaErrorKind(kind auditmeta.ErrorKind) bool {
+	switch kind {
+	case auditmeta.ErrorDialectMismatch, auditmeta.ErrorSchemaHintRequired, auditmeta.ErrorPostgreSQLDatabaseRequired, auditmeta.ErrorMySQLDatabaseSchemaConflict:
+		return true
+	default:
+		return false
+	}
 }
 
 func mapMetadataPrepareError(err error, connection auditConnectionOptions) error {
@@ -619,8 +625,7 @@ func exitCodeForCLIError(err error) int {
 	}
 	var auditMetaErr *auditmeta.Error
 	if errors.As(err, &auditMetaErr) {
-		switch auditMetaErr.Kind {
-		case auditmeta.ErrorDialectMismatch, auditmeta.ErrorSchemaHintRequired, auditmeta.ErrorPostgreSQLDatabaseRequired, auditmeta.ErrorMySQLDatabaseSchemaConflict:
+		if isUserFacingAuditMetaErrorKind(auditMetaErr.Kind) {
 			return exitUser
 		}
 	}
