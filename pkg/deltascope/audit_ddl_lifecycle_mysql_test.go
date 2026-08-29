@@ -154,8 +154,8 @@ func TestAuditAlterIndexUsesCreateIndexNoticeAndActionMetadata(t *testing.T) {
 			if got := indexFinding.Metadata["action"]; got != "add_index" {
 				t.Errorf("metadata action = %#v, want add_index", got)
 			}
-			if got := indexFinding.Metadata["name"]; got != tc.index {
-				t.Errorf("metadata name = %#v, want %q", got, tc.index)
+			if got := indexFinding.Metadata["index"]; got != tc.index {
+				t.Errorf("metadata index = %#v, want %q", got, tc.index)
 			}
 		})
 	}

@@ -3,7 +3,7 @@
 Date: 2026-08-30
 Status: Accepted
 Related milestone/version: bar70 / GitHub issue #49
-Related commits: issue #49 implementation commit on the milestone branch
+Related commits: df86703b2401ec481061fd88cf2aa35578469741
 Related tests:
   `internal/application/audit/extract_test.go`
   `internal/infrastructure/parser/tidb/extractor_test.go`
@@ -42,8 +42,9 @@ adding duplicate rule IDs, or changing existing lifecycle wording.
 
 ## Public Contract
 
-MySQL and TiDB `ALTER TABLE` index additions expose `add_index` action metadata
-and use `ddl.create_index.notice`. True `ADD CONSTRAINT` forms continue to use
+MySQL and TiDB `ALTER TABLE` index additions expose bounded `action:
+add_index` and `index` metadata and use `ddl.create_index.notice`. True `ADD
+CONSTRAINT` forms continue to use
 `add_constraint` and `ddl.alter.add_constraint.notice`. Existing renderers
 receive the same bounded finding message and metadata through the shared audit
 result.
@@ -74,6 +75,6 @@ replaced with that parser-owned fact without changing the normalized contract.
 
 ## Links
 
-- Commits: issue #49 implementation commit on `fix/issue-49-alter-index-20260830`
+- Commits: `df86703b2401ec481061fd88cf2aa35578469741`
 - Tests: `make sql-corpus-gates`, `make ddl-coverage-catalog-test`
 - Docs: `docs/decisions/README.md`

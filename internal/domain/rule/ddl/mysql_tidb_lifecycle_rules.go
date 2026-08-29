@@ -66,13 +66,9 @@ func (r mysqlTidbLifecycleRule) Evaluate(ctx context.Context, statement spec.Sta
 		"operation": string(r.operation),
 	}
 	if statement.DDL.Operation == spec.DDLOperationAlterTable {
-		for _, alter := range statement.DDL.Alter {
-			if alter.Action != "add_index" {
-				continue
-			}
-			metadata["action"] = alter.Action
-			metadata["name"] = alter.Name
-			break
+		if indexName := firstAlterIndexName(statement.DDL, "add_index"); indexName != "" {
+			metadata["action"] = "add_index"
+			metadata["index"] = indexName
 		}
 	}
 	if r.objectType != "" {
@@ -104,25 +100,26 @@ func lifecycleMessageObjectName(statement spec.Statement) string {
 			return qualifiedTableName(ddl.Table.Schema, ddl.Table.Name)
 		}
 	case spec.DDLOperationCreateIndex:
-		for _, alter := range ddl.Alter {
-			if index, ok := alterIndexDefinition(alter); ok && index.Name != "" {
-				return index.Name
-			}
-		}
+		return firstAlterIndexName(ddl, "")
 	case spec.DDLOperationAlterTable:
-		for _, alter := range ddl.Alter {
-			if alter.Action != "add_index" {
-				continue
-			}
-			if index, ok := alterIndexDefinition(alter); ok && index.Name != "" {
-				return index.Name
-			}
-		}
+		return firstAlterIndexName(ddl, "add_index")
 	case spec.DDLOperationDropIndex:
 		for _, alter := range ddl.Alter {
 			if alter.Index != nil && alter.Index.OldName != "" {
 				return alter.Index.OldName
 			}
+		}
+	}
+	return ""
+}
+
+func firstAlterIndexName(ddl *spec.DDL, action string) string {
+	for _, alter := range ddl.Alter {
+		if action != "" && alter.Action != action {
+			continue
+		}
+		if index, ok := alterIndexDefinition(alter); ok && index.Name != "" {
+			return index.Name
 		}
 	}
 	return ""
