@@ -68,6 +68,17 @@ profile is not included in result JSON.
 
 Projection-only mode emits a `projection_only_inference_risk` warning when non-projected columns exist. This warns the caller that a user authorized only for projected columns could still infer data through WHERE, JOIN, or ORDER BY clauses. Use projection-only mode only when the authorization layer accepts this trade-off.
 
+## CLI Input Sources
+
+`query-access analyze` accepts SQL from mutually exclusive `--sql`, `--file`, or
+stdin when both flags are omitted. Flag presence selects the source: an explicit
+`--sql ""` or whitespace-only value fails immediately with `SQL input must not be
+empty` and exit 3 without reading stdin. Empty stdin returns the same bounded
+message and exit code. If `--file` cannot be opened, the command returns
+`cannot read SQL file` with exit 3 and does not expose the OS error or filesystem
+path. Valid inline, file, and stdin inputs retain the result and admission exit
+codes described below.
+
 ## Table Permissions
 
 Both strict and projection-only modes require `read_table` permission for every base table and view. CTEs and derived tables do not require permission directly; their permission requirements come from the underlying physical tables and views they reference.

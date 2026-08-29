@@ -1,18 +1,23 @@
 # Decision: Treat Explicit Empty `--sql` as Provided Input
 
-Date: 2026-08-17
+Date: 2026-08-17 (updated 2026-08-30)
 Status: Accepted
-Related milestone/version: issue #19
+Related milestone/version: issue #19; follow-up issue #32
 Related commits:
 Related tests:
 - `TestAuditCommandRejectsExplicitEmptySQLWithoutReadingStdin`
 - `TestAuditCommandRejectsEmptyFileInput`
 - `TestResolveAuditSQLRejectsConflictingOrEmptyInput`
 - `TestAuditCommandSupportsStdinInput`
+- `TestQueryAccessAnalyzeRejectsExplicitEmptySQLWithoutReadingStdin`
+- `TestQueryAccessAnalyzeEmptyStdin`
+- `TestQueryAccessAnalyzeMissingFileErrorIsBounded`
+- `TestQueryAccessAnalyzeSupportsStdinAndFileInput`
 - `TestAuditSQLToolReturnsStructuredErrorForEmptySQL`
 Related docs:
 - `docs/reference/cli.md`
 - `docs/reference/cli.zh-CN.md`
+- `docs/reference/query-access-analysis.md`
 - `docs/recipe/audit-sql-offline.md`
 - `docs/recipe/audit-sql-offline.zh-CN.md`
 
@@ -22,6 +27,9 @@ Related docs:
 `resolveAuditSQL` only inspected `strings.TrimSpace(inlineSQL)`. The command then
 called `io.ReadAll(stdin)`. If stdin stayed open, the process hung with no output.
 
+Issue #32 found the same provided-vs-omitted fallthrough in
+`query-access analyze`, whose documented usage exit class is 3.
+
 The same empty value with stdin closed already failed with `SQL input must not be
 empty` and exit 2. MCP `audit_sql sql=""` already fail-closes with `bad_request`.
 
@@ -30,6 +38,12 @@ empty` and exit 2. MCP `audit_sql sql=""` already fail-closes with `bad_request`
 If the `--sql` flag is present (`Flags().Changed("sql")`), that value is the SQL
 input. Empty or whitespace-only `--sql` fails immediately with
 `SQL input must not be empty` and exit 2, without reading stdin.
+
+The same source-selection rule applies to `query-access analyze`. Its explicit
+empty or whitespace-only `--sql` fails immediately with the same message and
+exit 3, preserving the Query Access usage-error contract. A missing or
+unreadable Query Access `--file` returns the bounded message `cannot read SQL
+file` with exit 3 and no OS error or filesystem path.
 
 `--file` empty content and omitted-flag stdin audits keep their existing behavior.
 MCP empty-SQL handling is unchanged.
@@ -49,6 +63,10 @@ from a missing flag.
 - `echo 'delete from users' | deltascope audit` is unchanged.
 - Empty `--file` content still exits 2 with `SQL input must not be empty`.
 - MCP empty SQL remains `isError` / `code=bad_request` / `audit SQL must not be empty`.
+- Query Access with neither `--sql` nor `--file` reads stdin; empty stdin exits 3
+  with `SQL input must not be empty`.
+- Query Access valid inline, file, and stdin inputs retain their result and
+  admission exit codes.
 
 ## Deferred / Out Of Scope
 
@@ -56,12 +74,13 @@ from a missing flag.
 - Metadata connection errors (#23)
 - Unknown-flag / parser-error exit codes (#24)
 - Successful stdin or `--file` audits
-- The same provided-vs-omitted hang on `query-access analyze --sql ""`
 
 ## Verification Evidence
 
 CLI `Execute` tests pass a stdin reader that fails if read, proving `--sql ""` and
 `--sql "   "` do not fall through. Existing stdin and empty-file tests remain.
+Query Access `Execute` tests prove the same behavior with a non-EOF stdin reader,
+preserve empty-stdin/file/stdin behavior, and assert missing-file path redaction.
 MCP `TestAuditSQLToolReturnsStructuredErrorForEmptySQL` remains the empty-SQL
 fail-closed check.
 
@@ -74,5 +93,6 @@ through to another source.
 ## Links
 
 - Issue: https://github.com/Fanduzi/DeltaScope/issues/19
-- Tests: `internal/interfaces/cli/cli_test.go`, `internal/interfaces/mcp/server_test.go`
-- Docs: `docs/reference/cli.md`, `docs/reference/cli.zh-CN.md`
+- Follow-up issue: https://github.com/Fanduzi/DeltaScope/issues/32
+- Tests: `internal/interfaces/cli/cli_test.go`, `internal/interfaces/cli/query_access_test.go`, `internal/interfaces/mcp/server_test.go`
+- Docs: `docs/reference/cli.md`, `docs/reference/cli.zh-CN.md`, `docs/reference/query-access-analysis.md`

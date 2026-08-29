@@ -1,6 +1,6 @@
 // Package cli verifies CLI query access command behavior.
-// input: synthetic CLI invocations for offline analysis and unified online-session routing
-// output: coverage for query access JSON output, exit codes, input validation, unified entry use, bounded failures, and close ownership
+// input: synthetic CLI invocations covering explicit-empty/non-EOF stdin, file, and unified online-session routing
+// output: coverage for query access JSON output, exit codes, input-source validation, bounded failures, and close ownership
 // pos: CLI adapter behavior and unified online migration coverage for query access
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -12,6 +12,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/application/online"
@@ -231,6 +234,9 @@ func TestQueryAccessAnalyzeHelpShowsConnectionFlags(t *testing.T) {
 			t.Errorf("expected %q in help output", flag)
 		}
 	}
+	if !bytes.Contains(stdout.Bytes(), []byte("Explicit empty or whitespace-only --sql fails with exit 3 without reading stdin.")) {
+		t.Fatalf("expected explicit empty SQL input contract in help output:\n%s", stdout.String())
+	}
 }
 
 func TestQueryAccessAnalyzeInvalidMode(t *testing.T) {
@@ -242,12 +248,82 @@ func TestQueryAccessAnalyzeInvalidMode(t *testing.T) {
 	}
 }
 
-func TestQueryAccessAnalyzeEmptySQL(t *testing.T) {
+func TestQueryAccessAnalyzeEmptyStdin(t *testing.T) {
 	var stderr bytes.Buffer
-	exitCode := Execute(t.Context(), []string{"query-access", "analyze", "--sql", "  "}, &bytes.Buffer{}, &bytes.Buffer{}, &stderr)
+	exitCode := Execute(t.Context(), []string{"query-access", "analyze"}, strings.NewReader("  \n"), &bytes.Buffer{}, &stderr)
 
 	if exitCode != exitQueryAccessUsageError {
 		t.Fatalf("expected exit code %d, got %d: %s", exitQueryAccessUsageError, exitCode, stderr.String())
+	}
+	if stderr.String() != "SQL input must not be empty\n" {
+		t.Fatalf("expected bounded empty SQL error, got %q", stderr.String())
+	}
+}
+
+func TestQueryAccessAnalyzeRejectsExplicitEmptySQLWithoutReadingStdin(t *testing.T) {
+	for _, args := range [][]string{
+		{"query-access", "analyze", "--sql", ""},
+		{"query-access", "analyze", "--sql", "   "},
+	} {
+		t.Run(args[len(args)-1], func(t *testing.T) {
+			var stderr bytes.Buffer
+			exitCode := Execute(t.Context(), args, unexpectedStdinReader{t: t}, &bytes.Buffer{}, &stderr)
+
+			if exitCode != exitQueryAccessUsageError {
+				t.Fatalf("expected exit code %d, got %d: %s", exitQueryAccessUsageError, exitCode, stderr.String())
+			}
+			if stderr.String() != "SQL input must not be empty\n" {
+				t.Fatalf("expected bounded empty SQL error, got %q", stderr.String())
+			}
+		})
+	}
+}
+
+func TestQueryAccessAnalyzeMissingFileErrorIsBounded(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "missing.sql")
+	var stderr bytes.Buffer
+	exitCode := Execute(t.Context(), []string{"query-access", "analyze", "--file", path}, strings.NewReader("SELECT 1"), &bytes.Buffer{}, &stderr)
+
+	if exitCode != exitQueryAccessUsageError {
+		t.Fatalf("expected exit code %d, got %d: %s", exitQueryAccessUsageError, exitCode, stderr.String())
+	}
+	if stderr.String() != "cannot read SQL file\n" {
+		t.Fatalf("expected bounded missing file error, got %q", stderr.String())
+	}
+	if bytes.Contains(stderr.Bytes(), []byte(path)) {
+		t.Fatalf("missing file path leaked in stderr: %q", stderr.String())
+	}
+}
+
+func TestQueryAccessAnalyzeSupportsStdinAndFileInput(t *testing.T) {
+	filePath := filepath.Join(t.TempDir(), "query.sql")
+	if err := os.WriteFile(filePath, []byte("SELECT 1"), 0o600); err != nil {
+		t.Fatalf("write SQL file: %v", err)
+	}
+
+	for _, tc := range []struct {
+		name  string
+		args  []string
+		stdin string
+	}{
+		{name: "stdin", args: []string{"query-access", "analyze"}, stdin: "SELECT 1"},
+		{name: "file", args: []string{"query-access", "analyze", "--file", filePath}, stdin: ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var stdout, stderr bytes.Buffer
+			exitCode := Execute(t.Context(), tc.args, strings.NewReader(tc.stdin), &stdout, &stderr)
+
+			if exitCode != exitQueryAccessAdmissible {
+				t.Fatalf("expected exit code %d, got %d: %s", exitQueryAccessAdmissible, exitCode, stderr.String())
+			}
+			var result map[string]any
+			if err := json.Unmarshal(stdout.Bytes(), &result); err != nil {
+				t.Fatalf("decode output: %v", err)
+			}
+			if result["admission"] != string(deltascope.QueryAccessAdmissible) {
+				t.Fatalf("expected admissible admission, got %#v", result["admission"])
+			}
+		})
 	}
 }
 

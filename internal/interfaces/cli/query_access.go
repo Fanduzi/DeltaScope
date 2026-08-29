@@ -1,6 +1,6 @@
 // Package cli exposes the command-line adapter for DeltaScope.
-// input: query-access command flags including dialect-aware connection flags, SQL text from flags/files/stdin, and the unified public online query access API
-// output: rendered offline or identity-routed online query access results in JSON format, exit-code mapping for CI integration
+// input: query-access command flags including dialect-aware connection flags, flag-presence-aware SQL text from --sql/--file/stdin, and the unified public online query access API
+// output: rendered offline or identity-routed online query access results in JSON format, exit-code mapping, and bounded input errors
 // pos: CLI query-access command implementation above offline analysis and the opaque unified online session boundary
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -51,14 +51,16 @@ func newQueryAccessAnalyzeCmd(options *cliOptions, exitCode *int) *cobra.Command
 		Use:   "analyze",
 		Short: "Analyze SQL for query access requirements",
 		Long: "Analyze SQL to determine read classification, admission, and permission requirements.\n" +
+			"SQL input comes from --sql, --file, or stdin. Explicit empty or whitespace-only --sql fails with exit 3 without reading stdin.\n" +
 			"When connection flags are present, DeltaScope uses online mode with server-identity-derived capability.",
 		Example: "Offline example:\n" +
 			"  deltascope query-access analyze --sql \"SELECT id, name FROM users WHERE id = 1\" --dialect mysql\n" +
-			"  deltascope query-access analyze --file ./query.sql --dialect postgresql --mode projection_only\n\n" +
+			"  deltascope query-access analyze --file ./query.sql --dialect postgresql --mode projection_only\n" +
+			"  cat ./query.sql | deltascope query-access analyze --dialect mysql\n\n" +
 			"Online example:\n" +
 			"  deltascope query-access analyze --sql \"SELECT id, name FROM users WHERE id = 1\" --host 127.0.0.1 --port 3306 --user root --ask-password --schema app",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			sql, err := resolveQueryAccessSQL(cmd.Context(), cmd.InOrStdin(), inlineSQL, filePath, cmd.ErrOrStderr(), stdinIsTerminal(cmd))
+			sql, err := resolveQueryAccessSQL(cmd.Context(), cmd.InOrStdin(), inlineSQL, filePath, cmd.ErrOrStderr(), stdinIsTerminal(cmd), cmd.Flags().Changed("sql"))
 			if err != nil {
 				*exitCode = exitQueryAccessUsageError
 				return err
@@ -107,17 +109,20 @@ func newQueryAccessAnalyzeCmd(options *cliOptions, exitCode *int) *cobra.Command
 	return cmd
 }
 
-func resolveQueryAccessSQL(ctx context.Context, stdin io.Reader, inlineSQL string, filePath string, stderr io.Writer, interactive bool) (string, error) {
-	if strings.TrimSpace(inlineSQL) != "" && strings.TrimSpace(filePath) != "" {
+func resolveQueryAccessSQL(ctx context.Context, stdin io.Reader, inlineSQL string, filePath string, stderr io.Writer, interactive bool, sqlProvided bool) (string, error) {
+	if sqlProvided && strings.TrimSpace(filePath) != "" {
 		return "", newUserError("use either --sql or --file, not both")
 	}
-	if strings.TrimSpace(inlineSQL) != "" {
+	if sqlProvided {
+		if strings.TrimSpace(inlineSQL) == "" {
+			return "", newUserError("SQL input must not be empty")
+		}
 		return inlineSQL, nil
 	}
 	if strings.TrimSpace(filePath) != "" {
 		content, err := os.ReadFile(filePath)
 		if err != nil {
-			return "", newUserError(fmt.Sprintf("read SQL file: %v", err))
+			return "", newUserError("cannot read SQL file")
 		}
 		if err := ctx.Err(); err != nil {
 			return "", err
