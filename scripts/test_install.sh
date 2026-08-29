@@ -181,6 +181,17 @@ expect_failure_with_pin_hint() {
   fi
 }
 
+expect_wget_fallback_hint() {
+  local description="$1"
+
+  if grep -Fq 'wget latest-release redirect fallback failed or is unsupported' "${CASE_DIR}/stderr" \
+    && grep -Fq 'use curl or set DELTASCOPE_VERSION=vX.Y.Z' "${CASE_DIR}/stderr"; then
+    pass "${description}"
+  else
+    fail "${description}"
+  fi
+}
+
 expect_discovery_calls() {
   local description="$1"
   shift
@@ -235,6 +246,9 @@ for client in curl wget; do
   for redirect_mode in invalid empty nonrelease failure; do
     run_case "redirect-${redirect_mode}" "${client}" failure "${redirect_mode}" ''
     expect_failure_with_pin_hint "${client}: ${redirect_mode} redirect is rejected safely"
+    if [ "${client}" = 'wget' ] && [ "${redirect_mode}" = 'failure' ]; then
+      expect_wget_fallback_hint "${client}: failed redirect gives supported-client guidance"
+    fi
   done
 
   run_case pinned "${client}" failure failure v1.2.3

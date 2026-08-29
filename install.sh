@@ -68,8 +68,10 @@ fetch_latest_redirect() {
   latest_url="https://github.com/${REPO}/releases/latest"
 
   if command -v curl >/dev/null 2>&1; then
-    curl -fsSL -o /dev/null -w '%{url_effective}\n' "${latest_url}" 2>/dev/null
-    return
+    if curl -fsSL -o /dev/null -w '%{url_effective}\n' "${latest_url}" 2>/dev/null; then
+      return 0
+    fi
+    return 1
   fi
 
   if command -v wget >/dev/null 2>&1; then
@@ -78,7 +80,7 @@ fetch_latest_redirect() {
       sed -n 's/^[[:space:]]*[Ll]ocation:[[:space:]]*\(https:\/\/[^[:space:]]*\)\( \[following\]\)\{0,1\}$/\1/p' "${redirect_headers}" | tail -n 1
       redirect_status=0
     else
-      redirect_status=1
+      redirect_status=2
     fi
     rm -f "${redirect_headers}"
     return "${redirect_status}"
@@ -112,11 +114,21 @@ fetch_latest_version() {
     return
   fi
 
-  redirect_url="$(fetch_latest_redirect 2>/dev/null || true)"
+  redirect_url=""
+  redirect_status=0
+  if redirect_url="$(fetch_latest_redirect 2>/dev/null)"; then
+    :
+  else
+    redirect_status="$?"
+  fi
   redirect_tag="$(release_tag_from_redirect "${redirect_url}" || true)"
   if [ -n "${redirect_tag}" ]; then
     printf '%s\n' "${redirect_tag}"
     return
+  fi
+
+  if [ "${redirect_status}" -eq 2 ]; then
+    fail "could not resolve a release version; wget latest-release redirect fallback failed or is unsupported; use curl or set DELTASCOPE_VERSION=vX.Y.Z to bypass version discovery"
   fi
 
   fail "could not resolve a release version; set DELTASCOPE_VERSION=vX.Y.Z to bypass version discovery"

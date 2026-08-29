@@ -36,6 +36,8 @@ avoids exposing untrusted bodies in installer diagnostics.
 
 - Unpinned installs try REST discovery, then the public latest-release redirect.
 - curl and wget use equivalent fallback behavior.
+- If wget cannot perform the redirect inspection, the bounded failure names the
+  supported curl alternative or the version pin bypass.
 - Only configured-repository `vMAJOR.MINOR.PATCH` release tags are accepted.
 - Failed discovery reports the `DELTASCOPE_VERSION=vX.Y.Z` bypass hint without
   dumping response bodies.
@@ -60,8 +62,8 @@ tests use only local fake clients and a local archive fixture.
 
 The installer uses the existing `sed`, `head`, and `tail` utilities while
 using wget's server-response headers to observe the final redirect. Future
-changes to release URL shape or tag policy must update the installer contract
-test and this decision.
+changes to release URL shape, client capabilities, or tag policy must update
+the installer contract test and this decision.
 
 ## Links
 
