@@ -1,0 +1,17 @@
+name: no_primary_key_control
+dialect: mysql
+category: ddl
+expect:
+  parse_ok: true
+  statement_kind: ddl
+  operation: create_table
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.table.primary_key.require
+    exclude:
+      - ddl.table.primary_key.bigint.require
+      - ddl.table.primary_key.unsigned.require
+      - ddl.table.primary_key.auto_increment.require
+      - ddl.table.primary_key.not_null.require

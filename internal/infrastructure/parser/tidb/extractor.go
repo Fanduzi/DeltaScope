@@ -1,6 +1,6 @@
 // Package tidbparser extracts parser-neutral statements from TiDB AST nodes.
 // input: TiDB parser statement nodes and parser-neutral dialect metadata
-// output: extractor-backed parsed statements for the application layer
+// output: extractor-backed parsed statements for the application layer, including inline and table-level primary-key metadata
 // pos: infrastructure extraction adapter between TiDB AST and domain spec
 // note: if this file changes, update this header and module README.md.
 package tidbparser
@@ -207,7 +207,14 @@ func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
 	}
 
 	for _, col := range stmt.Cols {
-		ddl.Columns = append(ddl.Columns, extractColumn(col))
+		column := extractColumn(col)
+		ddl.Columns = append(ddl.Columns, column)
+		for _, option := range col.Options {
+			if option != nil && option.Tp == ast.ColumnOptionPrimaryKey {
+				ddl.PrimaryKey = &spec.Index{Name: "primary", Kind: spec.IndexKindPrimary, Columns: []string{column.Name}}
+				break
+			}
+		}
 	}
 
 	for _, c := range stmt.Constraints {

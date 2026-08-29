@@ -1,0 +1,4 @@
+CREATE TABLE no_primary_key_control (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  email VARCHAR(32) NOT NULL UNIQUE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='no primary key';
