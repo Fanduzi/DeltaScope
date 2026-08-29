@@ -51,7 +51,7 @@ deltascope audit --config ./deltascope.yaml --format json --file ./migrations/v2
 
 ### 输出与退出标志
 
-以下标志仅属于 `audit`。Query Access 始终输出固定 JSON 文档，不接受审计渲染或 finding 阈值选项。向 Query Access 传入 `--format` 或 `--fail-on` 会返回用法错误（退出码 3），且不会输出分析文档。
+以下标志仅属于 `audit`。规范用法是放在 `audit` 之后；为兼容旧用法，放在 `audit` 之前也仍然支持。Query Access 始终输出固定 JSON 文档，不接受审计渲染或 finding 阈值选项。在 Query Access 的命令之前或之后传入 `--format` 或 `--fail-on`，都会返回用法错误（退出码 3），且不会输出分析文档。
 
 | 标志 | 类型 | 默认值 | 描述 |
 |------|------|--------|------|
@@ -1058,7 +1058,7 @@ Warnings:
 unknown rule "ddl.table.comments.require"
 ```
 
-`config lint` 没有 JSON 输出，全局 `--format` 标志也不会改变它的输出（该标志控制的是 audit 的输出格式）。要以 JSON 查看有效策略，请用 `config status <rule-id> --format json`。
+`config lint` 没有 JSON 输出，也不接受 `--format`。要以 JSON 查看有效策略，请用 `config status <rule-id> --format json`。
 
 ### config show-default
 

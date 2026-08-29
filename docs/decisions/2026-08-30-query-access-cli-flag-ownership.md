@@ -10,7 +10,7 @@ The root Cobra command registered `--format` and `--fail-on` as persistent flags
 
 ## Decision
 
-Register and validate `--format` and `--fail-on` as local `audit` flags. Query Access keeps its fixed JSON document and admission exit contract; Cobra rejects either audit-only flag before Query Access analysis runs.
+Register and validate `--format` and `--fail-on` as local `audit` flags. Preserve legacy forms placed before `audit` by normalizing them into the audit command only. Query Access keeps its fixed JSON document and admission exit contract; Cobra rejects either audit-only flag before Query Access analysis runs in either command position.
 
 ## Rationale
 
@@ -21,7 +21,7 @@ Flag ownership should match the command that consumes the value. Scoping these o
 - `deltascope audit --format` supports `markdown`, `json`, `github-actions`, `github-summary`, `sarif`, and `gitlab-codequality`.
 - `deltascope audit --fail-on` supports `blocker`, `warning`, `notice`, and `none`; invalid values remain audit user errors with exit 2.
 - Query Access help does not list `--format` or `--fail-on`.
-- Passing either flag to `query-access analyze` is an unsupported usage error with exit 3, no analysis document on stdout, and no changed admission result.
+- Passing either flag to `query-access analyze`, either after the command or before the command group, is an unsupported usage error with exit 3, no analysis document on stdout, and no changed admission result.
 - Query Access exit codes remain `0` admissible, `1` rejected, `2` indeterminate, and `3` usage/connection.
 
 ## Deferred / Out Of Scope
@@ -40,7 +40,7 @@ Flag ownership should match the command that consumes the value. Scoping these o
 
 ## Consequences
 
-The root help no longer advertises audit output formats. Users must place `--format` and `--fail-on` after `audit`; Query Access callers receive an immediate bounded usage failure instead of a silently ignored option.
+The root help no longer advertises audit output formats. New audit invocations should place `--format` and `--fail-on` after `audit`, while the CLI retains legacy prefix compatibility; Query Access callers receive an immediate bounded usage failure instead of a silently ignored option.
 
 ## Links
 

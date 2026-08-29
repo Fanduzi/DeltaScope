@@ -105,6 +105,44 @@ func TestAuditCommandSupportsSQLJSONOutput(t *testing.T) {
 	}
 }
 
+func TestAuditCommandPreservesLegacyPrefixFlags(t *testing.T) {
+	tests := []struct {
+		name      string
+		args      []string
+		wantCode  int
+		wantToken string
+	}{
+		{
+			name:      "format",
+			args:      []string{"--format", "json", "audit", "--sql", "delete from users"},
+			wantCode:  exitAudit,
+			wantToken: `"verdict":"reject"`,
+		},
+		{
+			name:      "fail-on",
+			args:      []string{"--fail-on", "none", "audit", "--sql", "delete from users"},
+			wantCode:  exitOK,
+			wantToken: "Verdict: `reject`",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			var stdout, stderr strings.Builder
+			code := Execute(context.Background(), tc.args, strings.NewReader(""), &stdout, &stderr)
+			if code != tc.wantCode {
+				t.Fatalf("expected exit code %d, got %d\nstderr=%s", tc.wantCode, code, stderr.String())
+			}
+			if stderr.Len() != 0 {
+				t.Fatalf("expected no stderr, got %q", stderr.String())
+			}
+			if !strings.Contains(stdout.String(), tc.wantToken) {
+				t.Fatalf("expected output to contain %q, got %q", tc.wantToken, stdout.String())
+			}
+		})
+	}
+}
+
 func TestAuditCommandSupportsFileInput(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "change.sql")

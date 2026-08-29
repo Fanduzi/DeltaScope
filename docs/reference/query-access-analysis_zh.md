@@ -176,7 +176,7 @@ deltascope query-access analyze --sql "SELECT id, name FROM users WHERE id = 1" 
 deltascope query-access analyze --file ./query.sql --dialect postgresql --mode projection_only
 ```
 
-退出码：`0` = 可准入，`1` = 已拒绝，`2` = 不确定，`3` = 用法或连接错误。CLI 始终输出固定的 Query Access JSON 文档；仅属于 audit 的 `--format` 和 `--fail-on` 标志不受支持，传入后以退出码 3 失败且不输出分析文档。
+退出码：`0` = 可准入，`1` = 已拒绝，`2` = 不确定，`3` = 用法或连接错误。CLI 始终输出固定的 Query Access JSON 文档；仅属于 audit 的 `--format` 和 `--fail-on` 标志在两种命令位置都不受支持，传入后以退出码 3 失败且不输出分析文档。
 
 ## HTTP 用法
 

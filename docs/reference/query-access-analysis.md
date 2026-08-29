@@ -204,7 +204,7 @@ deltascope query-access analyze --sql "SELECT id, name FROM users WHERE id = 1" 
 deltascope query-access analyze --file ./query.sql --dialect postgresql --mode projection_only
 ```
 
-Exit codes: `0` = admissible, `1` = rejected, `2` = indeterminate, `3` = usage or connection error. The CLI always emits the fixed Query Access JSON document; audit-only `--format` and `--fail-on` flags are unsupported and fail with exit 3 without analysis output.
+Exit codes: `0` = admissible, `1` = rejected, `2` = indeterminate, `3` = usage or connection error. The CLI always emits the fixed Query Access JSON document; audit-only `--format` and `--fail-on` flags are unsupported in either command position and fail with exit 3 without analysis output.
 
 ## HTTP Usage
 

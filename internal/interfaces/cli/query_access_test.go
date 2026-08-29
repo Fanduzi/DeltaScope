@@ -1,5 +1,5 @@
 // Package cli verifies CLI query access command behavior.
-// input: synthetic CLI invocations covering audit-only flag boundaries, fixed JSON output, admission exits, explicit-empty/non-EOF stdin, file, and unified online-session routing
+// input: synthetic CLI invocations covering audit-only flag boundaries in both command positions, fixed JSON output, admission exits, explicit-empty/non-EOF stdin, file, and unified online-session routing
 // output: coverage for query access JSON output, exit codes, input-source validation, bounded failures, and close ownership
 // pos: CLI adapter behavior and unified online migration coverage for query access
 // note: if this file changes, update this header and module README.md.
@@ -252,6 +252,8 @@ func TestQueryAccessAnalyzeRejectsAuditOnlyFlags(t *testing.T) {
 	}{
 		{name: "format", args: []string{"query-access", "analyze", "--sql", "SELECT 1", "--format", "json"}, flag: "--format"},
 		{name: "fail-on", args: []string{"query-access", "analyze", "--sql", "SELECT 1", "--fail-on", "warning"}, flag: "--fail-on"},
+		{name: "format after command group", args: []string{"query-access", "--format", "json", "analyze", "--sql", "SELECT 1"}, flag: "--format"},
+		{name: "fail-on after command group", args: []string{"query-access", "--fail-on", "warning", "analyze", "--sql", "SELECT 1"}, flag: "--fail-on"},
 		{name: "format before command", args: []string{"--format", "json", "query-access", "analyze", "--sql", "SELECT 1"}, flag: "--format"},
 		{name: "fail-on before command", args: []string{"--fail-on", "warning", "query-access", "analyze", "--sql", "SELECT 1"}, flag: "--fail-on"},
 	} {

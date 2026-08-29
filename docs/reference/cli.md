@@ -56,7 +56,7 @@ deltascope audit --config ./deltascope.yaml --format json --file ./migrations/v2
 
 ### Output and Exit Flags
 
-These flags belong to `audit` only. Query Access always emits its fixed JSON document; it does not accept audit rendering or finding-threshold options. Passing `--format` or `--fail-on` to Query Access returns a usage error (exit 3) without an analysis document.
+These flags belong to `audit` only. Their canonical placement is after `audit`; legacy forms placed before `audit` remain supported for compatibility. Query Access always emits its fixed JSON document; it does not accept audit rendering or finding-threshold options. Passing `--format` or `--fail-on` to Query Access, before or after the command, returns a usage error (exit 3) without an analysis document.
 
 | Flag | Type | Default | Description |
 |------|------|---------|-------------|
@@ -1133,8 +1133,7 @@ warnings, so a file with both an error and a hazard reports only the error:
 unknown rule "ddl.table.comments.require"
 ```
 
-`config lint` has no JSON output, and the global `--format` flag does not change what it prints
-(that flag controls audit output formats). To inspect effective policy as JSON, use
+`config lint` has no JSON output and does not accept `--format`. To inspect effective policy as JSON, use
 `config status <rule-id> --format json`.
 
 ### config show-default
