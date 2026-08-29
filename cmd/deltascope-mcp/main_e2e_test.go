@@ -255,18 +255,21 @@ func assertDMLTableExistenceMCP(t *testing.T, ctx context.Context, session *sdkm
 	t.Helper()
 
 	call := func(sql string) map[string]any {
+		connection := map[string]any{
+			"host":    "127.0.0.1",
+			"port":    port,
+			"user":    "root",
+			"schema":  "app",
+			"dialect": dialect,
+		}
+		if dialect == "mysql" {
+			connection["password"] = "root"
+		}
 		result, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
 			Name: "audit_sql",
 			Arguments: map[string]any{
-				"sql": sql,
-				"connection": map[string]any{
-					"host":     "127.0.0.1",
-					"port":     port,
-					"user":     "root",
-					"password": "root",
-					"schema":   "app",
-					"dialect":  dialect,
-				},
+				"sql":        sql,
+				"connection": connection,
 			},
 		})
 		if err != nil {
