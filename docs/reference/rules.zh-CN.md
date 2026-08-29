@@ -392,7 +392,7 @@ rules:
 | `ddl.alter.modify_column.compatibility.require` | MODIFY COLUMN 必须与当前列类型兼容 | blocker | **是** |
 | `ddl.alter.change_column.compatibility.require` | CHANGE COLUMN 必须与当前列类型兼容 | blocker | **是** |
 | `ddl.alter.modify_column.explicit_nullability_change.forbid` | MODIFY COLUMN 不得显式更改可空性 | blocker | **是** |
-| `ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory` | 显式 MODIFY NULL/NOT NULL 但前置状态未知时发出非阻断提示 | notice | **是** |
+| `ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory` | 显式 MODIFY NULL/NOT NULL 但前置状态未知时发出非阻断提示 | notice | 否 |
 | `ddl.alter.change_column.explicit_nullability_change.forbid` | CHANGE COLUMN 不得显式更改可空性 | blocker | **是** |
 | `ddl.alter.modify_column.explicit_default_change.forbid` | MODIFY COLUMN 不得显式更改 DEFAULT 值 | blocker | **是** |
 | `ddl.alter.change_column.explicit_default_change.forbid` | CHANGE COLUMN 不得显式更改 DEFAULT 值 | blocker | **是** |
@@ -951,6 +951,8 @@ rules:
 **元数据支撑规则**在没有活跃 `MetadataProvider` 时通常静默跳过。离线审计不会对无法取得的状态作出断言。唯一明确的例外是 MODIFY unknown-prior-state advisory：它以 notice 级别离线运行，而已有的 MODIFY blocker 只有在确认源列并完成比较后才触发。
 
 ### 元数据支撑规则 ID 完整列表
+
+unknown-prior-state advisory 会在元数据可用时消费实时状态，因此列在此处；但它明确不要求元数据，离线审计也会发出有界 notice。
 
 | 规则 ID |
 |---------|

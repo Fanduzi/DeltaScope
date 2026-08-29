@@ -394,7 +394,7 @@ These rules check that column type and attribute changes made via `MODIFY COLUMN
 | `ddl.alter.modify_column.compatibility.require` | MODIFY COLUMN must be compatible with current column type | blocker | **Yes** |
 | `ddl.alter.change_column.compatibility.require` | CHANGE COLUMN must be compatible with current column type | blocker | **Yes** |
 | `ddl.alter.modify_column.explicit_nullability_change.forbid` | MODIFY COLUMN must not explicitly change nullability | blocker | **Yes** |
-| `ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory` | Explicit MODIFY NULL/NOT NULL with unknown prior state emits a non-blocking advisory | notice | **Yes** |
+| `ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory` | Explicit MODIFY NULL/NOT NULL with unknown prior state emits a non-blocking advisory | notice | No |
 | `ddl.alter.change_column.explicit_nullability_change.forbid` | CHANGE COLUMN must not explicitly change nullability | blocker | **Yes** |
 | `ddl.alter.modify_column.explicit_default_change.forbid` | MODIFY COLUMN must not explicitly change DEFAULT value | blocker | **Yes** |
 | `ddl.alter.change_column.explicit_default_change.forbid` | CHANGE COLUMN must not explicitly change DEFAULT value | blocker | **Yes** |
@@ -960,6 +960,10 @@ and AST alone. All rules not listed as metadata-backed below are offline rules.
 they do not claim unavailable state. The MODIFY unknown-prior-state advisory is the explicit exception: it runs offline at notice level, while the existing MODIFY blocker only fires after a confirmed source-column comparison.
 
 ### Complete List of Metadata-Backed Rule IDs
+
+The unknown-prior-state advisory is listed because it consumes live metadata
+when available, but it intentionally remains metadata-optional and emits its
+bounded notice during offline audits.
 
 | Rule ID |
 |---------|
