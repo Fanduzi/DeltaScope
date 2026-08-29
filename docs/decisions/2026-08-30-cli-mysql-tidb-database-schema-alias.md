@@ -3,11 +3,12 @@
 Date: 2026-08-30
 Status: Accepted
 Related milestone/version: issue #45
-Related commits: `3f8f4b0`, `421fcea`
+Related commits: `3f8f4b0`, `421fcea`, `89b98df`
 Related tests:
 - `TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias`
 - `TestPrepareRejectsConflictingMySQLCompatibleDatabaseAndSchema`
 - `TestAuditCommandUsesMySQLCompatibleDatabaseAsSchemaAlias`
+- `TestPrepareMetadataAuditPreservesAutoDetectedPostgreSQLDatabaseAndSchema`
 - `TestAuditCommandRejectsConflictingMySQLCompatibleDatabaseAndSchema`
 Related docs:
 - `docs/reference/cli.md`
@@ -80,6 +81,6 @@ errors for adapter-specific classification.
 ## Links
 
 - Issue: https://github.com/Fanduzi/DeltaScope/issues/45
-- Commits: `3f8f4b0`, `421fcea`
+- Commits: `3f8f4b0`, `421fcea`, `89b98df`
 - Tests: `internal/application/auditmeta/prepare_test.go`, `internal/interfaces/cli/audit_metadata_test.go`
 - Docs: `docs/reference/cli.md`, `docs/reference/cli.zh-CN.md`, `README.md`, `README_ZH.md`
