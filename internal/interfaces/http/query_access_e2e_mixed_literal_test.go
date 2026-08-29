@@ -163,10 +163,10 @@ func TestQueryAccessOnline_TransportSmoke(t *testing.T) {
 		allowAdditionalRequirements                                             bool
 	}{
 		{"mysql84_admissible", "mysql84", "SELECT COUNT(1) FROM app.builtin_semantic_facts", "app.builtin_semantic_facts=read_table", "", "read_only", "admissible", false},
-		{"mysql84_schema_only", "mysql84", "SELECT id FROM users", "app.users=read_table", "", "read_only", "admissible", true},
+		{"mysql84_schema_only", "mysql84", "SELECT id FROM builtin_semantic_facts", "app.builtin_semantic_facts=read_table", "", "read_only", "admissible", true},
 		{"mysql84_unknown_function", "mysql84", "SELECT app_specific_rollup(amount) FROM app.builtin_semantic_facts", "", "unknown_function_effect", "indeterminate", "indeterminate", false},
 		{"tidb85_admissible", "tidb85", "SELECT COUNT(1) FROM app.builtin_semantic_facts", "app.builtin_semantic_facts=read_table", "", "read_only", "admissible", false},
-		{"tidb85_schema_only", "tidb85", "SELECT id FROM users", "app.users=read_table", "", "read_only", "admissible", true},
+		{"tidb85_schema_only", "tidb85", "SELECT id FROM builtin_semantic_facts", "app.builtin_semantic_facts=read_table", "", "read_only", "admissible", true},
 		{"tidb85_unknown_function", "tidb85", "SELECT app_specific_rollup(amount) FROM app.builtin_semantic_facts", "", "unknown_function_effect", "indeterminate", "indeterminate", false},
 	}
 	for _, tc := range cases {
