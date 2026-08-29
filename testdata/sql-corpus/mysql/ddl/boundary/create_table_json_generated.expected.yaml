@@ -1,0 +1,20 @@
+name: create_table_json_generated
+dialect: mysql
+category: ddl
+expect:
+  parse_ok: true
+  statement_kind: ddl
+  operation: create_table
+  statements:
+    count: 1
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.column.comment.require
+      - ddl.column.default.require
+      - ddl.column.not_null.require
+      - ddl.table.audit_columns.require
+    exclude:
+      - ddl.column.json.forbid
+      - ddl.table.primary_key.require

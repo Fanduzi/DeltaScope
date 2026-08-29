@@ -1,4 +1,4 @@
-name: create_table_primary_key
+name: create_table_options
 dialect: mysql
 category: ddl
 expect:
@@ -10,7 +10,11 @@ expect:
   unsupported:
     count: 0
   findings:
-    include: []
+    include:
+      - ddl.column.default.require
     exclude:
       - ddl.table.primary_key.require
+      - ddl.table.primary_key.bigint.require
+      - ddl.table.primary_key.unsigned.require
+      - ddl.table.primary_key.auto_increment.require
       - ddl.table.primary_key.not_null.require

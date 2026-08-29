@@ -1,0 +1,17 @@
+name: alter_table_add_column_algorithm_lock
+dialect: mysql
+category: ddl
+expect:
+  parse_ok: true
+  statement_kind: ddl
+  operation: alter_table
+  statements:
+    count: 1
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.alter.add_column.notice
+    exclude:
+      - ddl.alter.add_constraint.notice
+      - ddl.create_index.notice

@@ -12,20 +12,32 @@ outcomes. Each case is a pair of files:
 sql-corpus/
 ├── mysql/
 │   ├── ddl/
-│   │   ├── supported/     — statements DeltaScope fully supports
-│   │   ├── unsupported/   — statements parsed but not fully covered
+│   │   ├── boundary/      — edge cases recording current behaviour
 │   │   ├── findings/      — statements expected to produce specific findings
-│   │   └── boundary/      — edge cases recording current behaviour
+│   │   ├── metadata/      — statements requiring metadata-aware assertions
+│   │   └── supported/     — statements DeltaScope fully supports
 │   └── dml/
 │       ├── clean/         — statements producing no findings
 │       ├── findings/
-│       ├── supported/
-│       └── unsupported/
+│       └── metadata/
 ├── tidb/
 │   └── ...
 └── postgresql/
     └── ...
 ```
+
+## MySQL Representative Pack
+
+The MySQL DDL corpus keeps production-shaped coverage bounded and separate:
+
+- one `CREATE TABLE` with `UNSIGNED AUTO_INCREMENT`, a table-level primary key, `InnoDB`, default `utf8mb4`, and a table comment
+- one `CREATE TABLE` with a `JSON` column plus generated `VIRTUAL` and `STORED` columns
+- separate `CREATE TABLE` cases for `RANGE` and `LIST` partitioning
+- one standalone `ALTER TABLE ... ADD COLUMN` with `ALGORITHM=INPLACE` and `LOCK=NONE`
+
+Pack manifests assert retained statement count, statement kind, and meaningful
+finding include/exclude expectations. These are representative MySQL shapes,
+not official grammar-completeness coverage.
 
 ## PostgreSQL Representative Pack
 

@@ -1,4 +1,4 @@
-name: create_table_primary_key
+name: create_table_range_partition
 dialect: mysql
 category: ddl
 expect:
@@ -10,7 +10,9 @@ expect:
   unsupported:
     count: 0
   findings:
-    include: []
+    include:
+      - ddl.column.default.require
+      - ddl.table.partition.forbid
+      - ddl.table.primary_key.columns.max_count
     exclude:
       - ddl.table.primary_key.require
-      - ddl.table.primary_key.not_null.require
