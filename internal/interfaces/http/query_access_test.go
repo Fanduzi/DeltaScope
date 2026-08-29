@@ -1,6 +1,6 @@
 // Package httpapi verifies HTTP query access request binding and response mapping.
 // input: synthetic HTTP requests with schema hints against offline analysis and unified online-session routing
-// output: focused coverage for JSON behavior, schema binding, unified entry use, bounded failures including the PostgreSQL PG17 version boundary, zero-open authorization, and close ownership
+// output: focused coverage for JSON behavior, schema/catalog separation, unified entry use, bounded failures including the PostgreSQL PG17 version boundary, zero-open authorization, and close ownership
 // pos: HTTP adapter behavior and unified online migration coverage for query access
 // note: if this file changes, update this header and module README.md.
 package httpapi
@@ -156,6 +156,56 @@ func TestHandlerQueryAccessOnlineBindsMySQLTiDBSchema(t *testing.T) {
 				t.Fatalf("request SQL = %q, want %q unchanged", request.SQL, sqlText)
 			}
 		})
+	}
+}
+
+func TestHandlerQueryAccessOnlineKeepsRequestDefaultSeparateFromCatalog(t *testing.T) {
+	previousOpener := openOnlineSession
+	previousConstructor := newOnlineQueryAccessSessionFromConn
+	previousAnalyzer := analyzeOnlineQueryAccessWithSession
+	t.Cleanup(func() {
+		openOnlineSession = previousOpener
+		newOnlineQueryAccessSessionFromConn = previousConstructor
+		analyzeOnlineQueryAccessWithSession = previousAnalyzer
+	})
+
+	var sessionConfig online.SessionConfig
+	var request deltascope.QueryAccessRequest
+	openOnlineSession = func(_ context.Context, cfg online.SessionConfig) (*online.Session, error) {
+		sessionConfig = cfg
+		return &online.Session{Conn: &sql.Conn{}, Close: func() error { return nil }}, nil
+	}
+	newOnlineQueryAccessSessionFromConn = func(context.Context, *sql.Conn) (*deltascope.OnlineQueryAccessSession, error) {
+		return nil, nil
+	}
+	analyzeOnlineQueryAccessWithSession = func(_ context.Context, _ *deltascope.OnlineQueryAccessSession, got deltascope.QueryAccessRequest) (*deltascope.QueryAccessResult, error) {
+		request = got
+		return &deltascope.QueryAccessResult{
+			Dialect:            "mysql",
+			Mode:               deltascope.QueryAccessModeStrict,
+			ReadClassification: deltascope.QueryAccessReadOnly,
+			Admission:          deltascope.QueryAccessAdmissible,
+		}, nil
+	}
+
+	handler, err := NewHandler("", "test-build", WithRegistry(newQueryAccessTestRegistryWithDialect(t, "test-conn", "mysql", "", "")))
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/v1/query-access/analyze", bytes.NewBufferString(`{"sql":"SELECT id FROM users","connection_id":"test-conn","default_schema":"app"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "test-key-value")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body=%s", rec.Code, rec.Body.String())
+	}
+	if sessionConfig.Database != "" || sessionConfig.Schema != "app" {
+		t.Fatalf("session database/schema = %q/%q, want empty/app", sessionConfig.Database, sessionConfig.Schema)
+	}
+	if request.DefaultSchema != "app" {
+		t.Fatalf("request default schema = %q, want app", request.DefaultSchema)
 	}
 }
 

@@ -1,6 +1,6 @@
 // Package httpapi exposes the HTTP adapter for DeltaScope.
 // input: query-access JSON requests, schema hints, authorized runtime connection configuration, and the unified public online query access API
-// output: bounded offline or schema-bound identity-routed online query-access JSON responses with stable identity error mapping and unchanged logging contracts
+// output: bounded offline or configured-schema-bound identity-routed online query-access JSON responses with stable identity error mapping and unchanged logging contracts
 // pos: HTTP query-access adapter above offline analysis and the opaque unified online session boundary
 // note: if this file changes, update this header and module README.md.
 package httpapi
@@ -131,7 +131,8 @@ func handleQueryAccessOnline(
 	connectTimeout, _, _ := runtimeconfig.ParseConnectTimeout(conn.ConnectTimeout)
 
 	connDialect := strings.ToLower(strings.TrimSpace(conn.Dialect))
-	schema := strings.TrimSpace(conn.Schema)
+	configuredSchema := strings.TrimSpace(conn.Schema)
+	schema := configuredSchema
 	if connDialect == "mysql" || connDialect == "tidb" {
 		var err error
 		schema, err = appqa.ResolveMySQLTiDBDefaultSchema(connDialect, schema, request.DefaultSchema)
@@ -144,7 +145,7 @@ func handleQueryAccessOnline(
 	}
 	database := strings.TrimSpace(conn.Database)
 	if (connDialect == "mysql" || connDialect == "tidb") && database == "" {
-		database = schema
+		database = configuredSchema
 	}
 
 	sessionCfg := online.SessionConfig{
