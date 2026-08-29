@@ -2,7 +2,7 @@
 
 // Package auditmeta verifies shared metadata-aware audit preparation for PostgreSQL.
 // input: metadata-aware audit requests with PostgreSQL dialect and fake metadata clients
-// output: focused coverage for PostgreSQL-specific schema inference, fallback open, and client contracts
+// output: focused coverage for PostgreSQL-specific schema inference, fallback open, valid database/schema combinations, and client contracts
 // pos: application-layer preparation tests gated behind the postgresql build tag
 // note: if this file changes, update this header and module README.md.
 package auditmeta
@@ -77,7 +77,7 @@ func TestPrepareFallsBackToPostgreSQLOpenWhenDialectNotExplicit(t *testing.T) {
 	calls := 0
 	prepared, err := Prepare(context.Background(), Request{
 		SQL:            "delete from users where id = 1",
-		Connection:     ConnectionConfig{Host: "127.0.0.1", User: "root"},
+		Connection:     ConnectionConfig{Host: "127.0.0.1", User: "root", Database: "app"},
 		ExplicitSchema: "public",
 		OpenClient: func(config ConnectionConfig) (Client, error) {
 			calls++
@@ -118,7 +118,7 @@ func TestPrepareFallsBackToPostgreSQLOpenWhenDetectFailsOnInitialClient(t *testi
 	calls := 0
 	prepared, err := Prepare(context.Background(), Request{
 		SQL:            "delete from users where id = 1",
-		Connection:     ConnectionConfig{Host: "127.0.0.1", User: "root"},
+		Connection:     ConnectionConfig{Host: "127.0.0.1", User: "root", Database: "app"},
 		ExplicitSchema: "public",
 		OpenClient: func(config ConnectionConfig) (Client, error) {
 			calls++
@@ -152,6 +152,68 @@ func TestPrepareFallsBackToPostgreSQLOpenWhenDetectFailsOnInitialClient(t *testi
 	}
 	if prepared.Dialect != spec.DialectPostgreSQL {
 		t.Fatalf("expected postgres dialect, got %#v", prepared.Dialect)
+	}
+}
+
+func TestPrepareKeepsPostgreSQLDatabaseSchemaCombinations(t *testing.T) {
+	tests := []struct {
+		name             string
+		sql              string
+		database         string
+		explicitSchema   string
+		requestedDialect spec.Dialect
+		explicitDialect  bool
+		wantSchema       string
+	}{
+		{
+			name:             "database only",
+			sql:              "delete from public.users",
+			database:         "app",
+			requestedDialect: spec.DialectPostgreSQL,
+			explicitDialect:  true,
+			wantSchema:       "public",
+		},
+		{
+			name:             "database and schema",
+			sql:              "delete from users",
+			database:         "app",
+			explicitSchema:   "public",
+			requestedDialect: spec.DialectPostgreSQL,
+			explicitDialect:  true,
+			wantSchema:       "public",
+		},
+		{
+			name:       "database and schema omitted",
+			sql:        "create view active_users as select id from users",
+			wantSchema: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := &fakeClient{detectDialect: spec.DialectPostgreSQL}
+			prepared, err := Prepare(context.Background(), Request{
+				SQL: tt.sql,
+				Connection: ConnectionConfig{
+					Host:     "127.0.0.1",
+					User:     "root",
+					Database: tt.database,
+				},
+				RequestedDialect: tt.requestedDialect,
+				ExplicitDialect:  tt.explicitDialect,
+				ExplicitSchema:   tt.explicitSchema,
+				OpenClient: func(ConnectionConfig) (Client, error) {
+					return client, nil
+				},
+			})
+			if err != nil {
+				t.Fatalf("prepare metadata audit: %v", err)
+			}
+			t.Cleanup(func() { _ = prepared.Client.Close() })
+			if prepared.Dialect != spec.DialectPostgreSQL || prepared.Schema != tt.wantSchema {
+				t.Fatalf("unexpected prepared PostgreSQL context: %#v", prepared)
+			}
+		})
 	}
 }
 

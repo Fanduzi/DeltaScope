@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# input: docker compose PostgreSQL service, fixture SQL, and deltascope CLI invocations with --dialect postgresql
+# input: docker compose PostgreSQL service, fixture SQL, and deltascope CLI invocations with --dialect postgresql and explicit database/schema selection
 # output: repeatable metadata-aware CLI e2e execution for PostgreSQL with JSON assertion helpers
 # pos: shell-based end-to-end harness for live metadata PG CLI validation
 # contract: ALTER INDEX ... RENAME emits ddl.pg.alter_index.rename.notice and exits 0
@@ -13,6 +13,7 @@ PG_CONTAINER="deltascope-pg-e2e"
 PG_HOST="127.0.0.1"
 PG_PORT="5500"
 PG_USER="root"
+PG_DATABASE="postgres"
 PG_PASSWORD="root"
 export PG_PASSWORD
 TMP_DIR=""
@@ -242,7 +243,7 @@ run_pg_suite() {
   # Case 2: explicit --schema flag
   stdout_file="$(mktemp "${TMP_DIR}/pg-explicit-schema.XXXXXX.json")"
   stderr_file="$(mktemp "${TMP_DIR}/pg-explicit-schema.XXXXXX.stderr")"
-  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "delete from users where id = 1" --host "${PG_HOST}" --port "${PG_PORT}" --user "${PG_USER}" --password-env PG_PASSWORD --dialect postgresql --schema archive --format json; then
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "delete from users where id = 1" --host "${PG_HOST}" --port "${PG_PORT}" --user "${PG_USER}" --password-env PG_PASSWORD --dialect postgresql --database "${PG_DATABASE}" --schema archive --format json; then
     exit_code=0
   else
     exit_code=$?
@@ -310,7 +311,7 @@ run_pg_suite() {
   # Case 8: PostgreSQL ALTER INDEX ... RENAME maps to the PG-specific notice rule
   stdout_file="$(mktemp "${TMP_DIR}/pg-rename-idx.XXXXXX.json")"
   stderr_file="$(mktemp "${TMP_DIR}/pg-rename-idx.XXXXXX.stderr")"
-  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "alter index idx_accounts_email rename to idx_new" --host "${PG_HOST}" --port "${PG_PORT}" --user "${PG_USER}" --password-env PG_PASSWORD --dialect postgresql --schema app --format json; then
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "alter index idx_accounts_email rename to idx_new" --host "${PG_HOST}" --port "${PG_PORT}" --user "${PG_USER}" --password-env PG_PASSWORD --dialect postgresql --database "${PG_DATABASE}" --schema app --format json; then
     exit_code=0
   else
     exit_code=$?

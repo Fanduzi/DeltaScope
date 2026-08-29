@@ -1,5 +1,10 @@
 //go:build postgresql
 
+// Package cli verifies PostgreSQL-specific CLI metadata-aware audit behavior.
+// input: PostgreSQL audit arguments and fake metadata clients
+// output: PostgreSQL metadata rule findings and valid database/schema connection coverage
+// pos: interface-layer PostgreSQL-tagged CLI audit tests
+// note: if this file changes, update this header and module README.md.
 package cli
 
 import (
@@ -203,7 +208,7 @@ func TestAuditCommandPostgreSQLMetadataMapsDropConstraintToPrimaryKeyRule(t *tes
 	stderr := &strings.Builder{}
 	code := Execute(
 		context.Background(),
-		[]string{"audit", "--sql", "alter table users drop constraint users_pkey;", "--host", "127.0.0.1", "--user", "root", "--schema", "public", "--dialect", "postgresql"},
+		[]string{"audit", "--sql", "alter table users drop constraint users_pkey;", "--host", "127.0.0.1", "--user", "root", "--database", "app", "--schema", "public", "--dialect", "postgresql"},
 		strings.NewReader(""),
 		stdout,
 		stderr,
@@ -243,7 +248,7 @@ func TestAuditCommandPostgreSQLMetadataRequiresExistingColumnForRenameColumn(t *
 	stderr := &strings.Builder{}
 	code := Execute(
 		context.Background(),
-		[]string{"audit", "--sql", "alter table users rename column missing_email to email;", "--host", "127.0.0.1", "--user", "root", "--schema", "public", "--dialect", "postgresql"},
+		[]string{"audit", "--sql", "alter table users rename column missing_email to email;", "--host", "127.0.0.1", "--user", "root", "--database", "app", "--schema", "public", "--dialect", "postgresql"},
 		strings.NewReader(""),
 		stdout,
 		stderr,
@@ -283,7 +288,7 @@ func TestAuditCommandPostgreSQLMetadataRequiresExistingColumnForDropColumn(t *te
 	stderr := &strings.Builder{}
 	code := Execute(
 		context.Background(),
-		[]string{"audit", "--sql", "alter table users drop column missing_email;", "--host", "127.0.0.1", "--user", "root", "--schema", "public", "--dialect", "postgresql"},
+		[]string{"audit", "--sql", "alter table users drop column missing_email;", "--host", "127.0.0.1", "--user", "root", "--database", "app", "--schema", "public", "--dialect", "postgresql"},
 		strings.NewReader(""),
 		stdout,
 		stderr,
@@ -320,7 +325,7 @@ func TestAuditCommandPostgreSQLMetadataRequiresExistingTableForRenameTable(t *te
 	stderr := &strings.Builder{}
 	code := Execute(
 		context.Background(),
-		[]string{"audit", "--sql", "alter table users rename to users_archive;", "--host", "127.0.0.1", "--user", "root", "--schema", "public", "--dialect", "postgresql"},
+		[]string{"audit", "--sql", "alter table users rename to users_archive;", "--host", "127.0.0.1", "--user", "root", "--database", "app", "--schema", "public", "--dialect", "postgresql"},
 		strings.NewReader(""),
 		stdout,
 		stderr,

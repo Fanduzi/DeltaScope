@@ -72,7 +72,7 @@ that connection but do not activate metadata-aware mode on their own.
 | `--password-env` | | (none) | Environment variable that contains the database password |
 | `--password-file` | | (none) | File path that contains the database password |
 | `--ask-password` | | false | Prompt for password interactively. Mutually exclusive with `--password-env` and `--password-file`. |
-| `--database` | | (none) | PostgreSQL database name (defaults to `postgres` when omitted) |
+| `--database` | | (none) | PostgreSQL database name (defaults to `postgres` when omitted; required when `--schema` is set) |
 | `--schema` | `-D` | (none) | Default schema for unqualified table name resolution |
 | `--socket` | `-S` | (none) | Unix socket path. Mutually exclusive with `--host`/`--port` and `--tls-mode enabled`. |
 | `--tls-mode` | | `disabled` | TLS connection mode: `disabled` or `enabled`. When `enabled`, requires `--host` and `--user`; rejects `--socket`. |
@@ -86,7 +86,7 @@ that connection but do not activate metadata-aware mode on their own.
 - For MySQL/TiDB: dialect is auto-detected from the live instance by querying `tidb_version()`. If `--dialect` is
   also set explicitly and conflicts, the command exits with code 2. When `--port` is omitted, this path keeps the
   MySQL-oriented default of `3306`.
-- For PostgreSQL: pass `--dialect postgresql` explicitly and use `--database` to select the database (`postgres` when omitted). `--schema` selects the schema within that database. When `--port` is omitted, the explicit PostgreSQL selection uses `5432`; an explicit port always wins. The CLI does not probe services to infer a port.
+- For PostgreSQL: pass `--dialect postgresql` explicitly and use `--database` to select the database (`postgres` when omitted). `--schema` selects the schema within that database; when `--schema` is explicitly set, `--database` is required and is never inferred from the schema value. Omitting both preserves default catalog resolution. When `--port` is omitted, the explicit PostgreSQL selection uses `5432`; an explicit port always wins. The CLI does not probe services to infer a port.
 - Schema resolution order for unqualified table names: SQL-level qualifier → `--schema` flag →
   unique match across accessible schemas → error if ambiguous.
 - Connection failures print one bounded stderr line. Portable output never includes host, port,

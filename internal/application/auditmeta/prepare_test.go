@@ -1,6 +1,6 @@
 // Package auditmeta verifies shared metadata-aware audit preparation.
 // input: metadata-aware audit requests plus fake metadata clients that simulate dialect and schema lookups
-// output: focused coverage for shared connection setup, schema inference, and dialect validation
+// output: focused coverage for shared connection setup, schema inference, dialect validation, and PostgreSQL schema/database validation
 // pos: application-layer preparation tests shared by CLI and MCP adapters
 // note: if this file changes, update this header and module README.md.
 package auditmeta
@@ -120,6 +120,55 @@ func TestPrepareUsesExplicitSchemaWithoutInference(t *testing.T) {
 	}
 	if len(client.findSchemaCalls) != 0 {
 		t.Fatalf("expected no schema inference calls, got %#v", client.findSchemaCalls)
+	}
+}
+
+func TestPrepareRejectsPostgreSQLSchemaWithoutDatabase(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name             string
+		explicitDialect  bool
+		requestedDialect spec.Dialect
+	}{
+		{name: "explicit dialect", explicitDialect: true, requestedDialect: spec.DialectPostgreSQL},
+		{name: "detected dialect"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := &fakeClient{detectDialect: spec.DialectPostgreSQL}
+			_, err := Prepare(context.Background(), Request{
+				SQL:              "delete from users",
+				Connection:       ConnectionConfig{Host: "127.0.0.1", User: "root"},
+				RequestedDialect: tt.requestedDialect,
+				ExplicitDialect:  tt.explicitDialect,
+				ExplicitSchema:   "public",
+				OpenClient: func(config ConnectionConfig) (Client, error) {
+					return client, nil
+				},
+			})
+			if err == nil {
+				t.Fatal("expected PostgreSQL schema/database validation error")
+			}
+			var prepErr *Error
+			if !errors.As(err, &prepErr) {
+				t.Fatalf("expected typed preparation error, got %T", err)
+			}
+			if prepErr.Kind != ErrorPostgreSQLDatabaseRequired {
+				t.Fatalf("expected %q error kind, got %q", ErrorPostgreSQLDatabaseRequired, prepErr.Kind)
+			}
+			message := strings.ToLower(err.Error())
+			if !strings.Contains(message, "schema") || !strings.Contains(message, "database") || !strings.Contains(message, "--database") {
+				t.Fatalf("expected bounded schema/database guidance, got %q", err.Error())
+			}
+			if strings.Contains(message, "127.0.0.1") || strings.Contains(message, "root") {
+				t.Fatalf("validation error leaked connection details: %q", err.Error())
+			}
+			if !client.closed {
+				t.Fatal("expected client to close on prepare failure")
+			}
+		})
 	}
 }
 
@@ -350,7 +399,7 @@ func TestPrepareFallsBackToPostgresOpenWhenInitialOpenFailsWithoutExplicitDialec
 	calls := 0
 	prepared, err := Prepare(context.Background(), Request{
 		SQL:            "delete from users where id = 1",
-		Connection:     ConnectionConfig{Host: "127.0.0.1", User: "root"},
+		Connection:     ConnectionConfig{Host: "127.0.0.1", User: "root", Database: "app"},
 		ExplicitSchema: "public",
 		OpenClient: func(config ConnectionConfig) (Client, error) {
 			calls++

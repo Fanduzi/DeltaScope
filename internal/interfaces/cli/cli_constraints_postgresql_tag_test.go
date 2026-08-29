@@ -1,5 +1,10 @@
 //go:build postgresql
 
+// Package cli verifies PostgreSQL-specific CLI constraint and index metadata audit behavior.
+// input: PostgreSQL audit arguments and fake metadata clients
+// output: PostgreSQL metadata finding and connection-contract coverage
+// pos: interface-layer PostgreSQL-tagged CLI audit tests
+// note: if this file changes, update this header and module README.md.
 package cli
 
 import (
@@ -246,7 +251,7 @@ func TestAuditCommandPostgreSQLMetadataDropIndexRendersExistenceFinding(t *testi
 
 	code := Execute(
 		context.Background(),
-		[]string{"audit", "--sql", "drop index missing_idx;", "--host", "127.0.0.1", "--user", "root", "--schema", "public", "--dialect", "postgresql", "--format", "json"},
+		[]string{"audit", "--sql", "drop index missing_idx;", "--host", "127.0.0.1", "--user", "root", "--database", "app", "--schema", "public", "--dialect", "postgresql", "--format", "json"},
 		strings.NewReader(""),
 		stdout,
 		stderr,

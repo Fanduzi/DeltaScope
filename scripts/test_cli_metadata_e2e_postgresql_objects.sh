@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# input: docker compose PostgreSQL service, object metadata fixtures, and deltascope CLI invocations
+# input: docker compose PostgreSQL service, object metadata fixtures, and deltascope CLI invocations with explicit database/schema selection
 # output: repeatable metadata-object-aware CLI e2e execution for PostgreSQL with JSON assertion helpers
 # pos: shell-based end-to-end harness for live object metadata PG CLI validation
 # note: if this file changes, update this header and module README.md.
@@ -12,6 +12,7 @@ PG_CONTAINER="deltascope-pg-e2e"
 PG_HOST="127.0.0.1"
 PG_PORT="5500"
 PG_USER="root"
+PG_DATABASE="postgres"
 PG_PASSWORD="root"
 export PG_PASSWORD
 TMP_DIR=""
@@ -232,7 +233,7 @@ run_object_suite() {
     --sql "DROP EXTENSION pgcrypto" \
     --host "${PG_HOST}" --port "${PG_PORT}" \
     --user "${PG_USER}" --password-env PG_PASSWORD \
-    --dialect postgresql --schema public --format json; then
+    --dialect postgresql --database "${PG_DATABASE}" --schema public --format json; then
     exit_code=0
   else
     exit_code=$?
@@ -251,7 +252,7 @@ run_object_suite() {
     --sql "DROP SCHEMA missing_schema" \
     --host "${PG_HOST}" --port "${PG_PORT}" \
     --user "${PG_USER}" --password-env PG_PASSWORD \
-    --dialect postgresql --schema public --format json; then
+    --dialect postgresql --database "${PG_DATABASE}" --schema public --format json; then
     exit_code=0
   else
     exit_code=$?
@@ -287,7 +288,7 @@ run_object_suite() {
     --sql "DROP DOMAIN app.email_address" \
     --host "${PG_HOST}" --port "${PG_PORT}" \
     --user "${PG_USER}" --password-env PG_PASSWORD \
-    --dialect postgresql --schema app --format json; then
+    --dialect postgresql --database "${PG_DATABASE}" --schema app --format json; then
     exit_code=0
   else
     exit_code=$?
@@ -305,7 +306,7 @@ run_object_suite() {
     --sql "DROP PUBLICATION e2e_test_pub" \
     --host "${PG_HOST}" --port "${PG_PORT}" \
     --user "${PG_USER}" --password-env PG_PASSWORD \
-    --dialect postgresql --schema public --format json; then
+    --dialect postgresql --database "${PG_DATABASE}" --schema public --format json; then
     exit_code=0
   else
     exit_code=$?
@@ -323,7 +324,7 @@ run_object_suite() {
     --sql "DROP PUBLICATION missing_pub" \
     --host "${PG_HOST}" --port "${PG_PORT}" \
     --user "${PG_USER}" --password-env PG_PASSWORD \
-    --dialect postgresql --schema public --format json; then
+    --dialect postgresql --database "${PG_DATABASE}" --schema public --format json; then
     exit_code=0
   else
     exit_code=$?
@@ -341,7 +342,7 @@ run_object_suite() {
     --sql "DROP SEQUENCE app.ticket_seq" \
     --host "${PG_HOST}" --port "${PG_PORT}" \
     --user "${PG_USER}" --password-env PG_PASSWORD \
-    --dialect postgresql --schema app --format json; then
+    --dialect postgresql --database "${PG_DATABASE}" --schema app --format json; then
     exit_code=0
   else
     exit_code=$?
@@ -359,7 +360,7 @@ run_object_suite() {
     --sql "DROP SERVER fs_test" \
     --host "${PG_HOST}" --port "${PG_PORT}" \
     --user "${PG_USER}" --password-env PG_PASSWORD \
-    --dialect postgresql --schema public --format json; then
+    --dialect postgresql --database "${PG_DATABASE}" --schema public --format json; then
     exit_code=0
   else
     exit_code=$?
@@ -379,7 +380,7 @@ run_object_suite() {
     --sql "DROP USER MAPPING FOR root SERVER fs_test" \
     --host "${PG_HOST}" --port "${PG_PORT}" \
     --user "${PG_USER}" --password-env PG_PASSWORD \
-    --dialect postgresql --schema public --format json; then
+    --dialect postgresql --database "${PG_DATABASE}" --schema public --format json; then
     exit_code=0
   else
     exit_code=$?
@@ -398,7 +399,7 @@ run_object_suite() {
     --sql "COMMENT ON TABLE app.users IS 'new comment text'" \
     --host "${PG_HOST}" --port "${PG_PORT}" \
     --user "${PG_USER}" --password-env PG_PASSWORD \
-    --dialect postgresql --schema app --format json; then
+    --dialect postgresql --database "${PG_DATABASE}" --schema app --format json; then
     exit_code=0
   else
     exit_code=$?
@@ -418,7 +419,7 @@ run_object_suite() {
     --sql "DROP MATERIALIZED VIEW app.user_summary" \
     --host "${PG_HOST}" --port "${PG_PORT}" \
     --user "${PG_USER}" --password-env PG_PASSWORD \
-    --dialect postgresql --schema app --format json; then
+    --dialect postgresql --database "${PG_DATABASE}" --schema app --format json; then
     exit_code=0
   else
     exit_code=$?
@@ -436,7 +437,7 @@ run_object_suite() {
     --sql "DROP TYPE app.color" \
     --host "${PG_HOST}" --port "${PG_PORT}" \
     --user "${PG_USER}" --password-env PG_PASSWORD \
-    --dialect postgresql --schema app --format json; then
+    --dialect postgresql --database "${PG_DATABASE}" --schema app --format json; then
     exit_code=0
   else
     exit_code=$?

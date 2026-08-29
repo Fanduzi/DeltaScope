@@ -6,8 +6,8 @@ Shared preparation helpers for metadata-aware audit requests before they enter t
 
 | File | Responsibility |
 |------|---------------|
-| `errors.go` | Defines typed metadata-preparation errors for adapter-level classification |
-| `prepare.go` | Opens metadata clients, detects dialect, resolves schema, and returns prepared audit context |
+| `errors.go` | Defines typed metadata-preparation errors, including PostgreSQL schema/database validation, for adapter-level classification |
+| `prepare.go` | Opens metadata clients, detects dialect, validates PostgreSQL database/schema selection, resolves schema, and returns prepared audit context |
 | `targets.go` | Infers target tables from SQL statements for schema resolution |
 | `client.go` | Bridges MySQL-compatible infrastructure providers into the shared preparation client contract |
 | `prepare_test.go` | Verifies shared metadata-aware preparation behavior for CLI and future MCP adapters |
@@ -19,6 +19,7 @@ Shared preparation helpers for metadata-aware audit requests before they enter t
 - `Request`
 - `PreparedAudit`
 - `Prepare(ctx, request)`
+- `Error` / `ErrorKind` — typed preparation failures, including `ErrorPostgreSQLDatabaseRequired`
 
 ## Dependencies
 

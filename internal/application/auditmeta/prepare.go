@@ -1,6 +1,6 @@
 // Package auditmeta prepares metadata-aware audit requests for multiple adapters.
 // input: audit SQL text, requested dialect/schema preferences, metadata connection configs, and metadata clients
-// output: prepared metadata-aware audit context with opened client, resolved dialect, and resolved schema
+// output: prepared metadata-aware audit context with opened client, resolved dialect/schema, or bounded dialect-specific connection validation errors
 // pos: shared application helper between transport adapters and the core audit service
 // note: if this file changes, update this header and module README.md.
 package auditmeta
@@ -93,6 +93,11 @@ func Prepare(ctx context.Context, request Request) (*PreparedAudit, error) {
 
 	if request.ExplicitDialect && request.RequestedDialect != detectedDialect {
 		return nil, newDialectMismatchError(string(detectedDialect), string(request.RequestedDialect))
+	}
+	if detectedDialect == spec.DialectPostgreSQL &&
+		strings.TrimSpace(request.ExplicitSchema) != "" &&
+		strings.TrimSpace(request.Connection.Database) == "" {
+		return nil, newPostgreSQLDatabaseRequiredError()
 	}
 
 	schema, schemaSource, err := resolveSchema(ctx, client, request.SQL, detectedDialect, request.ExplicitSchema, explicitSchemaSource(request.ExplicitSchemaSource), schemaHint(request.SchemaHint))

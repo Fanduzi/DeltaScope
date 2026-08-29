@@ -1,6 +1,6 @@
 // Package cli exposes the command-line adapter for DeltaScope.
 // input: audit command flags including whether --sql was explicitly provided, SQL text from flags/files/stdin, password source/prompt dependencies, and application audit services
-// output: rendered audit results, dialect-aware connection-option normalization, password resolution, offline existence caveats on default surfaces, and user-vs-runtime exit-code mapping for CLI audit invocations
+// output: rendered audit results, dialect-aware connection-option normalization, PostgreSQL schema/database usage validation, password resolution, offline existence caveats on default surfaces, and user-vs-runtime exit-code mapping for CLI audit invocations
 // pos: CLI audit command implementation above the application service and output renderers
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -151,7 +151,7 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 	cmd.Flags().BoolVar(&options.AskPassword, "ask-password", false, "prompt for a database password without echo")
 	cmd.Flags().StringVarP(&options.Schema, "schema", "D", "", "database schema for metadata-aware audit")
 	cmd.Flags().StringVarP(&options.Socket, "socket", "S", "", "database Unix socket for metadata-aware audit")
-	cmd.Flags().StringVar(&options.Database, "database", "", "database name for metadata-aware audit (PostgreSQL)")
+	cmd.Flags().StringVar(&options.Database, "database", "", "database name for metadata-aware audit (PostgreSQL; required when --schema is set)")
 	cmd.Flags().StringVar(&options.MetadataConnectTimeout, "metadata-connect-timeout", "", "metadata connection timeout for metadata-aware audit, for example 5s or 500ms")
 	cmd.Flags().StringVar(&options.TLSMode, "tls-mode", "disabled", "TLS mode for database connection: disabled or enabled")
 	cmd.Flags().StringVar(&options.TLSCAFile, "tls-ca-file", "", "path to TLS CA certificate PEM file (requires tls-mode=enabled)")
@@ -590,7 +590,7 @@ func isBoundedApplicationError(err error) bool {
 	var auditMetaErr *auditmeta.Error
 	if errors.As(err, &auditMetaErr) {
 		switch auditMetaErr.Kind {
-		case auditmeta.ErrorDialectMismatch, auditmeta.ErrorSchemaHintRequired:
+		case auditmeta.ErrorDialectMismatch, auditmeta.ErrorSchemaHintRequired, auditmeta.ErrorPostgreSQLDatabaseRequired:
 			return true
 		}
 	}
@@ -620,7 +620,7 @@ func exitCodeForCLIError(err error) int {
 	var auditMetaErr *auditmeta.Error
 	if errors.As(err, &auditMetaErr) {
 		switch auditMetaErr.Kind {
-		case auditmeta.ErrorDialectMismatch, auditmeta.ErrorSchemaHintRequired:
+		case auditmeta.ErrorDialectMismatch, auditmeta.ErrorSchemaHintRequired, auditmeta.ErrorPostgreSQLDatabaseRequired:
 			return exitUser
 		}
 	}

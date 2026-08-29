@@ -1,5 +1,10 @@
 //go:build postgresql
 
+// Package cli verifies PostgreSQL-specific CLI object metadata audit behavior.
+// input: PostgreSQL object audit arguments and fake metadata clients
+// output: PostgreSQL object metadata projection and valid database/schema connection coverage
+// pos: interface-layer PostgreSQL-tagged CLI audit tests
+// note: if this file changes, update this header and module README.md.
 package cli
 
 import (
@@ -33,7 +38,7 @@ func TestAuditCommandProjectsNotFoundObjectMetadata(t *testing.T) {
 	stdout := &strings.Builder{}
 	code := Execute(
 		context.Background(),
-		[]string{"audit", "--sql", "DROP SCHEMA old_schema", "--host", "127.0.0.1", "--user", "root", "--dialect", "postgresql", "--schema", "public", "--format", "json"},
+		[]string{"audit", "--sql", "DROP SCHEMA old_schema", "--host", "127.0.0.1", "--user", "root", "--database", "app", "--dialect", "postgresql", "--schema", "public", "--format", "json"},
 		strings.NewReader(""),
 		stdout,
 		&strings.Builder{},
@@ -121,7 +126,7 @@ func TestAuditCommandProjectsConfirmedObjectMetadata(t *testing.T) {
 	stdout := &strings.Builder{}
 	code := Execute(
 		context.Background(),
-		[]string{"audit", "--sql", "DROP DOMAIN app.email_address", "--host", "127.0.0.1", "--user", "root", "--dialect", "postgresql", "--schema", "app", "--format", "json"},
+		[]string{"audit", "--sql", "DROP DOMAIN app.email_address", "--host", "127.0.0.1", "--user", "root", "--database", "app", "--dialect", "postgresql", "--schema", "app", "--format", "json"},
 		strings.NewReader(""),
 		stdout,
 		&strings.Builder{},

@@ -1,6 +1,6 @@
 // Package cli verifies metadata-aware CLI audit wiring.
 // input: audit command args plus fake metadata clients that simulate dialect, schema, and connection-option resolution
-// output: focused coverage for metadata-mode connection setup, schema inference, dialect validation, and port defaults
+// output: focused coverage for metadata-mode connection setup, schema inference, dialect validation, PostgreSQL schema/database usage errors, and port defaults
 // pos: interface-layer metadata-aware audit test coverage
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -135,6 +135,9 @@ func TestAuditCommandResolvesMetadataPortByExplicitDialect(t *testing.T) {
 				args = append(args, "--sql", "delete from users")
 			}
 			if tt.dialect != "" {
+				if tt.dialect == string(spec.DialectPostgreSQL) {
+					args = append(args, "--database", "app")
+				}
 				args = append(args, "--dialect", tt.dialect)
 			}
 			if tt.port != "" {
@@ -145,6 +148,55 @@ func TestAuditCommandResolvesMetadataPortByExplicitDialect(t *testing.T) {
 
 			if client.options.Port != tt.wantPort {
 				t.Fatalf("expected resolved port %d, got %d", tt.wantPort, client.options.Port)
+			}
+		})
+	}
+}
+
+func TestAuditCommandRejectsPostgreSQLSchemaWithoutDatabase(t *testing.T) {
+	tests := []struct {
+		name            string
+		explicitDialect bool
+	}{
+		{name: "explicit dialect", explicitDialect: true},
+		{name: "detected dialect"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			previous := newMetadataClient
+			client := &fakeMetadataClient{detectDialect: spec.DialectPostgreSQL}
+			newMetadataClient = func(auditConnectionOptions) (metadataClient, error) {
+				return client, nil
+			}
+			t.Cleanup(func() { newMetadataClient = previous })
+
+			args := []string{
+				"audit",
+				"--sql", "delete from users",
+				"--host", "127.0.0.1",
+				"--user", "root",
+				"--schema", "public",
+			}
+			if tt.explicitDialect {
+				args = append(args, "--dialect", "postgresql")
+			}
+
+			stdout := &strings.Builder{}
+			stderr := &strings.Builder{}
+			code := Execute(context.Background(), args, strings.NewReader(""), stdout, stderr)
+			if code != exitUser {
+				t.Fatalf("expected usage exit code %d, got %d (stderr=%q)", exitUser, code, stderr.String())
+			}
+			if stdout.Len() != 0 {
+				t.Fatalf("expected no audit body, got %q", stdout.String())
+			}
+			message := strings.ToLower(stderr.String())
+			if !strings.Contains(message, "schema") || !strings.Contains(message, "database") || !strings.Contains(message, "--database") {
+				t.Fatalf("expected bounded schema/database guidance, got %q", stderr.String())
+			}
+			if client.instanceCalls != nil || client.tableSnapshotCalls != nil {
+				t.Fatalf("expected rule evaluation to be skipped, got instance=%#v snapshots=%#v", client.instanceCalls, client.tableSnapshotCalls)
 			}
 		})
 	}
