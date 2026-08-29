@@ -8,6 +8,7 @@ package audit
 import (
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
@@ -111,7 +112,11 @@ func isPostgreSQLEscapeString(sql string, quote int) bool {
 	if quote == 0 || sql[quote-1] != 'E' && sql[quote-1] != 'e' {
 		return false
 	}
-	return quote == 1 || !isDollarTagPart(sql[quote-2]) && sql[quote-2] != '$'
+	if quote == 1 {
+		return true
+	}
+	previous, _ := utf8.DecodeLastRuneInString(sql[:quote-1])
+	return !isDollarTagPart(previous) && previous != '$'
 }
 
 func appendStatementChunk(chunks []statementChunk, source string, start, end int) []statementChunk {
@@ -151,31 +156,37 @@ func dollarQuoteDelimiter(sql string, start int) string {
 	if start+1 >= len(sql) {
 		return ""
 	}
-	if start > 0 && (isDollarTagPart(sql[start-1]) || sql[start-1] == '$') {
-		return ""
+	if start > 0 {
+		previous, _ := utf8.DecodeLastRuneInString(sql[:start])
+		if isDollarTagPart(previous) || previous == '$' {
+			return ""
+		}
 	}
 	if sql[start+1] == '$' {
 		return "$$"
 	}
-	if !isDollarTagStart(sql[start+1]) {
+	first, width := utf8.DecodeRuneInString(sql[start+1:])
+	if !isDollarTagStart(first) {
 		return ""
 	}
-	for i := start + 2; i < len(sql); i++ {
+	for i := start + 1 + width; i < len(sql); {
 		if sql[i] == '$' {
 			return sql[start : i+1]
 		}
-		if !isDollarTagPart(sql[i]) {
+		char, width := utf8.DecodeRuneInString(sql[i:])
+		if !isDollarTagPart(char) {
 			return ""
 		}
+		i += width
 	}
 	return ""
 }
 
-func isDollarTagStart(char byte) bool {
-	return char == '_' || char >= 'A' && char <= 'Z' || char >= 'a' && char <= 'z'
+func isDollarTagStart(char rune) bool {
+	return char == '_' || unicode.IsLetter(char)
 }
 
-func isDollarTagPart(char byte) bool {
+func isDollarTagPart(char rune) bool {
 	return isDollarTagStart(char) || char >= '0' && char <= '9'
 }
 

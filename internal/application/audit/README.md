@@ -7,7 +7,7 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 | File | Responsibility |
 |------|---------------|
 | parse.go | Normalizes one leading UTF-8 BOM, parses bounded top-level statement slices independently by dialect, and translates successful locations from each slice so failed text cannot capture a valid sibling's source match |
-| statement_boundary.go | Splits top-level SQL only at semicolons outside supported dialect strings, quoted identifiers, comments, and PostgreSQL dollar-quoted bodies while distinguishing dollar signs inside unquoted identifiers; it does not infer statement semantics |
+| statement_boundary.go | Splits top-level SQL only at semicolons outside supported dialect strings, quoted identifiers, comments, and PostgreSQL dollar-quoted bodies (including Unicode identifier tags) while distinguishing dollar signs inside unquoted identifiers; it does not infer statement semantics |
 | parse_pg.go | Implements PostgreSQL parsing when built with the `postgresql` tag |
 | parse_pg_stub.go | Returns the PG-capable build guidance error when PostgreSQL support is not compiled in |
 | parse_test.go | Verifies that application parsing hides parser-specific AST details |

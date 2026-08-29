@@ -79,6 +79,23 @@ func TestAuditParserRecoveryPostgreSQLPreservesDollarQuotedStatementAndTrailingF
 	}
 }
 
+func TestAuditParserRecoveryPostgreSQLPreservesUnicodeDollarQuoteTag(t *testing.T) {
+	t.Parallel()
+
+	result, err := AuditSQL(context.Background(), Request{
+		SQL: "CREATE FUNCTION audit_marker() RETURNS void AS $é$ BEGIN PERFORM 1; END; $é$ LANGUAGE plpgsql;\n" +
+			"CREATE INDEX idx_x ON;\n" +
+			"DELETE FROM users;",
+		Dialect: spec.DialectPostgreSQL,
+	})
+	if err == nil {
+		t.Fatal("expected parser-error result to remain non-nil")
+	}
+	if len(result.Statements) != 2 || len(result.Diagnostics) != 1 || result.Diagnostics[0].Line != 2 {
+		t.Fatalf("expected Unicode dollar-quote tag to preserve valid siblings, got %#v", result)
+	}
+}
+
 func TestAuditParserRecoveryPostgreSQLDoesNotSplitEscapeString(t *testing.T) {
 	t.Parallel()
 	result, err := AuditSQL(context.Background(), Request{
