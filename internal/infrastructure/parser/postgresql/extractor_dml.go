@@ -36,31 +36,22 @@ func isInsertSelect(stmt *pg_query.InsertStmt) bool {
 
 func extractUpdate(stmt *pg_query.UpdateStmt) *spec.DML {
 	hasJoin := len(stmt.GetFromClause()) > 0
-	tables := singleTableSlice(tableFromRangeVar(stmt.GetRelation()))
-	isSingleTable := len(tables) == 1 && !hasJoin
-	shape, lookupColumns, matchedKeyName, matchedKeyKind := extractMutationPredicateShape(stmt.GetWhereClause(), hasJoin, isSingleTable)
-	return &spec.DML{
-		Operation:      spec.DMLOperationUpdate,
-		Tables:         tables,
-		HasWhere:       stmt.GetWhereClause() != nil,
-		HasJoin:        hasJoin,
-		PredicateShape: shape,
-		LookupColumns:  lookupColumns,
-		MatchedKeyName: matchedKeyName,
-		MatchedKeyKind: matchedKeyKind,
-		IsSingleTable:  isSingleTable,
-	}
+	return extractMutationDML(spec.DMLOperationUpdate, stmt.GetRelation(), stmt.GetWhereClause(), hasJoin)
 }
 
 func extractDelete(stmt *pg_query.DeleteStmt) *spec.DML {
 	hasJoin := len(stmt.GetUsingClause()) > 0
-	tables := singleTableSlice(tableFromRangeVar(stmt.GetRelation()))
+	return extractMutationDML(spec.DMLOperationDelete, stmt.GetRelation(), stmt.GetWhereClause(), hasJoin)
+}
+
+func extractMutationDML(operation spec.DMLOperation, relation *pg_query.RangeVar, where *pg_query.Node, hasJoin bool) *spec.DML {
+	tables := singleTableSlice(tableFromRangeVar(relation))
 	isSingleTable := len(tables) == 1 && !hasJoin
-	shape, lookupColumns, matchedKeyName, matchedKeyKind := extractMutationPredicateShape(stmt.GetWhereClause(), hasJoin, isSingleTable)
+	shape, lookupColumns, matchedKeyName, matchedKeyKind := extractMutationPredicateShape(where, hasJoin, isSingleTable)
 	return &spec.DML{
-		Operation:      spec.DMLOperationDelete,
+		Operation:      operation,
 		Tables:         tables,
-		HasWhere:       stmt.GetWhereClause() != nil,
+		HasWhere:       where != nil,
 		HasJoin:        hasJoin,
 		PredicateShape: shape,
 		LookupColumns:  lookupColumns,
@@ -84,7 +75,7 @@ func extractMutationPredicateShape(where *pg_query.Node, hasJoin, isSingleTable 
 }
 
 func predicateIsIDLiteralEquality(where *pg_query.Node, isSingleTable bool) bool {
-	if !isSingleTable {
+	if where == nil || !isSingleTable {
 		return false
 	}
 	predicate := where.GetAExpr()
