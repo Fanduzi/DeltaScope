@@ -4,7 +4,9 @@ Date: 2026-08-30
 Status: Accepted
 Related milestone/version: issue #44
 Related commits:
+- `46a1160b7a2df06d2c2f3a75eccb3b3d1514e3d4`
 Related tests:
+- `TestParseLeadingUTF8BOMUsesVisibleSQLLocations`
 - `TestAuditLeadingUTF8BOMMatchesBOMFreeInput`
 - `TestAuditOnlyStripsLeadingUTF8BOM`
 - `TestAuditBOMOnlyInputIsEmpty`
@@ -69,6 +71,8 @@ format characters or other encodings without a separate decision.
 
 ## Links
 
+- Commits: `46a1160b7a2df06d2c2f3a75eccb3b3d1514e3d4`
 - Issue: https://github.com/Fanduzi/DeltaScope/issues/44
 - Tests: `pkg/deltascope/audit_test.go`, `pkg/deltascope/query_access_test.go`, `internal/interfaces/cli/cli_test.go`, `testdata/sql-corpus/mysql/dml/clean/leading_utf8_bom.sql`
+- Docs: `internal/application/README.md`, `internal/application/audit/README.md`, `internal/application/queryaccess/README.md`, `pkg/deltascope/README.md`, `internal/interfaces/cli/README.md`
 - Implementation: `internal/application/sql_input.go`
