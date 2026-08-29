@@ -3,7 +3,7 @@
 Date: 2026-08-30
 Status: Accepted
 Related issue: [GitHub #47](https://github.com/Fanduzi/DeltaScope/issues/47)
-Implementation: [fix(ddl): compare MODIFY nullability with metadata](https://github.com/Fanduzi/DeltaScope/commit/1ac5749abc827e70c7e826ef24a400443a0d92c2) and [publicly clarify the hybrid advisory metadata scope](https://github.com/Fanduzi/DeltaScope/commit/c174408d80cb11b68bb5df5a743b5a5bdbee27c8)
+Implementation: [fix(ddl): compare MODIFY nullability with metadata](https://github.com/Fanduzi/DeltaScope/commit/f1eb7b4b9d64be35b30d584827a1939fffdaf569) and [publicly clarify the hybrid advisory metadata scope](https://github.com/Fanduzi/DeltaScope/commit/1f3bd5b9fecbde1acc1d15e92af020ea1591ea3e)
 
 ## Context
 
@@ -61,15 +61,15 @@ live transition blocker.
 
 ## Verification Evidence
 
-- [Application transition and offline tests](https://github.com/Fanduzi/DeltaScope/blob/1ac5749abc827e70c7e826ef24a400443a0d92c2/internal/application/audit/service_test.go)
+- [Application transition and offline tests](https://github.com/Fanduzi/DeltaScope/blob/f1eb7b4b9d64be35b30d584827a1939fffdaf569/internal/application/audit/service_test.go)
   cover all four live state combinations, omitted nullability, unknown
   metadata, and independent compatibility findings.
-- [Parser extraction tests](https://github.com/Fanduzi/DeltaScope/blob/1ac5749abc827e70c7e826ef24a400443a0d92c2/internal/application/audit/extract_test.go)
+- [Parser extraction tests](https://github.com/Fanduzi/DeltaScope/blob/f1eb7b4b9d64be35b30d584827a1939fffdaf569/internal/application/audit/extract_test.go)
   cover explicit `NULL` and `NOT NULL` targets for MySQL and TiDB.
-- [MySQL metadata provider tests](https://github.com/Fanduzi/DeltaScope/blob/1ac5749abc827e70c7e826ef24a400443a0d92c2/internal/infrastructure/metadata/mysql/provider_test.go)
+- [MySQL metadata provider tests](https://github.com/Fanduzi/DeltaScope/blob/f1eb7b4b9d64be35b30d584827a1939fffdaf569/internal/infrastructure/metadata/mysql/provider_test.go)
   lock `is_nullable` normalization.
-- [MySQL corpus fixtures](https://github.com/Fanduzi/DeltaScope/tree/1ac5749abc827e70c7e826ef24a400443a0d92c2/testdata/sql-corpus/mysql)
-  and [TiDB corpus fixtures](https://github.com/Fanduzi/DeltaScope/tree/1ac5749abc827e70c7e826ef24a400443a0d92c2/testdata/sql-corpus/tidb)
+- [MySQL corpus fixtures](https://github.com/Fanduzi/DeltaScope/tree/f1eb7b4b9d64be35b30d584827a1939fffdaf569/testdata/sql-corpus/mysql)
+  and [TiDB corpus fixtures](https://github.com/Fanduzi/DeltaScope/tree/f1eb7b4b9d64be35b30d584827a1939fffdaf569/testdata/sql-corpus/tidb)
   cover offline and metadata-aware cases. The CLI metadata E2E harness carries
   live restatement and transition assertions for both dialects.
 
@@ -84,5 +84,5 @@ infer state from a missing column or a failed lookup.
 ## Links
 
 - [GitHub #47](https://github.com/Fanduzi/DeltaScope/issues/47)
-- [Exact implementation commit](https://github.com/Fanduzi/DeltaScope/commit/1ac5749abc827e70c7e826ef24a400443a0d92c2)
-- [Exact public-contract clarification commit](https://github.com/Fanduzi/DeltaScope/commit/c174408d80cb11b68bb5df5a743b5a5bdbee27c8)
+- [Exact implementation commit](https://github.com/Fanduzi/DeltaScope/commit/f1eb7b4b9d64be35b30d584827a1939fffdaf569)
+- [Exact public-contract clarification commit](https://github.com/Fanduzi/DeltaScope/commit/1f3bd5b9fecbde1acc1d15e92af020ea1591ea3e)
