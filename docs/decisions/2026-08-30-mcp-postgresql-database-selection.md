@@ -3,7 +3,7 @@
 Date: 2026-08-30
 Status: Accepted
 Related milestone/version: issue #39
-Related commits: implementation commit on `fix/issue-39-mcp-database-20260830`
+Related commits: `5c6ff0c`
 Related tests:
 - `TestResolveAuditConnectionResolvesDirectPasswordEnv`
 - `TestResolveAuditConnectionLoadsNamedConnectionFromConfig`
@@ -80,6 +80,7 @@ not echo database unless a separate contract decision authorizes it.
 
 ## Links
 
+- Commits: `5c6ff0c`
 - Issue: https://github.com/Fanduzi/DeltaScope/issues/39
 - Tests: `internal/interfaces/mcp/connection_test.go`, `internal/interfaces/mcp/server_test.go`, `internal/interfaces/mcp/rule_tools_test.go`, `cmd/deltascope-mcp/main_e2e_postgresql_test.go`
 - Shared validation: `internal/application/auditmeta/prepare.go`
