@@ -391,7 +391,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 			return newAlterObjectExistenceRule(ruleIDAlterRenameColumnExistsRequire, []string{"rename_column"}, "column", false, rule.LevelBlocker, cfg, alterObjectName, snapshotHasColumn)
 		}},
 		{ruleID: ruleIDAlterAddIndexExistsForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
-			return newAlterObjectExistenceRule(ruleIDAlterAddIndexExistsForbid, []string{"add_constraint"}, "index", true, rule.LevelBlocker, cfg, alterObjectName, snapshotHasIndex)
+			return newAlterObjectExistenceRule(ruleIDAlterAddIndexExistsForbid, []string{"add_constraint", "add_index"}, "index", true, rule.LevelBlocker, cfg, alterObjectName, snapshotHasIndex)
 		}},
 		{ruleID: ruleIDAlterDropIndexExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAlterObjectExistenceRule(ruleIDAlterDropIndexExistsRequire, []string{"drop_index"}, "index", false, rule.LevelBlocker, cfg, alterObjectName, snapshotHasIndex)

@@ -19,7 +19,7 @@ func TestAuditMySQLDDLLifecycleRuleCoverage(t *testing.T) {
 	}{
 		{name: "rename_table_notice", sql: "RENAME TABLE users TO users_old", wantRuleID: "ddl.rename_table.notice"},
 		{name: "create_index_notice", sql: "CREATE INDEX idx_email ON users (email)", wantRuleID: "ddl.create_index.notice"},
-		{name: "alter_add_index_notice", sql: "ALTER TABLE users ADD INDEX idx_email (email)", wantRuleID: "ddl.alter.add_constraint.notice"},
+		{name: "alter_add_index_notice", sql: "ALTER TABLE users ADD INDEX idx_email (email)", wantRuleID: "ddl.create_index.notice"},
 		{name: "create_user_notice", sql: "CREATE USER 'admin'@'%' IDENTIFIED BY 'secret'", wantRuleID: "ddl.create_user.notice"},
 		{name: "grant_notice", sql: "GRANT SELECT ON app.users TO 'reader'@'%'", wantRuleID: "ddl.grant.notice"},
 		{name: "drop_resource_group_notice", sql: "DROP RESOURCE GROUP rg1", wantRuleID: "ddl.drop_resource_group.notice"},
@@ -66,7 +66,7 @@ func TestAuditTiDBDDLLifecycleRuleCoverage(t *testing.T) {
 	}{
 		{name: "rename_table_notice", sql: "RENAME TABLE users TO users_old", wantRuleID: "ddl.rename_table.notice"},
 		{name: "create_index_notice", sql: "CREATE INDEX idx_email ON users (email)", wantRuleID: "ddl.create_index.notice"},
-		{name: "alter_add_index_notice", sql: "ALTER TABLE users ADD INDEX idx_email (email)", wantRuleID: "ddl.alter.add_constraint.notice"},
+		{name: "alter_add_index_notice", sql: "ALTER TABLE users ADD INDEX idx_email (email)", wantRuleID: "ddl.create_index.notice"},
 		{name: "create_user_notice", sql: "CREATE USER 'admin'@'%' IDENTIFIED BY 'secret'", wantRuleID: "ddl.create_user.notice"},
 		{name: "grant_notice", sql: "GRANT SELECT ON app.users TO 'reader'@'%'", wantRuleID: "ddl.grant.notice"},
 		{name: "create_placement_policy_notice", sql: "CREATE PLACEMENT POLICY p1 PRIMARY_REGION='us-east-1' REGIONS='us-east-1'", wantRuleID: "ddl.create_placement_policy.notice"},
@@ -102,6 +102,60 @@ func TestAuditTiDBDDLLifecycleRuleCoverage(t *testing.T) {
 			}
 			if !found {
 				t.Fatalf("expected finding with rule %q, got %#v", tt.wantRuleID, result.Statements[0].Findings)
+			}
+		})
+	}
+}
+
+func TestAuditAlterIndexUsesCreateIndexNoticeAndActionMetadata(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name    string
+		dialect Dialect
+		sql     string
+		index   string
+	}{
+		{name: "mysql_add_index", dialect: DialectMySQL, sql: "ALTER TABLE users ADD INDEX idx_email (email)", index: "idx_email"},
+		{name: "tidb_add_key", dialect: DialectTiDB, sql: "ALTER TABLE users ADD KEY idx_email (email)", index: "idx_email"},
+		{name: "mysql_unique_index", dialect: DialectMySQL, sql: "ALTER TABLE users ADD UNIQUE INDEX uniq_email (email)", index: "uniq_email"},
+		{name: "tidb_fulltext_index", dialect: DialectTiDB, sql: "ALTER TABLE posts ADD FULLTEXT INDEX ft_body (body)", index: "ft_body"},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			result, err := Audit(context.Background(), Request{SQL: tc.sql, Dialect: tc.dialect})
+			if err != nil {
+				t.Fatalf("audit: %v", err)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected one statement, got %d", len(result.Statements))
+			}
+
+			var indexFinding *Finding
+			for i := range result.Statements[0].Findings {
+				finding := &result.Statements[0].Findings[i]
+				if finding.RuleID == "ddl.alter.add_constraint.notice" {
+					t.Fatalf("index addition emitted constraint notice: %#v", finding)
+				}
+				if finding.RuleID == "ddl.create_index.notice" {
+					indexFinding = finding
+				}
+			}
+			if indexFinding == nil {
+				t.Fatalf("expected create-index notice, got %#v", result.Statements[0].Findings)
+			}
+			if indexFinding.Message != `CREATE INDEX "`+tc.index+`" adds a new index to a table` {
+				t.Errorf("message = %q, want normalized create-index wording", indexFinding.Message)
+			}
+			if got := indexFinding.Metadata["action"]; got != "add_index" {
+				t.Errorf("metadata action = %#v, want add_index", got)
+			}
+			if got := indexFinding.Metadata["name"]; got != tc.index {
+				t.Errorf("metadata name = %#v, want %q", got, tc.index)
 			}
 		})
 	}

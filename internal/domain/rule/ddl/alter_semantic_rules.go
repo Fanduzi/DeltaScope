@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: parser-neutral alter Statement specs with richer rename, add-index, target-type, and explicit-change detail
-// output: findings for semantic alter rename, standalone rename-index forbids, alter-added index lifecycle, and conservative target-type-family checks
+// output: findings for semantic alter rename, standalone rename-index forbids, normalized add-index lifecycle, and conservative target-type-family checks
 // pos: DDL semantic alter rule implementations layered above action-level forbids and shared rename semantics
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -464,12 +464,12 @@ func evaluateProjectedAlterIndexRule(ctx context.Context, inner rule.StatementRu
 }
 
 func allAlterAddedIndexes(statement spec.Statement) []spec.Index {
-	if !appliesToAlterActions(statement, "add_constraint") {
+	if !appliesToAlterActions(statement, "add_constraint", "add_index") {
 		return nil
 	}
 
 	indexes := make([]spec.Index, 0)
-	for _, alter := range matchingAlterActions(statement, "add_constraint") {
+	for _, alter := range matchingAlterActions(statement, "add_constraint", "add_index") {
 		index, ok := alterConstraintIndex(alter)
 		if !ok {
 			continue

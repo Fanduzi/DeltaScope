@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: normalized Statement specs for MySQL/TiDB DDL lifecycle operations
-// output: notice-level findings for MySQL/TiDB rename, index, DCL, user, role, procedure, placement, sequence, and resource group operations
+// output: notice-level findings for MySQL/TiDB rename, index, ALTER-index, DCL, user, role, procedure, placement, sequence, and resource group operations
 // pos: MySQL/TiDB lifecycle rule implementations for v0.200.0 normalized-silent coverage
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -44,7 +44,7 @@ func (r mysqlTidbLifecycleRule) AppliesTo(statement spec.Statement) bool {
 	if statement.Kind != spec.KindDDL || statement.DDL == nil {
 		return false
 	}
-	if statement.DDL.Operation != r.operation {
+	if statement.DDL.Operation != r.operation && !(r.operation == spec.DDLOperationCreateIndex && appliesToAlterActions(statement, "add_index")) {
 		return false
 	}
 	if r.objectType != "" && statement.DDL.ObjectType != r.objectType {
@@ -64,6 +64,16 @@ func (r mysqlTidbLifecycleRule) Evaluate(ctx context.Context, statement spec.Sta
 	}
 	metadata := map[string]any{
 		"operation": string(r.operation),
+	}
+	if statement.DDL.Operation == spec.DDLOperationAlterTable {
+		for _, alter := range statement.DDL.Alter {
+			if alter.Action != "add_index" {
+				continue
+			}
+			metadata["action"] = alter.Action
+			metadata["name"] = alter.Name
+			break
+		}
 	}
 	if r.objectType != "" {
 		metadata["object_type"] = r.objectType
@@ -95,6 +105,15 @@ func lifecycleMessageObjectName(statement spec.Statement) string {
 		}
 	case spec.DDLOperationCreateIndex:
 		for _, alter := range ddl.Alter {
+			if index, ok := alterIndexDefinition(alter); ok && index.Name != "" {
+				return index.Name
+			}
+		}
+	case spec.DDLOperationAlterTable:
+		for _, alter := range ddl.Alter {
+			if alter.Action != "add_index" {
+				continue
+			}
 			if index, ok := alterIndexDefinition(alter); ok && index.Name != "" {
 				return index.Name
 			}

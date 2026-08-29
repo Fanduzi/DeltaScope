@@ -501,8 +501,8 @@ func TestExtractMapsAlterTable(t *testing.T) {
 		}
 
 		addIndex := stmt.DDL.Alter[5]
-		if addIndex.Action != "add_constraint" {
-			t.Fatalf("expected sixth alter action add_constraint, got %q", addIndex.Action)
+		if addIndex.Action != "add_index" {
+			t.Fatalf("expected sixth alter action add_index, got %q", addIndex.Action)
 		}
 		if addIndex.Name != "uniq_email" {
 			t.Fatalf("expected canonical add index name uniq_email, got %q", addIndex.Name)
@@ -615,6 +615,128 @@ func TestExtractMapsAlterTable(t *testing.T) {
 			t.Fatalf("expected non-index add constraint to avoid AlterIndex payload, got %+v", alter[0].Index)
 		}
 	})
+}
+
+func TestExtractMapsMySQLTiDBAlterIndexesAsIndexActions(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name    string
+		dialect spec.Dialect
+		sql     string
+		index   string
+	}{
+		{name: "mysql_add_index", dialect: spec.DialectMySQL, sql: "ALTER TABLE users ADD INDEX idx_email (email)", index: "idx_email"},
+		{name: "mysql_add_key", dialect: spec.DialectMySQL, sql: "ALTER TABLE users ADD KEY idx_email (email)", index: "idx_email"},
+		{name: "tidb_add_index", dialect: spec.DialectTiDB, sql: "ALTER TABLE users ADD INDEX idx_email (email)", index: "idx_email"},
+		{name: "tidb_add_key", dialect: spec.DialectTiDB, sql: "ALTER TABLE users ADD KEY idx_email (email)", index: "idx_email"},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			parsed, err := Parse(context.Background(), tc.sql, tc.dialect)
+			if err != nil {
+				t.Fatalf("parse: %v", err)
+			}
+			statements, err := Extract(context.Background(), parsed)
+			if err != nil {
+				t.Fatalf("extract: %v", err)
+			}
+			if len(statements) != 1 || statements[0].DDL == nil || len(statements[0].DDL.Alter) != 1 {
+				t.Fatalf("expected one normalized alter action, got %#v", statements)
+			}
+
+			alter := statements[0].DDL.Alter[0]
+			if alter.Action != "add_index" {
+				t.Fatalf("expected add_index action, got %q", alter.Action)
+			}
+			if alter.Name != tc.index || alter.Index == nil || alter.Index.Definition == nil {
+				t.Fatalf("expected index %q to remain named and structured, got %#v", tc.index, alter)
+			}
+			if alter.Index.Definition.Name != tc.index || alter.Index.Definition.Kind != spec.IndexKindSecondary || len(alter.Index.Definition.Columns) != 1 || alter.Index.Definition.Columns[0] != "email" {
+				t.Fatalf("unexpected normalized index definition: %#v", alter.Index.Definition)
+			}
+		})
+	}
+}
+
+func TestExtractPreservesAlterIndexAndConstraintSemantics(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name       string
+		dialect    spec.Dialect
+		sql        string
+		wantAction []string
+		wantNames  []string
+		wantKinds  []spec.IndexKind
+	}{
+		{name: "mysql_unique_index", dialect: spec.DialectMySQL, sql: "ALTER TABLE users ADD UNIQUE INDEX uniq_email (email)", wantAction: []string{"add_index"}, wantNames: []string{"uniq_email"}, wantKinds: []spec.IndexKind{spec.IndexKindUnique}},
+		{name: "tidb_unique_key", dialect: spec.DialectTiDB, sql: "ALTER TABLE users ADD UNIQUE KEY uniq_email (email)", wantAction: []string{"add_index"}, wantNames: []string{"uniq_email"}, wantKinds: []spec.IndexKind{spec.IndexKindUnique}},
+		{name: "mysql_fulltext_index", dialect: spec.DialectMySQL, sql: "ALTER TABLE posts ADD FULLTEXT INDEX ft_body (body)", wantAction: []string{"add_index"}, wantNames: []string{"ft_body"}, wantKinds: []spec.IndexKind{spec.IndexKindFulltext}},
+		{name: "tidb_fulltext_key", dialect: spec.DialectTiDB, sql: "ALTER TABLE posts ADD FULLTEXT KEY ft_body (body)", wantAction: []string{"add_index"}, wantNames: []string{"ft_body"}, wantKinds: []spec.IndexKind{spec.IndexKindFulltext}},
+		{name: "mysql_primary_key", dialect: spec.DialectMySQL, sql: "ALTER TABLE users ADD PRIMARY KEY (id)", wantAction: []string{"add_constraint"}, wantNames: []string{"primary"}, wantKinds: []spec.IndexKind{spec.IndexKindPrimary}},
+		{name: "tidb_named_constraints", dialect: spec.DialectTiDB, sql: "ALTER TABLE users ADD CONSTRAINT uq_email UNIQUE (email), ADD CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES accounts(id), ADD CONSTRAINT chk_email CHECK (email <> '')", wantAction: []string{"add_constraint", "add_constraint", "add_constraint"}, wantNames: []string{"uq_email", "fk_user", "chk_email"}},
+		{name: "mysql_mixed_constraint_and_index", dialect: spec.DialectMySQL, sql: "ALTER TABLE users ADD CONSTRAINT uq_email UNIQUE (email), ADD INDEX idx_name (name)", wantAction: []string{"add_constraint", "add_index"}, wantNames: []string{"uq_email", "idx_name"}, wantKinds: []spec.IndexKind{spec.IndexKindUnique, spec.IndexKindSecondary}},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			parsed, err := Parse(context.Background(), tc.sql, tc.dialect)
+			if err != nil {
+				t.Fatalf("parse: %v", err)
+			}
+			statements, err := Extract(context.Background(), parsed)
+			if err != nil {
+				t.Fatalf("extract: %v", err)
+			}
+			if len(statements) != 1 || statements[0].DDL == nil {
+				t.Fatalf("expected one DDL statement, got %#v", statements)
+			}
+
+			alters := statements[0].DDL.Alter
+			if len(alters) != len(tc.wantAction) {
+				t.Fatalf("expected %d alter actions, got %#v", len(tc.wantAction), alters)
+			}
+			for i, alter := range alters {
+				if alter.Action != tc.wantAction[i] || alter.Name != tc.wantNames[i] {
+					t.Errorf("alter[%d] = action %q name %q, want action %q name %q", i, alter.Action, alter.Name, tc.wantAction[i], tc.wantNames[i])
+				}
+				if i >= len(tc.wantKinds) {
+					continue
+				}
+				if alter.Index == nil || alter.Index.Definition == nil || alter.Index.Definition.Kind != tc.wantKinds[i] {
+					t.Errorf("alter[%d] index = %#v, want kind %q", i, alter.Index, tc.wantKinds[i])
+				}
+			}
+		})
+	}
+}
+
+func TestExtractPreservesAlterIndexAlgorithmAndLockSQL(t *testing.T) {
+	t.Parallel()
+
+	sql := "ALTER TABLE users ADD INDEX idx_email (email), ALGORITHM=INPLACE, LOCK=NONE"
+	parsed, err := Parse(context.Background(), sql, spec.DialectMySQL)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	statements, err := Extract(context.Background(), parsed)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if len(statements) != 1 || statements[0].NormalizedSQL != sql {
+		t.Fatalf("normalized SQL = %q, want %q", statements[0].NormalizedSQL, sql)
+	}
+	if len(statements[0].DDL.Alter) != 3 || statements[0].DDL.Alter[0].Action != "add_index" {
+		t.Fatalf("expected index plus algorithm/lock actions, got %#v", statements[0].DDL.Alter)
+	}
 }
 
 func TestExtractMapsInsert(t *testing.T) {

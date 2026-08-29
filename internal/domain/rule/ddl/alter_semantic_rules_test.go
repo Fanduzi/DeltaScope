@@ -247,7 +247,7 @@ func TestAlterAddedRedundantIndexRulesReuseLifecycleSnapshot(t *testing.T) {
 	t.Parallel()
 	statement := alterStatement(
 		spec.Alter{
-			Action: "add_constraint",
+			Action: "add_index",
 			Name:   "idx_email_created",
 			Index: &spec.AlterIndex{
 				Definition: &spec.Index{

@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: normalized Statement specs emitted by application extraction, including alter-table and standalone rename payloads
-// output: reusable DDL rule predicates and rule identifier constants plus shared rename matching helpers
+// output: reusable DDL rule predicates and rule identifier constants plus shared alter-action and rename matching helpers
 // pos: DDL rule common helpers shared across concrete rules and parser-neutral rename semantics
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -800,12 +800,12 @@ func alterTargetColumnTypeFamily(alter spec.Alter) (string, bool) {
 }
 
 func alterAddedIndexesByKind(statement spec.Statement, kind spec.IndexKind) []spec.Index {
-	if !appliesToAlterActions(statement, "add_constraint") {
+	if !appliesToAlterActions(statement, "add_constraint", "add_index") {
 		return nil
 	}
 
 	indexes := make([]spec.Index, 0)
-	for _, alter := range matchingAlterActions(statement, "add_constraint") {
+	for _, alter := range matchingAlterActions(statement, "add_constraint", "add_index") {
 		index, ok := alterConstraintIndex(alter)
 		if !ok || index.Kind != kind {
 			continue

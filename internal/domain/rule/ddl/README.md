@@ -6,7 +6,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 
 | File | Responsibility |
 |------|---------------|
-| common.go | Shared DDL rule IDs plus parser-neutral alter matching, standalone DDL action matching, explicit-change, rename, standalone rename-name extraction, option, target-type-family, alter-index projection helpers, and `projectObjectMetadata` for projecting `spec.Metadata.Objects` validation state into finding metadata maps, including pinned Milestone 4 create-table superset IDs and `hasColumnConstraint` helper for column-constraint checks |
+| common.go | Shared DDL rule IDs plus parser-neutral alter matching (including add-index actions), standalone DDL action matching, explicit-change, rename, standalone rename-name extraction, option, target-type-family, alter-index projection helpers, and `projectObjectMetadata` for projecting `spec.Metadata.Objects` validation state into finding metadata maps, including pinned Milestone 4 create-table superset IDs and `hasColumnConstraint` helper for column-constraint checks |
 | common_test.go | Verifies richer alter helper boundaries and future alter rule IDs remain stable |
 | config.go | Parses policy params for DDL rule constructors, including normalized string-list, structured naming requirements, and bounded integer helpers for upcoming alter semantics |
 | table_rules.go | Implements table comment and table name rules |
@@ -20,7 +20,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | alter_rules.go | Implements action-level ALTER TABLE restriction rules plus approved standalone DDL action reuse for PostgreSQL DROP INDEX |
 | database_lifecycle_rules.go | Implements MySQL/TiDB database lifecycle rules: create-database notice, drop-database warning |
 | database_lifecycle_rules_test.go | Verifies MySQL/TiDB database lifecycle rules with positive, negative, cross-dialect, registration, and defaults coverage |
-| mysql_tidb_lifecycle_rules.go | Implements MySQL/TiDB standalone lifecycle notices with normalized object-identifier messages |
+| mysql_tidb_lifecycle_rules.go | Implements MySQL/TiDB standalone lifecycle notices plus create-index notice reuse for normalized ALTER add-index actions, with normalized object-identifier messages |
 | postgresql_migration_rules.go | Implements PostgreSQL-only migration-safety rules: concurrent index, NOT NULL without default, concurrent unique constraint, drop constraint advisory, NOT VALID validation, set-data-type rewrite, add-column with volatile default, and add-check without NOT VALID |
 | postgresql_object_lifecycle_rules.go | Implements PostgreSQL-only object lifecycle rules: create-schema notice, drop-schema advisory/cascade, create-sequence cycle, alter-sequence restart/cycle, drop-sequence advisory/cascade, drop-materialized-view advisory/cascade |
 | postgresql_materialized_view_refresh_rules.go | Implements PostgreSQL-only materialized view refresh rules: non-concurrent refresh warning, WITH NO DATA notice |
@@ -37,7 +37,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | denylist_rules.go | Implements DDL table denylist checks against protected schemas or tables |
 | size_rules.go | Implements metadata-backed rough row-size and index-key-length checks for create-table statements |
 | alter_compatibility_rules.go | Implements source-aware compatibility checks for metadata-backed change/modify column operations |
-| alter_semantic_rules.go | Implements rename-index forbids, explicit alter-column change forbids, alter-added index naming/lifecycle rules, and conservative alter target-type-family rules |
+| alter_semantic_rules.go | Implements rename-index forbids, explicit alter-column change forbids, normalized add-index naming/lifecycle rules, and conservative alter target-type-family rules |
 | table_option_rules.go | Implements create-table option, foreign-key, and object-shape rules |
 | register.go | Registers enabled DDL rules into the shared registry, including shipped alter-added index lifecycle rules |
 | table_rules_test.go | Verifies table comment and name-length rule behavior |

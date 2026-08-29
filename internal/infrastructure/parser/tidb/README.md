@@ -7,7 +7,7 @@ TiDB-backed parser adapter for multi-statement SQL parsing, parser-warning colle
 | File | Responsibility |
 |------|---------------|
 | parser.go | Parses SQL text and preserves raw statement nodes plus parser warnings |
-| extractor.go | Wraps TiDB AST nodes in parser-neutral extractors and performs TiDB-specific statement extraction including inline/table-level primary-key metadata with implicit primary-key nullability and database/schema lifecycle DDL (CREATE/DROP DATABASE/SCHEMA normalized to create_schema/drop_schema with ObjectType="database") |
+| extractor.go | Wraps TiDB AST nodes in parser-neutral extractors and performs TiDB-specific statement extraction including normalized ALTER index/constraint actions, inline/table-level primary-key metadata with implicit primary-key nullability, and database/schema lifecycle DDL (CREATE/DROP DATABASE/SCHEMA normalized to create_schema/drop_schema with ObjectType="database") |
 | query_access.go | Extracts query access facts from TiDB AST: lexical scope system, relation/column/output extraction, read classification, and candidate handoff |
 | query_access_effect_candidates.go | Defines bounded internal candidate facts, operand hints, and copy-safe candidate accumulation |
 | query_access_effect_collector.go | Traverses query locations, scopes, subqueries, CTEs, derived tables, set operations, and LIMIT/OFFSET expressions |

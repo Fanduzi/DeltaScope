@@ -133,9 +133,9 @@ func TestExtractorAlterTableCapturesColumnAndIndexActions(t *testing.T) {
 		t.Fatalf("expected drop primary key payload, got %#v", dropPrimaryKey)
 	}
 
-	addConstraint := findAlter(t, stmt.DDL.Alter, "add_constraint", "uniq_email")
-	if addConstraint.Index == nil || addConstraint.Index.Definition == nil || addConstraint.Index.Definition.Kind != spec.IndexKindUnique {
-		t.Fatalf("expected add unique constraint payload, got %#v", addConstraint)
+	addIndex := findAlter(t, stmt.DDL.Alter, "add_index", "uniq_email")
+	if addIndex.Index == nil || addIndex.Index.Definition == nil || addIndex.Index.Definition.Kind != spec.IndexKindUnique {
+		t.Fatalf("expected add unique index payload, got %#v", addIndex)
 	}
 
 	modifyColumn := findAlter(t, stmt.DDL.Alter, "modify_column", "nickname")

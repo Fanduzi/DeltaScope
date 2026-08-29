@@ -1,6 +1,6 @@
 // Package tidbparser extracts parser-neutral statements from TiDB AST nodes.
 // input: TiDB parser statement nodes and parser-neutral dialect metadata
-// output: extractor-backed parsed statements for the application layer, including inline and table-level primary-key metadata
+// output: extractor-backed parsed statements for the application layer, including normalized ALTER index/constraint actions and primary-key metadata
 // pos: infrastructure extraction adapter between TiDB AST and domain spec
 // note: if this file changes, update this header and module README.md.
 package tidbparser
@@ -79,7 +79,7 @@ func (e tidbExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statem
 	case *ast.CreateViewStmt:
 		statement.DDL = extractCreateView(node)
 	case *ast.AlterTableStmt:
-		statement.DDL = extractAlterTable(node)
+		statement.DDL = extractAlterTable(node, rawSQL)
 	case *ast.DropTableStmt:
 		statement.DDL = extractDropTable(node)
 	case *ast.TruncateTableStmt:
@@ -242,10 +242,15 @@ func extractCreateView(stmt *ast.CreateViewStmt) *spec.DDL {
 	return &spec.DDL{Operation: spec.DDLOperationCreateView, Table: &spec.Table{Schema: stmt.ViewName.Schema.L, Name: stmt.ViewName.Name.L}, HasSelect: stmt.Select != nil}
 }
 
-func extractAlterTable(stmt *ast.AlterTableStmt) *spec.DDL {
+func extractAlterTable(stmt *ast.AlterTableStmt, rawSQL string) *spec.DDL {
 	ddl := &spec.DDL{Operation: spec.DDLOperationAlterTable, Table: &spec.Table{Schema: stmt.Table.Schema.L, Name: stmt.Table.Name.L}, Alter: make([]spec.Alter, 0, len(stmt.Specs))}
-	for _, s := range stmt.Specs {
-		ddl.Alter = append(ddl.Alter, extractAlterSpecs(s)...)
+	clauses := splitAlterTableClauses(rawSQL)
+	for index, s := range stmt.Specs {
+		clause := rawSQL
+		if len(clauses) == len(stmt.Specs) {
+			clause = clauses[index]
+		}
+		ddl.Alter = append(ddl.Alter, extractAlterSpecs(s, clause)...)
 	}
 	return ddl
 }
@@ -313,7 +318,7 @@ func extractDropDatabase(stmt *ast.DropDatabaseStmt) *spec.DDL {
 	}
 }
 
-func extractAlterSpecs(specification *ast.AlterTableSpec) []spec.Alter {
+func extractAlterSpecs(specification *ast.AlterTableSpec, clause string) []spec.Alter {
 	if specification.Tp == ast.AlterTableAddColumns && len(specification.NewColumns) > 0 {
 		alters := make([]spec.Alter, 0, len(specification.NewColumns))
 		for _, column := range specification.NewColumns {
@@ -324,11 +329,11 @@ func extractAlterSpecs(specification *ast.AlterTableSpec) []spec.Alter {
 		}
 		return alters
 	}
-	return []spec.Alter{extractAlterSpec(specification)}
+	return []spec.Alter{extractAlterSpec(specification, clause)}
 }
 
-func extractAlterSpec(specification *ast.AlterTableSpec) spec.Alter {
-	alter := spec.Alter{Action: alterActionName(specification.Tp), Name: extractAlterName(specification)}
+func extractAlterSpec(specification *ast.AlterTableSpec, clause string) spec.Alter {
+	alter := spec.Alter{Action: alterActionNameForSpec(specification, clause), Name: extractAlterName(specification)}
 	if column := extractAlterColumn(specification); column != nil {
 		alter.Column = column
 	}
@@ -342,6 +347,76 @@ func extractAlterSpec(specification *ast.AlterTableSpec) spec.Alter {
 		}
 	}
 	return alter
+}
+
+func alterActionNameForSpec(specification *ast.AlterTableSpec, clause string) string {
+	action := alterActionName(specification.Tp)
+	if action != "add_constraint" || specification.Constraint == nil || !constraintIsIndexAddition(specification.Constraint.Tp) {
+		return action
+	}
+
+	normalizedClause := strings.Join(strings.Fields(strings.ToUpper(clause)), " ")
+	if strings.Contains(normalizedClause, "ADD CONSTRAINT") {
+		return action
+	}
+	return "add_index"
+}
+
+func constraintIsIndexAddition(tp ast.ConstraintType) bool {
+	switch tp {
+	case ast.ConstraintKey, ast.ConstraintIndex, ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex, ast.ConstraintFulltext:
+		return true
+	default:
+		return false
+	}
+}
+
+func splitAlterTableClauses(sql string) []string {
+	clauses := make([]string, 0, 1)
+	start := 0
+	depth := 0
+	var quote byte
+
+	for i := 0; i < len(sql); i++ {
+		char := sql[i]
+		if quote != 0 {
+			if char == '\\' && quote != '`' {
+				i++
+				continue
+			}
+			if char == quote {
+				if quote != '`' && i+1 < len(sql) && sql[i+1] == quote {
+					i++
+					continue
+				}
+				quote = 0
+			}
+			continue
+		}
+
+		switch char {
+		case '\'', '"', '`':
+			quote = char
+		case '(':
+			depth++
+		case ')':
+			if depth > 0 {
+				depth--
+			}
+		case ',':
+			if depth == 0 {
+				if clause := strings.TrimSpace(sql[start:i]); clause != "" {
+					clauses = append(clauses, clause)
+				}
+				start = i + 1
+			}
+		}
+	}
+
+	if clause := strings.TrimSpace(sql[start:]); clause != "" {
+		clauses = append(clauses, clause)
+	}
+	return clauses
 }
 
 func extractInsert(stmt *ast.InsertStmt) *spec.DML {

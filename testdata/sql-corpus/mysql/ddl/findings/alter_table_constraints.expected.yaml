@@ -1,0 +1,14 @@
+name: alter_table_constraints
+dialect: mysql
+category: ddl
+expect:
+  parse_ok: true
+  statement_kind: ddl
+  operation: alter_table
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.alter.add_constraint.notice
+    exclude:
+      - ddl.create_index.notice
