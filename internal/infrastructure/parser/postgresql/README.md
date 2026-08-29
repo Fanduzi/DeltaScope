@@ -8,6 +8,8 @@ Build-tagged PostgreSQL parser adapter for parser wiring and parser-neutral extr
 |------|---------------|
 | parser.go | Parses PostgreSQL SQL text and classifies statements when built with the `postgresql` tag |
 | extractor.go | Defines the PostgreSQL extracted-statement wrapper and extractor that populates normalized spec fields (column `NotNull`, `Default`, constraints) for ALTER TABLE ADD COLUMN statements |
+| extractor_dml.go | Extracts PostgreSQL DML target and bounded predicate facts used by the shared offline impact estimator |
+| extractor_dml_postgresql_tag_test.go | Verifies literal/placeholder primary-key equality and conservative unknown predicate shapes |
 | query_access.go | Extracts query access facts (read classification, relations, column references, output lineage, unproven effect reasons) from PostgreSQL AST |
 | query_access_effect_candidates.go | Defines internal EffectCandidate facts and helpers collected during the complete effect traversal |
 | query_access_effect_candidates_postgresql_tag_test.go | Verifies exact COUNT(1) statement envelopes and literal rejection |

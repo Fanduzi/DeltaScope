@@ -1,6 +1,6 @@
 // Package audit verifies the MySQL and TiDB SQL corpus.
 // input: dialect corpus SQL and expected YAML files
-// output: report-level parser, statement, unsupported, finding, and semantic contract coverage
+// output: full-pipeline parser, statement, unsupported, finding, impact, and semantic contract coverage
 // pos: untagged corpus regression runner for the application audit pipeline
 // note: if this file changes, update this header and module README.md.
 package audit
@@ -166,7 +166,7 @@ func TestSQLCorpusMySQLAndTiDB(t *testing.T) {
 
 			// Semantic assertions: operation and facts via parse/extract path.
 			if len(result.Statements) > 0 {
-				if tc.Expect.Operation != "" || (tc.Facts != nil && len(tc.Facts.Constraints) > 0) {
+				if tc.Expect.Operation != "" || tc.Expect.Impact != nil || (tc.Facts != nil && len(tc.Facts.Constraints) > 0) {
 					corpusAssertSemantic(t, string(sqlBytes), dialect, tc)
 				}
 			}

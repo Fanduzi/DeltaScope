@@ -247,7 +247,7 @@ deltascope config lint --file ./deltascope.yaml --strict
 }
 ```
 
-离线模式只使用 SQL 形状做估算。metadata-aware 模式可以基于只读表统计信息进一步收敛估算。DeltaScope 不会执行 DML，也不会运行 `EXPLAIN ANALYZE`。
+离线模式只使用 SQL 形状做估算。MySQL、TiDB 和 PostgreSQL 复用有界的单表 `id =` 字面量/参数等值启发式；PostgreSQL 支持 `$1` 占位符。非等值、`OR`、范围和未识别列仍保持 unknown，缺少 `WHERE` 仍表示全表估算。metadata-aware 模式可以基于只读表统计信息进一步收敛估算。在线 PostgreSQL 的 `EXPLAIN` 估算仍使用 `source: plan`，并覆盖形状估算。DeltaScope 不会执行 DML，也不会运行 `EXPLAIN ANALYZE`。
 
 metadata-aware 审核（需要数据库连接）：
 

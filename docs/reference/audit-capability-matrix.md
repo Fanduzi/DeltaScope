@@ -1211,6 +1211,8 @@ Surface contract for unsupported statements:
 | `dml.impact.rows.max_count` | Conservative estimated affected-row count exceeds the configured threshold | ✓ | ✓ | warning |
 | `dml.impact.ratio.max_percent` | Conservative estimated affected-row ratio exceeds the configured threshold | ✓ | ✓ | warning |
 
+The offline impact path is dialect-normalized. For MySQL, TiDB, and PostgreSQL, a single-table `id =` literal or parameter equality uses the bounded `pk_equality` estimate (`estimated_rows: 1`, low risk, high confidence, `source: shape`). PostgreSQL `$1` placeholders follow the same contract. Non-equality, `OR`, range, and unrecognized-column predicates remain unknown; missing `WHERE` keeps its existing full-table estimate. A live PostgreSQL `EXPLAIN` result remains `source: plan` and overrides the shape estimate.
+
 ### INSERT Restrictions
 
 | Rule ID | Check Description | Offline | Metadata | Default Level |

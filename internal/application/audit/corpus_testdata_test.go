@@ -1,6 +1,6 @@
 // Package audit defines and validates shared SQL corpus expectations.
 // input: expected YAML files and application audit results
-// output: validated corpus schemas plus reusable partial-result assertions
+// output: validated corpus schemas plus reusable partial-result and impact assertions
 // pos: shared corpus test-data contract for tagged and untagged audit runners
 // note: if this file changes, update this header and module README.md.
 package audit
@@ -42,6 +42,7 @@ type corpusExpected struct {
 			Lines            []int `yaml:"lines"`
 			Columns          []int `yaml:"columns"`
 		} `yaml:"diagnostics"`
+		Impact *corpusImpact `yaml:"impact,omitempty"`
 	} `yaml:"expect"`
 	Facts    *corpusFacts    `yaml:"facts"`
 	Config   map[string]any  `yaml:"config,omitempty"`
@@ -79,6 +80,16 @@ func corpusAssertPartialResult(t *testing.T, result report.Result, tc corpusExpe
 			t.Errorf("diagnostics.columns[%d]: expected %d, got %+v", i, column, parserDiagnostics)
 		}
 	}
+}
+
+type corpusImpact struct {
+	EstimatedRows  *int64   `yaml:"estimated_rows,omitempty"`
+	EstimatedRatio *float64 `yaml:"estimated_ratio,omitempty"`
+	RiskLevel      string   `yaml:"risk_level,omitempty"`
+	Confidence     string   `yaml:"confidence,omitempty"`
+	Source         string   `yaml:"source,omitempty"`
+	ReasonCodes    []string `yaml:"reason_codes,omitempty"`
+	Notes          []string `yaml:"notes,omitempty"`
 }
 
 // corpusFacts carries expected structural facts for deeper assertions.
@@ -292,6 +303,23 @@ func TestSQLCorpusExpectedFilesAreWellFormed(t *testing.T) {
 				for _, id := range tc.Expect.Findings.Exclude {
 					if id == "" {
 						t.Fatal("findings.exclude must not contain empty strings")
+					}
+				}
+			}
+
+			if impact := tc.Expect.Impact; impact != nil {
+				if impact.RiskLevel != "" && !map[string]bool{"low": true, "medium": true, "high": true, "unknown": true}[impact.RiskLevel] {
+					t.Fatalf("invalid impact.risk_level %q", impact.RiskLevel)
+				}
+				if impact.Confidence != "" && !map[string]bool{"low": true, "medium": true, "high": true}[impact.Confidence] {
+					t.Fatalf("invalid impact.confidence %q", impact.Confidence)
+				}
+				if impact.Source != "" && !map[string]bool{"shape": true, "metadata": true, "plan": true}[impact.Source] {
+					t.Fatalf("invalid impact.source %q", impact.Source)
+				}
+				for _, code := range impact.ReasonCodes {
+					if code == "" {
+						t.Fatal("impact.reason_codes must not contain empty strings")
 					}
 				}
 			}

@@ -112,7 +112,7 @@ type StatementResult struct {
 }
 ```
 
-离线模式只使用 SQL 形状做估算。元数据感知模式可以基于只读表统计信息进一步收敛估算。DeltaScope 不会执行 DML，也不会运行 `EXPLAIN ANALYZE`。这个 payload 会在规则评估前附加到语句结果上。
+离线模式只使用 SQL 形状做估算。MySQL、TiDB 和 PostgreSQL 复用有界的单表 `id =` 字面量/参数等值启发式；PostgreSQL 支持 `$1` 占位符。非等值、`OR`、范围和未识别列仍保持 unknown，缺少 `WHERE` 仍表示全表估算。元数据感知模式可以基于只读表统计信息进一步收敛估算。对于 PostgreSQL，`UPDATE` 和 `DELETE` 还可以通过只读 `EXPLAIN` 查询进一步估算；其 `source` 保持为 `plan` 并覆盖形状估算。`INSERT` 不触发 planner 估算。DeltaScope 不会执行 DML，也不会运行 `EXPLAIN ANALYZE`。这个 payload 会在规则评估前附加到语句结果上。
 
 ### DML RETURNING 方言事实
 

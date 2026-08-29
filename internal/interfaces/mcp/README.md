@@ -8,6 +8,7 @@ Thin MCP adapter for exposing DeltaScope audit and rule-discovery capabilities t
 |------|---------------|
 | `audit_tool.go` | Implements `audit_sql` on the shared DeltaScope path, including catalog-aware metadata audits, and passes full partial public results and context into bounded diagnostic tool errors |
 | `audit_tool_test.go` | Verifies `audit_sql` compact text, structured result, empty-SQL `bad_request`, and offline `context.note` / `context.unproven` |
+| `audit_impact_postgresql_tag_test.go` | Verifies PostgreSQL offline primary-key equality impact in MCP structured output |
 | `audit_tool_postgresql_tag_test.go` | Verifies compact review-verdict text on the PostgreSQL-capable build |
 | `server_metadata_postgresql_tag_test.go` | Verifies PostgreSQL metadata-aware MCP result behavior and separate database/schema propagation |
 | `connection.go` | Resolves `connection_ref` inputs, delegates direct connection validation/password lookup to `internal/interfaces/metadata`, and assembles MCP connection state while preserving separate database/catalog and schema values |

@@ -48,6 +48,14 @@ expect:
     parser_error_count: <int, >= 0>
     lines: [<int>]                 # ordered 1-based parser-diagnostic lines
     columns: [<int>]               # ordered 1-based parser-diagnostic columns
+  impact:                         # optional statement-level DML impact contract
+    estimated_rows: <int>         # expected conservative row estimate
+    estimated_ratio: <number>     # expected conservative ratio
+    risk_level: <low|medium|high|unknown>
+    confidence: <low|medium|high>
+    source: <shape|metadata|plan>
+    reason_codes: [<string>]
+    notes: [<string>]
 facts:                            # optional semantic assertions
   constraints:
     - type: <string, required>    # e.g. foreign_key, check

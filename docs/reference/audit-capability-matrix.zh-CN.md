@@ -1190,6 +1190,8 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 |---------|---------|:----:|:------:|---------|
 | `dml.table.denylist.forbid` | DML 操作的目标表在配置的 Schema 级或表级拒绝列表中 | ✓ | ✗ | blocker |
 
+离线影响估算路径按方言标准化。MySQL、TiDB 和 PostgreSQL 的单表 `id =` 字面量或参数等值条件都使用有界的 `pk_equality` 估算（`estimated_rows: 1`、低风险、高置信度、`source: shape`）。PostgreSQL `$1` 占位符遵循相同契约。非等值、`OR`、范围和未识别列仍保持 unknown；缺少 `WHERE` 保持现有的全表估算。在线 PostgreSQL 的 `EXPLAIN` 结果仍使用 `source: plan`，并覆盖形状估算。
+
 ---
 
 ## 元数据感知能力

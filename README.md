@@ -247,7 +247,7 @@ For a selective DML such as `DELETE FROM users WHERE id = 42`, DeltaScope may ad
 }
 ```
 
-Offline mode uses SQL shape only. Metadata-aware mode may refine the estimate with read-only table statistics. DeltaScope does not execute the DML and does not run `EXPLAIN ANALYZE`.
+Offline mode uses SQL shape only. MySQL, TiDB, and PostgreSQL share the bounded single-table `id =` literal/parameter equality heuristic; PostgreSQL `$1` placeholders are supported. Non-equality, `OR`, range, and unrecognized-column predicates remain unknown, while a missing `WHERE` remains a full-table estimate. Metadata-aware mode may refine the estimate with read-only table statistics. A live PostgreSQL `EXPLAIN` estimate remains `source: plan` and overrides the shape estimate. DeltaScope does not execute the DML and does not run `EXPLAIN ANALYZE`.
 
 Audit with live metadata (instance-aware rules):
 

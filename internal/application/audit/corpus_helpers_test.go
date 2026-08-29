@@ -1,3 +1,8 @@
+// Package audit provides shared SQL-corpus test helpers.
+// input: corpus YAML expectations, SQL fixtures, and parser-neutral statements
+// output: reusable corpus metadata, semantic, and impact assertions
+// pos: application audit test support for dialect corpus runners
+// note: if this file changes, update this header and module README.md.
 package audit
 
 import (
@@ -406,6 +411,42 @@ func corpusAssertSemantic(t *testing.T, sql string, dialect spec.Dialect, tc cor
 	}
 	if tc.Facts != nil && len(tc.Facts.Constraints) > 0 {
 		corpusAssertConstraintFacts(t, stmt, tc.Facts.Constraints)
+	}
+	if tc.Expect.Impact != nil {
+		corpusAssertImpact(t, stmt, tc.Expect.Impact)
+	}
+}
+
+func corpusAssertImpact(t *testing.T, stmt spec.Statement, expected *corpusImpact) {
+	t.Helper()
+	if stmt.DML == nil || stmt.DML.Impact == nil {
+		t.Fatalf("semantic impact: expected DML impact, got %#v", stmt)
+	}
+	actual := stmt.DML.Impact
+	if expected.EstimatedRows != nil {
+		if actual.EstimatedRows == nil || *actual.EstimatedRows != *expected.EstimatedRows {
+			t.Errorf("impact.estimated_rows: expected %v, got %#v", *expected.EstimatedRows, actual.EstimatedRows)
+		}
+	}
+	if expected.EstimatedRatio != nil {
+		if actual.EstimatedRatio == nil || *actual.EstimatedRatio != *expected.EstimatedRatio {
+			t.Errorf("impact.estimated_ratio: expected %v, got %#v", *expected.EstimatedRatio, actual.EstimatedRatio)
+		}
+	}
+	if expected.RiskLevel != "" && string(actual.RiskLevel) != expected.RiskLevel {
+		t.Errorf("impact.risk_level: expected %q, got %q", expected.RiskLevel, actual.RiskLevel)
+	}
+	if expected.Confidence != "" && string(actual.Confidence) != expected.Confidence {
+		t.Errorf("impact.confidence: expected %q, got %q", expected.Confidence, actual.Confidence)
+	}
+	if expected.Source != "" && string(actual.Source) != expected.Source {
+		t.Errorf("impact.source: expected %q, got %q", expected.Source, actual.Source)
+	}
+	if expected.ReasonCodes != nil && !stringSlicesEqual(actual.ReasonCodes, expected.ReasonCodes) {
+		t.Errorf("impact.reason_codes: expected %#v, got %#v", expected.ReasonCodes, actual.ReasonCodes)
+	}
+	if expected.Notes != nil && !stringSlicesEqual(actual.Notes, expected.Notes) {
+		t.Errorf("impact.notes: expected %#v, got %#v", expected.Notes, actual.Notes)
 	}
 }
 

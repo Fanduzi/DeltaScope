@@ -1,0 +1,15 @@
+name: postgresql_offline_delete_primary_key_equality
+dialect: postgresql
+category: dml
+expect:
+  parse_ok: true
+  statement_kind: dml
+  operation: delete
+  unsupported:
+    count: 0
+  impact:
+    estimated_rows: 1
+    risk_level: low
+    confidence: high
+    source: shape
+    reason_codes: [pk_equality]

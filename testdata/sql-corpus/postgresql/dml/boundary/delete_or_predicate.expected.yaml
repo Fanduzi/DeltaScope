@@ -1,0 +1,14 @@
+name: postgresql_offline_delete_or_predicate_unknown_impact
+dialect: postgresql
+category: dml
+expect:
+  parse_ok: true
+  statement_kind: dml
+  operation: delete
+  unsupported:
+    count: 0
+  impact:
+    risk_level: unknown
+    confidence: low
+    source: shape
+    reason_codes: [shape_unknown]
