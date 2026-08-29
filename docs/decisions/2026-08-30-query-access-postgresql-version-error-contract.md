@@ -5,12 +5,16 @@ Status: Accepted
 Related issue: [#33](https://github.com/Fanduzi/DeltaScope/issues/33)
 Related commits:
 - [`f9d48982c11c86892c7aee8f7ca96dcab46097ab`](https://github.com/Fanduzi/DeltaScope/commit/f9d48982c11c86892c7aee8f7ca96dcab46097ab) — implementation
+- [`0ec88099b3cbaea78c6168d276b221a6a5f63c86`](https://github.com/Fanduzi/DeltaScope/commit/0ec88099b3cbaea78c6168d276b221a6a5f63c86) — implementation correction and authentication classification
 Related tests:
 - `TestParseServerIdentity_PostgreSQLUnsupportedVersionIsBounded`
 - `TestOnlineQueryAccessSession_RecognizedButUnsupportedVersion`
 - `TestQueryAccessOnlinePostgreSQL16ReportsVersionRequirement`
+- `TestQueryAccessOnlineAuthenticationFailureRemainsBounded`
 - `TestHandlerQueryAccessOnlinePostgreSQL16ReportsVersionRequirement`
+- `TestHandlerQueryAccessOnlineKeepsAuthenticationDialAndTimeoutDistinct`
 - `TestHandlerCapabilitiesReturnsSurfaceSummary`
+- `TestWrapConnectionFailureKeepsAuthenticationAndDialDistinct`
 Related docs:
 - `docs/reference/query-access-analysis.md`
 - `docs/reference/query-access-analysis_zh.md`
@@ -23,8 +27,10 @@ The online Query Access session already trusts PostgreSQL 17 only. A reachable
 PostgreSQL 16 server therefore failed identity validation, but the generic
 unsupported-series error was collapsed to `connection failed` by the CLI. The
 HTTP adapter returned `identity_error` with a generic message, while its
-capabilities payload did not advertise that code. Audit connectivity and the
-PostgreSQL audit path were already working and must not change.
+capabilities payload did not advertise that code. Online database
+authentication and dial failures were also both exposed as `connection_failed`
+to HTTP clients. Audit connectivity and the PostgreSQL audit path were already
+working and must not change.
 
 ## Decision
 
@@ -41,8 +47,9 @@ online PostgreSQL Query Access requires PostgreSQL 17
 The unified SDK session exposes the corresponding bounded version sentinel.
 The online CLI maps it to exit `3` and the message above. HTTP maps it to the
 documented `identity_error` code with status `502`, and `/v1/capabilities`
-advertises that code. Authentication, dial, timeout, and TLS mappings retain
-their existing bounded categories.
+advertises that code. The shared opener classifies database authentication as
+`authentication_failed` while dial, timeout, and TLS mappings retain separate
+bounded categories; HTTP advertises the authentication code as well.
 
 ## Rationale
 
@@ -60,7 +67,7 @@ database/schema semantics.
   and the existing #36 CLI flag ownership remain unchanged.
 - A reachable PostgreSQL identity outside PG17 returns the bounded requirement
   message above; the CLI exits `3` and emits no Query Access result.
-- HTTP returns `502` with `{"code":"identity_error","message":"online PostgreSQL Query Access requires PostgreSQL 17"}` and advertises `identity_error` in `structured_errors`.
+- HTTP returns `502` with `{"code":"identity_error","message":"online PostgreSQL Query Access requires PostgreSQL 17"}` for the version boundary and `502 authentication_failed` for database authentication; both codes are advertised in `structured_errors`.
 - Authentication, dial, timeout, and TLS failures remain distinguishable at
   their existing surfaces.
 - No response, error, or access log exposes credentials, DSNs, submitted SQL,
@@ -79,8 +86,12 @@ database/schema semantics.
 ## Verification Evidence
 
 - `make test` passed on implementation commit
-  `f9d48982c11c86892c7aee8f7ca96dcab46097ab`.
-- `go test -tags=postgresql ./...` passed on the same implementation commit.
+  `f9d48982c11c86892c7aee8f7ca96dcab46097ab` and correction commit
+  `0ec88099b3cbaea78c6168d276b221a6a5f63c86`.
+- `go test -tags=postgresql ./...` passed on correction commit
+  `0ec88099b3cbaea78c6168d276b221a6a5f63c86`.
+- `go test -race` on affected packages, `go vet ./...`, and `make lint` passed
+  on correction commit `0ec88099b3cbaea78c6168d276b221a6a5f63c86`.
 - Focused default and tagged tests cover PG16 identity classification, PG17
   routing, CLI/HTTP parity, capabilities discovery, auth/no-leak boundaries,
   and unchanged transport error categories.
@@ -98,6 +109,7 @@ changing only transport wording is insufficient.
 
 - Issue: https://github.com/Fanduzi/DeltaScope/issues/33
 - Implementation: [f9d48982c11c86892c7aee8f7ca96dcab46097ab](https://github.com/Fanduzi/DeltaScope/commit/f9d48982c11c86892c7aee8f7ca96dcab46097ab)
+- Implementation correction: [0ec88099b3cbaea78c6168d276b221a6a5f63c86](https://github.com/Fanduzi/DeltaScope/commit/0ec88099b3cbaea78c6168d276b221a6a5f63c86)
 - Online identity: `internal/application/online/identity.go`
 - Online error mapping: `internal/application/online/errors.go`
 - CLI/HTTP boundaries: `internal/interfaces/cli/audit.go`, `internal/interfaces/http/query_access.go`
