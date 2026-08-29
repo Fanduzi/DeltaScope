@@ -1,15 +1,15 @@
-name: generated_identity_with_options
+name: create_index_concurrently
 dialect: postgresql
 category: ddl
 expect:
   parse_ok: true
   statement_kind: ddl
-  operation: create_table
+  operation: create_index
   statements:
     count: 1
   unsupported:
     count: 0
   findings:
-    include:
-      - ddl.table.comment.require
-    exclude: []
+    include: []
+    exclude:
+      - ddl.pg.create_index.concurrently.require

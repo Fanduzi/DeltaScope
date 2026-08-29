@@ -1,0 +1,20 @@
+name: mixed_alter_concurrent_index_dml_partial
+dialect: postgresql
+category: ddl
+expect:
+  parse_ok: false
+  statement_kind: ddl
+  statements:
+    count: 3
+  diagnostics:
+    parser_error_count: 1
+    lines: [3]
+    columns: [1]
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.pg.alter.add_column.non_null_no_default.warn
+      - dml.where.require
+    exclude:
+      - ddl.pg.create_index.concurrently.require

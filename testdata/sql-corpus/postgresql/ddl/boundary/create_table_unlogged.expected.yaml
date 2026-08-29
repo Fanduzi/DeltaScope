@@ -1,4 +1,4 @@
-name: generated_identity_with_options
+name: create_table_unlogged
 dialect: postgresql
 category: ddl
 expect:

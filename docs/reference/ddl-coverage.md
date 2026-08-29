@@ -44,10 +44,20 @@ This catalog has explicit boundaries. It is **not**:
 |---------|------:|----------------:|------------------:|--------------------:|-------------:|-------------:|
 | MySQL | 61 | 46 | 0 | 0 | 15 | 0 |
 | TiDB | 54 | 45 | 0 | 0 | 9 | 0 |
-| PostgreSQL | 285 | 274 | 6 | 0 | 5 | 0 |
+| PostgreSQL | 290 | 279 | 6 | 0 | 5 | 0 |
 | PG ALTER TABLE residual | 66 | 60 | 2 | 0 | 4 | 0 |
 
 ---
+
+## PostgreSQL Representative Production Shapes
+
+The PostgreSQL census and catalog include bounded representative forms for
+`CREATE INDEX CONCURRENTLY`, `DROP INDEX CONCURRENTLY`,
+`REFRESH MATERIALIZED VIEW CONCURRENTLY`, and selected `CREATE TABLE` shapes
+such as `UNLOGGED`, `JSONB`, arrays, generated stored columns, identity
+columns, and `LIKE ... INCLUDING`. The SQL backing each catalog claim contains
+the advertised form. This is representative regression coverage, not official
+PostgreSQL grammar-completeness coverage.
 
 ## User Examples
 

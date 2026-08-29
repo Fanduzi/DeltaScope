@@ -21,8 +21,8 @@ func TestLoadEmbeddedCatalogMatchesCheckedInCatalog(t *testing.T) {
 	if version != "v0.270.0" {
 		t.Errorf("embedded catalog version = %q, want v0.270.0", version)
 	}
-	if len(entries) != 400 {
-		t.Errorf("embedded catalog entries = %d, want 400", len(entries))
+	if len(entries) != 405 {
+		t.Errorf("embedded catalog entries = %d, want 405", len(entries))
 	}
 
 	disk, err := LoadCatalog(testCatalogPath)

@@ -14,9 +14,14 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 | extract.go | Converts parsed statements into first-pass domain `Statement` values by invoking parser-neutral extractors and attaching shape-only DML impact facts |
 | extract_test.go | Verifies representative DDL and DML extraction behavior, including create-like/create-as/partition flags plus enriched create-table facts, preserved backticked-keyword and unnamed-index names, extracted column charset/collation facts, normalized row-format and auto-increment-init options, explicit DDL lifecycle operations, MySQL/TiDB ALTER index/constraint action normalization with ALGORITHM/LOCK preservation, richer alter-table detail including explicit statement-local change facts, multi-column add expansion, non-index constraint handling, and extracted DML target-table plus predicate-shape facts |
 | corpus_helpers_test.go | Provides shared corpus metadata conversion and semantic assertions, including optional statement-level impact contracts |
-| corpus_postgresql_tag_test.go | Runs PostgreSQL corpus fixtures through the full audit pipeline and semantic extraction checks |
+| corpus_postgresql_tag_test.go | Runs PostgreSQL corpus fixtures, including the representative modern-shape pack and tagged partial parser-error checks, through the full audit pipeline and semantic extraction checks |
 | corpus_test.go | Runs MySQL/TiDB corpus fixtures through the full audit pipeline and semantic extraction checks |
 | corpus_testdata_test.go | Validates corpus fixture shape and supported expected-field enums, including impact expectations |
+| corpus_inventory_test.go | Prints the supported-rule and dialect corpus inventory |
+| postgresql_ddl_coverage_census_postgresql_tag_test.go | Classifies representative PostgreSQL DDL forms and records which forms have corpus fixtures for catalog generation |
+| postgresql_ddl_consolidated_census_postgresql_tag_test.go | Verifies the per-source and consolidated PostgreSQL DDL census totals |
+| ddl_coverage_catalog_test.go | Generates and validates the checked-in DDL coverage catalog from the cross-dialect and PostgreSQL census sources |
+| ddl_coverage_catalog_query_test.go | Verifies embedded and checked-in catalog parity plus catalog query behavior |
 | impact_postgresql_tag_test.go | Verifies PostgreSQL offline primary-key equality and planner impact-source precedence |
 | impact.go | Maps extracted DML predicate shapes to conservative offline impact estimates, populates statement `impact` objects with `estimated_rows`, `estimated_ratio`, `risk_level`, `confidence`, `source`, `reason_codes`, and optional `notes`, upgrades shape-derived sources to metadata after enrichment, and refines the narrow primary-key-on-`id` case when metadata snapshots confirm `PRIMARY(id)` plus optional `table_rows` facts |
 | impact_test.go | Verifies shape-only impact estimation plus post-enrichment metadata source upgrades, unique-equality refinement, and offline preservation behavior for representative UPDATE and DELETE shapes and their additive `impact` payloads |
@@ -25,9 +30,6 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 | explain.go | Joins evaluated findings with shipped catalog metadata and statement metadata availability notes |
 | service.go | Normalizes one leading UTF-8 BOM before empty-input validation, then orchestrates policy loading, per-statement parser recovery, extraction, metadata enrichment, impact refinement, evaluation, preserved partial results, and fail-closed diagnostics for parser-error and unsupported outcomes |
 | service_test.go | Verifies parser errors at migration beginning/middle/end, semicolons inside supported strings/comments, failed-chunk location collisions, preserved valid findings/impact, metadata enrichment, and existing unsupported contracts |
-| corpus_test.go | Runs MySQL and TiDB SQL-corpus cases, including partial parser-error result assertions |
-| corpus_postgresql_tag_test.go | Runs the PostgreSQL corpus and its tagged partial parser-error result assertions |
-| corpus_testdata_test.go | Defines and validates the shared corpus schema, including retained statement and located parser-diagnostic expectations |
 | metadata.go | Defines the optional metadata-provider, index-owner resolver, plan estimator, and object-resolver seams, then attaches schema, instance, target-table, and non-table object snapshots to statements before evaluation |
 | diagnostics.go | Defines diagnostic evidence constants (classification, reason, action_hint, guidance codes, evidence refs) and helpers for constructing parser-error and unsupported statement diagnostics with optional guidance classification |
 | ddl_coverage_catalog_query.go | Defines CatalogEntry, CatalogQuery, CatalogResult, LoadEmbeddedCatalog, LoadCatalogFile, LoadCatalog, QueryCatalog, and Validate for reading the generated (embedded) DDL coverage catalog and filtering it without invoking the audit engine |

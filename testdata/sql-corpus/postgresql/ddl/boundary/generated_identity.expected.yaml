@@ -5,8 +5,11 @@ expect:
   parse_ok: true
   statement_kind: ddl
   operation: create_table
+  statements:
+    count: 1
   unsupported:
     count: 0
   findings:
-    include: []
+    include:
+      - ddl.table.comment.require
     exclude: []

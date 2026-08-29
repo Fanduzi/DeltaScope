@@ -27,6 +27,16 @@ sql-corpus/
     └── ...
 ```
 
+## PostgreSQL Representative Pack
+
+The PostgreSQL corpus keeps production-shaped coverage bounded and separate:
+
+- standalone `CREATE INDEX CONCURRENTLY`, `DROP INDEX CONCURRENTLY`, and `REFRESH MATERIALIZED VIEW CONCURRENTLY`
+- one-fixture `CREATE TABLE` cases for `UNLOGGED`, identity, `JSONB`, arrays, generated stored columns, and `LIKE ... INCLUDING`
+- a mixed migration that retains valid `ALTER TABLE`, concurrent-index, and DML results around an intentionally malformed statement under the issue #43 partial-result contract
+
+Pack manifests assert the retained statement count, first statement kind, unsupported count, and meaningful finding or parser-diagnostic expectations. These are representative PostgreSQL production shapes, not official grammar-completeness coverage.
+
 ## Expected YAML Schema
 
 ```yaml

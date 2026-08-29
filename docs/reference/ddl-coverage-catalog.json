@@ -20,8 +20,8 @@
       "unclassified": 0
     },
     "postgresql": {
-      "total": 285,
-      "finding_covered": 274,
+      "total": 290,
+      "finding_covered": 279,
       "normalized_silent": 6,
       "unsupported_boundary": 0,
       "parser_error": 5,
@@ -1938,6 +1938,16 @@
     },
     {
       "dialect": "postgresql",
+      "family": "index_lifecycle",
+      "form": "DROP INDEX CONCURRENTLY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.pg.drop_index.advisory"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
       "family": "large_object_lifecycle",
       "form": "ALTER LARGE OBJECT OWNER TO",
       "classification": "finding_covered",
@@ -2741,6 +2751,62 @@
       "guidance_code": "parser_upgrade_candidate",
       "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
       "notes": "parser error"
+    },
+    {
+      "dialect": "postgresql",
+      "family": "table_lifecycle",
+      "form": "CREATE TABLE ARRAY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.column.comment.require",
+        "ddl.column.comment.require",
+        "ddl.column.default.require",
+        "ddl.table.audit_columns.require",
+        "ddl.table.comment.require"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "table_lifecycle",
+      "form": "CREATE TABLE JSONB",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.column.comment.require",
+        "ddl.column.comment.require",
+        "ddl.column.default.require",
+        "ddl.column.default.require",
+        "ddl.column.not_null.require",
+        "ddl.table.audit_columns.require",
+        "ddl.table.comment.require"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "table_lifecycle",
+      "form": "CREATE TABLE LIKE INCLUDING",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.table.audit_columns.require",
+        "ddl.table.columns.min_count",
+        "ddl.table.comment.require",
+        "ddl.table.primary_key.require"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "postgresql",
+      "family": "table_lifecycle",
+      "form": "CREATE TABLE UNLOGGED",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.column.comment.require",
+        "ddl.column.default.require",
+        "ddl.table.audit_columns.require",
+        "ddl.table.comment.require"
+      ],
+      "notes": ""
     },
     {
       "dialect": "postgresql",

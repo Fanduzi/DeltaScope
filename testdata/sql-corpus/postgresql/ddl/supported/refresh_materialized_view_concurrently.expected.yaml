@@ -1,4 +1,4 @@
-name: refresh_materialized_view_no_data_notice_rule_coverage
+name: refresh_materialized_view_concurrently
 dialect: postgresql
 category: ddl
 expect:
@@ -10,6 +10,7 @@ expect:
   unsupported:
     count: 0
   findings:
-    include:
+    include: []
+    exclude:
       - ddl.pg.refresh_materialized_view.concurrently.warn
       - ddl.pg.refresh_materialized_view.no_data.notice

@@ -1,5 +1,10 @@
 //go:build postgresql
 
+// Package audit characterizes representative PostgreSQL DDL forms.
+// input: representative PostgreSQL DDL SQL strings and corpus coverage markers
+// output: tagged census classifications used by the DDL coverage catalog
+// pos: PostgreSQL-specific application audit coverage census
+// note: if this file changes, update this header and module README.md.
 package audit
 
 import (
@@ -55,6 +60,10 @@ var pgDDLCensusCases = []censusCase{
 	{Name: "CREATE TABLE with check constraint", SQL: "CREATE TABLE products (id bigint PRIMARY KEY, price integer CONSTRAINT chk_price_positive CHECK (price > 0))"},
 	{Name: "CREATE TABLE generated column", SQL: "CREATE TABLE t (id bigint PRIMARY KEY, a integer, b integer GENERATED ALWAYS AS (a + 1) STORED)"},
 	{Name: "CREATE TABLE identity column", SQL: "CREATE TABLE t (id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY, name text)"},
+	{Name: "CREATE TABLE UNLOGGED", SQL: "CREATE UNLOGGED TABLE audit_events (id bigint PRIMARY KEY)"},
+	{Name: "CREATE TABLE JSONB", SQL: "CREATE TABLE event_payloads (id bigint PRIMARY KEY, payload jsonb)"},
+	{Name: "CREATE TABLE ARRAY", SQL: "CREATE TABLE user_tags (id bigint PRIMARY KEY, tags text[])"},
+	{Name: "CREATE TABLE LIKE INCLUDING", SQL: "CREATE TABLE user_events_copy (LIKE user_events INCLUDING ALL)"},
 
 	// --- VIEW ---
 	{Name: "CREATE VIEW basic", SQL: "CREATE VIEW v_active AS SELECT id FROM users WHERE active = true"},
@@ -64,6 +73,7 @@ var pgDDLCensusCases = []censusCase{
 	// --- DROP / TRUNCATE ---
 	{Name: "DROP TABLE", SQL: "DROP TABLE users"},
 	{Name: "DROP INDEX", SQL: "DROP INDEX idx_users_name"},
+	{Name: "DROP INDEX CONCURRENTLY", SQL: "DROP INDEX CONCURRENTLY idx_users_name"},
 	{Name: "TRUNCATE TABLE", SQL: "TRUNCATE TABLE users"},
 
 	// --- CREATE INDEX ---
@@ -170,15 +180,20 @@ var pgCorpusCovered = map[string]bool{
 	"CREATE TABLE with check constraint":       true,
 	"CREATE TABLE generated column":            true,
 	"CREATE TABLE identity column":             true,
+	"CREATE TABLE UNLOGGED":                    true,
+	"CREATE TABLE JSONB":                       true,
+	"CREATE TABLE ARRAY":                       true,
+	"CREATE TABLE LIKE INCLUDING":              true,
 	"CREATE VIEW basic":                        false,
 	"CREATE OR REPLACE VIEW":                   true,
 	"DROP VIEW":                                false,
 	"DROP TABLE":                               false,
 	"DROP INDEX":                               true,
+	"DROP INDEX CONCURRENTLY":                  true,
 	"TRUNCATE TABLE":                           false,
 	"CREATE INDEX":                             false,
 	"CREATE UNIQUE INDEX":                      true,
-	"CREATE INDEX CONCURRENTLY":                false,
+	"CREATE INDEX CONCURRENTLY":                true,
 	"CREATE INDEX partial":                     true,
 	"CREATE INDEX expression":                  true,
 	"CREATE INDEX INCLUDE":                     true,
@@ -231,7 +246,7 @@ var pgCorpusCovered = map[string]bool{
 	"CREATE MATERIALIZED VIEW":                 false,
 	"DROP MATERIALIZED VIEW":                   true,
 	"REFRESH MATERIALIZED VIEW basic":          true,
-	"REFRESH MATERIALIZED VIEW CONCURRENTLY":   false,
+	"REFRESH MATERIALIZED VIEW CONCURRENTLY":   true,
 	"REFRESH MATERIALIZED VIEW WITH DATA":      true,
 	"REFRESH MATERIALIZED VIEW WITH NO DATA":   true,
 	"COMMENT ON TABLE":                         false,

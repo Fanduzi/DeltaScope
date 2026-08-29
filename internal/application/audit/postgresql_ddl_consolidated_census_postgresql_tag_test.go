@@ -1,5 +1,10 @@
 //go:build postgresql
 
+// Package audit verifies the consolidated PostgreSQL DDL census.
+// input: PostgreSQL representative, completion, deep, long-tail, and residual census cases
+// output: per-source and consolidated DDL coverage summaries
+// pos: PostgreSQL-tagged application audit census aggregation gate
+// note: if this file changes, update this header and module README.md.
 package audit
 
 import (
@@ -101,7 +106,7 @@ func TestPostgreSQLDDLConsolidatedCoverageCensus(t *testing.T) {
 		}
 	}
 
-	assertExpected("representative", summaries[0].Summary, 92, 88, 4, 0, 0)
+	assertExpected("representative", summaries[0].Summary, 97, 93, 4, 0, 0)
 	assertExpected("completion", summaries[1].Summary, 31, 31, 0, 0, 0)
 	assertExpected("deep", summaries[2].Summary, 39, 38, 0, 0, 1)
 	assertExpected("long_tail", summaries[3].Summary, 57, 57, 0, 0, 0)

@@ -44,10 +44,19 @@ DDL 覆盖目录回答一个核心问题：对于给定的 DDL 形态，DeltaSco
 |------|-----:|----------------:|------------------:|--------------------:|-------------:|-------------:|
 | MySQL | 61 | 46 | 0 | 0 | 15 | 0 |
 | TiDB | 54 | 45 | 0 | 0 | 9 | 0 |
-| PostgreSQL | 285 | 274 | 6 | 0 | 5 | 0 |
+| PostgreSQL | 290 | 279 | 6 | 0 | 5 | 0 |
 | PG ALTER TABLE residual | 66 | 60 | 2 | 0 | 4 | 0 |
 
 ---
+
+## PostgreSQL 代表性生产形态
+
+PostgreSQL census 和覆盖目录包含有界的代表性形态：
+`CREATE INDEX CONCURRENTLY`、`DROP INDEX CONCURRENTLY`、
+`REFRESH MATERIALIZED VIEW CONCURRENTLY`，以及 `UNLOGGED`、`JSONB`、数组、
+生成存储列、identity 列和 `LIKE ... INCLUDING` 等选定的 `CREATE TABLE`
+形态。每条目录声明所对应的 SQL 都实际包含所广告的形态。这是代表性回归覆盖，
+不是 PostgreSQL 官方语法全集覆盖声明。
 
 ## 用户示例
 

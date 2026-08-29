@@ -105,6 +105,7 @@ var familyRules = []familyRule{
 	// Order: most specific prefix first.
 	{"CREATE TEMPORARY TABLE", "table_lifecycle"},
 	{"CREATE TEMP TABLE", "table_lifecycle"},
+	{"CREATE UNLOGGED TABLE", "table_lifecycle"},
 	{"CREATE TABLE", "table_lifecycle"},
 	{"DROP TABLE", "table_lifecycle"},
 	{"TRUNCATE TABLE", "table_lifecycle"},
@@ -565,7 +566,7 @@ func TestDDLCoverageCatalog(t *testing.T) {
 	// Validate baselines.
 	assertCatalogSummary(t, "mysql", mysqlSummary, 61, 46, 0, 0, 15, 0)
 	assertCatalogSummary(t, "tidb", tidbSummary, 54, 45, 0, 0, 9, 0)
-	assertCatalogSummary(t, "postgresql", pgSummary, 285, 274, 6, 0, 5, 0)
+	assertCatalogSummary(t, "postgresql", pgSummary, 290, 279, 6, 0, 5, 0)
 	assertCatalogSummary(t, "postgresql_alter_table_residual", pgResSummary, 66, 60, 2, 0, 4, 0)
 
 	// Convert to JSON entries.
