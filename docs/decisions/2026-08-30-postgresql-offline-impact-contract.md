@@ -3,7 +3,9 @@
 Date: 2026-08-30  
 Status: Accepted  
 Related issue: [#37](https://github.com/Fanduzi/DeltaScope/issues/37)  
-Implementation commit: `7427512a1435f46658126f2943317b73a4194925`
+Implementation commits:
+- `7427512a1435f46658126f2943317b73a4194925` — PostgreSQL normalized predicate extraction, tests, corpus contracts, and impact documentation
+- `6f37a43fbce609160e088d03b2e4aad74b4fdfb7` — shared PostgreSQL mutation extraction assembly cleanup
 
 ## Context
 
@@ -84,7 +86,9 @@ authoritative.
 
 ## Links
 
-- Exact implementation commit: `7427512a1435f46658126f2943317b73a4194925`
+- Exact implementation commits:
+  - `7427512a1435f46658126f2943317b73a4194925`
+  - `6f37a43fbce609160e088d03b2e4aad74b4fdfb7`
 - User-facing impact references: `README.md`, `README_ZH.md`,
   `docs/reference/audit-capability-matrix.md`,
   `docs/reference/audit-capability-matrix.zh-CN.md`,
