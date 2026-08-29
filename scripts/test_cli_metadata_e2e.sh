@@ -249,7 +249,7 @@ run_dml_existence_cases() {
     esac
     stdout_file="$(mktemp "${TMP_DIR}/${dialect}-missing-${case_name}.XXXXXX.json")"
     stderr_file="$(mktemp "${TMP_DIR}/${dialect}-missing-${case_name}.XXXXXX.stderr")"
-    if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "${sql}" --host 127.0.0.1 --port "${port}" --user root "${connection_args[@]}" --schema app --format json; then
+    if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "${sql}" --host 127.0.0.1 --port "${port}" --user root ${connection_args[@]+"${connection_args[@]}"} --schema app --format json; then
       exit_code=0
     else
       exit_code=$?
@@ -260,7 +260,7 @@ run_dml_existence_cases() {
 
   stdout_file="$(mktemp "${TMP_DIR}/${dialect}-missing-qualified.XXXXXX.json")"
   stderr_file="$(mktemp "${TMP_DIR}/${dialect}-missing-qualified.XXXXXX.stderr")"
-  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "UPDATE archive.missing_users SET name = 'x' WHERE id = 1" --host 127.0.0.1 --port "${port}" --user root "${connection_args[@]}" --schema app --format json; then
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "UPDATE archive.missing_users SET name = 'x' WHERE id = 1" --host 127.0.0.1 --port "${port}" --user root ${connection_args[@]+"${connection_args[@]}"} --schema app --format json; then
     exit_code=0
   else
     exit_code=$?
