@@ -1,6 +1,6 @@
 // Package ddl verifies semantic alter rule behavior.
-// input: synthetic alter-table statements with rename, add-index, target-type, and explicit-change semantic payloads plus policy overrides
-// output: focused coverage for semantic alter rename, alter-added index governance, and target-type-family rules
+// input: synthetic alter-table statements with rename, add-index, target-type, explicit-change, and metadata payloads plus policy overrides
+// output: focused coverage for semantic alter rename, nullability state handling, alter-added index governance, and target-type-family rules
 // pos: domain DDL semantic alter rule and registration-path test coverage
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -814,7 +814,7 @@ func TestAlterRegisterAddsEnabledSemanticRulesInDeterministicOrder(t *testing.T)
 		t.Fatalf("register: %v", err)
 	}
 
-	findings, err := registry.EvaluateStatement(context.Background(), alterStatement(
+	statement := alterStatement(
 		spec.Alter{
 			Action: "rename_index",
 			Name:   "idx_old",
@@ -849,7 +849,19 @@ func TestAlterRegisterAddsEnabledSemanticRulesInDeterministicOrder(t *testing.T)
 				},
 			},
 		},
-	))
+	)
+	statement.Metadata = &spec.Metadata{
+		TargetTable: &spec.TableSnapshot{
+			Exists: true,
+			Table:  &spec.Table{Name: "users"},
+			Columns: []spec.Column{
+				{Name: "payload", Type: "json", NotNull: true},
+				{Name: "body", Type: "json"},
+			},
+			Indexes: []spec.Index{{Name: "idx_old"}},
+		},
+	}
+	findings, err := registry.EvaluateStatement(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
 	}

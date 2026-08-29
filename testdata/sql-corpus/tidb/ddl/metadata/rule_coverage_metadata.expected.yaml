@@ -18,6 +18,7 @@ expect:
       - ddl.alter.rename_index.exists.require
       - ddl.alter.drop_primary_key.exists.require
       - ddl.alter.modify_column.compatibility.require
+      - ddl.alter.modify_column.explicit_nullability_change.forbid
       - ddl.alter.change_column.compatibility.require
       - ddl.alter.table_option.compatibility.require
       - ddl.table.drop.exists.require

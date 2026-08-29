@@ -564,8 +564,8 @@ func TestDDLCoverageCatalog(t *testing.T) {
 	pgResSummary := computeCatalogSummary(pgResEntries)
 
 	// Validate baselines.
-	assertCatalogSummary(t, "mysql", mysqlSummary, 61, 46, 0, 0, 15, 0)
-	assertCatalogSummary(t, "tidb", tidbSummary, 54, 45, 0, 0, 9, 0)
+	assertCatalogSummary(t, "mysql", mysqlSummary, 62, 47, 0, 0, 15, 0)
+	assertCatalogSummary(t, "tidb", tidbSummary, 55, 46, 0, 0, 9, 0)
 	assertCatalogSummary(t, "postgresql", pgSummary, 290, 279, 6, 0, 5, 0)
 	assertCatalogSummary(t, "postgresql_alter_table_residual", pgResSummary, 66, 60, 2, 0, 4, 0)
 

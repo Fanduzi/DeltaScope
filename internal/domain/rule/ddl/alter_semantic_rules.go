@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: parser-neutral alter Statement specs with richer rename, add-index, target-type, and explicit-change detail
-// output: findings for semantic alter rename, standalone rename-index forbids, normalized add-index lifecycle, and conservative target-type-family checks
+// input: parser-neutral alter Statement specs with richer rename, add-index, target-type, explicit-change, and metadata state detail
+// output: findings for semantic alter rename, normalized add-index lifecycle, conservative target-type-family checks, and nullability state advisories
 // pos: DDL semantic alter rule implementations layered above action-level forbids and shared rename semantics
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -93,29 +93,39 @@ type alterTargetTypeFamilyRule struct {
 }
 
 type forbiddenExplicitAlterColumnChangeRule struct {
-	ruleID     string
-	action     string
-	label      string
-	changeKind string
-	level      rule.Level
-	forbid     bool
-	predicate  func(spec.Alter) bool
+	ruleID        string
+	action        string
+	label         string
+	changeKind    string
+	level         rule.Level
+	forbid        bool
+	predicate     func(spec.Alter) bool
+	metadataAware bool
 }
 
 func newForbiddenExplicitAlterColumnChangeRule(ruleID, action, label, changeKind string, fallbackLevel rule.Level, predicate func(spec.Alter) bool, cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newForbiddenExplicitAlterColumnChangeRuleWithMetadata(ruleID, action, label, changeKind, fallbackLevel, predicate, false, cfg)
+}
+
+func newMetadataAwareForbiddenExplicitAlterColumnChangeRule(ruleID, action, label, changeKind string, fallbackLevel rule.Level, predicate func(spec.Alter) bool, cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newForbiddenExplicitAlterColumnChangeRuleWithMetadata(ruleID, action, label, changeKind, fallbackLevel, predicate, true, cfg)
+}
+
+func newForbiddenExplicitAlterColumnChangeRuleWithMetadata(ruleID, action, label, changeKind string, fallbackLevel rule.Level, predicate func(spec.Alter) bool, metadataAware bool, cfg policy.RulePolicy) (rule.StatementRule, error) {
 	forbid, err := boolParam(ruleID, cfg, "forbid", true)
 	if err != nil {
 		return nil, err
 	}
 
 	return forbiddenExplicitAlterColumnChangeRule{
-		ruleID:     ruleID,
-		action:     action,
-		label:      label,
-		changeKind: changeKind,
-		level:      configuredLevel(cfg, fallbackLevel),
-		forbid:     forbid,
-		predicate:  predicate,
+		ruleID:        ruleID,
+		action:        action,
+		label:         label,
+		changeKind:    changeKind,
+		level:         configuredLevel(cfg, fallbackLevel),
+		forbid:        forbid,
+		predicate:     predicate,
+		metadataAware: metadataAware,
 	}, nil
 }
 
@@ -136,6 +146,9 @@ func (r forbiddenExplicitAlterColumnChangeRule) Evaluate(ctx context.Context, st
 			return nil, err
 		}
 		if !r.predicate(alter) {
+			continue
+		}
+		if r.metadataAware && !alterHasNullabilityTransition(statement, alter) {
 			continue
 		}
 
@@ -163,6 +176,88 @@ func (r forbiddenExplicitAlterColumnChangeRule) Evaluate(ctx context.Context, st
 		})
 	}
 	return findings, nil
+}
+
+type unknownPriorNullabilityAdvisoryRule struct {
+	level rule.Level
+}
+
+func newUnknownPriorNullabilityAdvisoryRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return unknownPriorNullabilityAdvisoryRule{level: configuredLevel(cfg, rule.LevelNotice)}, nil
+}
+
+func (r unknownPriorNullabilityAdvisoryRule) ID() string {
+	return ruleIDAlterModifyColumnExplicitNullabilityUnknownPriorStateAdvisory
+}
+
+func (r unknownPriorNullabilityAdvisoryRule) AppliesTo(statement spec.Statement) bool {
+	return (statement.Dialect == spec.DialectMySQL || statement.Dialect == spec.DialectTiDB) && appliesToAlterActions(statement, "modify_column")
+}
+
+func (r unknownPriorNullabilityAdvisoryRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
+	if !r.AppliesTo(statement) {
+		return nil, nil
+	}
+
+	findings := make([]rule.Finding, 0)
+	for _, alter := range matchingAlterActions(statement, "modify_column") {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		if !alterTouchesExplicitNullability(alter) {
+			continue
+		}
+		target, hasTarget := alterColumnDefinition(alter)
+		if _, _, known := alterNullabilityState(statement, alter); known {
+			continue
+		}
+
+		targetName := alter.Name
+		metadata := map[string]any{
+			"table":       statement.DDL.Table.Name,
+			"action":      alter.Action,
+			"name":        alter.Name,
+			"column_name": targetName,
+			"change_kind": "explicit_nullability_change",
+			"prior_state": "unknown",
+		}
+		if hasTarget {
+			if target.Name != "" {
+				targetName = target.Name
+				metadata["column_name"] = targetName
+			}
+			metadata["requested_not_null"] = target.NotNull
+		}
+		findings = append(findings, rule.Finding{
+			RuleID:     r.ID(),
+			Level:      r.level,
+			Message:    fmt.Sprintf("ALTER TABLE modify column explicitly states nullability for %q, but the prior state is unknown", targetName),
+			Suggestion: "run a metadata-aware audit to compare the requested nullability with the live column before applying",
+			Metadata:   metadata,
+		})
+	}
+	return findings, nil
+}
+
+func alterHasNullabilityTransition(statement spec.Statement, alter spec.Alter) bool {
+	sourceNotNull, targetNotNull, known := alterNullabilityState(statement, alter)
+	return known && sourceNotNull != targetNotNull
+}
+
+func alterNullabilityState(statement spec.Statement, alter spec.Alter) (sourceNotNull, targetNotNull, known bool) {
+	target, ok := alterColumnDefinition(alter)
+	if !ok {
+		return false, false, false
+	}
+	snapshot, ok := targetTableSnapshot(statement)
+	if !ok || snapshot == nil || !snapshot.Exists {
+		return false, target.NotNull, false
+	}
+	source := snapshot.FindColumn(alter.Name)
+	if source == nil {
+		return false, target.NotNull, false
+	}
+	return source.NotNull, target.NotNull, true
 }
 
 func newAlterTargetTypeFamilyRule(ruleID, action, label string, fallbackLevel rule.Level, fallbackFamilies []string, cfg policy.RulePolicy) (rule.StatementRule, error) {

@@ -143,11 +143,13 @@
 
 ### 类型兼容性检查
 
-以下规则在 CHANGE COLUMN 或 MODIFY COLUMN 操作未被全局禁止、且存在当前列类型的元数据快照时触发。
+以下规则在 CHANGE COLUMN 或 MODIFY COLUMN 操作未被全局禁止、且存在所需的源状态事实时触发。显式 MODIFY 可空性会与实时列状态比较；前置状态不可用时，bounded advisory 仍会离线运行，但不会声称发生了转换。
 
 | 规则 ID | 检查描述 | 离线 | 元数据 | 默认级别 |
 |---------|---------|:----:|:------:|---------|
 | `ddl.alter.table_option.compatibility.require` | 表选项变更（如字符集）与当前表状态不兼容 | ✗ | ✓ | blocker |
+| `ddl.alter.modify_column.explicit_nullability_change.forbid` | 已确认的 MODIFY COLUMN 可空性转换被禁止 | ✗ | ✓ | blocker |
+| `ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory` | 显式 MODIFY NULL/NOT NULL 但未确认前置可空性时发出非阻断提示 | ✓ | ✓ | notice |
 
 ### ALTER 路径上的索引检查
 

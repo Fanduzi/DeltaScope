@@ -1,6 +1,6 @@
 // Package mysqlmeta verifies metadata normalization helpers for the MySQL provider.
-// input: synthetic variable, version, DSN, collation, type, and index classification scenarios
-// output: stable provider helper behavior without requiring a live database
+// input: synthetic variable, version, DSN, collation, type, column-nullability, and index classification scenarios
+// output: stable provider helper behavior and normalized column metadata without requiring a live database
 // pos: infrastructure metadata adapter test coverage
 // note: if this file changes, update this header and module README.md.
 package mysqlmeta
@@ -625,6 +625,9 @@ func TestLoadTableSnapshotPreservesIndexCardinalityFromStatisticsRows(t *testing
 	}
 	if len(snapshot.Indexes[0].Columns) != 2 {
 		t.Fatalf("expected secondary index columns to be preserved, got %#v", snapshot.Indexes[0])
+	}
+	if !snapshot.Columns[0].NotNull || snapshot.Columns[1].NotNull {
+		t.Fatalf("expected information_schema.is_nullable to map to NotNull, got %#v", snapshot.Columns)
 	}
 }
 

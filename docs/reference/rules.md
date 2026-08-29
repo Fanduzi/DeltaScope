@@ -383,11 +383,9 @@ These rules govern the structural operations permitted within an `ALTER TABLE` s
 
 **PostgreSQL ALTER TABLE ADD CONSTRAINT (v0.39.0):** `ddl.alter.add_index.unique.prefix.require` now also applies to PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... UNIQUE` forms. `ddl.table.primary_key.bigint.require` and `ddl.table.primary_key.columns.max_count` now also apply to PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... PRIMARY KEY`. These reuse existing shared alter-table index and primary-key rule families — no new rule IDs were added.
 
-### Type Compatibility Rules (11 rules)
+### Type Compatibility Rules (12 rules)
 
-These rules check that column type changes made via `MODIFY COLUMN` or `CHANGE COLUMN` are safe and
-compatible. Most of these rules require live metadata to compare the target type against the current
-column definition.
+These rules check that column type and attribute changes made via `MODIFY COLUMN` or `CHANGE COLUMN` are safe and compatible. Most require live metadata to compare the target against the current column definition. The unknown-prior-state advisory is the bounded offline fallback for explicit MODIFY nullability clauses.
 
 | Rule ID | Description | Default Level | Metadata Required |
 |---------|-------------|:-------------:|:-----------------:|
@@ -396,6 +394,7 @@ column definition.
 | `ddl.alter.modify_column.compatibility.require` | MODIFY COLUMN must be compatible with current column type | blocker | **Yes** |
 | `ddl.alter.change_column.compatibility.require` | CHANGE COLUMN must be compatible with current column type | blocker | **Yes** |
 | `ddl.alter.modify_column.explicit_nullability_change.forbid` | MODIFY COLUMN must not explicitly change nullability | blocker | **Yes** |
+| `ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory` | Explicit MODIFY NULL/NOT NULL with unknown prior state emits a non-blocking advisory | notice | **Yes** |
 | `ddl.alter.change_column.explicit_nullability_change.forbid` | CHANGE COLUMN must not explicitly change nullability | blocker | **Yes** |
 | `ddl.alter.modify_column.explicit_default_change.forbid` | MODIFY COLUMN must not explicitly change DEFAULT value | blocker | **Yes** |
 | `ddl.alter.change_column.explicit_default_change.forbid` | CHANGE COLUMN must not explicitly change DEFAULT value | blocker | **Yes** |
@@ -957,9 +956,8 @@ Rules fall into two categories based on whether they require a live database con
 **Offline rules** always run, even when no database connection is provided. They evaluate the SQL text
 and AST alone. All rules not listed as metadata-backed below are offline rules.
 
-**Metadata-backed rules** silently skip when no `MetadataProvider` is active. During offline audits
-they never produce findings — no errors, no false positives. They only activate when connection flags
-are supplied to `deltascope audit`.
+**Metadata-backed rules** normally silently skip when no `MetadataProvider` is active. During offline audits
+they do not claim unavailable state. The MODIFY unknown-prior-state advisory is the explicit exception: it runs offline at notice level, while the existing MODIFY blocker only fires after a confirmed source-column comparison.
 
 ### Complete List of Metadata-Backed Rule IDs
 
@@ -970,6 +968,7 @@ are supplied to `deltascope audit`.
 | `ddl.alter.modify_column.compatibility.require` |
 | `ddl.alter.change_column.compatibility.require` |
 | `ddl.alter.modify_column.explicit_nullability_change.forbid` |
+| `ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory` |
 | `ddl.alter.change_column.explicit_nullability_change.forbid` |
 | `ddl.alter.modify_column.explicit_default_change.forbid` |
 | `ddl.alter.change_column.explicit_default_change.forbid` |

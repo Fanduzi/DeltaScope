@@ -1,3 +1,8 @@
+// Package audit verifies cross-dialect DDL coverage classifications.
+// input: representative MySQL/TiDB DDL statements and their expected coverage class
+// output: parser, normalization, and finding-covered census evidence for catalog generation
+// pos: application audit DDL coverage census gate
+// note: if this file changes, update this header and module README.md.
 package audit
 
 import (
@@ -91,6 +96,7 @@ var mysqlDDLCensusCases = []struct {
 	{Name: "ALTER TABLE ADD COLUMN", SQL: "ALTER TABLE users ADD COLUMN email varchar(255)", Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER TABLE DROP COLUMN", SQL: "ALTER TABLE users DROP COLUMN email", Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER TABLE MODIFY COLUMN", SQL: "ALTER TABLE users MODIFY COLUMN email varchar(500)", Expected: ddlCoverageFindingCovered},
+	{Name: "ALTER TABLE MODIFY COLUMN EXPLICIT NULLABILITY", SQL: "ALTER TABLE users MODIFY COLUMN email varchar(500) NOT NULL", Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER TABLE CHANGE COLUMN", SQL: "ALTER TABLE users CHANGE COLUMN email user_email varchar(255)", Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER TABLE RENAME COLUMN", SQL: "ALTER TABLE users RENAME COLUMN email TO user_email", Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER TABLE RENAME TO", SQL: "ALTER TABLE users RENAME TO members", Expected: ddlCoverageFindingCovered},
@@ -177,6 +183,7 @@ var tidbDDLCensusCases = []struct {
 	{Name: "ALTER TABLE ADD COLUMN", SQL: "ALTER TABLE users ADD COLUMN email varchar(255)", Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER TABLE DROP COLUMN", SQL: "ALTER TABLE users DROP COLUMN email", Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER TABLE MODIFY COLUMN", SQL: "ALTER TABLE users MODIFY COLUMN email varchar(500)", Expected: ddlCoverageFindingCovered},
+	{Name: "ALTER TABLE MODIFY COLUMN EXPLICIT NULLABILITY", SQL: "ALTER TABLE users MODIFY COLUMN email varchar(500) NOT NULL", Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER TABLE CHANGE COLUMN", SQL: "ALTER TABLE users CHANGE COLUMN email user_email varchar(255)", Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER TABLE RENAME COLUMN", SQL: "ALTER TABLE users RENAME COLUMN email TO user_email", Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER TABLE ADD PRIMARY KEY", SQL: "ALTER TABLE users ADD PRIMARY KEY (id)", Expected: ddlCoverageFindingCovered},

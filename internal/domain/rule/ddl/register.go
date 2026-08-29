@@ -280,8 +280,9 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		}},
 		{ruleID: ruleIDAlterTableOptionCompatibilityRequire, construct: newAlterTableOptionCompatibilityRule},
 		{ruleID: ruleIDAlterModifyColumnExplicitNullabilityChangeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
-			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterModifyColumnExplicitNullabilityChangeForbid, "modify_column", "modify column", "explicit_nullability_change", rule.LevelBlocker, alterTouchesExplicitNullability, cfg)
+			return newMetadataAwareForbiddenExplicitAlterColumnChangeRule(ruleIDAlterModifyColumnExplicitNullabilityChangeForbid, "modify_column", "modify column", "explicit_nullability_change", rule.LevelBlocker, alterTouchesExplicitNullability, cfg)
 		}},
+		{ruleID: ruleIDAlterModifyColumnExplicitNullabilityUnknownPriorStateAdvisory, construct: newUnknownPriorNullabilityAdvisoryRule},
 		{ruleID: ruleIDAlterChangeColumnExplicitNullabilityChangeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterChangeColumnExplicitNullabilityChangeForbid, "change_column", "change column", "explicit_nullability_change", rule.LevelBlocker, alterTouchesExplicitNullability, cfg)
 		}},

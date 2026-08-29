@@ -395,6 +395,7 @@ func formatYAMLScalar(value any) string {
 // PG-prefixed rules target PostgreSQL only.
 // TiDB-prefixed or merge.tidb rules target TiDB only.
 // merge.mysql rules target MySQL only.
+// The MODIFY unknown-prior-state nullability advisory targets MySQL and TiDB.
 // All other rules (including DML) apply to common dialect scope.
 func dialectsForRule(ruleID string) []string {
 	switch {
@@ -406,6 +407,8 @@ func dialectsForRule(ruleID string) []string {
 		return []string{"mysql"}
 	case strings.Contains(ruleID, ".merge.tidb."):
 		return []string{"tidb"}
+	case ruleID == unknownPriorNullabilityAdvisoryRuleID:
+		return []string{"mysql", "tidb"}
 	default:
 		return []string{"common"}
 	}
@@ -650,6 +653,8 @@ func sourceForRule() string {
 	return "policy"
 }
 
+const unknownPriorNullabilityAdvisoryRuleID = "ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory"
+
 var metadataAwareRuleIDs = map[string]bool{
 	"ddl.alter.change_column.compatibility.require": true,
 	"ddl.alter.change_column.exists.require":        true,
@@ -658,6 +663,7 @@ var metadataAwareRuleIDs = map[string]bool{
 	"ddl.alter.drop_primary_key.exists.require":     true,
 	"ddl.alter.modify_column.compatibility.require": true,
 	"ddl.alter.modify_column.exists.require":        true,
+	unknownPriorNullabilityAdvisoryRuleID:           true,
 	"ddl.alter.rename_column.exists.require":        true,
 	"ddl.alter.rename_index.exists.require":         true,
 	"ddl.table.drop.adaptive_hash.warn":             true,

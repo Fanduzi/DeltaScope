@@ -157,11 +157,13 @@ Structured naming governance for constraints only evaluates explicitly named obj
 
 ### Type Compatibility Checks
 
-These rules fire when a CHANGE COLUMN or MODIFY COLUMN operation is not globally forbidden and a metadata snapshot of the current column type is available.
+These rules fire when a CHANGE COLUMN or MODIFY COLUMN operation is not globally forbidden and the required source facts are available. Explicit MODIFY nullability is compared with the live column; when that prior state is unavailable, the bounded advisory still runs offline without claiming a transition.
 
 | Rule ID | Check Description | Offline | Metadata | Default Level |
 |---------|-------------------|:-------:|:--------:|---------------|
 | `ddl.alter.table_option.compatibility.require` | A table option change (e.g. charset) is incompatible with the current table state | ✗ | ✓ | blocker |
+| `ddl.alter.modify_column.explicit_nullability_change.forbid` | A confirmed MODIFY COLUMN nullability transition is forbidden | ✗ | ✓ | blocker |
+| `ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory` | Explicit MODIFY NULL/NOT NULL has no confirmed prior nullability; emits a non-blocking advisory | ✓ | ✓ | notice |
 
 ### Index Checks on Alter
 

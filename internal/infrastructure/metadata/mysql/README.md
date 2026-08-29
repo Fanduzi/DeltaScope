@@ -7,7 +7,7 @@ MySQL-protocol metadata provider used for optional metadata-aware DeltaScope aud
 | File | Responsibility |
 |------|---------------|
 | provider.go | Opens MySQL-compatible metadata connections and loads normalized dialect, schema, instance-fact, and target-table snapshot data from information schema, including preserved per-index cardinality facts |
-| provider_test.go | Verifies provider connection, dialect, normalization helpers, and index-cardinality accumulation behavior without a live database |
+| provider_test.go | Verifies provider connection, dialect, normalization helpers, information_schema column nullability mapping, and index-cardinality accumulation behavior without a live database |
 | provider_integration_test.go | Verifies provider connection pool configuration and connection-leak behavior against a live MySQL service (build tag `integration`) |
 | query_access_conn_resolver.go | Implements SchemaResolver for a caller-owned MySQL/TiDB `*sql.Conn` |
 | query_access_resolver_test.go | Verifies conn resolver behavior for table/view kind, full column order, missing relation, empty columns, cancellation, and unsupported relation kind using a custom test driver |

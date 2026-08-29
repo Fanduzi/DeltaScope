@@ -98,6 +98,47 @@ func TestExtractMapsCreateTable(t *testing.T) {
 	}
 }
 
+func TestExtractModifyColumnCapturesExplicitNullabilityAcrossMySQLAndTiDB(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name        string
+		dialect     spec.Dialect
+		nullability string
+		wantNotNull bool
+	}{
+		{name: "mysql NULL", dialect: spec.DialectMySQL, nullability: "NULL", wantNotNull: false},
+		{name: "mysql NOT NULL", dialect: spec.DialectMySQL, nullability: "NOT NULL", wantNotNull: true},
+		{name: "tidb NULL", dialect: spec.DialectTiDB, nullability: "NULL", wantNotNull: false},
+		{name: "tidb NOT NULL", dialect: spec.DialectTiDB, nullability: "NOT NULL", wantNotNull: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			parsed, err := Parse(context.Background(), "ALTER TABLE users MODIFY COLUMN email VARCHAR(320) "+tc.nullability, tc.dialect)
+			if err != nil {
+				t.Fatalf("parse: %v", err)
+			}
+			statements, err := Extract(context.Background(), parsed)
+			if err != nil {
+				t.Fatalf("extract: %v", err)
+			}
+			if len(statements) != 1 || statements[0].DDL == nil || len(statements[0].DDL.Alter) != 1 {
+				t.Fatalf("expected one alter statement, got %#v", statements)
+			}
+			alter := statements[0].DDL.Alter[0]
+			if alter.Action != "modify_column" || alter.Column == nil || alter.Column.Definition == nil {
+				t.Fatalf("expected modify column definition, got %#v", alter)
+			}
+			if alter.Column.Definition.NotNull != tc.wantNotNull {
+				t.Fatalf("expected target NotNull=%t, got %#v", tc.wantNotNull, alter.Column.Definition)
+			}
+			if alter.Column.Change == nil || !alter.Column.Change.TouchesNullability {
+				t.Fatalf("expected explicit nullability fact, got %#v", alter.Column.Change)
+			}
+		})
+	}
+}
+
 func TestExtractMapsConstraintNamesForNamingGovernance(t *testing.T) {
 	t.Parallel()
 	parsed, err := Parse(context.Background(), "create table orders (id bigint, user_id bigint, email varchar(64), amount bigint, constraint pk_orders primary key (id), constraint uk_orders_user unique key (user_id), unique key (email), constraint fk_orders_user foreign key (user_id) references users(id), constraint chk_orders_amount check (amount > 0), check (amount < 1000)) comment='orders';", spec.DialectMySQL)

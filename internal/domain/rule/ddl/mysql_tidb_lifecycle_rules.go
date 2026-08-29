@@ -44,7 +44,7 @@ func (r mysqlTidbLifecycleRule) AppliesTo(statement spec.Statement) bool {
 	if statement.Kind != spec.KindDDL || statement.DDL == nil {
 		return false
 	}
-	if statement.DDL.Operation != r.operation && !(r.operation == spec.DDLOperationCreateIndex && appliesToAlterActions(statement, "add_index")) {
+	if statement.DDL.Operation != r.operation && (r.operation != spec.DDLOperationCreateIndex || !appliesToAlterActions(statement, "add_index")) {
 		return false
 	}
 	if r.objectType != "" && statement.DDL.ObjectType != r.objectType {

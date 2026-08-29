@@ -21,8 +21,8 @@ func TestLoadEmbeddedCatalogMatchesCheckedInCatalog(t *testing.T) {
 	if version != "v0.270.0" {
 		t.Errorf("embedded catalog version = %q, want v0.270.0", version)
 	}
-	if len(entries) != 405 {
-		t.Errorf("embedded catalog entries = %d, want 405", len(entries))
+	if len(entries) != 407 {
+		t.Errorf("embedded catalog entries = %d, want 407", len(entries))
 	}
 
 	disk, err := LoadCatalog(testCatalogPath)
@@ -113,8 +113,8 @@ func TestQueryCatalog_TiDBEntries(t *testing.T) {
 			t.Errorf("got dialect %q, want tidb", e.Dialect)
 		}
 	}
-	if res.Total != 54 {
-		t.Errorf("TiDB total = %d, want 54", res.Total)
+	if res.Total != 55 {
+		t.Errorf("TiDB total = %d, want 55", res.Total)
 	}
 }
 

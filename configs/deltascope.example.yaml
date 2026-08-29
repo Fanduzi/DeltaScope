@@ -248,6 +248,11 @@ rules:
     params:
       forbid: false
 
+  ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory:
+    enabled: true
+    level: notice
+    params:
+
   ddl.alter.modify_column.target_type_family.allowlist:
     enabled: true
     level: blocker

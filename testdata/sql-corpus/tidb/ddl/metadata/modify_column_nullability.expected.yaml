@@ -1,0 +1,33 @@
+name: modify_column_nullability_metadata
+dialect: tidb
+category: ddl
+expect:
+  parse_ok: true
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.alter.modify_column.compatibility.require
+      - ddl.alter.modify_column.explicit_nullability_change.forbid
+      - ddl.alter.modify_column.notice
+    exclude:
+      - ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory
+metadata:
+  schema: app
+  tables:
+    nullable_same:
+      exists: true
+      columns:
+        - {name: email, type: varchar, length: 255, not_null: false}
+    notnull_same:
+      exists: true
+      columns:
+        - {name: email, type: varchar, length: 255, not_null: true}
+    nullable_to_notnull:
+      exists: true
+      columns:
+        - {name: email, type: varchar, length: 255, not_null: false}
+    notnull_to_nullable:
+      exists: true
+      columns:
+        - {name: email, type: varchar, length: 255, not_null: true}

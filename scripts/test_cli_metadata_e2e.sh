@@ -321,6 +321,28 @@ run_mysql_suite() {
   assert_exit_code "${exit_code}" 1
   assert_json_rule_present "${stdout_file}" "ddl.alter.modify_column.compatibility.require"
 
+  stdout_file="$(mktemp "${TMP_DIR}/mysql-nullability-same.XXXXXX.json")"
+  stderr_file="$(mktemp "${TMP_DIR}/mysql-nullability-same.XXXXXX.stderr")"
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "alter table app.accounts modify column email varchar(320) not null" --host 127.0.0.1 --port 3406 --user root --password-env MYSQL_PASSWORD --format json; then
+    exit_code=0
+  else
+    exit_code=$?
+  fi
+  assert_exit_code "${exit_code}" 0
+  assert_json_rule_absent "${stdout_file}" "ddl.alter.modify_column.explicit_nullability_change.forbid"
+  assert_json_rule_absent "${stdout_file}" "ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory"
+
+  stdout_file="$(mktemp "${TMP_DIR}/mysql-nullability-transition.XXXXXX.json")"
+  stderr_file="$(mktemp "${TMP_DIR}/mysql-nullability-transition.XXXXXX.stderr")"
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "alter table app.accounts modify column email varchar(320) null" --host 127.0.0.1 --port 3406 --user root --password-env MYSQL_PASSWORD --format json; then
+    exit_code=0
+  else
+    exit_code=$?
+  fi
+  assert_exit_code "${exit_code}" 1
+  assert_json_rule_present "${stdout_file}" "ddl.alter.modify_column.explicit_nullability_change.forbid"
+  assert_json_rule_absent "${stdout_file}" "ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory"
+
   stdout_file="$(mktemp "${TMP_DIR}/mysql-partial-create.XXXXXX.json")"
   stderr_file="$(mktemp "${TMP_DIR}/mysql-partial-create.XXXXXX.stderr")"
   if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "create table huge_profiles (id bigint unsigned not null auto_increment comment 'id', c1 varchar(16383) not null default '' comment 'c1', c2 varchar(16383) not null default '' comment 'c2', created_at timestamp not null default current_timestamp comment 'created', updated_at timestamp not null default current_timestamp on update current_timestamp comment 'updated', primary key (id)) engine=InnoDB default charset=utf8mb4 row_format=dynamic comment='huge profiles'" --host 127.0.0.1 --port 3406 --user root --password-env MYSQL_PASSWORD --schema app --format json; then
@@ -448,6 +470,28 @@ run_tidb_suite() {
   assert_json_field_eq "${stdout_file}" "context.schema" "app"
   assert_json_rule_present "${stdout_file}" "ddl.table.row_size.max_bytes.require"
   assert_json_rule_absent "${stdout_file}" "ddl.table.exists.create.forbid"
+
+  stdout_file="$(mktemp "${TMP_DIR}/tidb-nullability-same.XXXXXX.json")"
+  stderr_file="$(mktemp "${TMP_DIR}/tidb-nullability-same.XXXXXX.stderr")"
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "alter table app.accounts modify column email varchar(320) not null" --host 127.0.0.1 --port 4400 --user root --format json; then
+    exit_code=0
+  else
+    exit_code=$?
+  fi
+  assert_exit_code "${exit_code}" 0
+  assert_json_rule_absent "${stdout_file}" "ddl.alter.modify_column.explicit_nullability_change.forbid"
+  assert_json_rule_absent "${stdout_file}" "ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory"
+
+  stdout_file="$(mktemp "${TMP_DIR}/tidb-nullability-transition.XXXXXX.json")"
+  stderr_file="$(mktemp "${TMP_DIR}/tidb-nullability-transition.XXXXXX.stderr")"
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "alter table app.accounts modify column email varchar(320) null" --host 127.0.0.1 --port 4400 --user root --format json; then
+    exit_code=0
+  else
+    exit_code=$?
+  fi
+  assert_exit_code "${exit_code}" 1
+  assert_json_rule_present "${stdout_file}" "ddl.alter.modify_column.explicit_nullability_change.forbid"
+  assert_json_rule_absent "${stdout_file}" "ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory"
 
   # Hygiene: default-policy dialect — no PG-only leakage under TiDB dialect
   stdout_file="$(mktemp "${TMP_DIR}/tidb-hygiene.XXXXXX.json")"

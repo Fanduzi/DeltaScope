@@ -37,7 +37,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | denylist_rules.go | Implements DDL table denylist checks against protected schemas or tables |
 | size_rules.go | Implements metadata-backed rough row-size and index-key-length checks for create-table statements |
 | alter_compatibility_rules.go | Implements source-aware compatibility checks for metadata-backed change/modify column operations |
-| alter_semantic_rules.go | Implements rename-index forbids, explicit alter-column change forbids, normalized add-index naming/lifecycle rules, and conservative alter target-type-family rules |
+| alter_semantic_rules.go | Implements rename-index forbids, metadata-gated MODIFY nullability transitions, unknown-prior-state advisories, explicit alter-column change forbids, normalized add-index naming/lifecycle rules, and conservative alter target-type-family rules |
 | table_option_rules.go | Implements create-table option, foreign-key, and object-shape rules |
 | register.go | Registers enabled DDL rules into the shared registry, including shipped alter-added index lifecycle rules |
 | table_rules_test.go | Verifies table comment and name-length rule behavior |
@@ -58,7 +58,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | size_rules_test.go | Verifies metadata-backed row-size and index-key-length checks |
 | alter_semantic_rules_test.go | Verifies semantic alter rename-index, explicit alter-column change, alter-added index lifecycle, and conservative target-type-family rules plus registration order |
 | table_option_rules_test.go | Verifies create-table option and object-shape rules |
-| register_test.go | Verifies policy-backed DDL rule registration and deterministic ordering |
+| register_test.go | Verifies policy-backed DDL rule registration, deterministic ordering, and metadata-backed MODIFY nullability behavior |
 | postgresql_object_lifecycle_rules_test.go | Verifies PG object lifecycle rules with positive, negative, cross-dialect, and registration coverage |
 | postgresql_materialized_view_refresh_rules_test.go | Verifies PG refresh materialized view rules with positive, negative, cross-dialect, registration, and defaults coverage |
 | postgresql_alter_table_rules_test.go | Verifies PG alter table gap rules with positive, negative, cross-dialect, registration, and defaults coverage |
@@ -171,6 +171,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.alter.change_column.compatibility.require`
 - `ddl.alter.table_option.compatibility.require`
 - `ddl.alter.modify_column.explicit_nullability_change.forbid`
+- `ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory`
 - `ddl.alter.change_column.explicit_nullability_change.forbid`
 - `ddl.alter.modify_column.explicit_default_change.forbid`
 - `ddl.alter.change_column.explicit_default_change.forbid`
@@ -331,6 +332,7 @@ Shared alter helpers in `common.go` now cover the richer parser-neutral alter st
 - extracting target column and index definitions
 - extracting explicit statement-local column change facts
 - checking whether nullability/default/auto-increment changes are explicitly requested
+- comparing explicit MODIFY nullability against a confirmed source column without treating missing state as known
 - extracting old/new names for rename-style alters
 - detecting column renames from parser-neutral names only
 - reading normalized table-option values
@@ -344,6 +346,7 @@ The first semantic alter batch currently covers:
 
 - `ddl.alter.rename_index.forbid`
 - `ddl.alter.modify_column.explicit_nullability_change.forbid`
+- `ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory`
 - `ddl.alter.change_column.explicit_nullability_change.forbid`
 - `ddl.alter.modify_column.explicit_default_change.forbid`
 - `ddl.alter.change_column.explicit_default_change.forbid`

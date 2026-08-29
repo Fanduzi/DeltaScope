@@ -12,8 +12,8 @@
   ],
   "summary": {
     "mysql": {
-      "total": 61,
-      "finding_covered": 46,
+      "total": 62,
+      "finding_covered": 47,
       "normalized_silent": 0,
       "unsupported_boundary": 0,
       "parser_error": 15,
@@ -36,8 +36,8 @@
       "unclassified": 0
     },
     "tidb": {
-      "total": 54,
-      "finding_covered": 45,
+      "total": 55,
+      "finding_covered": 46,
       "normalized_silent": 0,
       "unsupported_boundary": 0,
       "parser_error": 9,
@@ -152,6 +152,17 @@
       "form": "ALTER TABLE MODIFY COLUMN",
       "classification": "finding_covered",
       "finding_rule_ids": [
+        "ddl.alter.modify_column.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "alter_table",
+      "form": "ALTER TABLE MODIFY COLUMN EXPLICIT NULLABILITY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory",
         "ddl.alter.modify_column.notice"
       ],
       "notes": ""
@@ -3762,6 +3773,17 @@
       "form": "ALTER TABLE MODIFY COLUMN",
       "classification": "finding_covered",
       "finding_rule_ids": [
+        "ddl.alter.modify_column.notice"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "tidb",
+      "family": "alter_table",
+      "form": "ALTER TABLE MODIFY COLUMN EXPLICIT NULLABILITY",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory",
         "ddl.alter.modify_column.notice"
       ],
       "notes": ""

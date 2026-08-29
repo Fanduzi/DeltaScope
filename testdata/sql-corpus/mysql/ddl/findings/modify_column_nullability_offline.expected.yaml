@@ -1,0 +1,13 @@
+name: modify_column_nullability_offline
+dialect: mysql
+category: ddl
+expect:
+  parse_ok: true
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory
+      - ddl.alter.modify_column.notice
+    exclude:
+      - ddl.alter.modify_column.explicit_nullability_change.forbid

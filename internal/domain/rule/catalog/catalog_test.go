@@ -64,6 +64,14 @@ func TestLookupMarksMetadataAwareRules(t *testing.T) {
 	if entry.MetadataNotes.Required == "" || entry.MetadataNotes.Missing == "" {
 		t.Fatalf("expected metadata notes to explain required and missing states, got %#v", entry.MetadataNotes)
 	}
+
+	entry, ok = Lookup("ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory")
+	if !ok || !entry.MetadataAware {
+		t.Fatalf("expected unknown-prior-state nullability advisory to be metadata-aware, got %#v", entry)
+	}
+	if len(entry.Dialects) != 2 || entry.Dialects[0] != "mysql" || entry.Dialects[1] != "tidb" {
+		t.Fatalf("expected advisory dialects [mysql tidb], got %#v", entry.Dialects)
+	}
 }
 
 func TestSearchMatchesRuleIDAndSummaryText(t *testing.T) {

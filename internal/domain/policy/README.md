@@ -7,7 +7,7 @@ Policy model for rule configuration and future audit settings.
 | File | Responsibility |
 |------|---------------|
 | policy.go | Defines policy and per-rule configuration |
-| defaults.go | Defines the built-in rule policy, including create-table identifier governance, expanded column/type-family breadth rules, primary-key semantics, indexes, alter restrictions, shipped semantic alter rules, metadata-backed existence rules, object-lifecycle rules for view/drop/truncate, table options/object shape, database lifecycle rules for MySQL/TiDB, and the Tier-1 DML rule set |
+| defaults.go | Defines the built-in rule policy, including create-table identifier governance, expanded column/type-family breadth rules, primary-key semantics, indexes, alter restrictions, shipped semantic alter rules including the MODIFY unknown-prior-state nullability advisory, metadata-backed existence rules, object-lifecycle rules for view/drop/truncate, table options/object shape, database lifecycle rules for MySQL/TiDB, and the Tier-1 DML rule set |
 | policy_test.go | Verifies flexible per-rule parameter modeling |
 
 ## Exports

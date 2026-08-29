@@ -2247,7 +2247,7 @@ rules:
 
 ### `ddl.alter.modify_column.explicit_nullability_change.forbid`
 
-禁止 `MODIFY COLUMN` 中显式修改列的可空性（nullability），防止意外引入或去除 NULL。
+禁止 `MODIFY COLUMN` 中相对于已确认的当前列定义显式修改可空性（nullability），防止意外引入或去除 NULL。若显式重复的 `NULL` 或 `NOT NULL` 与实时列状态一致，则允许通过；前置状态未知时改由 `ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory` 发出提示。
 
 - **默认**：已启用，级别 `blocker`
 
@@ -2269,6 +2269,31 @@ rules:
     level: blocker
     params:
       forbid: true
+```
+
+---
+
+### `ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory`
+
+> **离线和 metadata-aware 回退规则。** 此规则不会阻断审计。
+
+当 `MODIFY COLUMN` 显式声明 `NULL` 或 `NOT NULL`、但无法确认修改前的列可空性时发出 notice。它不会声称已经发生了状态转换。若实时元数据确认了当前列状态，则该提示被抑制，已有的 `...explicit_nullability_change.forbid` 规则只检查真实转换。
+
+- **默认**：已启用，级别 `notice`
+- **参数**：无
+
+**触发示例：**
+```sql
+ALTER TABLE users MODIFY COLUMN email VARCHAR(320) NOT NULL;
+```
+
+**YAML 配置示例：**
+```yaml
+rules:
+  ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory:
+    enabled: true
+    level: notice
+    params:
 ```
 
 ---

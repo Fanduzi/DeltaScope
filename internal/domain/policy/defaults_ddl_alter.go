@@ -260,6 +260,11 @@ func ddlAlterRules() map[string]RulePolicy {
 				"forbid": true,
 			},
 		},
+		"ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
 		"ddl.alter.change_column.explicit_nullability_change.forbid": {
 			Enabled: true,
 			Level:   rule.LevelBlocker,

@@ -1,3 +1,8 @@
+// Package audit verifies SQL corpus coverage for default policy rules.
+// input: checked-in SQL corpus expectations and default policy rule identifiers
+// output: dialect coverage guarantees for supported default rules
+// pos: application audit corpus coverage gate
+// note: if this file changes, update this header and module README.md.
 package audit
 
 import (
@@ -159,6 +164,7 @@ func isMySQLFamilyOnlyRule(ruleID string) bool {
 		"ddl.alter.change_column.exists.require",
 		"ddl.alter.table_option.compatibility.require",
 		"ddl.alter.modify_column.explicit_nullability_change.forbid",
+		"ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory",
 		"ddl.alter.change_column.explicit_nullability_change.forbid",
 		"ddl.alter.modify_column.explicit_default_change.forbid",
 		"ddl.alter.change_column.explicit_default_change.forbid",

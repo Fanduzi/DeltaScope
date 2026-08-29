@@ -381,9 +381,9 @@ rules:
 
 **PostgreSQL ALTER TABLE ADD CONSTRAINT（v0.39.0）：** `ddl.alter.add_index.unique.prefix.require` 现在也适用于 PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... UNIQUE` 形式。`ddl.table.primary_key.bigint.require` 和 `ddl.table.primary_key.columns.max_count` 现在也适用于 PostgreSQL `ALTER TABLE ... ADD CONSTRAINT ... PRIMARY KEY`。这些规则复用已有的共享 alter-table 索引和主键规则族——未新增规则 ID。
 
-### 类型兼容性规则（11 条）
+### 类型兼容性规则（12 条）
 
-这些规则检查通过 `MODIFY COLUMN` 或 `CHANGE COLUMN` 进行的列类型变更是否安全且兼容。大多数规则需要实时元数据来将目标类型与当前列定义进行比较。
+这些规则检查通过 `MODIFY COLUMN` 或 `CHANGE COLUMN` 进行的列类型和属性变更是否安全且兼容。大多数规则需要实时元数据来将目标值与当前列定义进行比较。unknown-prior-state advisory 是显式 MODIFY 可空性子句在离线模式下的收敛回退。
 
 | 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
 |---------|------|:--------:|:--------------:|
@@ -392,6 +392,7 @@ rules:
 | `ddl.alter.modify_column.compatibility.require` | MODIFY COLUMN 必须与当前列类型兼容 | blocker | **是** |
 | `ddl.alter.change_column.compatibility.require` | CHANGE COLUMN 必须与当前列类型兼容 | blocker | **是** |
 | `ddl.alter.modify_column.explicit_nullability_change.forbid` | MODIFY COLUMN 不得显式更改可空性 | blocker | **是** |
+| `ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory` | 显式 MODIFY NULL/NOT NULL 但前置状态未知时发出非阻断提示 | notice | **是** |
 | `ddl.alter.change_column.explicit_nullability_change.forbid` | CHANGE COLUMN 不得显式更改可空性 | blocker | **是** |
 | `ddl.alter.modify_column.explicit_default_change.forbid` | MODIFY COLUMN 不得显式更改 DEFAULT 值 | blocker | **是** |
 | `ddl.alter.change_column.explicit_default_change.forbid` | CHANGE COLUMN 不得显式更改 DEFAULT 值 | blocker | **是** |
@@ -947,7 +948,7 @@ rules:
 
 **离线规则**始终运行，即使未提供数据库连接。它们仅基于 SQL 文本和 AST 进行评估。所有未在下方列为元数据支撑的规则均属于离线规则。
 
-**元数据支撑规则**在没有活跃 `MetadataProvider` 时静默跳过。在离线审计期间，这些规则不会产生任何发现——不报错、不产生误报。仅当向 `deltascope audit` 提供连接标志时，这些规则才会激活。
+**元数据支撑规则**在没有活跃 `MetadataProvider` 时通常静默跳过。离线审计不会对无法取得的状态作出断言。唯一明确的例外是 MODIFY unknown-prior-state advisory：它以 notice 级别离线运行，而已有的 MODIFY blocker 只有在确认源列并完成比较后才触发。
 
 ### 元数据支撑规则 ID 完整列表
 
@@ -958,6 +959,7 @@ rules:
 | `ddl.alter.modify_column.compatibility.require` |
 | `ddl.alter.change_column.compatibility.require` |
 | `ddl.alter.modify_column.explicit_nullability_change.forbid` |
+| `ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory` |
 | `ddl.alter.change_column.explicit_nullability_change.forbid` |
 | `ddl.alter.modify_column.explicit_default_change.forbid` |
 | `ddl.alter.change_column.explicit_default_change.forbid` |

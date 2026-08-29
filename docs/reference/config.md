@@ -2278,7 +2278,7 @@ rules:
 
 > **Metadata-aware mode only.** This rule no-ops during offline audits.
 
-Forbids `MODIFY COLUMN` that explicitly changes nullability (e.g., adding or removing `NOT NULL`) compared to the current column definition.
+Forbids `MODIFY COLUMN` that explicitly changes nullability (e.g., adding or removing `NOT NULL`) compared to a confirmed current column definition. A restated `NULL` or `NOT NULL` clause is allowed when it matches the live column; unknown prior state is reported by `ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory` instead.
 
 **Default:** `enabled: true`, `level: blocker`
 
@@ -2296,6 +2296,32 @@ rules:
     level: blocker
     params:
       forbid: true
+```
+
+---
+
+#### ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory
+
+> **Offline and metadata-aware fallback.** This rule is non-blocking.
+
+Emits a notice when `MODIFY COLUMN` explicitly states `NULL` or `NOT NULL` but the prior column nullability cannot be confirmed. It never claims that a transition occurred. With confirmed live metadata, the notice is suppressed and the existing `...explicit_nullability_change.forbid` rule evaluates only a real transition.
+
+**Default:** `enabled: true`, `level: notice`
+
+**Parameters:** none.
+
+**Example:**
+```sql
+ALTER TABLE users MODIFY COLUMN email VARCHAR(320) NOT NULL;
+```
+
+**Config example:**
+```yaml
+rules:
+  ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory:
+    enabled: true
+    level: notice
+    params:
 ```
 
 ---

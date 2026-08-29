@@ -6,7 +6,7 @@ Explanation-oriented metadata for shipped DeltaScope rules, with discoverability
 
 | File | Responsibility |
 |------|---------------|
-| catalog.go | Builds stable catalog entries from shipped defaults, explanation templates, and discoverability metadata for CLI discovery |
+| catalog.go | Builds stable catalog entries from shipped defaults, explanation templates, and discoverability metadata for CLI discovery, including dialect and metadata-aware scope for the MODIFY nullability fallback advisory |
 | query.go | Structured query core: Query/Result types, Validate, QueryEntries with dialect/level/kind/category/search/limit filters |
 | catalog_test.go | Verifies catalog completeness, lookup stability, and metadata-aware flags |
 | catalog_discoverability_test.go | Verifies rule discoverability contract: completeness, field validity, deterministic ordering, dialect/category coverage, drift prevention |
@@ -56,7 +56,7 @@ Explanation-oriented metadata for shipped DeltaScope rules, with discoverability
 
 Catalog entries derive from the shipped default policy (`domainpolicy.Default()`):
 - **Enabled/Level/Params**: read directly from default policy
-- **Dialects**: derived from rule ID prefix (`ddl.pg.*` → `postgresql`, `ddl.tidb.*` → `tidb`, `.merge.mysql.` → `mysql`, `.merge.tidb.` → `tidb`, else → `common`)
+- **Dialects**: derived from rule ID prefix (`ddl.pg.*` → `postgresql`, `ddl.tidb.*` → `tidb`, `.merge.mysql.` → `mysql`, `.merge.tidb.` → `tidb`, the MODIFY unknown-prior-state nullability advisory → `mysql`/`tidb`, else → `common`)
 - **Category**: derived from rule ID segments (e.g., `ddl.table.*` → `table`, `ddl.alter.*` → `alter_table`, `dml.*` → `dml_safety`)
 - **Tags**: synthesized from kind + dialect + category + action suffix
 - **Source**: always `policy` since all entries derive from default policy

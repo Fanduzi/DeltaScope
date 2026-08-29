@@ -406,6 +406,8 @@ const (
 	ruleIDTiDBAlterTablePlacementPolicyNotice = "ddl.tidb.alter_table.placement_policy.notice"
 )
 
+const ruleIDAlterModifyColumnExplicitNullabilityUnknownPriorStateAdvisory = "ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory"
+
 func appliesToCreateTable(statement spec.Statement) bool {
 	if statement.Kind != spec.KindDDL || statement.DDL == nil || statement.DDL.Table == nil {
 		return false

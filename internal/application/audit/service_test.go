@@ -1,6 +1,6 @@
 // Package audit verifies the application audit service behavior.
-// input: audit service requests with SQL, dialect, and optional config path
-// output: end-to-end application audit coverage over policy loading, partial parsing, extraction, and rules
+// input: audit service requests with SQL, dialect, optional config, and metadata provider
+// output: end-to-end application audit coverage over policy loading, partial parsing, extraction, metadata enrichment, and rules
 // pos: application audit service test coverage
 // note: if this file changes, update this header and module README.md.
 package audit
@@ -56,6 +56,8 @@ var defaultPolicyDialectHygienePostgreSQLOnlyRemediationTokens = []string{
 
 const postgreSQLSyntaxNoticeRuleID = "dialect.postgresql.syntax.detected.notice"
 
+const modifyColumnUnknownPriorNullabilityAdvisoryRuleID = "ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory"
+
 type fakeMetadataProvider struct {
 	instanceCalls int
 	tableCalls    []string
@@ -102,6 +104,174 @@ func (f *fakeMetadataProvider) ResolveTableForIndex(_ context.Context, dialect s
 		return "", f.err
 	}
 	return f.indexTable, nil
+}
+
+func TestAuditModifyColumnNullabilityUsesCurrentMetadata(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		dialect        spec.Dialect
+		currentNotNull bool
+		requestedSQL   string
+		wantBlocker    bool
+	}{
+		{name: "mysql nullable remains nullable", dialect: spec.DialectMySQL, currentNotNull: false, requestedSQL: "ALTER TABLE users MODIFY COLUMN email VARCHAR(320) NULL", wantBlocker: false},
+		{name: "mysql not null remains not null", dialect: spec.DialectMySQL, currentNotNull: true, requestedSQL: "ALTER TABLE users MODIFY COLUMN email VARCHAR(320) NOT NULL", wantBlocker: false},
+		{name: "mysql nullable becomes not null", dialect: spec.DialectMySQL, currentNotNull: false, requestedSQL: "ALTER TABLE users MODIFY COLUMN email VARCHAR(320) NOT NULL", wantBlocker: true},
+		{name: "mysql not null becomes nullable", dialect: spec.DialectMySQL, currentNotNull: true, requestedSQL: "ALTER TABLE users MODIFY COLUMN email VARCHAR(320) NULL", wantBlocker: true},
+		{name: "mysql omitted nullability", dialect: spec.DialectMySQL, currentNotNull: true, requestedSQL: "ALTER TABLE users MODIFY COLUMN email VARCHAR(320)", wantBlocker: false},
+		{name: "tidb nullable remains nullable", dialect: spec.DialectTiDB, currentNotNull: false, requestedSQL: "ALTER TABLE users MODIFY COLUMN email VARCHAR(320) NULL", wantBlocker: false},
+		{name: "tidb not null remains not null", dialect: spec.DialectTiDB, currentNotNull: true, requestedSQL: "ALTER TABLE users MODIFY COLUMN email VARCHAR(320) NOT NULL", wantBlocker: false},
+		{name: "tidb nullable becomes not null", dialect: spec.DialectTiDB, currentNotNull: false, requestedSQL: "ALTER TABLE users MODIFY COLUMN email VARCHAR(320) NOT NULL", wantBlocker: true},
+		{name: "tidb not null becomes nullable", dialect: spec.DialectTiDB, currentNotNull: true, requestedSQL: "ALTER TABLE users MODIFY COLUMN email VARCHAR(320) NULL", wantBlocker: true},
+		{name: "tidb omitted nullability", dialect: spec.DialectTiDB, currentNotNull: true, requestedSQL: "ALTER TABLE users MODIFY COLUMN email VARCHAR(320)", wantBlocker: false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			result, err := AuditSQL(context.Background(), Request{
+				SQL:     tc.requestedSQL,
+				Dialect: tc.dialect,
+				Schema:  "app",
+				MetadataProvider: &fakeMetadataProvider{snapshot: &spec.TableSnapshot{
+					Exists:  true,
+					Table:   &spec.Table{Name: "users"},
+					Columns: []spec.Column{{Name: "email", Type: "varchar", Length: 255, NotNull: tc.currentNotNull}},
+				}},
+			})
+			if err != nil {
+				t.Fatalf("audit: %v", err)
+			}
+
+			blocker := false
+			advisory := false
+			for _, finding := range result.Statements[0].Findings {
+				switch finding.RuleID {
+				case "ddl.alter.modify_column.explicit_nullability_change.forbid":
+					blocker = true
+				case modifyColumnUnknownPriorNullabilityAdvisoryRuleID:
+					advisory = true
+				}
+			}
+			if blocker != tc.wantBlocker {
+				t.Fatalf("explicit nullability blocker = %t, want %t; findings=%+v", blocker, tc.wantBlocker, result.Statements[0].Findings)
+			}
+			if advisory {
+				t.Fatalf("did not expect unknown-prior-state advisory with confirmed column metadata; findings=%+v", result.Statements[0].Findings)
+			}
+		})
+	}
+}
+
+func TestAuditModifyColumnNullabilityOfflineUsesUnknownPriorStateAdvisory(t *testing.T) {
+	t.Parallel()
+
+	for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
+		dialect := dialect
+		t.Run(string(dialect), func(t *testing.T) {
+			t.Parallel()
+			result, err := AuditSQL(context.Background(), Request{
+				SQL:     "ALTER TABLE users MODIFY COLUMN email VARCHAR(320) NOT NULL",
+				Dialect: dialect,
+			})
+			if err != nil {
+				t.Fatalf("audit: %v", err)
+			}
+
+			var advisory *rule.Finding
+			for i := range result.Statements[0].Findings {
+				finding := &result.Statements[0].Findings[i]
+				switch finding.RuleID {
+				case "ddl.alter.modify_column.explicit_nullability_change.forbid":
+					t.Fatalf("offline audit must not claim a nullability transition: %+v", *finding)
+				case modifyColumnUnknownPriorNullabilityAdvisoryRuleID:
+					advisory = finding
+				}
+			}
+			if advisory == nil {
+				t.Fatalf("expected unknown-prior-state advisory, got %+v", result.Statements[0].Findings)
+			}
+			if advisory.Level != rule.LevelNotice {
+				t.Fatalf("expected notice-level advisory, got %+v", advisory)
+			}
+			if advisory.Metadata["prior_state"] != "unknown" || advisory.Metadata["requested_not_null"] != true {
+				t.Fatalf("expected bounded nullability metadata, got %+v", advisory.Metadata)
+			}
+		})
+	}
+}
+
+func TestAuditModifyColumnNullabilityMissingColumnMetadataStaysUnknown(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name     string
+		snapshot *spec.TableSnapshot
+	}{
+		{name: "missing column", snapshot: &spec.TableSnapshot{Exists: true, Table: &spec.Table{Name: "users"}}},
+		{name: "missing snapshot", snapshot: nil},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			result, err := AuditSQL(context.Background(), Request{
+				SQL:     "ALTER TABLE users MODIFY COLUMN email VARCHAR(320) NULL",
+				Dialect: spec.DialectMySQL,
+				Schema:  "app",
+				MetadataProvider: &fakeMetadataProvider{
+					snapshot: tc.snapshot,
+				},
+			})
+			if err != nil {
+				t.Fatalf("audit: %v", err)
+			}
+			for _, finding := range result.Statements[0].Findings {
+				if finding.RuleID == "ddl.alter.modify_column.explicit_nullability_change.forbid" {
+					t.Fatalf("missing metadata must not be treated as nullable source state: %+v", finding)
+				}
+			}
+			foundAdvisory := false
+			for _, finding := range result.Statements[0].Findings {
+				if finding.RuleID == modifyColumnUnknownPriorNullabilityAdvisoryRuleID {
+					foundAdvisory = true
+					break
+				}
+			}
+			if !foundAdvisory {
+				t.Fatalf("expected unknown-prior-state advisory, got %+v", result.Statements[0].Findings)
+			}
+		})
+	}
+}
+
+func TestAuditModifyColumnNullabilityDoesNotSuppressCompatibilityFinding(t *testing.T) {
+	t.Parallel()
+
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "ALTER TABLE users MODIFY COLUMN email VARCHAR(128) NOT NULL",
+		Dialect: spec.DialectMySQL,
+		Schema:  "app",
+		MetadataProvider: &fakeMetadataProvider{snapshot: &spec.TableSnapshot{
+			Exists:  true,
+			Table:   &spec.Table{Name: "users"},
+			Columns: []spec.Column{{Name: "email", Type: "varchar", Length: 255, NotNull: false}},
+		}},
+	})
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+
+	ids := make(map[string]bool)
+	for _, finding := range result.Statements[0].Findings {
+		ids[finding.RuleID] = true
+	}
+	if !ids["ddl.alter.modify_column.explicit_nullability_change.forbid"] {
+		t.Fatal("expected confirmed nullability transition blocker")
+	}
+	if !ids["ddl.alter.modify_column.compatibility.require"] {
+		t.Fatal("expected independent type compatibility finding")
+	}
 }
 
 func assertHasPostgreSQLSyntaxNotice(t *testing.T, result report.Result, token string) {
