@@ -3,7 +3,7 @@
 Date: 2026-08-30
 Status: Accepted
 Related milestone/version: GitHub issue #43
-Related commits: `2e4361490f345001bcf05939cc2cab471aa9f1f6` (statement recovery), `38878afa4e42dfb568b91055d25fad10235278f8` (public surfaces), `7d62fae02f0782a9424fc656c7548502965328aa` (location and boundary review fixes)
+Related commits: `2e4361490f345001bcf05939cc2cab471aa9f1f6` (statement recovery), `38878afa4e42dfb568b91055d25fad10235278f8` (public surfaces), `7d62fae02f0782a9424fc656c7548502965328aa` (location and boundary review fixes), `c6034181b4f3ad7b03764bd7204f9608d6f48cca` (Unicode dollar-quote boundary fix)
 Related tests: `internal/application/audit/service_test.go`, `internal/application/audit/ddl_parser_error_unsupported_contract_postgresql_tag_test.go`, `internal/application/audit/corpus_test.go`, `internal/application/audit/corpus_postgresql_tag_test.go`, public surface diagnostic tests
 Related docs: `internal/application/audit/README.md`, `internal/domain/spec/README.md`, `testdata/sql-corpus/README.md`
 
@@ -55,6 +55,7 @@ SDK, CLI, HTTP, and MCP error paths retain the same partial result. JSON and CI 
 - SDK, CLI, HTTP, and MCP tests assert the same partial-result and no-leak contract.
 - GitHub Actions, GitHub Summary, SARIF, and GitLab Code Quality tests assert visible bounded CI diagnostics.
 - Independent Spec review exposed a failed-chunk source-text collision; `7d62fae02f0782a9424fc656c7548502965328aa` confines successful location matching to the original chunk and adds the regression.
+- Final Spec review exposed PostgreSQL Unicode dollar-quote tags; `c6034181b4f3ad7b03764bd7204f9608d6f48cca` recognizes the documented Unicode identifier-letter boundary without broadening parser semantics.
 
 ## Consequences
 
@@ -67,6 +68,6 @@ SDK, CLI, HTTP, and MCP error paths retain the same partial result. JSON and CI 
 
 - Issue: https://github.com/Fanduzi/DeltaScope/issues/43
 - Base: `9d8251e89b23c687a2102e343e9b446565c8ad47`
-- Commits: `2e4361490f345001bcf05939cc2cab471aa9f1f6`, `38878afa4e42dfb568b91055d25fad10235278f8`, `7d62fae02f0782a9424fc656c7548502965328aa`
+- Commits: `2e4361490f345001bcf05939cc2cab471aa9f1f6`, `38878afa4e42dfb568b91055d25fad10235278f8`, `7d62fae02f0782a9424fc656c7548502965328aa`, `c6034181b4f3ad7b03764bd7204f9608d6f48cca`
 - Tests: `internal/application/audit/service_test.go`, `internal/application/audit/ddl_parser_error_unsupported_contract_postgresql_tag_test.go`, `pkg/deltascope/audit_unsupported_diagnostics_evidence_test.go`
 - Corpus: `testdata/sql-corpus/mysql/ddl/boundary/`, `testdata/sql-corpus/tidb/ddl/boundary/`, `testdata/sql-corpus/postgresql/ddl/boundary/`
