@@ -74,7 +74,7 @@ deltascope audit --config ./deltascope.yaml --format json --file ./migrations/v2
 
 **元数据感知模式下的行为：**
 
-- MySQL/TiDB 方言通过查询 `tidb_version()` 从实例自动检测。若同时显式指定了 `--dialect` 且与检测结果冲突，命令以退出码 2 退出。`--database` 选择 catalog，并且是 `--schema` 的别名；只提供其中一个即可，两者值相同会被接受，值冲突时会在 MySQL/TiDB 元数据连接打开前失败。省略 `--port` 时，该路径继续使用面向 MySQL 的默认端口 `3306`。
+- MySQL/TiDB 方言通过查询 `tidb_version()` 从实例自动检测。若同时显式指定了 `--dialect` 且与检测结果冲突，命令以退出码 2 退出。`--database` 选择 catalog，并且是 `--schema` 的别名；只提供其中一个即可，两者值相同会被接受，显式选择 MySQL/TiDB 时值冲突会在元数据连接打开前失败。自动检测连接会在识别实例后执行相同检查，以保持 PostgreSQL 的 database/schema 区分。省略 `--port` 时，该路径继续使用面向 MySQL 的默认端口 `3306`。
 - PostgreSQL 必须显式传入 `--dialect postgresql`，并用 `--database` 选择数据库（省略时默认为 `postgres`）；`--schema` 选择该数据库内的 schema。显式设置 `--schema` 时必须提供 `--database`，不会从 schema 值推断数据库；两者都省略时保留默认 catalog 解析。省略 `--port` 时，显式 PostgreSQL 选择使用 `5432`；显式传入的端口始终优先。CLI 不会通过探测服务来推断端口。
 - 无限定表名的 schema 解析顺序：SQL 级限定符 → `--schema` 标志 → 可访问 schema 中的唯一匹配 → 模糊时报错。
 - 连接失败时只向 stderr 打印一行有界消息。可移植输出不会包含 host、port、user、DSN、密码或原始驱动文本。空密码仍然允许；仅当服务器拒绝该空密码时，才会提示缺少 `--password-env` / `--password-file` / `--ask-password`。

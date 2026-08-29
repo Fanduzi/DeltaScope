@@ -86,8 +86,9 @@ that connection but do not activate metadata-aware mode on their own.
 - For MySQL/TiDB: dialect is auto-detected from the live instance by querying `tidb_version()`. If `--dialect` is
   also set explicitly and conflicts, the command exits with code 2. `--database` selects the catalog and is an alias
   for `--schema`; either flag alone works, matching values are accepted, and conflicting values fail before an
-  MySQL/TiDB metadata connection opens. When `--port` is omitted, this path keeps the MySQL-oriented default of
-  `3306`.
+  explicitly selected MySQL/TiDB metadata connection opens. Auto-detected connections apply the same check after
+  identity detection so PostgreSQL database/schema values remain distinct. When `--port` is omitted, this path keeps
+  the MySQL-oriented default of `3306`.
 - For PostgreSQL: pass `--dialect postgresql` explicitly and use `--database` to select the database (`postgres` when omitted). `--schema` selects the schema within that database; when `--schema` is explicitly set, `--database` is required and is never inferred from the schema value. Omitting both preserves default catalog resolution. When `--port` is omitted, the explicit PostgreSQL selection uses `5432`; an explicit port always wins. The CLI does not probe services to infer a port.
 - Schema resolution order for unqualified table names: SQL-level qualifier → `--schema` flag →
   unique match across accessible schemas → error if ambiguous.
