@@ -246,18 +246,18 @@ func TestQueryAccessAnalyzeHelpShowsConnectionFlags(t *testing.T) {
 
 func TestQueryAccessAnalyzeRejectsAuditOnlyFlags(t *testing.T) {
 	for _, tc := range []struct {
-		name  string
-		flag  string
-		value string
+		name string
+		args []string
+		flag string
 	}{
-		{name: "format", flag: "--format", value: "json"},
-		{name: "fail-on", flag: "--fail-on", value: "warning"},
+		{name: "format", args: []string{"query-access", "analyze", "--sql", "SELECT 1", "--format", "json"}, flag: "--format"},
+		{name: "fail-on", args: []string{"query-access", "analyze", "--sql", "SELECT 1", "--fail-on", "warning"}, flag: "--fail-on"},
+		{name: "format before command", args: []string{"--format", "json", "query-access", "analyze", "--sql", "SELECT 1"}, flag: "--format"},
+		{name: "fail-on before command", args: []string{"--fail-on", "warning", "query-access", "analyze", "--sql", "SELECT 1"}, flag: "--fail-on"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var stdout, stderr bytes.Buffer
-			exitCode := Execute(t.Context(), []string{
-				"query-access", "analyze", "--sql", "SELECT 1", tc.flag, tc.value,
-			}, &bytes.Buffer{}, &stdout, &stderr)
+			exitCode := Execute(t.Context(), tc.args, &bytes.Buffer{}, &stdout, &stderr)
 
 			if exitCode != exitQueryAccessUsageError {
 				t.Fatalf("expected exit code %d, got %d: %s", exitQueryAccessUsageError, exitCode, stderr.String())

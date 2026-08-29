@@ -6,7 +6,7 @@ CLI adapter layer for the DeltaScope application.
 
 | File | Responsibility |
 |------|---------------|
-| cli.go | Bridges process execution into the testable CLI executor and maps unset Cobra usage errors (unknown flags/commands) to exit 2, except query-access usage which stays 3 |
+| cli.go | Bridges process execution into the testable CLI executor and maps unset Cobra usage errors (including prefixed flag forms) to exit 2, except query-access usage which stays 3 |
 | root.go | Builds the Cobra root command, shared CLI option state, stable error/exit-code mapping, and root flags while keeping audit-only rendering/threshold flags local to `audit` |
 | audit.go | Implements the `audit` subcommand, audit-local `--format`/`--fail-on` validation and rendering, SQL input loading, interactive stdin hinting, dialect-aware MySQL/TiDB catalog alias and conflict normalization before known-dialect open, PostgreSQL schema/database usage validation, password/password-env/password-file resolution, metadata-connect-timeout parsing, password prompting, bounded metadata connection error mapping (exit 2 vs 3), quiet/normal/github-summary rendering, offline existence caveats on markdown Action Summary / quiet context / JSON context, and fail-threshold logic |
 | audit_metadata.go | Bridges CLI metadata-aware options (including connect timeout, normalized port, and MySQL/TiDB database catalog selection for explicit and auto-detected opens) into the shared metadata-preparation flow and MySQL-compatible client opener, and attaches the shared offline `context.note` / `context.unproven` when existence was not checked |

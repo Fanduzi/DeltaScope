@@ -44,6 +44,7 @@ The root help no longer advertises audit output formats. Users must place `--for
 
 ## Links
 
+- Implementation commit: [`4d9acc5`](https://github.com/Fanduzi/DeltaScope/commit/4d9acc527a30ac64b399c14694533e500084cb7e)
 - [CLI reference](../reference/cli.md)
 - [Query Access reference](../reference/query-access-analysis.md)
 - [CLI implementation](../../internal/interfaces/cli/audit.go)

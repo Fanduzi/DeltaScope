@@ -1,6 +1,6 @@
 // Package cli exposes the command-line adapter for DeltaScope.
 // input: process control from cmd/deltascope and Cobra command execution requests
-// output: executable CLI behavior and stable process exit codes, including Cobra usage-error mapping for local audits
+// output: executable CLI behavior and stable process exit codes, including Cobra usage-error mapping for audit and query-access command paths
 // pos: interface adapter between process entrypoint and application services
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -66,11 +66,22 @@ func isCLIUsageError(err error) bool {
 }
 
 func firstPositionalArg(args []string) string {
+	skipValue := false
 	for _, arg := range args {
+		if skipValue {
+			skipValue = false
+			continue
+		}
 		if arg == "--" {
 			return ""
 		}
 		if strings.HasPrefix(arg, "-") {
+			if !strings.Contains(arg, "=") {
+				switch arg {
+				case "--config", "--dialect", "--format", "--fail-on":
+					skipValue = true
+				}
+			}
 			continue
 		}
 		return arg
