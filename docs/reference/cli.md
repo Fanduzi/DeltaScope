@@ -111,7 +111,18 @@ that connection but do not activate metadata-aware mode on their own.
 | Authentication failed after a password source was set | `authentication failed` | `3` |
 | Server unreachable or other dial failure | `connection failed` | `3` |
 | Connect timeout | `connection timed out` | `3` |
-| TLS handshake or certificate verification | `TLS handshake failed` or `TLS certificate verification failed` | `3` |
+| TLS certificate hostname mismatch | `TLS hostname mismatch` | `3` |
+| TLS certificate authority is unknown or untrusted | `TLS unknown certificate authority` | `3` |
+| TLS server did not offer TLS | `TLS server did not offer TLS` | `3` |
+| Other TLS certificate verification failure | `TLS certificate verification failed` | `3` |
+| Other TLS handshake failure | `TLS handshake failed` | `3` |
+
+TLS failure messages are bounded categories. They never include the target host or address,
+certificate identity, credentials, DSN, CA-file path, or raw driver text. Hostname verification
+remains enabled. Stock MySQL 8.4 auto-generated server certificates have no hostname-valid SAN;
+supplying the server's `ca.pem` establishes trust but does not make that certificate valid for
+`localhost` or an IP address. Use a server certificate with a DNS/IP SAN matching `--host` and
+the corresponding trusted CA.
 
 Examples:
 

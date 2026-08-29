@@ -1,17 +1,21 @@
 // Package cli verifies metadata-aware connection failure exit codes and bounded messages.
-// input: Execute args for unreachable, authentication, and password-source failures
-// output: exit-code, one-line bounded stderr, and no-leak coverage for issue #23
+// input: Execute args and typed/wrapped driver errors for dial, authentication, password-source, and TLS failures
+// output: exit-code, one-line bounded stderr, TLS category, and no-leak coverage for metadata connection errors
 // pos: interface-layer contract tests for metadata connection error mapping
 // note: if this file changes, update this header and module README.md.
 package cli
 
 import (
 	"context"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
+	gomysql "github.com/go-sql-driver/mysql"
 )
 
 func TestAuditUnreachableMetadataServerExitsRuntime(t *testing.T) {
@@ -178,10 +182,76 @@ func TestAuditTLSFailureExitsRuntime(t *testing.T) {
 	if code != exitInternal {
 		t.Fatalf("expected exit %d for TLS failure, got %d (stderr=%q)", exitInternal, code, stderr.String())
 	}
-	if stderr.String() != "TLS certificate verification failed\n" {
+	if stderr.String() != "TLS unknown certificate authority\n" {
 		t.Fatalf("expected bounded TLS message, got %q", stderr.String())
 	}
 	assertNoConnectionInternals(t, stderr.String(), "db.example.com", "3306", "root", "x509")
+}
+
+func TestAuditTLSFailureCategories(t *testing.T) {
+	certificate := &x509.Certificate{
+		Subject:  pkix.Name{CommonName: "secret-cert.example"},
+		DNSNames: []string{"secret-cert.example"},
+	}
+
+	tests := []struct {
+		name  string
+		cause error
+		want  string
+	}{
+		{
+			name:  "hostname mismatch",
+			cause: fmt.Errorf("tls: failed to verify certificate: %w", x509.HostnameError{Certificate: certificate, Host: "secret-target.example"}),
+			want:  "TLS hostname mismatch",
+		},
+		{
+			name:  "unknown certificate authority",
+			cause: fmt.Errorf("tls: failed to verify certificate: %w", x509.UnknownAuthorityError{Cert: certificate}),
+			want:  "TLS unknown certificate authority",
+		},
+		{
+			name:  "mysql server did not offer TLS",
+			cause: gomysql.ErrNoTLS,
+			want:  "TLS server did not offer TLS",
+		},
+		{
+			name:  "postgresql server did not offer TLS",
+			cause: errors.New("server refused TLS connection"),
+			want:  "TLS server did not offer TLS",
+		},
+		{
+			name:  "verification fallback",
+			cause: errors.New("tls: failed to verify certificate: certificate policy rejected"),
+			want:  "TLS certificate verification failed",
+		},
+		{
+			name:  "handshake fallback",
+			cause: errors.New("tls: handshake failure"),
+			want:  "TLS handshake failed",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := &auditmeta.Error{
+				Kind:    auditmeta.ErrorConnectionOpen,
+				Message: fmt.Sprintf("open metadata connection: dsn=mysql://secret-user:secret-password@secret-target.example:3306/app path=/private/ca.pem raw=raw-driver-error cause=%v", tt.cause),
+				Err:     tt.cause,
+			}
+
+			got := mapAuditMetaErrorToBounded(err)
+			if got.Error() != tt.want {
+				t.Fatalf("expected %q, got %q", tt.want, got.Error())
+			}
+			if code := exitCodeForCLIError(got); code != exitInternal {
+				t.Fatalf("expected exit %d, got %d", exitInternal, code)
+			}
+			assertNoConnectionInternals(t, got.Error(),
+				"secret-target.example", "secret-cert.example", "secret-user", "secret-password",
+				"mysql://", "/private/ca.pem", "raw-driver-error",
+			)
+		})
+	}
 }
 
 func TestAuditMissingPasswordEnvStaysUserErrorWithoutConnect(t *testing.T) {

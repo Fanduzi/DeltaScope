@@ -1,6 +1,6 @@
 // Package cli exposes the command-line adapter for DeltaScope.
 // input: audit command flags including audit-local output format and fail threshold, whether --sql was explicitly provided, SQL text from flags/files/stdin, password source/prompt dependencies, and application audit services
-// output: rendered audit results, audit-only output validation, dialect-aware connection-option normalization with MySQL/TiDB catalog aliases and PostgreSQL schema/database validation, password resolution, offline existence caveats on default surfaces, and user-vs-runtime exit-code mapping for CLI audit invocations
+// output: rendered audit results, audit-only output validation, dialect-aware connection-option normalization with MySQL/TiDB catalog aliases and PostgreSQL schema/database validation, password resolution, offline existence caveats, and user-vs-runtime exit-code mapping with bounded TLS categories for CLI audit invocations
 // pos: CLI audit command implementation above the application service and output renderers
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -671,9 +671,31 @@ func mapAuditMetaErrorToBounded(err *auditmeta.Error) error {
 
 func classifyConnectionError(err error) error {
 	msg := connectionErrorText(err)
+	var hostnameErr x509.HostnameError
+	var hostnameErrPtr *x509.HostnameError
+	var unknownAuthorityErr x509.UnknownAuthorityError
+	var unknownAuthorityErrPtr *x509.UnknownAuthorityError
 	switch {
 	case isAuthenticationFailure(msg):
 		return newRuntimeError("authentication failed")
+	case errors.As(err, &hostnameErr), errors.As(err, &hostnameErrPtr),
+		strings.Contains(msg, "certificate is valid for"),
+		strings.Contains(msg, "cannot validate certificate"),
+		strings.Contains(msg, "certificate relies on legacy common name"),
+		strings.Contains(msg, "certificate is not valid for"):
+		return newRuntimeError("TLS hostname mismatch")
+	case errors.As(err, &unknownAuthorityErr), errors.As(err, &unknownAuthorityErrPtr),
+		strings.Contains(msg, "unknown authority"),
+		strings.Contains(msg, "unknown ca"),
+		strings.Contains(msg, "untrusted root"):
+		return newRuntimeError("TLS unknown certificate authority")
+	case strings.Contains(msg, "server refused tls connection"),
+		strings.Contains(msg, "server refused ssl connection"),
+		strings.Contains(msg, "server does not support tls"),
+		strings.Contains(msg, "server does not support ssl"),
+		strings.Contains(msg, "server did not offer tls"),
+		strings.Contains(msg, "server does not offer tls"):
+		return newRuntimeError("TLS server did not offer TLS")
 	case strings.Contains(msg, "certificate") || strings.Contains(msg, "x509"):
 		return newRuntimeError("TLS certificate verification failed")
 	case strings.Contains(msg, "tls"):

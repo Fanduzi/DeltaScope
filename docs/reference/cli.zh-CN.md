@@ -93,7 +93,13 @@ deltascope audit --config ./deltascope.yaml --format json --file ./migrations/v2
 | 已设置密码来源后认证失败 | `authentication failed` | `3` |
 | 服务器不可达或其他拨号失败 | `connection failed` | `3` |
 | 连接超时 | `connection timed out` | `3` |
-| TLS 握手或证书校验失败 | `TLS handshake failed` 或 `TLS certificate verification failed` | `3` |
+| TLS 证书主机名不匹配 | `TLS hostname mismatch` | `3` |
+| TLS 证书颁发机构未知或不受信任 | `TLS unknown certificate authority` | `3` |
+| TLS 服务器未提供 TLS | `TLS server did not offer TLS` | `3` |
+| 其他 TLS 证书校验失败 | `TLS certificate verification failed` | `3` |
+| 其他 TLS 握手失败 | `TLS handshake failed` | `3` |
+
+TLS 失败消息仅使用有界分类，不会包含目标 host 或地址、证书身份、凭据、DSN、CA 文件路径或原始驱动文本。主机名校验仍保持启用。Stock MySQL 8.4 自动生成的服务端证书没有可用于主机名校验的 SAN；即使提供服务端自己的 `ca.pem`，也只建立信任关系，不能让该证书对 `localhost` 或 IP 地址通过校验。请使用 DNS/IP SAN 与 `--host` 匹配且由相应受信任 CA 签发的服务端证书。
 
 示例：
 

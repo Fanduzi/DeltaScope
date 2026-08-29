@@ -289,6 +289,11 @@ deltascope audit \
   --database app --schema public --metadata-connect-timeout 5s
 ```
 
+Stock MySQL 8.4 自动生成的服务端证书没有可用于主机名校验的 SAN。提供服务端自己的
+`ca.pem` 只能建立信任关系，不能让该证书对 `localhost` 或 IP 地址通过校验。TLS 元数据
+访问应使用 DNS/IP SAN 与 `--host` 匹配且由相应受信任 CA 签发的服务端证书；DeltaScope
+仍保持主机名校验启用。
+
 查看所有内置规则：
 
 ```bash

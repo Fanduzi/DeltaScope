@@ -289,6 +289,11 @@ deltascope audit \
   --database app --schema public --metadata-connect-timeout 5s
 ```
 
+Stock MySQL 8.4 auto-generated server certificates have no hostname-valid SAN. Supplying the
+server's `ca.pem` establishes trust but does not make that certificate valid for `localhost` or an
+IP address. For TLS metadata access, use a server certificate with a DNS/IP SAN matching `--host`
+and the corresponding trusted CA; DeltaScope keeps hostname verification enabled.
+
 See all shipped rules:
 
 ```bash
