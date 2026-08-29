@@ -1,6 +1,6 @@
 // Package httpapi exposes the HTTP adapter for DeltaScope.
 // input: query-access JSON requests, authorized runtime connection configuration, and the unified public online query access API
-// output: bounded offline or identity-routed online query-access JSON responses with unchanged HTTP status and logging contracts
+// output: bounded offline or identity-routed online query-access JSON responses with stable identity error mapping and unchanged logging contracts
 // pos: HTTP query-access adapter above offline analysis and the opaque unified online session boundary
 // note: if this file changes, update this header and module README.md.
 package httpapi
@@ -159,7 +159,8 @@ func handleQueryAccessOnline(
 
 	queryAccessSession, err := newOnlineQueryAccessSessionFromConn(r.Context(), session.Conn)
 	if err != nil {
-		writeError(w, http.StatusBadGateway, "connection_failed", "connection failed")
+		status, code, message := mapOnlineQueryAccessConstructorError(err)
+		writeError(w, status, code, message)
 		return
 	}
 	result, err := analyzeOnlineQueryAccessWithSession(r.Context(), queryAccessSession, deltascope.QueryAccessRequest{
@@ -174,6 +175,13 @@ func handleQueryAccessOnline(
 	}
 
 	writeJSON(w, http.StatusOK, result)
+}
+
+func mapOnlineQueryAccessConstructorError(err error) (int, string, string) {
+	if errors.Is(err, deltascope.ErrOnlineQueryAccessPostgreSQLVersionUnsupported) {
+		return http.StatusBadGateway, "identity_error", online.PostgreSQLQueryAccessVersionRequirement
+	}
+	return http.StatusBadGateway, "connection_failed", "connection failed"
 }
 
 func mapOnlineSessionError(err error) (int, string) {

@@ -176,7 +176,7 @@ deltascope query-access analyze --sql "SELECT id, name FROM users WHERE id = 1" 
 deltascope query-access analyze --file ./query.sql --dialect postgresql --mode projection_only
 ```
 
-退出码：`0` = 可准入，`1` = 已拒绝，`2` = 不确定，`3` = 用法或连接错误。CLI 始终输出固定的 Query Access JSON 文档；仅属于 audit 的 `--format` 和 `--fail-on` 标志在两种命令位置都不受支持，传入后以退出码 3 失败且不输出分析文档。
+退出码：`0` = 可准入，`1` = 已拒绝，`2` = 不确定，`3` = 用法或连接错误。CLI 始终输出固定的 Query Access JSON 文档；仅属于 audit 的 `--format` 和 `--fail-on` 标志在两种命令位置都不受支持，传入后以退出码 3 失败且不输出分析文档。在线 PostgreSQL Query Access 有意只要求 PostgreSQL 17；可连接但不受支持的 PostgreSQL 身份会以退出码 3 失败，并返回有界消息 `online PostgreSQL Query Access requires PostgreSQL 17`。
 
 ## HTTP 用法
 
@@ -188,7 +188,7 @@ curl -X POST http://localhost:8083/v1/query-access/analyze \
   -d '{"sql":"SELECT id FROM users","dialect":"mysql","mode":"strict","profile":"mysql-8.4"}'
 ```
 
-该端点返回与 SDK 相同的 JSON 结构。无效模式返回 `400` 和 `invalid_mode` 错误码；无效配置返回有界的 `400` 错误，不会回显配置或 SQL。
+该端点返回与 SDK 相同的 JSON 结构。无效模式返回 `400` 和 `invalid_mode` 错误码；无效配置返回有界的 `400` 错误，不会回显配置或 SQL。可连接但不属于可信 PG17 在线能力的 PostgreSQL 服务器返回 `502`、`identity_error`，以及有界消息 `online PostgreSQL Query Access requires PostgreSQL 17`；该错误码会在 `GET /v1/capabilities` 中列出。
 
 ## 让 SDK 真正确认 MySQL/TiDB 的函数查询（同连接会话）
 
@@ -266,6 +266,8 @@ session, err := deltascope.NewOnlineQueryAccessSessionFromConn(ctx, conn)
 - 接受调用者拥有的 `*sql.Conn`（不是 `*sql.DB`）
 - 通过 `PingContext` 验证连接活性并识别服务器
 - 不获取连接的所有权；连接由调用者关闭
+- 可连接但版本不属于 PG17 的 PostgreSQL 身份返回有界的
+  `ErrOnlineQueryAccessPostgreSQLVersionUnsupported` 错误
 - 在非 postgresql 构建中返回 `ErrOnlineQueryAccessCapabilityUnsupported`
 
 ### 可信分析

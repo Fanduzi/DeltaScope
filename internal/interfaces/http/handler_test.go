@@ -1,6 +1,6 @@
 // Package httpapi verifies HTTP request binding and response mapping.
 // input: synthetic HTTP requests against the DeltaScope HTTP adapter
-// output: focused coverage for health, version, rule/capability discovery, audit success, and structured error responses
+// output: focused coverage for health, version, rule/capability discovery, audit success, and structured error responses including advertised online identity errors
 // pos: interface adapter test coverage for the HTTP service surface
 // note: if this file changes, update this header and module README.md.
 package httpapi
@@ -251,6 +251,20 @@ func TestHandlerCapabilitiesReturnsSurfaceSummary(t *testing.T) {
 	}
 	if !foundPostgreSQL {
 		t.Fatalf("expected capabilities payload to include postgresql, got %#v", dialects)
+	}
+	structuredErrors, ok := payload["structured_errors"].([]any)
+	if !ok {
+		t.Fatalf("expected structured_errors array, got %#v", payload["structured_errors"])
+	}
+	foundIdentityError := false
+	for _, item := range structuredErrors {
+		if item == "identity_error" {
+			foundIdentityError = true
+			break
+		}
+	}
+	if !foundIdentityError {
+		t.Fatalf("expected capabilities payload to include identity_error, got %#v", structuredErrors)
 	}
 }
 

@@ -1,12 +1,13 @@
 // Package online provides tests for the identity parser.
 // input: version strings and expected dialects
-// output: validated or rejected ServerIdentity
+// output: validated ServerIdentity or bounded identity/version rejection
 // pos: unit tests for ParseServerIdentity
 // note: if this file changes, update this header and module README.md.
 package online
 
 import (
 	"errors"
+	"strings"
 	"testing"
 )
 
@@ -331,6 +332,22 @@ func TestParseServerIdentity_DialectMismatch(t *testing.T) {
 				t.Errorf("ParseServerIdentity(%q, %q) error = %v, want %v", tt.rawVersion, tt.expectedDialect, err, ErrDialectMismatch)
 			}
 		})
+	}
+}
+
+func TestParseServerIdentity_PostgreSQLUnsupportedVersionIsBounded(t *testing.T) {
+	_, err := ParseServerIdentity("PostgreSQL 16.3 custom password=secret", "postgresql")
+	if !errors.Is(err, ErrPostgreSQLQueryAccessVersionUnsupported) {
+		t.Fatalf("want ErrPostgreSQLQueryAccessVersionUnsupported, got %v", err)
+	}
+	if !errors.Is(err, ErrIdentityUnsupported) {
+		t.Fatalf("want unsupported identity compatibility, got %v", err)
+	}
+	if err.Error() != "online PostgreSQL Query Access requires PostgreSQL 17" {
+		t.Fatalf("unexpected bounded error: %q", err.Error())
+	}
+	if strings.Contains(strings.ToLower(err.Error()), "16.3") || strings.Contains(strings.ToLower(err.Error()), "secret") {
+		t.Fatalf("unsupported identity leaked observed version or raw details: %q", err.Error())
 	}
 }
 

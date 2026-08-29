@@ -204,7 +204,7 @@ deltascope query-access analyze --sql "SELECT id, name FROM users WHERE id = 1" 
 deltascope query-access analyze --file ./query.sql --dialect postgresql --mode projection_only
 ```
 
-Exit codes: `0` = admissible, `1` = rejected, `2` = indeterminate, `3` = usage or connection error. The CLI always emits the fixed Query Access JSON document; audit-only `--format` and `--fail-on` flags are unsupported in either command position and fail with exit 3 without analysis output.
+Exit codes: `0` = admissible, `1` = rejected, `2` = indeterminate, `3` = usage or connection error. The CLI always emits the fixed Query Access JSON document; audit-only `--format` and `--fail-on` flags are unsupported in either command position and fail with exit 3 without analysis output. Online PostgreSQL Query Access intentionally requires PostgreSQL 17; a reachable unsupported PostgreSQL identity exits 3 with the bounded message `online PostgreSQL Query Access requires PostgreSQL 17`.
 
 ## HTTP Usage
 
@@ -218,7 +218,10 @@ curl -X POST http://localhost:8083/v1/query-access/analyze \
 
 The endpoint returns the same JSON structure as the SDK. Invalid mode returns
 `400` with `invalid_mode`; invalid profiles return bounded `400` errors without
-echoing the profile or SQL.
+echoing the profile or SQL. A reachable PostgreSQL server outside the trusted
+PG17 online capability returns `502` with `identity_error` and the bounded
+message `online PostgreSQL Query Access requires PostgreSQL 17`; this code is
+listed by `GET /v1/capabilities`.
 
 ## Confirming MySQL/TiDB Function Queries via a Same-Connection Session
 
@@ -277,7 +280,7 @@ In other words, `admissible` means "I can fully enumerate what this query reads,
 
 ### Connection Ownership and Safety
 
-The session does not own or expose the connection you pass in. It constructs relation metadata resolution from that same connection, rejects an external `SchemaResolver`, and is the only SDK boundary that can construct the private semantic capability. The session does not expose catalog, manifest, connection, or credential details. The caller is responsible for closing the connection. The production registry is enabled for `mysql-5.7`, `mysql-8.0`, `mysql-8.4`, and `tidb-8.5`.
+The session does not own or expose the connection you pass in. It constructs relation metadata resolution from that same connection, rejects an external `SchemaResolver`, and is the only SDK boundary that can construct the private semantic capability. The session does not expose catalog, manifest, connection, or credential details. The caller is responsible for closing the connection. The production registry is enabled for `mysql-5.7`, `mysql-8.0`, `mysql-8.4`, and `tidb-8.5`; trusted online PostgreSQL Query Access remains PG17-only.
 
 ## MCP Deferral
 
@@ -296,6 +299,8 @@ session, err := deltascope.NewOnlineQueryAccessSessionFromConn(ctx, conn)
 - Accepts a caller-owned `*sql.Conn` (not `*sql.DB`)
 - Validates connection liveness via `PingContext` and identifies the server
 - Does not take ownership of the connection; caller must close it
+- A reachable PostgreSQL identity outside PG17 returns the bounded
+  `ErrOnlineQueryAccessPostgreSQLVersionUnsupported` error
 - Returns `ErrOnlineQueryAccessCapabilityUnsupported` in non-postgresql builds
 
 ### Trusted Analysis

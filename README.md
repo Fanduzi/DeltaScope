@@ -490,6 +490,7 @@ DeltaScope keeps one audit path and exposes it through multiple entrypoints. Pro
 | `internal/application` | Use-case orchestration layer | [README](internal/application/README.md) |
 | `internal/application/audit` | Application parse/audit orchestration | [README](internal/application/audit/README.md) |
 | `internal/application/auditmeta` | Shared metadata-aware audit preparation | [README](internal/application/auditmeta/README.md) |
+| `internal/application/online` | Shared online identity, session, and bounded error boundary | [README](internal/application/online/README.md) |
 | `internal/application/policy` | Application policy loader | [README](internal/application/policy/README.md) |
 | `internal/domain` | Core domain types and rules | [README](internal/domain/README.md) |
 | `internal/domain/spec` | Normalized statement specifications | [README](internal/domain/spec/README.md) |

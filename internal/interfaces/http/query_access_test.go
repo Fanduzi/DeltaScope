@@ -1,6 +1,6 @@
 // Package httpapi verifies HTTP query access request binding and response mapping.
 // input: synthetic HTTP requests against offline analysis and unified online-session routing
-// output: focused coverage for JSON behavior, unified entry use, bounded failures, zero-open authorization, and close ownership
+// output: focused coverage for JSON behavior, unified entry use, bounded failures including the PostgreSQL PG17 version boundary, zero-open authorization, and close ownership
 // pos: HTTP adapter behavior and unified online migration coverage for query access
 // note: if this file changes, update this header and module README.md.
 package httpapi
@@ -134,6 +134,36 @@ func TestHandlerQueryAccessOnlineMapsUnifiedConstructorFailures(t *testing.T) {
 				t.Fatalf("calls = constructor:%d analysis:%d close:%d, want 1, 0, 1", constructorCalls, analysisCalls, closeCalls)
 			}
 		})
+	}
+}
+
+func TestHandlerQueryAccessOnlinePostgreSQL16ReportsVersionRequirement(t *testing.T) {
+	previousOpener := openOnlineSession
+	openOnlineSession = func(context.Context, online.SessionConfig) (*online.Session, error) {
+		return nil, online.ErrPostgreSQLQueryAccessVersionUnsupported
+	}
+	t.Cleanup(func() { openOnlineSession = previousOpener })
+
+	handler, err := NewHandler("", "test-build", WithRegistry(newQueryAccessTestRegistry(t, "pg16")))
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodPost, "/v1/query-access/analyze", bytes.NewBufferString(`{"sql":"SELECT COUNT(1) /* PG16_SQL_MARKER */ FROM public.users","connection_id":"pg16"}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", "test-key-value")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadGateway {
+		t.Fatalf("status = %d, want %d: %s", rec.Code, http.StatusBadGateway, rec.Body.String())
+	}
+	if rec.Body.String() != `{"error":{"code":"identity_error","message":"online PostgreSQL Query Access requires PostgreSQL 17"}}`+"\n" {
+		t.Fatalf("unexpected bounded HTTP error: %q", rec.Body.String())
+	}
+	for _, forbidden := range []string{"16.3", "PG16_SQL_MARKER", "pg16", "test-key-value", "127.0.0.1", "3306", "root", "secret"} {
+		if strings.Contains(strings.ToLower(rec.Body.String()), strings.ToLower(forbidden)) {
+			t.Fatalf("HTTP output leaked %q: %q", forbidden, rec.Body.String())
+		}
 	}
 }
 

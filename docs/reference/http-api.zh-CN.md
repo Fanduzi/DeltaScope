@@ -162,6 +162,7 @@ curl http://127.0.0.1:8083/v1/capabilities
     "bad_request",
     "connection_invalid",
     "connection_failed",
+    "identity_error",
     "config_invalid",
     "auth_required",
     "auth_invalid",
@@ -456,6 +457,11 @@ curl -s -X POST http://127.0.0.1:8083/v1/audit \
 
 > **在线方言行为：** 当设置了 `connection_id` 时，服务端会忽略请求中的 `dialect` 字段，从实时数据库会话中推断实际方言。`dialect` 字段仅在离线模式下进行校验；无法识别的方言仅在未提供 `connection_id` 时才返回 `400 bad_request`。
 
+在线 PostgreSQL Query Access 有意只信任 PostgreSQL 17。当可连接的命名
+连接报告其他 PostgreSQL 版本时，端点返回 `502 identity_error`，消息为有界的
+`online PostgreSQL Query Access requires PostgreSQL 17`。响应不会返回观察到的
+版本、连接信息、凭据、SQL 或目录对象名称。
+
 命名连接的 `purposes` 列表中必须包含 `query_access`，否则服务端返回 `403 purpose_not_allowed`。
 
 #### 请求
@@ -556,6 +562,7 @@ curl -s -X POST http://127.0.0.1:8083/v1/audit \
 | 403 | `not_authorized` | 已认证的主体无权访问所请求的连接 |
 | 403 | `purpose_not_allowed` | 命名连接的 `purposes` 中不含 `query_access` |
 | 502 | `connection_failed` | DeltaScope 无法打开元数据连接、探测方言，或无法解析 schema 信息 |
+| 502 | `identity_error` | 实时服务器身份不适用于请求的在线能力；PostgreSQL Query Access 要求 PostgreSQL 17 |
 | 401 | `auth_required` | 在开启认证且路径受保护时，请求缺少 `X-API-Key` |
 | 403 | `auth_invalid` | 请求提供了 `X-API-Key`，但不在服务端配置 key 列表中 |
 | 429 | `rate_limited` | 请求超过当前限流阈值 |

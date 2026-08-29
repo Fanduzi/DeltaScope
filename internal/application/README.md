@@ -13,6 +13,7 @@ Application services orchestrate use cases between interfaces, domain logic, and
 | configlint/ | Derives deterministic rule-level replacement warnings for a YAML config file |
 | policy/load.go | Loads effective audit policy for application use cases |
 | sql_input.go | Removes one leading UTF-8 BOM at the shared SQL-input boundary |
+| online/ | Opens, identifies, and maps bounded errors for online Query Access sessions |
 | queryaccess/ | Defines application contracts for query access analysis |
 
 ## Exports

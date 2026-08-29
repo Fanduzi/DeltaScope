@@ -1,6 +1,6 @@
 // Package deltascope verifies the unified online query access session contract.
 // input: caller-owned *sql.Conn backed by configurable stub and recording drivers
-// output: contract evidence for signatures, opacity, ownership, validation priority, generic sentinels, direct MySQL/TiDB semantics including parse-failure, compatibility equivalence, and recording-driver no-execution/no-leak
+// output: contract evidence for signatures, opacity, ownership, validation priority, generic and PostgreSQL-version sentinels, direct MySQL/TiDB semantics including parse-failure, compatibility equivalence, and recording-driver no-execution/no-leak
 // pos: public unified online session contract tests (default and PostgreSQL-tagged builds)
 // note: if this file changes, update this header and module README.md.
 package deltascope
@@ -349,10 +349,11 @@ func TestOnlineQueryAccessSession_RecognizedButUnsupportedVersion(t *testing.T) 
 	cases := []struct {
 		name    string
 		version string
+		wantErr error
 	}{
-		{"mysql81", "8.1.0"},
-		{"tidb75", "8.0.11-TiDB-v7.5.4"},
-		{"pg16", "PostgreSQL 16.3"},
+		{"mysql81", "8.1.0", ErrOnlineQueryAccessCapabilityUnsupported},
+		{"tidb75", "8.0.11-TiDB-v7.5.4", ErrOnlineQueryAccessCapabilityUnsupported},
+		{"pg16", "PostgreSQL 16.3", ErrOnlineQueryAccessPostgreSQLVersionUnsupported},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -365,19 +366,22 @@ func TestOnlineQueryAccessSession_RecognizedButUnsupportedVersion(t *testing.T) 
 			defer conn.Close()
 
 			session, err := NewOnlineQueryAccessSessionFromConn(t.Context(), conn)
-			if !errors.Is(err, ErrOnlineQueryAccessCapabilityUnsupported) {
-				t.Fatalf("want ErrOnlineQueryAccessCapabilityUnsupported, got session=%v err=%v", session, err)
+			if !errors.Is(err, tc.wantErr) {
+				t.Fatalf("want %v, got session=%v err=%v", tc.wantErr, session, err)
 			}
 			if session != nil {
 				t.Fatal("expected nil session for unsupported version")
 			}
-			text := err.Error()
+			message := err.Error()
+			if tc.name == "pg16" && message != "online PostgreSQL Query Access requires PostgreSQL 17" {
+				t.Fatalf("unexpected PostgreSQL version error: %q", message)
+			}
 			for _, forbidden := range []string{
-				"8.1", "7.5", "16.3", "TiDB", "PostgreSQL", "mysql",
+				"8.1", "7.5", "16.3",
 				"password", "dsn", "host=", "user=", "127.0.0.1",
 			} {
-				if strings.Contains(strings.ToLower(text), strings.ToLower(forbidden)) {
-					t.Errorf("error text must not contain %q, got %q", forbidden, text)
+				if strings.Contains(strings.ToLower(message), strings.ToLower(forbidden)) {
+					t.Errorf("error text must not contain %q, got %q", forbidden, message)
 				}
 			}
 		})

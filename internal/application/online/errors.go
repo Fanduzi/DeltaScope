@@ -1,6 +1,6 @@
 // Package online provides the shared online session factory for SDK, CLI, and HTTP.
 // input: errors from online operations (session open, identity, authorization)
-// output: bounded error taxonomy and status mapping that never leaks secrets, endpoints, or driver text
+// output: bounded error taxonomy and status mapping that never leaks secrets, endpoints, observed identity, or driver text
 // pos: shared error boundary for all online surfaces (HTTP, MCP, CLI)
 // note: if this file changes, update this header and module README.md.
 package online
@@ -14,7 +14,8 @@ import (
 )
 
 // Sentinel errors for online operations.
-// Messages are bounded — they never contain secrets, endpoints, versions, or driver text.
+// Messages are bounded — they never contain secrets, endpoints, observed versions, or driver text.
+// The PostgreSQL Query Access requirement is a fixed supported-version phrase.
 var (
 	ErrConnectionNotFound  = errors.New("connection not found")
 	ErrPurposeNotAllowed   = errors.New("purpose not allowed for this connection")
@@ -29,7 +30,7 @@ var (
 
 // MapOnlineError maps an error from online operations to a bounded (code, message, status) tuple.
 // The returned message never contains sensitive information such as DSNs, credentials,
-// hostnames, ports, driver text, or version strings.
+// hostnames, ports, observed version strings, or driver text.
 func MapOnlineError(err error) (code string, message string, status int) {
 	if err == nil {
 		return "", "", 0
@@ -66,6 +67,12 @@ func MapOnlineError(err error) (code string, message string, status int) {
 	}
 	if errors.Is(err, ErrConnectionFailed) {
 		return "connection_failed", "connection failed", http.StatusBadGateway
+	}
+
+	// A recognized PostgreSQL identity outside the trusted PG17 series gets a
+	// stable version requirement while retaining the identity_error/502 contract.
+	if errors.Is(err, ErrPostgreSQLQueryAccessVersionUnsupported) {
+		return "identity_error", PostgreSQLQueryAccessVersionRequirement, http.StatusBadGateway
 	}
 
 	// Identity sentinel errors (defined in identity.go).

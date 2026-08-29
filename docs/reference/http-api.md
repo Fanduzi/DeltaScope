@@ -162,6 +162,7 @@ curl http://127.0.0.1:8083/v1/capabilities
     "bad_request",
     "connection_invalid",
     "connection_failed",
+    "identity_error",
     "config_invalid",
     "auth_required",
     "auth_invalid",
@@ -468,6 +469,12 @@ When `connection_id` is omitted, the request runs in offline mode using the buil
 
 > **Online dialect behavior:** When `connection_id` is set, the server ignores the request-level `dialect` field and derives the actual dialect from the live database session. The `dialect` field is only validated in offline mode; an unrecognized dialect returns `400 bad_request` only when no `connection_id` is provided.
 
+Online PostgreSQL Query Access is intentionally trusted only for PostgreSQL 17.
+When a reachable named connection reports another PostgreSQL version, the
+endpoint returns `502 identity_error` with the bounded message `online
+PostgreSQL Query Access requires PostgreSQL 17`. It does not return the
+observed version, connection details, credentials, SQL, or catalog names.
+
 The named connection must include `query_access` in its `purposes` list; otherwise the server returns `403 purpose_not_allowed`.
 
 #### Request
@@ -568,6 +575,7 @@ Response (the response shape is `QueryAccessResult`, not an audit result):
 | 403 | `not_authorized` | The authenticated principal is not authorized for the requested connection |
 | 403 | `purpose_not_allowed` | The named connection does not have `query_access` in its `purposes` |
 | 502 | `connection_failed` | DeltaScope could not open the metadata connection, detect dialect, or resolve schema information |
+| 502 | `identity_error` | The live server identity is not usable for the requested online capability; PostgreSQL Query Access requires PostgreSQL 17 |
 | 401 | `auth_required` | Request is missing `X-API-Key` when auth is enabled and the path is protected |
 | 403 | `auth_invalid` | `X-API-Key` was provided but does not match configured keys |
 | 429 | `rate_limited` | Request exceeded configured rate limit |

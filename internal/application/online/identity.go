@@ -1,6 +1,6 @@
 // Package online provides the shared online session factory for SDK, CLI, and HTTP.
 // input: pinned *sql.Conn, server version string, expected dialect
-// output: validated ServerIdentity, CapabilityTarget, and bounded sentinel errors
+// output: validated ServerIdentity, CapabilityTarget, and bounded identity errors including the fixed PostgreSQL Query Access version requirement
 // pos: shared identity parsing and session lifecycle for online query access
 // note: if this file changes, update this header and module README.md.
 package online
@@ -33,7 +33,8 @@ const (
 )
 
 // Bounded sentinel errors for identity parsing. These messages never contain
-// version strings, hostnames, ports, DSNs, or credentials.
+// observed version strings, hostnames, ports, DSNs, or credentials. The fixed
+// PostgreSQL Query Access requirement is safe to expose at transport boundaries.
 var (
 	ErrIdentityUnavailable = errors.New("server identity unavailable")
 	ErrIdentityUnknown     = errors.New("unsupported database product")
@@ -41,6 +42,25 @@ var (
 	ErrIdentityUnsupported = errors.New("unsupported database version series")
 	ErrDialectMismatch     = errors.New("configured dialect disagrees with server identity")
 )
+
+// PostgreSQLQueryAccessVersionRequirement is the stable bounded message for
+// a reachable PostgreSQL server outside the trusted online PG17 capability.
+const PostgreSQLQueryAccessVersionRequirement = "online PostgreSQL Query Access requires PostgreSQL 17"
+
+type postgreSQLQueryAccessVersionUnsupportedError struct{}
+
+func (postgreSQLQueryAccessVersionUnsupportedError) Error() string {
+	return PostgreSQLQueryAccessVersionRequirement
+}
+
+func (postgreSQLQueryAccessVersionUnsupportedError) Unwrap() error {
+	return ErrIdentityUnsupported
+}
+
+// ErrPostgreSQLQueryAccessVersionUnsupported identifies a recognized PostgreSQL
+// server whose version is outside the intentionally trusted PG17 capability.
+// It unwraps to ErrIdentityUnsupported for existing identity callers.
+var ErrPostgreSQLQueryAccessVersionUnsupported error = postgreSQLQueryAccessVersionUnsupportedError{}
 
 // ServerIdentity represents the validated database server identity.
 // It never appears in public results, errors, or logs.
@@ -132,7 +152,7 @@ func parsePostgreSQLIdentity(raw string) (*ServerIdentity, error) {
 
 	series, ok := pgSeriesForVersion(major, minor)
 	if !ok {
-		return nil, ErrIdentityUnsupported
+		return nil, ErrPostgreSQLQueryAccessVersionUnsupported
 	}
 
 	return &ServerIdentity{

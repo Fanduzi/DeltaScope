@@ -1,6 +1,6 @@
 // Package cli exposes the command-line adapter for DeltaScope.
 // input: query-access command flags including dialect-aware connection flags, flag-presence-aware SQL text from --sql/--file/stdin, and the unified public online query access API
-// output: rendered offline or identity-routed online query access results in JSON format, exit-code mapping, and bounded input errors
+// output: rendered offline or identity-routed online query access results in JSON format, exit-code mapping, and bounded input/version-boundary errors
 // pos: CLI query-access command implementation above offline analysis and the opaque unified online session boundary
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -52,7 +52,8 @@ func newQueryAccessAnalyzeCmd(options *cliOptions, exitCode *int) *cobra.Command
 		Short: "Analyze SQL for query access requirements",
 		Long: "Analyze SQL to determine read classification, admission, and permission requirements.\n" +
 			"SQL input comes from --sql, --file, or stdin. Explicit empty or whitespace-only --sql fails with exit 3 without reading stdin.\n" +
-			"When connection flags are present, DeltaScope uses online mode with server-identity-derived capability.",
+			"When connection flags are present, DeltaScope uses online mode with server-identity-derived capability.\n" +
+			"online PostgreSQL Query Access requires PostgreSQL 17.",
 		Example: "Offline example:\n" +
 			"  deltascope query-access analyze --sql \"SELECT id, name FROM users WHERE id = 1\" --dialect mysql\n" +
 			"  deltascope query-access analyze --file ./query.sql --dialect postgresql --mode projection_only\n" +

@@ -1,6 +1,6 @@
 // Package cli exposes the command-line adapter for DeltaScope.
 // input: audit command flags including audit-local output format and fail threshold, whether --sql was explicitly provided, SQL text from flags/files/stdin, password source/prompt dependencies, and application audit services
-// output: rendered audit results and located diagnostics, audit-only output validation, dialect-aware connection-option normalization with MySQL/TiDB catalog aliases and PostgreSQL schema/database validation, password resolution, offline existence caveats, and user-vs-runtime exit-code mapping with bounded TLS categories
+// output: rendered audit results and located diagnostics, audit-only output validation, dialect-aware connection-option normalization with MySQL/TiDB catalog aliases and PostgreSQL schema/database validation, password resolution, offline existence caveats, and user-vs-runtime exit-code mapping with bounded connection, identity, and TLS categories
 // pos: CLI audit command implementation above the application service and output renderers
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -19,6 +19,7 @@ import (
 
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
+	"github.com/Fanduzi/DeltaScope/internal/application/online"
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -799,6 +800,10 @@ func promptPassword(stderr io.Writer) (string, error) {
 }
 
 func mapOnlineCLIBoundaryError(err error) error {
+	if errors.Is(err, online.ErrPostgreSQLQueryAccessVersionUnsupported) {
+		return newRuntimeError(online.PostgreSQLQueryAccessVersionRequirement)
+	}
+
 	msg := err.Error()
 	switch {
 	case isAuthenticationFailure(strings.ToLower(msg)):

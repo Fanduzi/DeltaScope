@@ -1,6 +1,6 @@
 // Package deltascope exposes the unified online query access session boundary.
 // input: caller-owned *sql.Conn, context, and a query access request with optional dialect constraint
-// output: opaque unified session, generic online analysis entry, five bounded sentinel errors, and MySQL/TiDB/PG17 routing
+// output: opaque unified session, generic online analysis entry, bounded sentinel errors, and MySQL/TiDB/PG17 routing
 // pos: public unified online query access session API above dialect-specific entries
 // note: if this file changes, update this header and module README.md.
 package deltascope
@@ -16,7 +16,8 @@ import (
 // Generic online query access sentinel errors. These are the bounded public
 // boundary of the unified entry; callers must use errors.Is, not string
 // matching. They never embed credentials, endpoints, raw versions, catalog
-// facts, or driver text.
+// facts, or driver text. The PostgreSQL version sentinel below uses only the
+// fixed supported-version requirement.
 var (
 	// ErrOnlineQueryAccessSessionUnavailable indicates the context or caller-owned
 	// connection session was unusable (nil input, failed liveness, or failed
@@ -34,7 +35,20 @@ var (
 	// ErrOnlineQueryAccessCapabilityUnsupported indicates the observed server
 	// capability is recognized but not supported by this build or milestone.
 	ErrOnlineQueryAccessCapabilityUnsupported = errors.New("online query access capability is not supported")
+	// ErrOnlineQueryAccessPostgreSQLVersionUnsupported identifies a reachable
+	// PostgreSQL server outside the intentionally trusted PG17 capability.
+	ErrOnlineQueryAccessPostgreSQLVersionUnsupported error = postgreSQLQueryAccessVersionUnsupportedError{}
 )
+
+type postgreSQLQueryAccessVersionUnsupportedError struct{}
+
+func (postgreSQLQueryAccessVersionUnsupportedError) Error() string {
+	return online.PostgreSQLQueryAccessVersionRequirement
+}
+
+func (postgreSQLQueryAccessVersionUnsupportedError) Unwrap() error {
+	return ErrOnlineQueryAccessCapabilityUnsupported
+}
 
 // OnlineQueryAccessSession is an opaque wrapper around a caller-owned *sql.Conn.
 //
@@ -55,10 +69,12 @@ type OnlineQueryAccessSession struct {
 //
 // Nil context or connection, failed liveness, and untrustworthy identity
 // acquisition (unknown product, malformed version, failed version query) map
-// to ErrOnlineQueryAccessSessionUnavailable. A recognized product whose
-// version series is outside the supported set (for example MySQL 8.1, TiDB
-// 7.x, PostgreSQL 16) and an observed PostgreSQL target in a source build
-// without the postgresql tag map to ErrOnlineQueryAccessCapabilityUnsupported.
+// to ErrOnlineQueryAccessSessionUnavailable. A recognized PostgreSQL identity
+// outside the trusted PG17 series maps to
+// ErrOnlineQueryAccessPostgreSQLVersionUnsupported. Other recognized products
+// outside the supported set (for example MySQL 8.1 or TiDB 7.x) and an
+// observed PostgreSQL target in a source build without the postgresql tag map
+// to ErrOnlineQueryAccessCapabilityUnsupported.
 func NewOnlineQueryAccessSessionFromConn(ctx context.Context, conn *sql.Conn) (*OnlineQueryAccessSession, error) {
 	if ctx == nil || conn == nil {
 		return nil, ErrOnlineQueryAccessSessionUnavailable
@@ -69,6 +85,9 @@ func NewOnlineQueryAccessSessionFromConn(ctx context.Context, conn *sql.Conn) (*
 
 	identity, err := online.IdentifyFromConn(ctx, conn, "")
 	if err != nil {
+		if errors.Is(err, online.ErrPostgreSQLQueryAccessVersionUnsupported) {
+			return nil, ErrOnlineQueryAccessPostgreSQLVersionUnsupported
+		}
 		if errors.Is(err, online.ErrIdentityUnsupported) {
 			return nil, ErrOnlineQueryAccessCapabilityUnsupported
 		}

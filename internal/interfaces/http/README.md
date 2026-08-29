@@ -13,9 +13,9 @@ HTTP exposes DeltaScope audit and metadata-aware review capabilities as a JSON s
 | handler.go | Binds Gin HTTP requests to public APIs and emits diagnostic error envelopes that retain the full partial audit result beside the bounded transport error |
 | handler_unsupported_diagnostics_evidence_test.go | Verifies HTTP parser diagnostics preserve valid statement results, findings, locations, context, and no-leak boundaries |
 | handler_test.go | Verifies HTTP request binding, error mapping, JSON response shape, and metadata-aware omission of offline existence caveats |
-| rule_catalog.go | Builds HTTP rule-list, rule-detail, and capability payloads from the shipped catalog metadata, including `note` / `unproven` on `context_fields` |
-| query_access.go | Handles HTTP query access analysis requests, preserves registry/authorization/connection/error/log ownership, and routes online analysis through the opaque unified SDK session |
-| query_access_test.go | Verifies HTTP query access request binding, response shape, defaults, unified online entry wiring with an empty analysis dialect, bounded constructor/capability failures, zero-open authorization paths, and close ownership |
+| rule_catalog.go | Builds HTTP rule-list, rule-detail, and capability payloads from the shipped catalog metadata, including `note` / `unproven` on `context_fields` and the stable `identity_error` code |
+| query_access.go | Handles HTTP query access analysis requests, preserves registry/authorization/connection/error/log ownership, maps the bounded PostgreSQL PG17 identity boundary, and routes online analysis through the opaque unified SDK session |
+| query_access_test.go | Verifies HTTP query access request binding, response shape, defaults, unified online entry wiring with an empty analysis dialect, bounded constructor/capability/PG16 failures, zero-open authorization paths, and close ownership |
 | query_access_issue35_postgresql_tag_test.go | Verifies CLI and HTTP share the normalized PostgreSQL `read_only`/`admissible` state and reason codes |
 | query_access_unified_entry_test.go | Structurally verifies `handleQueryAccessOnline` contains no product inspection or dialect-specific Query Access constructor/analysis calls and uses both unified SDK entry symbols |
 | query_access_postgresql_online_recording_test.go | Focused recording-driver proof that the PostgreSQL online HTTP connection_id path delegates through a pinned session, closes once, maps bounded catalog failures, and never executes submitted SQL, EXPLAIN, or prepare operations |
@@ -35,7 +35,7 @@ HTTP exposes DeltaScope audit and metadata-aware review capabilities as a JSON s
 
 ## Notes
 
-- Online Query Access keeps registry lookup, authorization, TLS/credential resolution, cancellation, connection close, HTTP errors, request IDs, and access logs in HTTP, then passes the caller-owned pinned connection to the opaque unified SDK session without inspecting observed product or constraining the analysis request dialect.
+- Online Query Access keeps registry lookup, authorization, TLS/credential resolution, cancellation, connection close, HTTP errors, request IDs, and access logs in HTTP, then passes the caller-owned pinned connection to the opaque unified SDK session without inspecting observed product or constraining the analysis request dialect. A reachable PostgreSQL identity outside PG17 returns `502 identity_error` with the fixed bounded requirement message; `identity_error` is advertised by `/v1/capabilities`.
 - Query Access semantic breadth and detailed probe tests live in the unified SDK suite; this module retains only HTTP-owned transport, registry, authorization, sink, lifecycle, and real-route evidence.
 - The HTTP layer is adapter-only: it reuses the shared public audit API and metadata-preparation helpers instead of reimplementing dialect or schema logic.
 - Routing uses Gin while keeping the public JSON API contract unchanged.
