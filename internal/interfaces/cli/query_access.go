@@ -201,9 +201,10 @@ func buildOnlineSessionConfig(connection auditConnectionOptions, dialect spec.Di
 		TLSMode:        connection.TLSMode,
 		CACert:         connection.CACert,
 	}
-	if dialect == spec.DialectPostgreSQL {
+	switch dialect {
+	case spec.DialectPostgreSQL:
 		cfg.Database = connection.Database
-	} else if dialect == spec.DialectMySQL || dialect == spec.DialectTiDB {
+	case spec.DialectMySQL, spec.DialectTiDB:
 		cfg.Database = connection.Schema
 	}
 	return cfg
