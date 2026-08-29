@@ -46,6 +46,24 @@ func TestParseReturnsApplicationOwnedStatements(t *testing.T) {
 	}
 }
 
+func TestParseLeadingUTF8BOMUsesVisibleSQLLocations(t *testing.T) {
+	t.Parallel()
+
+	result, err := Parse(context.Background(), "\ufeffdelete from users;\r\nupdate users set name = 'delta';", spec.DialectMySQL)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(result.Statements) != 2 {
+		t.Fatalf("statements = %d, want 2", len(result.Statements))
+	}
+	if result.Statements[0].Line != 1 || result.Statements[0].Column != 1 {
+		t.Fatalf("first location = (%d, %d), want (1, 1)", result.Statements[0].Line, result.Statements[0].Column)
+	}
+	if result.Statements[1].Line != 2 || result.Statements[1].Column != 1 {
+		t.Fatalf("second location = (%d, %d), want (2, 1)", result.Statements[1].Line, result.Statements[1].Column)
+	}
+}
+
 func TestParseRejectsUnknownDialect(t *testing.T) {
 	t.Parallel()
 	_, err := Parse(context.Background(), "select 1;", spec.Dialect("sqlite"))

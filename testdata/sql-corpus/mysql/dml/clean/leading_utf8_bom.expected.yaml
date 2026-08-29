@@ -1,0 +1,11 @@
+name: leading_utf8_bom
+dialect: mysql
+category: dml
+expect:
+  parse_ok: true
+  statement_kind: dml
+  unsupported:
+    count: 0
+  findings:
+    include: []
+    exclude: []

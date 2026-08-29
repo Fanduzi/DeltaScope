@@ -10,6 +10,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -29,6 +30,72 @@ type fakeMetadataProvider struct {
 	instance      *InstanceFacts
 	snapshot      *TableSnapshot
 	err           error
+}
+
+func TestAuditLeadingUTF8BOMMatchesBOMFreeInput(t *testing.T) {
+	t.Parallel()
+
+	const sql = "delete from users;\r\nupdate users set name = 'delta';"
+	want, err := Audit(context.Background(), Request{SQL: sql, Dialect: DialectMySQL})
+	if err != nil {
+		t.Fatalf("BOM-free audit: %v", err)
+	}
+	got, err := Audit(context.Background(), Request{SQL: "\ufeff" + sql, Dialect: DialectMySQL})
+	if err != nil {
+		t.Fatalf("BOM-prefixed audit: %v", err)
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("BOM-prefixed result differs from BOM-free result:\n got: %#v\nwant: %#v", got, want)
+	}
+	if got.Statements[0].Findings[0].Location == nil || got.Statements[0].Findings[0].Location.Line != 1 {
+		t.Fatalf("first statement location = %#v, want line 1", got.Statements[0].Findings[0].Location)
+	}
+	if got.Statements[1].Findings[0].Location == nil || got.Statements[1].Findings[0].Location.Line != 2 {
+		t.Fatalf("second statement location = %#v, want line 2", got.Statements[1].Findings[0].Location)
+	}
+}
+
+func TestAuditOnlyStripsLeadingUTF8BOM(t *testing.T) {
+	t.Parallel()
+
+	const embeddedBOM = "\ufeff"
+	result, err := Audit(context.Background(), Request{
+		SQL:     "select '" + embeddedBOM + "';",
+		Dialect: DialectMySQL,
+	})
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("statements = %d, want 1", len(result.Statements))
+	}
+	if !strings.Contains(result.Statements[0].RawSQL, embeddedBOM) {
+		t.Fatalf("embedded BOM disappeared from raw SQL %q", result.Statements[0].RawSQL)
+	}
+}
+
+func TestAuditDoesNotStripASecondLeadingUTF8BOM(t *testing.T) {
+	t.Parallel()
+
+	_, err := Audit(context.Background(), Request{
+		SQL:     "\ufeff\ufeffdelete from users where id = 1;",
+		Dialect: DialectMySQL,
+	})
+	if err == nil {
+		t.Fatal("second leading BOM was silently stripped")
+	}
+}
+
+func TestAuditBOMOnlyInputIsEmpty(t *testing.T) {
+	t.Parallel()
+
+	for _, sql := range []string{"\ufeff", "\ufeff \r\n"} {
+		_, err := Audit(context.Background(), Request{SQL: sql, Dialect: DialectMySQL})
+		if err == nil || !strings.Contains(err.Error(), "empty") {
+			t.Errorf("SQL %q: error = %v, want empty-input error", sql, err)
+		}
+	}
 }
 
 func (f *fakeMetadataProvider) LoadInstanceFacts(_ context.Context, _ Dialect, _ string) (*InstanceFacts, error) {

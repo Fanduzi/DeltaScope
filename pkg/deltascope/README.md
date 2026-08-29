@@ -138,6 +138,7 @@ The unified online-session suite owns exhaustive semantic and detailed-probe evi
 
 ## Notes
 
+- Audit and Query Access treat exactly one leading UTF-8 BOM as an input encoding marker before parsing. BOM characters later in SQL remain part of the input.
 - `Request` now carries top-level `Schema` and `MetadataProvider` fields so CLI, HTTP, and library consumers can opt into metadata-aware audits without changing the offline call shape.
 - Public `MetadataProvider` stays minimal; standalone PostgreSQL index-owner resolution remains an internal optional seam behind the application metadata enrichment layer.
 - `Result` and `StatementResult` expose an optional `Explanation` field for additive shared result context without changing verdict semantics. The built-in audit flow populates these aggregate fields whenever findings are present.

@@ -205,6 +205,29 @@ func TestAuditCommandRejectsEmptyFileInput(t *testing.T) {
 	}
 }
 
+func TestAuditCommandAcceptsLeadingUTF8BOMFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "bom.sql")
+	if err := os.WriteFile(path, []byte("\ufeffSELECT 1;\r\n"), 0o644); err != nil {
+		t.Fatalf("write sql file: %v", err)
+	}
+
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--file", path, "--format", "json"},
+		unexpectedStdinReader{t: t},
+		stdout,
+		stderr,
+	)
+	if code != 0 {
+		t.Fatalf("expected successful audit, got code %d stderr=%q stdout=%q", code, stderr.String(), stdout.String())
+	}
+	if !strings.Contains(stdout.String(), `"statements":1`) || strings.Contains(stdout.String(), `"parser_error"`) {
+		t.Fatalf("unexpected BOM file result: %q", stdout.String())
+	}
+}
+
 func TestResolveAuditSQLPrintsInteractiveStdinHint(t *testing.T) {
 	stderr := &strings.Builder{}
 

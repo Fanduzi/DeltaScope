@@ -1,5 +1,5 @@
 // Package audit orchestrates audit use cases at the application layer.
-// input: audit requests carrying SQL text, dialect, optional policy override paths, and optional metadata providers
+// input: audit requests carrying SQL text, dialect, optional policy override paths, optional metadata providers, and shared input normalization
 // output: end-to-end audit results assembled from policy loading, parsing, extraction, metadata enrichment, post-enrichment impact refinement, and rule evaluation
 // pos: application service entrypoint for the unified offline/metadata-aware SQL audit use case with preserved statement impact estimates
 // note: if this file changes, update this header and module README.md.
@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"strings"
 
+	application "github.com/Fanduzi/DeltaScope/internal/application"
 	apppolicy "github.com/Fanduzi/DeltaScope/internal/application/policy"
 	domainpolicy "github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
@@ -57,7 +58,8 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 	if err := ctx.Err(); err != nil {
 		return report.Result{}, err
 	}
-	if strings.TrimSpace(request.SQL) == "" {
+	sql := application.NormalizeSQLInput(request.SQL)
+	if strings.TrimSpace(sql) == "" {
 		return report.Result{}, ErrEmptySQL
 	}
 	if request.Dialect != spec.DialectMySQL && request.Dialect != spec.DialectTiDB && request.Dialect != spec.DialectPostgreSQL {
@@ -72,10 +74,10 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 		return report.Result{}, err
 	}
 
-	parsed, err := Parse(ctx, request.SQL, request.Dialect)
+	parsed, err := parseSQL(ctx, sql, request.Dialect)
 	if err != nil {
 		if request.Dialect == spec.DialectMySQL || request.Dialect == spec.DialectTiDB {
-			if token, ok := possiblePostgreSQLMismatch(request.SQL); ok {
+			if token, ok := possiblePostgreSQLMismatch(sql); ok {
 				result := report.Aggregate(nil, []rule.Finding{buildPossiblePostgreSQLMismatchFinding(string(request.Dialect), token)})
 				result.Verdict = report.VerdictReview
 				return result, err
@@ -86,7 +88,7 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 			return report.Result{}, err
 		}
 		return report.Result{
-			Diagnostics: []spec.Diagnostic{newParserErrorDiagnosticWithGuidance(request.Dialect, request.SQL)},
+			Diagnostics: []spec.Diagnostic{newParserErrorDiagnosticWithGuidance(request.Dialect, sql)},
 		}, errParserUnsupported
 	}
 	if err := ctx.Err(); err != nil {

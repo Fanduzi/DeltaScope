@@ -1,5 +1,5 @@
 // Package queryaccess provides the application service for query access analysis.
-// input: SQL text, dialect, mode, profile, default schema, and optional schema resolver
+// input: SQL text, dialect, mode, profile, default schema, optional schema resolver, and shared input normalization
 // output: domain-typed query access results with metadata resolution and normalized final state
 // pos: application orchestration and cross-surface state-normalization layer for query access
 // note: if this file changes, update this header and module README.md.
@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"strings"
 
+	application "github.com/Fanduzi/DeltaScope/internal/application"
 	domain "github.com/Fanduzi/DeltaScope/internal/domain/queryaccess"
 )
 
@@ -97,6 +98,7 @@ func (s *Service) Analyze(ctx context.Context, req QueryAccessRequest) (QueryAcc
 	if err := ctx.Err(); err != nil {
 		return QueryAccessResult{}, fmt.Errorf("analyze cancelled: %w", err)
 	}
+	req.SQL = application.NormalizeSQLInput(req.SQL)
 	if err := ValidateAnalysisProfile(req.AnalysisProfile, req.Dialect); err != nil {
 		return QueryAccessResult{}, err
 	}

@@ -24,7 +24,7 @@ Application-level contracts for query access analysis, defining the schema resol
 | extract_tidb_test.go | Verifies TiDB extraction bridging: classification, admission, CTE permissions, mode normalization, and column usages |
 | extract_postgresql.go | Bridges PostgreSQL infrastructure query access facts to domain types with admission computation |
 | extract_postgresql_stub.go | Returns ErrPostgreSQLNotAvailable when built without the `postgresql` tag |
-| service.go | Orchestrates query access analysis: extraction by dialect, optional metadata resolution, Promotion Barriers, requirement generation, one proof-orchestration point, final classification/admission computation, sorting, and validation |
+| service.go | Normalizes one leading UTF-8 BOM, then orchestrates query access analysis: extraction by dialect, optional metadata resolution, Promotion Barriers, requirement generation, one proof-orchestration point, final classification/admission computation, sorting, and validation |
 | proof_orchestration.go | Single private proof-orchestration point: routes ordinary PostgreSQL, exact COUNT(1), MySQL/TiDB builtin, and no-effect applicability; owns proof-specific reason removal |
 | proof_orchestration_contract_test.go | Locks the application proof-orchestration contract at the Service.Analyze seam for MySQL/TiDB builtin, no-effect, and barrier applicability |
 | proof_orchestration_contract_postgresql_tag_test.go | Locks the PostgreSQL ordinary/exact COUNT(1) proof-orchestration contract, probe counts, and cancellation at the Service.Analyze seam |
@@ -81,6 +81,7 @@ Application-level contracts for query access analysis, defining the schema resol
 
 - The Query Access corpus owns offline semantic fixtures; the unified SDK owns online semantic breadth, with complete replacement evidence recorded in the milestone ledger.
 - `QueryAccessResult` wraps the domain `Result` for application-layer consumption.
+- The shared application input boundary removes exactly one leading UTF-8 BOM before Query Access parsing; existing empty-input result semantics remain unchanged.
 - `QueryAccessRequest.Mode` is a string that the domain layer normalizes via `NormalizeMode`.
 - `ExtractTiDBQueryAccess` computes admission from read classification: read_only → admissible, not_read_only → rejected, indeterminate → indeterminate.
 - `AnalyzePostgreSQL` follows the same admission computation pattern as TiDB.

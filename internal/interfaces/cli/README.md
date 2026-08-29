@@ -51,6 +51,7 @@ CLI adapter layer for the DeltaScope application.
 - Query Access semantic breadth and detailed probe tests live in the unified SDK suite; this module retains only CLI-owned transport, sink, lifecycle, and real-route evidence.
 - `deltascope --version` prints the build version plus compiled dialect surface.
 - `deltascope version` prints the ASCII logo plus the build version and compiled dialect surface.
+- Audit file, inline, and stdin SQL pass through the shared one-leading-UTF-8-BOM normalization before parsing.
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.

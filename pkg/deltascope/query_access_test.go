@@ -9,9 +9,31 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"reflect"
 	"strings"
 	"testing"
 )
+
+func TestAnalyzeQueryAccessLeadingUTF8BOMMatchesBOMFreeInput(t *testing.T) {
+	t.Parallel()
+
+	const sql = "SELECT id FROM users\r\nWHERE id = 1"
+	want, err := AnalyzeQueryAccess(context.Background(), QueryAccessRequest{
+		SQL: sql, Dialect: DialectMySQL, Mode: QueryAccessModeStrict,
+	})
+	if err != nil {
+		t.Fatalf("BOM-free analysis: %v", err)
+	}
+	got, err := AnalyzeQueryAccess(context.Background(), QueryAccessRequest{
+		SQL: "\ufeff" + sql, Dialect: DialectMySQL, Mode: QueryAccessModeStrict,
+	})
+	if err != nil {
+		t.Fatalf("BOM-prefixed analysis: %v", err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("BOM-prefixed result differs from BOM-free result:\n got: %#v\nwant: %#v", got, want)
+	}
+}
 
 func TestAnalyzeQueryAccessMySQLSelect(t *testing.T) {
 	result, err := AnalyzeQueryAccess(context.Background(), QueryAccessRequest{

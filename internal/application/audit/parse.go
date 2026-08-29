@@ -1,5 +1,5 @@
 // Package audit orchestrates audit use cases at the application layer.
-// input: SQL text, selected dialect, and infrastructure-backed parser adapters
+// input: SQL text, selected dialect, shared input normalization, and infrastructure-backed parser adapters
 // output: application-owned parsed statements for later extraction and rule evaluation
 // pos: application parsing entrypoint between interfaces and parser infrastructure
 // note: if this file changes, update this header and module README.md.
@@ -9,6 +9,7 @@ import (
 	"context"
 	"fmt"
 
+	application "github.com/Fanduzi/DeltaScope/internal/application"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	tidbparser "github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb"
 )
@@ -40,6 +41,10 @@ func (e *PostgreSQLCapabilityBoundaryError) Error() string {
 
 // Parse delegates SQL parsing to the dialect-specific parser adapter.
 func Parse(ctx context.Context, sql string, dialect spec.Dialect) (ParsedSQL, error) {
+	return parseSQL(ctx, application.NormalizeSQLInput(sql), dialect)
+}
+
+func parseSQL(ctx context.Context, sql string, dialect spec.Dialect) (ParsedSQL, error) {
 	switch dialect {
 	case spec.DialectMySQL, spec.DialectTiDB:
 		return parseTiDB(ctx, sql, dialect)
