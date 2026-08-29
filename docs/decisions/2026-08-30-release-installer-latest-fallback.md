@@ -3,7 +3,7 @@
 Date: 2026-08-30
 Status: Accepted
 Related milestone/version: Issue #40
-Related commits: Issue #40 implementation commit
+Related commits: 345618a5a982eaad89c5ccd846e9c261a2e2bc30
 Related tests: `scripts/test_install.sh`
 Related docs: `README.md`, `README_ZH.md`, `install.sh`
 
@@ -65,6 +65,6 @@ test and this decision.
 
 ## Links
 
-- Commits: Issue #40 implementation commit
+- Commits: 345618a5a982eaad89c5ccd846e9c261a2e2bc30
 - Tests: `scripts/test_install.sh`
 - Docs: `README.md`, `README_ZH.md`, `scripts/README.md`

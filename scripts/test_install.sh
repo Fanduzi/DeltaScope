@@ -8,29 +8,29 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 INSTALLER="${SCRIPT_DIR}/../install.sh"
-TD="$(mktemp -d)"
-P=0
-F=0
+TEMP_DIR="$(mktemp -d)"
+PASSED=0
+FAILED=0
 
 cleanup() {
-  rm -rf "${TD}"
+  rm -rf "${TEMP_DIR}"
 }
 trap cleanup EXIT
 
 pass() {
   printf '  PASS: %s\n' "$1"
-  P=$((P + 1))
+  PASSED=$((PASSED + 1))
 }
 
 fail() {
   printf '  FAIL: %s\n' "$1"
-  F=$((F + 1))
+  FAILED=$((FAILED + 1))
 }
 
 setup_case() {
   local name="$1" tool command_path
 
-  CASE_DIR="${TD}/${name}"
+  CASE_DIR="${TEMP_DIR}/${name}"
   mkdir -p "${CASE_DIR}/tools" "${CASE_DIR}/fixture" "${CASE_DIR}/install"
   printf '#!/bin/sh\nprintf installed\\n\n' > "${CASE_DIR}/fixture/deltascope"
   chmod +x "${CASE_DIR}/fixture/deltascope"
@@ -242,5 +242,5 @@ for client in curl wget; do
   expect_only_asset_call "${client}: pinned install calls only the release asset"
 done
 
-printf '\nResults: %d passed, %d failed\n' "${P}" "${F}"
-[ "${F}" -eq 0 ] && echo 'All tests passed.' || exit 1
+printf '\nResults: %d passed, %d failed\n' "${PASSED}" "${FAILED}"
+[ "${FAILED}" -eq 0 ] && echo 'All tests passed.' || exit 1
