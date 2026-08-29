@@ -3229,6 +3229,28 @@ rules:
 
 ---
 
+#### dml.table.exists.require
+
+Blocks `INSERT`, `UPDATE`, and `DELETE` against a target table that live metadata definitively reports as absent. This metadata-aware rule applies to MySQL and TiDB; it is skipped without a live table snapshot and does not check source tables inside `INSERT ... SELECT`.
+
+**Default:** `enabled: true`, `level: blocker`
+
+**Parameters:** none
+
+**Trigger condition:**
+
+The target relation lookup must return a table snapshot with `exists: false`. A missing snapshot makes no existence claim, while lookup errors remain metadata/connection errors.
+
+**Config example:**
+```yaml
+rules:
+  dml.table.exists.require:
+    enabled: true
+    level: blocker
+```
+
+---
+
 ## DDL: PostgreSQL Migration-Safety Rules
 
 > These rules only apply when `--dialect postgresql` is set and are automatically skipped for MySQL/TiDB dialects.

@@ -8,7 +8,7 @@ Native stdio runtime for the official DeltaScope MCP server. For client onboardi
 |------|---------------|
 | `main.go` | Parses process flags, loads runtime config, merges logging settings, and starts the MCP stdio service |
 | `main_test.go` | Verifies command bootstrap, version fast-path, logging config, runtime config merge, and stdio smoke behavior |
-| `main_e2e_test.go` | Verifies tagged Docker-backed metadata-aware MCP smoke against real MySQL/TiDB fixtures for direct and connection_ref flows |
+| `main_e2e_test.go` | Verifies tagged Docker-backed metadata-aware MCP smoke against real MySQL/TiDB fixtures for direct and connection_ref flows, including DML target-table existence cases |
 | `main_e2e_postgresql_test.go` | Verifies tagged Docker-backed PostgreSQL MCP metadata audits with separate database and schema selections |
 
 ## Notes

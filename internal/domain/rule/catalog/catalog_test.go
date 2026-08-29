@@ -51,18 +51,20 @@ func TestLookupReturnsKnownRuleMetadata(t *testing.T) {
 
 func TestLookupMarksMetadataAwareRules(t *testing.T) {
 	t.Parallel()
-	entry, ok := Lookup("ddl.table.exists.create.forbid")
-	if !ok {
-		t.Fatalf("expected metadata-aware rule to exist")
-	}
-	if !entry.MetadataAware {
-		t.Fatalf("expected ddl.table.exists.create.forbid to be metadata-aware")
-	}
-	if entry.MetadataNotes == nil {
-		t.Fatal("expected metadata-aware rules to expose metadata notes")
-	}
-	if entry.MetadataNotes.Required == "" || entry.MetadataNotes.Missing == "" {
-		t.Fatalf("expected metadata notes to explain required and missing states, got %#v", entry.MetadataNotes)
+	for _, ruleID := range []string{"ddl.table.exists.create.forbid", "dml.table.exists.require"} {
+		entry, ok := Lookup(ruleID)
+		if !ok {
+			t.Fatalf("expected metadata-aware rule %q to exist", ruleID)
+		}
+		if !entry.MetadataAware {
+			t.Fatalf("expected %s to be metadata-aware", ruleID)
+		}
+		if entry.MetadataNotes == nil {
+			t.Fatalf("expected %s to expose metadata notes", ruleID)
+		}
+		if entry.MetadataNotes.Required == "" || entry.MetadataNotes.Missing == "" {
+			t.Fatalf("expected metadata notes to explain required and missing states, got %#v", entry.MetadataNotes)
+		}
 	}
 
 	entry, ok = Lookup("ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory")

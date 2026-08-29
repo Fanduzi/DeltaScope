@@ -396,9 +396,12 @@ func formatYAMLScalar(value any) string {
 // TiDB-prefixed or merge.tidb rules target TiDB only.
 // merge.mysql rules target MySQL only.
 // The MODIFY unknown-prior-state nullability advisory targets MySQL and TiDB.
-// All other rules (including DML) apply to common dialect scope.
+// The DML table-existence requirement also targets MySQL and TiDB.
+// All other rules (including most DML rules) apply to common dialect scope.
 func dialectsForRule(ruleID string) []string {
 	switch {
+	case ruleID == "dml.table.exists.require":
+		return []string{"mysql", "tidb"}
 	case strings.HasPrefix(ruleID, "ddl.pg."):
 		return []string{"postgresql"}
 	case strings.HasPrefix(ruleID, "ddl.tidb."):
@@ -676,6 +679,7 @@ var metadataAwareRuleIDs = map[string]bool{
 	"ddl.table.truncate.exists.require":             true,
 	"ddl.table.truncate.rows.max_count":             true,
 	"dml.table.denylist.forbid":                     true,
+	"dml.table.exists.require":                      true,
 	"ddl.table.denylist.forbid":                     true,
 	"ddl.alter.add_column.exists.forbid":            true,
 	"ddl.alter.add_index.exists.forbid":             true,

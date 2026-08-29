@@ -930,7 +930,7 @@ These rules guard selected PostgreSQL ALTER object operations for schema, index,
 
 ---
 
-## DML Rules (10 rules)
+## DML Rules (11 rules)
 
 These rules evaluate DML statements: `SELECT`, `INSERT`, `UPDATE`, `DELETE`, and `REPLACE`.
 
@@ -946,6 +946,7 @@ These rules evaluate DML statements: `SELECT`, `INSERT`, `UPDATE`, `DELETE`, and
 | `dml.insert.select.forbid` | INSERT INTO … SELECT is forbidden | blocker | No |
 | `dml.insert.on_duplicate.forbid` | INSERT … ON DUPLICATE KEY UPDATE is forbidden | blocker | No |
 | `dml.table.denylist.forbid` | DML on schema/table entries in the denylist is forbidden | blocker | **Yes** |
+| `dml.table.exists.require` | MySQL/TiDB DML target table must exist in live metadata | blocker | **Yes** |
 
 ---
 
@@ -998,6 +999,7 @@ bounded notice during offline audits.
 | `ddl.table.truncate.rows.max_count` |
 | `ddl.table.denylist.forbid` |
 | `dml.table.denylist.forbid` |
+| `dml.table.exists.require` |
 
 ---
 

@@ -1,6 +1,6 @@
 // Package audit orchestrates audit use cases at the application layer.
 // input: optional metadata providers plus parsed statement targets for enrichment
-// output: metadata-enriched statements for rules that can use live instance or schema facts
+// output: metadata-enriched statements with resolved target schemas for rules that can use live instance or schema facts
 // pos: application-layer bridge between provider-backed metadata and domain statements
 // note: if this file changes, update this header and module README.md.
 package audit
@@ -52,7 +52,7 @@ func enrichStatementsWithMetadata(ctx context.Context, dialect spec.Dialect, req
 		enriched := make([]spec.Statement, len(statements))
 		for i, statement := range statements {
 			enriched[i] = statement
-			enriched[i].Metadata = &spec.Metadata{Schema: request.Schema}
+			enriched[i].Metadata = &spec.Metadata{Schema: metadataTargetSchema(request, statement)}
 
 			if lookup := planObjectLookup(request.Schema, statement); lookup != nil {
 				objSnapshot := resolveObjectSnapshot(ctx, request, dialect, lookup)
@@ -74,17 +74,18 @@ func enrichStatementsWithMetadata(ctx context.Context, dialect spec.Dialect, req
 
 	for i, statement := range statements {
 		enriched[i] = statement
-		metadata := &spec.Metadata{Schema: request.Schema, Instance: instanceFacts}
+		metadataSchema := metadataTargetSchema(request, statement)
+		metadata := &spec.Metadata{Schema: metadataSchema, Instance: instanceFacts}
 
 		tableName, err := metadataTargetTableName(ctx, dialect, request, statement)
 		if err != nil {
 			return nil, fmt.Errorf("resolve index owner: %w", err)
 		}
 		if tableName != "" {
-			key := strings.ToLower(tableName)
+			key := strings.ToLower(metadataSchema) + "." + strings.ToLower(tableName)
 			snapshot, ok := snapshots[key]
 			if !ok {
-				snapshot, err = request.Provider.LoadTableSnapshot(ctx, dialect, request.Schema, tableName)
+				snapshot, err = request.Provider.LoadTableSnapshot(ctx, dialect, metadataSchema, tableName)
 				if err != nil {
 					return nil, fmt.Errorf("load table snapshot for %s: %w", tableName, err)
 				}
@@ -125,6 +126,29 @@ func targetTableName(statement spec.Statement) string {
 		return strings.TrimSpace(statement.DML.Tables[0].Name)
 	}
 	return ""
+}
+
+func metadataTargetSchema(request *MetadataRequest, statement spec.Statement) string {
+	if statement.DML != nil && len(statement.DML.Tables) > 0 {
+		if schema := strings.TrimSpace(statement.DML.Tables[0].Schema); schema != "" {
+			return schema
+		}
+	}
+	if statement.DDL != nil && statement.DDL.Table != nil {
+		switch statement.DDL.Operation {
+		case spec.DDLOperationCreateTable, spec.DDLOperationAlterTable, spec.DDLOperationDropTable, spec.DDLOperationTruncateTable:
+			if schema := strings.TrimSpace(statement.DDL.Table.Schema); schema != "" {
+				return schema
+			}
+		}
+	}
+	if statement.DDL != nil && statement.DDL.Operation == spec.DDLOperationAlterIndex {
+		return indexOwnerSchema(request, statement.DDL.Options)
+	}
+	if request == nil {
+		return ""
+	}
+	return strings.TrimSpace(request.Schema)
 }
 
 func metadataTargetTableName(ctx context.Context, dialect spec.Dialect, request *MetadataRequest, statement spec.Statement) (string, error) {

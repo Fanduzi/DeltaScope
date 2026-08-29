@@ -230,6 +230,45 @@ start_tidb_stack() {
   seed_tidb
 }
 
+run_dml_existence_cases() {
+  local dialect="$1"
+  local port="$2"
+  shift 2
+  local connection_args=("$@")
+  local case_name
+  local sql
+  local stdout_file
+  local stderr_file
+  local exit_code
+
+  for case_name in insert update delete; do
+    case "${case_name}" in
+      insert) sql="INSERT INTO missing_users (id) VALUES (1)" ;;
+      update) sql="UPDATE missing_users SET name = 'x' WHERE id = 1" ;;
+      delete) sql="DELETE FROM missing_users WHERE id = 1" ;;
+    esac
+    stdout_file="$(mktemp "${TMP_DIR}/${dialect}-missing-${case_name}.XXXXXX.json")"
+    stderr_file="$(mktemp "${TMP_DIR}/${dialect}-missing-${case_name}.XXXXXX.stderr")"
+    if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "${sql}" --host 127.0.0.1 --port "${port}" --user root "${connection_args[@]}" --schema app --format json; then
+      exit_code=0
+    else
+      exit_code=$?
+    fi
+    assert_exit_code "${exit_code}" 1
+    assert_json_rule_present "${stdout_file}" "dml.table.exists.require"
+  done
+
+  stdout_file="$(mktemp "${TMP_DIR}/${dialect}-missing-qualified.XXXXXX.json")"
+  stderr_file="$(mktemp "${TMP_DIR}/${dialect}-missing-qualified.XXXXXX.stderr")"
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "UPDATE archive.missing_users SET name = 'x' WHERE id = 1" --host 127.0.0.1 --port "${port}" --user root "${connection_args[@]}" --schema app --format json; then
+    exit_code=0
+  else
+    exit_code=$?
+  fi
+  assert_exit_code "${exit_code}" 1
+  assert_json_rule_present "${stdout_file}" "dml.table.exists.require"
+}
+
 run_mysql_suite() {
   local stdout_file
   local stderr_file
@@ -248,6 +287,9 @@ run_mysql_suite() {
   assert_json_field_eq "${stdout_file}" "context.mode" "metadata-aware"
   assert_json_field_eq "${stdout_file}" "context.dialect" "mysql"
   assert_json_field_eq "${stdout_file}" "context.schema" "app"
+  assert_json_rule_absent "${stdout_file}" "dml.table.exists.require"
+
+  run_dml_existence_cases mysql 3406 --password-env MYSQL_PASSWORD
 
   stdout_file="$(mktemp "${TMP_DIR}/mysql-database-alias.XXXXXX.json")"
   stderr_file="$(mktemp "${TMP_DIR}/mysql-database-alias.XXXXXX.stderr")"
@@ -406,6 +448,9 @@ run_tidb_suite() {
   assert_json_field_eq "${stdout_file}" "context.mode" "metadata-aware"
   assert_json_field_eq "${stdout_file}" "context.dialect" "tidb"
   assert_json_field_eq "${stdout_file}" "context.schema" "app"
+  assert_json_rule_absent "${stdout_file}" "dml.table.exists.require"
+
+  run_dml_existence_cases tidb 4400
 
   stdout_file="$(mktemp "${TMP_DIR}/tidb-database-alias.XXXXXX.json")"
   stderr_file="$(mktemp "${TMP_DIR}/tidb-database-alias.XXXXXX.stderr")"

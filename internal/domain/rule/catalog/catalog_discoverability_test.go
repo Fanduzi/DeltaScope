@@ -1,7 +1,7 @@
 // Package catalog verifies rule catalog discoverability metadata.
 // input: built-in policy defaults plus catalog entries with dialects, category, tags, and source
 // output: regression coverage for catalog completeness, field validity, deterministic ordering, and discoverability contract
-// pos: rule discoverability catalog test coverage for v0.290.0
+// pos: shipped rule discoverability catalog test coverage
 // note: if this file changes, update this header and module README.md.
 package catalog
 
@@ -401,6 +401,9 @@ func TestDialectsForRuleKnownPatterns(t *testing.T) {
 		if len(dialects) != 1 || dialects[0] != tc.dialect {
 			t.Errorf("dialectsForRule(%q) = %v, want [%q]", tc.ruleID, dialects, tc.dialect)
 		}
+	}
+	if got := dialectsForRule("dml.table.exists.require"); len(got) != 2 || got[0] != "mysql" || got[1] != "tidb" {
+		t.Fatalf("dialectsForRule(dml.table.exists.require) = %v, want [mysql tidb]", got)
 	}
 }
 

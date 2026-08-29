@@ -47,6 +47,7 @@ func TestDefaultMetadataExistenceRulesStayEnabled(t *testing.T) {
 		"ddl.alter.drop_index.exists.require",
 		"ddl.alter.rename_index.exists.require",
 		"ddl.alter.drop_primary_key.exists.require",
+		"dml.table.exists.require",
 	} {
 		ruleCfg, ok := p.Rules[ruleID]
 		if !ok {

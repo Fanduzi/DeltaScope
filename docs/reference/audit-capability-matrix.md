@@ -1229,6 +1229,12 @@ The offline impact path is dialect-normalized. For MySQL, TiDB, and PostgreSQL, 
 |---------|-------------------|:-------:|:--------:|---------------|
 | `dml.table.denylist.forbid` | DML targets a table on the configured schema- or table-level denylist | ✓ | ✗ | blocker |
 
+### Table Existence
+
+| Rule ID | Check Description | Offline | Metadata | Default Level |
+|---------|-------------------|:-------:|:--------:|:-------------:|
+| `dml.table.exists.require` | MySQL/TiDB INSERT, UPDATE, or DELETE targets a table absent from live metadata | ✗ | ✓ | blocker |
+
 ---
 
 ## Metadata-Aware Capabilities
@@ -1252,6 +1258,7 @@ When a metadata provider is configured, DeltaScope loads live facts from the tar
 | Column definitions | Column existence checks on ADD/DROP/MODIFY/CHANGE/RENAME; type-compatibility guards |
 | Index definitions | Index existence checks on ADD/DROP/RENAME; redundancy checks against existing indexes |
 | Primary key shape | Primary key existence check before DROP PRIMARY KEY |
+| Table existence (`exists`) | MySQL/TiDB DML target-table existence blocker (`dml.table.exists.require`) |
 | Table options (engine, charset, row format) | Table option compatibility check on ALTER TABLE |
 | `table_rows` | Row count safety threshold on DROP TABLE and TRUNCATE TABLE |
 | Index cardinality and `table_rows` | Metadata-aware refinement of conservative DML impact estimation |

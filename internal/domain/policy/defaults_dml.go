@@ -81,5 +81,9 @@ func dmlRules() map[string]RulePolicy {
 				"qualified_tables": []string{},
 			},
 		},
+		"dml.table.exists.require": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+		},
 	}
 }

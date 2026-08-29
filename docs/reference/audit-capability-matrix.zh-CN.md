@@ -1194,6 +1194,12 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 
 离线影响估算路径按方言标准化。MySQL、TiDB 和 PostgreSQL 的单表 `id =` 字面量或参数等值条件都使用有界的 `pk_equality` 估算（`estimated_rows: 1`、低风险、高置信度、`source: shape`）。PostgreSQL `$1` 占位符遵循相同契约。非等值、`OR`、范围和未识别列仍保持 unknown；缺少 `WHERE` 保持现有的全表估算。在线 PostgreSQL 的 `EXPLAIN` 结果仍使用 `source: plan`，并覆盖形状估算。
 
+### 表存在性
+
+| 规则 ID | 检查描述 | 离线 | 元数据 | 默认级别 |
+|---------|---------|:----:|:------:|---------|
+| `dml.table.exists.require` | MySQL/TiDB 的 INSERT、UPDATE 或 DELETE 目标表不在实时元数据中 | ✗ | ✓ | blocker |
+
 ---
 
 ## 元数据感知能力
@@ -1217,6 +1223,7 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 | 列定义 | ADD/DROP/MODIFY/CHANGE/RENAME 时的列存在性检查；类型兼容性验证 |
 | 索引定义 | ADD/DROP/RENAME 时的索引存在性检查；与现有索引的冗余性检查 |
 | 主键形态 | DROP PRIMARY KEY 前的主键存在性检查 |
+| 表存在性（`exists`） | MySQL/TiDB DML 目标表存在性阻止规则（`dml.table.exists.require`） |
 | 表选项（引擎、字符集、行格式） | ALTER TABLE 时的表选项兼容性检查 |
 | `table_rows` | DROP TABLE 和 TRUNCATE TABLE 的行数安全阈值检查 |
 

@@ -54,6 +54,7 @@ func TestRunServesMetadataAwareAuditOverRealMySQL(t *testing.T) {
 		t.Fatalf("unexpected metadata source: %#v", got)
 	}
 	assertFindingPresent(t, body, "ddl.table.exists.create.forbid")
+	assertDMLTableExistenceHTTP(t, ctx, baseURL, mysqlHTTPAuditConnectionID, harness, passwordFile, "127.0.0.1:3406")
 }
 
 func TestRunServesMetadataAwareAuditOverRealTiDB(t *testing.T) {
@@ -76,6 +77,7 @@ func TestRunServesMetadataAwareAuditOverRealTiDB(t *testing.T) {
 	if got := contextValue["metadata_source"]; got != "registry" {
 		t.Fatalf("unexpected metadata source: %#v", got)
 	}
+	assertDMLTableExistenceHTTP(t, ctx, baseURL, tidbHTTPAuditConnectionID, harness, passwordFile, "127.0.0.1:4400")
 }
 
 func startHTTPServer(t *testing.T) string {
@@ -461,4 +463,47 @@ func assertFindingPresent(t *testing.T, body map[string]any, ruleID string) {
 		}
 	}
 	t.Fatalf("expected finding for rule %q, got %#v", ruleID, body)
+}
+
+func assertDMLTableExistenceHTTP(t *testing.T, ctx context.Context, baseURL, connectionID string, harness *httpServerHarness, passwordFile, endpoint string) {
+	t.Helper()
+
+	for _, sql := range []string{
+		"INSERT INTO missing_users (id) VALUES (1)",
+		"UPDATE missing_users SET name = 'x' WHERE id = 1",
+		"DELETE FROM missing_users WHERE id = 1",
+	} {
+		body := postAuditConnectionRequest(t, ctx, baseURL, sql, connectionID)
+		assertHTTPAuditNoCredentialLeak(t, harness, body, endpoint, passwordFile)
+		assertFindingPresent(t, body, "dml.table.exists.require")
+	}
+
+	body := postAuditConnectionRequest(t, ctx, baseURL, "UPDATE app.users SET name = 'x' WHERE id = 1", connectionID)
+	assertHTTPAuditNoCredentialLeak(t, harness, body, endpoint, passwordFile)
+	assertFindingAbsent(t, body, "dml.table.exists.require")
+}
+
+func assertFindingAbsent(t *testing.T, body map[string]any, ruleID string) {
+	t.Helper()
+
+	statements, ok := body["statements"].([]any)
+	if !ok {
+		t.Fatalf("expected statements array, got %#v", body["statements"])
+	}
+	for _, rawStatement := range statements {
+		statement, ok := rawStatement.(map[string]any)
+		if !ok {
+			continue
+		}
+		findings, ok := statement["findings"].([]any)
+		if !ok {
+			continue
+		}
+		for _, rawFinding := range findings {
+			finding, ok := rawFinding.(map[string]any)
+			if ok && finding["rule_id"] == ruleID {
+				t.Fatalf("did not expect finding for rule %q, got %#v", ruleID, body)
+			}
+		}
+	}
 }

@@ -36,6 +36,7 @@ CLI adapter layer for the DeltaScope application.
 | ddl_coverage_test.go | Verifies ddl-coverage command filtering, text/JSON output, empty results, invalid flags, no-leak sanity across all 400 catalog entries, embedded-catalog lookup from an empty working directory, and exit 2 when a `--catalog` override is missing |
 | rules_catalog_test.go | Verifies rules list filtering (dialect, level, kind, category, search, limit), rules explain detail output, text/JSON formats, invalid flags, empty results, and no-severity sanity |
 | audit_metadata_test.go | Verifies metadata-aware CLI wiring for dialect detection, MySQL/TiDB database/schema aliases and conflicts, schema inference, PostgreSQL schema/database usage validation, create-table partial behavior, dialect-aware port defaults, and metadata-connect-timeout flag validation |
+| audit_dml_table_existence_test.go | Verifies metadata-aware MySQL/TiDB INSERT/UPDATE/DELETE missing-target findings and their stable JSON shape |
 | config_status_test.go | Verifies config status text/JSON output, partial-replacement danger wording, disabled-rule wording, and error mapping (missing rule id, unknown rule, invalid format, invalid config) with no severity field |
 | config_lint_test.go | Verifies config lint warnings (level-only replacement hazard), `Config OK` / `Config OK with warnings` output and exit-code matrix, `--strict`, error precedence, deterministic warning ordering, existing invalid-value errors, and YAML-null string params still failing the type check, with no severity field |
 

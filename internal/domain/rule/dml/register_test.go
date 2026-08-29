@@ -1,6 +1,6 @@
 // Package dml verifies DML rule registration behavior.
 // input: policy objects, synthetic DML statements, and the shared registry
-// output: deterministic registration and evaluation coverage for the first DML rule batch
+// output: deterministic registration and evaluation coverage for the shipped DML rule batch
 // pos: domain DML rule integration tests across policy-backed registry assembly
 // note: if this file changes, update this header and module README.md.
 package dml
@@ -102,6 +102,7 @@ func TestRegisterAddsImpactRulesInDeterministicOrder(t *testing.T) {
 	gotIDs := registeredStatementRuleIDs(t, registry)
 	wantIDs := []string{
 		"dml.table.denylist.forbid",
+		"dml.table.exists.require",
 		"dml.where.require",
 		"dml.impact.estimate",
 		"dml.impact.rows.max_count",

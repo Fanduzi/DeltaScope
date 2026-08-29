@@ -75,6 +75,11 @@ facts:                            # optional semantic assertions
       referenced_columns: [<string>]  # FK target columns (optional)
 ```
 
+Metadata-aware cases may add `metadata.schema` and `metadata.tables` snapshots.
+An explicit `exists: false` snapshot represents a provider-confirmed missing
+relation; omitting the snapshot keeps the audit offline or makes no existence
+claim.
+
 ## Two-Layer Test Architecture
 
 Corpus tests assert behaviour at two layers:

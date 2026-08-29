@@ -1,13 +1,17 @@
-name: update_with_where
+name: missing_table_insert
 dialect: mysql
 category: dml
 expect:
   parse_ok: true
   statement_kind: dml
+  operation: insert
   unsupported:
     count: 0
   findings:
-    include: []
-    exclude:
-      - dml.where.require
+    include:
       - dml.table.exists.require
+metadata:
+  schema: app
+  tables:
+    missing_users:
+      exists: false

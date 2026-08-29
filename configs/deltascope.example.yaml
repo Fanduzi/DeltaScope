@@ -2009,6 +2009,10 @@ rules:
       schemas: []
       tables: []
 
+  dml.table.exists.require:
+    enabled: true
+    level: blocker
+
   dml.where.require:
     enabled: true
     level: blocker

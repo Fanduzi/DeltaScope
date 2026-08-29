@@ -1,7 +1,7 @@
 // Package audit verifies SQL corpus coverage for default policy rules.
 // input: checked-in SQL corpus expectations and default policy rule identifiers
-// output: dialect coverage guarantees for supported default rules
-// pos: application audit corpus coverage gate
+// output: dialect coverage guarantees for supported and non-deferred default rules
+// pos: application audit corpus inventory and coverage test seam
 // note: if this file changes, update this header and module README.md.
 package audit
 
@@ -188,6 +188,7 @@ func isMySQLFamilyOnlyRule(ruleID string) bool {
 		"dml.replace.forbid",
 		"dml.insert.on_duplicate.forbid",
 		"dml.subquery.forbid",
+		"dml.table.exists.require",
 		"ddl.database.create.notice",
 		"ddl.database.drop.warn",
 		"ddl.rename_table.notice",

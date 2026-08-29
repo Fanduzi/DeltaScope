@@ -56,13 +56,15 @@ Explanation-oriented metadata for shipped DeltaScope rules, with discoverability
 
 Catalog entries derive from the shipped default policy (`domainpolicy.Default()`):
 - **Enabled/Level/Params**: read directly from default policy
-- **Dialects**: derived from rule ID prefix (`ddl.pg.*` → `postgresql`, `ddl.tidb.*` → `tidb`, `.merge.mysql.` → `mysql`, `.merge.tidb.` → `tidb`, the MODIFY unknown-prior-state nullability advisory → `mysql`/`tidb`, else → `common`)
+- **Dialects**: derived from rule ID prefix (`ddl.pg.*` → `postgresql`, `ddl.tidb.*` → `tidb`, `.merge.mysql.` → `mysql`, `.merge.tidb.` → `tidb`, the MODIFY unknown-prior-state advisory and `dml.table.exists.require` → `mysql`/`tidb`, else → `common`)
 - **Category**: derived from rule ID segments (e.g., `ddl.table.*` → `table`, `ddl.alter.*` → `alter_table`, `dml.*` → `dml_safety`)
 - **Tags**: synthesized from kind + dialect + category + action suffix
 - **Source**: always `policy` since all entries derive from default policy
 - **Explanation fields** (Why/Risk/Suggestion/Summary): generated from rule ID pattern heuristics
 
 No supplemental hand-maintained metadata is used. All enrichment derives from the rule ID and default policy, preventing drift.
+
+The metadata-aware DML target-table existence entry is an explicit dialect exception because its execution rule is intentionally MySQL/TiDB-only while retaining the stable `dml.*` ID family.
 
 ## Dependencies
 - Upstream: `internal/interfaces/cli`, `internal/interfaces/http`, `internal/interfaces/mcp`, future documentation tooling

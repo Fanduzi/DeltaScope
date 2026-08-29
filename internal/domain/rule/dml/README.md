@@ -9,6 +9,7 @@ First Tier-1 DML rule batch for offline update/delete/insert checks.
 | common.go | Shared DML rule IDs and operation predicates |
 | config.go | Parses policy params for DML rule constructors |
 | denylist_rules.go | Implements DML table denylist checks against protected schemas or tables |
+| metadata_rules.go | Implements the MySQL/TiDB metadata-backed DML target-table existence blocker |
 | mutation_rules.go | Implements WHERE, LIMIT, ORDER BY, subquery, and JOIN ... ON rules |
 | impact_rules.go | Implements additive statement-level impact estimation plus row-count / ratio thresholds |
 | insert_rules.go | Implements insert row-count, replace, insert-select, and on-duplicate rules |
@@ -17,6 +18,7 @@ First Tier-1 DML rule batch for offline update/delete/insert checks.
 | impact_rules_test.go | Verifies impact estimate threshold and registration behavior |
 | insert_rules_test.go | Verifies insert-family rule behavior |
 | register_test.go | Verifies policy-backed DML rule registration and deterministic ordering |
+| metadata_rules_test.go | Verifies metadata-backed target-table existence and dialect boundaries |
 
 ## Exports
 
@@ -41,6 +43,7 @@ First Tier-1 DML rule batch for offline update/delete/insert checks.
 - `dml.insert.select.forbid`
 - `dml.insert.on_duplicate.forbid`
 - `dml.table.denylist.forbid`
+- `dml.table.exists.require`
 
 ## Object-Scope Denylist Surface
 

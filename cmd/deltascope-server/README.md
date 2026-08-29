@@ -8,7 +8,7 @@ HTTP service entrypoint exposes DeltaScope audit and metadata-aware review over 
 |------|---------------|
 | main.go | Parses process flags, loads runtime config, merges logging settings, and starts the HTTP service |
 | main_test.go | Verifies CLI flag parsing, logging config from flags, and runtime config merge helpers |
-| main_e2e_test.go | Runs Docker-backed MySQL/TiDB metadata-aware HTTP e2e coverage against the real server binary using registry-backed `connection_id` payloads and no-leak assertions |
+| main_e2e_test.go | Runs Docker-backed MySQL/TiDB metadata-aware HTTP e2e coverage against the real server binary using registry-backed `connection_id` payloads, DML target-table existence cases, and no-leak assertions |
 | main_e2e_postgresql_test.go | Runs Docker-backed PostgreSQL metadata-aware HTTP audit e2e via registry-backed authorized `connection_id` |
 | main_e2e_postgresql_query_access_test.go | Verifies Docker-backed PG17 COUNT(1) query-access behavior through the HTTP connection_id surface, including foreign-table fail-closed |
 

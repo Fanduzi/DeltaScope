@@ -9,6 +9,7 @@ HTTP exposes DeltaScope audit and metadata-aware review capabilities as a JSON s
 | audit_metadata.go | Executes one HTTP audit request through offline or registry metadata-aware flows and preserves adapter context plus partial public results when an audit returns diagnostics and an error |
 | audit_metadata_test.go | Verifies HTTP metadata-aware execution wiring, additive context, and direct metadata client lifecycle handling |
 | audit_impact_postgresql_tag_test.go | Verifies PostgreSQL offline primary-key equality impact in HTTP JSON output |
+| audit_dml_table_existence_test.go | Verifies registry-backed MySQL/TiDB INSERT/UPDATE/DELETE missing-target findings and stable HTTP result shape |
 | audit_offline_existence_test.go | Locks offline ALTER DROP COLUMN HTTP JSON `context.note` / `context.unproven` and capabilities `context_fields` |
 | handler.go | Binds Gin HTTP requests to public APIs and emits diagnostic error envelopes that retain the full partial audit result beside the bounded transport error |
 | handler_unsupported_diagnostics_evidence_test.go | Verifies HTTP parser diagnostics preserve valid statement results, findings, locations, context, and no-leak boundaries |

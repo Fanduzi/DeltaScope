@@ -1,6 +1,6 @@
 // Package dml defines Tier-1 DML rules.
 // input: domain policy values and a shared rule registry
-// output: deterministic registration of the first DML rule batch
+// output: deterministic registration of the shipped DML rule batch
 // pos: DML rule assembly entrypoint for application wiring
 // note: if this file changes, update this header and module README.md.
 package dml
@@ -17,6 +17,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		construct func(policy.RulePolicy) (rule.StatementRule, error)
 	}{
 		{ruleID: ruleIDTableDenylistForbid, construct: newTableDenylistRule},
+		{ruleID: ruleIDTableExistsRequire, construct: newTableExistenceRule},
 		{ruleID: ruleIDWhereRequire, construct: newWhereRequiredRule},
 		{ruleID: ruleIDImpactEstimate, construct: newImpactEstimateRule},
 		{ruleID: ruleIDImpactRowsMaxCount, construct: newImpactRowsMaxCountRule},

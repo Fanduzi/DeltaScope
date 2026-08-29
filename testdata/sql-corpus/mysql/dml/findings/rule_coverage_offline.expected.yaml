@@ -16,6 +16,8 @@ expect:
       - dml.replace.forbid
       - dml.insert.select.forbid
       - dml.insert.on_duplicate.forbid
+    exclude:
+      - dml.table.exists.require
 config:
   rules:
     dml.insert.rows.max_count:

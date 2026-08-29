@@ -1,13 +1,17 @@
-name: update_with_where
-dialect: mysql
+name: existing_table_update
+dialect: tidb
 category: dml
 expect:
   parse_ok: true
   statement_kind: dml
+  operation: update
   unsupported:
     count: 0
   findings:
-    include: []
     exclude:
-      - dml.where.require
       - dml.table.exists.require
+metadata:
+  schema: app
+  tables:
+    existing_users:
+      exists: true

@@ -3433,6 +3433,25 @@ rules:
 
 ---
 
+### `dml.table.exists.require`
+
+当实时元数据明确报告 DML 目标表不存在时，阻止 `INSERT`、`UPDATE` 和 `DELETE`。该元数据感知规则仅适用于 MySQL 和 TiDB；没有实时表快照时跳过，不检查 `INSERT ... SELECT` 中的源表。
+
+- **默认**：已启用，级别 `blocker`
+- **参数**：无
+
+只有目标关系查询返回 `exists: false` 的表快照时才会触发。缺少快照不声明表存在或不存在；查询失败仍沿用元数据/连接错误路径。
+
+**YAML 配置示例：**
+```yaml
+rules:
+  dml.table.exists.require:
+    enabled: true
+    level: blocker
+```
+
+---
+
 ## 信任与误配防护
 
 v0.20.0 引入了 PostgreSQL 信任与误配防护作为增量引擎行为。这些**不能通过策略 YAML 配置**，在 `rules:` 块中没有条目：

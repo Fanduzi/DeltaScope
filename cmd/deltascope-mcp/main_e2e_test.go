@@ -66,6 +66,7 @@ func TestRunServesMetadataAwareAuditOverRealMySQL(t *testing.T) {
 	if contextValue["metadata_source"] != "direct" {
 		t.Fatalf("unexpected metadata source: %#v", contextValue["metadata_source"])
 	}
+	assertDMLTableExistenceMCP(t, ctx, session, "mysql", 3406)
 }
 
 func TestRunServesMetadataAwareAuditOverConnectionRef(t *testing.T) {
@@ -181,6 +182,7 @@ func TestRunServesMetadataAwareAuditOverRealTiDB(t *testing.T) {
 	if contextValue["metadata_source"] != "direct" {
 		t.Fatalf("unexpected metadata source: %#v", contextValue["metadata_source"])
 	}
+	assertDMLTableExistenceMCP(t, ctx, session, "tidb", 4400)
 }
 
 func TestRunServesMetadataAwareAuditOverTiDBConnectionRef(t *testing.T) {
@@ -247,4 +249,75 @@ connections:
 	if contextValue["schema_source"] != "config" {
 		t.Fatalf("unexpected schema source: %#v", contextValue["schema_source"])
 	}
+}
+
+func assertDMLTableExistenceMCP(t *testing.T, ctx context.Context, session *sdkmcp.ClientSession, dialect string, port int) {
+	t.Helper()
+
+	call := func(sql string) map[string]any {
+		result, err := session.CallTool(ctx, &sdkmcp.CallToolParams{
+			Name: "audit_sql",
+			Arguments: map[string]any{
+				"sql": sql,
+				"connection": map[string]any{
+					"host":     "127.0.0.1",
+					"port":     port,
+					"user":     "root",
+					"password": "root",
+					"schema":   "app",
+					"dialect":  dialect,
+				},
+			},
+		})
+		if err != nil {
+			t.Fatalf("call audit_sql: %v", err)
+		}
+		if result == nil || result.IsError {
+			t.Fatalf("expected successful tool result, got %#v", result)
+		}
+		body, ok := result.StructuredContent.(map[string]any)
+		if !ok {
+			t.Fatalf("expected structured result body, got %T", result.StructuredContent)
+		}
+		return body
+	}
+
+	for _, sql := range []string{
+		"INSERT INTO missing_users (id) VALUES (1)",
+		"UPDATE missing_users SET name = 'x' WHERE id = 1",
+		"DELETE FROM missing_users WHERE id = 1",
+	} {
+		assertMCPFindingID(t, call(sql), "dml.table.exists.require")
+	}
+	assertMCPFindingAbsentID(t, call("UPDATE app.users SET name = 'x' WHERE id = 1"), "dml.table.exists.require")
+}
+
+func assertMCPFindingID(t *testing.T, body map[string]any, ruleID string) {
+	t.Helper()
+	if mcpFindingIDPresent(body, ruleID) {
+		return
+	}
+	t.Fatalf("expected MCP finding %q, got %#v", ruleID, body)
+}
+
+func assertMCPFindingAbsentID(t *testing.T, body map[string]any, ruleID string) {
+	t.Helper()
+	if mcpFindingIDPresent(body, ruleID) {
+		t.Fatalf("did not expect MCP finding %q, got %#v", ruleID, body)
+	}
+}
+
+func mcpFindingIDPresent(body map[string]any, ruleID string) bool {
+	statements, _ := body["statements"].([]any)
+	for _, rawStatement := range statements {
+		statement, _ := rawStatement.(map[string]any)
+		findings, _ := statement["findings"].([]any)
+		for _, rawFinding := range findings {
+			finding, _ := rawFinding.(map[string]any)
+			if finding["rule_id"] == ruleID {
+				return true
+			}
+		}
+	}
+	return false
 }

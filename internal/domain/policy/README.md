@@ -37,6 +37,7 @@ Policy model for rule configuration and future audit settings.
 - The default lifecycle policy also ships row-count cautions for `drop table` and `truncate table`, using metadata-backed `table_rows` snapshots with a default threshold of `100`.
 - The default global DDL policy enables MySQL merge-alter guidance and ships the TiDB variant in a relaxed state until a team chooses to require merged alters there as well.
 - The default policy now also exposes DDL and DML table denylist hooks via `schemas`, `tables`, and `qualified_tables`; the shipped defaults keep those lists empty so the rules stay inert until a team populates them.
+- The default policy also enables `dml.table.exists.require`; it blocks only definitively absent MySQL/TiDB DML target tables when live table metadata is attached and stays inert offline and for PostgreSQL.
 
 ## Dependencies
 - Upstream: application policy loading and future config adapters

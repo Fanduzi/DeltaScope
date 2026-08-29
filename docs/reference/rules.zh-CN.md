@@ -923,7 +923,7 @@ rules:
 
 ---
 
-## DML 规则（10 条）
+## DML 规则（11 条）
 
 这些规则对 DML 语句进行评估：`SELECT`、`INSERT`、`UPDATE`、`DELETE`、`REPLACE`。
 
@@ -939,6 +939,7 @@ rules:
 | `dml.insert.select.forbid` | 禁止 INSERT INTO … SELECT | blocker | 否 |
 | `dml.insert.on_duplicate.forbid` | 禁止 INSERT … ON DUPLICATE KEY UPDATE | blocker | 否 |
 | `dml.table.denylist.forbid` | 禁止对拒绝列表中的 schema/表执行 DML | blocker | **是** |
+| `dml.table.exists.require` | MySQL/TiDB 的 DML 目标表必须存在于实时元数据中 | blocker | **是** |
 
 ---
 
@@ -987,6 +988,7 @@ unknown-prior-state advisory 会在元数据可用时消费实时状态，因此
 | `ddl.table.truncate.rows.max_count` |
 | `ddl.table.denylist.forbid` |
 | `dml.table.denylist.forbid` |
+| `dml.table.exists.require` |
 
 ---
 
