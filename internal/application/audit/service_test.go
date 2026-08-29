@@ -395,7 +395,7 @@ func TestAuditPreservesValidStatementsAroundParserError(t *testing.T) {
 	if len(result.Diagnostics) != 1 || result.Diagnostics[0].Classification != DiagnosticParserError || result.Diagnostics[0].Audited {
 		t.Fatalf("expected one unaudited parser diagnostic, got %#v", result.Diagnostics)
 	}
-	if strings.Contains(strings.Join([]string{result.Diagnostics[0].Reason, result.Diagnostics[0].ActionHint}, " "), "idx_x") {
+	if strings.Contains(result.Diagnostics[0].Reason+" "+result.Diagnostics[0].ActionHint, "idx_x") {
 		t.Fatalf("parser diagnostic leaked SQL text: %#v", result.Diagnostics[0])
 	}
 	diagnosticJSON, err := json.Marshal(result.Diagnostics[0])
