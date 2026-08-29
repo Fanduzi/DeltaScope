@@ -162,6 +162,7 @@ curl http://127.0.0.1:8083/v1/capabilities
     "bad_request",
     "connection_invalid",
     "connection_failed",
+    "authentication_failed",
     "identity_error",
     "config_invalid",
     "auth_required",
@@ -575,6 +576,7 @@ Response (the response shape is `QueryAccessResult`, not an audit result):
 | 403 | `not_authorized` | The authenticated principal is not authorized for the requested connection |
 | 403 | `purpose_not_allowed` | The named connection does not have `query_access` in its `purposes` |
 | 502 | `connection_failed` | DeltaScope could not open the metadata connection, detect dialect, or resolve schema information |
+| 502 | `authentication_failed` | The database rejected the configured credentials; the response does not expose driver details or credential data |
 | 502 | `identity_error` | The live server identity is not usable for the requested online capability; PostgreSQL Query Access requires PostgreSQL 17 |
 | 401 | `auth_required` | Request is missing `X-API-Key` when auth is enabled and the path is protected |
 | 403 | `auth_invalid` | `X-API-Key` was provided but does not match configured keys |

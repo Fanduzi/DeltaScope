@@ -1,6 +1,6 @@
 // Package cli verifies CLI query access command behavior.
 // input: synthetic CLI invocations covering audit-only flag boundaries in both command positions, fixed JSON output, admission exits, explicit-empty/non-EOF stdin, file, unified online-session routing, and the PostgreSQL PG17 version boundary
-// output: coverage for query access JSON output, exit codes, input-source validation, bounded failures/version messages, and close ownership
+// output: coverage for query access JSON output, exit codes, input-source validation, bounded connection/authentication/version messages, and close ownership
 // pos: CLI adapter behavior and unified online migration coverage for query access
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -104,6 +104,37 @@ func TestQueryAccessOnlinePostgreSQL16ReportsVersionRequirement(t *testing.T) {
 		t.Fatalf("unexpected bounded error: %q", stderr.String())
 	}
 	for _, forbidden := range []string{"16.3", "PG16_SQL_MARKER", "pg16.invalid", "5432", "pg16_user", "PG16_PASSWORD", "pg16_database"} {
+		if strings.Contains(strings.ToLower(stderr.String()), strings.ToLower(forbidden)) {
+			t.Fatalf("CLI output leaked %q: %q", forbidden, stderr.String())
+		}
+	}
+}
+
+func TestQueryAccessOnlineAuthenticationFailureRemainsBounded(t *testing.T) {
+	t.Setenv("CLI_AUTH_PASSWORD", "cli-auth-secret")
+	previousOpener := openOnlineSession
+	openOnlineSession = func(context.Context, online.SessionConfig) (*online.Session, error) {
+		return nil, online.ErrAuthenticationFailed
+	}
+	t.Cleanup(func() { openOnlineSession = previousOpener })
+
+	var stdout, stderr bytes.Buffer
+	exitCode := Execute(t.Context(), []string{
+		"query-access", "analyze",
+		"--sql", "SELECT 1 /* CLI_AUTH_MARKER */",
+		"--dialect", "postgresql",
+		"--host", "auth.invalid",
+		"--user", "auth_user",
+		"--password-env", "CLI_AUTH_PASSWORD",
+	}, &bytes.Buffer{}, &stdout, &stderr)
+
+	if exitCode != exitQueryAccessUsageError || stdout.Len() != 0 {
+		t.Fatalf("unexpected authentication failure result: exit=%d stdout=%q stderr=%q", exitCode, stdout.String(), stderr.String())
+	}
+	if stderr.String() != "authentication failed\n" {
+		t.Fatalf("unexpected bounded authentication error: %q", stderr.String())
+	}
+	for _, forbidden := range []string{"CLI_AUTH_MARKER", "auth.invalid", "auth_user", "CLI_AUTH_PASSWORD", "cli-auth-secret"} {
 		if strings.Contains(strings.ToLower(stderr.String()), strings.ToLower(forbidden)) {
 			t.Fatalf("CLI output leaked %q: %q", forbidden, stderr.String())
 		}

@@ -1,6 +1,6 @@
 // Package online provides tests for the session factory.
 // input: mock database driver configurations
-// output: verified session lifecycle behavior
+// output: verified session lifecycle behavior and distinct bounded authentication/dial failure classification
 // pos: unit tests for OpenSession with mock drivers
 // note: if this file changes, update this header and module README.md.
 package online
@@ -263,6 +263,21 @@ func TestIdentifyFromConn_Cancellation(t *testing.T) {
 	// The query may or may not fail depending on timing, but the function
 	// should handle cancellation gracefully.
 	_, _ = IdentifyFromConn(ctx, conn, "mysql")
+}
+
+func TestWrapConnectionFailureKeepsAuthenticationAndDialDistinct(t *testing.T) {
+	authErr := wrapConnectionFailure(errors.New("password authentication failed for user root"))
+	if !errors.Is(authErr, ErrAuthenticationFailed) {
+		t.Fatalf("want ErrAuthenticationFailed, got %v", authErr)
+	}
+
+	dialErr := wrapConnectionFailure(errors.New("dial tcp 127.0.0.1:5432: connection refused"))
+	if !errors.Is(dialErr, ErrConnectionFailed) {
+		t.Fatalf("want ErrConnectionFailed, got %v", dialErr)
+	}
+	if errors.Is(dialErr, ErrAuthenticationFailed) {
+		t.Fatalf("dial failure must not classify as authentication failure: %v", dialErr)
+	}
 }
 
 func TestDeriveCapabilityTarget_AllTargets(t *testing.T) {

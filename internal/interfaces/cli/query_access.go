@@ -1,6 +1,6 @@
 // Package cli exposes the command-line adapter for DeltaScope.
 // input: query-access command flags including dialect-aware connection flags, flag-presence-aware SQL text from --sql/--file/stdin, and the unified public online query access API
-// output: rendered offline or identity-routed online query access results in JSON format, exit-code mapping, and bounded input/version-boundary errors
+// output: rendered offline or identity-routed online query access results in JSON format, exit-code mapping, and shared bounded connection/authentication/TLS/version-boundary errors
 // pos: CLI query-access command implementation above offline analysis and the opaque unified online session boundary
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -8,6 +8,7 @@ package cli
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -227,6 +228,33 @@ func runQueryAccessOnline(cmd *cobra.Command, sql string, dialect spec.Dialect, 
 	}
 
 	return writeQueryAccessResult(cmd, result, exitCode)
+}
+
+func mapOnlineCLIBoundaryError(err error) error {
+	if errors.Is(err, online.ErrPostgreSQLQueryAccessVersionUnsupported) {
+		return newRuntimeError(online.PostgreSQLQueryAccessVersionRequirement)
+	}
+	if errors.Is(err, online.ErrAuthenticationFailed) {
+		return newRuntimeError("authentication failed")
+	}
+
+	msg := err.Error()
+	switch {
+	case isAuthenticationFailure(strings.ToLower(msg)):
+		return newRuntimeError("authentication failed")
+	case strings.Contains(msg, "certificate"):
+		return newRuntimeError("TLS handshake failed")
+	case strings.Contains(msg, "x509:"):
+		return newRuntimeError("TLS certificate verification failed")
+	case strings.Contains(msg, "tls:"):
+		return newRuntimeError("TLS handshake failed")
+	case strings.Contains(msg, "timeout"):
+		return newRuntimeError("connection timed out")
+	case strings.Contains(msg, "context canceled"):
+		return newRuntimeError("request canceled")
+	default:
+		return newRuntimeError("connection failed")
+	}
 }
 
 func writeQueryAccessResult(cmd *cobra.Command, result *deltascope.QueryAccessResult, exitCode *int) error {

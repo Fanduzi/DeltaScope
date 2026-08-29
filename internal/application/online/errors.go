@@ -1,6 +1,6 @@
 // Package online provides the shared online session factory for SDK, CLI, and HTTP.
 // input: errors from online operations (session open, identity, authorization)
-// output: bounded error taxonomy and status mapping that never leaks secrets, endpoints, observed identity, or driver text
+// output: bounded error taxonomy and status mapping that never leaks secrets, endpoints, observed identity, authentication details, or driver text
 // pos: shared error boundary for all online surfaces (HTTP, MCP, CLI)
 // note: if this file changes, update this header and module README.md.
 package online
@@ -21,11 +21,13 @@ var (
 	ErrPurposeNotAllowed   = errors.New("purpose not allowed for this connection")
 	ErrPrincipalNotAllowed = errors.New("principal not authorized for this connection")
 	ErrConnectionFailed    = errors.New("connection failed")
-	ErrSchemaRequired      = errors.New("schema is required")
-	ErrSchemaLookupFailed  = errors.New("schema lookup failed")
-	ErrTimeout             = errors.New("operation timed out")
-	ErrCanceled            = errors.New("operation canceled")
-	ErrInternal            = errors.New("internal error")
+	// ErrAuthenticationFailed identifies a database authentication failure.
+	ErrAuthenticationFailed = errors.New("authentication failed")
+	ErrSchemaRequired       = errors.New("schema is required")
+	ErrSchemaLookupFailed   = errors.New("schema lookup failed")
+	ErrTimeout              = errors.New("operation timed out")
+	ErrCanceled             = errors.New("operation canceled")
+	ErrInternal             = errors.New("internal error")
 )
 
 // MapOnlineError maps an error from online operations to a bounded (code, message, status) tuple.
@@ -64,6 +66,9 @@ func MapOnlineError(err error) (code string, message string, status int) {
 	}
 	if errors.Is(err, ErrPrincipalNotAllowed) {
 		return "not_authorized", "not authorized for this connection", http.StatusForbidden
+	}
+	if errors.Is(err, ErrAuthenticationFailed) {
+		return "authentication_failed", "authentication failed", http.StatusBadGateway
 	}
 	if errors.Is(err, ErrConnectionFailed) {
 		return "connection_failed", "connection failed", http.StatusBadGateway

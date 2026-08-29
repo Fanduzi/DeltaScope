@@ -221,7 +221,9 @@ The endpoint returns the same JSON structure as the SDK. Invalid mode returns
 echoing the profile or SQL. A reachable PostgreSQL server outside the trusted
 PG17 online capability returns `502` with `identity_error` and the bounded
 message `online PostgreSQL Query Access requires PostgreSQL 17`; this code is
-listed by `GET /v1/capabilities`.
+listed by `GET /v1/capabilities`. Database authentication failures return the
+separate bounded `502 authentication_failed` response; dial and timeout failures
+retain their own bounded codes.
 
 ## Confirming MySQL/TiDB Function Queries via a Same-Connection Session
 

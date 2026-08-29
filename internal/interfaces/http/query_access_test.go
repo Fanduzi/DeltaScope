@@ -167,6 +167,51 @@ func TestHandlerQueryAccessOnlinePostgreSQL16ReportsVersionRequirement(t *testin
 	}
 }
 
+func TestHandlerQueryAccessOnlineKeepsAuthenticationDialAndTimeoutDistinct(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		openErr    error
+		wantStatus int
+		wantCode   string
+		wantMsg    string
+	}{
+		{name: "authentication", openErr: online.ErrAuthenticationFailed, wantStatus: http.StatusBadGateway, wantCode: "authentication_failed", wantMsg: "authentication failed"},
+		{name: "dial", openErr: online.ErrConnectionFailed, wantStatus: http.StatusBadGateway, wantCode: "connection_failed", wantMsg: "connection failed"},
+		{name: "timeout", openErr: context.DeadlineExceeded, wantStatus: http.StatusGatewayTimeout, wantCode: "timeout", wantMsg: "operation timed out"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			previousOpener := openOnlineSession
+			openOnlineSession = func(context.Context, online.SessionConfig) (*online.Session, error) {
+				return nil, tc.openErr
+			}
+			t.Cleanup(func() { openOnlineSession = previousOpener })
+
+			handler, err := NewHandler("", "test-build", WithRegistry(newQueryAccessTestRegistry(t, "test-conn")))
+			if err != nil {
+				t.Fatalf("new handler: %v", err)
+			}
+			req := httptest.NewRequest(http.MethodPost, "/v1/query-access/analyze", bytes.NewBufferString(`{"sql":"SELECT 1 /* ONLINE_ERROR_MARKER */","connection_id":"test-conn"}`))
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("X-API-Key", "test-key-value")
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+
+			if rec.Code != tc.wantStatus {
+				t.Fatalf("status = %d, want %d: %s", rec.Code, tc.wantStatus, rec.Body.String())
+			}
+			wantBody := fmt.Sprintf(`{"error":{"code":%q,"message":%q}}`+"\n", tc.wantCode, tc.wantMsg)
+			if rec.Body.String() != wantBody {
+				t.Fatalf("body = %q, want %q", rec.Body.String(), wantBody)
+			}
+			for _, forbidden := range []string{"ONLINE_ERROR_MARKER", "test-conn", "test-key-value", "127.0.0.1", "3306", "root", "secret"} {
+				if strings.Contains(strings.ToLower(rec.Body.String()), strings.ToLower(forbidden)) {
+					t.Fatalf("HTTP output leaked %q: %q", forbidden, rec.Body.String())
+				}
+			}
+		})
+	}
+}
+
 func TestHandlerQueryAccessOnlineMapsUnifiedAnalysisCancellation(t *testing.T) {
 	for _, testCase := range []struct {
 		name        string

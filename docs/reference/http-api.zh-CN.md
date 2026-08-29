@@ -162,6 +162,7 @@ curl http://127.0.0.1:8083/v1/capabilities
     "bad_request",
     "connection_invalid",
     "connection_failed",
+    "authentication_failed",
     "identity_error",
     "config_invalid",
     "auth_required",
@@ -562,6 +563,7 @@ curl -s -X POST http://127.0.0.1:8083/v1/audit \
 | 403 | `not_authorized` | 已认证的主体无权访问所请求的连接 |
 | 403 | `purpose_not_allowed` | 命名连接的 `purposes` 中不含 `query_access` |
 | 502 | `connection_failed` | DeltaScope 无法打开元数据连接、探测方言，或无法解析 schema 信息 |
+| 502 | `authentication_failed` | 数据库拒绝了配置的凭据；响应不会暴露驱动细节或凭据数据 |
 | 502 | `identity_error` | 实时服务器身份不适用于请求的在线能力；PostgreSQL Query Access 要求 PostgreSQL 17 |
 | 401 | `auth_required` | 在开启认证且路径受保护时，请求缺少 `X-API-Key` |
 | 403 | `auth_invalid` | 请求提供了 `X-API-Key`，但不在服务端配置 key 列表中 |

@@ -159,8 +159,8 @@ func handleQueryAccessOnline(
 
 	queryAccessSession, err := newOnlineQueryAccessSessionFromConn(r.Context(), session.Conn)
 	if err != nil {
-		status, code, message := mapOnlineQueryAccessConstructorError(err)
-		writeError(w, status, code, message)
+		code, message := mapOnlineQueryAccessConstructorError(err)
+		writeError(w, http.StatusBadGateway, code, message)
 		return
 	}
 	result, err := analyzeOnlineQueryAccessWithSession(r.Context(), queryAccessSession, deltascope.QueryAccessRequest{
@@ -177,11 +177,11 @@ func handleQueryAccessOnline(
 	writeJSON(w, http.StatusOK, result)
 }
 
-func mapOnlineQueryAccessConstructorError(err error) (int, string, string) {
+func mapOnlineQueryAccessConstructorError(err error) (string, string) {
 	if errors.Is(err, deltascope.ErrOnlineQueryAccessPostgreSQLVersionUnsupported) {
-		return http.StatusBadGateway, "identity_error", online.PostgreSQLQueryAccessVersionRequirement
+		return "identity_error", online.PostgreSQLQueryAccessVersionRequirement
 	}
-	return http.StatusBadGateway, "connection_failed", "connection failed"
+	return "connection_failed", "connection failed"
 }
 
 func mapOnlineSessionError(err error) (int, string) {

@@ -1,6 +1,6 @@
 // Package online provides the shared online session factory for SDK, CLI, and HTTP.
 // input: SessionConfig with connection parameters, TLS mode, and expected dialect
-// output: pinned *sql.Conn with validated ServerIdentity and CapabilityTarget
+// output: pinned *sql.Conn with validated ServerIdentity and CapabilityTarget, with bounded authentication and connection failures
 // pos: shared session lifecycle for online query access (open, pin, identify, close)
 // note: if this file changes, update this header and module README.md.
 package online
@@ -89,13 +89,13 @@ func openMySQLSession(ctx context.Context, cfg SessionConfig) (*Session, error) 
 
 	if err := db.PingContext(pingCtx); err != nil {
 		db.Close()
-		return nil, fmt.Errorf("%w: %w", ErrConnectionFailed, err)
+		return nil, wrapConnectionFailure(err)
 	}
 
 	conn, err := db.Conn(ctx)
 	if err != nil {
 		db.Close()
-		return nil, fmt.Errorf("%w: %w", ErrConnectionFailed, err)
+		return nil, wrapConnectionFailure(err)
 	}
 
 	identity, err := IdentifyFromConn(ctx, conn, cfg.Dialect)
@@ -167,13 +167,13 @@ func openPostgreSQLSession(ctx context.Context, cfg SessionConfig) (*Session, er
 
 	if err := db.PingContext(pingCtx); err != nil {
 		db.Close()
-		return nil, fmt.Errorf("%w: %w", ErrConnectionFailed, err)
+		return nil, wrapConnectionFailure(err)
 	}
 
 	conn, err := db.Conn(ctx)
 	if err != nil {
 		db.Close()
-		return nil, fmt.Errorf("%w: %w", ErrConnectionFailed, err)
+		return nil, wrapConnectionFailure(err)
 	}
 
 	identity, err := IdentifyFromConn(ctx, conn, "postgresql")
@@ -217,6 +217,24 @@ func IdentifyFromConn(ctx context.Context, conn *sql.Conn, expectedDialect strin
 		return nil, err
 	}
 	return identity, nil
+}
+
+func wrapConnectionFailure(err error) error {
+	if isAuthenticationFailure(err) {
+		return fmt.Errorf("%w: %w", ErrAuthenticationFailed, err)
+	}
+	return fmt.Errorf("%w: %w", ErrConnectionFailed, err)
+}
+
+func isAuthenticationFailure(err error) bool {
+	if err == nil {
+		return false
+	}
+	message := strings.ToLower(err.Error())
+	return strings.Contains(message, "access denied") ||
+		strings.Contains(message, "authentication failed") ||
+		strings.Contains(message, "password authentication") ||
+		strings.Contains(message, "invalid authorization")
 }
 
 // buildMySQLConfig constructs a MySQL driver config from the session config.

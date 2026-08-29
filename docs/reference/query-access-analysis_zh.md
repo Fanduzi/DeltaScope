@@ -188,7 +188,7 @@ curl -X POST http://localhost:8083/v1/query-access/analyze \
   -d '{"sql":"SELECT id FROM users","dialect":"mysql","mode":"strict","profile":"mysql-8.4"}'
 ```
 
-该端点返回与 SDK 相同的 JSON 结构。无效模式返回 `400` 和 `invalid_mode` 错误码；无效配置返回有界的 `400` 错误，不会回显配置或 SQL。可连接但不属于可信 PG17 在线能力的 PostgreSQL 服务器返回 `502`、`identity_error`，以及有界消息 `online PostgreSQL Query Access requires PostgreSQL 17`；该错误码会在 `GET /v1/capabilities` 中列出。
+该端点返回与 SDK 相同的 JSON 结构。无效模式返回 `400` 和 `invalid_mode` 错误码；无效配置返回有界的 `400` 错误，不会回显配置或 SQL。可连接但不属于可信 PG17 在线能力的 PostgreSQL 服务器返回 `502`、`identity_error`，以及有界消息 `online PostgreSQL Query Access requires PostgreSQL 17`；该错误码会在 `GET /v1/capabilities` 中列出。数据库认证失败返回独立的有界 `502 authentication_failed`；拨号和超时失败继续使用各自的有界错误码。
 
 ## 让 SDK 真正确认 MySQL/TiDB 的函数查询（同连接会话）
 

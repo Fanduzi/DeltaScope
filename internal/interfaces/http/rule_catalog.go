@@ -118,7 +118,7 @@ func httpCapabilitiesPayload() httpCapabilitiesResponse {
 		InputRules:        []string{"connection_id references a named connection in the server runtime config", "top-level schema overrides the named connection schema when both are set", "top-level dialect overrides the named connection dialect when both are set", "connection_id supports mysql, tidb, and postgresql metadata-aware audit"},
 		ResultFields:      []string{"verdict", "summary", "statements", "global_findings", "explanation", "context"},
 		ContextFields:     []string{"mode", "dialect", "dialect_source", "schema", "schema_source", "metadata_source", "note", "unproven"},
-		StructuredErrors:  []string{"invalid_json", "bad_request", "connection_invalid", "connection_failed", "identity_error", "config_invalid", "auth_required", "auth_invalid", "rate_limited", "request_timeout", "request_canceled", "internal_error", "not_found"},
+		StructuredErrors:  []string{"invalid_json", "bad_request", "connection_invalid", "connection_failed", "authentication_failed", "identity_error", "config_invalid", "auth_required", "auth_invalid", "rate_limited", "request_timeout", "request_canceled", "internal_error", "not_found"},
 		MetadataFeatures:  []string{"schema context", "instance facts", "target table snapshots"},
 		QueryParameters:   []string{"GET /v1/rules?query=<text>"},
 		RuleCatalogRoutes: []string{"GET /v1/rules", "GET /v1/rules/{rule_id}"},
