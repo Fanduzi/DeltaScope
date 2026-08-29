@@ -113,7 +113,7 @@ Application-level contracts for query access analysis, defining the schema resol
 
 ## Dependencies
 - Upstream: `internal/interfaces/*`
-- Downstream: `internal/domain/queryaccess`, `internal/infrastructure/parser/tidb`, `internal/infrastructure/parser/postgresql`, `internal/infrastructure/metadata/mysql`, `internal/infrastructure/metadata/postgresql`
+- Downstream: `internal/application`, `internal/domain/queryaccess`, `internal/infrastructure/parser/tidb`, `internal/infrastructure/parser/postgresql`, `internal/infrastructure/metadata/mysql`, `internal/infrastructure/metadata/postgresql`
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.
