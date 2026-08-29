@@ -508,12 +508,12 @@
       "finding_rule_ids": [
         "ddl.column.comment.require",
         "ddl.column.default.require",
-        "ddl.column.not_null.require",
         "ddl.table.audit_columns.require",
         "ddl.table.charset.allowlist",
         "ddl.table.comment.require",
         "ddl.table.engine.allowlist",
-        "ddl.table.primary_key.require"
+        "ddl.table.primary_key.auto_increment.require",
+        "ddl.table.primary_key.unsigned.require"
       ],
       "notes": ""
     },
@@ -567,12 +567,12 @@
       "finding_rule_ids": [
         "ddl.column.comment.require",
         "ddl.column.default.require",
-        "ddl.column.not_null.require",
         "ddl.table.audit_columns.require",
         "ddl.table.charset.allowlist",
         "ddl.table.comment.require",
         "ddl.table.engine.allowlist",
-        "ddl.table.primary_key.require"
+        "ddl.table.primary_key.auto_increment.require",
+        "ddl.table.primary_key.unsigned.require"
       ],
       "notes": ""
     },
@@ -4002,12 +4002,12 @@
       "finding_rule_ids": [
         "ddl.column.comment.require",
         "ddl.column.default.require",
-        "ddl.column.not_null.require",
         "ddl.table.audit_columns.require",
         "ddl.table.charset.allowlist",
         "ddl.table.comment.require",
         "ddl.table.engine.allowlist",
-        "ddl.table.primary_key.require"
+        "ddl.table.primary_key.auto_increment.require",
+        "ddl.table.primary_key.unsigned.require"
       ],
       "notes": ""
     },

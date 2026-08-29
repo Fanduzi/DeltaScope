@@ -3,13 +3,15 @@
 Date: 2026-08-30
 Status: Accepted
 Related milestone/version: issue #42
-Related commits: a88577f
+Related commits: a88577f, e51147a
 Related tests:
 - `TestSQLCorpusMySQLAndTiDB`
 - `testdata/sql-corpus/mysql/ddl/findings/column_primary_key.expected.yaml`
 - `testdata/sql-corpus/tidb/ddl/findings/column_primary_key.expected.yaml`
 Related docs:
 - `internal/infrastructure/parser/tidb/README.md`
+- `docs/reference/ddl-coverage-catalog.json`
+- `internal/application/audit/catalogdata/ddl-coverage-catalog.json`
 
 ## Context
 
@@ -67,7 +69,8 @@ primary-key presence and attribute findings. Paired controls assert that a
 column-level `UNIQUE` without a primary key includes
 `ddl.table.primary_key.require`. The existing `id BIGINT PRIMARY KEY` corpus
 cases also assert that inline primary-key presence and implicit `NOT NULL` are
-recognized.
+recognized. `TestDDLCoverageCatalog` was regenerated and passes with the
+updated MySQL/TiDB `CREATE TABLE` finding inventories.
 
 ## Consequences
 
@@ -78,6 +81,6 @@ Future MySQL/TiDB primary-key rule behavior should continue to consume
 ## Links
 
 - Issue: https://github.com/Fanduzi/DeltaScope/issues/42
-- Commit: `a88577f`
+- Commits: `a88577f`, `e51147a`
 - Extractor: `internal/infrastructure/parser/tidb/extractor.go`
 - Corpus: `testdata/sql-corpus/{mysql,tidb}/ddl/findings/`
