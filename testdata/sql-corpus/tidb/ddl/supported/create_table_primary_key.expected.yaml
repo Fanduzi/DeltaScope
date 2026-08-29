@@ -8,4 +8,6 @@ expect:
     count: 0
   findings:
     include: []
-    exclude: []
+    exclude:
+      - ddl.table.primary_key.require
+      - ddl.table.primary_key.not_null.require

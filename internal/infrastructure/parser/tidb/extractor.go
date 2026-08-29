@@ -388,7 +388,7 @@ func extractColumn(col *ast.ColumnDef) spec.Column {
 			if option.Expr != nil {
 				column.Comment = normalizedExprText(option.Expr)
 			}
-		case ast.ColumnOptionNotNull:
+		case ast.ColumnOptionNotNull, ast.ColumnOptionPrimaryKey:
 			column.NotNull = true
 		case ast.ColumnOptionAutoIncrement:
 			column.AutoIncrement = true
