@@ -298,6 +298,52 @@ func TestQueryAccessOnlineBindsMySQLTiDBSchema(t *testing.T) {
 	}
 }
 
+func TestQueryAccessOnlineKeepsRequestDefaultSeparateFromCatalog(t *testing.T) {
+	previousOpener := openOnlineSession
+	previousConstructor := newOnlineQueryAccessSessionFromConn
+	previousAnalyzer := analyzeOnlineQueryAccessWithSession
+	t.Cleanup(func() {
+		openOnlineSession = previousOpener
+		newOnlineQueryAccessSessionFromConn = previousConstructor
+		analyzeOnlineQueryAccessWithSession = previousAnalyzer
+	})
+
+	var sessionConfig online.SessionConfig
+	var request deltascope.QueryAccessRequest
+	openOnlineSession = func(_ context.Context, cfg online.SessionConfig) (*online.Session, error) {
+		sessionConfig = cfg
+		return &online.Session{Conn: &sql.Conn{}, Close: func() error { return nil }}, nil
+	}
+	newOnlineQueryAccessSessionFromConn = func(context.Context, *sql.Conn) (*deltascope.OnlineQueryAccessSession, error) {
+		return nil, nil
+	}
+	analyzeOnlineQueryAccessWithSession = func(_ context.Context, _ *deltascope.OnlineQueryAccessSession, got deltascope.QueryAccessRequest) (*deltascope.QueryAccessResult, error) {
+		request = got
+		return &deltascope.QueryAccessResult{
+			Dialect:            "mysql",
+			Mode:               deltascope.QueryAccessModeStrict,
+			ReadClassification: deltascope.QueryAccessReadOnly,
+			Admission:          deltascope.QueryAccessAdmissible,
+		}, nil
+	}
+
+	var stdout, stderr bytes.Buffer
+	exitCode := Execute(t.Context(), []string{
+		"query-access", "analyze", "--sql", "SELECT id FROM users",
+		"--dialect", "mysql", "--host", "127.0.0.1", "--user", "root",
+		"--default-schema", "app",
+	}, &bytes.Buffer{}, &stdout, &stderr)
+	if exitCode != exitQueryAccessAdmissible {
+		t.Fatalf("exit code = %d, want %d; stderr=%q", exitCode, exitQueryAccessAdmissible, stderr.String())
+	}
+	if sessionConfig.Database != "" || sessionConfig.Schema != "" {
+		t.Fatalf("session database/schema = %q/%q, want empty/empty", sessionConfig.Database, sessionConfig.Schema)
+	}
+	if request.DefaultSchema != "app" {
+		t.Fatalf("request default schema = %q, want app", request.DefaultSchema)
+	}
+}
+
 func TestQueryAccessOnlineRejectsConflictingMySQLTiDBSchemaBeforeAnalysis(t *testing.T) {
 	for _, dialect := range []string{"mysql", "tidb"} {
 		t.Run(dialect, func(t *testing.T) {
