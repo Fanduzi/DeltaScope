@@ -1,6 +1,6 @@
 // Package auditmeta prepares metadata-aware audit requests for multiple adapters.
-// input: parsed SQL statements and normalized statement specs from the audit application layer
-// output: target-table facts used for schema inference before metadata-aware audit execution
+// input: parsed and partially parsed SQL statements plus normalized statement specs from the audit application layer
+// output: target-table facts from valid statements used for schema inference before metadata-aware audit execution
 // pos: shared SQL target inference helper for metadata-aware adapters
 // note: if this file changes, update this header and module README.md.
 package auditmeta
@@ -21,7 +21,7 @@ type schemaTarget struct {
 
 func collectTargetTables(ctx context.Context, sqlText string, dialect spec.Dialect) ([]schemaTarget, error) {
 	parsed, err := appaudit.Parse(ctx, sqlText, dialect)
-	if err != nil {
+	if err != nil && len(parsed.Statements) == 0 {
 		return nil, err
 	}
 	statements, err := appaudit.Extract(ctx, parsed)

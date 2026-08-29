@@ -1,3 +1,8 @@
+// Package audit verifies the MySQL and TiDB SQL corpus.
+// input: dialect corpus SQL and expected YAML files
+// output: report-level parser, statement, unsupported, finding, and semantic contract coverage
+// pos: untagged corpus regression runner for the application audit pipeline
+// note: if this file changes, update this header and module README.md.
 package audit
 
 import (
@@ -105,11 +110,14 @@ func TestSQLCorpusMySQLAndTiDB(t *testing.T) {
 					if err == nil {
 						t.Fatal("expected parse_ok=false, got nil error")
 					}
-					return // no further assertions on parse failure
+					if !corpusHasPartialAssertions(tc) {
+						return
+					}
 				}
 			} else if err != nil {
 				t.Fatalf("audit error: %v", err)
 			}
+			corpusAssertPartialResult(t, result, tc)
 
 			// Assert unsupported.count.
 			if tc.Expect.Unsupported != nil && tc.Expect.Unsupported.Count != nil {

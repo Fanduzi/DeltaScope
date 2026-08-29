@@ -1,3 +1,8 @@
+// Package audit defines and validates shared SQL corpus expectations.
+// input: expected YAML files and application audit results
+// output: validated corpus schemas plus reusable partial-result assertions
+// pos: shared corpus test-data contract for tagged and untagged audit runners
+// note: if this file changes, update this header and module README.md.
 package audit
 
 import (
@@ -7,6 +12,8 @@ import (
 	"testing"
 
 	"go.yaml.in/yaml/v3"
+
+	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 )
 
 // corpusExpected is the schema each .expected.yaml file must satisfy.
@@ -27,10 +34,51 @@ type corpusExpected struct {
 			Include []string `yaml:"include"`
 			Exclude []string `yaml:"exclude"`
 		} `yaml:"findings"`
+		Statements *struct {
+			Count *int `yaml:"count"`
+		} `yaml:"statements"`
+		Diagnostics *struct {
+			ParserErrorCount *int  `yaml:"parser_error_count"`
+			Lines            []int `yaml:"lines"`
+			Columns          []int `yaml:"columns"`
+		} `yaml:"diagnostics"`
 	} `yaml:"expect"`
 	Facts    *corpusFacts    `yaml:"facts"`
 	Config   map[string]any  `yaml:"config,omitempty"`
 	Metadata *corpusMetadata `yaml:"metadata,omitempty"`
+}
+
+func corpusHasPartialAssertions(tc corpusExpected) bool {
+	return tc.Expect.Statements != nil || tc.Expect.Diagnostics != nil
+}
+
+func corpusAssertPartialResult(t *testing.T, result report.Result, tc corpusExpected) {
+	t.Helper()
+	if tc.Expect.Statements != nil && tc.Expect.Statements.Count != nil && len(result.Statements) != *tc.Expect.Statements.Count {
+		t.Errorf("statements.count: expected %d, got %d", *tc.Expect.Statements.Count, len(result.Statements))
+	}
+	if tc.Expect.Diagnostics == nil {
+		return
+	}
+	parserDiagnostics := make([]struct{ line, column int }, 0)
+	for _, diagnostic := range result.Diagnostics {
+		if diagnostic.Classification == "parser_error" {
+			parserDiagnostics = append(parserDiagnostics, struct{ line, column int }{diagnostic.Line, diagnostic.Column})
+		}
+	}
+	if tc.Expect.Diagnostics.ParserErrorCount != nil && len(parserDiagnostics) != *tc.Expect.Diagnostics.ParserErrorCount {
+		t.Errorf("diagnostics.parser_error_count: expected %d, got %d", *tc.Expect.Diagnostics.ParserErrorCount, len(parserDiagnostics))
+	}
+	for i, line := range tc.Expect.Diagnostics.Lines {
+		if i >= len(parserDiagnostics) || parserDiagnostics[i].line != line {
+			t.Errorf("diagnostics.lines[%d]: expected %d, got %+v", i, line, parserDiagnostics)
+		}
+	}
+	for i, column := range tc.Expect.Diagnostics.Columns {
+		if i >= len(parserDiagnostics) || parserDiagnostics[i].column != column {
+			t.Errorf("diagnostics.columns[%d]: expected %d, got %+v", i, column, parserDiagnostics)
+		}
+	}
 }
 
 // corpusFacts carries expected structural facts for deeper assertions.
@@ -214,6 +262,12 @@ func TestSQLCorpusExpectedFilesAreWellFormed(t *testing.T) {
 						t.Fatal("unsupported.metadata[].feature must not be empty")
 					}
 				}
+			}
+			if tc.Expect.Statements != nil && tc.Expect.Statements.Count != nil && *tc.Expect.Statements.Count < 0 {
+				t.Fatalf("statements.count must be >= 0, got %d", *tc.Expect.Statements.Count)
+			}
+			if tc.Expect.Diagnostics != nil && tc.Expect.Diagnostics.ParserErrorCount != nil && *tc.Expect.Diagnostics.ParserErrorCount < 0 {
+				t.Fatalf("diagnostics.parser_error_count must be >= 0, got %d", *tc.Expect.Diagnostics.ParserErrorCount)
 			}
 
 			// 5. Validate operation if present — must not be empty.

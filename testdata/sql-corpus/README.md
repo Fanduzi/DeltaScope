@@ -42,6 +42,12 @@ expect:
   findings:
     include: [<string>]           # rule IDs that must appear
     exclude: [<string>]           # rule IDs that must NOT appear
+  statements:
+    count: <int, >= 0>            # retained audited statements, including partial-error cases
+  diagnostics:
+    parser_error_count: <int, >= 0>
+    lines: [<int>]                 # ordered 1-based parser-diagnostic lines
+    columns: [<int>]               # ordered 1-based parser-diagnostic columns
 facts:                            # optional semantic assertions
   constraints:
     - type: <string, required>    # e.g. foreign_key, check

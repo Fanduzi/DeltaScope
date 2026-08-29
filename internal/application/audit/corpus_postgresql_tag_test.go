@@ -1,5 +1,10 @@
 //go:build postgresql
 
+// Package audit verifies the PostgreSQL SQL corpus.
+// input: PostgreSQL corpus SQL and expected YAML files
+// output: tagged report-level parser, partial-result, finding, unsupported, and semantic contract coverage
+// pos: PostgreSQL-capable corpus regression runner for the application audit pipeline
+// note: if this file changes, update this header and module README.md.
 package audit
 
 import (
@@ -73,11 +78,14 @@ func TestSQLCorpusPostgreSQL(t *testing.T) {
 					if auditErr == nil || isUnsupportedErr {
 						t.Fatal("expected parse_ok=false, got nil error or unsupported-only error")
 					}
-					return
+					if !corpusHasPartialAssertions(tc) {
+						return
+					}
 				}
 			} else if auditErr != nil && !isUnsupportedErr {
 				t.Fatalf("audit error: %v", auditErr)
 			}
+			corpusAssertPartialResult(t, result, tc)
 
 			// Assert unsupported.count.
 			if tc.Expect.Unsupported != nil && tc.Expect.Unsupported.Count != nil {
@@ -146,7 +154,7 @@ func TestSQLCorpusPostgreSQL(t *testing.T) {
 			}
 
 			// Semantic assertions: operation and facts via parse/extract path.
-			if len(result.Statements) > 0 {
+			if len(result.Statements) > 0 && (auditErr == nil || isUnsupportedErr) {
 				if tc.Expect.Operation != "" || (tc.Facts != nil && len(tc.Facts.Constraints) > 0) {
 					corpusAssertSemantic(t, string(sqlBytes), spec.DialectPostgreSQL, tc)
 				}

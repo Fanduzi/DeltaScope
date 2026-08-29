@@ -6,7 +6,8 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 
 | File | Responsibility |
 |------|---------------|
-| parse.go | Normalizes one leading UTF-8 BOM, dispatches by dialect, and builds application-owned parsed statements from infrastructure-backed parser adapters via parser-neutral extractors, while leaving PostgreSQL build-tagged support behind the Phase 3 adapter seam |
+| parse.go | Normalizes one leading UTF-8 BOM, parses bounded top-level statement slices independently by dialect, and returns valid parsed statements alongside internal parse-failure locations while preserving the existing fail-closed error contract |
+| statement_boundary.go | Splits top-level SQL only at semicolons outside supported dialect strings, quoted identifiers, comments, and PostgreSQL dollar-quoted bodies; it does not perform grammar recovery or infer statement semantics |
 | parse_pg.go | Implements PostgreSQL parsing when built with the `postgresql` tag |
 | parse_pg_stub.go | Returns the PG-capable build guidance error when PostgreSQL support is not compiled in |
 | parse_test.go | Verifies that application parsing hides parser-specific AST details |
@@ -17,8 +18,11 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 | evaluate.go | Applies registered rules, enriches findings with explanation metadata, and aggregates statement/global findings into report output while preserving statement-level DML `impact` estimates |
 | evaluate_test.go | Verifies application-owned report-flow integration and explanation enrichment over the rule registry |
 | explain.go | Joins evaluated findings with shipped catalog metadata and statement metadata availability notes |
-| service.go | Normalizes one leading UTF-8 BOM before empty-input validation, then orchestrates policy loading, parsing, extraction, top-level request metadata plumbing, optional metadata enrichment, post-enrichment DML impact attachment/refinement, rule registration, evaluation, partial-support error propagation for unsupported statements, and diagnostic evidence attachment for parser-error and unsupported outcomes |
-| service_test.go | Verifies the end-to-end application audit use case with defaults, config overrides, multi-statement SQL, PostgreSQL validation-boundary acceptance, mixed supported/unsupported partial results, metadata enrichment behavior, metadata-backed DML `impact` surfacing, and schema-only context/top-level request plumbing |
+| service.go | Normalizes one leading UTF-8 BOM before empty-input validation, then orchestrates policy loading, per-statement parser recovery, extraction, metadata enrichment, impact refinement, evaluation, preserved partial results, and fail-closed diagnostics for parser-error and unsupported outcomes |
+| service_test.go | Verifies the end-to-end application audit use case, including parser errors at migration beginning/middle/end, semicolons inside supported strings/comments, preserved valid findings/locations, metadata enrichment, and existing unsupported/impact contracts |
+| corpus_test.go | Runs MySQL and TiDB SQL-corpus cases, including partial parser-error result assertions |
+| corpus_postgresql_tag_test.go | Runs the PostgreSQL corpus and its tagged partial parser-error result assertions |
+| corpus_testdata_test.go | Defines and validates the shared corpus schema, including retained statement and located parser-diagnostic expectations |
 | metadata.go | Defines the optional metadata-provider, index-owner resolver, plan estimator, and object-resolver seams, then attaches schema, instance, target-table, and non-table object snapshots to statements before evaluation |
 | diagnostics.go | Defines diagnostic evidence constants (classification, reason, action_hint, guidance codes, evidence refs) and helpers for constructing parser-error and unsupported statement diagnostics with optional guidance classification |
 | ddl_coverage_catalog_query.go | Defines CatalogEntry, CatalogQuery, CatalogResult, LoadEmbeddedCatalog, LoadCatalogFile, LoadCatalog, QueryCatalog, and Validate for reading the generated (embedded) DDL coverage catalog and filtering it without invoking the audit engine |
@@ -53,7 +57,8 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 
 ## Notes
 
-- `report.Result` carries an additive `Diagnostics []spec.Diagnostic` field. When the parser fails to parse a statement (parser-error path) or when a statement is an explicitly unsupported boundary (unsupported path), diagnostics are populated with `classification` (`parser_error` or `unsupported_statement`), `reason`, `action_hint`, `audited` (always `false`), and `dialect`. Parser-error diagnostics may also carry `guidance_code` (e.g., `parser_upgrade_candidate`) and `evidence_ref` (GitHub documentation URL) when the statement form matches a known unsupported boundary. Diagnostics do not contain raw SQL text, parser `near ...` fragments, or any other forbidden payload.
+- `report.Result` carries additive diagnostics. A parser failure affects only its bounded top-level statement: valid siblings continue through extraction, metadata, evaluation, findings, impact, and source-location attachment in original order. Each failed statement produces one `audited=false` parser diagnostic with optional 1-based `line`/`column`; the overall call still returns an error so process surfaces exit 2. Diagnostics never contain raw SQL text, parser `near ...` fragments, or other forbidden payload.
+- Statement-boundary recovery is lexical and deliberately narrow. It recognizes supported quote/comment forms needed to avoid false semicolon boundaries, then delegates every slice to the existing dialect parser. It does not add grammar fallbacks or guess semantics for failed text.
 
 ## Dependencies
 - Upstream: future CLI and public audit entrypoints

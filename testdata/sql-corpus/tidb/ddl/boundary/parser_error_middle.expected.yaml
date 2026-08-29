@@ -1,0 +1,14 @@
+name: parser error in middle preserves valid TiDB statements
+dialect: tidb
+category: ddl
+expect:
+  parse_ok: false
+  statements:
+    count: 2
+  diagnostics:
+    parser_error_count: 1
+    lines: [2]
+    columns: [1]
+  findings:
+    include: [dml.where.require]
+    exclude: []

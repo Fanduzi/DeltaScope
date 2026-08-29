@@ -1,12 +1,13 @@
 // Package audit orchestrates audit use cases at the application layer.
-// input: SQL text, selected dialect, shared input normalization, and infrastructure-backed parser adapters
-// output: application-owned parsed statements for later extraction and rule evaluation
+// input: SQL text, selected dialect, shared input normalization, statement boundaries, and infrastructure-backed parser adapters
+// output: application-owned parsed statements plus bounded per-statement parse failures for later audit aggregation
 // pos: application parsing entrypoint between interfaces and parser infrastructure
 // note: if this file changes, update this header and module README.md.
 package audit
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	application "github.com/Fanduzi/DeltaScope/internal/application"
@@ -28,6 +29,14 @@ type ParsedSQL struct {
 	Dialect    spec.Dialect      `json:"dialect"`
 	Statements []ParsedStatement `json:"statements"`
 	Warnings   []string          `json:"warnings,omitempty"`
+	failures   []parseFailure
+}
+
+type parseFailure struct {
+	RawSQL string
+	Line   int
+	Column int
+	Err    error
 }
 
 // PostgreSQLCapabilityBoundaryError reports that PostgreSQL parsing needs a PostgreSQL-capable build.
@@ -45,6 +54,40 @@ func Parse(ctx context.Context, sql string, dialect spec.Dialect) (ParsedSQL, er
 }
 
 func parseSQL(ctx context.Context, sql string, dialect spec.Dialect) (ParsedSQL, error) {
+	if dialect != spec.DialectMySQL && dialect != spec.DialectTiDB && dialect != spec.DialectPostgreSQL {
+		return ParsedSQL{}, fmt.Errorf("unsupported dialect: %s", dialect)
+	}
+
+	parsed := ParsedSQL{Dialect: dialect}
+	for _, chunk := range splitSQLStatements(sql, dialect) {
+		statement, err := parseStatement(ctx, chunk.SQL, dialect)
+		if err != nil {
+			if ctxErr := ctx.Err(); ctxErr != nil {
+				return ParsedSQL{}, ctxErr
+			}
+			var pgCap *PostgreSQLCapabilityBoundaryError
+			if errors.As(err, &pgCap) {
+				return ParsedSQL{}, err
+			}
+			parsed.failures = append(parsed.failures, parseFailure{
+				RawSQL: chunk.SQL,
+				Line:   chunk.Line,
+				Column: chunk.Column,
+				Err:    err,
+			})
+			continue
+		}
+		parsed.Statements = append(parsed.Statements, statement.Statements...)
+		parsed.Warnings = append(parsed.Warnings, statement.Warnings...)
+	}
+	attachParsedStatementLocations(parsed.Statements, sql)
+	if len(parsed.failures) > 0 {
+		return parsed, fmt.Errorf("parse sql: %d statement(s) could not be parsed: %w", len(parsed.failures), parsed.failures[0].Err)
+	}
+	return parsed, nil
+}
+
+func parseStatement(ctx context.Context, sql string, dialect spec.Dialect) (ParsedSQL, error) {
 	switch dialect {
 	case spec.DialectMySQL, spec.DialectTiDB:
 		return parseTiDB(ctx, sql, dialect)
@@ -74,8 +117,6 @@ func parseTiDB(ctx context.Context, sql string, dialect spec.Dialect) (ParsedSQL
 			Extractor: stmt.Extractor,
 		})
 	}
-
-	attachParsedStatementLocations(parsed.Statements, sql)
 
 	return parsed, nil
 }

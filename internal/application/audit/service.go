@@ -74,22 +74,35 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 		return report.Result{}, err
 	}
 
-	parsed, err := parseSQL(ctx, sql, request.Dialect)
-	if err != nil {
+	parsed, parseErr := parseSQL(ctx, sql, request.Dialect)
+	if parseErr != nil && len(parsed.failures) == 0 {
 		if request.Dialect == spec.DialectMySQL || request.Dialect == spec.DialectTiDB {
 			if token, ok := possiblePostgreSQLMismatch(sql); ok {
 				result := report.Aggregate(nil, []rule.Finding{buildPossiblePostgreSQLMismatchFinding(string(request.Dialect), token)})
 				result.Verdict = report.VerdictReview
-				return result, err
+				return result, parseErr
 			}
 		}
 		var pgCap *PostgreSQLCapabilityBoundaryError
-		if errors.As(err, &pgCap) {
-			return report.Result{}, err
+		if errors.As(parseErr, &pgCap) {
+			return report.Result{}, parseErr
 		}
 		return report.Result{
 			Diagnostics: []spec.Diagnostic{newParserErrorDiagnosticWithGuidance(request.Dialect, sql)},
 		}, errParserUnsupported
+	}
+	if len(parsed.Statements) == 0 && len(parsed.failures) > 0 {
+		result := report.Result{}
+		if request.Dialect == spec.DialectMySQL || request.Dialect == spec.DialectTiDB {
+			for _, failure := range parsed.failures {
+				if token, ok := possiblePostgreSQLMismatch(failure.RawSQL); ok {
+					result = addGlobalFinding(result, buildPossiblePostgreSQLMismatchFinding(string(request.Dialect), token))
+					result.Verdict = report.VerdictReview
+				}
+			}
+		}
+		result.Diagnostics = parserFailureDiagnostics(parsed.failures, request.Dialect)
+		return result, errParserUnsupported
 	}
 	if err := ctx.Err(); err != nil {
 		return report.Result{}, err
@@ -126,8 +139,10 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 		return report.Result{}, err
 	}
 	if request.Dialect == spec.DialectMySQL || request.Dialect == spec.DialectTiDB {
-		if token, ok := possiblePostgreSQLMismatch(request.SQL); ok {
-			result = addGlobalFinding(result, buildPossiblePostgreSQLMismatchFinding(string(request.Dialect), token))
+		for _, failure := range parsed.failures {
+			if token, ok := possiblePostgreSQLMismatch(failure.RawSQL); ok {
+				result = addGlobalFinding(result, buildPossiblePostgreSQLMismatchFinding(string(request.Dialect), token))
+			}
 		}
 	}
 	if request.Dialect == spec.DialectMySQL {
@@ -138,11 +153,29 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 			}
 		}
 	}
+	if len(parsed.failures) > 0 {
+		result.Diagnostics = append(result.Diagnostics, parserFailureDiagnostics(parsed.failures, request.Dialect)...)
+		if len(result.Unsupported) > 0 {
+			result.Diagnostics = append(result.Diagnostics, newUnsupportedStatementDiagnostic(request.Dialect))
+		}
+		return result, errParserUnsupported
+	}
 	if len(result.Unsupported) > 0 {
 		result.Diagnostics = append(result.Diagnostics, newUnsupportedStatementDiagnostic(request.Dialect))
 		return result, fmt.Errorf("%w: %d item(s)", ErrUnsupportedStatement, len(result.Unsupported))
 	}
 	return result, nil
+}
+
+func parserFailureDiagnostics(failures []parseFailure, dialect spec.Dialect) []spec.Diagnostic {
+	diagnostics := make([]spec.Diagnostic, 0, len(failures))
+	for _, failure := range failures {
+		diagnostic := newParserErrorDiagnosticWithGuidance(dialect, failure.RawSQL)
+		diagnostic.Line = failure.Line
+		diagnostic.Column = failure.Column
+		diagnostics = append(diagnostics, diagnostic)
+	}
+	return diagnostics
 }
 
 func metadataRequestFor(request Request) *MetadataRequest {

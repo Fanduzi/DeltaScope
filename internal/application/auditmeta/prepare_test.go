@@ -1,6 +1,6 @@
 // Package auditmeta verifies shared metadata-aware audit preparation.
 // input: metadata-aware audit requests plus fake metadata clients that simulate dialect and schema lookups
-// output: focused coverage for shared connection setup, MySQL/TiDB database/schema aliases and conflicts, schema inference, dialect validation, and PostgreSQL schema/database validation
+// output: focused coverage for shared connection setup, MySQL/TiDB database/schema aliases and conflicts, partial-parse schema inference, dialect validation, and PostgreSQL schema/database validation
 // pos: application-layer preparation tests shared by CLI and MCP adapters
 // note: if this file changes, update this header and module README.md.
 package auditmeta
@@ -96,6 +96,32 @@ func TestPrepareReturnsResolvedDialectAndSchema(t *testing.T) {
 	}
 	if client.connectionConfig.Host != "127.0.0.1" || client.connectionConfig.Port != 3307 || client.connectionConfig.User != "root" {
 		t.Fatalf("unexpected connection config: %#v", client.connectionConfig)
+	}
+}
+
+func TestPrepareInfersSchemaFromValidStatementsAroundParserError(t *testing.T) {
+	t.Parallel()
+
+	client := &fakeClient{
+		detectDialect:  spec.DialectMySQL,
+		schemasByTable: map[string][]string{"users": {"app"}},
+	}
+	prepared, err := Prepare(context.Background(), Request{
+		SQL: "ALTER TABLE users ADD COLUMN x INT;\n" +
+			"CREATE INDEX CONCURRENTLY idx_x ON users (x);\n" +
+			"DELETE FROM users;",
+		OpenClient: func(ConnectionConfig) (Client, error) { return client, nil },
+	})
+	if err != nil {
+		t.Fatalf("prepare partial metadata audit: %v", err)
+	}
+	t.Cleanup(func() { _ = prepared.Client.Close() })
+
+	if prepared.Schema != "app" || prepared.SchemaSource != "inferred" {
+		t.Fatalf("expected schema inference from valid statements, got %#v", prepared)
+	}
+	if len(client.findSchemaCalls) != 1 || client.findSchemaCalls[0] != "users" {
+		t.Fatalf("expected one valid target lookup, got %#v", client.findSchemaCalls)
 	}
 }
 

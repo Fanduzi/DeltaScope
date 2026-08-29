@@ -1,4 +1,8 @@
 // Package audit provides application-layer parser mismatch hints.
+// input: parser-failed MySQL or TiDB SQL text masked of literals and comments
+// output: bounded PostgreSQL-syntax notice tokens without raw SQL payloads
+// pos: application diagnostic hinting beside parser-error aggregation
+// note: if this file changes, update this header and module README.md.
 package audit
 
 import (
@@ -12,6 +16,7 @@ import (
 
 var possiblePostgreSQLMismatchPatterns = []regexpPatternHint{
 	{pattern: regexp.MustCompile(`(?i)\bon\s+conflict\b`), token: "ON CONFLICT"},
+	{pattern: regexp.MustCompile(`(?i)\bcreate\s+(?:unique\s+)?index\s+concurrently\b`), token: "CREATE INDEX CONCURRENTLY"},
 	{pattern: regexp.MustCompile(`::`), token: "::"},
 	{pattern: regexp.MustCompile(`(?i)\balter\s+table\b[\s\S]*\balter\s+column\b[\s\S]*\btype\b[\s\S]*\busing\b`), token: "ALTER COLUMN TYPE USING"},
 	{pattern: regexp.MustCompile(`(?i)\bgenerated\b[\s\S]*\bas\s+identity\b`), token: "GENERATED AS IDENTITY"},

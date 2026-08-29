@@ -1,0 +1,14 @@
+name: parser error at beginning preserves valid MySQL statements
+dialect: mysql
+category: ddl
+expect:
+  parse_ok: false
+  statements:
+    count: 2
+  diagnostics:
+    parser_error_count: 1
+    lines: [1]
+    columns: [1]
+  findings:
+    include: [dml.where.require]
+    exclude: []

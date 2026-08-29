@@ -1,6 +1,6 @@
 // Package spec defines normalized statement specifications for rule evaluation.
 // input: statement data extracted from parser-specific AST adapters
-// output: parser-neutral statement models for domain rule processing
+// output: parser-neutral statement models and source-located audit diagnostics for domain processing
 // pos: domain specification model for all auditable SQL statements
 // note: if this file changes, update this header and module README.md.
 package spec
@@ -72,4 +72,6 @@ type Diagnostic struct {
 	Dialect        string `json:"dialect,omitempty"`
 	GuidanceCode   string `json:"guidance_code,omitempty"`
 	EvidenceRef    string `json:"evidence_ref,omitempty"`
+	Line           int    `json:"line,omitempty"`
+	Column         int    `json:"column,omitempty"`
 }

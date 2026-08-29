@@ -1,15 +1,17 @@
 // Package audit verifies the application audit service behavior.
 // input: audit service requests with SQL, dialect, and optional config path
-// output: end-to-end application audit coverage over policy loading, extraction, and rules
+// output: end-to-end application audit coverage over policy loading, partial parsing, extraction, and rules
 // pos: application audit service test coverage
 // note: if this file changes, update this header and module README.md.
 package audit
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -180,6 +182,124 @@ func TestAuditPostgreSQLSyntaxNoticeProvidesExplicitTrustGuidance(t *testing.T) 
 	// Message must carry --dialect postgresql
 	if !strings.Contains(finding.Message, "--dialect postgresql") {
 		t.Fatalf("expected message to carry --dialect postgresql, got %q", finding.Message)
+	}
+}
+
+func TestAuditPreservesValidStatementsAroundParserError(t *testing.T) {
+	t.Parallel()
+
+	result, err := AuditSQL(context.Background(), Request{
+		SQL: "ALTER TABLE users ADD COLUMN x INT;\n" +
+			"CREATE INDEX CONCURRENTLY idx_x ON users (x);\n" +
+			"DELETE FROM users;",
+		Dialect: spec.DialectMySQL,
+	})
+	if err == nil {
+		t.Fatal("expected parser-error result to remain non-nil")
+	}
+	if len(result.Statements) != 2 {
+		t.Fatalf("expected two audited statements, got %#v", result.Statements)
+	}
+	if result.Summary.Statements != 2 {
+		t.Fatalf("expected summary to count two audited statements, got %#v", result.Summary)
+	}
+	if result.Statements[0].NormalizedSQL != "ALTER TABLE users ADD COLUMN x INT" {
+		t.Fatalf("expected first valid statement to be preserved, got %#v", result.Statements[0])
+	}
+	if result.Statements[1].NormalizedSQL != "DELETE FROM users" {
+		t.Fatalf("expected trailing valid statement to be preserved, got %#v", result.Statements[1])
+	}
+	if result.Statements[1].Impact == nil {
+		t.Fatalf("expected trailing DELETE impact to be preserved, got %#v", result.Statements[1])
+	}
+	deleteFindingLocated := false
+	for _, finding := range result.Statements[1].Findings {
+		if finding.RuleID == "dml.where.require" {
+			deleteFindingLocated = finding.Location != nil && finding.Location.Line == 3 && finding.Location.Column == 1
+		}
+	}
+	if !deleteFindingLocated {
+		t.Fatalf("expected trailing DELETE finding at line 3 column 1, got %#v", result.Statements[1].Findings)
+	}
+	assertHasPostgreSQLSyntaxNotice(t, result, "CREATE INDEX CONCURRENTLY")
+	if len(result.Diagnostics) != 1 || result.Diagnostics[0].Classification != DiagnosticParserError || result.Diagnostics[0].Audited {
+		t.Fatalf("expected one unaudited parser diagnostic, got %#v", result.Diagnostics)
+	}
+	if strings.Contains(strings.Join([]string{result.Diagnostics[0].Reason, result.Diagnostics[0].ActionHint}, " "), "idx_x") {
+		t.Fatalf("parser diagnostic leaked SQL text: %#v", result.Diagnostics[0])
+	}
+	diagnosticJSON, err := json.Marshal(result.Diagnostics[0])
+	if err != nil {
+		t.Fatalf("marshal parser diagnostic: %v", err)
+	}
+	var diagnostic map[string]any
+	if err := json.Unmarshal(diagnosticJSON, &diagnostic); err != nil {
+		t.Fatalf("decode parser diagnostic: %v", err)
+	}
+	if diagnostic["line"] != float64(2) || diagnostic["column"] != float64(1) {
+		t.Fatalf("expected parser diagnostic at line 2 column 1, got %s", diagnosticJSON)
+	}
+}
+
+func TestAuditParserRecoveryAcrossMySQLTiDBMigrationPositions(t *testing.T) {
+	t.Parallel()
+
+	const (
+		alter   = "ALTER TABLE users ADD COLUMN x INT;"
+		invalid = "CREATE INDEX CONCURRENTLY idx_x ON users (x);"
+		delete  = "DELETE FROM users;"
+	)
+	for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
+		for _, tc := range []struct {
+			name           string
+			sql            string
+			diagnosticLine int
+		}{
+			{name: "beginning", sql: invalid + "\n" + alter + "\n" + delete, diagnosticLine: 1},
+			{name: "middle", sql: alter + "\n" + invalid + "\n" + delete, diagnosticLine: 2},
+			{name: "end", sql: alter + "\n" + delete + "\n" + invalid, diagnosticLine: 3},
+		} {
+			t.Run(string(dialect)+"/"+tc.name, func(t *testing.T) {
+				t.Parallel()
+				result, err := AuditSQL(context.Background(), Request{SQL: tc.sql, Dialect: dialect})
+				if err == nil {
+					t.Fatal("expected parser-error result to remain non-nil")
+				}
+				if len(result.Statements) != 2 || result.Summary.Statements != 2 {
+					t.Fatalf("expected two audited statements, got %#v", result)
+				}
+				if len(result.Diagnostics) != 1 || result.Diagnostics[0].Line != tc.diagnosticLine || result.Diagnostics[0].Column != 1 {
+					t.Fatalf("expected one located parser diagnostic, got %#v", result.Diagnostics)
+				}
+				if got := collectAuditResultRuleIDs(result); !slices.Contains(got, "dml.where.require") {
+					t.Fatalf("expected valid DELETE finding, got %v", got)
+				}
+			})
+		}
+	}
+}
+
+func TestAuditParserRecoveryDoesNotSplitSemicolonsInStringsOrComments(t *testing.T) {
+	t.Parallel()
+
+	result, err := AuditSQL(context.Background(), Request{
+		SQL: "UPDATE users SET name = 'semi;colon' /* ; ignored */ WHERE id = 1;\n" +
+			"UPDATE users SET name = 'safe' -- ; ignored\nWHERE id = 2;\n" +
+			"CREATE INDEX CONCURRENTLY idx_x ON users (x);\n" +
+			"DELETE FROM users;",
+		Dialect: spec.DialectMySQL,
+	})
+	if err == nil {
+		t.Fatal("expected parser-error result to remain non-nil")
+	}
+	if len(result.Statements) != 3 || result.Summary.Statements != 3 {
+		t.Fatalf("expected three audited statements, got %#v", result.Statements)
+	}
+	if len(result.Diagnostics) != 1 || result.Diagnostics[0].Line != 4 {
+		t.Fatalf("expected only the line 4 statement to fail parsing, got %#v", result.Diagnostics)
+	}
+	if got := collectAuditResultRuleIDs(result); !slices.Contains(got, "dml.where.require") {
+		t.Fatalf("expected valid trailing DELETE finding, got %v", got)
 	}
 }
 

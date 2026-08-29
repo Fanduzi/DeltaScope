@@ -1,0 +1,14 @@
+name: parser error at end preserves valid PostgreSQL statements
+dialect: postgresql
+category: ddl
+expect:
+  parse_ok: false
+  statements:
+    count: 2
+  diagnostics:
+    parser_error_count: 1
+    lines: [3]
+    columns: [1]
+  findings:
+    include: [dml.where.require]
+    exclude: []
