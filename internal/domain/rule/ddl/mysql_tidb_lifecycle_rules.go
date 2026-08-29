@@ -8,6 +8,7 @@ package ddl
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
@@ -58,8 +59,8 @@ func (r mysqlTidbLifecycleRule) Evaluate(ctx context.Context, statement spec.Sta
 	}
 	objectName := statement.DDL.ObjectName
 	message := r.message
-	if objectName != "" {
-		message = fmt.Sprintf(r.message, objectName)
+	if strings.Contains(r.message, "%q") {
+		message = fmt.Sprintf(r.message, lifecycleMessageObjectName(statement))
 	}
 	metadata := map[string]any{
 		"operation": string(r.operation),
@@ -79,6 +80,33 @@ func (r mysqlTidbLifecycleRule) Evaluate(ctx context.Context, statement spec.Sta
 		Suggestion: r.suggestion,
 		Metadata:   metadata,
 	}}, nil
+}
+
+func lifecycleMessageObjectName(statement spec.Statement) string {
+	ddl := statement.DDL
+	if ddl.ObjectName != "" {
+		return ddl.ObjectName
+	}
+
+	switch ddl.Operation {
+	case spec.DDLOperationRenameTable:
+		if ddl.Table != nil && ddl.Table.Name != "" {
+			return qualifiedTableName(ddl.Table.Schema, ddl.Table.Name)
+		}
+	case spec.DDLOperationCreateIndex:
+		for _, alter := range ddl.Alter {
+			if index, ok := alterIndexDefinition(alter); ok && index.Name != "" {
+				return index.Name
+			}
+		}
+	case spec.DDLOperationDropIndex:
+		for _, alter := range ddl.Alter {
+			if alter.Index != nil && alter.Index.OldName != "" {
+				return alter.Index.OldName
+			}
+		}
+	}
+	return ""
 }
 
 // Constructor functions for each rule.

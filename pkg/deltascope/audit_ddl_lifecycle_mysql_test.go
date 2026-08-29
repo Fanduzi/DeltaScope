@@ -1,3 +1,8 @@
+// Package deltascope verifies the stable public audit API.
+// input: MySQL/TiDB DDL SQL requests and public audit results
+// output: public lifecycle rule coverage and privacy-safe finding assertions
+// pos: public SDK contract tests for audit result behavior
+// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (
@@ -99,6 +104,58 @@ func TestAuditTiDBDDLLifecycleRuleCoverage(t *testing.T) {
 				t.Fatalf("expected finding with rule %q, got %#v", tt.wantRuleID, result.Statements[0].Findings)
 			}
 		})
+	}
+}
+
+func TestAuditMySQLDDLNoticeMessagesUseNormalizedIdentifiers(t *testing.T) {
+	result, err := Audit(context.Background(), Request{
+		SQL:     "RENAME TABLE app.Users TO app.Users_old;\nCREATE INDEX `Idx Email` ON app.Users (email);",
+		Dialect: DialectMySQL,
+	})
+	if err != nil {
+		t.Fatalf("audit error: %v", err)
+	}
+
+	tests := []struct {
+		statementIndex int
+		ruleID         string
+		wantMessage    string
+		wantLine       int
+	}{
+		{statementIndex: 0, ruleID: "ddl.rename_table.notice", wantMessage: `RENAME TABLE "app.users" changes table identifiers`, wantLine: 1},
+		{statementIndex: 1, ruleID: "ddl.create_index.notice", wantMessage: `CREATE INDEX "Idx Email" adds a new index to a table`, wantLine: 2},
+	}
+
+	if len(result.Statements) != len(tests) {
+		t.Fatalf("expected %d statements, got %d", len(tests), len(result.Statements))
+	}
+	for _, tt := range tests {
+		var finding *Finding
+		for i := range result.Statements[tt.statementIndex].Findings {
+			candidate := &result.Statements[tt.statementIndex].Findings[i]
+			if candidate.RuleID == tt.ruleID {
+				finding = candidate
+				break
+			}
+		}
+		if finding == nil {
+			t.Fatalf("statement %d: expected finding %q, got %#v", tt.statementIndex, tt.ruleID, result.Statements[tt.statementIndex].Findings)
+		}
+		if finding.Message != tt.wantMessage {
+			t.Errorf("statement %d: message = %q, want %q", tt.statementIndex, finding.Message, tt.wantMessage)
+		}
+		if strings.Contains(finding.Message, "%q") {
+			t.Errorf("statement %d: message contains unresolved format verb: %q", tt.statementIndex, finding.Message)
+		}
+		if finding.Level != LevelNotice {
+			t.Errorf("statement %d: level = %q, want %q", tt.statementIndex, finding.Level, LevelNotice)
+		}
+		if finding.StatementIndex != tt.statementIndex {
+			t.Errorf("statement %d: statement index = %d, want %d", tt.statementIndex, finding.StatementIndex, tt.statementIndex)
+		}
+		if finding.Location == nil || finding.Location.Line != tt.wantLine || finding.Location.Column != 1 {
+			t.Errorf("statement %d: location = %+v, want line %d column 1", tt.statementIndex, finding.Location, tt.wantLine)
+		}
 	}
 }
 
