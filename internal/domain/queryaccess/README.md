@@ -44,6 +44,7 @@ Transport-neutral domain types for query access analysis, including read classif
   - `ReasonWriteOperation`
   - `ReasonMultiStatement`
   - `ReasonSchemaUnavailable`
+  - `ReasonIndeterminate`
   - `ReasonAmbiguousReference`
   - `ReasonFunctionEffect`
   - `ReasonUnprovenOperatorEffect`
@@ -105,7 +106,7 @@ Transport-neutral domain types for query access analysis, including read classif
 - `Result` intentionally excludes raw SQL, severity, literal, password, and credential fields.
 - Sorting functions return new slices; they do not mutate input.
 - `FoldReadClassification` priority: `not_read_only` > `indeterminate` > `read_only`.
-- `ValidateAdmission` rejects `admissible` + non-`read_only` combinations.
+- `ValidateAdmission` rejects `admissible` + non-`read_only` combinations; application final normalization also prevents `read_only` + `indeterminate` and supplies a bounded reason for fail-closed indeterminate results.
 - Unproven-effect reason codes (`unproven_*`, `identity_*`) are additive machine identifiers only; they never embed SQL, OIDs, object names, or driver errors.
 - `ReasonForIdentityFailure` maps only bounded `IdentityFailure` categories; free-text cannot be injected as a trusted reason.
 - `IdentityStatus` is the per-candidate resolver outcome enum (`resolved` + fail-closed statuses). `lookup_failed` maps to `IdentityFailureError` / `identity_lookup_failed`. Free-text statuses are invalid. `resolved` is not a trust claim.

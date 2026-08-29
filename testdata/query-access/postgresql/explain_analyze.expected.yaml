@@ -3,7 +3,7 @@ dialect: postgresql
 mode: strict
 expect:
   read_classification: not_read_only
-  admission: indeterminate
+  admission: rejected
   relations: []
   referenced_columns: []
   outputs: []

@@ -26,4 +26,4 @@ expect:
     - reference: unqualified_column
       reason: ambiguous_reference
   warnings: []
-  reason_codes: []
+  reason_codes: [ambiguous_reference]

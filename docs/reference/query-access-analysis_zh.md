@@ -24,6 +24,11 @@
 
 所有方言都按这个映射推导。
 
+SDK、CLI 和 HTTP 都通过同一个共享的最终归一化步骤执行这套映射。
+当 `read_only` 的权限要求完整时，准入为 `admissible`；如果存在未解析的
+权限要求或其他保守拒绝边界，两个字段都会变为 `indeterminate`，并至少带有
+一个稳定的 `reason_codes`。`not_read_only` 始终变为 `rejected`。
+
 ## 模式
 
 | 模式 | 列要求 | 使用场景 |
@@ -58,12 +63,12 @@ strict 和 projection_only 都要求每个基表和视图有 `read_table` 权限
 下面几种情况默认就会得到 `indeterminate`：
 
 - **带函数的查询**，例如 `SELECT NOW()`、`SELECT COUNT(*) FROM app.users`，在默认离线表面上无法确认函数会读取什么（默认路径不启用函数效果提升；要提升必须走下文的同连接会话）。
-- **`SELECT *`**：没有元数据时无法展开通配符，分类为 `indeterminate`，`unresolved` 里会出现 `{reference: "*", reason: schema_unavailable}`。
+- **`SELECT *`**：没有元数据时无法展开通配符，分类为 `indeterminate`，并带有 `reason_codes: [schema_unavailable]`；`unresolved` 里会出现 `{reference: "*", reason: schema_unavailable}`。
 - **未限定的表名**（PostgreSQL）：`SELECT id FROM users` 这种没有 schema 限定符的关系，运行时到底解析到哪个 schema 取决于会话的 `search_path`，分析器无法确定，见后文“未绑定关系和列”。
 - **未知的函数或运算符效果**：MySQL/TiDB 上带函数查询返回 `indeterminate`，原因是 `unknown_function_effect`。
 - **解析失败**：`reason_codes: [parse_failure]`。
 - **空输入**：`reason_codes: [zero_statements]`。
-- **歧义列**：`unresolved: [{reference: "unqualified_column", reason: ambiguous_reference}]`。
+- **歧义列**：带有 `reason_codes: [ambiguous_reference]`，`unresolved: [{reference: "unqualified_column", reason: ambiguous_reference}]`。
 
 授权层应该把 `indeterminate` 当作拒绝处理。
 
@@ -115,7 +120,7 @@ PostgreSQL 上，没有 schema 限定符的基表关系是**执行未绑定的**
 | CTE 权限要求 | `false` | `false` |
 | WHERE 子句列用途 | `projection` + `filter` | `projection`（WHERE 列仅在 SELECT 中引用时才获得 `filter`） |
 | 歧义列处理 | `indeterminate` 且有 `ambiguous_reference` 未解析项 | `read_only` 且有未限定列引用 |
-| `reason_codes` 填充 | 是（`write_operation`、`function_call`、`parse_failure` 等） | 是（`unproven_operator_effect`、`unproven_function_effect`、`unproven_cast_effect`、`unqualified_relation_blocked`、`identity_*` 码） |
+| `reason_codes` 填充 | 是（`write_operation`、`function_call`、`parse_failure`、`ambiguous_reference` 等） | 是（`unproven_operator_effect`、`unproven_function_effect`、`unproven_cast_effect`、`unqualified_relation_blocked`、`identity_*` 或 `indeterminate` 兜底码） |
 | `unresolved` 填充 | 是（通配符、歧义引用） | 是（`unqualified_relation` 条目，用于未限定模式的基表关系） |
 
 ## 结果结构
@@ -276,7 +281,11 @@ result, err := deltascope.AnalyzeOnlineQueryAccessWithSession(ctx, session, req)
 
 ### 默认路径
 
-默认的 `AnalyzeQueryAccess`（不带会话）对 PostgreSQL 保持“无法确认”的保守行为。CLI 和 HTTP 在未提供连接参数时走默认路径；提供连接参数时在线模式走统一在线入口并获得可信提升；MCP 没有 query-access 工具。
+默认的 `AnalyzeQueryAccess`（不带会话）仍是离线路径，不会提升带效果的
+PostgreSQL 查询。满足完整权限要求的 schema 限定、无效果查询可以返回
+`read_only` + `admissible`；未限定、未解析或带效果的边界仍然保守返回
+`indeterminate`。CLI 和 HTTP 在未提供连接参数时走同一路径；提供连接参数时
+在线模式走统一在线入口并获得可信提升；MCP 没有 query-access 工具。
 
 ### Phase 1 纯效果矩阵
 
@@ -284,7 +293,7 @@ result, err := deltascope.AnalyzeOnlineQueryAccessWithSession(ctx, session, req)
 
 | 方言 | 表面 | Phase 1 聚合/窗口 |
 |---|---|---|
-| PostgreSQL | 默认 SDK/CLI/HTTP | `indeterminate`（保持不变） |
+| PostgreSQL | 默认 SDK/CLI/HTTP | 完整要求的无效果读取可为 `admissible`；带效果或触发边界的形状仍为 `indeterminate` |
 | PostgreSQL | 仅统一在线会话 | 在要求完整且证明通过时，`count`/`sum`/`avg`/`min`/`max`/`row_number`/`rank`/`dense_rank` 可为 `admissible` |
 | MySQL | 默认 SDK/CLI/HTTP | `indeterminate`，原因是 `unknown_function_effect`（离线保守） |
 | MySQL | 统一在线会话（身份推导的 `mysql-5.7`/`mysql-8.0`/`mysql-8.4` profile） | 已证明的 `COUNT(*)`、直接列 `COUNT`/`SUM`/`AVG`/`MIN`/`MAX` 可为 `admissible`；8.x profile 还支持带直接分区+排序列的 `ROW_NUMBER`/`RANK`/`DENSE_RANK` |

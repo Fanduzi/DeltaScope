@@ -1,3 +1,8 @@
+// Package queryaccess_test verifies query access domain model serialization and constants.
+// input: domain Result values and bounded query access constants
+// output: regression coverage for JSON contracts and machine identifiers
+// pos: domain model test seam for query access public result structure
+// note: if this file changes, update this header and module README.md.
 package queryaccess_test
 
 import (
@@ -344,6 +349,7 @@ func TestReasonCodeConstants(t *testing.T) {
 		queryaccess.ReasonWriteOperation:              "write_operation",
 		queryaccess.ReasonMultiStatement:              "multi_statement",
 		queryaccess.ReasonSchemaUnavailable:           "schema_unavailable",
+		queryaccess.ReasonIndeterminate:               "indeterminate",
 		queryaccess.ReasonAmbiguousReference:          "ambiguous_reference",
 		queryaccess.ReasonFunctionEffect:              "unknown_function_effect",
 		queryaccess.ReasonUnprovenOperatorEffect:      "unproven_operator_effect",

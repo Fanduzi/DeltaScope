@@ -1,6 +1,6 @@
 // Package queryaccess defines transport-neutral domain types for query access analysis.
 // input: SQL statement references, relation references, column references, and usage contexts
-// output: pure domain models for query access requirements, read classification, and admission decisions
+// output: pure domain models for query access requirements, state decisions, and bounded reason codes
 // pos: domain model for the query access analysis foundation shared across CLI, HTTP, and MCP surfaces
 // note: if this file changes, update this header and module README.md.
 package queryaccess
@@ -93,6 +93,9 @@ const (
 	ReasonMultiStatement ReasonCode = "multi_statement"
 	// ReasonSchemaUnavailable indicates schema metadata was not available.
 	ReasonSchemaUnavailable ReasonCode = "schema_unavailable"
+	// ReasonIndeterminate indicates no more specific reason was available for a
+	// fail-closed indeterminate result.
+	ReasonIndeterminate ReasonCode = "indeterminate"
 	// ReasonAmbiguousReference indicates a reference could not be uniquely resolved.
 	ReasonAmbiguousReference ReasonCode = "ambiguous_reference"
 	// ReasonFunctionEffect indicates a function call with unknown side effects.

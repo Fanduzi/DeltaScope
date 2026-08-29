@@ -24,6 +24,12 @@ Admission is derived from read classification:
 
 Admission is derived from read classification for all dialects.
 
+The shared final normalization enforces this mapping across the SDK, CLI, and
+HTTP surfaces. A `read_only` result with complete requirements is
+`admissible`; unresolved requirements or another fail-closed barrier change
+both fields to `indeterminate` and include at least one stable `reason_codes`
+entry. `not_read_only` always becomes `rejected`.
+
 ## Modes
 
 | Mode | Column requirements | Use case |
@@ -123,8 +129,8 @@ Common default `indeterminate` scenarios (see specific entries below):
 
 - **Parse failure**: `read_classification: indeterminate`, `reason_codes: [parse_failure]`
 - **Empty input**: `read_classification: indeterminate`, `reason_codes: [zero_statements]`
-- **Unresolved wildcard**: `read_classification: indeterminate`, `unresolved: [{reference: "*", reason: schema_unavailable}]`
-- **Ambiguous column**: `read_classification: indeterminate`, `unresolved: [{reference: "unqualified_column", reason: ambiguous_reference}]`
+- **Unresolved wildcard**: `read_classification: indeterminate`, `reason_codes: [schema_unavailable]`, `unresolved: [{reference: "*", reason: schema_unavailable}]`
+- **Ambiguous column**: `read_classification: indeterminate`, `reason_codes: [ambiguous_reference]`, `unresolved: [{reference: "unqualified_column", reason: ambiguous_reference}]`
 
 ## Metadata Requirements
 
@@ -142,7 +148,7 @@ Without metadata, wildcards (`SELECT *`) remain unresolved and the classificatio
 | CTE permission required | `false` | `false` |
 | WHERE clause column usages | `projection` + `filter` | `projection` (WHERE columns get `filter` only if referenced in SELECT) |
 | Ambiguous column handling | `indeterminate` with `ambiguous_reference` unresolved | `read_only` with unqualified column reference |
-| `reason_codes` populated | Yes (`write_operation`, `function_call`, `parse_failure`, etc.) | Yes (`unproven_operator_effect`, `unproven_function_effect`, `unproven_cast_effect`, `unqualified_relation_blocked`, `identity_*` codes) |
+| `reason_codes` populated | Yes (`write_operation`, `function_call`, `parse_failure`, `ambiguous_reference`, etc.) | Yes (`unproven_operator_effect`, `unproven_function_effect`, `unproven_cast_effect`, `unqualified_relation_blocked`, `identity_*`, or `indeterminate` fallback codes) |
 | `unresolved` populated | Yes (wildcards, ambiguous references) | Yes (`unqualified_relation` entries for unqualified base relations) |
 
 ## Result Structure
@@ -314,7 +320,13 @@ result, err := deltascope.AnalyzeOnlineQueryAccessWithSession(ctx, session, req)
 
 ### Default Path
 
-The default `AnalyzeQueryAccess` function (no session) remains fail-closed for PostgreSQL. CLI and HTTP use the default path unless connection flags are present, in which case online mode routes through the unified online entry and gains trusted promotion; MCP has no query-access tool.
+The default `AnalyzeQueryAccess` function (no session) remains offline and does
+not promote effect-bearing PostgreSQL queries. Schema-qualified effect-free
+queries with complete requirements may be `read_only` + `admissible`; unqualified,
+unresolved, and effect-bearing barriers remain fail-closed. CLI and HTTP use
+the same default path unless connection flags are present, in which case
+online mode routes through the unified online entry and gains trusted
+promotion; MCP has no query-access tool.
 
 ### Phase 1 Pure-Effect Matrix
 
@@ -324,7 +336,7 @@ allowlist.
 
 | Dialect | Surface | Phase 1 aggregates/windows |
 |---|---|---|
-| PostgreSQL | Default SDK/CLI/HTTP | `indeterminate` (unchanged) |
+| PostgreSQL | Default SDK/CLI/HTTP | Effect-free reads with complete requirements may be `admissible`; effect/barrier shapes remain `indeterminate` |
 | PostgreSQL | Unified online session only | `admissible` for proven `count`/`sum`/`avg`/`min`/`max`/`row_number`/`rank`/`dense_rank` with complete requirements |
 | MySQL | Default SDK/CLI/HTTP | `indeterminate` with `unknown_function_effect` (offline fail-closed) |
 | MySQL | Unified online session (identity-derived `mysql-5.7`/`mysql-8.0`/`mysql-8.4` profile) | `admissible` for proven `COUNT(*)`, direct-column `COUNT`/`SUM`/`AVG`/`MIN`/`MAX`; 8.x profiles also `ROW_NUMBER`/`RANK`/`DENSE_RANK` with direct partition+order columns |

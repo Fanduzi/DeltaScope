@@ -18,6 +18,11 @@
 
 > 注意：本指南用的是默认离线路径 `appqa.Service.Analyze()`，它不连数据库。带函数的 MySQL/TiDB 查询在这条路径上仍是 `indeterminate`。如果你想让 SDK 真正确认 MySQL/TiDB 的函数查询（例如 `COUNT(*)`），需要用统一的同连接在线会话 API（`NewOnlineQueryAccessSessionFromConn` 和 `AnalyzeOnlineQueryAccessWithSession`）；详见[查询访问分析参考](../reference/query-access-analysis_zh.md)中“让 SDK 真正确认 MySQL/TiDB 的函数查询”一节。
 
+共享的最终结果契约会把权限要求完整且无效果的 `read_only` 结果映射为
+`admissible`，把 `not_read_only` 映射为 `rejected`；任何未解析项或保守拒绝
+边界都会同时返回 `indeterminate`，并带有稳定的原因码。SDK、CLI 和 HTTP
+都会序列化这同一份结果。
+
 ### 步骤 1：分析简单查询
 
 ```go
@@ -164,7 +169,7 @@ result, _ := svc.Analyze(context.Background(), appqa.QueryAccessRequest{
 
 - 空模式默认为 `strict`。
 - 没有元数据时，通配符产生 `indeterminate` 分类。
-- 默认 SDK/CLI/HTTP 在默认离线路径上不连数据库；带函数的 PostgreSQL、MySQL、TiDB 查询在这条路径上都保持 `indeterminate`。
+- 默认 SDK/CLI/HTTP 在默认离线路径上不连数据库；带函数的 PostgreSQL、MySQL、TiDB 查询在这条路径上都保持 `indeterminate`。满足 schema 限定和完整权限要求的无效果 PostgreSQL 读取可以是 `admissible`。
 - 要让带函数的查询从 `indeterminate` 提升为 `admissible`，必须用统一的同连接在线会话 API：`NewOnlineQueryAccessSessionFromConn` 和 `AnalyzeOnlineQueryAccessWithSession`。方言专用会话 API（`NewPostgreSQLQueryAccessSessionFromConn` / `AnalyzePostgreSQLQueryAccessWithSession`、`NewMySQLTiDBQueryAccessSessionFromConn` / `AnalyzeMySQLTiDBQueryAccessWithSession`）已弃用，迁移方式见[查询访问分析参考](../reference/query-access-analysis_zh.md)的迁移一节。提升需要真实的数据库连接；默认离线 SDK/CLI/HTTP 路径不会打开连接。
 - MySQL/TiDB 会话提升要求被引用的基表是 schema-qualified（例如 `app.orders`）。未限定表名即使请求携带 `DefaultSchema` 也保持 `indeterminate`。语义 manifest 由观察到的服务器版本系列选定；SQL mode 不会被验证，因此运行非默认 SQL mode 的服务器可能与分析语义有差异。
 - 在授权层里把 `indeterminate` 当作拒绝处理。
@@ -175,7 +180,7 @@ result, _ := svc.Analyze(context.Background(), appqa.QueryAccessRequest{
 
 | 方言 | 表面 | Phase 1 聚合/窗口 |
 |---|---|---|
-| PostgreSQL | 默认 SDK/CLI/HTTP | `indeterminate`（保持不变） |
+| PostgreSQL | 默认 SDK/CLI/HTTP | 带函数/效果或触发边界时为 `indeterminate`；完整要求的无效果读取可以是 `admissible` |
 | PostgreSQL | 仅统一在线会话 | 在要求完整且证明通过时，count/sum/avg/min/max/row_number/rank/dense_rank 为 `admissible` |
 | MySQL | 默认 SDK/CLI/HTTP | `indeterminate`，原因是 `unknown_function_effect`（离线保守） |
 | MySQL | 统一在线会话（身份推导的 `mysql-5.7`/`mysql-8.0`/`mysql-8.4` profile） | 已证明的 `COUNT(*)`、直接列 `COUNT`/`SUM`/`AVG`/`MIN`/`MAX` 可为 `admissible`；8.x profile 还支持带直接分区+排序列的 ranking window |

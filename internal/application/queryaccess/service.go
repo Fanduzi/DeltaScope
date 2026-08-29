@@ -1,7 +1,7 @@
 // Package queryaccess provides the application service for query access analysis.
 // input: SQL text, dialect, mode, profile, default schema, and optional schema resolver
-// output: domain-typed query access results with optional metadata resolution
-// pos: application orchestration layer for query access analysis
+// output: domain-typed query access results with metadata resolution and normalized final state
+// pos: application orchestration and cross-surface state-normalization layer for query access
 // note: if this file changes, update this header and module README.md.
 package queryaccess
 
@@ -215,12 +215,7 @@ func (s *Service) Analyze(ctx context.Context, req QueryAccessRequest) (QueryAcc
 		hasResolver,
 		proof.allowsPromotion,
 	)
-	extracted.DomainResult.Admission = recomputeAdmission(
-		extracted.DomainResult.ReadClassification,
-		extracted.DomainResult.Admission,
-		extracted.DomainResult.Unresolved,
-		hasResolver,
-	)
+	extracted.DomainResult.Admission = recomputeAdmission(extracted.DomainResult.ReadClassification, extracted.DomainResult.Unresolved)
 
 	extracted.DomainResult.Relations = domain.SortRelations(extracted.DomainResult.Relations)
 	extracted.DomainResult.ReferencedColumns = domain.SortColumns(extracted.DomainResult.ReferencedColumns)
@@ -228,6 +223,7 @@ func (s *Service) Analyze(ctx context.Context, req QueryAccessRequest) (QueryAcc
 	// Outputs preserve SELECT declaration order — do NOT sort.
 	extracted.DomainResult.Unresolved = domain.SortUnresolved(extracted.DomainResult.Unresolved)
 	extracted.DomainResult.Warnings = domain.SortWarningCodes(extracted.DomainResult.Warnings)
+	normalizeFinalState(&extracted.DomainResult)
 
 	if err := domain.ValidateResult(&extracted.DomainResult); err != nil {
 		return QueryAccessResult{}, fmt.Errorf("invalid result: %w", err)
@@ -400,23 +396,57 @@ func hasFunctionCallReasonCode(codes []domain.ReasonCode) bool {
 	return false
 }
 
-func recomputeAdmission(classification domain.ReadClassification, current domain.Admission, unresolved []domain.Unresolved, hasResolver bool) domain.Admission {
-	if current == domain.Rejected {
-		return current
-	}
-	if !hasResolver && current == domain.IndeterminateAdmission {
-		return current
+func recomputeAdmission(classification domain.ReadClassification, unresolved []domain.Unresolved) domain.Admission {
+	if classification == domain.NotReadOnly {
+		return domain.Rejected
 	}
 	if len(unresolved) > 0 {
 		return domain.IndeterminateAdmission
-	}
-	if classification == domain.NotReadOnly {
-		return domain.Rejected
 	}
 	if classification == domain.ReadOnly {
 		return domain.Admissible
 	}
 	return domain.IndeterminateAdmission
+}
+
+// normalizeFinalState enforces the public classification/admission contract
+// after all barriers and proof decisions have been applied.
+func normalizeFinalState(result *domain.Result) {
+	if result == nil {
+		return
+	}
+
+	switch result.ReadClassification {
+	case domain.NotReadOnly:
+		result.Admission = domain.Rejected
+	case domain.ReadOnly:
+		if result.Admission == domain.IndeterminateAdmission {
+			result.ReadClassification = domain.Indeterminate
+			ensureIndeterminateReason(result)
+		} else {
+			result.Admission = domain.Admissible
+		}
+	default:
+		result.ReadClassification = domain.Indeterminate
+		result.Admission = domain.IndeterminateAdmission
+		ensureIndeterminateReason(result)
+	}
+
+	result.ReasonCodes = domain.NormalizeReasonCodes(result.ReasonCodes)
+}
+
+func ensureIndeterminateReason(result *domain.Result) {
+	if len(result.ReasonCodes) > 0 {
+		return
+	}
+	for _, unresolved := range result.Unresolved {
+		if unresolved.Reason != "" {
+			result.ReasonCodes = append(result.ReasonCodes, unresolved.Reason)
+		}
+	}
+	if len(result.ReasonCodes) == 0 {
+		result.ReasonCodes = append(result.ReasonCodes, domain.ReasonIndeterminate)
+	}
 }
 
 // reclassifyAfterResolution applies the common promotion checks to an

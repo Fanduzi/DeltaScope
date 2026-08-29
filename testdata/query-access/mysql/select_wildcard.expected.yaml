@@ -21,4 +21,4 @@ expect:
     - reference: "*"
       reason: schema_unavailable
   warnings: []
-  reason_codes: []
+  reason_codes: [schema_unavailable]

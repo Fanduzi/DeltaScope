@@ -320,11 +320,13 @@ Do not change MySQL/TiDB current behavior in this milestone.
 
 This decision is **Accepted**. Consumers may rely on:
 
-1. PostgreSQL queries that previously were always `indeterminate` may become
-   `read_only` + `admissible` **only** via the public trusted SDK entry point
-   `AnalyzePostgreSQLQueryAccessWithSession` when every effect is catalog-resolved
-   **and** listed in the PG17 trusted-effect manifest, and all existing admission
-   preconditions hold (including complete physical requirements).
+1. Effect-bearing PostgreSQL queries that previously were always `indeterminate`
+   may become `read_only` + `admissible` **only** via the public trusted SDK
+   entry point `AnalyzePostgreSQLQueryAccessWithSession` when every effect is
+   catalog-resolved **and** listed in the PG17 trusted-effect manifest, and all
+   existing admission preconditions hold (including complete physical
+   requirements). Effect-free PostgreSQL reads with complete requirements may
+   be admissible through the default shared path.
 2. Absence of proof, or resolved identity outside the manifest, never yields
    `admissible`.
 3. `pg_catalog` + stable/immutable without a manifest entry remains
@@ -342,9 +344,13 @@ This decision is **Accepted**. Consumers may rely on:
    for the observed metadata and session resolution context. It does **not**
    authorize execution, evaluate grants, or guarantee that a later query
    execution uses the same database snapshot, catalog state, or search_path.
-9. Default `AnalyzeQueryAccess`, CLI, and HTTP continue the fail-closed default
-   path (no automatic promotion). Trusted promotion requires an explicit
-   caller-owned `*sql.Conn` session and the public trusted function above.
+9. Default `AnalyzeQueryAccess`, CLI, and HTTP remain offline and do not
+   automatically promote effect-bearing queries. Schema-qualified effect-free
+   reads with complete requirements may return `read_only` + `admissible`; an
+   unresolved or fail-closed barrier returns `indeterminate` classification,
+   `indeterminate` admission, and at least one stable reason code. Trusted
+   effect promotion still requires an explicit caller-owned `*sql.Conn` session
+   and the public trusted function above.
 10. Relation metadata, column-type, and effect-identity facts for the trusted
     path are assembled from that same caller-owned `*sql.Conn` (no `*sql.DB`
     pool fallback). The caller retains ownership and may use/close the connection
@@ -1608,8 +1614,10 @@ dense_rank windows). Ordered-set rank OIDs 3986 and 3992 remain excluded.
   manifest. Callers must not supply a self-claimed `Trusted` bit.
 - Type facts are threaded from session-bound relation metadata into effect
   resolution on the trusted path.
-- Callers who want PostgreSQL `admissible` must use the public trusted session
-  API with a live caller-owned `*sql.Conn` (not the default SDK/CLI/HTTP path).
+- Callers who want effect-bearing PostgreSQL queries to become `admissible` must
+  use the public trusted session API with a live caller-owned `*sql.Conn`; the
+  default SDK/CLI/HTTP path can admit complete effect-free reads but never
+  performs effect promotion.
 - Documentation must distinguish default fail-closed PostgreSQL admission from
   the opt-in trusted SDK path: unproven or non-manifest effects remain
   indeterminate; only manifest-listed proven builtins may be admissible under
@@ -1636,6 +1644,30 @@ audit spike only:
 6. A **bounded, version-scoped, maintainable** trusted-effect manifest cannot
    be defined for the phase-1 matrix (or maintenance cost forces open-ended
    class trust).
+
+## Issue #35 Amendment — Final Query Access State Invariant (2026-08-30)
+
+**Status:** Accepted.
+
+The shared application finalization step is the single authority for the public
+classification/admission state machine:
+
+- complete, effect-free `read_only` results return `admissible`;
+- `not_read_only` results return `rejected`;
+- any unresolved requirement or other fail-closed barrier returns
+  `indeterminate` for both fields and includes at least one stable reason code,
+  using the specific unresolved reason when available or `indeterminate` as a
+  bounded fallback.
+
+This applies to the SDK, CLI, and HTTP surfaces through `Service.Analyze`. It
+does not broaden PostgreSQL function/operator trust, change connection
+behavior, add MCP, or return database rows. A schema-qualified PostgreSQL
+`SELECT id FROM public.users` with complete requirements is therefore
+`read_only` + `admissible`; WHERE/operator, view, unqualified-relation,
+unresolved-object, and unproven trusted-proof barriers remain fail-closed.
+
+Verification is owned by `final_state_invariant_postgresql_tag_test.go`, the
+PostgreSQL query-access corpus updates, and the CLI/HTTP golden-path checks.
 
 ## Links
 

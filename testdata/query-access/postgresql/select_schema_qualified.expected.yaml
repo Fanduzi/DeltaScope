@@ -3,7 +3,7 @@ dialect: postgresql
 mode: strict
 expect:
   read_classification: read_only
-  admission: indeterminate
+  admission: admissible
   relations:
     - schema: app
       name: users

@@ -10,4 +10,4 @@ expect:
   requirements: []
   unresolved: []
   warnings: []
-  reason_codes: []
+  reason_codes: [indeterminate]
