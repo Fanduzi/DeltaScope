@@ -4,6 +4,7 @@ Date: 2026-08-30
 Status: Accepted
 Related milestone/version: issue #38
 Related commits:
+- `f13f267687bd6c76499b0dae474e119b188954d1`
 Related tests:
 - `TestAuditCommandResolvesMetadataPortByExplicitDialect`
 Related docs:
@@ -53,6 +54,13 @@ overriding an operator's explicit value.
 PostgreSQL with omitted and explicit ports, explicit MySQL/TiDB, auto-detection,
 and both inline and file SQL inputs through the CLI metadata opener seam.
 
+- `go test ./internal/interfaces/cli -run '^TestAuditCommandResolvesMetadataPortByExplicitDialect$' -count=1`: PASS (5 subtests).
+- `make test`: PASS.
+- `make pg-unit-test-gates`: PASS (7 PostgreSQL-tagged packages).
+- `make docs-example-gates`: PASS.
+- `make decision-record-gate`: PASS.
+- Three-level documentation check: PASS.
+
 ## Consequences
 
 CLI help and reference documentation must describe the conditional default
@@ -61,6 +69,6 @@ retain explicit-vs-omitted tracking at normalization boundaries.
 
 ## Links
 
-- Commits:
+- Commits: `f13f267687bd6c76499b0dae474e119b188954d1`
 - Tests: `internal/interfaces/cli/audit_metadata_test.go`
 - Docs: `docs/reference/cli.md`, `docs/reference/cli.zh-CN.md`
