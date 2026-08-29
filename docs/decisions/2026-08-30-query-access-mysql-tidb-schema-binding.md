@@ -7,6 +7,9 @@ Implementation commits:
 - [`0766cd6d79cb39d438202756df3e050f5b4b22fe`](https://github.com/Fanduzi/DeltaScope/commit/0766cd6d79cb39d438202756df3e050f5b4b22fe)
 - [`70ec6dd46db7c0ab1b8d338c14d37477c147fdc6`](https://github.com/Fanduzi/DeltaScope/commit/70ec6dd46db7c0ab1b8d338c14d37477c147fdc6)
 - [`630afee584e2c398543e2ec009a2cbccda4b7137`](https://github.com/Fanduzi/DeltaScope/commit/630afee584e2c398543e2ec009a2cbccda4b7137)
+- [`6fbc40808770e471743f1855a961379ec48efd0e`](https://github.com/Fanduzi/DeltaScope/commit/6fbc40808770e471743f1855a961379ec48efd0e)
+- [`2ab2ec6872a7fb92734c37554347d86c5fb4181e`](https://github.com/Fanduzi/DeltaScope/commit/2ab2ec6872a7fb92734c37554347d86c5fb4181e)
+- [`6dfb6bd5892ba3cadc85fa882ee45fc109ef8cec`](https://github.com/Fanduzi/DeltaScope/commit/6dfb6bd5892ba3cadc85fa882ee45fc109ef8cec)
 Related decisions:
 - [Scope CLI rendering and threshold flags to audit](2026-08-30-query-access-cli-flag-ownership.md)
 - [Treat MySQL/TiDB database as the catalog alias](2026-08-30-cli-mysql-tidb-database-schema-alias.md)
@@ -17,6 +20,8 @@ Related tests:
 - `TestHandlerQueryAccessOnlineBindsMySQLTiDBSchema`
 - `TestHandlerQueryAccessOnlineRejectsConflictingMySQLTiDBSchemaBeforeOpen`
 - `TestHandlerQueryAccessOnlinePreservesPostgreSQLDatabaseAndSchema`
+- `TestQueryAccessOnlineKeepsRequestDefaultSeparateFromCatalog`
+- `TestQueryAccessOnline_TransportSmoke`
 
 ## Context
 
@@ -76,10 +81,11 @@ adapters.
 ## Verification Evidence
 
 Focused CLI and HTTP tests cover MySQL/TiDB schema-only and matching values,
-bounded pre-open/pre-analysis conflicts, unchanged SQL, and PostgreSQL
-database/schema preservation. The existing Query Access corpus remains the
-semantic regression route; the live CLI TLS route exercises an unqualified
-MySQL relation with `--schema`.
+bounded pre-open/pre-analysis conflicts, request/catalog separation, unchanged
+SQL, and PostgreSQL database/schema preservation. The existing Query Access
+corpus remains the semantic regression route; the live CLI TLS route exercises
+an unqualified MySQL relation with `--schema`, and the real HTTP transport
+smoke covers the same unqualified relation for MySQL and TiDB.
 
 ## Links
 
