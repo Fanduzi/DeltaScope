@@ -1,6 +1,6 @@
 // Package auditmeta prepares metadata-aware audit requests for multiple adapters.
 // input: metadata-preparation failures encountered while opening connections, validating dialects, and resolving schemas
-// output: typed shared errors, including PostgreSQL schema/database validation, that let adapters classify metadata-prep failures without brittle string matching
+// output: typed shared errors, including MySQL/TiDB alias conflicts and PostgreSQL schema/database validation, that let adapters classify metadata-prep failures without brittle string matching
 // pos: shared error taxonomy for CLI and MCP metadata-aware preparation flows
 // note: if this file changes, update this header and module README.md.
 package auditmeta
@@ -11,13 +11,14 @@ import "fmt"
 type ErrorKind string
 
 const (
-	ErrorInvalidSQL                 ErrorKind = "invalid_sql"
-	ErrorDialectMismatch            ErrorKind = "dialect_mismatch"
-	ErrorSchemaHintRequired         ErrorKind = "schema_hint_required"
-	ErrorSchemaLookupFailed         ErrorKind = "schema_lookup_failed"
-	ErrorConnectionOpen             ErrorKind = "connection_open_failed"
-	ErrorDialectDetect              ErrorKind = "dialect_detect_failed"
-	ErrorPostgreSQLDatabaseRequired ErrorKind = "postgresql_database_required"
+	ErrorInvalidSQL                  ErrorKind = "invalid_sql"
+	ErrorDialectMismatch             ErrorKind = "dialect_mismatch"
+	ErrorSchemaHintRequired          ErrorKind = "schema_hint_required"
+	ErrorSchemaLookupFailed          ErrorKind = "schema_lookup_failed"
+	ErrorConnectionOpen              ErrorKind = "connection_open_failed"
+	ErrorDialectDetect               ErrorKind = "dialect_detect_failed"
+	ErrorPostgreSQLDatabaseRequired  ErrorKind = "postgresql_database_required"
+	ErrorMySQLDatabaseSchemaConflict ErrorKind = "mysql_database_schema_conflict"
 )
 
 // Error is a typed metadata-preparation failure.
@@ -65,4 +66,8 @@ func newDialectDetectError(err error) *Error {
 
 func newPostgreSQLDatabaseRequiredError() *Error {
 	return newError(ErrorPostgreSQLDatabaseRequired, "PostgreSQL schema and database are distinct; pass --database when --schema is explicitly set", nil)
+}
+
+func newMySQLDatabaseSchemaConflictError() *Error {
+	return newError(ErrorMySQLDatabaseSchemaConflict, "MySQL/TiDB --database and --schema must match when both are set; use one catalog value", nil)
 }

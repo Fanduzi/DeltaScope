@@ -249,6 +249,17 @@ run_mysql_suite() {
   assert_json_field_eq "${stdout_file}" "context.dialect" "mysql"
   assert_json_field_eq "${stdout_file}" "context.schema" "app"
 
+  stdout_file="$(mktemp "${TMP_DIR}/mysql-database-alias.XXXXXX.json")"
+  stderr_file="$(mktemp "${TMP_DIR}/mysql-database-alias.XXXXXX.stderr")"
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "delete from users where id = 1" --host 127.0.0.1 --port 3406 --user root --password-env MYSQL_PASSWORD --database app --format json; then
+    exit_code=0
+  else
+    exit_code=$?
+  fi
+  assert_exit_code "${exit_code}" 0
+  assert_json_field_eq "${stdout_file}" "context.schema" "app"
+  assert_json_field_eq "${stdout_file}" "context.schema_source" "database"
+
   stdout_file="$(mktemp "${TMP_DIR}/mysql-ambiguous.XXXXXX.json")"
   stderr_file="$(mktemp "${TMP_DIR}/mysql-ambiguous.XXXXXX.stderr")"
   if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "delete from users where id = 1" --host 127.0.0.1 --port 3406 --user root --password-env MYSQL_PASSWORD --format json; then
@@ -373,6 +384,17 @@ run_tidb_suite() {
   assert_json_field_eq "${stdout_file}" "context.mode" "metadata-aware"
   assert_json_field_eq "${stdout_file}" "context.dialect" "tidb"
   assert_json_field_eq "${stdout_file}" "context.schema" "app"
+
+  stdout_file="$(mktemp "${TMP_DIR}/tidb-database-alias.XXXXXX.json")"
+  stderr_file="$(mktemp "${TMP_DIR}/tidb-database-alias.XXXXXX.stderr")"
+  if run_cli_capture "${stdout_file}" "${stderr_file}" audit --sql "delete from users where id = 1" --host 127.0.0.1 --port 4400 --user root --database app --format json; then
+    exit_code=0
+  else
+    exit_code=$?
+  fi
+  assert_exit_code "${exit_code}" 0
+  assert_json_field_eq "${stdout_file}" "context.schema" "app"
+  assert_json_field_eq "${stdout_file}" "context.schema_source" "database"
 
   stdout_file="$(mktemp "${TMP_DIR}/tidb-ambiguous.XXXXXX.json")"
   stderr_file="$(mktemp "${TMP_DIR}/tidb-ambiguous.XXXXXX.stderr")"

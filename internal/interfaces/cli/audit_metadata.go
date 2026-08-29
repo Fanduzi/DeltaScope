@@ -1,6 +1,6 @@
 // Package cli exposes the command-line adapter for DeltaScope.
 // input: metadata-aware audit connection options, SQL text, and metadata provider clients
-// output: resolved dialect/schema context, offline existence caveat fields, and provider wiring for metadata-aware CLI audits
+// output: resolved dialect/schema context including MySQL/TiDB catalog aliases, offline existence caveat fields, and provider wiring for metadata-aware CLI audits
 // pos: CLI metadata-aware audit preparation between command flags and application requests
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -69,6 +69,7 @@ func openMetadataClient(options auditConnectionOptions) (metadataClient, error) 
 		Socket:         options.Socket,
 		User:           options.User,
 		Password:       options.Password,
+		Database:       options.Database,
 		ConnectTimeout: options.ConnectTimeout,
 		TLSMode:        options.TLSMode,
 		CACert:         options.CACert,

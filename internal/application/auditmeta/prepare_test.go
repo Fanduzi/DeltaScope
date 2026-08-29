@@ -1,6 +1,6 @@
 // Package auditmeta verifies shared metadata-aware audit preparation.
 // input: metadata-aware audit requests plus fake metadata clients that simulate dialect and schema lookups
-// output: focused coverage for shared connection setup, schema inference, dialect validation, and PostgreSQL schema/database validation
+// output: focused coverage for shared connection setup, MySQL/TiDB database/schema aliases and conflicts, schema inference, dialect validation, and PostgreSQL schema/database validation
 // pos: application-layer preparation tests shared by CLI and MCP adapters
 // note: if this file changes, update this header and module README.md.
 package auditmeta
@@ -120,6 +120,156 @@ func TestPrepareUsesExplicitSchemaWithoutInference(t *testing.T) {
 	}
 	if len(client.findSchemaCalls) != 0 {
 		t.Fatalf("expected no schema inference calls, got %#v", client.findSchemaCalls)
+	}
+}
+
+func TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name            string
+		dialect         spec.Dialect
+		explicitDialect bool
+		database        string
+		explicitSchema  string
+		wantSchema      string
+		wantSource      string
+	}{
+		{name: "mysql database only", dialect: spec.DialectMySQL, explicitDialect: true, database: "app", wantSchema: "app", wantSource: "database"},
+		{name: "mysql auto-detected database only", dialect: spec.DialectMySQL, database: "app", wantSchema: "app", wantSource: "database"},
+		{name: "mysql schema only", dialect: spec.DialectMySQL, explicitDialect: true, explicitSchema: "app", wantSchema: "app", wantSource: "request"},
+		{name: "mysql matching values", dialect: spec.DialectMySQL, explicitDialect: true, database: "app", explicitSchema: "app", wantSchema: "app", wantSource: "request"},
+		{name: "tidb database only", dialect: spec.DialectTiDB, explicitDialect: true, database: "app", wantSchema: "app", wantSource: "database"},
+		{name: "tidb schema only", dialect: spec.DialectTiDB, explicitDialect: true, explicitSchema: "app", wantSchema: "app", wantSource: "request"},
+		{name: "tidb matching values", dialect: spec.DialectTiDB, explicitDialect: true, database: "app", explicitSchema: "app", wantSchema: "app", wantSource: "request"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			client := &fakeClient{detectDialect: tt.dialect}
+			var captured ConnectionConfig
+			connectionDialect := tt.dialect
+			if !tt.explicitDialect {
+				connectionDialect = ""
+			}
+			prepared, err := Prepare(context.Background(), Request{
+				SQL: "delete from users",
+				Connection: ConnectionConfig{
+					Database: tt.database,
+					Dialect:  connectionDialect,
+				},
+				RequestedDialect: tt.dialect,
+				ExplicitDialect:  tt.explicitDialect,
+				ExplicitSchema:   tt.explicitSchema,
+				OpenClient: func(config ConnectionConfig) (Client, error) {
+					captured = config
+					return client, nil
+				},
+			})
+			if err != nil {
+				t.Fatalf("prepare metadata audit: %v", err)
+			}
+			t.Cleanup(func() { _ = prepared.Client.Close() })
+
+			if prepared.Schema != tt.wantSchema || prepared.SchemaSource != tt.wantSource {
+				t.Fatalf("unexpected schema selection: schema=%q source=%q", prepared.Schema, prepared.SchemaSource)
+			}
+			if captured.Database != tt.database {
+				t.Fatalf("expected database %q in connection config, got %q", tt.database, captured.Database)
+			}
+			if len(client.findSchemaCalls) != 0 {
+				t.Fatalf("expected alias selection to skip schema inference, got %#v", client.findSchemaCalls)
+			}
+		})
+	}
+}
+
+func TestPrepareRejectsConflictingMySQLCompatibleDatabaseAndSchemaBeforeOpen(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range []struct {
+		name              string
+		dialect           spec.Dialect
+		requestedDialect  spec.Dialect
+		explicitDialect   bool
+		connectionDialect spec.Dialect
+	}{
+		{name: "mysql", dialect: spec.DialectMySQL, requestedDialect: spec.DialectMySQL, explicitDialect: true, connectionDialect: spec.DialectMySQL},
+		{name: "tidb", dialect: spec.DialectTiDB, requestedDialect: spec.DialectTiDB, explicitDialect: true, connectionDialect: spec.DialectTiDB},
+		{name: "mysql auto-detected", dialect: spec.DialectMySQL, requestedDialect: spec.DialectMySQL},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			client := &fakeClient{detectDialect: tt.dialect}
+			openCalls := 0
+			_, err := Prepare(context.Background(), Request{
+				SQL: "delete from users",
+				Connection: ConnectionConfig{
+					Database: "app",
+					Dialect:  tt.connectionDialect,
+				},
+				RequestedDialect: tt.requestedDialect,
+				ExplicitDialect:  tt.explicitDialect,
+				ExplicitSchema:   "archive",
+				OpenClient: func(ConnectionConfig) (Client, error) {
+					openCalls++
+					return client, nil
+				},
+			})
+			if err == nil {
+				t.Fatal("expected database/schema conflict")
+			}
+			var prepErr *Error
+			if !errors.As(err, &prepErr) {
+				t.Fatalf("expected typed preparation error, got %T", err)
+			}
+			if prepErr.Kind != ErrorMySQLDatabaseSchemaConflict {
+				t.Fatalf("expected %q error kind, got %q", ErrorMySQLDatabaseSchemaConflict, prepErr.Kind)
+			}
+			message := strings.ToLower(err.Error())
+			if !strings.Contains(message, "--database") || !strings.Contains(message, "--schema") || !strings.Contains(message, "match") {
+				t.Fatalf("expected bounded conflict guidance, got %q", err.Error())
+			}
+			if strings.Contains(message, "app") || strings.Contains(message, "archive") {
+				t.Fatalf("conflict error should not echo selected values: %q", err.Error())
+			}
+			if openCalls != 0 {
+				t.Fatalf("expected conflict validation before open, got %d open calls", openCalls)
+			}
+		})
+	}
+}
+
+func TestPrepareKeepsPostgreSQLDatabaseAndSchemaDistinct(t *testing.T) {
+	t.Parallel()
+
+	client := &fakeClient{detectDialect: spec.DialectPostgreSQL}
+	var captured ConnectionConfig
+	prepared, err := Prepare(context.Background(), Request{
+		SQL: "delete from users",
+		Connection: ConnectionConfig{
+			Database: "app",
+			Dialect:  spec.DialectPostgreSQL,
+		},
+		RequestedDialect: spec.DialectPostgreSQL,
+		ExplicitDialect:  true,
+		ExplicitSchema:   "public",
+		OpenClient: func(config ConnectionConfig) (Client, error) {
+			captured = config
+			return client, nil
+		},
+	})
+	if err != nil {
+		t.Fatalf("prepare metadata audit: %v", err)
+	}
+	t.Cleanup(func() { _ = prepared.Client.Close() })
+
+	if prepared.Dialect != spec.DialectPostgreSQL || prepared.Schema != "public" || prepared.SchemaSource != "request" {
+		t.Fatalf("unexpected PostgreSQL context: %#v", prepared)
+	}
+	if captured.Database != "app" {
+		t.Fatalf("expected PostgreSQL database to remain app, got %q", captured.Database)
 	}
 }
 

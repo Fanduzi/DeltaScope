@@ -1,6 +1,6 @@
 // Package auditmeta prepares metadata-aware audit requests for multiple adapters.
 // input: audit SQL text, requested dialect/schema preferences, metadata connection configs, and metadata clients
-// output: prepared metadata-aware audit context with opened client, resolved dialect/schema, or bounded dialect-specific connection validation errors
+// output: prepared metadata-aware audit context with opened client, resolved dialect/schema aliases, or bounded MySQL/TiDB and PostgreSQL connection validation errors
 // pos: shared application helper between transport adapters and the core audit service
 // note: if this file changes, update this header and module README.md.
 package auditmeta
@@ -66,6 +66,10 @@ type PreparedAudit struct {
 
 // Prepare opens a metadata client, resolves dialect and schema, and returns prepared audit context.
 func Prepare(ctx context.Context, request Request) (*PreparedAudit, error) {
+	if err := validateKnownDatabaseSchema(request); err != nil {
+		return nil, err
+	}
+
 	var client Client
 	var detectedDialect spec.Dialect
 	var err error
@@ -100,7 +104,11 @@ func Prepare(ctx context.Context, request Request) (*PreparedAudit, error) {
 		return nil, newPostgreSQLDatabaseRequiredError()
 	}
 
-	schema, schemaSource, err := resolveSchema(ctx, client, request.SQL, detectedDialect, request.ExplicitSchema, explicitSchemaSource(request.ExplicitSchemaSource), schemaHint(request.SchemaHint))
+	explicitSchema, explicitSource, err := normalizeDatabaseSchema(detectedDialect, request.Connection.Database, request.ExplicitSchema, request.ExplicitSchemaSource)
+	if err != nil {
+		return nil, err
+	}
+	schema, schemaSource, err := resolveSchema(ctx, client, request.SQL, detectedDialect, explicitSchema, explicitSource, schemaHint(request.SchemaHint))
 	if err != nil {
 		if request.ExplicitDialect && request.RequestedDialect == spec.DialectPostgreSQL {
 			var prepErr *Error
@@ -120,6 +128,37 @@ func Prepare(ctx context.Context, request Request) (*PreparedAudit, error) {
 		DialectSource: "detected",
 		SchemaSource:  schemaSource,
 	}, nil
+}
+
+func validateKnownDatabaseSchema(request Request) error {
+	dialect := request.Connection.Dialect
+	if dialect == "" {
+		dialect = request.RequestedDialect
+	}
+	if !isMySQLCompatible(dialect) {
+		return nil
+	}
+	_, _, err := normalizeDatabaseSchema(dialect, request.Connection.Database, request.ExplicitSchema, request.ExplicitSchemaSource)
+	return err
+}
+
+func normalizeDatabaseSchema(dialect spec.Dialect, database, explicitSchema, source string) (string, string, error) {
+	database = strings.TrimSpace(database)
+	explicitSchema = strings.TrimSpace(explicitSchema)
+	if !isMySQLCompatible(dialect) {
+		return explicitSchema, explicitSchemaSource(source), nil
+	}
+	if database != "" && explicitSchema != "" && database != explicitSchema {
+		return "", "", newMySQLDatabaseSchemaConflictError()
+	}
+	if explicitSchema == "" && database != "" {
+		return database, "database", nil
+	}
+	return explicitSchema, explicitSchemaSource(source), nil
+}
+
+func isMySQLCompatible(dialect spec.Dialect) bool {
+	return dialect == spec.DialectMySQL || dialect == spec.DialectTiDB
 }
 
 func prepareClientAndDialect(ctx context.Context, config ConnectionConfig, explicitDialect bool, openClient func(ConnectionConfig) (Client, error)) (Client, spec.Dialect, error) {

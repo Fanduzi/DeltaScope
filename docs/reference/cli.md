@@ -72,8 +72,8 @@ that connection but do not activate metadata-aware mode on their own.
 | `--password-env` | | (none) | Environment variable that contains the database password |
 | `--password-file` | | (none) | File path that contains the database password |
 | `--ask-password` | | false | Prompt for password interactively. Mutually exclusive with `--password-env` and `--password-file`. |
-| `--database` | | (none) | PostgreSQL database name (defaults to `postgres` when omitted; required when `--schema` is set) |
-| `--schema` | `-D` | (none) | Default schema for unqualified table name resolution |
+| `--database` | | (none) | Database/catalog name. For MySQL/TiDB it aliases `--schema`; for PostgreSQL it selects the database (required when `--schema` is set) |
+| `--schema` | `-D` | (none) | Default schema for unqualified table name resolution. For MySQL/TiDB it selects the catalog and aliases `--database` |
 | `--socket` | `-S` | (none) | Unix socket path. Mutually exclusive with `--host`/`--port` and `--tls-mode enabled`. |
 | `--tls-mode` | | `disabled` | TLS connection mode: `disabled` or `enabled`. When `enabled`, requires `--host` and `--user`; rejects `--socket`. |
 | `--tls-ca-file` | | (none) | Path to a CA certificate file for TLS verification. Only used when `--tls-mode enabled`. |
@@ -84,8 +84,10 @@ that connection but do not activate metadata-aware mode on their own.
 **Behavior in metadata-aware mode:**
 
 - For MySQL/TiDB: dialect is auto-detected from the live instance by querying `tidb_version()`. If `--dialect` is
-  also set explicitly and conflicts, the command exits with code 2. When `--port` is omitted, this path keeps the
-  MySQL-oriented default of `3306`.
+  also set explicitly and conflicts, the command exits with code 2. `--database` selects the catalog and is an alias
+  for `--schema`; either flag alone works, matching values are accepted, and conflicting values fail before an
+  MySQL/TiDB metadata connection opens. When `--port` is omitted, this path keeps the MySQL-oriented default of
+  `3306`.
 - For PostgreSQL: pass `--dialect postgresql` explicitly and use `--database` to select the database (`postgres` when omitted). `--schema` selects the schema within that database; when `--schema` is explicitly set, `--database` is required and is never inferred from the schema value. Omitting both preserves default catalog resolution. When `--port` is omitted, the explicit PostgreSQL selection uses `5432`; an explicit port always wins. The CLI does not probe services to infer a port.
 - Schema resolution order for unqualified table names: SQL-level qualifier → `--schema` flag →
   unique match across accessible schemas → error if ambiguous.
@@ -106,18 +108,18 @@ that connection but do not activate metadata-aware mode on their own.
 Examples:
 
 ```bash
-# Connect to a local MySQL/TiDB instance (dialect auto-detected)
+# Connect to a local MySQL/TiDB instance (dialect auto-detected; --database selects the catalog)
 deltascope audit \
   --host 127.0.0.1 --port 3306 \
   --user dba --ask-password \
-  --schema mydb \
+  --database mydb \
   --file ./migration.sql
 
 # Use a Unix socket
 deltascope audit \
   --socket /var/run/mysqld/mysqld.sock \
   --user dba --password-env DELTASCOPE_DB_PASSWORD \
-  --schema mydb \
+  --database mydb \
   --sql "ALTER TABLE orders ADD COLUMN status TINYINT NOT NULL DEFAULT 0"
 
 # Connect to a PostgreSQL instance
@@ -132,7 +134,7 @@ deltascope audit \
   --host db.example.com --port 3306 \
   --user dba --ask-password \
   --tls-mode enabled \
-  --schema mydb \
+  --database mydb \
   --file ./migration.sql
 
 # Connect to PostgreSQL over TLS with a custom CA certificate
@@ -327,7 +329,7 @@ describing how dialect and schema were resolved.
 ```
 
 `dialect_source` values: `"default"` (offline default), `"flag"` (from `--dialect`), or `"detected"` (from a live instance in metadata-aware mode).
-For CLI metadata-aware audits, `schema_source` values are `"flag"` (from `--schema`) or `"inferred"` (unique match across accessible schemas). When schema inference is unnecessary or unavailable, the field may be omitted instead of emitting an extra source value.
+For CLI metadata-aware audits, `schema_source` values are `"database"` (the MySQL/TiDB `--database` alias), `"flag"` (from `--schema`), or `"inferred"` (unique match across accessible schemas). When schema inference is unnecessary or unavailable, the field may be omitted instead of emitting an extra source value.
 
 #### Quiet Mode
 

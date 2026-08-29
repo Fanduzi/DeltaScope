@@ -63,8 +63,8 @@ deltascope audit --config ./deltascope.yaml --format json --file ./migrations/v2
 | `--password-env` | | （无） | 包含数据库密码的环境变量名 |
 | `--password-file` | | （无） | 包含数据库密码的文件路径 |
 | `--ask-password` | | false | 交互式密码提示。与 `--password-env` 和 `--password-file` 互斥。 |
-| `--database` | | （无） | PostgreSQL 数据库名（省略时默认为 `postgres`；设置 `--schema` 时必填） |
-| `--schema` | `-D` | （无） | 用于解析无限定表名的默认 schema |
+| `--database` | | （无） | 数据库/catalog 名称。对于 MySQL/TiDB，它是 `--schema` 的别名；对于 PostgreSQL，它选择数据库（设置 `--schema` 时必填） |
+| `--schema` | `-D` | （无） | 用于解析无限定表名的默认 schema。对于 MySQL/TiDB，它选择 catalog，并与 `--database` 互为别名 |
 | `--socket` | `-S` | （无） | Unix socket 路径。与 `--host`/`--port` 和 `--tls-mode enabled` 互斥。 |
 | `--tls-mode` | | `disabled` | TLS 连接模式：`disabled` 或 `enabled`。设为 `enabled` 时要求 `--host` 和 `--user`；与 `--socket` 互斥。 |
 | `--tls-ca-file` | | （无） | TLS 验证用 CA 证书文件路径。仅在 `--tls-mode enabled` 时使用。 |
@@ -74,7 +74,7 @@ deltascope audit --config ./deltascope.yaml --format json --file ./migrations/v2
 
 **元数据感知模式下的行为：**
 
-- MySQL/TiDB 方言通过查询 `tidb_version()` 从实例自动检测。若同时显式指定了 `--dialect` 且与检测结果冲突，命令以退出码 2 退出。省略 `--port` 时，该路径继续使用面向 MySQL 的默认端口 `3306`。
+- MySQL/TiDB 方言通过查询 `tidb_version()` 从实例自动检测。若同时显式指定了 `--dialect` 且与检测结果冲突，命令以退出码 2 退出。`--database` 选择 catalog，并且是 `--schema` 的别名；只提供其中一个即可，两者值相同会被接受，值冲突时会在 MySQL/TiDB 元数据连接打开前失败。省略 `--port` 时，该路径继续使用面向 MySQL 的默认端口 `3306`。
 - PostgreSQL 必须显式传入 `--dialect postgresql`，并用 `--database` 选择数据库（省略时默认为 `postgres`）；`--schema` 选择该数据库内的 schema。显式设置 `--schema` 时必须提供 `--database`，不会从 schema 值推断数据库；两者都省略时保留默认 catalog 解析。省略 `--port` 时，显式 PostgreSQL 选择使用 `5432`；显式传入的端口始终优先。CLI 不会通过探测服务来推断端口。
 - 无限定表名的 schema 解析顺序：SQL 级限定符 → `--schema` 标志 → 可访问 schema 中的唯一匹配 → 模糊时报错。
 - 连接失败时只向 stderr 打印一行有界消息。可移植输出不会包含 host、port、user、DSN、密码或原始驱动文本。空密码仍然允许；仅当服务器拒绝该空密码时，才会提示缺少 `--password-env` / `--password-file` / `--ask-password`。
@@ -91,18 +91,18 @@ deltascope audit --config ./deltascope.yaml --format json --file ./migrations/v2
 示例：
 
 ```bash
-# 连接本地 MySQL/TiDB 实例（自动检测方言）
+# 连接本地 MySQL/TiDB 实例（自动检测方言；--database 选择 catalog）
 deltascope audit \
   --host 127.0.0.1 --port 3306 \
   --user dba --ask-password \
-  --schema mydb \
+  --database mydb \
   --file ./migration.sql
 
 # 使用 Unix socket
 deltascope audit \
   --socket /var/run/mysqld/mysqld.sock \
   --user dba --password-env DELTASCOPE_DB_PASSWORD \
-  --schema mydb \
+  --database mydb \
   --sql "ALTER TABLE orders ADD COLUMN status TINYINT NOT NULL DEFAULT 0"
 
 # 通过 TLS 连接 MySQL
@@ -110,7 +110,7 @@ deltascope audit \
   --host db.example.com --port 3306 \
   --user dba --ask-password \
   --tls-mode enabled \
-  --schema mydb \
+  --database mydb \
   --file ./migration.sql
 
 # 通过 TLS 连接 PostgreSQL 并指定自定义 CA 证书
@@ -280,7 +280,7 @@ CLI JSON 始终包含顶层 `context` 对象。离线模式下它说明方言来
 ```
 
 `dialect_source` 取值：`"default"`（离线默认值）、`"flag"`（来自 `--dialect`）或 `"detected"`（metadata-aware 模式下来自实例检测）。
-`schema_source` 取值：`"flag"`（来自 `--schema`）、`"inferred"`（唯一匹配）或 `"qualified"`（SQL 中显式限定）。
+`schema_source` 取值：`"database"`（MySQL/TiDB 的 `--database` 别名）、`"flag"`（来自 `--schema`）、`"inferred"`（唯一匹配）或 `"qualified"`（SQL 中显式限定）。
 
 #### 静默模式
 

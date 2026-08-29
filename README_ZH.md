@@ -254,7 +254,7 @@ metadata-aware 审核（需要数据库连接）：
 ```bash
 deltascope audit \
   --sql "alter table orders add column status tinyint not null comment 'order status'" \
-  --host 127.0.0.1 --port 3306 --user root --ask-password --schema app
+  --host 127.0.0.1 --port 3306 --user root --ask-password --database app
 ```
 
 带连接超时的元数据感知审核（MySQL）：
@@ -263,7 +263,7 @@ deltascope audit \
 deltascope audit \
   --sql "alter table users add column email varchar(255)" \
   --dialect mysql \
-  --host 127.0.0.1 --port 3306 --user root --ask-password --schema app \
+  --host 127.0.0.1 --port 3306 --user root --ask-password --database app \
   --metadata-connect-timeout 5s
 ```
 

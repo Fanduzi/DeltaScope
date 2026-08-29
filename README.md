@@ -254,7 +254,7 @@ Audit with live metadata (instance-aware rules):
 ```bash
 deltascope audit \
   --sql "alter table orders add index idx_status (status)" \
-  --host 127.0.0.1 --port 3306 --user root --ask-password --schema app
+  --host 127.0.0.1 --port 3306 --user root --ask-password --database app
 ```
 
 Metadata-aware audit with an explicit connect timeout (MySQL):
@@ -263,7 +263,7 @@ Metadata-aware audit with an explicit connect timeout (MySQL):
 deltascope audit \
   --sql "alter table users add column email varchar(255)" \
   --dialect mysql \
-  --host 127.0.0.1 --port 3306 --user root --ask-password --schema app \
+  --host 127.0.0.1 --port 3306 --user root --ask-password --database app \
   --metadata-connect-timeout 5s
 ```
 

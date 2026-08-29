@@ -1,6 +1,6 @@
 // Package cli verifies metadata-aware CLI audit wiring.
 // input: audit command args plus fake metadata clients that simulate dialect, schema, and connection-option resolution
-// output: focused coverage for metadata-mode connection setup, schema inference, dialect validation, PostgreSQL schema/database usage errors, and port defaults
+// output: focused coverage for metadata-mode connection setup, MySQL/TiDB catalog aliases and conflicts, schema inference, dialect validation, PostgreSQL schema/database usage errors, and port defaults
 // pos: interface-layer metadata-aware audit test coverage
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -8,6 +8,7 @@ package cli
 import (
 	"context"
 	"crypto/x509"
+	"encoding/json"
 	"os"
 	"strings"
 	"testing"
@@ -197,6 +198,132 @@ func TestAuditCommandRejectsPostgreSQLSchemaWithoutDatabase(t *testing.T) {
 			}
 			if client.instanceCalls != nil || client.tableSnapshotCalls != nil {
 				t.Fatalf("expected rule evaluation to be skipped, got instance=%#v snapshots=%#v", client.instanceCalls, client.tableSnapshotCalls)
+			}
+		})
+	}
+}
+
+func TestAuditCommandUsesMySQLCompatibleDatabaseAsSchemaAlias(t *testing.T) {
+	tests := []struct {
+		name            string
+		dialect         spec.Dialect
+		explicitDialect bool
+		database        string
+		explicitSchema  string
+		wantSource      string
+	}{
+		{name: "mysql database only", dialect: spec.DialectMySQL, explicitDialect: true, database: "app", wantSource: "database"},
+		{name: "mysql auto-detected database only", dialect: spec.DialectMySQL, database: "app", wantSource: "database"},
+		{name: "mysql schema only", dialect: spec.DialectMySQL, explicitDialect: true, explicitSchema: "app", wantSource: "flag"},
+		{name: "mysql matching values", dialect: spec.DialectMySQL, explicitDialect: true, database: "app", explicitSchema: "app", wantSource: "flag"},
+		{name: "tidb database only", dialect: spec.DialectTiDB, explicitDialect: true, database: "app", wantSource: "database"},
+		{name: "tidb schema only", dialect: spec.DialectTiDB, explicitDialect: true, explicitSchema: "app", wantSource: "flag"},
+		{name: "tidb matching values", dialect: spec.DialectTiDB, explicitDialect: true, database: "app", explicitSchema: "app", wantSource: "flag"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			previous := newMetadataClient
+			client := &fakeMetadataClient{detectDialect: tt.dialect}
+			newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+				client.options = options
+				return client, nil
+			}
+			t.Cleanup(func() { newMetadataClient = previous })
+
+			args := []string{
+				"audit", "--sql", "delete from users",
+				"--host", "127.0.0.1", "--user", "root",
+				"--format", "json",
+			}
+			if tt.explicitDialect {
+				args = append(args, "--dialect", string(tt.dialect))
+			}
+			if tt.database != "" {
+				args = append(args, "--database", tt.database)
+			}
+			if tt.explicitSchema != "" {
+				args = append(args, "--schema", tt.explicitSchema)
+			}
+
+			stdout := &strings.Builder{}
+			stderr := &strings.Builder{}
+			code := Execute(context.Background(), args, strings.NewReader(""), stdout, stderr)
+			if code != exitAudit {
+				t.Fatalf("expected audit exit code %d, got %d (stderr=%q)", exitAudit, code, stderr.String())
+			}
+			if client.options.Database != tt.database {
+				t.Fatalf("expected database %q in metadata options, got %q", tt.database, client.options.Database)
+			}
+			if len(client.instanceCalls) != 1 || client.instanceCalls[0] != "app" {
+				t.Fatalf("expected app instance-facts schema, got %#v", client.instanceCalls)
+			}
+			if len(client.tableSnapshotCalls) != 1 || client.tableSnapshotCalls[0].Schema != "app" {
+				t.Fatalf("expected app table-snapshot schema, got %#v", client.tableSnapshotCalls)
+			}
+
+			var payload struct {
+				Context struct {
+					Schema       string `json:"schema"`
+					SchemaSource string `json:"schema_source"`
+				} `json:"context"`
+			}
+			if err := json.Unmarshal([]byte(stdout.String()), &payload); err != nil {
+				t.Fatalf("decode audit JSON: %v; stdout=%q", err, stdout.String())
+			}
+			if payload.Context.Schema != "app" || payload.Context.SchemaSource != tt.wantSource {
+				t.Fatalf("unexpected audit context: %#v", payload.Context)
+			}
+		})
+	}
+}
+
+func TestAuditCommandRejectsConflictingMySQLCompatibleDatabaseAndSchemaBeforeConnect(t *testing.T) {
+	for _, tt := range []struct {
+		name            string
+		dialect         spec.Dialect
+		explicitDialect bool
+	}{
+		{name: "mysql", dialect: spec.DialectMySQL, explicitDialect: true},
+		{name: "tidb", dialect: spec.DialectTiDB, explicitDialect: true},
+		{name: "mysql auto-detected", dialect: spec.DialectMySQL},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			previous := newMetadataClient
+			client := &fakeMetadataClient{detectDialect: tt.dialect}
+			openCalls := 0
+			newMetadataClient = func(auditConnectionOptions) (metadataClient, error) {
+				openCalls++
+				return client, nil
+			}
+			t.Cleanup(func() { newMetadataClient = previous })
+
+			stdout := &strings.Builder{}
+			stderr := &strings.Builder{}
+			args := []string{
+				"audit", "--sql", "delete from users",
+				"--host", "127.0.0.1", "--user", "root",
+				"--database", "app", "--schema", "archive",
+			}
+			if tt.explicitDialect {
+				args = append(args, "--dialect", string(tt.dialect))
+			}
+			code := Execute(context.Background(), args, strings.NewReader(""), stdout, stderr)
+			if code != exitUser {
+				t.Fatalf("expected user exit code %d, got %d (stderr=%q)", exitUser, code, stderr.String())
+			}
+			if stdout.Len() != 0 {
+				t.Fatalf("expected no audit body, got %q", stdout.String())
+			}
+			message := strings.ToLower(stderr.String())
+			if !strings.Contains(message, "--database") || !strings.Contains(message, "--schema") || !strings.Contains(message, "match") {
+				t.Fatalf("expected bounded conflict guidance, got %q", stderr.String())
+			}
+			if strings.Contains(message, "app") || strings.Contains(message, "archive") {
+				t.Fatalf("conflict error should not echo selected values: %q", stderr.String())
+			}
+			if openCalls != 0 {
+				t.Fatalf("expected conflict validation before metadata opener, got %d calls", openCalls)
 			}
 		})
 	}
