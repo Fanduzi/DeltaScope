@@ -17,12 +17,12 @@ import (
 
 func TestServiceAnalyzeFinalStateInvariant(t *testing.T) {
 	tests := []struct {
-		name       string
-		dialect    string
-		sql        string
-		metadata   bool
-		wantClass  domain.ReadClassification
-		wantAdmit  domain.Admission
+		name      string
+		dialect   string
+		sql       string
+		metadata  bool
+		wantClass domain.ReadClassification
+		wantAdmit domain.Admission
 	}{
 		{"mysql/offline/read_only", "mysql", "SELECT id FROM app.users", false, domain.ReadOnly, domain.Admissible},
 		{"mysql/metadata/read_only", "mysql", "SELECT id FROM app.users", true, domain.ReadOnly, domain.Admissible},

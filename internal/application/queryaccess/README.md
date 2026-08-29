@@ -33,7 +33,7 @@ Application-level contracts for query access analysis, defining the schema resol
 | requirements.go | Generates access requirements based on mode: strict requires all columns, projection-only requires only output-contributing columns with inference risk warning |
 | requirements_test.go | Verifies requirement generation: salary threshold, blacklist JOIN, GROUP/HAVING, ORDER BY, hashed output, subquery correlation, mode equality, stable warnings, invalid mode, unresolved references |
 | service_test.go | Verifies service integration: offline mode, metadata mode, mode normalization, classification preservation, wildcard expansion |
-| final_state_invariant_postgresql_tag_test.go | Verifies final classification/admission/reason-code invariants across MySQL, TiDB, and PostgreSQL offline and metadata-resolved paths |
+| final_state_invariant_postgresql_tag_test.go | Verifies final classification/admission invariants and fallback reason normalization across MySQL, TiDB, and PostgreSQL offline and metadata-resolved paths |
 | unproven_effect_reasons_postgresql_tag_test.go | Verifies bounded unproven-effect reason codes for PostgreSQL operator/function/cast presence, identity-failure mapping no-leak, mode freeze, and sort determinism |
 | unproven_effect_mysql_tidb_regression_test.go | Guards MySQL/TiDB operator-bearing admissible cases against unproven_* reason regression |
 
