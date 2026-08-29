@@ -1,6 +1,6 @@
 // Package githubsummary renders concise GitHub Actions job summaries.
-// input: internal report results from the audit application flow
-// output: GitHub-flavored Markdown for GITHUB_STEP_SUMMARY
+// input: internal report findings, unsupported details, and bounded diagnostics from the audit application flow
+// output: GitHub-flavored Markdown with finding summaries and unaudited-statement counts
 // pos: infrastructure output adapter for CI job-summary rendering
 // note: if this file changes, update this header and module README.md.
 package githubsummary
@@ -33,6 +33,7 @@ func Render(result report.Result) ([]byte, error) {
 	if summary.TotalItems == 0 {
 		builder.WriteString("No findings.\n")
 		writeUnsupported(builder, len(result.Unsupported))
+		writeUnaudited(builder, result)
 		return []byte(builder.String()), nil
 	}
 
@@ -44,6 +45,7 @@ func Render(result report.Result) ([]byte, error) {
 		fmt.Fprintf(builder, "Showing %d of %d rule groups.\n", shown, summary.TotalItems)
 	}
 	writeUnsupported(builder, len(result.Unsupported))
+	writeUnaudited(builder, result)
 	return []byte(builder.String()), nil
 }
 
@@ -116,6 +118,18 @@ func writeUnsupported(builder *strings.Builder, count int) {
 	builder.WriteString("Unsupported statements: ")
 	builder.WriteString(strconv.Itoa(count))
 	builder.WriteString("\n")
+}
+
+func writeUnaudited(builder *strings.Builder, result report.Result) {
+	count := 0
+	for _, diagnostic := range result.Diagnostics {
+		if !diagnostic.Audited {
+			count++
+		}
+	}
+	if count > 0 {
+		fmt.Fprintf(builder, "Unaudited statements: %d\n", count)
+	}
 }
 
 // formatFindingCount renders a singular/plural finding count, e.g. "1 finding" or "2 findings".

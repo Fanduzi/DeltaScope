@@ -6,8 +6,8 @@ Renders concise GitHub-flavored Markdown for GitHub Actions job summaries (`$GIT
 
 | File | Responsibility |
 |------|----------------|
-| render.go | Formats `report.Result` into a short SQL review summary: title, verdict, counts, and the derived Action Summary |
-| render_test.go | Verifies clean output, finding summaries, catalog summary/suggestion, global scope, no raw SQL, truncation, determinism, no `severity` wording, and unsupported-statement counts |
+| render.go | Formats `report.Result` into a short SQL review summary with verdict/counts, Action Summary, unsupported count, and unaudited-statement count |
+| render_test.go | Verifies clean/finding summaries, no-leak behavior, unsupported counts, and parser-diagnostic unaudited counts |
 
 ## Exports
 
@@ -42,6 +42,7 @@ identical in grouping/ordering/cap to the markdown Action Summary:
 When the result has no findings, the output emits `No findings.` and omits the Action Summary.
 When the result carries unsupported statements, a final `Unsupported statements: N` line is
 appended so unsupported diagnostics are not silently hidden; only the count is shown.
+When diagnostics mark statements `audited=false`, a final `Unaudited statements: N` line is also appended without diagnostic or SQL payloads.
 
 ### No-Leak Boundary
 

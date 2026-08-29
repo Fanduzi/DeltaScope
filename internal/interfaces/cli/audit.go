@@ -1,6 +1,6 @@
 // Package cli exposes the command-line adapter for DeltaScope.
 // input: audit command flags including audit-local output format and fail threshold, whether --sql was explicitly provided, SQL text from flags/files/stdin, password source/prompt dependencies, and application audit services
-// output: rendered audit results, audit-only output validation, dialect-aware connection-option normalization with MySQL/TiDB catalog aliases and PostgreSQL schema/database validation, password resolution, offline existence caveats, and user-vs-runtime exit-code mapping with bounded TLS categories for CLI audit invocations
+// output: rendered audit results and located diagnostics, audit-only output validation, dialect-aware connection-option normalization with MySQL/TiDB catalog aliases and PostgreSQL schema/database validation, password resolution, offline existence caveats, and user-vs-runtime exit-code mapping with bounded TLS categories
 // pos: CLI audit command implementation above the application service and output renderers
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -440,6 +440,12 @@ func renderMarkdownResult(result report.Result, runContext *auditRunContext) ([]
 		b.WriteString("\n\n## Diagnostics\n")
 		for _, d := range result.Diagnostics {
 			fmt.Fprintf(&b, "- classification: %s\n  action_hint: %s\n  reason: %s\n  audited: %v\n  dialect: %s\n", d.Classification, d.ActionHint, d.Reason, d.Audited, d.Dialect)
+			if d.Line > 0 {
+				fmt.Fprintf(&b, "  line: %d\n", d.Line)
+			}
+			if d.Column > 0 {
+				fmt.Fprintf(&b, "  column: %d\n", d.Column)
+			}
 			if d.GuidanceCode != "" {
 				fmt.Fprintf(&b, "  guidance_code: %s\n", d.GuidanceCode)
 			}
@@ -499,6 +505,12 @@ func renderQuietResult(result report.Result, runContext *auditRunContext) []byte
 	}
 	for _, d := range result.Diagnostics {
 		line := fmt.Sprintf("[diagnostic] classification=%s action_hint=%s reason=%s audited=%v dialect=%s", d.Classification, d.ActionHint, d.Reason, d.Audited, d.Dialect)
+		if d.Line > 0 {
+			line += fmt.Sprintf(" line=%d", d.Line)
+		}
+		if d.Column > 0 {
+			line += fmt.Sprintf(" column=%d", d.Column)
+		}
 		if d.GuidanceCode != "" {
 			line += fmt.Sprintf(" guidance_code=%s", d.GuidanceCode)
 		}

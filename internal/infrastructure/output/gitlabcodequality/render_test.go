@@ -1,3 +1,8 @@
+// Package gitlabcodequality_test verifies GitLab Code Quality output generation.
+// input: synthetic report findings and parser diagnostics with source locations
+// output: stable GitLab issue shape, severity, fingerprint, and location coverage
+// pos: black-box infrastructure output adapter regression coverage
+// note: if this file changes, update this header and module README.md.
 package gitlabcodequality_test
 
 import (
@@ -71,6 +76,33 @@ func TestRenderStatementFindingHasRequiredKeys(t *testing.T) {
 	}
 	if lines["begin"] != float64(5) {
 		t.Errorf("location.lines.begin = %v, want 5", lines["begin"])
+	}
+}
+
+func TestRenderParserDiagnosticHasRequiredKeys(t *testing.T) {
+	t.Parallel()
+	data, err := gitlabcodequality.Render(report.Result{Diagnostics: []spec.Diagnostic{{
+		Classification: "parser_error",
+		Reason:         "statement was not audited",
+		ActionHint:     "verify the selected dialect",
+		Line:           2,
+		Column:         3,
+	}}}, gitlabcodequality.Options{Path: "migrations.sql"})
+	if err != nil {
+		t.Fatalf("Render: %v", err)
+	}
+	var issues []map[string]any
+	if err := json.Unmarshal(data, &issues); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if len(issues) != 1 {
+		t.Fatalf("expected one parser diagnostic issue, got %s", data)
+	}
+	assertStringField(t, issues[0], "check_name", "parser_error")
+	assertStringField(t, issues[0], "severity", "major")
+	lines := issues[0]["location"].(map[string]any)["lines"].(map[string]any)
+	if lines["begin"] != float64(2) {
+		t.Fatalf("expected line 2, got %#v", lines)
 	}
 }
 

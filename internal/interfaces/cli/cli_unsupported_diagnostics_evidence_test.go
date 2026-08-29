@@ -88,6 +88,42 @@ func TestUnsupportedDiagnosticsEvidenceCLIParserErrorJSON(t *testing.T) {
 	}
 }
 
+func TestCLIParserErrorJSONPreservesPartialAuditResult(t *testing.T) {
+	t.Parallel()
+
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "ALTER TABLE users ADD COLUMN x INT;\nCREATE INDEX CONCURRENTLY idx_x ON users (x);\nDELETE FROM users;", "--dialect", "mysql", "--format", "json"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+	if code != exitUser {
+		t.Fatalf("expected exit %d for partial parser-error SQL, got %d", exitUser, code)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(stdout.String()), &payload); err != nil {
+		t.Fatalf("decode JSON output: %v\noutput was: %s", err, stdout.String())
+	}
+	summary, _ := payload["summary"].(map[string]any)
+	if summary["statements"] != float64(2) {
+		t.Fatalf("expected two audited statements, got %s", stdout.String())
+	}
+	statements, _ := payload["statements"].([]any)
+	if len(statements) != 2 || !strings.Contains(stdout.String(), "dml.where.require") {
+		t.Fatalf("expected valid statements and DELETE finding, got %s", stdout.String())
+	}
+	diagnostics, _ := payload["diagnostics"].([]any)
+	if len(diagnostics) != 1 || diagnostics[0].(map[string]any)["line"] != float64(2) {
+		t.Fatalf("expected one line-2 parser diagnostic, got %s", stdout.String())
+	}
+	if strings.Contains(stdout.String()+stderr.String(), "idx_x") {
+		t.Fatalf("CLI diagnostic output leaked invalid SQL text: stdout=%q stderr=%q", stdout.String(), stderr.String())
+	}
+}
+
 func TestUnsupportedDiagnosticsEvidenceCLIParserErrorText(t *testing.T) {
 	t.Parallel()
 
@@ -149,6 +185,8 @@ func TestUnsupportedDiagnosticsGuidanceMarkdownRender(t *testing.T) {
 				Dialect:        "mysql",
 				GuidanceCode:   "parser_upgrade_candidate",
 				EvidenceRef:    "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
+				Line:           2,
+				Column:         3,
 			},
 		},
 	}, nil)
@@ -162,6 +200,9 @@ func TestUnsupportedDiagnosticsGuidanceMarkdownRender(t *testing.T) {
 	}
 	if !strings.Contains(rendered, "evidence_ref: https://github.com/Fanduzi/DeltaScope/") {
 		t.Fatalf("expected evidence_ref URL in markdown diagnostics, got %q", rendered)
+	}
+	if !strings.Contains(rendered, "line: 2") || !strings.Contains(rendered, "column: 3") {
+		t.Fatalf("expected diagnostic location in markdown output, got %q", rendered)
 	}
 }
 
@@ -179,6 +220,8 @@ func TestUnsupportedDiagnosticsGuidanceQuietRender(t *testing.T) {
 				Dialect:        "mysql",
 				GuidanceCode:   "parser_upgrade_candidate",
 				EvidenceRef:    "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
+				Line:           2,
+				Column:         3,
 			},
 		},
 	}, nil)
@@ -189,6 +232,9 @@ func TestUnsupportedDiagnosticsGuidanceQuietRender(t *testing.T) {
 	}
 	if !strings.Contains(rendered, "evidence_ref=https://github.com/Fanduzi/DeltaScope/") {
 		t.Fatalf("expected evidence_ref URL in quiet output, got %q", rendered)
+	}
+	if !strings.Contains(rendered, "line=2") || !strings.Contains(rendered, "column=3") {
+		t.Fatalf("expected diagnostic location in quiet output, got %q", rendered)
 	}
 }
 

@@ -123,6 +123,30 @@ func TestRenderIncludesLocationWhenPresent(t *testing.T) {
 	}
 }
 
+func TestRenderIncludesLocatedParserDiagnostic(t *testing.T) {
+	t.Parallel()
+	result := report.Result{Diagnostics: []spec.Diagnostic{{
+		Classification: "parser_error",
+		Reason:         "statement was not audited",
+		ActionHint:     "verify the selected dialect",
+		Audited:        false,
+		Dialect:        "mysql",
+		Line:           2,
+		Column:         3,
+	}}}
+
+	output, err := Render(result, Options{Path: "migrations/001.sql"})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+	rendered := string(output)
+	for _, want := range []string{"::error", "file=migrations/001.sql", "line=2", "col=3", "title=Parser Error", "statement was not audited"} {
+		if !strings.Contains(rendered, want) {
+			t.Fatalf("expected %q in parser annotation, got %q", want, rendered)
+		}
+	}
+}
+
 func TestRenderIncludesFilePathWhenProvided(t *testing.T) {
 	t.Parallel()
 	result := report.Result{

@@ -6,10 +6,11 @@ HTTP exposes DeltaScope audit and metadata-aware review capabilities as a JSON s
 
 | File | Responsibility |
 |------|---------------|
-| audit_metadata.go | Executes one HTTP audit request through offline or direct metadata-aware flows and adds adapter context to the JSON response, including offline `note` / `unproven` |
+| audit_metadata.go | Executes one HTTP audit request through offline or registry metadata-aware flows and preserves adapter context plus partial public results when an audit returns diagnostics and an error |
 | audit_metadata_test.go | Verifies HTTP metadata-aware execution wiring, additive context, and direct metadata client lifecycle handling |
 | audit_offline_existence_test.go | Locks offline ALTER DROP COLUMN HTTP JSON `context.note` / `context.unproven` and capabilities `context_fields` |
-| handler.go | Binds Gin HTTP requests to the public audit/rule/capability/query-access APIs, auth checks, JSON responses, structured access logging, and health/readiness endpoints |
+| handler.go | Binds Gin HTTP requests to public APIs and emits diagnostic error envelopes that retain the full partial audit result beside the bounded transport error |
+| handler_unsupported_diagnostics_evidence_test.go | Verifies HTTP parser diagnostics preserve valid statement results, findings, locations, context, and no-leak boundaries |
 | handler_test.go | Verifies HTTP request binding, error mapping, JSON response shape, and metadata-aware omission of offline existence caveats |
 | rule_catalog.go | Builds HTTP rule-list, rule-detail, and capability payloads from the shipped catalog metadata, including `note` / `unproven` on `context_fields` |
 | query_access.go | Handles HTTP query access analysis requests, preserves registry/authorization/connection/error/log ownership, and routes online analysis through the opaque unified SDK session |
@@ -43,7 +44,7 @@ HTTP exposes DeltaScope audit and metadata-aware review capabilities as a JSON s
 - Default middleware chain is request-id -> recovery -> timeout -> metrics -> auth -> rate-limit -> access log.
 - Config hot-reload is achieved by re-reading the configured policy path on each audit request, so file updates take effect without restarting the server.
 - Current scope supports offline and metadata-aware audit, HTTP-native rule discovery, capability discovery, and query access analysis.
-- Responses preserve the public DeltaScope result body and add a `context` block describing mode, dialect/schema provenance, and metadata source. Offline `context` also includes `note` and `unproven`; metadata-aware `context` omits them.
+- Responses preserve the public DeltaScope result body and add a `context` block describing mode, dialect/schema provenance, and metadata source. Parser-error responses use the same top-level result/context shape plus an `error` object, retaining valid statement findings while still returning a non-success status.
 - Direct connection input accepts `connect_timeout` (duration string like `5s`); empty/omitted/`0s` falls back to runtime config default, invalid/negative values return 400.
 
 ## Dependencies

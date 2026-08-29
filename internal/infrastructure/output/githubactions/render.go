@@ -1,6 +1,6 @@
 // Package githubactions renders audit results as GitHub Actions workflow commands.
-// input: internal report results from the audit application flow
-// output: GitHub Actions annotation commands for CI pipeline integration
+// input: internal report findings and source-located parser diagnostics from the audit application flow
+// output: GitHub Actions finding and parser-error annotation commands for CI pipeline integration
 // pos: infrastructure output adapter for the GitHub Actions CI-native renderer
 // note: if this file changes, update this header and module README.md.
 package githubactions
@@ -11,6 +11,7 @@ import (
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
 // Options carries renderer configuration.
@@ -34,11 +35,34 @@ func Render(result report.Result, options Options) ([]byte, error) {
 	for _, item := range result.Unsupported {
 		lines = append(lines, fmt.Sprintf("::notice title=Unsupported Statement %d::%s: %s", item.Index+1, item.Feature, item.Reason))
 	}
+	for _, diagnostic := range result.Diagnostics {
+		if diagnostic.Classification == "parser_error" {
+			lines = append(lines, formatParserDiagnostic(diagnostic, options))
+		}
+	}
 
 	if len(lines) == 0 {
 		return nil, nil
 	}
 	return []byte(strings.Join(lines, "\n")), nil
+}
+
+func formatParserDiagnostic(diagnostic spec.Diagnostic, options Options) string {
+	message := diagnostic.Reason
+	if diagnostic.ActionHint != "" {
+		message += "\nAction: " + diagnostic.ActionHint
+	}
+	params := "title=Parser Error"
+	if options.Path != "" {
+		params = "file=" + escapeValue(options.Path) + "," + params
+	}
+	if diagnostic.Line > 0 {
+		params = fmt.Sprintf("%s,line=%d", params, diagnostic.Line)
+		if diagnostic.Column > 0 {
+			params = fmt.Sprintf("%s,col=%d", params, diagnostic.Column)
+		}
+	}
+	return fmt.Sprintf("::error %s::%s", params, escapeValue(message))
 }
 
 func formatAnnotation(finding rule.Finding, options Options) string {

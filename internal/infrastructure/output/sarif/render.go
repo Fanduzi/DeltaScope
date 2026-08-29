@@ -1,6 +1,6 @@
 // Package sarif renders audit results as SARIF 2.1.0 JSON.
-// input: internal report results from the audit application flow
-// output: SARIF 2.1.0 JSON payloads for CI pipeline integration
+// input: internal report findings and source-located parser diagnostics from the audit application flow
+// output: SARIF 2.1.0 finding and parser-error results for CI pipeline integration
 // pos: infrastructure output adapter for the SARIF CI-native renderer
 // note: if this file changes, update this header and module README.md.
 package sarif
@@ -12,6 +12,7 @@ import (
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
 const sarifSchema = "https://docs.oasis-open.org/sarif/sarif/v2.1.0/errata01/os/schemas/sarif-schema-2.1.0.json"
@@ -23,7 +24,7 @@ type Options struct {
 }
 
 // Render formats an audit result into SARIF 2.1.0 JSON.
-// Unsupported statements are not included in SARIF output.
+// Unsupported statements are not included; parser-error diagnostics are included.
 func Render(result report.Result, options Options) ([]byte, error) {
 	ruleMeta := make(map[string]*sarifRule, 8)
 	var results []sarifResult
@@ -42,6 +43,18 @@ func Render(result report.Result, options Options) ([]byte, error) {
 	}
 	for _, finding := range result.GlobalFindings {
 		collectFinding(finding)
+	}
+	for _, diagnostic := range result.Diagnostics {
+		if diagnostic.Classification != "parser_error" {
+			continue
+		}
+		if _, exists := ruleMeta[diagnostic.Classification]; !exists {
+			ruleMeta[diagnostic.Classification] = &sarifRule{
+				ID:   diagnostic.Classification,
+				Help: &sarifMessage{Text: diagnostic.ActionHint},
+			}
+		}
+		results = append(results, parserDiagnosticResult(diagnostic, options))
 	}
 
 	rules := make([]sarifRule, 0, len(ruleMeta))
@@ -74,6 +87,25 @@ func Render(result report.Result, options Options) ([]byte, error) {
 	}
 
 	return json.Marshal(doc)
+}
+
+func parserDiagnosticResult(diagnostic spec.Diagnostic, options Options) sarifResult {
+	result := sarifResult{
+		RuleID:  diagnostic.Classification,
+		Level:   "error",
+		Message: sarifMessage{Text: diagnostic.Reason + "\nAction: " + diagnostic.ActionHint},
+	}
+	if diagnostic.Line <= 0 {
+		return result
+	}
+	location := sarifLocation{PhysicalLocation: sarifPhysicalLocation{
+		Region: sarifRegion{StartLine: diagnostic.Line, StartColumn: diagnostic.Column},
+	}}
+	if options.Path != "" {
+		location.PhysicalLocation.ArtifactLocation = &sarifArtifactLocation{URI: options.Path}
+	}
+	result.Locations = []sarifLocation{location}
+	return result
 }
 
 func buildRuleMeta(finding rule.Finding) *sarifRule {

@@ -1,6 +1,6 @@
 // Package mcpapi exposes the MCP adapter for DeltaScope.
-// input: adapter and audit errors arising during MCP tool execution
-// output: stable MCP tool error payloads with machine-readable codes and human-readable messages
+// input: adapter and audit errors plus partial audit results arising during MCP tool execution
+// output: stable MCP tool error payloads with machine-readable codes, messages, and partial results when available
 // pos: shared error-shaping helpers for MCP tool handlers
 // note: if this file changes, update this header and module README.md.
 package mcpapi
@@ -11,7 +11,6 @@ import (
 
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
-	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -31,18 +30,18 @@ func toolError(code, message string) (*sdkmcp.CallToolResult, error) {
 }
 
 type toolDiagnosticErrorPayload struct {
-	Code        string            `json:"code"`
-	Message     string            `json:"message"`
-	Diagnostics []spec.Diagnostic `json:"diagnostics,omitempty"`
+	AuditSQLResult
+	Code    string `json:"code"`
+	Message string `json:"message"`
 }
 
-func toolDiagnosticError(code, message string, diagnostics []spec.Diagnostic) *sdkmcp.CallToolResult {
+func toolDiagnosticError(code, message string, result AuditSQLResult) *sdkmcp.CallToolResult {
 	return &sdkmcp.CallToolResult{
 		IsError: true,
 		Content: []sdkmcp.Content{
 			&sdkmcp.TextContent{Text: message},
 		},
-		StructuredContent: toolDiagnosticErrorPayload{Code: code, Message: message, Diagnostics: diagnostics},
+		StructuredContent: toolDiagnosticErrorPayload{AuditSQLResult: result, Code: code, Message: message},
 	}
 }
 

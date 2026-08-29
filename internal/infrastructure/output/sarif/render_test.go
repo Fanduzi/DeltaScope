@@ -12,6 +12,7 @@ import (
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
 func TestRenderIncludesVersion(t *testing.T) {
@@ -126,6 +127,38 @@ func TestRenderIncludesResults(t *testing.T) {
 	entry, _ := resultsArr[0].(map[string]any)
 	if entry["ruleId"] != "dml.where.require" {
 		t.Fatalf("expected ruleId dml.where.require, got %v", entry["ruleId"])
+	}
+}
+
+func TestRenderIncludesLocatedParserDiagnostic(t *testing.T) {
+	t.Parallel()
+	output, err := Render(report.Result{Diagnostics: []spec.Diagnostic{{
+		Classification: "parser_error",
+		Reason:         "statement was not audited",
+		ActionHint:     "verify the selected dialect",
+		Line:           2,
+		Column:         3,
+	}}}, Options{Path: "migrations/001.sql"})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+	var doc map[string]any
+	if err := json.Unmarshal(output, &doc); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	results := nested(resultsPath, doc).([]any)
+	if len(results) != 1 {
+		t.Fatalf("expected one parser diagnostic result, got %s", output)
+	}
+	entry := results[0].(map[string]any)
+	if entry["ruleId"] != "parser_error" || entry["level"] != "error" {
+		t.Fatalf("expected parser_error/error SARIF result, got %#v", entry)
+	}
+	locations := entry["locations"].([]any)
+	physical := locations[0].(map[string]any)["physicalLocation"].(map[string]any)
+	region := physical["region"].(map[string]any)
+	if region["startLine"] != float64(2) || region["startColumn"] != float64(3) {
+		t.Fatalf("expected line 2 column 3, got %#v", region)
 	}
 }
 

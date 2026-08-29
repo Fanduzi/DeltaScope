@@ -3,6 +3,11 @@
 // output: regression coverage for public audit orchestration and stable result mapping
 // pos: public API test coverage for pkg/deltascope
 // note: if this file changes, update this header and module README.md.
+// Package deltascope verifies the public SQL audit API.
+// input: public audit requests across dialect, parser, metadata, and policy boundaries
+// output: stable public result, partial-result, error, finding, and metadata contract coverage
+// pos: primary public SDK audit regression suite
+// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (
@@ -246,7 +251,7 @@ func TestAuditReturnsCapabilityBoundaryErrorForExplicitPostgreSQLOnUnsupportedBu
 	}
 }
 
-func TestAuditMySQLParseablePGSyntaxReturnsInputErrorWithoutPartialResult(t *testing.T) {
+func TestAuditMySQLParseablePGSyntaxReturnsBoundedDiagnosticResult(t *testing.T) {
 	result, err := Audit(context.Background(), Request{
 		SQL:     "select id::bigint from users;",
 		Dialect: DialectMySQL,
@@ -257,8 +262,14 @@ func TestAuditMySQLParseablePGSyntaxReturnsInputErrorWithoutPartialResult(t *tes
 	if strings.Contains(strings.ToLower(err.Error()), "possible dialect mismatch") {
 		t.Fatalf("did not expect adapter-only mismatch wording in public api error, got %q", err.Error())
 	}
-	if result.Verdict != "" || len(result.Statements) != 0 || len(result.GlobalFindings) != 0 || len(result.Unsupported) != 0 || result.Explanation != nil {
-		t.Fatalf("expected zero public result on input error, got %#v", result)
+	if len(result.Statements) != 0 || len(result.Unsupported) != 0 {
+		t.Fatalf("expected no audited statements on wholly unparsable input, got %#v", result)
+	}
+	if len(result.Diagnostics) != 1 || result.Diagnostics[0].Classification != "parser_error" || result.Diagnostics[0].Audited {
+		t.Fatalf("expected one bounded unaudited diagnostic, got %#v", result.Diagnostics)
+	}
+	if len(result.GlobalFindings) != 1 || result.GlobalFindings[0].RuleID != "dialect.postgresql.syntax.detected.notice" {
+		t.Fatalf("expected existing bounded dialect notice to survive, got %#v", result.GlobalFindings)
 	}
 }
 

@@ -1,6 +1,6 @@
 // Package httpapi exposes the HTTP adapter for DeltaScope.
 // input: HTTP requests carrying SQL audit payloads plus service-level config/version wiring
-// output: JSON audit, rule-catalog, capability, health, readiness, version, structured error responses, and structured access log lines
+// output: JSON audit, partial audit error results, rule-catalog, capability, health, readiness, version, and structured access log lines
 // pos: interface adapter between net/http and the public DeltaScope audit API
 // note: if this file changes, update this header and module README.md.
 package httpapi
@@ -28,7 +28,6 @@ import (
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	"github.com/Fanduzi/DeltaScope/internal/application/online"
 	apppolicy "github.com/Fanduzi/DeltaScope/internal/application/policy"
-	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/logger"
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig"
 	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
@@ -623,7 +622,7 @@ func handleAudit(
 		status, code := mapAuditError(reqErr)
 		message := mapAuditErrorMessage(reqErr)
 		if len(response.Diagnostics) > 0 {
-			writeDiagnosticError(w, status, code, message, response.Diagnostics)
+			writeDiagnosticError(w, status, code, message, response)
 			return
 		}
 		writeError(w, status, code, message)
@@ -688,14 +687,14 @@ func writeError(w http.ResponseWriter, status int, code, message string) {
 }
 
 type diagnosticEnvelope struct {
-	Error       serviceError      `json:"error"`
-	Diagnostics []spec.Diagnostic `json:"diagnostics,omitempty"`
+	auditResponse
+	Error serviceError `json:"error"`
 }
 
-func writeDiagnosticError(w http.ResponseWriter, status int, code, message string, diagnostics []spec.Diagnostic) {
+func writeDiagnosticError(w http.ResponseWriter, status int, code, message string, response auditResponse) {
 	writeJSON(w, status, diagnosticEnvelope{
-		Error:       serviceError{Code: code, Message: message},
-		Diagnostics: diagnostics,
+		auditResponse: response,
+		Error:         serviceError{Code: code, Message: message},
 	})
 }
 

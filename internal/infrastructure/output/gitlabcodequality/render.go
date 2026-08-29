@@ -1,6 +1,6 @@
 // Package gitlabcodequality renders audit results as GitLab Code Quality JSON.
-// input: internal report results from the audit application flow
-// output: GitLab Code Quality JSON array for CI pipeline integration
+// input: internal report findings and source-located parser diagnostics from the audit application flow
+// output: GitLab Code Quality finding and parser-error issues for CI pipeline integration
 // pos: infrastructure output adapter for the GitLab Code Quality CI-native renderer
 // note: if this file changes, update this header and module README.md.
 package gitlabcodequality
@@ -13,6 +13,7 @@ import (
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
 // Options carries renderer configuration.
@@ -22,7 +23,7 @@ type Options struct {
 }
 
 // Render formats an audit result into a GitLab Code Quality JSON array.
-// Unsupported statements are not included.
+// Unsupported statements are not included; parser-error diagnostics are included.
 func Render(result report.Result, options Options) ([]byte, error) {
 	path := resolvePath(options.Path)
 	issues := make([]issue, 0, len(result.Statements))
@@ -35,12 +36,35 @@ func Render(result report.Result, options Options) ([]byte, error) {
 	for _, finding := range result.GlobalFindings {
 		issues = append(issues, buildIssue(finding, path))
 	}
+	for _, diagnostic := range result.Diagnostics {
+		if diagnostic.Classification == "parser_error" {
+			issues = append(issues, buildDiagnosticIssue(diagnostic, path))
+		}
+	}
 
 	if issues == nil {
 		issues = []issue{}
 	}
 
 	return json.Marshal(issues)
+}
+
+func buildDiagnosticIssue(diagnostic spec.Diagnostic, path string) issue {
+	line := diagnostic.Line
+	if line <= 0 {
+		line = 1
+	}
+	description := diagnostic.Reason
+	if diagnostic.ActionHint != "" {
+		description += " Action: " + diagnostic.ActionHint
+	}
+	return issue{
+		Description: description,
+		CheckName:   diagnostic.Classification,
+		Fingerprint: computeFingerprint(diagnostic.Classification, path, line, -1, description),
+		Severity:    "major",
+		Location:    location{Path: path, Lines: lines{Begin: line}},
+	}
 }
 
 type issue struct {

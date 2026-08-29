@@ -63,6 +63,16 @@ func executeOfflineAudit(
 ) (auditResponse, error) {
 	dialect, dialectSource := resolveHTTPAuditDialect(string(request.Dialect))
 	schema, schemaSource := resolveRequestSchema(request)
+	runContext := &auditRunContext{
+		Mode:           "offline",
+		Dialect:        string(dialect),
+		DialectSource:  dialectSource,
+		Schema:         schema,
+		SchemaSource:   schemaSource,
+		MetadataSource: "none",
+		Note:           ifaceconn.ExistenceNotCheckedNote,
+		Unproven:       ifaceconn.OfflineExistenceUnproven(),
+	}
 	result, err := auditFn(ctx, deltascope.Request{
 		SQL:        request.SQL,
 		Dialect:    dialect,
@@ -71,22 +81,13 @@ func executeOfflineAudit(
 	})
 	if err != nil {
 		if len(result.Diagnostics) > 0 {
-			return auditResponse{Result: result}, err
+			return auditResponse{Result: result, Context: runContext}, err
 		}
 		return auditResponse{}, err
 	}
 	return auditResponse{
-		Result: result,
-		Context: &auditRunContext{
-			Mode:           "offline",
-			Dialect:        string(dialect),
-			DialectSource:  dialectSource,
-			Schema:         schema,
-			SchemaSource:   schemaSource,
-			MetadataSource: "none",
-			Note:           ifaceconn.ExistenceNotCheckedNote,
-			Unproven:       ifaceconn.OfflineExistenceUnproven(),
-		},
+		Result:  result,
+		Context: runContext,
 	}, nil
 }
 
@@ -161,22 +162,23 @@ func executeRegistryAwareAudit(
 		Schema:           prepared.Schema,
 		MetadataProvider: publicMetadataProvider{client: prepared.Client},
 	})
+	runContext := &auditRunContext{
+		Mode:           "metadata-aware",
+		Dialect:        string(prepared.Dialect),
+		DialectSource:  prepared.DialectSource,
+		Schema:         prepared.Schema,
+		SchemaSource:   prepared.SchemaSource,
+		MetadataSource: "registry",
+	}
 	if err != nil {
 		if len(result.Diagnostics) > 0 {
-			return auditResponse{Result: result}, err
+			return auditResponse{Result: result, Context: runContext}, err
 		}
 		return auditResponse{}, err
 	}
 	return auditResponse{
-		Result: result,
-		Context: &auditRunContext{
-			Mode:           "metadata-aware",
-			Dialect:        string(prepared.Dialect),
-			DialectSource:  prepared.DialectSource,
-			Schema:         prepared.Schema,
-			SchemaSource:   prepared.SchemaSource,
-			MetadataSource: "registry",
-		},
+		Result:  result,
+		Context: runContext,
 	}, nil
 }
 

@@ -43,6 +43,26 @@ func TestRenderCleanResult(t *testing.T) {
 	}
 }
 
+func TestRenderCountsUnauditedParserDiagnostics(t *testing.T) {
+	t.Parallel()
+	output, err := Render(report.Result{
+		Verdict: report.VerdictPass,
+		Summary: report.Summary{Statements: 2},
+		Diagnostics: []spec.Diagnostic{{
+			Classification: "parser_error",
+			Reason:         "statement was not audited",
+			Audited:        false,
+			Line:           2,
+		}},
+	})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+	if !strings.Contains(string(output), "Unaudited statements: 1") {
+		t.Fatalf("expected bounded unaudited count, got:\n%s", output)
+	}
+}
+
 func TestRenderFindingActionSummary(t *testing.T) {
 	t.Parallel()
 

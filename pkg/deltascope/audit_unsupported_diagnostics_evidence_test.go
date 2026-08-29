@@ -1,7 +1,13 @@
+// Package deltascope verifies public SDK diagnostic result contracts.
+// input: public audit requests containing parser-error and valid SQL statements
+// output: bounded SDK errors that preserve partial audit results and diagnostic evidence
+// pos: stable public package parser-diagnostic and partial-result regression coverage
+// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 	"testing"
 
@@ -65,6 +71,43 @@ func TestUnsupportedDiagnosticsEvidenceSDKParserError(t *testing.T) {
 	msg := strings.ToLower(err.Error())
 	if !strings.Contains(msg, "not audited") {
 		t.Fatalf("v0.220.0 error contract: expected 'not audited', got %q", err.Error())
+	}
+}
+
+func TestAuditParserErrorPreservesPartialSDKResult(t *testing.T) {
+	t.Parallel()
+
+	result, err := Audit(context.Background(), Request{
+		SQL: "ALTER TABLE users ADD COLUMN x INT;\n" +
+			"CREATE INDEX CONCURRENTLY idx_x ON users (x);\n" +
+			"DELETE FROM users;",
+		Dialect: DialectMySQL,
+	})
+	if err == nil {
+		t.Fatal("expected parser-error result to remain non-nil")
+	}
+	if len(result.Statements) != 2 || result.Summary.Statements != 2 {
+		t.Fatalf("expected two audited statements, got %#v", result.Statements)
+	}
+	foundDeleteFinding := false
+	for _, finding := range result.Statements[1].Findings {
+		foundDeleteFinding = foundDeleteFinding || finding.RuleID == "dml.where.require"
+	}
+	if !foundDeleteFinding {
+		t.Fatalf("expected trailing DELETE finding, got %#v", result.Statements[1].Findings)
+	}
+	if result.Statements[1].Impact == nil {
+		t.Fatalf("expected trailing DELETE impact to be preserved, got %#v", result.Statements[1])
+	}
+	if len(result.Diagnostics) != 1 || result.Diagnostics[0].Line != 2 || result.Diagnostics[0].Column != 1 {
+		t.Fatalf("expected one located parser diagnostic, got %#v", result.Diagnostics)
+	}
+	payload, marshalErr := json.Marshal(result)
+	if marshalErr != nil {
+		t.Fatalf("marshal public result: %v", marshalErr)
+	}
+	if strings.Contains(string(payload), "idx_x") {
+		t.Fatalf("public result leaked invalid SQL text: %s", payload)
 	}
 }
 

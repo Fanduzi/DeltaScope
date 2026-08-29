@@ -1,6 +1,6 @@
 // Package mcpapi exposes the MCP adapter for DeltaScope.
 // input: audit_sql MCP requests, shared DeltaScope public audit API, and resolved run-context metadata
-// output: structured MCP audit_sql responses plus a compact finding-summary text surface with offline existence caveats and resolved catalog-aware metadata audits
+// output: structured MCP audit_sql responses, partial parser-error results, and compact finding summaries with offline existence caveats and resolved catalog-aware metadata audits
 // pos: MCP audit tool adapter between tool invocations and the shared audit engine
 // note: if this file changes, update this header and module README.md.
 package mcpapi
@@ -80,7 +80,17 @@ func auditSQLOffline(ctx context.Context, input AuditSQLParams) (*sdkmcp.CallToo
 	})
 	if err != nil {
 		if len(result.Diagnostics) > 0 {
-			return toolDiagnosticError(mapAuditToolError(err), err.Error(), result.Diagnostics), nil, nil
+			return toolDiagnosticError(mapAuditToolError(err), err.Error(), AuditSQLResult{
+				Result: result,
+				Context: AuditContext{
+					Mode:           "offline",
+					Dialect:        string(dialect),
+					DialectSource:  dialectSource,
+					MetadataSource: MetadataSourceNone,
+					Note:           ifaceconn.ExistenceNotCheckedNote,
+					Unproven:       ifaceconn.OfflineExistenceUnproven(),
+				},
+			}), nil, nil
 		}
 		toolResult, toolErr := toolError(mapAuditToolError(err), err.Error())
 		return toolResult, nil, toolErr
@@ -154,7 +164,17 @@ func auditSQLWithMetadata(ctx context.Context, input AuditSQLParams, connection 
 	})
 	if err != nil {
 		if len(result.Diagnostics) > 0 {
-			return toolDiagnosticError(mapAuditToolError(err), err.Error(), result.Diagnostics), nil, nil
+			return toolDiagnosticError(mapAuditToolError(err), err.Error(), AuditSQLResult{
+				Result: result,
+				Context: AuditContext{
+					Mode:           "metadata-aware",
+					Dialect:        string(prepared.Dialect),
+					DialectSource:  prepared.DialectSource,
+					Schema:         prepared.Schema,
+					SchemaSource:   prepared.SchemaSource,
+					MetadataSource: connection.Source,
+				},
+			}), nil, nil
 		}
 		toolResult, toolErr := toolError(mapAuditToolError(err), err.Error())
 		return toolResult, nil, toolErr
