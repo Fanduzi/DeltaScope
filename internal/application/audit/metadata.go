@@ -129,21 +129,10 @@ func targetTableName(statement spec.Statement) string {
 }
 
 func metadataTargetSchema(request *MetadataRequest, statement spec.Statement) string {
-	if statement.DML != nil && len(statement.DML.Tables) > 0 {
+	if (statement.Dialect == spec.DialectMySQL || statement.Dialect == spec.DialectTiDB) && statement.DML != nil && len(statement.DML.Tables) > 0 {
 		if schema := strings.TrimSpace(statement.DML.Tables[0].Schema); schema != "" {
 			return schema
 		}
-	}
-	if statement.DDL != nil && statement.DDL.Table != nil {
-		switch statement.DDL.Operation {
-		case spec.DDLOperationCreateTable, spec.DDLOperationAlterTable, spec.DDLOperationDropTable, spec.DDLOperationTruncateTable:
-			if schema := strings.TrimSpace(statement.DDL.Table.Schema); schema != "" {
-				return schema
-			}
-		}
-	}
-	if statement.DDL != nil && statement.DDL.Operation == spec.DDLOperationAlterIndex {
-		return indexOwnerSchema(request, statement.DDL.Options)
 	}
 	if request == nil {
 		return ""

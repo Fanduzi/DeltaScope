@@ -103,6 +103,58 @@ func TestAuditMetadataDMLUsesResolvedSchemaForUnqualifiedTarget(t *testing.T) {
 	}
 }
 
+func TestEnrichMetadataKeepsRequestSchemaForPostgreSQLAndDDL(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name      string
+		dialect   spec.Dialect
+		statement spec.Statement
+	}{
+		{
+			name:    "postgresql dml",
+			dialect: spec.DialectPostgreSQL,
+			statement: spec.Statement{
+				Kind:    spec.KindDML,
+				Dialect: spec.DialectPostgreSQL,
+				DML:     &spec.DML{Operation: spec.DMLOperationUpdate, Tables: []spec.Table{{Schema: "tenant_a", Name: "users"}}},
+			},
+		},
+		{
+			name:    "mysql ddl",
+			dialect: spec.DialectMySQL,
+			statement: spec.Statement{
+				Kind:    spec.KindDDL,
+				Dialect: spec.DialectMySQL,
+				DDL:     &spec.DDL{Operation: spec.DDLOperationAlterTable, Table: &spec.Table{Schema: "tenant_a", Name: "users"}, Alter: []spec.Alter{{Action: "add_column", Name: "email"}}},
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			provider := &dmlTableMetadataProvider{
+				snapshots: map[string]*spec.TableSnapshot{
+					"app.users": {Schema: "app", Exists: true},
+				},
+			}
+			enriched, err := enrichStatementsWithMetadata(context.Background(), tc.dialect, &MetadataRequest{
+				Schema:   "app",
+				Provider: provider,
+			}, []spec.Statement{tc.statement})
+			if err != nil {
+				t.Fatalf("enrich: %v", err)
+			}
+			if len(provider.snapshotCalls) != 1 || provider.snapshotCalls[0] != "app.users" {
+				t.Fatalf("snapshot calls = %#v, want app.users", provider.snapshotCalls)
+			}
+			if enriched[0].Metadata == nil || enriched[0].Metadata.Schema != "app" {
+				t.Fatalf("metadata schema = %#v, want app", enriched[0].Metadata)
+			}
+		})
+	}
+}
+
 func TestAuditMetadataDMLDoesNotCheckInsertSelectSourceTables(t *testing.T) {
 	t.Parallel()
 
