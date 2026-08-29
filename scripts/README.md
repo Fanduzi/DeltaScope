@@ -31,6 +31,7 @@ Operational scripts for local DeltaScope workflows.
 | test_cli_tls_e2e_regression.sh | Verifies CLI TLS fixture lifecycle: tolerates externally pre-occupied legacy ports ([external], owner untouched), occupies free legacy ports with harness-owned Python holders ([owned]), re-asserts full legacy-port coverage before each run, kills only owned holders and requires only owned ports released on every exit path while requiring pre-existing ports to remain listening during cleanup, and asserts no residual Docker resources or workspace files after normal and intentional-failure runs, plus Docker availability policy |
 | release_from_candidate.sh | Local release orchestrator. Accepts VERSION and --dry-run. Mutating sequence: preflight → release gates → pretag-candidate-gate → annotated tag → posttag-candidate-gate → push main → push tag. Stops on any failure; no automatic deletion, retry, or force push. Dry-run is read-only. |
 | test_release_from_candidate.sh | Temporary-repository tests for the orchestrator: valid dry-run path, missing RC, candidate drift, dirty tree, local/remote tag collision, dry-run no-tag/no-push evidence |
+| test_install.sh | Hermetic curl/wget contract tests for API discovery, latest-release redirect fallback, bounded failure hints, and pinned installer bypass |
 | test_verify_release_workflow_provenance.py | Release workflow provenance contract checker: parses needs DAG, verifies provenance job exists with read-only permissions, fetches origin/main, runs posttag-candidate-gate with RELEASE_MAIN_REF, and all mutation jobs are transitively downstream |
 | test_verify_release_workflow_provenance_negative.py | Negative tests for the provenance contract checker: 6 negative cases (missing provenance job, missing dependency, write permissions, missing fetch, missing RELEASE_MAIN_REF, independent publisher bypass) plus 1 positive control |
 | verify_release_recover_workflow_provenance.py | Recovery workflow provenance contract checker for release-recover.yml: fail-closed `refs/heads/main` dispatch-ref guard as the first preflight step (with `exit 1` inside the mismatch branch), read-only preflight permissions with no publisher secrets, full-history input-tag checkout, origin/main fetch, same-step RELEASE_MAIN_REF post-tag candidate gate before any external release-state work, tag_target_sha resolved from the input tag's peeled commit and exported after the gate, publisher jobs pinned to exactly the verified SHA, all mutation jobs transitively downstream of preflight, no historical-tag bypass literals, and no inline workflow-input interpolation in run scripts |
@@ -86,6 +87,7 @@ Operational scripts for local DeltaScope workflows.
 - `make release-recovery-provenance-negative-test`
 - `make pretag-candidate-test`
 - `make posttag-candidate-test`
+- `bash scripts/test_install.sh`
 
 ## Dependencies
 - Upstream: local developers, `Makefile`, and release-verification workflows

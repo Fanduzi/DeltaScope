@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
-# input: release version selectors, host os/arch facts, and GitHub release archives from the DeltaScope repository
+# input: release version selectors, host os/arch facts, GitHub release metadata, and release archives from the DeltaScope repository
 # output: installed DeltaScope release binaries under a local operator-selected bin directory
-# pos: release-facing installer that resolves one trusted artifact contract into local binaries
+# pos: release-facing installer that resolves a validated release tag into local binaries
 # note: if this file changes, update this header and module README.md.
 
 set -eu
@@ -45,16 +45,81 @@ detect_arch() {
   esac
 }
 
+release_tag_from_api() {
+  sed -n 's/.*"tag_name":[[:space:]]*"\(v[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\)".*/\1/p' | head -n 1
+}
+
+release_tag_from_redirect() {
+  redirect_url="$1"
+  redirect_prefix="https://github.com/${REPO}/releases/tag/"
+
+  case "${redirect_url}" in
+    "${redirect_prefix}"*) ;;
+    *) return 1 ;;
+  esac
+
+  tag="${redirect_url#${redirect_prefix}}"
+  valid_tag="$(printf '%s\n' "${tag}" | sed -n '/^v[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*$/p')"
+  [ "${valid_tag}" = "${tag}" ] || return 1
+  printf '%s\n' "${valid_tag}"
+}
+
+fetch_latest_redirect() {
+  latest_url="https://github.com/${REPO}/releases/latest"
+
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL -o /dev/null -w '%{url_effective}\n' "${latest_url}" 2>/dev/null
+    return
+  fi
+
+  if command -v wget >/dev/null 2>&1; then
+    redirect_headers="$(mktemp)"
+    if wget --max-redirect=20 --server-response --spider "${latest_url}" >"${redirect_headers}" 2>&1; then
+      sed -n 's/^[[:space:]]*[Ll]ocation:[[:space:]]*\(https:\/\/[^[:space:]]*\)\( \[following\]\)\{0,1\}$/\1/p' "${redirect_headers}" | tail -n 1
+      redirect_status=0
+    else
+      redirect_status=1
+    fi
+    rm -f "${redirect_headers}"
+    return "${redirect_status}"
+  fi
+
+  fail "missing downloader: need curl or wget"
+}
+
 fetch_latest_version() {
   need_cmd sed
   api_url="https://api.github.com/repos/${REPO}/releases/latest"
+  api_body="$(mktemp)"
+  api_tag=""
+
   if command -v curl >/dev/null 2>&1; then
-    curl -fsSL "${api_url}" | sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1
+    if curl -fsSL "${api_url}" >"${api_body}" 2>/dev/null; then
+      api_tag="$(release_tag_from_api <"${api_body}")"
+    fi
   elif command -v wget >/dev/null 2>&1; then
-    wget -qO- "${api_url}" | sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1
+    if wget -qO "${api_body}" "${api_url}" 2>/dev/null; then
+      api_tag="$(release_tag_from_api <"${api_body}")"
+    fi
   else
+    rm -f "${api_body}"
     fail "missing downloader: need curl or wget"
   fi
+  rm -f "${api_body}"
+
+  if [ -n "${api_tag}" ]; then
+    printf '%s\n' "${api_tag}"
+    return
+  fi
+
+  redirect_url="$(fetch_latest_redirect 2>/dev/null || true)"
+  redirect_tag="$(release_tag_from_redirect "${redirect_url}" || true)"
+  if [ -n "${redirect_tag}" ]; then
+    printf '%s\n' "${redirect_tag}"
+    return
+  fi
+
+  fail "could not resolve a release version; set DELTASCOPE_VERSION=vX.Y.Z to bypass version discovery"
 }
 
 download_file() {

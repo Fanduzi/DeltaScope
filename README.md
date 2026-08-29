@@ -39,6 +39,7 @@ SQL audit for MySQL, TiDB, and PostgreSQL — works offline, or connect to the d
 ## Install
 
 The repository installer script is the generic portable installer. It resolves the same release archives CI publishes.
+If GitHub API discovery is unavailable, it falls back to the public latest-release redirect; set `DELTASCOPE_VERSION=vX.Y.Z` to bypass discovery when needed.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh | sh

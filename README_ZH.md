@@ -39,6 +39,7 @@
 ## 安装
 
 安装脚本会拉取 CI 发布到 GitHub Release 的同一套安装包。
+如果 GitHub API 版本发现不可用，脚本会回退到公开的 latest-release 重定向；需要时可设置 `DELTASCOPE_VERSION=vX.Y.Z` 跳过版本发现。
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/main/install.sh | sh
