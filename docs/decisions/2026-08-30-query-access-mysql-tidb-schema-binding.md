@@ -4,13 +4,13 @@ Date: 2026-08-30
 Status: Accepted
 Related issue: [#34](https://github.com/Fanduzi/DeltaScope/issues/34)
 Implementation commits:
-- [`0766cd6d79cb39d438202756df3e050f5b4b22fe`](https://github.com/Fanduzi/DeltaScope/commit/0766cd6d79cb39d438202756df3e050f5b4b22fe)
-- [`70ec6dd46db7c0ab1b8d338c14d37477c147fdc6`](https://github.com/Fanduzi/DeltaScope/commit/70ec6dd46db7c0ab1b8d338c14d37477c147fdc6)
-- [`630afee584e2c398543e2ec009a2cbccda4b7137`](https://github.com/Fanduzi/DeltaScope/commit/630afee584e2c398543e2ec009a2cbccda4b7137)
-- [`6fbc40808770e471743f1855a961379ec48efd0e`](https://github.com/Fanduzi/DeltaScope/commit/6fbc40808770e471743f1855a961379ec48efd0e)
-- [`2ab2ec6872a7fb92734c37554347d86c5fb4181e`](https://github.com/Fanduzi/DeltaScope/commit/2ab2ec6872a7fb92734c37554347d86c5fb4181e)
-- [`6dfb6bd5892ba3cadc85fa882ee45fc109ef8cec`](https://github.com/Fanduzi/DeltaScope/commit/6dfb6bd5892ba3cadc85fa882ee45fc109ef8cec)
-- [`9c203e0403f130cefe650a836a6a3967eaab940d`](https://github.com/Fanduzi/DeltaScope/commit/9c203e0403f130cefe650a836a6a3967eaab940d)
+- [`d9e1b58f43f5c0253f85cf6a52bd04b11ea740b6`](https://github.com/Fanduzi/DeltaScope/commit/d9e1b58f43f5c0253f85cf6a52bd04b11ea740b6)
+- [`e4742dfa6a14502d0b6390ddaedf1efef20498c9`](https://github.com/Fanduzi/DeltaScope/commit/e4742dfa6a14502d0b6390ddaedf1efef20498c9)
+- [`42c34590dc53bc7fc388e42684f24d1a761a4aee`](https://github.com/Fanduzi/DeltaScope/commit/42c34590dc53bc7fc388e42684f24d1a761a4aee)
+- [`321530cc90df833fd03b3e163c655fb48fb0577f`](https://github.com/Fanduzi/DeltaScope/commit/321530cc90df833fd03b3e163c655fb48fb0577f)
+- [`5ee1cca4c2849aeb797cdfeb7ab9caf56ccebf97`](https://github.com/Fanduzi/DeltaScope/commit/5ee1cca4c2849aeb797cdfeb7ab9caf56ccebf97)
+- [`d187d754f408656bbf15a4e76cf16a7839d0fdc9`](https://github.com/Fanduzi/DeltaScope/commit/d187d754f408656bbf15a4e76cf16a7839d0fdc9)
+- [`67135f56f3a3d9bdd840061b37421e50f1883e72`](https://github.com/Fanduzi/DeltaScope/commit/67135f56f3a3d9bdd840061b37421e50f1883e72)
 Related decisions:
 - [Scope CLI rendering and threshold flags to audit](2026-08-30-query-access-cli-flag-ownership.md)
 - [Treat MySQL/TiDB database as the catalog alias](2026-08-30-cli-mysql-tidb-database-schema-alias.md)
