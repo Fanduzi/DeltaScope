@@ -1,9 +1,9 @@
 # Decision: Compare MySQL/TiDB MODIFY Nullability With Known State
 
-Date: 2026-08-30  
-Status: Accepted  
-Related issue: [GitHub #47](https://github.com/Fanduzi/DeltaScope/issues/47)  
-Implementation: [fix(ddl): compare MODIFY nullability with metadata](https://github.com/Fanduzi/DeltaScope/commit/1ac5749abc827e70c7e826ef24a400443a0d92c2)
+Date: 2026-08-30
+Status: Accepted
+Related issue: [GitHub #47](https://github.com/Fanduzi/DeltaScope/issues/47)
+Implementation: [fix(ddl): compare MODIFY nullability with metadata](https://github.com/Fanduzi/DeltaScope/commit/1ac5749abc827e70c7e826ef24a400443a0d92c2) and [publicly clarify the hybrid advisory metadata scope](https://github.com/Fanduzi/DeltaScope/commit/c174408d80cb11b68bb5df5a743b5a5bdbee27c8)
 
 ## Context
 
@@ -85,3 +85,4 @@ infer state from a missing column or a failed lookup.
 
 - [GitHub #47](https://github.com/Fanduzi/DeltaScope/issues/47)
 - [Exact implementation commit](https://github.com/Fanduzi/DeltaScope/commit/1ac5749abc827e70c7e826ef24a400443a0d92c2)
+- [Exact public-contract clarification commit](https://github.com/Fanduzi/DeltaScope/commit/c174408d80cb11b68bb5df5a743b5a5bdbee27c8)
