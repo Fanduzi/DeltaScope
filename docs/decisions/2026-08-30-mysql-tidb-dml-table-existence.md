@@ -7,6 +7,7 @@ Related commits:
 - [DML target-table existence implementation](https://github.com/Fanduzi/DeltaScope/commit/bb6a95b0671973adaf7409ec4aacd5690b5f18a0)
 - [Metadata schema-scope correction](https://github.com/Fanduzi/DeltaScope/commit/18adebf8fb5330192f40c1f69a0bd7e5ea23ecc8)
 - [DML mutation-target extraction correction](https://github.com/Fanduzi/DeltaScope/commit/761dc7e487e53def75f53720611280c0e6aee258)
+- [DML mutation-target expectation synchronization](https://github.com/Fanduzi/DeltaScope/commit/6e9381869d4f9071a69a3d1d4adc162848b35abe)
 Related tests:
 - `internal/domain/rule/dml/metadata_rules_test.go`
 - `internal/application/audit/dml_table_existence_test.go`
@@ -100,6 +101,6 @@ silently widening this rule.
 ## Links
 
 - Issue: https://github.com/Fanduzi/DeltaScope/issues/46
-- Commits: [bb6a95b0671973adaf7409ec4aacd5690b5f18a0](https://github.com/Fanduzi/DeltaScope/commit/bb6a95b0671973adaf7409ec4aacd5690b5f18a0), [18adebf8fb5330192f40c1f69a0bd7e5ea23ecc8](https://github.com/Fanduzi/DeltaScope/commit/18adebf8fb5330192f40c1f69a0bd7e5ea23ecc8), [761dc7e487e53def75f53720611280c0e6aee258](https://github.com/Fanduzi/DeltaScope/commit/761dc7e487e53def75f53720611280c0e6aee258)
+- Commits: [bb6a95b0671973adaf7409ec4aacd5690b5f18a0](https://github.com/Fanduzi/DeltaScope/commit/bb6a95b0671973adaf7409ec4aacd5690b5f18a0), [18adebf8fb5330192f40c1f69a0bd7e5ea23ecc8](https://github.com/Fanduzi/DeltaScope/commit/18adebf8fb5330192f40c1f69a0bd7e5ea23ecc8), [761dc7e487e53def75f53720611280c0e6aee258](https://github.com/Fanduzi/DeltaScope/commit/761dc7e487e53def75f53720611280c0e6aee258), [6e9381869d4f9071a69a3d1d4adc162848b35abe](https://github.com/Fanduzi/DeltaScope/commit/6e9381869d4f9071a69a3d1d4adc162848b35abe)
 - Tests: `internal/infrastructure/parser/tidb/extractor_test.go`, `internal/application/audit/dml_table_existence_test.go`, `pkg/deltascope/audit_dml_table_existence_test.go`, `internal/interfaces/{cli,http,mcp}/audit_dml_table_existence_test.go`
 - Docs: `docs/reference/{rules,config,audit-capability-matrix}.md` and their Chinese counterparts
