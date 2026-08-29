@@ -77,7 +77,7 @@ v0.490.0 发布 v0.480.0 之后落地的操作员/agent 审计契约修复，以
 
 ## 未变指标
 
-- SQL corpus：**582/582**，**100.0%**，**247** 个 YAML fixture。
+- 支持的 rule-and-dialect fixture coverage：**582/582**，**100.0%**，**247** 个 YAML fixture；这不是 SQL syntax 或 grammar coverage。
 - PostgreSQL ALTER TABLE 配置项：**53**。
 - DDL 覆盖目录：**400** 条（mysql 61，tidb 54，postgresql 285，parser_upgrade_candidate 18）。
 

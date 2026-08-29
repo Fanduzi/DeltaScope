@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
+# input: release consistency checker and temporary release-surface fixtures
+# output: passing or failing assertions for release consistency contracts
+# pos: unit tests for the static release contract checker
+# note: if this file changes, update this header and scripts/README.md.
 """Unit tests for release surface consistency checker.
 
 These tests define the expected behavior of scripts/verify_release_consistency.py.
-They currently fail (RED) because the checker is a stub. Task 3 will implement
-the checker and turn them GREEN.
 """
 
 import sys
@@ -328,6 +330,39 @@ class TestReleaseConsistency(unittest.TestCase):
         self._validate_with_fixture({
             "docs/releases/release-notes-v0.170.0.md": table_notes,
         })
+
+    def test_current_sql_corpus_fact_uses_fixture_coverage_label(self):
+        corpus = vrc.RELEASE_FACTS["v0.490.0"]["sql_corpus"]
+        self.assertEqual(
+            vrc._format_sql_corpus_fact(corpus),
+            "release-consistency: supported rule-and-dialect fixture coverage "
+            "582/582, 100.0%, 247 YAML",
+        )
+
+    def test_current_release_notes_require_fixture_coverage_label(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            notes = (
+                "Rule-and-dialect fixture coverage: 582/582, 100.0%, "
+                "247 YAML fixture files.\n"
+            )
+            _write(root, "docs/releases/release-notes-v0.490.0.md", notes)
+            _write(
+                root,
+                "docs/releases/release-notes-v0.490.0.zh-CN.md",
+                notes,
+            )
+            errors = []
+            vrc._validate_sql_corpus(
+                root,
+                "v0.490.0",
+                vrc.RELEASE_FACTS["v0.490.0"],
+                errors,
+            )
+            self.assertEqual(len(errors), 2)
+            self.assertTrue(
+                all("metric label" in error for error in errors), errors
+            )
 
     def test_ignores_overclaim_in_old_changelog_section(self):
         """Overclaim in old CHANGELOG sections should not trigger false positives."""

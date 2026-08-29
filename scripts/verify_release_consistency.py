@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# input: release docs and versioned release facts under the repository root
+# output: release-surface consistency errors or a labeled fact summary
+# pos: static release contract checker for cross-surface facts
+# note: if this file changes, update this header and scripts/README.md.
 """Release surface consistency checker.
 
 Validates that release-domain facts are consistent across all release surfaces:
@@ -12,6 +16,10 @@ import sys
 from pathlib import Path
 
 
+SQL_CORPUS_METRIC_LABEL = "supported rule-and-dialect fixture coverage"
+SQL_CORPUS_METRIC_LABEL_ZH = "支持的 rule-and-dialect fixture coverage"
+
+
 RELEASE_FACTS = {
     "v0.490.0": {
         "pg_alter_table_config_entries": 53,
@@ -20,6 +28,8 @@ RELEASE_FACTS = {
             "covered_rule_dialect_targets": 582,
             "coverage_percent": "100.0",
             "expected_yaml_files_total": 247,
+            "metric_label": SQL_CORPUS_METRIC_LABEL,
+            "metric_label_zh": SQL_CORPUS_METRIC_LABEL_ZH,
         },
         "required_rule_ids": [],
         "ddl_coverage_catalog": {
@@ -1058,6 +1068,12 @@ def _validate_sql_corpus(root, version, facts, errors):
     zh_notes = _read_file(
         root, f"docs/releases/release-notes-{version}.zh-CN.md"
     )
+    metric_labels = {
+        f"docs/releases/release-notes-{version}.md": corpus.get("metric_label"),
+        f"docs/releases/release-notes-{version}.zh-CN.md": corpus.get(
+            "metric_label_zh", corpus.get("metric_label")
+        ),
+    }
 
     covered_str = (
         f"{corpus['supported_rule_dialect_targets']}"
@@ -1068,6 +1084,13 @@ def _validate_sql_corpus(root, version, facts, errors):
         (f"docs/releases/release-notes-{version}.md", en_notes),
         (f"docs/releases/release-notes-{version}.zh-CN.md", zh_notes),
     ]:
+        metric_label = metric_labels.get(label)
+        if metric_label and metric_label.lower() not in content.lower():
+            errors.append(
+                f"{label} missing SQL corpus metric label "
+                f"{metric_label}"
+            )
+
         coverage_ok = (
             covered_str in content
             or re.search(
@@ -1385,6 +1408,17 @@ def validate_all(root, version):
         raise ReleaseConsistencyError("\n".join(errors))
 
 
+def _format_sql_corpus_fact(corpus):
+    label = corpus.get("metric_label", "sql corpus")
+    return (
+        f"release-consistency: {label} "
+        f"{corpus['supported_rule_dialect_targets']}"
+        f"/{corpus['covered_rule_dialect_targets']}, "
+        f"{corpus['coverage_percent']}%, "
+        f"{corpus['expected_yaml_files_total']} YAML"
+    )
+
+
 def main():
     version = os.environ.get("VERSION", "").strip()
     if not re.match(r"^v\d+\.\d+\.\d+$", version):
@@ -1424,13 +1458,7 @@ def main():
 
     corpus = facts.get("sql_corpus")
     if corpus:
-        print(
-            f"release-consistency: sql corpus "
-            f"{corpus['supported_rule_dialect_targets']}"
-            f"/{corpus['covered_rule_dialect_targets']}, "
-            f"{corpus['coverage_percent']}%, "
-            f"{corpus['expected_yaml_files_total']} YAML"
-        )
+        print(_format_sql_corpus_fact(corpus))
 
     if "pg_alter_table_rule_count" in facts:
         print(

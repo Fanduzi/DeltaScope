@@ -429,6 +429,7 @@ deltascope audit \
 ```bash
 make build              # 构建所有二进制到 bin/
 make test               # 单元测试（无 Docker）
+make sql-corpus-gates   # 未加 tag 的 MySQL/TiDB golden corpus 与 rule-and-dialect fixture coverage gate
 make test-e2e-cli       # 端到端测试（需要 Docker）
 make pg-unit-test-gates # PostgreSQL tag 单元测试 gate
 make pg-e2e-gates       # PostgreSQL CLI / HTTP / MCP 端到端 gate

@@ -13,6 +13,7 @@ It is not a promise of exhaustive SQL grammar support. DeltaScope continues to p
 - Unified Query Access online session for SDK, CLI, and HTTP. Dialect-specific constructors stay available and deprecated. Connection-only PostgreSQL resolvers. No-leak: submitted SQL is never executed, prepared, or explained.
 - MCP compact `audit_sql` text, compact `list_rules`, Registry discovery, and offline `context.note` / `unproven`.
 - CLI/HTTP audit contract: existence caveat, hypothetical DROP COLUMN notice, empty `--sql`, exit `2`/`3`, YAML `""`, embedded DDL-coverage catalog, aggregated Markdown skip reasons.
+- Current SQL corpus fact: 582/582 supported rule-and-dialect fixture targets (100.0%) across 247 YAML fixtures; this is fixture coverage, not SQL syntax or grammar coverage.
 - Decision records listed in `docs/releases/release-notes-v0.490.0.md` (Accepted; Related milestone/version: v0.490.0).
 
 ### Non-Goals

@@ -408,6 +408,7 @@ Paste a SQL snippet or point to a file — the agent audits it with DeltaScope a
 ## Developer Workflows
 
 - `make test` runs `go test ./...`
+- `make sql-corpus-gates` runs the untagged MySQL/TiDB golden corpus and supported rule-and-dialect fixture coverage gate
 - `make build` produces all local binaries under `bin/`
 - `make build-linux` produces Linux amd64 binaries under `bin/`
 - `make test-e2e-cli` runs the Docker-backed metadata CLI smoke suite

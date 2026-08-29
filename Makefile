@@ -14,7 +14,7 @@ test:
 	go test ./...
 
 sql-corpus-gates:
-	go test ./internal/application/audit -run 'TestSQLCorpusExpectedFilesAreWellFormed|TestSQLCorpusCoversSupportedRuleDialects' -tags postgresql -count=1
+	go test ./internal/application/audit -run 'TestSQLCorpusMySQLAndTiDB|TestSQLCorpusExpectedFilesAreWellFormed|TestSQLCorpusCoversSupportedRuleDialects' -count=1
 
 query-access-corpus-gates:
 	go test ./internal/application/queryaccess/ -run TestQueryAccessCorpus -count=1

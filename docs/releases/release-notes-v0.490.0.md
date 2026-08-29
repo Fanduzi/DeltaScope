@@ -77,7 +77,7 @@ The registered audit rule catalog is unchanged from v0.480.0.
 
 ## Unchanged Metrics
 
-- SQL corpus: **582/582**, **100.0%**, **247** YAML fixture files.
+- Supported rule-and-dialect fixture coverage: **582/582**, **100.0%**, **247** YAML fixture files. This is not SQL syntax or grammar coverage.
 - PostgreSQL ALTER TABLE config entries: **53**.
 - DDL coverage catalog: **400** entries (mysql 61, tidb 54, postgresql 285, parser_upgrade_candidate 18).
 

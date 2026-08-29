@@ -100,7 +100,9 @@ This skips the suite only when Docker is unavailable and `CI` is not set and `DE
 ## Notes
 
 - `go test ./...` is the default fast verification path.
-- `make sql-corpus-gates` enforces the SQL corpus contract: every currently supported `rule_id × dialect` surface must have at least one corpus case.
+- `make sql-corpus-gates` runs the untagged MySQL/TiDB golden corpus and enforces the SQL corpus contract: every currently supported `rule_id × dialect` surface must have at least one fixture case. Its 100% metric is supported rule-and-dialect fixture coverage, not SQL syntax or grammar coverage.
+- `make pg-unit-test-gates` keeps PostgreSQL corpus execution in the separate `postgresql`-tagged unit gate; the untagged corpus target does not execute PostgreSQL fixtures.
+- The pull-request lint workflow runs `python3 scripts/test_pr_workflow_contract.py` and `make sql-corpus-gates` without Docker.
 - `make sql-corpus-report` prints the current supported-rule inventory: rule count, supported `rule_id × dialect` target count, covered count, corpus fixture counts by dialect, and deferred surfaces.
 - That contract is intentionally narrower than “every policy key on every dialect”. The coverage gate tracks the current stable extractor/rule support surface, not theoretical future support.
 - `make ddl-census-report` prints the tracked DDL coverage census for MySQL, TiDB, and PostgreSQL. This is an inventory/reporting gate — it shows how many tracked DDL forms are finding-covered, silently normalized, explicitly unsupported, or parser-blocked for each dialect. It is not a full SQL grammar coverage claim. The current census informs future MySQL/TiDB DDL rule prioritization.

@@ -18,6 +18,12 @@ jobs:
         with:
           go-version-file: "go.mod"
 
+      - name: Verify pull-request corpus gate wiring
+        run: python3 scripts/test_pr_workflow_contract.py
+
+      - name: Run MySQL/TiDB SQL corpus gates
+        run: make sql-corpus-gates
+
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v7
         with:
