@@ -1,6 +1,6 @@
 // Package cli exposes the command-line adapter for DeltaScope.
 // input: Cobra command construction inputs, process-like stdin/stdout/stderr dependencies, and shared CLI option state
-// output: root command wiring for audit, rules, config, capabilities, ddl-coverage, and version subcommands
+// output: root command wiring for audit, rules, config, capabilities, ddl-coverage, and version subcommands, with audit-only rendering and threshold flags kept off the root
 // pos: CLI command assembly and shared option definitions
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -46,22 +46,6 @@ func newRootCmd(exitCode *int, stdin io.Reader, stdout io.Writer, stderr io.Writ
 		Short:         rootCommandShort(),
 		SilenceUsage:  true,
 		SilenceErrors: true,
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			switch options.Format {
-			case "markdown", "json", "github-actions", "github-summary", "sarif", "gitlab-codequality":
-			default:
-				*exitCode = exitUser
-				return newUserError("format must be markdown, json, github-actions, github-summary, sarif, or gitlab-codequality")
-			}
-
-			switch options.FailOn {
-			case "blocker", "warning", "notice", "none":
-				return nil
-			default:
-				*exitCode = exitUser
-				return newUserError("unsupported fail threshold: use blocker, warning, notice, or none")
-			}
-		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if options.ShowVersion {
 				_, err := fmt.Fprintln(cmd.OutOrStdout(), renderVersionLine())
@@ -78,8 +62,6 @@ func newRootCmd(exitCode *int, stdin io.Reader, stdout io.Writer, stderr io.Writ
 
 	rootCmd.PersistentFlags().StringVar(&options.ConfigPath, "config", "", "path to YAML policy config")
 	rootCmd.PersistentFlags().StringVar(&options.Dialect, "dialect", options.Dialect, dialectFlagDescription())
-	rootCmd.PersistentFlags().StringVar(&options.Format, "format", options.Format, "output format: markdown, json, github-actions, github-summary, sarif, or gitlab-codequality")
-	rootCmd.PersistentFlags().StringVar(&options.FailOn, "fail-on", options.FailOn, "non-zero threshold: blocker, warning, notice, or none")
 	rootCmd.PersistentFlags().BoolVar(&options.Quiet, "quiet", false, "suppress non-result chatter")
 	rootCmd.Flags().BoolVar(&options.ShowVersion, "version", false, "print the DeltaScope build version and supported dialects")
 

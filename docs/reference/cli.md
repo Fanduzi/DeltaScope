@@ -14,8 +14,6 @@ These flags apply to all subcommands.
 |------|------|---------|-------------|
 | `--config` | string | (none) | Path to YAML policy config file. When omitted, `policy.Default()` is used. |
 | `--dialect` | string | `mysql` | SQL dialect: `mysql`, `tidb`, or `postgresql`. PostgreSQL requires a PG-capable DeltaScope binary. Starting with the `v0.17.0` public release line, the supported macOS and Linux `deltascope` archives are PG-capable, so PostgreSQL offline audit uses the normal main CLI path. In metadata-aware mode, dialect is auto-detected from the live MySQL/TiDB-compatible instance; an explicit `--dialect` that conflicts with the detected dialect causes exit 2. |
-| `--format` | string | `markdown` | Output format: `markdown` (human-readable local report), `json` (stable machine-readable contract), `github-actions` (inline GitHub Actions annotations), `github-summary` (Markdown for `$GITHUB_STEP_SUMMARY`), `sarif` (SARIF 2.1.0 for GitHub Code Scanning and SARIF consumers), or `gitlab-codequality` (GitLab Code Quality artifact). |
-| `--fail-on` | string | `blocker` | Exit 1 threshold: `blocker`, `warning`, `notice`, or `none`. |
 | `--quiet` | bool | false | Suppress non-result output. With markdown output, each finding is printed as a single line; JSON output is unchanged. |
 | `--version` | bool | false | Print only the semantic version string and exit. |
 
@@ -55,6 +53,15 @@ cat migrations/v2.sql | deltascope audit
 # With a non-default policy and JSON output
 deltascope audit --config ./deltascope.yaml --format json --file ./migrations/v2.sql
 ```
+
+### Output and Exit Flags
+
+These flags belong to `audit` only. Query Access always emits its fixed JSON document; it does not accept audit rendering or finding-threshold options. Passing `--format` or `--fail-on` to Query Access returns a usage error (exit 3) without an analysis document.
+
+| Flag | Type | Default | Description |
+|------|------|---------|-------------|
+| `--format` | string | `markdown` | Output format: `markdown` (human-readable local report), `json` (stable machine-readable contract), `github-actions` (inline GitHub Actions annotations), `github-summary` (Markdown for `$GITHUB_STEP_SUMMARY`), `sarif` (SARIF 2.1.0 for GitHub Code Scanning and SARIF consumers), or `gitlab-codequality` (GitLab Code Quality artifact). |
+| `--fail-on` | string | `blocker` | Exit 1 threshold: `blocker`, `warning`, `notice`, or `none`. |
 
 ### Connection Flags (Metadata-Aware Mode)
 

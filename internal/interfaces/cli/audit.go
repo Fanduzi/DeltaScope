@@ -1,6 +1,6 @@
 // Package cli exposes the command-line adapter for DeltaScope.
-// input: audit command flags including whether --sql was explicitly provided, SQL text from flags/files/stdin, password source/prompt dependencies, and application audit services
-// output: rendered audit results, dialect-aware connection-option normalization with MySQL/TiDB catalog aliases and PostgreSQL schema/database validation, password resolution, offline existence caveats on default surfaces, and user-vs-runtime exit-code mapping for CLI audit invocations
+// input: audit command flags including audit-local output format and fail threshold, whether --sql was explicitly provided, SQL text from flags/files/stdin, password source/prompt dependencies, and application audit services
+// output: rendered audit results, audit-only output validation, dialect-aware connection-option normalization with MySQL/TiDB catalog aliases and PostgreSQL schema/database validation, password resolution, offline existence caveats on default surfaces, and user-vs-runtime exit-code mapping for CLI audit invocations
 // pos: CLI audit command implementation above the application service and output renderers
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -62,6 +62,22 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 		Short: "Audit SQL from flags, files, or stdin",
 		Long: "Audit SQL in offline mode or enrich the same audit engine with live metadata.\n" +
 			"When connection flags are present, DeltaScope uses metadata-aware mode, auto-detects the dialect, and infers schema when possible for mysql, tidb, and postgresql connections.",
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			switch options.Format {
+			case "markdown", "json", "github-actions", "github-summary", "sarif", "gitlab-codequality":
+			default:
+				*exitCode = exitUser
+				return newUserError("format must be markdown, json, github-actions, github-summary, sarif, or gitlab-codequality")
+			}
+
+			switch options.FailOn {
+			case "blocker", "warning", "notice", "none":
+				return nil
+			default:
+				*exitCode = exitUser
+				return newUserError("unsupported fail threshold: use blocker, warning, notice, or none")
+			}
+		},
 		Example: "Offline example:\n" +
 			"  deltascope audit --sql \"delete from users\" --dialect mysql\n" +
 			"  deltascope audit --sql \"drop index idx_name;\" --dialect postgresql\n\n" +
@@ -143,6 +159,8 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 	cmd.Flags().BoolP("help", "", false, "help for audit")
 	cmd.Flags().StringVar(&inlineSQL, "sql", "", "inline SQL text to audit")
 	cmd.Flags().StringVar(&filePath, "file", "", "path to a SQL file to audit")
+	cmd.Flags().StringVar(&options.Format, "format", options.Format, "output format: markdown, json, github-actions, github-summary, sarif, or gitlab-codequality")
+	cmd.Flags().StringVar(&options.FailOn, "fail-on", options.FailOn, "non-zero threshold: blocker, warning, notice, or none")
 	cmd.Flags().StringVarP(&options.Host, "host", "h", "", "database host for metadata-aware audit")
 	cmd.Flags().IntVarP(&options.Port, "port", "P", options.Port, "database port for metadata-aware audit (3306 for MySQL/TiDB/auto-detect; 5432 for explicit PostgreSQL)")
 	cmd.Flags().StringVarP(&options.User, "user", "u", "", "database user for metadata-aware audit")

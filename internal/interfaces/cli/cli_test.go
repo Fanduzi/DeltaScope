@@ -1,6 +1,6 @@
 // Package cli verifies the Cobra CLI adapter behavior.
-// input: command-line args, stdin/file SQL sources, unread-stdin doubles for explicit --sql, password-prompt doubles, and config-init/version requests
-// output: end-to-end CLI behavior coverage for exit codes, rendered output, and connection-flag validation
+// input: command-line args including audit-local output flags, stdin/file SQL sources, unread-stdin doubles for explicit --sql, password-prompt doubles, and config-init/version requests
+// output: end-to-end CLI behavior coverage for audit rendering/thresholds, exit codes, rendered output, and connection-flag validation
 // pos: interface-layer CLI test coverage
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -1395,25 +1395,23 @@ func TestCapabilitiesPrintsStableSummary(t *testing.T) {
 	}
 }
 
-func TestRootAndAuditHelpAdvertiseGitLabCodeQualityFormat(t *testing.T) {
-	for _, args := range [][]string{
-		{"--help"},
-		{"audit", "--help"},
-	} {
-		stdout := &strings.Builder{}
-		code := Execute(
-			context.Background(),
-			args,
-			strings.NewReader(""),
-			stdout,
-			&strings.Builder{},
-		)
+func TestAuditHelpAdvertisesGitLabCodeQualityFormat(t *testing.T) {
+	stdout := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--help"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
 
-		if code != 0 {
-			t.Fatalf("args=%v: expected exit code 0, got %d", args, code)
-		}
-		if output := stdout.String(); !strings.Contains(output, "gitlab-codequality") {
-			t.Fatalf("args=%v: expected help output to advertise gitlab-codequality, got %q", args, output)
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d", code)
+	}
+	output := stdout.String()
+	for _, flag := range []string{"--format", "--fail-on", "gitlab-codequality"} {
+		if !strings.Contains(output, flag) {
+			t.Fatalf("expected audit help to advertise %q, got %q", flag, output)
 		}
 	}
 }
@@ -2141,28 +2139,23 @@ func TestAuditGitHubSummaryCleanOutput(t *testing.T) {
 	}
 }
 
-// TestRootAndAuditHelpAdvertiseGitHubSummaryFormat verifies that both the root
-// and audit help text advertise the github-summary output format.
-func TestRootAndAuditHelpAdvertiseGitHubSummaryFormat(t *testing.T) {
-	for _, args := range [][]string{
-		{"--help"},
-		{"audit", "--help"},
-	} {
-		stdout := &strings.Builder{}
-		code := Execute(
-			context.Background(),
-			args,
-			strings.NewReader(""),
-			stdout,
-			&strings.Builder{},
-		)
+// TestAuditHelpAdvertisesGitHubSummaryFormat verifies that audit help
+// advertises the github-summary output format.
+func TestAuditHelpAdvertisesGitHubSummaryFormat(t *testing.T) {
+	stdout := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--help"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
 
-		if code != 0 {
-			t.Fatalf("args=%v: expected exit code 0, got %d", args, code)
-		}
-		if output := stdout.String(); !strings.Contains(output, "github-summary") {
-			t.Fatalf("args=%v: expected help output to advertise github-summary, got %q", args, output)
-		}
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d", code)
+	}
+	if output := stdout.String(); !strings.Contains(output, "github-summary") {
+		t.Fatalf("expected audit help to advertise github-summary, got %q", output)
 	}
 }
 

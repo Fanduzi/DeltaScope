@@ -1,5 +1,5 @@
 // Package cli verifies CLI query access command behavior.
-// input: synthetic CLI invocations covering explicit-empty/non-EOF stdin, file, and unified online-session routing
+// input: synthetic CLI invocations covering audit-only flag boundaries, fixed JSON output, admission exits, explicit-empty/non-EOF stdin, file, and unified online-session routing
 // output: coverage for query access JSON output, exit codes, input-source validation, bounded failures, and close ownership
 // pos: CLI adapter behavior and unified online migration coverage for query access
 // note: if this file changes, update this header and module README.md.
@@ -219,6 +219,11 @@ func TestQueryAccessAnalyzeHelpNoProfile(t *testing.T) {
 	if bytes.Contains(stdout.Bytes(), []byte("--profile")) {
 		t.Fatalf("--profile flag should not appear in help output:\n%s", stdout.String())
 	}
+	for _, forbidden := range []string{"--format", "--fail-on"} {
+		if bytes.Contains(stdout.Bytes(), []byte(forbidden)) {
+			t.Fatalf("%s flag should not appear in help output:\n%s", forbidden, stdout.String())
+		}
+	}
 }
 
 func TestQueryAccessAnalyzeHelpShowsConnectionFlags(t *testing.T) {
@@ -236,6 +241,34 @@ func TestQueryAccessAnalyzeHelpShowsConnectionFlags(t *testing.T) {
 	}
 	if !bytes.Contains(stdout.Bytes(), []byte("Explicit empty or whitespace-only --sql fails with exit 3 without reading stdin.")) {
 		t.Fatalf("expected explicit empty SQL input contract in help output:\n%s", stdout.String())
+	}
+}
+
+func TestQueryAccessAnalyzeRejectsAuditOnlyFlags(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		flag  string
+		value string
+	}{
+		{name: "format", flag: "--format", value: "json"},
+		{name: "fail-on", flag: "--fail-on", value: "warning"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var stdout, stderr bytes.Buffer
+			exitCode := Execute(t.Context(), []string{
+				"query-access", "analyze", "--sql", "SELECT 1", tc.flag, tc.value,
+			}, &bytes.Buffer{}, &stdout, &stderr)
+
+			if exitCode != exitQueryAccessUsageError {
+				t.Fatalf("expected exit code %d, got %d: %s", exitQueryAccessUsageError, exitCode, stderr.String())
+			}
+			if stdout.Len() != 0 {
+				t.Fatalf("expected no analysis output, got %q", stdout.String())
+			}
+			if !strings.Contains(stderr.String(), "unknown flag: "+tc.flag) {
+				t.Fatalf("expected bounded unknown-flag error, got %q", stderr.String())
+			}
+		})
 	}
 }
 

@@ -12,8 +12,6 @@
 |------|------|--------|------|
 | `--config` | string | （无） | YAML 策略配置文件路径。省略时使用 `policy.Default()`。 |
 | `--dialect` | string | `mysql` | SQL 方言：`mysql`、`tidb` 或 `postgresql`。PostgreSQL 需要使用 PG-capable DeltaScope 二进制。从 `v0.17.0` 公开 release 开始，受支持的 macOS 和 Linux `deltascope` 主 archive 都直接提供该能力，因此 PostgreSQL offline 审计走的就是正常主 CLI 路径。在元数据感知模式下，方言从在线的 MySQL/TiDB 兼容实例自动检测；若显式指定的 `--dialect` 与检测结果冲突，命令将以退出码 2 退出。 |
-| `--format` | string | `markdown` | 输出格式：`markdown`（人类可读的本地报告）、`json`（稳定的机器可读契约）、`github-actions`（GitHub Actions 内联注解）、`github-summary`（写入 `$GITHUB_STEP_SUMMARY` 的 Markdown）、`sarif`（SARIF 2.1.0，用于 GitHub Code Scanning 和 SARIF 消费方）或 `gitlab-codequality`（GitLab Code Quality 报告）。 |
-| `--fail-on` | string | `blocker` | 退出码 1 的阈值：`blocker`、`warning`、`notice` 或 `none`。 |
 | `--quiet` | bool | false | 抑制非结果输出。在 `markdown` 输出模式下，每条发现以单行形式打印；与 `--format json` 一起使用时，不会改变 JSON 契约。 |
 | `--version` | bool | false | 仅打印语义化版本字符串后退出。 |
 
@@ -50,6 +48,15 @@ cat migrations/v2.sql | deltascope audit
 # 使用非默认策略并输出 JSON
 deltascope audit --config ./deltascope.yaml --format json --file ./migrations/v2.sql
 ```
+
+### 输出与退出标志
+
+以下标志仅属于 `audit`。Query Access 始终输出固定 JSON 文档，不接受审计渲染或 finding 阈值选项。向 Query Access 传入 `--format` 或 `--fail-on` 会返回用法错误（退出码 3），且不会输出分析文档。
+
+| 标志 | 类型 | 默认值 | 描述 |
+|------|------|--------|------|
+| `--format` | string | `markdown` | 输出格式：`markdown`（人类可读的本地报告）、`json`（稳定的机器可读契约）、`github-actions`（GitHub Actions 内联注解）、`github-summary`（写入 `$GITHUB_STEP_SUMMARY` 的 Markdown）、`sarif`（SARIF 2.1.0，用于 GitHub Code Scanning 和 SARIF 消费方）、或 `gitlab-codequality`（GitLab Code Quality 报告）。 |
+| `--fail-on` | string | `blocker` | 退出码 1 的阈值：`blocker`、`warning`、`notice` 或 `none`。 |
 
 ### 连接标志（元数据感知模式）
 
