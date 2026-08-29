@@ -141,6 +141,37 @@ func TestQueryAccessOnlineAuthenticationFailureRemainsBounded(t *testing.T) {
 	}
 }
 
+func TestQueryAccessOnlineTimeoutRemainsBounded(t *testing.T) {
+	t.Setenv("CLI_TIMEOUT_PASSWORD", "cli-timeout-secret")
+	previousOpener := openOnlineSession
+	openOnlineSession = func(context.Context, online.SessionConfig) (*online.Session, error) {
+		return nil, context.DeadlineExceeded
+	}
+	t.Cleanup(func() { openOnlineSession = previousOpener })
+
+	var stdout, stderr bytes.Buffer
+	exitCode := Execute(t.Context(), []string{
+		"query-access", "analyze",
+		"--sql", "SELECT 1 /* CLI_TIMEOUT_MARKER */",
+		"--dialect", "postgresql",
+		"--host", "timeout.invalid",
+		"--user", "timeout_user",
+		"--password-env", "CLI_TIMEOUT_PASSWORD",
+	}, &bytes.Buffer{}, &stdout, &stderr)
+
+	if exitCode != exitQueryAccessUsageError || stdout.Len() != 0 {
+		t.Fatalf("unexpected timeout result: exit=%d stdout=%q stderr=%q", exitCode, stdout.String(), stderr.String())
+	}
+	if stderr.String() != "connection timed out\n" {
+		t.Fatalf("unexpected bounded timeout error: %q", stderr.String())
+	}
+	for _, forbidden := range []string{"CLI_TIMEOUT_MARKER", "timeout.invalid", "timeout_user", "CLI_TIMEOUT_PASSWORD", "cli-timeout-secret"} {
+		if strings.Contains(strings.ToLower(stderr.String()), strings.ToLower(forbidden)) {
+			t.Fatalf("CLI output leaked %q: %q", forbidden, stderr.String())
+		}
+	}
+}
+
 func TestQueryAccessOnlineUsesUnifiedEntryWithEmptyRequestDialect(t *testing.T) {
 	previousOpener := openOnlineSession
 	previousConstructor := newOnlineQueryAccessSessionFromConn

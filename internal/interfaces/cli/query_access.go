@@ -1,6 +1,6 @@
 // Package cli exposes the command-line adapter for DeltaScope.
 // input: query-access command flags including dialect-aware connection flags, flag-presence-aware SQL text from --sql/--file/stdin, and the unified public online query access API
-// output: rendered offline or identity-routed online query access results in JSON format, exit-code mapping, and shared bounded connection/authentication/TLS/version-boundary errors
+// output: rendered offline or identity-routed online query access results in JSON format, exit-code mapping, and shared bounded connection/authentication/timeout/TLS/version-boundary errors
 // pos: CLI query-access command implementation above offline analysis and the opaque unified online session boundary
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -231,6 +231,12 @@ func runQueryAccessOnline(cmd *cobra.Command, sql string, dialect spec.Dialect, 
 }
 
 func mapOnlineCLIBoundaryError(err error) error {
+	if errors.Is(err, context.DeadlineExceeded) {
+		return newRuntimeError("connection timed out")
+	}
+	if errors.Is(err, context.Canceled) {
+		return newRuntimeError("request canceled")
+	}
 	if errors.Is(err, online.ErrPostgreSQLQueryAccessVersionUnsupported) {
 		return newRuntimeError(online.PostgreSQLQueryAccessVersionRequirement)
 	}
@@ -240,7 +246,7 @@ func mapOnlineCLIBoundaryError(err error) error {
 
 	msg := err.Error()
 	switch {
-	case isAuthenticationFailure(strings.ToLower(msg)):
+	case online.IsAuthenticationFailure(err):
 		return newRuntimeError("authentication failed")
 	case strings.Contains(msg, "certificate"):
 		return newRuntimeError("TLS handshake failed")

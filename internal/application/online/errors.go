@@ -67,7 +67,8 @@ func MapOnlineError(err error) (code string, message string, status int) {
 	if errors.Is(err, ErrPrincipalNotAllowed) {
 		return "not_authorized", "not authorized for this connection", http.StatusForbidden
 	}
-	if errors.Is(err, ErrAuthenticationFailed) {
+	if errors.Is(err, ErrAuthenticationFailed) ||
+		(errors.Is(err, ErrConnectionFailed) && IsAuthenticationFailure(err)) {
 		return "authentication_failed", "authentication failed", http.StatusBadGateway
 	}
 	if errors.Is(err, ErrConnectionFailed) {

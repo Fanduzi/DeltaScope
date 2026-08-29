@@ -19,6 +19,7 @@ import (
 
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
+	"github.com/Fanduzi/DeltaScope/internal/application/online"
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -688,7 +689,7 @@ func classifyConnectionError(err error) error {
 	var unknownAuthorityErr x509.UnknownAuthorityError
 	var unknownAuthorityErrPtr *x509.UnknownAuthorityError
 	switch {
-	case isAuthenticationFailure(msg):
+	case online.IsAuthenticationFailure(err):
 		return newRuntimeError("authentication failed")
 	case errors.As(err, &hostnameErr), errors.As(err, &hostnameErrPtr),
 		strings.Contains(msg, "certificate is valid for"),
@@ -732,13 +733,6 @@ func connectionErrorText(err error) string {
 	return b.String()
 }
 
-func isAuthenticationFailure(msg string) bool {
-	return strings.Contains(msg, "access denied") ||
-		strings.Contains(msg, "authentication failed") ||
-		strings.Contains(msg, "password authentication") ||
-		strings.Contains(msg, "invalid authorization")
-}
-
 func applyPasswordSourceHint(err error, connection auditConnectionOptions) error {
 	if err != nil && err.Error() == "authentication failed" && !connection.passwordSourceSet {
 		return newUserError("password source required: use --password-env, --password-file, or --ask-password")
@@ -760,7 +754,7 @@ func isOnlineConnectionError(err error) bool {
 		strings.Contains(msg, "x509:") ||
 		strings.Contains(msg, "connection failed") ||
 		strings.Contains(msg, "pgpass") ||
-		isAuthenticationFailure(msg)
+		online.IsAuthenticationFailure(err)
 }
 
 func promptPassword(stderr io.Writer) (string, error) {

@@ -18,7 +18,7 @@ Shared online connection identity and error boundaries for the CLI, HTTP, and pu
 - `ProductFamily`, `VersionSeries`, `ServerIdentity`, and `CapabilityTarget`
 - `ParseServerIdentity()`, `DeriveCapabilityTarget()`, and `IdentifyFromConn()`
 - `SessionConfig`, `Session`, and `OpenSession()`
-- `MapOnlineError()` and bounded online error sentinels
+- `MapOnlineError()`, `IsAuthenticationFailure()`, and bounded online error sentinels
 - `PostgreSQLQueryAccessVersionRequirement` and `ErrPostgreSQLQueryAccessVersionUnsupported`
 
 ## Dependencies

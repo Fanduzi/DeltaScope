@@ -220,13 +220,15 @@ func IdentifyFromConn(ctx context.Context, conn *sql.Conn, expectedDialect strin
 }
 
 func wrapConnectionFailure(err error) error {
-	if isAuthenticationFailure(err) {
+	if IsAuthenticationFailure(err) {
 		return fmt.Errorf("%w: %w", ErrAuthenticationFailed, err)
 	}
 	return fmt.Errorf("%w: %w", ErrConnectionFailed, err)
 }
 
-func isAuthenticationFailure(err error) bool {
+// IsAuthenticationFailure reports whether an online driver error uses one of
+// the bounded authentication signals recognized by the transport adapters.
+func IsAuthenticationFailure(err error) bool {
 	if err == nil {
 		return false
 	}
