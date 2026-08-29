@@ -1,6 +1,6 @@
 // Package queryaccess defines application-level query access contracts.
-// input: query access requests, results, resolvers, and online schema hints
-// output: domain-typed query access contracts and MySQL/TiDB schema binding
+// input: query access requests, results, resolvers, and online catalog hints
+// output: domain-typed query access contracts and MySQL/TiDB catalog binding
 // pos: application contract layer above parsing and transport adapters
 // note: if this file changes, update this header and module README.md.
 package queryaccess
@@ -13,28 +13,35 @@ import (
 	domain "github.com/Fanduzi/DeltaScope/internal/domain/queryaccess"
 )
 
-// ErrMySQLTiDBDefaultSchemaConflict indicates that an online MySQL/TiDB
-// connection schema and an explicit default schema disagree.
-var ErrMySQLTiDBDefaultSchemaConflict = errors.New("MySQL/TiDB connection schema and default schema must match; use one schema value")
+// ErrMySQLTiDBSchemaConflict indicates that online MySQL/TiDB catalog hints
+// disagree.
+var ErrMySQLTiDBSchemaConflict = errors.New("MySQL/TiDB database, schema, and default schema must match when set; use one catalog value")
 
-// ResolveMySQLTiDBDefaultSchema binds a connection schema to the online
-// analysis default for MySQL/TiDB. Other dialects keep their existing request
-// default unchanged.
-func ResolveMySQLTiDBDefaultSchema(dialect, connectionSchema, requestedSchema string) (string, error) {
+// ResolveMySQLTiDBOnlineSchema canonicalizes MySQL/TiDB database, connection
+// schema, and request default hints into one catalog and one qualifier.
+func ResolveMySQLTiDBOnlineSchema(dialect, database, connectionSchema, requestedSchema string) (string, string, error) {
 	dialect = strings.ToLower(strings.TrimSpace(dialect))
+	database = strings.TrimSpace(database)
+	connectionSchema = strings.TrimSpace(connectionSchema)
 	requestedSchema = strings.TrimSpace(requestedSchema)
 	if dialect != "mysql" && dialect != "tidb" {
-		return requestedSchema, nil
+		return database, requestedSchema, nil
 	}
 
-	connectionSchema = strings.TrimSpace(connectionSchema)
-	if connectionSchema != "" && requestedSchema != "" && connectionSchema != requestedSchema {
-		return "", ErrMySQLTiDBDefaultSchemaConflict
+	if database != "" && connectionSchema != "" && database != connectionSchema {
+		return "", "", ErrMySQLTiDBSchemaConflict
+	}
+	catalog := database
+	if catalog == "" {
+		catalog = connectionSchema
+	}
+	if catalog != "" && requestedSchema != "" && catalog != requestedSchema {
+		return "", "", ErrMySQLTiDBSchemaConflict
 	}
 	if requestedSchema != "" {
-		return requestedSchema, nil
+		return catalog, requestedSchema, nil
 	}
-	return connectionSchema, nil
+	return catalog, catalog, nil
 }
 
 // SchemaResolver resolves relation metadata for name resolution.

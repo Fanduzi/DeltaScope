@@ -1,6 +1,6 @@
 // Package cli exposes the command-line adapter for DeltaScope.
-// input: query-access command flags including dialect-aware connection and schema hints, flag-presence-aware SQL text from --sql/--file/stdin, and the unified public online query access API
-// output: rendered offline or schema-bound identity-routed online query access results in JSON format, exit-code mapping, and shared bounded connection/authentication/timeout/TLS/version-boundary errors
+// input: query-access command flags including dialect-aware connection and catalog/schema hints, flag-presence-aware SQL text from --sql/--file/stdin, and the unified public online query access API
+// output: rendered offline or alias-bound identity-routed online query access results in JSON format, exit-code mapping, and shared bounded connection/authentication/timeout/TLS/version-boundary errors
 // pos: CLI query-access command implementation above offline analysis and the opaque unified online session boundary
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -84,10 +84,15 @@ func newQueryAccessAnalyzeCmd(options *cliOptions, exitCode *int) *cobra.Command
 				*exitCode = exitQueryAccessUsageError
 				return err
 			}
-			defaultSchema, err = appqa.ResolveMySQLTiDBDefaultSchema(string(dialect), connection.Schema, defaultSchema)
-			if err != nil {
-				*exitCode = exitQueryAccessUsageError
-				return newUserError("--schema and --default-schema must match; use one schema value")
+			if dialect == spec.DialectMySQL || dialect == spec.DialectTiDB {
+				var resolvedDefaultSchema string
+				connection.Database, resolvedDefaultSchema, err = appqa.ResolveMySQLTiDBOnlineSchema(string(dialect), connection.Database, connection.Schema, defaultSchema)
+				if err != nil {
+					*exitCode = exitQueryAccessUsageError
+					return newUserError("--database, --schema, and --default-schema must match; use one catalog value")
+				}
+				connection.Schema = connection.Database
+				defaultSchema = resolvedDefaultSchema
 			}
 
 			if !connection.Enabled() {
@@ -109,7 +114,7 @@ func newQueryAccessAnalyzeCmd(options *cliOptions, exitCode *int) *cobra.Command
 	cmd.Flags().StringVar(&options.PasswordFile, "password-file", "", "file path that contains the database password for online query access")
 	cmd.Flags().BoolVar(&options.AskPassword, "ask-password", false, "prompt for a database password without echo")
 	cmd.Flags().StringVarP(&options.Schema, "schema", "D", "", "schema/catalog for online query access (MySQL/TiDB also uses it as the default qualifier)")
-	cmd.Flags().StringVar(&options.Database, "database", "", "database name for online query access (PostgreSQL)")
+	cmd.Flags().StringVar(&options.Database, "database", "", "database/catalog for online query access (MySQL/TiDB alias of --schema; PostgreSQL database)")
 	cmd.Flags().StringVarP(&options.Socket, "socket", "S", "", "database Unix socket for online query access")
 	cmd.Flags().StringVar(&options.MetadataConnectTimeout, "metadata-connect-timeout", "", "connection timeout for online query access, for example 5s or 500ms")
 	cmd.Flags().StringVar(&options.TLSMode, "tls-mode", "disabled", "TLS mode for database connection: disabled or enabled")
@@ -205,7 +210,10 @@ func buildOnlineSessionConfig(connection auditConnectionOptions, dialect spec.Di
 	case spec.DialectPostgreSQL:
 		cfg.Database = connection.Database
 	case spec.DialectMySQL, spec.DialectTiDB:
-		cfg.Database = connection.Schema
+		cfg.Database = connection.Database
+		if cfg.Database == "" {
+			cfg.Database = connection.Schema
+		}
 	}
 	return cfg
 }

@@ -1,6 +1,6 @@
 // Package cli verifies CLI query access command behavior.
-// input: synthetic CLI invocations covering audit-only flag boundaries, SQL sources, schema hints, unified online-session routing, and the PostgreSQL PG17 version boundary
-// output: coverage for query access JSON output, exit codes, input-source validation, schema binding, bounded connection/authentication/version messages, and close ownership
+// input: synthetic CLI invocations covering audit-only flag boundaries, SQL sources, catalog/schema hints, unified online-session routing, and the PostgreSQL PG17 version boundary
+// output: coverage for query access JSON output, exit codes, input-source validation, alias/conflict binding, bounded connection/authentication/version messages, and close ownership
 // pos: CLI adapter behavior and unified online migration coverage for query access
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -230,14 +230,18 @@ func TestQueryAccessOnlineBindsMySQLTiDBSchema(t *testing.T) {
 	for _, testCase := range []struct {
 		name          string
 		dialect       string
+		database      string
+		schema        string
 		defaultSchema string
 		sql           string
 	}{
-		{name: "mysql schema only", dialect: "mysql"},
-		{name: "mysql matching default schema", dialect: "mysql", defaultSchema: "app"},
-		{name: "mysql qualified relation", dialect: "mysql", sql: "SELECT id FROM app.users"},
-		{name: "tidb schema only", dialect: "tidb"},
-		{name: "tidb matching default schema", dialect: "tidb", defaultSchema: "app"},
+		{name: "mysql schema only", dialect: "mysql", schema: "app"},
+		{name: "mysql database only", dialect: "mysql", database: "app"},
+		{name: "mysql matching catalog values", dialect: "mysql", database: "app", schema: "app", defaultSchema: "app"},
+		{name: "mysql qualified relation", dialect: "mysql", schema: "app", sql: "SELECT id FROM app.users"},
+		{name: "tidb schema only", dialect: "tidb", schema: "app"},
+		{name: "tidb database only", dialect: "tidb", database: "app"},
+		{name: "tidb matching catalog values", dialect: "tidb", database: "app", schema: "app", defaultSchema: "app"},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			previousOpener := openOnlineSession
@@ -275,7 +279,13 @@ func TestQueryAccessOnlineBindsMySQLTiDBSchema(t *testing.T) {
 			args := []string{
 				"query-access", "analyze", "--sql", sqlText,
 				"--dialect", testCase.dialect,
-				"--host", "127.0.0.1", "--user", "root", "--schema", "app",
+				"--host", "127.0.0.1", "--user", "root",
+			}
+			if testCase.database != "" {
+				args = append(args, "--database", testCase.database)
+			}
+			if testCase.schema != "" {
+				args = append(args, "--schema", testCase.schema)
 			}
 			if testCase.defaultSchema != "" {
 				args = append(args, "--default-schema", testCase.defaultSchema)
@@ -285,8 +295,8 @@ func TestQueryAccessOnlineBindsMySQLTiDBSchema(t *testing.T) {
 			if exitCode := Execute(t.Context(), args, &bytes.Buffer{}, &stdout, &stderr); exitCode != exitQueryAccessAdmissible {
 				t.Fatalf("exit code = %d, want %d; stderr=%q", exitCode, exitQueryAccessAdmissible, stderr.String())
 			}
-			if sessionConfig.Database != "app" {
-				t.Fatalf("session database = %q, want app", sessionConfig.Database)
+			if sessionConfig.Database != "app" || sessionConfig.Schema != "app" {
+				t.Fatalf("session database/schema = %q/%q, want app/app", sessionConfig.Database, sessionConfig.Schema)
 			}
 			if request.DefaultSchema != "app" {
 				t.Fatalf("request default schema = %q, want app", request.DefaultSchema)
@@ -345,8 +355,19 @@ func TestQueryAccessOnlineKeepsRequestDefaultSeparateFromCatalog(t *testing.T) {
 }
 
 func TestQueryAccessOnlineRejectsConflictingMySQLTiDBSchemaBeforeAnalysis(t *testing.T) {
-	for _, dialect := range []string{"mysql", "tidb"} {
-		t.Run(dialect, func(t *testing.T) {
+	for _, testCase := range []struct {
+		name          string
+		dialect       string
+		database      string
+		schema        string
+		defaultSchema string
+	}{
+		{name: "mysql schema and default", dialect: "mysql", schema: "app", defaultSchema: "archive"},
+		{name: "tidb schema and default", dialect: "tidb", schema: "app", defaultSchema: "archive"},
+		{name: "mysql database and schema", dialect: "mysql", database: "app", schema: "archive"},
+		{name: "tidb database and schema", dialect: "tidb", database: "app", schema: "archive"},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
 			previousOpener := openOnlineSession
 			previousAnalyzer := analyzeOnlineQueryAccessWithSession
 			t.Cleanup(func() {
@@ -364,12 +385,21 @@ func TestQueryAccessOnlineRejectsConflictingMySQLTiDBSchemaBeforeAnalysis(t *tes
 				return nil, errors.New("unexpected analysis")
 			}
 
-			var stdout, stderr bytes.Buffer
-			exitCode := Execute(t.Context(), []string{
+			args := []string{
 				"query-access", "analyze", "--sql", "SELECT id FROM users",
-				"--dialect", dialect, "--host", "127.0.0.1", "--user", "root",
-				"--schema", "app", "--default-schema", "archive",
-			}, &bytes.Buffer{}, &stdout, &stderr)
+				"--dialect", testCase.dialect, "--host", "127.0.0.1", "--user", "root",
+			}
+			if testCase.database != "" {
+				args = append(args, "--database", testCase.database)
+			}
+			if testCase.schema != "" {
+				args = append(args, "--schema", testCase.schema)
+			}
+			if testCase.defaultSchema != "" {
+				args = append(args, "--default-schema", testCase.defaultSchema)
+			}
+			var stdout, stderr bytes.Buffer
+			exitCode := Execute(t.Context(), args, &bytes.Buffer{}, &stdout, &stderr)
 			if exitCode != exitQueryAccessUsageError {
 				t.Fatalf("exit code = %d, want %d; stderr=%q", exitCode, exitQueryAccessUsageError, stderr.String())
 			}
@@ -377,7 +407,7 @@ func TestQueryAccessOnlineRejectsConflictingMySQLTiDBSchemaBeforeAnalysis(t *tes
 				t.Fatalf("conflict must stop before open/analysis: stdout=%q opens=%d analyses=%d", stdout.String(), openCalls, analysisCalls)
 			}
 			message := strings.ToLower(stderr.String())
-			for _, token := range []string{"--schema", "--default-schema", "match"} {
+			for _, token := range []string{"--database", "--schema", "--default-schema", "match"} {
 				if !strings.Contains(message, token) {
 					t.Fatalf("conflict guidance missing %q: %q", token, stderr.String())
 				}

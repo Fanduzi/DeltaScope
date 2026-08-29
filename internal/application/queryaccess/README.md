@@ -7,7 +7,7 @@ Application-level contracts for query access analysis, defining the schema resol
 | File | Responsibility |
 |------|---------------|
 | doc.go | Declares the queryaccess application package boundary |
-| contracts.go | Defines SchemaResolver interface, RelationSchema, ColumnSchema, QueryAccessRequest, QueryAccessResult, and the shared MySQL/TiDB online default-schema binding contract |
+| contracts.go | Defines SchemaResolver interface, RelationSchema, ColumnSchema, QueryAccessRequest, QueryAccessResult, and the shared MySQL/TiDB online catalog/default-schema binding contract |
 | profile.go | Defines the closed analysis-profile values and dialect validation |
 | builtin_semantic_manifest.go | Owns immutable MySQL/TiDB builtin semantic entries and session-only capability assembly |
 | builtin_semantic_gateway.go | Proves exact candidate closure and strict physical requirement completeness |
@@ -40,7 +40,7 @@ Application-level contracts for query access analysis, defining the schema resol
 ## Exports
 
 - `SchemaResolver`
-- `ResolveMySQLTiDBDefaultSchema()` / `ErrMySQLTiDBDefaultSchemaConflict`
+- `ResolveMySQLTiDBOnlineSchema()` / `ErrMySQLTiDBSchemaConflict`
 - `ErrBOMOnlySQL`
 - `RelationSchema`
 - `ColumnSchema` (optional `TypeOID` fact; zero when unknown)
@@ -82,7 +82,7 @@ Application-level contracts for query access analysis, defining the schema resol
 ## Notes
 
 - The Query Access corpus owns offline semantic fixtures; the unified SDK owns online semantic breadth, with complete replacement evidence recorded in the milestone ledger.
-- `ResolveMySQLTiDBDefaultSchema` supplies a named/CLI MySQL/TiDB connection schema when the online request omits `default_schema`, accepts an equal explicit value, and rejects conflicting values without changing PostgreSQL behavior.
+- `ResolveMySQLTiDBOnlineSchema` canonicalizes MySQL/TiDB database/schema aliases and request defaults, accepts equal values, rejects conflicts, and leaves PostgreSQL behavior outside the alias branch.
 - `QueryAccessResult` wraps the domain `Result` for application-layer consumption.
 - The shared application input boundary removes exactly one leading UTF-8 BOM before Query Access parsing; BOM-only and BOM-plus-whitespace input is rejected as empty, while BOM-free empty-input result semantics remain unchanged.
 - `QueryAccessRequest.Mode` is a string that the domain layer normalizes via `NormalizeMode`.

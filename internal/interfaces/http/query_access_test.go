@@ -1,6 +1,6 @@
 // Package httpapi verifies HTTP query access request binding and response mapping.
-// input: synthetic HTTP requests with schema hints against offline analysis and unified online-session routing
-// output: focused coverage for JSON behavior, schema/catalog separation, unified entry use, bounded failures including the PostgreSQL PG17 version boundary, zero-open authorization, and close ownership
+// input: synthetic HTTP requests with catalog/schema hints against offline analysis and unified online-session routing
+// output: focused coverage for JSON behavior, alias/conflict and schema/catalog separation, unified entry use, bounded failures including the PostgreSQL PG17 version boundary, zero-open authorization, and close ownership
 // pos: HTTP adapter behavior and unified online migration coverage for query access
 // note: if this file changes, update this header and module README.md.
 package httpapi
@@ -87,14 +87,18 @@ func TestHandlerQueryAccessOnlineBindsMySQLTiDBSchema(t *testing.T) {
 	for _, testCase := range []struct {
 		name          string
 		dialect       string
+		database      string
+		schema        string
 		defaultSchema string
 		sql           string
 	}{
-		{name: "mysql schema only", dialect: "mysql"},
-		{name: "mysql matching default schema", dialect: "mysql", defaultSchema: "app"},
-		{name: "mysql qualified relation", dialect: "mysql", sql: "SELECT id FROM app.users"},
-		{name: "tidb schema only", dialect: "tidb"},
-		{name: "tidb matching default schema", dialect: "tidb", defaultSchema: "app"},
+		{name: "mysql schema only", dialect: "mysql", schema: "app"},
+		{name: "mysql database only", dialect: "mysql", database: "app"},
+		{name: "mysql matching catalog values", dialect: "mysql", database: "app", schema: "app", defaultSchema: "app"},
+		{name: "mysql qualified relation", dialect: "mysql", schema: "app", sql: "SELECT id FROM app.users"},
+		{name: "tidb schema only", dialect: "tidb", schema: "app"},
+		{name: "tidb database only", dialect: "tidb", database: "app"},
+		{name: "tidb matching catalog values", dialect: "tidb", database: "app", schema: "app", defaultSchema: "app"},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
 			previousOpener := openOnlineSession
@@ -133,7 +137,7 @@ func TestHandlerQueryAccessOnlineBindsMySQLTiDBSchema(t *testing.T) {
 			if testCase.defaultSchema != "" {
 				payload = fmt.Sprintf(`{"sql":%q,"connection_id":"test-conn","default_schema":%q}`, sqlText, testCase.defaultSchema)
 			}
-			handler, err := NewHandler("", "test-build", WithRegistry(newQueryAccessTestRegistryWithDialect(t, "test-conn", testCase.dialect, "", "app")))
+			handler, err := NewHandler("", "test-build", WithRegistry(newQueryAccessTestRegistryWithDialect(t, "test-conn", testCase.dialect, testCase.database, testCase.schema)))
 			if err != nil {
 				t.Fatalf("new handler: %v", err)
 			}
@@ -146,8 +150,8 @@ func TestHandlerQueryAccessOnlineBindsMySQLTiDBSchema(t *testing.T) {
 			if rec.Code != http.StatusOK {
 				t.Fatalf("status = %d, want 200; body=%s", rec.Code, rec.Body.String())
 			}
-			if sessionConfig.Database != "app" {
-				t.Fatalf("session database = %q, want app", sessionConfig.Database)
+			if sessionConfig.Database != "app" || sessionConfig.Schema != "app" {
+				t.Fatalf("session database/schema = %q/%q, want app/app", sessionConfig.Database, sessionConfig.Schema)
 			}
 			if request.DefaultSchema != "app" {
 				t.Fatalf("request default schema = %q, want app", request.DefaultSchema)
@@ -210,8 +214,19 @@ func TestHandlerQueryAccessOnlineKeepsRequestDefaultSeparateFromCatalog(t *testi
 }
 
 func TestHandlerQueryAccessOnlineRejectsConflictingMySQLTiDBSchemaBeforeOpen(t *testing.T) {
-	for _, dialect := range []string{"mysql", "tidb"} {
-		t.Run(dialect, func(t *testing.T) {
+	for _, testCase := range []struct {
+		name          string
+		dialect       string
+		database      string
+		schema        string
+		defaultSchema string
+	}{
+		{name: "mysql schema and default", dialect: "mysql", schema: "app", defaultSchema: "archive"},
+		{name: "tidb schema and default", dialect: "tidb", schema: "app", defaultSchema: "archive"},
+		{name: "mysql database and schema", dialect: "mysql", database: "app", schema: "archive"},
+		{name: "tidb database and schema", dialect: "tidb", database: "app", schema: "archive"},
+	} {
+		t.Run(testCase.name, func(t *testing.T) {
 			previousOpener := openOnlineSession
 			previousAnalyzer := analyzeOnlineQueryAccessWithSession
 			t.Cleanup(func() {
@@ -229,11 +244,15 @@ func TestHandlerQueryAccessOnlineRejectsConflictingMySQLTiDBSchemaBeforeOpen(t *
 				return nil, fmt.Errorf("unexpected analysis")
 			}
 
-			handler, err := NewHandler("", "test-build", WithRegistry(newQueryAccessTestRegistryWithDialect(t, "test-conn", dialect, "", "app")))
+			handler, err := NewHandler("", "test-build", WithRegistry(newQueryAccessTestRegistryWithDialect(t, "test-conn", testCase.dialect, testCase.database, testCase.schema)))
 			if err != nil {
 				t.Fatalf("new handler: %v", err)
 			}
-			req := httptest.NewRequest(http.MethodPost, "/v1/query-access/analyze", bytes.NewBufferString(`{"sql":"SELECT id FROM users","connection_id":"test-conn","default_schema":"archive"}`))
+			payload := `{"sql":"SELECT id FROM users","connection_id":"test-conn"}`
+			if testCase.defaultSchema != "" {
+				payload = fmt.Sprintf(`{"sql":"SELECT id FROM users","connection_id":"test-conn","default_schema":%q}`, testCase.defaultSchema)
+			}
+			req := httptest.NewRequest(http.MethodPost, "/v1/query-access/analyze", bytes.NewBufferString(payload))
 			req.Header.Set("Content-Type", "application/json")
 			req.Header.Set("X-API-Key", "test-key-value")
 			rec := httptest.NewRecorder()
@@ -243,7 +262,7 @@ func TestHandlerQueryAccessOnlineRejectsConflictingMySQLTiDBSchemaBeforeOpen(t *
 				t.Fatalf("status/body = %d/%s, want bounded invalid_request", rec.Code, rec.Body.String())
 			}
 			message := strings.ToLower(rec.Body.String())
-			for _, token := range []string{"schema", "default_schema", "match"} {
+			for _, token := range []string{"database", "schema", "default_schema", "match"} {
 				if !strings.Contains(message, token) {
 					t.Fatalf("conflict guidance missing %q: %s", token, rec.Body.String())
 				}

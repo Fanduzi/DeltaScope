@@ -1,6 +1,6 @@
 // Package httpapi exposes the HTTP adapter for DeltaScope.
-// input: query-access JSON requests, schema hints, authorized runtime connection configuration, and the unified public online query access API
-// output: bounded offline or configured-schema-bound identity-routed online query-access JSON responses with stable identity error mapping and unchanged logging contracts
+// input: query-access JSON requests, catalog/schema hints, authorized runtime connection configuration, and the unified public online query access API
+// output: bounded offline or alias-bound identity-routed online query-access JSON responses with stable identity error mapping and unchanged logging contracts
 // pos: HTTP query-access adapter above offline analysis and the opaque unified online session boundary
 // note: if this file changes, update this header and module README.md.
 package httpapi
@@ -133,19 +133,16 @@ func handleQueryAccessOnline(
 	connDialect := strings.ToLower(strings.TrimSpace(conn.Dialect))
 	configuredSchema := strings.TrimSpace(conn.Schema)
 	schema := configuredSchema
+	database := strings.TrimSpace(conn.Database)
 	if connDialect == "mysql" || connDialect == "tidb" {
 		var err error
-		schema, err = appqa.ResolveMySQLTiDBDefaultSchema(connDialect, schema, request.DefaultSchema)
+		database, schema, err = appqa.ResolveMySQLTiDBOnlineSchema(connDialect, database, configuredSchema, request.DefaultSchema)
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "invalid_request", "connection schema and default_schema must match; use one schema value")
+			writeError(w, http.StatusBadRequest, "invalid_request", "database, schema, and default_schema must match when set; use one catalog value")
 			return
 		}
 	} else if strings.TrimSpace(request.DefaultSchema) != "" {
 		schema = strings.TrimSpace(request.DefaultSchema)
-	}
-	database := strings.TrimSpace(conn.Database)
-	if (connDialect == "mysql" || connDialect == "tidb") && database == "" {
-		database = configuredSchema
 	}
 
 	sessionCfg := online.SessionConfig{
