@@ -44,7 +44,7 @@ The root help no longer advertises audit output formats. New audit invocations s
 
 ## Links
 
-- Implementation commits: [`c99d8c0`](https://github.com/Fanduzi/DeltaScope/commit/c99d8c0ab656aa32d92db75b41ad3d35da2a8348), [`d84c89d`](https://github.com/Fanduzi/DeltaScope/commit/d84c89dceec0fa9097ac3a1b7c7c524e891fc6d9), [`8007e6e`](https://github.com/Fanduzi/DeltaScope/commit/8007e6e3ac70e74e25706af9370dad642b305d7e), [`b759e24`](https://github.com/Fanduzi/DeltaScope/commit/b759e24a86bec0a29124c00e8f68d84d11dab76f)
+- Implementation commits: [`5eef8fea48841739a860ef7cf4c84964ca100b42`](https://github.com/Fanduzi/DeltaScope/commit/5eef8fea48841739a860ef7cf4c84964ca100b42), [`50e60f00cdbd9f373d1ee465fb35074c6e4f4b0e`](https://github.com/Fanduzi/DeltaScope/commit/50e60f00cdbd9f373d1ee465fb35074c6e4f4b0e), [`04c7118a52247bed4a682988f0f6393df62bce26`](https://github.com/Fanduzi/DeltaScope/commit/04c7118a52247bed4a682988f0f6393df62bce26), [`ecf4a841536ea2f15ed6674a895fbaf989c60388`](https://github.com/Fanduzi/DeltaScope/commit/ecf4a841536ea2f15ed6674a895fbaf989c60388)
 - [CLI reference](../reference/cli.md)
 - [Query Access reference](../reference/query-access-analysis.md)
 - [CLI implementation](../../internal/interfaces/cli/audit.go)
