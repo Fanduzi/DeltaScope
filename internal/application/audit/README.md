@@ -34,7 +34,7 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 | service_test.go | Verifies parser recovery and diagnostics, defaults/config overrides, metadata enrichment including MySQL/TiDB MODIFY nullability state, DML impact, schema plumbing, and existing unsupported contracts |
 | corpus_coverage_test.go | Verifies every non-deferred shipped rule has corpus coverage for its supported dialect targets, including MySQL/TiDB-only metadata rules |
 | metadata.go | Defines the optional metadata-provider, index-owner resolver, plan estimator, and object-resolver seams, then attaches resolved target schema, instance, target-table, and non-table object snapshots to statements before evaluation |
-| dml_table_existence_test.go | Verifies MySQL/TiDB missing and existing DML target behavior, qualified-schema enrichment, and metadata lookup error propagation |
+| dml_table_existence_test.go | Verifies MySQL/TiDB missing and existing DML target behavior, qualified-schema enrichment, joined mutation-target extraction, and metadata lookup error propagation |
 | diagnostics.go | Defines diagnostic evidence constants (classification, reason, action_hint, guidance codes, evidence refs) and helpers for constructing parser-error and unsupported statement diagnostics with optional guidance classification |
 | ddl_coverage_catalog_query.go | Defines CatalogEntry, CatalogQuery, CatalogResult, LoadEmbeddedCatalog, LoadCatalogFile, LoadCatalog, QueryCatalog, and Validate for reading the generated (embedded) DDL coverage catalog and filtering it without invoking the audit engine |
 | catalogdata/ddl-coverage-catalog.json | Generated catalog copy compiled into release binaries; kept byte-identical to docs/reference/ddl-coverage-catalog.json |

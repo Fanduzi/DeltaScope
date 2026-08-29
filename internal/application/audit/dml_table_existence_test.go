@@ -103,6 +103,31 @@ func TestAuditMetadataDMLUsesResolvedSchemaForUnqualifiedTarget(t *testing.T) {
 	}
 }
 
+func TestAuditMetadataDMLUsesMutationTargetFromJoinedUpdate(t *testing.T) {
+	t.Parallel()
+
+	provider := &dmlTableMetadataProvider{
+		snapshots: map[string]*spec.TableSnapshot{
+			"app.users": {Schema: "app", Exists: false},
+		},
+	}
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:              "UPDATE orders o JOIN users u ON u.id = o.user_id SET u.name = 'x' WHERE o.id = 1",
+		Dialect:          spec.DialectMySQL,
+		Schema:           "app",
+		MetadataProvider: provider,
+	})
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	if len(provider.snapshotCalls) != 1 || provider.snapshotCalls[0] != "app.users" {
+		t.Fatalf("snapshot calls = %#v, want app.users", provider.snapshotCalls)
+	}
+	if !hasDMLTableExistenceFinding(result.Statements[0].Findings) {
+		t.Fatalf("expected missing mutation target finding, got %#v", result.Statements[0].Findings)
+	}
+}
+
 func TestEnrichMetadataKeepsRequestSchemaForPostgreSQLAndDDL(t *testing.T) {
 	t.Parallel()
 

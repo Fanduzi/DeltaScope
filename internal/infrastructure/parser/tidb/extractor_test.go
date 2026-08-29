@@ -194,8 +194,8 @@ func TestExtractorDMLCapturesJoinAndSubqueryShapes(t *testing.T) {
 	if updateStmt.DML == nil || !updateStmt.DML.HasJoin || !updateStmt.DML.HasJoinOn || updateStmt.DML.PredicateShape != spec.PredicateShapeJoin {
 		t.Fatalf("expected join update facts, got %#v", updateStmt.DML)
 	}
-	if len(updateStmt.DML.Tables) != 2 {
-		t.Fatalf("expected joined tables to be collected, got %#v", updateStmt.DML.Tables)
+	if len(updateStmt.DML.Tables) != 1 || updateStmt.DML.Tables[0].Name != "users" {
+		t.Fatalf("expected assignment-qualified mutation target users, got %#v", updateStmt.DML.Tables)
 	}
 
 	deleteStmt := statements[1]
@@ -399,6 +399,25 @@ func TestExtractorHelperPredicatesAndAlterVariants(t *testing.T) {
 	}
 	if got := extractAlterName(&ast.AlterTableSpec{Name: "custom"}); got != "custom" {
 		t.Fatalf("expected custom name, got %q", got)
+	}
+}
+
+func TestExtractorDMLTablesContainMutationTargets(t *testing.T) {
+	t.Parallel()
+
+	update := extractSingleStatement(t, "UPDATE orders o JOIN users u ON u.id = o.user_id SET u.name = 'x' WHERE o.id = 1")
+	if update.DML == nil || len(update.DML.Tables) != 1 || update.DML.Tables[0].Name != "users" {
+		t.Fatalf("expected assignment-qualified update target users, got %#v", update.DML)
+	}
+
+	delete := extractSingleStatement(t, "DELETE users FROM orders JOIN users ON users.id = orders.user_id WHERE orders.id = 1")
+	if delete.DML == nil || len(delete.DML.Tables) != 1 || delete.DML.Tables[0].Name != "users" {
+		t.Fatalf("expected explicit delete target users, got %#v", delete.DML)
+	}
+
+	insertSelect := extractSingleStatement(t, "INSERT INTO archive_users SELECT id FROM source_users")
+	if insertSelect.DML == nil || len(insertSelect.DML.Tables) != 1 || insertSelect.DML.Tables[0].Name != "archive_users" {
+		t.Fatalf("expected insert-select target only, got %#v", insertSelect.DML)
 	}
 }
 

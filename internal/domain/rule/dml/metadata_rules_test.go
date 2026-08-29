@@ -74,6 +74,22 @@ func TestTableExistenceRuleUsesOnlyDefinitiveMySQLTiDBSnapshots(t *testing.T) {
 			}
 		})
 	}
+
+	findings, err := ruleUnderTest.Evaluate(context.Background(), spec.Statement{
+		Kind:     spec.KindDML,
+		Dialect:  spec.DialectMySQL,
+		Metadata: missingTableMetadata(),
+		DML: &spec.DML{
+			Operation: spec.DMLOperationUpdate,
+			Tables:    []spec.Table{{Name: "users"}, {Name: "orders"}},
+		},
+	})
+	if err != nil {
+		t.Fatalf("evaluate multiple mutation targets: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected ambiguous multiple-target mutation to fail closed, got %#v", findings)
+	}
 }
 
 func missingTableMetadata() *spec.Metadata {

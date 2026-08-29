@@ -1,6 +1,6 @@
 // Package tidbparser extracts parser-neutral statements from TiDB AST nodes.
 // input: TiDB parser statement nodes and parser-neutral dialect metadata
-// output: extractor-backed parsed statements for the application layer, including normalized ALTER index/constraint actions and primary-key metadata
+// output: extractor-backed parsed statements for the application layer, including mutation-target-only DML tables, normalized ALTER index/constraint actions, and primary-key metadata
 // pos: infrastructure extraction adapter between TiDB AST and domain spec
 // note: if this file changes, update this header and module README.md.
 package tidbparser
@@ -430,7 +430,7 @@ func extractInsert(stmt *ast.InsertStmt) *spec.DML {
 
 func extractUpdate(stmt *ast.UpdateStmt) *spec.DML {
 	join := tableRefsJoin(stmt.TableRefs)
-	tables := extractMutationTables(join)
+	tables := extractUpdateMutationTables(stmt, join)
 	hasSubquery := nodeHasSubquery(stmt)
 	isSingleTable := len(tables) == 1 && !joinExists(join)
 	shape, lookupColumns, matchedKeyName, matchedKeyKind := extractMutationPredicateShape(stmt.Where, join, isSingleTable)
@@ -439,7 +439,7 @@ func extractUpdate(stmt *ast.UpdateStmt) *spec.DML {
 
 func extractDelete(stmt *ast.DeleteStmt) *spec.DML {
 	join := tableRefsJoin(stmt.TableRefs)
-	tables := extractMutationTables(join)
+	tables := extractDeleteMutationTables(stmt, join)
 	hasSubquery := nodeHasSubquery(stmt)
 	isSingleTable := len(tables) == 1 && !joinExists(join)
 	shape, lookupColumns, matchedKeyName, matchedKeyKind := extractMutationPredicateShape(stmt.Where, join, isSingleTable)
@@ -1046,29 +1046,139 @@ func tableRefsJoin(tableRefs *ast.TableRefsClause) *ast.Join {
 }
 
 func extractMutationTables(join *ast.Join) []spec.Table {
-	if join == nil {
-		return nil
+	refs := extractMutationTableRefs(join)
+	tables := make([]spec.Table, 0, len(refs))
+	for _, ref := range refs {
+		tables = append(tables, ref.table)
 	}
-	tables := make([]spec.Table, 0, 2)
-	collectMutationTables(join, &tables)
 	return tables
 }
 
-func collectMutationTables(node ast.ResultSetNode, tables *[]spec.Table) {
+type mutationTableRef struct {
+	table spec.Table
+	alias string
+}
+
+func extractMutationTableRefs(join *ast.Join) []mutationTableRef {
+	if join == nil {
+		return nil
+	}
+	refs := make([]mutationTableRef, 0, 2)
+	collectMutationTableRefs(join, &refs)
+	return refs
+}
+
+func collectMutationTableRefs(node ast.ResultSetNode, refs *[]mutationTableRef) {
 	switch typed := node.(type) {
 	case nil:
 		return
 	case *ast.Join:
-		collectMutationTables(typed.Left, tables)
-		collectMutationTables(typed.Right, tables)
+		collectMutationTableRefs(typed.Left, refs)
+		collectMutationTableRefs(typed.Right, refs)
 	case *ast.TableSource:
-		collectMutationTables(typed.Source, tables)
-	case *ast.TableName:
-		if typed.Name.L == "" || containsTable(*tables, typed.Schema.L, typed.Name.L) {
+		if table, ok := typed.Source.(*ast.TableName); ok {
+			appendMutationTableRef(refs, mutationTableRef{
+				table: spec.Table{Schema: table.Schema.L, Name: table.Name.L},
+				alias: typed.AsName.L,
+			})
 			return
 		}
-		*tables = append(*tables, spec.Table{Schema: typed.Schema.L, Name: typed.Name.L})
+		collectMutationTableRefs(typed.Source, refs)
+	case *ast.TableName:
+		appendMutationTableRef(refs, mutationTableRef{table: spec.Table{Schema: typed.Schema.L, Name: typed.Name.L}})
 	}
+}
+
+func appendMutationTableRef(refs *[]mutationTableRef, ref mutationTableRef) {
+	if ref.table.Name == "" || containsTableRefs(*refs, ref.table.Schema, ref.table.Name) {
+		return
+	}
+	*refs = append(*refs, ref)
+}
+
+func containsTableRefs(items []mutationTableRef, schema string, name string) bool {
+	for _, item := range items {
+		if strings.EqualFold(item.table.Schema, schema) && strings.EqualFold(item.table.Name, name) {
+			return true
+		}
+	}
+	return false
+}
+
+func extractUpdateMutationTables(stmt *ast.UpdateStmt, join *ast.Join) []spec.Table {
+	refs := extractMutationTableRefs(join)
+	if !joinExists(join) {
+		return mutationTablesFromRefs(refs)
+	}
+
+	targetQualifiers := make([]string, 0, len(stmt.List))
+	for _, assignment := range stmt.List {
+		if assignment == nil || assignment.Column == nil || strings.TrimSpace(assignment.Column.Table.L) == "" {
+			return nil
+		}
+		qualifier := assignment.Column.Table.L
+		if assignment.Column.Schema.L != "" {
+			qualifier = assignment.Column.Schema.L + "." + qualifier
+		}
+		if !containsStringFold(targetQualifiers, qualifier) {
+			targetQualifiers = append(targetQualifiers, qualifier)
+		}
+	}
+	if len(targetQualifiers) == 0 {
+		return nil
+	}
+
+	tables := make([]spec.Table, 0, len(targetQualifiers))
+	for _, ref := range refs {
+		for _, qualifier := range targetQualifiers {
+			if mutationTableRefMatches(ref, qualifier) {
+				tables = append(tables, ref.table)
+				break
+			}
+		}
+	}
+	if len(tables) != len(targetQualifiers) {
+		return nil
+	}
+	return tables
+}
+
+func extractDeleteMutationTables(stmt *ast.DeleteStmt, join *ast.Join) []spec.Table {
+	if stmt.Tables == nil || len(stmt.Tables.Tables) == 0 {
+		return extractMutationTables(join)
+	}
+	tables := make([]spec.Table, 0, len(stmt.Tables.Tables))
+	for _, table := range stmt.Tables.Tables {
+		if table == nil || table.Name.L == "" || containsTable(tables, table.Schema.L, table.Name.L) {
+			continue
+		}
+		tables = append(tables, spec.Table{Schema: table.Schema.L, Name: table.Name.L})
+	}
+	return tables
+}
+
+func mutationTablesFromRefs(refs []mutationTableRef) []spec.Table {
+	tables := make([]spec.Table, 0, len(refs))
+	for _, ref := range refs {
+		tables = append(tables, ref.table)
+	}
+	return tables
+}
+
+func mutationTableRefMatches(ref mutationTableRef, qualifier string) bool {
+	if strings.EqualFold(ref.alias, qualifier) || strings.EqualFold(ref.table.Name, qualifier) {
+		return true
+	}
+	return ref.table.Schema != "" && strings.EqualFold(ref.table.Schema+"."+ref.table.Name, qualifier)
+}
+
+func containsStringFold(values []string, value string) bool {
+	for _, item := range values {
+		if strings.EqualFold(item, value) {
+			return true
+		}
+	}
+	return false
 }
 
 func containsTable(items []spec.Table, schema string, name string) bool {

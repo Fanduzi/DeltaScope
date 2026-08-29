@@ -25,13 +25,14 @@ func newTableExistenceRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
 func (r tableExistenceRule) ID() string { return ruleIDTableExistsRequire }
 
 func (r tableExistenceRule) AppliesTo(statement spec.Statement) bool {
+	// ponytail: multi-target mutations fail closed; add per-target snapshots if they must be covered.
 	return (statement.Dialect == spec.DialectMySQL || statement.Dialect == spec.DialectTiDB) &&
 		statement.Kind == spec.KindDML &&
 		statement.DML != nil &&
 		(statement.DML.Operation == spec.DMLOperationInsert ||
 			statement.DML.Operation == spec.DMLOperationUpdate ||
 			statement.DML.Operation == spec.DMLOperationDelete) &&
-		len(statement.DML.Tables) > 0
+		len(statement.DML.Tables) == 1
 }
 
 func (r tableExistenceRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {

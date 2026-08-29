@@ -45,6 +45,8 @@ First Tier-1 DML rule batch for offline update/delete/insert checks.
 - `dml.table.denylist.forbid`
 - `dml.table.exists.require`
 
+`dml.table.exists.require` evaluates a single resolved mutation target. Ambiguous multi-target UPDATE/DELETE statements fail closed until the statement model carries per-target snapshots.
+
 ## Object-Scope Denylist Surface
 
 - `dml.table.denylist.forbid`
