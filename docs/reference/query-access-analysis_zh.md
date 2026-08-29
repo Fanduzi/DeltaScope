@@ -179,11 +179,12 @@ deltascope query-access analyze --sql "SELECT id, name FROM users WHERE id = 1" 
 
 退出码：`0` = 可准入，`1` = 已拒绝，`2` = 不确定，`3` = 用法或连接错误。CLI 始终输出固定的 Query Access JSON 文档；仅属于 audit 的 `--format` 和 `--fail-on` 标志在两种命令位置都不受支持，传入后以退出码 3 失败且不输出分析文档。在线 PostgreSQL Query Access 有意只要求 PostgreSQL 17；可连接但不受支持的 PostgreSQL 身份会以退出码 3 失败，并返回有界消息 `online PostgreSQL Query Access requires PostgreSQL 17`。
 
-在 MySQL/TiDB 在线模式下，`--schema` 既选择连接 catalog，也会在未提供
-`--default-schema` 时作为无限定关系的默认限定符。显式传入相同的
-`--default-schema` 会被接受；两者冲突时会在建立连接或分析前失败，并返回
-有界的用法提示。SQL 中已有的限定关系保持原有行为。PostgreSQL 继续保持
-独立的 database/schema 连接规则，不参与这项 MySQL/TiDB 绑定。
+在 MySQL/TiDB 在线模式下，`--database` 和 `--schema` 是 catalog 别名：
+只提供其中一个时，它既选择连接 catalog，也会在未提供 `--default-schema`
+时作为无限定关系的默认限定符；两者值相同时也会被接受。显式的
+`--default-schema` 必须与选定 catalog 一致；任何冲突都会在建立连接或分析前
+失败，并返回有界的用法提示。SQL 中已有的限定关系保持原有行为。
+PostgreSQL 继续保持独立的 database/schema 连接规则，不参与这项绑定。
 
 ## HTTP 用法
 

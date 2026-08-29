@@ -10,6 +10,7 @@ Implementation commits:
 - [`6fbc40808770e471743f1855a961379ec48efd0e`](https://github.com/Fanduzi/DeltaScope/commit/6fbc40808770e471743f1855a961379ec48efd0e)
 - [`2ab2ec6872a7fb92734c37554347d86c5fb4181e`](https://github.com/Fanduzi/DeltaScope/commit/2ab2ec6872a7fb92734c37554347d86c5fb4181e)
 - [`6dfb6bd5892ba3cadc85fa882ee45fc109ef8cec`](https://github.com/Fanduzi/DeltaScope/commit/6dfb6bd5892ba3cadc85fa882ee45fc109ef8cec)
+- [`9c203e0403f130cefe650a836a6a3967eaab940d`](https://github.com/Fanduzi/DeltaScope/commit/9c203e0403f130cefe650a836a6a3967eaab940d)
 Related decisions:
 - [Scope CLI rendering and threshold flags to audit](2026-08-30-query-access-cli-flag-ownership.md)
 - [Treat MySQL/TiDB database as the catalog alias](2026-08-30-cli-mysql-tidb-database-schema-alias.md)
@@ -36,13 +37,14 @@ but allowed a different request-level `default_schema` to silently replace it.
 Use one shared application-layer resolver for online MySQL/TiDB request
 construction:
 
-- A connection schema supplies the request default when `default_schema` (or
-  CLI `--default-schema`) is omitted.
+- MySQL/TiDB database and connection schema are catalog aliases; either one
+  supplies the request default when `default_schema` (or CLI
+  `--default-schema`) is omitted.
 - An explicit matching value is accepted.
 - Conflicting values return bounded guidance before the online connection is
   opened or analysis begins.
-- The CLI and HTTP MySQL/TiDB connection configs pass the selected schema as
-  the catalog; an HTTP request-only default does not select a catalog.
+- The CLI and HTTP MySQL/TiDB connection configs pass the canonical catalog;
+  an HTTP request-only default does not select a catalog.
 - Qualified SQL remains unchanged, and PostgreSQL keeps its separate
   database/schema behavior.
 
@@ -59,10 +61,11 @@ adapters.
 
 ## Public Contract
 
-- Online MySQL/TiDB CLI `--schema app` selects catalog `app` and resolves
-  unqualified relations against `app` when `--default-schema` is omitted.
-- Online HTTP named MySQL/TiDB connections use their configured `schema` for
-  the same two purposes when `default_schema` is omitted.
+- Online MySQL/TiDB CLI `--database app` or `--schema app` selects catalog
+  `app` and resolves unqualified relations against `app` when
+  `--default-schema` is omitted.
+- Online HTTP named MySQL/TiDB connections use their configured `database` or
+  `schema` alias for the same two purposes when `default_schema` is omitted.
 - An HTTP request-only `default_schema` remains a qualifier hint and does not
   change a named connection's configured catalog.
 - Equal explicit and connection schema values are valid.

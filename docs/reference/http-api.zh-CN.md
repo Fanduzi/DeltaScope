@@ -456,11 +456,12 @@ curl -s -X POST http://127.0.0.1:8083/v1/audit \
 
 省略 `connection_id` 时，请求以离线模式运行，使用内置解析器。设置 `connection_id` 时，服务端会打开元数据连接并从实时数据库解析 schema 信息。`profile` 字段在离线模式下可用，但当设置了 `connection_id` 时会被拒绝，返回 `400 invalid_request`。
 
-对于 MySQL/TiDB 在线连接，命名连接的 `schema` 在省略
-`default_schema` 时会作为无限定关系的默认限定符；未配置 `database` 时，
-它也会作为连接 catalog。显式传入相同的 `default_schema` 会被接受；如果
-两者冲突，会在打开数据库或开始分析前返回 `400 invalid_request`。
-PostgreSQL 继续保持原有的 database/schema 分离行为。
+对于 MySQL/TiDB 在线连接，命名连接的 `database` 和 `schema` 是 catalog
+别名。只提供其中一个时，它既选择连接 catalog，也会在省略
+`default_schema` 时作为无限定关系的默认限定符；两者值相同时也会被接受。
+显式的 `default_schema` 必须与选定 catalog 一致；如果冲突，会在打开数据库
+或开始分析前返回 `400 invalid_request`。仅请求提供的 `default_schema` 不会
+选择命名连接 catalog。PostgreSQL 继续保持原有的 database/schema 分离行为。
 
 > **在线方言行为：** 当设置了 `connection_id` 时，服务端会忽略请求中的 `dialect` 字段，从实时数据库会话中推断实际方言。`dialect` 字段仅在离线模式下进行校验；无法识别的方言仅在未提供 `connection_id` 时才返回 `400 bad_request`。
 
@@ -478,7 +479,7 @@ PostgreSQL 继续保持原有的 database/schema 分离行为。
 | `sql` | string | 是 | 待分析的 SELECT 类查询 |
 | `dialect` | string | 否 | `mysql`、`tidb` 或 `postgresql`，省略时默认为 `mysql` |
 | `mode` | string | 否 | `strict` 或 `projection_only`，省略时默认为 `strict` |
-| `default_schema` | string | 否 | 可选 schema 名称。在线 MySQL/TiDB 连接省略时使用命名连接的 `schema`；如果两者都设置，显式值必须匹配。PostgreSQL 保留原有的请求级覆盖行为。 |
+| `default_schema` | string | 否 | 可选 schema 名称。在线 MySQL/TiDB 连接省略时使用命名连接的 `database`/`schema` catalog 别名；如果两者都设置，显式值必须匹配。仅请求提供的值不会选择 catalog。PostgreSQL 保留原有的请求级覆盖行为。 |
 | `profile` | string | 否 | 离线模式的分析配置（如 `mysql-5.7`、`mysql-8.0`、`mysql-8.4`、`tidb-8.5`）。离线模式下可用，但当设置了 `connection_id` 时会被拒绝 |
 | `connection_id` | string | 否 | 引用服务端 runtime config 中定义的命名连接。命名连接的 `purposes` 中必须包含 `query_access` |
 

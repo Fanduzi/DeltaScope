@@ -207,10 +207,11 @@ deltascope query-access analyze --sql "SELECT id, name FROM users WHERE id = 1" 
 
 Exit codes: `0` = admissible, `1` = rejected, `2` = indeterminate, `3` = usage or connection error. The CLI always emits the fixed Query Access JSON document; audit-only `--format` and `--fail-on` flags are unsupported in either command position and fail with exit 3 without analysis output. Online PostgreSQL Query Access intentionally requires PostgreSQL 17; a reachable unsupported PostgreSQL identity exits 3 with the bounded message `online PostgreSQL Query Access requires PostgreSQL 17`.
 
-In online MySQL/TiDB mode, `--schema` selects the connection catalog and also
-supplies the request's default qualifier for unqualified relations when
-`--default-schema` is omitted. An explicit matching `--default-schema` is
-accepted; conflicting values fail before connection or analysis with bounded
+In online MySQL/TiDB mode, `--database` and `--schema` are catalog aliases:
+either one supplies the connection catalog and the request's default qualifier
+for unqualified relations when `--default-schema` is omitted. Equal values are
+accepted. An explicit `--default-schema` must match the selected catalog when
+both are set; any conflict fails before connection or analysis with bounded
 usage guidance. SQL-qualified relations keep their existing behavior.
 PostgreSQL keeps its separate database/schema connection rules and is not
 included in this MySQL/TiDB binding.
