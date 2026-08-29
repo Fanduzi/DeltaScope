@@ -40,6 +40,7 @@ Application-level contracts for query access analysis, defining the schema resol
 ## Exports
 
 - `SchemaResolver`
+- `ErrBOMOnlySQL`
 - `RelationSchema`
 - `ColumnSchema` (optional `TypeOID` fact; zero when unknown)
 - `QueryAccessRequest`
@@ -81,7 +82,7 @@ Application-level contracts for query access analysis, defining the schema resol
 
 - The Query Access corpus owns offline semantic fixtures; the unified SDK owns online semantic breadth, with complete replacement evidence recorded in the milestone ledger.
 - `QueryAccessResult` wraps the domain `Result` for application-layer consumption.
-- The shared application input boundary removes exactly one leading UTF-8 BOM before Query Access parsing; existing empty-input result semantics remain unchanged.
+- The shared application input boundary removes exactly one leading UTF-8 BOM before Query Access parsing; BOM-only and BOM-plus-whitespace input is rejected as empty, while BOM-free empty-input result semantics remain unchanged.
 - `QueryAccessRequest.Mode` is a string that the domain layer normalizes via `NormalizeMode`.
 - `ExtractTiDBQueryAccess` computes admission from read classification: read_only → admissible, not_read_only → rejected, indeterminate → indeterminate.
 - `AnalyzePostgreSQL` follows the same admission computation pattern as TiDB.

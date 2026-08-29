@@ -35,6 +35,33 @@ func TestAnalyzeQueryAccessLeadingUTF8BOMMatchesBOMFreeInput(t *testing.T) {
 	}
 }
 
+func TestAnalyzeQueryAccessBOMOnlyInputIsRejectedAsEmpty(t *testing.T) {
+	t.Parallel()
+
+	for _, sql := range []string{"\ufeff", "\ufeff \r\n"} {
+		_, err := AnalyzeQueryAccess(context.Background(), QueryAccessRequest{
+			SQL: sql, Dialect: DialectMySQL,
+		})
+		if err == nil || !strings.Contains(strings.ToLower(err.Error()), "empty") {
+			t.Errorf("SQL %q: error = %v, want empty-input error", sql, err)
+		}
+	}
+}
+
+func TestAnalyzeQueryAccessBOMFreeEmptyInputKeepsZeroStatements(t *testing.T) {
+	t.Parallel()
+
+	result, err := AnalyzeQueryAccess(context.Background(), QueryAccessRequest{
+		SQL: "", Dialect: DialectMySQL,
+	})
+	if err != nil {
+		t.Fatalf("empty analysis: %v", err)
+	}
+	if !reflect.DeepEqual(result.ReasonCodes, []string{"zero_statements"}) {
+		t.Fatalf("reason codes = %v, want [zero_statements]", result.ReasonCodes)
+	}
+}
+
 func TestAnalyzeQueryAccessMySQLSelect(t *testing.T) {
 	result, err := AnalyzeQueryAccess(context.Background(), QueryAccessRequest{
 		SQL:     "SELECT id, name FROM users WHERE id = 1",

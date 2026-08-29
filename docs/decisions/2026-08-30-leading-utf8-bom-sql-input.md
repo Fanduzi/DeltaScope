@@ -11,6 +11,8 @@ Related tests:
 - `TestAuditOnlyStripsLeadingUTF8BOM`
 - `TestAuditBOMOnlyInputIsEmpty`
 - `TestAnalyzeQueryAccessLeadingUTF8BOMMatchesBOMFreeInput`
+- `TestAnalyzeQueryAccessBOMOnlyInputIsRejectedAsEmpty`
+- `TestAnalyzeQueryAccessBOMFreeEmptyInputKeepsZeroStatements`
 - `TestAuditCommandAcceptsLeadingUTF8BOMFile`
 - `TestSQLCorpusMySQLAndTiDB` (`leading_utf8_bom` fixture)
 Related docs:
@@ -32,9 +34,10 @@ audit empty-input validation must recognize marker-only files as empty.
 
 The shared application input boundary removes exactly one leading UTF-8 BOM
 before audit empty-input validation and parser dispatch. Query Access removes
-the same marker before extraction. All public audit surfaces and Query Access
-session routes therefore inherit the behavior through their existing
-application services.
+the same marker before extraction and rejects the input only when that marker
+was present and the remaining text is empty after whitespace trimming. All
+public audit surfaces and Query Access session routes therefore inherit the
+behavior through their existing application services.
 
 ## Rationale
 
@@ -46,16 +49,18 @@ requests without duplicating transport logic or changing parser recovery.
 ## Public Contract
 
 - One leading UTF-8 BOM followed by valid SQL has the same audit or Query Access semantics as BOM-free SQL.
-- Marker-only and marker-plus-whitespace audit input is rejected as empty.
+- Marker-only and marker-plus-whitespace audit or Query Access input is rejected as empty.
+- BOM-free Query Access empty input keeps its existing `zero_statements` result.
 - BOM characters after the first decoded character are not removed.
 - Statement locations are calculated from the visible SQL after the marker.
 - UTF-16/UTF-32 detection, malformed UTF-8 repair, arbitrary zero-width stripping, and parser recovery remain unsupported.
 
 ## Deferred / Out Of Scope
 
-Query Access keeps its existing empty-input result contract (`zero_statements`)
-because changing that behavior belongs to the deferred Query Access empty-input
-work, not this parser-marker fix. Issue #43 parser recovery is unchanged.
+BOM-free Query Access keeps its existing empty-input result contract
+(`zero_statements`) to avoid changing the separate Query Access empty-input
+public contract. Only BOM-prefixed input that becomes empty is rejected here.
+Issue #43 parser recovery is unchanged.
 
 ## Verification Evidence
 

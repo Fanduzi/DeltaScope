@@ -1,6 +1,6 @@
 // Package queryaccess provides the application service for query access analysis.
 // input: SQL text, dialect, mode, profile, default schema, optional schema resolver, and shared input normalization
-// output: domain-typed query access results with metadata resolution and normalized final state
+// output: domain-typed query access results with metadata resolution, normalized final state, or a bounded BOM-empty input error
 // pos: application orchestration and cross-surface state-normalization layer for query access
 // note: if this file changes, update this header and module README.md.
 package queryaccess
@@ -17,6 +17,9 @@ import (
 
 // ErrExtractionFailed indicates query access extraction failed without exposing SQL text.
 var ErrExtractionFailed = errors.New("query access extraction failed")
+
+// ErrBOMOnlySQL indicates SQL became empty after removing one leading UTF-8 BOM.
+var ErrBOMOnlySQL = errors.New("query access SQL must not be empty")
 
 // ErrTrustedBundleInvalid indicates the trusted bundle failed validation.
 var ErrTrustedBundleInvalid = errors.New("invalid trusted bundle")
@@ -98,7 +101,11 @@ func (s *Service) Analyze(ctx context.Context, req QueryAccessRequest) (QueryAcc
 	if err := ctx.Err(); err != nil {
 		return QueryAccessResult{}, fmt.Errorf("analyze cancelled: %w", err)
 	}
-	req.SQL = application.NormalizeSQLInput(req.SQL)
+	normalizedSQL := application.NormalizeSQLInput(req.SQL)
+	if normalizedSQL != req.SQL && strings.TrimSpace(normalizedSQL) == "" {
+		return QueryAccessResult{}, ErrBOMOnlySQL
+	}
+	req.SQL = normalizedSQL
 	if err := ValidateAnalysisProfile(req.AnalysisProfile, req.Dialect); err != nil {
 		return QueryAccessResult{}, err
 	}
