@@ -174,9 +174,16 @@ result, err := deltascope.AnalyzeQueryAccess(context.Background(), deltascope.Qu
 ```bash
 deltascope query-access analyze --sql "SELECT id, name FROM users WHERE id = 1" --dialect mysql
 deltascope query-access analyze --file ./query.sql --dialect postgresql --mode projection_only
+deltascope query-access analyze --sql "SELECT id, name FROM users WHERE id = 1" --host 127.0.0.1 --port 3306 --user root --ask-password --schema app
 ```
 
 退出码：`0` = 可准入，`1` = 已拒绝，`2` = 不确定，`3` = 用法或连接错误。CLI 始终输出固定的 Query Access JSON 文档；仅属于 audit 的 `--format` 和 `--fail-on` 标志在两种命令位置都不受支持，传入后以退出码 3 失败且不输出分析文档。在线 PostgreSQL Query Access 有意只要求 PostgreSQL 17；可连接但不受支持的 PostgreSQL 身份会以退出码 3 失败，并返回有界消息 `online PostgreSQL Query Access requires PostgreSQL 17`。
+
+在 MySQL/TiDB 在线模式下，`--schema` 既选择连接 catalog，也会在未提供
+`--default-schema` 时作为无限定关系的默认限定符。显式传入相同的
+`--default-schema` 会被接受；两者冲突时会在建立连接或分析前失败，并返回
+有界的用法提示。SQL 中已有的限定关系保持原有行为。PostgreSQL 继续保持
+独立的 database/schema 连接规则，不参与这项 MySQL/TiDB 绑定。
 
 ## HTTP 用法
 
@@ -207,7 +214,9 @@ result, err := deltascope.AnalyzeOnlineQueryAccessWithSession(ctx, session, delt
 })
 ```
 
-注意示例里的表名写成 `app.orders`，带 schema 限定符。这是提升的硬性要求，见下文。
+注意示例里的表名写成 `app.orders`，带 schema 限定符。这是函数效果提升的
+硬性要求，见下文。在线 CLI/HTTP 的 schema 绑定可以解析普通的、无函数效果
+的 MySQL/TiDB 读取，但不会扩大这项提升边界。
 
 ### 提升要求 schema 限定的基表
 

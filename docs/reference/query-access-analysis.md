@@ -202,9 +202,18 @@ Query access analysis is available through the CLI:
 ```bash
 deltascope query-access analyze --sql "SELECT id, name FROM users WHERE id = 1" --dialect mysql
 deltascope query-access analyze --file ./query.sql --dialect postgresql --mode projection_only
+deltascope query-access analyze --sql "SELECT id, name FROM users WHERE id = 1" --host 127.0.0.1 --port 3306 --user root --ask-password --schema app
 ```
 
 Exit codes: `0` = admissible, `1` = rejected, `2` = indeterminate, `3` = usage or connection error. The CLI always emits the fixed Query Access JSON document; audit-only `--format` and `--fail-on` flags are unsupported in either command position and fail with exit 3 without analysis output. Online PostgreSQL Query Access intentionally requires PostgreSQL 17; a reachable unsupported PostgreSQL identity exits 3 with the bounded message `online PostgreSQL Query Access requires PostgreSQL 17`.
+
+In online MySQL/TiDB mode, `--schema` selects the connection catalog and also
+supplies the request's default qualifier for unqualified relations when
+`--default-schema` is omitted. An explicit matching `--default-schema` is
+accepted; conflicting values fail before connection or analysis with bounded
+usage guidance. SQL-qualified relations keep their existing behavior.
+PostgreSQL keeps its separate database/schema connection rules and is not
+included in this MySQL/TiDB binding.
 
 ## HTTP Usage
 
@@ -242,7 +251,10 @@ result, err := deltascope.AnalyzeOnlineQueryAccessWithSession(ctx, session, delt
 })
 ```
 
-Note the table is written as `app.orders`, with a schema qualifier. That is a hard requirement for promotion, explained next.
+Note the table is written as `app.orders`, with a schema qualifier. That is a
+hard requirement for function-effect promotion, explained next. The online
+CLI/HTTP schema binding resolves ordinary effect-free MySQL/TiDB reads without
+expanding this promotion boundary.
 
 ### Promotion Requires a Schema-Qualified Base Relation
 

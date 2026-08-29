@@ -456,6 +456,12 @@ curl -s -X POST http://127.0.0.1:8083/v1/audit \
 
 省略 `connection_id` 时，请求以离线模式运行，使用内置解析器。设置 `connection_id` 时，服务端会打开元数据连接并从实时数据库解析 schema 信息。`profile` 字段在离线模式下可用，但当设置了 `connection_id` 时会被拒绝，返回 `400 invalid_request`。
 
+对于 MySQL/TiDB 在线连接，命名连接的 `schema` 在省略
+`default_schema` 时会作为无限定关系的默认限定符；未配置 `database` 时，
+它也会作为连接 catalog。显式传入相同的 `default_schema` 会被接受；如果
+两者冲突，会在打开数据库或开始分析前返回 `400 invalid_request`。
+PostgreSQL 继续保持原有的 database/schema 分离行为。
+
 > **在线方言行为：** 当设置了 `connection_id` 时，服务端会忽略请求中的 `dialect` 字段，从实时数据库会话中推断实际方言。`dialect` 字段仅在离线模式下进行校验；无法识别的方言仅在未提供 `connection_id` 时才返回 `400 bad_request`。
 
 在线 PostgreSQL Query Access 有意只信任 PostgreSQL 17。当可连接的命名
@@ -472,7 +478,7 @@ curl -s -X POST http://127.0.0.1:8083/v1/audit \
 | `sql` | string | 是 | 待分析的 SELECT 类查询 |
 | `dialect` | string | 否 | `mysql`、`tidb` 或 `postgresql`，省略时默认为 `mysql` |
 | `mode` | string | 否 | `strict` 或 `projection_only`，省略时默认为 `strict` |
-| `default_schema` | string | 否 | 可选 schema 名称；如果同时提供 `default_schema` 和命名连接的 schema，以 `default_schema` 为准 |
+| `default_schema` | string | 否 | 可选 schema 名称。在线 MySQL/TiDB 连接省略时使用命名连接的 `schema`；如果两者都设置，显式值必须匹配。PostgreSQL 保留原有的请求级覆盖行为。 |
 | `profile` | string | 否 | 离线模式的分析配置（如 `mysql-5.7`、`mysql-8.0`、`mysql-8.4`、`tidb-8.5`）。离线模式下可用，但当设置了 `connection_id` 时会被拒绝 |
 | `connection_id` | string | 否 | 引用服务端 runtime config 中定义的命名连接。命名连接的 `purposes` 中必须包含 `query_access` |
 
@@ -556,7 +562,7 @@ curl -s -X POST http://127.0.0.1:8083/v1/audit \
 | 400 | `invalid_json` | 请求体不是合法 JSON、包含未知字段，或超过 1 MiB |
 | 400 | `bad_request` | `sql` 为空或 `dialect` 值无法识别（仅离线模式；在线模式忽略请求中的 dialect） |
 | 400 | `invalid_mode` | `mode` 不是 `strict` 或 `projection_only` |
-| 400 | `invalid_request` | 同时设置了 `profile` 和 `connection_id` |
+| 400 | `invalid_request` | 同时设置了 `profile` 和 `connection_id`，或在线 MySQL/TiDB 的 `default_schema` 与命名连接的 `schema` 冲突 |
 | 400 | `invalid_profile` | `profile` 不在支持的闭合集合内 |
 | 400 | `profile_dialect_mismatch` | `profile` 与所选 `dialect` 不匹配 |
 | 404 | `connection_not_found` | `connection_id` 引用了服务端 runtime config 中不存在的连接 |

@@ -468,6 +468,13 @@ Analyzes a SELECT-style query for read-side access control. The request body mus
 
 When `connection_id` is omitted, the request runs in offline mode using the built-in parser. When `connection_id` is set, the server opens a metadata connection and resolves schema information from the live database. The `profile` field is accepted in offline mode but rejected with `400 invalid_request` when `connection_id` is set.
 
+For online MySQL/TiDB connections, the named connection's `schema` supplies
+the default qualifier for unqualified relations when `default_schema` is
+omitted, and it is also used as the connection catalog when no `database` is
+configured. An explicit matching `default_schema` is accepted. A conflicting
+value returns `400 invalid_request` before the database is opened or analysis
+runs. PostgreSQL keeps its existing separate database/schema behavior.
+
 > **Online dialect behavior:** When `connection_id` is set, the server ignores the request-level `dialect` field and derives the actual dialect from the live database session. The `dialect` field is only validated in offline mode; an unrecognized dialect returns `400 bad_request` only when no `connection_id` is provided.
 
 Online PostgreSQL Query Access is intentionally trusted only for PostgreSQL 17.
@@ -485,7 +492,7 @@ The named connection must include `query_access` in its `purposes` list; otherwi
 | `sql` | string | Yes | A SELECT-style query to analyze for read-side access control |
 | `dialect` | string | No | `mysql`, `tidb`, or `postgresql`. Defaults to `mysql` when omitted. |
 | `mode` | string | No | `strict` or `projection_only`. Defaults to `strict` when omitted. |
-| `default_schema` | string | No | Optional schema name. When both `default_schema` and the named connection's schema are supplied, `default_schema` takes precedence. |
+| `default_schema` | string | No | Optional schema name. For online MySQL/TiDB connections, omission uses the named connection's `schema`; an explicit value must match it when both are set. PostgreSQL retains its existing request-level override behavior. |
 | `profile` | string | No | Analysis profile for offline mode (e.g. `mysql-5.7`, `mysql-8.0`, `mysql-8.4`, `tidb-8.5`). Accepted offline but rejected when `connection_id` is set. |
 | `connection_id` | string | No | References a named connection defined in the server's runtime config. The named connection must have `query_access` in its `purposes`. |
 
@@ -569,7 +576,7 @@ Response (the response shape is `QueryAccessResult`, not an audit result):
 | 400 | `invalid_json` | Request body is not valid JSON, contains unknown fields, or exceeds 1 MiB |
 | 400 | `bad_request` | `sql` is empty or `dialect` value is unrecognized (offline only; online mode ignores request dialect) |
 | 400 | `invalid_mode` | `mode` is not `strict` or `projection_only` |
-| 400 | `invalid_request` | `profile` is set together with `connection_id` |
+| 400 | `invalid_request` | `profile` is set together with `connection_id`, or online MySQL/TiDB `default_schema` conflicts with the named connection's `schema` |
 | 400 | `invalid_profile` | `profile` is outside the closed set of supported profiles |
 | 400 | `profile_dialect_mismatch` | `profile` does not match the selected `dialect` |
 | 404 | `connection_not_found` | `connection_id` references a connection that does not exist in the server's runtime config |
