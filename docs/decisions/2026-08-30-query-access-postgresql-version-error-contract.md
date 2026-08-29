@@ -69,7 +69,7 @@ database/schema semantics.
   and the existing #36 CLI flag ownership remain unchanged.
 - A reachable PostgreSQL identity outside PG17 returns the bounded requirement
   message above; the CLI exits `3` and emits no Query Access result.
-- HTTP returns `502` with `{"code":"identity_error","message":"online PostgreSQL Query Access requires PostgreSQL 17"}` for the version boundary and `502 authentication_failed` for database authentication; both codes are advertised in `structured_errors`.
+- HTTP returns `502` with `{"error":{"code":"identity_error","message":"online PostgreSQL Query Access requires PostgreSQL 17"}}` for the version boundary and the same `error` envelope with code `authentication_failed` for database authentication; both codes are advertised in `structured_errors`.
 - Authentication, dial, timeout, and TLS failures remain distinguishable at
   their existing surfaces.
 - No response, error, or access log exposes credentials, DSNs, submitted SQL,
