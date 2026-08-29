@@ -1,6 +1,6 @@
 // Package cli verifies metadata-aware CLI audit wiring.
-// input: audit command args plus fake metadata clients that simulate dialect and schema lookups
-// output: focused coverage for metadata-mode connection setup, schema inference, and dialect validation
+// input: audit command args plus fake metadata clients that simulate dialect, schema, and connection-option resolution
+// output: focused coverage for metadata-mode connection setup, schema inference, dialect validation, and port defaults
 // pos: interface-layer metadata-aware audit test coverage
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -8,6 +8,7 @@ package cli
 import (
 	"context"
 	"crypto/x509"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -95,6 +96,58 @@ func (f *fakeMetadataClient) LoadPlanEstimate(context.Context, spec.Statement) (
 func (f *fakeMetadataClient) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
 	f.objectCalls = append(f.objectCalls, req)
 	return f.objectSnapshot, nil
+}
+
+func TestAuditCommandResolvesMetadataPortByExplicitDialect(t *testing.T) {
+	tests := []struct {
+		name         string
+		dialect      string
+		detected     spec.Dialect
+		port         string
+		wantPort     int
+		useFileInput bool
+	}{
+		{name: "explicit PostgreSQL omitted inline", dialect: "postgresql", detected: spec.DialectPostgreSQL, wantPort: 5432},
+		{name: "explicit PostgreSQL port wins in file input", dialect: "postgresql", detected: spec.DialectPostgreSQL, port: "3306", wantPort: 3306, useFileInput: true},
+		{name: "explicit MySQL omitted", dialect: "mysql", detected: spec.DialectMySQL, wantPort: 3306},
+		{name: "explicit TiDB omitted", dialect: "tidb", detected: spec.DialectTiDB, wantPort: 3306},
+		{name: "auto-detected omitted", detected: spec.DialectMySQL, wantPort: 3306},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			previous := newMetadataClient
+			client := &fakeMetadataClient{detectDialect: tt.detected}
+			newMetadataClient = func(options auditConnectionOptions) (metadataClient, error) {
+				client.options = options
+				return client, nil
+			}
+			t.Cleanup(func() { newMetadataClient = previous })
+
+			args := []string{"audit", "--host", "127.0.0.1", "--user", "root", "--schema", "app"}
+			if tt.useFileInput {
+				path := t.TempDir() + "/migration.sql"
+				if err := os.WriteFile(path, []byte("delete from users"), 0o600); err != nil {
+					t.Fatalf("write SQL file: %v", err)
+				}
+				args = append(args, "--file", path)
+			} else {
+				args = append(args, "--sql", "delete from users")
+			}
+			if tt.dialect != "" {
+				args = append(args, "--dialect", tt.dialect)
+			}
+			if tt.port != "" {
+				args = append(args, "--port", tt.port)
+			}
+
+			Execute(context.Background(), args, strings.NewReader(""), &strings.Builder{}, &strings.Builder{})
+
+			if client.options.Port != tt.wantPort {
+				t.Fatalf("expected resolved port %d, got %d", tt.wantPort, client.options.Port)
+			}
+		})
+	}
 }
 
 func TestAuditCommandUsesMetadataAwareProviderForTCPConnection(t *testing.T) {

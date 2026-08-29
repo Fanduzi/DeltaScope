@@ -67,7 +67,7 @@ that connection but do not activate metadata-aware mode on their own.
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
 | `--host` | `-h` | (none) | Database host address |
-| `--port` | `-P` | `3306` | Port number (default 3306 for MySQL/TiDB, 5432 for PostgreSQL) |
+| `--port` | `-P` | `3306` | Port number. With `--port` omitted, defaults to `5432` only when `--dialect postgresql` is explicit; otherwise defaults to `3306`. An explicit port always wins. |
 | `--user` | `-u` | (none) | Database user |
 | `--password-env` | | (none) | Environment variable that contains the database password |
 | `--password-file` | | (none) | File path that contains the database password |
@@ -84,8 +84,9 @@ that connection but do not activate metadata-aware mode on their own.
 **Behavior in metadata-aware mode:**
 
 - For MySQL/TiDB: dialect is auto-detected from the live instance by querying `tidb_version()`. If `--dialect` is
-  also set explicitly and conflicts, the command exits with code 2.
-- For PostgreSQL: pass `--dialect postgresql` explicitly and use `--database` to select the database (`postgres` when omitted). `--schema` selects the schema within that database.
+  also set explicitly and conflicts, the command exits with code 2. When `--port` is omitted, this path keeps the
+  MySQL-oriented default of `3306`.
+- For PostgreSQL: pass `--dialect postgresql` explicitly and use `--database` to select the database (`postgres` when omitted). `--schema` selects the schema within that database. When `--port` is omitted, the explicit PostgreSQL selection uses `5432`; an explicit port always wins. The CLI does not probe services to infer a port.
 - Schema resolution order for unqualified table names: SQL-level qualifier → `--schema` flag →
   unique match across accessible schemas → error if ambiguous.
 - Connection failures print one bounded stderr line. Portable output never includes host, port,
@@ -105,7 +106,7 @@ that connection but do not activate metadata-aware mode on their own.
 Examples:
 
 ```bash
-# Connect to a local MySQL instance
+# Connect to a local MySQL/TiDB instance (dialect auto-detected)
 deltascope audit \
   --host 127.0.0.1 --port 3306 \
   --user dba --ask-password \

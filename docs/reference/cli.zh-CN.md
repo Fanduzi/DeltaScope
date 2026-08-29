@@ -58,7 +58,7 @@ deltascope audit --config ./deltascope.yaml --format json --file ./migrations/v2
 | 标志 | 简写 | 默认值 | 描述 |
 |------|------|--------|------|
 | `--host` | `-h` | （无） | MySQL/TiDB 主机地址 |
-| `--port` | `-P` | `3306` | 端口号 |
+| `--port` | `-P` | `3306` | 端口号。省略 `--port` 时，仅在显式指定 `--dialect postgresql` 的情况下默认为 `5432`；其他情况默认为 `3306`。显式传入的端口始终优先。 |
 | `--user` | `-u` | （无） | 数据库用户名 |
 | `--password-env` | | （无） | 包含数据库密码的环境变量名 |
 | `--password-file` | | （无） | 包含数据库密码的文件路径 |
@@ -74,8 +74,8 @@ deltascope audit --config ./deltascope.yaml --format json --file ./migrations/v2
 
 **元数据感知模式下的行为：**
 
-- MySQL/TiDB 方言通过查询 `tidb_version()` 从实例自动检测。若同时显式指定了 `--dialect` 且与检测结果冲突，命令以退出码 2 退出。
-- PostgreSQL 必须显式传入 `--dialect postgresql`，并用 `--database` 选择数据库（省略时默认为 `postgres`）；`--schema` 选择该数据库内的 schema。
+- MySQL/TiDB 方言通过查询 `tidb_version()` 从实例自动检测。若同时显式指定了 `--dialect` 且与检测结果冲突，命令以退出码 2 退出。省略 `--port` 时，该路径继续使用面向 MySQL 的默认端口 `3306`。
+- PostgreSQL 必须显式传入 `--dialect postgresql`，并用 `--database` 选择数据库（省略时默认为 `postgres`）；`--schema` 选择该数据库内的 schema。省略 `--port` 时，显式 PostgreSQL 选择使用 `5432`；显式传入的端口始终优先。CLI 不会通过探测服务来推断端口。
 - 无限定表名的 schema 解析顺序：SQL 级限定符 → `--schema` 标志 → 可访问 schema 中的唯一匹配 → 模糊时报错。
 - 连接失败时只向 stderr 打印一行有界消息。可移植输出不会包含 host、port、user、DSN、密码或原始驱动文本。空密码仍然允许；仅当服务器拒绝该空密码时，才会提示缺少 `--password-env` / `--password-file` / `--ask-password`。
 
@@ -91,7 +91,7 @@ deltascope audit --config ./deltascope.yaml --format json --file ./migrations/v2
 示例：
 
 ```bash
-# 连接本地 MySQL 实例
+# 连接本地 MySQL/TiDB 实例（自动检测方言）
 deltascope audit \
   --host 127.0.0.1 --port 3306 \
   --user dba --ask-password \

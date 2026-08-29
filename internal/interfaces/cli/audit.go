@@ -1,6 +1,6 @@
 // Package cli exposes the command-line adapter for DeltaScope.
 // input: audit command flags including whether --sql was explicitly provided, SQL text from flags/files/stdin, password source/prompt dependencies, and application audit services
-// output: rendered audit results, connection-option validation, password resolution, offline existence caveats on default surfaces, and user-vs-runtime exit-code mapping for CLI audit invocations
+// output: rendered audit results, dialect-aware connection-option normalization, password resolution, offline existence caveats on default surfaces, and user-vs-runtime exit-code mapping for CLI audit invocations
 // pos: CLI audit command implementation above the application service and output renderers
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -144,7 +144,7 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 	cmd.Flags().StringVar(&inlineSQL, "sql", "", "inline SQL text to audit")
 	cmd.Flags().StringVar(&filePath, "file", "", "path to a SQL file to audit")
 	cmd.Flags().StringVarP(&options.Host, "host", "h", "", "database host for metadata-aware audit")
-	cmd.Flags().IntVarP(&options.Port, "port", "P", options.Port, "database port for metadata-aware audit")
+	cmd.Flags().IntVarP(&options.Port, "port", "P", options.Port, "database port for metadata-aware audit (3306 for MySQL/TiDB/auto-detect; 5432 for explicit PostgreSQL)")
 	cmd.Flags().StringVarP(&options.User, "user", "u", "", "database user for metadata-aware audit")
 	cmd.Flags().StringVar(&options.PasswordEnv, "password-env", "", "environment variable that contains the database password for metadata-aware audit")
 	cmd.Flags().StringVar(&options.PasswordFile, "password-file", "", "file path that contains the database password for metadata-aware audit")
@@ -180,10 +180,15 @@ type auditConnectionOptions struct {
 var passwordPrompt = promptPassword
 
 func resolveConnectionOptions(cmd *cobra.Command, options *cliOptions) (auditConnectionOptions, error) {
+	portSet := cmd.Flags().Changed("port")
+	port := options.Port
+	if !portSet && cmd.Flags().Changed("dialect") && parseDialect(options.Dialect) == spec.DialectPostgreSQL {
+		port = 5432
+	}
 	resolved := auditConnectionOptions{
 		Host:         strings.TrimSpace(options.Host),
-		Port:         options.Port,
-		PortSet:      cmd.Flags().Changed("port"),
+		Port:         port,
+		PortSet:      portSet,
 		User:         strings.TrimSpace(options.User),
 		PasswordEnv:  strings.TrimSpace(options.PasswordEnv),
 		PasswordFile: strings.TrimSpace(options.PasswordFile),
