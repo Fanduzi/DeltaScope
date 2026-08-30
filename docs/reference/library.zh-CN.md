@@ -58,6 +58,8 @@ type Result struct {
 }
 ```
 
+`Verdict` 和 `Summary` 只描述进入正常规则评估的语句。当另一条有界语句解析失败时，`Audit` 仍返回该 `Result` 以及非空 error，并保留已审计的相邻语句。每条 `spec.Diagnostic` 可为 parser 失败语句携带可选的 1-based `line` 和 `column`。诊断不含原始 SQL 或 parser 内部信息。
+
 ### Summary
 
 ```go
@@ -423,7 +425,7 @@ if err != nil {
 // 像往常一样使用 result
 ```
 
-`Result.Unsupported` 为每条 DeltaScope 无法完整审计的语句携带一个 `spec.UnsupportedDetail`；`Result.Diagnostics` 携带结构化的 parser-error 与 unsupported-statement 诊断。两者都以值类型返回在 `Result` 上。这是部分结果行为，不是 fallback parser，也不是新增审计规则。
+`Result.Unsupported` 为每条 DeltaScope 无法完整审计的语句携带一个 `spec.UnsupportedDetail`；`Result.Diagnostics` 携带结构化的 parser-error 与 unsupported-statement 诊断。parser-error 诊断可包含可选的 1-based `line` 和 `column`。两者都以值类型返回在 `Result` 上。这是部分结果行为，不是 fallback parser，也不是新增审计规则。非空 parser error 仍会在 `Result.Statements` 中保留已审计的相邻语句。
 
 ---
 

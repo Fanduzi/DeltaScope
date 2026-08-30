@@ -426,7 +426,7 @@ TiDB parser 可识别 `INSERT`、`UPDATE` 和单表 `DELETE` 的 DML `RETURNING`
 
 #### Parser-Error Unsupported 合同
 
-当所选方言 parser 无法解析某条 tracked DDL 语句时，DeltaScope 返回诊断信息，说明未执行审计且未从未解析 SQL 推断任何 findings。这是不支持的 parser 面，不是 fallback parser。DeltaScope 不从未解析 SQL 推断 findings。parser-error 数量不会因此合同而减少。不增加 parser 支持，不引入 fallback parser，不新增 SQL 审计规则。诊断消息为：`statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred`。CLI 上该路径以退出码 `2`（用户输入错误）退出。JSON `verdict` 保持为空；调用方必须使用 `diagnostics[].classification == parser_error`。这不是新增 `error` 或 `unsupported` 裁决值。
+当所选方言 parser 无法解析某条 tracked DDL 语句时，DeltaScope 返回诊断信息，说明未执行审计且未从未解析 SQL 推断任何 findings。这是不支持的 parser 面，不是 fallback parser。DeltaScope 不从未解析 SQL 推断 findings。parser-error 数量不会因此合同而减少。不增加 parser 支持，不引入 fallback parser，不新增 SQL 审计规则。诊断消息为：`statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred`。CLI 上该路径以退出码 `2`（用户输入错误）退出，即使同一次输入里已有语句被成功审计。`summary` 和 JSON `verdict` 只描述进入正常规则评估的语句；整段输入都无法解析时 `verdict` 仍为空。调用方还必须检查 `diagnostics[].classification == parser_error`。这不是新增 `error` 或 `unsupported` 裁决值。混合输入会按原文顺序保留已审计语句及其 findings、impact 估计和源位置。
 
 #### Unsupported Diagnostics Evidence（v0.230.0）
 
@@ -441,6 +441,8 @@ TiDB parser 可识别 `INSERT`、`UPDATE` 和单表 `DELETE` 的 DML `RETURNING`
 | `dialect` | string | 所选方言（可用时） |
 | `guidance_code` | string | 可选的机器可读边界类别（v0.260.0+） |
 | `evidence_ref` | string | 可选的 GitHub 文档 URL，指向边界证据（v0.260.0+） |
+| `line` | int | 可选，有界 parser 失败语句的 1-based 起始行 |
+| `column` | int | 可选，有界 parser 失败语句的 1-based 起始列 |
 
 对于 `parser_error` 诊断，`reason` 包含 v0.220.0 标准诊断消息，`action_hint` 建议验证方言和语法、拆分多语句输入或升级 DeltaScope。
 

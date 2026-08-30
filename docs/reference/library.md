@@ -58,6 +58,8 @@ type Result struct {
 }
 ```
 
+`Verdict` and `Summary` describe only statements that reached normal rule evaluation. When another bounded statement fails parsing, `Audit` still returns this `Result` together with a non-nil error and retains the audited sibling statements. Each `spec.Diagnostic` may include optional 1-based `line` and `column` for a parser-failed statement. Diagnostics never contain raw SQL or parser internals.
+
 ### Summary
 
 ```go
@@ -439,7 +441,7 @@ if err != nil {
 // use result as usual
 ```
 
-`Result.Unsupported` carries one `spec.UnsupportedDetail` per statement DeltaScope could not fully audit, and `Result.Diagnostics` carries structured parser-error and unsupported-statement diagnostics. Both are returned by value on the `Result`. This is partial-result behavior, not a fallback parser and not new audit rules.
+`Result.Unsupported` carries one `spec.UnsupportedDetail` per statement DeltaScope could not fully audit, and `Result.Diagnostics` carries structured parser-error and unsupported-statement diagnostics. A parser-error diagnostic may include optional 1-based `line` and `column`. Both are returned by value on the `Result`. This is partial-result behavior, not a fallback parser and not new audit rules. A non-nil parser error still retains audited sibling statements in `Result.Statements`.
 
 ---
 

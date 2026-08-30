@@ -617,9 +617,9 @@ curl -s -X POST http://127.0.0.1:8083/v1/query-access/analyze \
 | `explanation` | object | 可选的聚合级解释对象，包含 `summary` 和 `reasons`。当审计产生一条或多条 finding 时，内置 HTTP 审计流程会填充该字段 |
 | `context` | object | 附加的请求上下文，描述 `mode`、`dialect`、`dialect_source`、`schema`、`schema_source` 和 `metadata_source`。离线响应还包含 `note`（`existence not checked (no database connection)`）和 `unproven`（`column_exists`、`table_exists`）；元数据感知响应省略这两个字段 |
 | `unsupported` | array | 针对解析器识别但不支持的语句的结构化部分支持详情。每项包含 `index`、`feature`、`sql`、`reason` 和可选的 `metadata`；为空时省略 |
-| `diagnostics` | array | 结构化的解析错误和不受支持语句诊断。每项包含 `classification`（`parser_error` 或 `unsupported_statement`）、`reason`、`action_hint`、`audited`（恒为 `false`）、可选 `dialect` 以及可选的 `guidance_code` / `evidence_ref`；为空时省略 |
+| `diagnostics` | array | 结构化的解析错误和不受支持语句诊断。每项包含 `classification`（`parser_error` 或 `unsupported_statement`）、`reason`、`action_hint`、`audited`（恒为 `false`）、可选 `dialect`、可选的 `guidance_code` / `evidence_ref`，以及有界 parser 失败语句的可选 1-based `line` / `column`；为空时省略 |
 
-这两个数组都是附加字段（`omitempty`）。`diagnostics` 不含原始 SQL 文本或解析器 `near ...` 片段；`unsupported` 保留原始语句文本，便于调用者定位未被审计的语句。finding 的优先级仍使用 [Finding](#finding) 章节中的 `level` 字段。
+这两个数组都是附加字段（`omitempty`）。`diagnostics` 不含原始 SQL 文本或解析器 `near ...` 片段；`unsupported` 保留原始语句文本，便于调用者定位未被审计的语句。finding 的优先级仍使用 [Finding](#finding) 章节中的 `level` 字段。出现 `parser_error` 诊断时，已审计的相邻语句仍保留在 `statements` 中；`verdict` 和 `summary` 只描述这些已审计语句，HTTP 仍返回其常规 error 对象。
 
 ### StatementResult
 
