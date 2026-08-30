@@ -16,6 +16,8 @@ Table-driven fixtures covering:
 - RELEASE_MAIN_REF on wrong step (env/run split across steps)
 - GoReleaser action-only publisher (uses: goreleaser/... with release args)
 - Checkout without fetch-depth: 0
+- npm publication depending on Homebrew verification
+- npm publication missing a required platform-build direct need
 
 Usage: python3 scripts/test_verify_release_workflow_provenance_negative.py
 """
@@ -319,6 +321,30 @@ no_depth_prov = """\
 expect_violation("catches missing fetch-depth: 0",
     make_workflow(provenance=no_depth_prov),
     "fetch-depth: 0")
+
+# N10: npm depends on Homebrew verification
+print("N10: npm depends on Homebrew verification")
+homebrew_coupled_tail = VALID_TAIL.replace(
+    "      - release-macos-amd64\n    runs-on: ubuntu-latest\n    steps:\n"
+    "      - run: npm publish --access public --provenance ./packages/deltascope-mcp\n",
+    "      - release-macos-amd64\n"
+    "      - verify-homebrew-cask-install\n    runs-on: ubuntu-latest\n    steps:\n"
+    "      - run: npm publish --access public --provenance ./packages/deltascope-mcp\n",
+)
+expect_violation(
+    "catches npm waiting on Homebrew verification",
+    make_workflow(tail=homebrew_coupled_tail),
+    "verify-homebrew-cask-install",
+)
+
+# N11: npm missing a required platform-build direct need
+print("N11: npm missing a required platform-build direct need")
+missing_platform_tail = VALID_TAIL.replace("      - release-linux-arm64\n", "")
+expect_violation(
+    "catches missing platform-build need",
+    make_workflow(tail=missing_platform_tail),
+    "release-linux-arm64",
+)
 
 print("")
 print(f"Results: {PASS} passed, {FAIL} failed")

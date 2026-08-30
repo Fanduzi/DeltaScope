@@ -3,7 +3,7 @@
 Date: 2026-08-30
 Status: Accepted
 Related milestone/version: Issue #54
-Related commits: (will be filled after commit)
+Related commits: [`56ac92ac08dbabb6b92e9c3a64e081317ab41d52`](https://github.com/Fanduzi/DeltaScope/commit/56ac92ac08dbabb6b92e9c3a64e081317ab41d52)
 Related tests: scripts/test_verify_release_workflow_provenance.py, scripts/test_verify_release_workflow_provenance_negative.py
 Related docs: docs/dev/release-recovery.md, scripts/README.md
 
@@ -87,7 +87,7 @@ every future tap or cask-install failure.
 
 ## Links
 
-- Commits: (will be filled after commit)
+- Commits: [`56ac92ac08dbabb6b92e9c3a64e081317ab41d52`](https://github.com/Fanduzi/DeltaScope/commit/56ac92ac08dbabb6b92e9c3a64e081317ab41d52)
 - Tests: scripts/test_verify_release_workflow_provenance.py, scripts/test_verify_release_workflow_provenance_negative.py
 - Docs: docs/dev/release-recovery.md, scripts/README.md
 - Issue: https://github.com/Fanduzi/DeltaScope/issues/54
