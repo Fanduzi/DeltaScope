@@ -58,7 +58,7 @@ type Result struct {
 }
 ```
 
-`Verdict` and `Summary` describe only statements that reached normal rule evaluation. When another bounded statement fails parsing, `Audit` still returns this `Result` together with a non-nil error and retains the audited sibling statements. Each `spec.Diagnostic` may include optional 1-based `line` and `column` for a parser-failed statement. Diagnostics never contain raw SQL or parser internals.
+`Summary` describes only statements that reached normal rule evaluation. When another bounded statement fails parsing, `Audit` still returns this `Result` together with a non-nil error and retains the audited sibling statements. If that mixed result would otherwise be `pass`, `Verdict` is floored to `review`; existing `review` and `reject` verdicts do not downgrade. Each `spec.Diagnostic` may include optional 1-based `line` and `column` for a parser-failed statement. Diagnostics never contain raw SQL or parser internals.
 
 ### Summary
 
@@ -268,8 +268,8 @@ const (
 
 | Value | Meaning |
 |-------|---------|
-| `VerdictPass` | All statements passed with no blocker- or warning-level findings. Notice-only results also remain `pass`. |
-| `VerdictReview` | One or more warnings were found and no blockers were found. |
+| `VerdictPass` | All statements passed with no blocker- or warning-level findings. Notice-only results also remain `pass`. A mixed result with any `parser_error` diagnostic is `review` instead of `pass`. |
+| `VerdictReview` | One or more warnings were found and no blockers were found. Also the completeness floor when mixed input contains a parser-error diagnostic and aggregation would otherwise be `pass`. |
 | `VerdictReject` | One or more blocker-level findings were found. |
 
 ### Level

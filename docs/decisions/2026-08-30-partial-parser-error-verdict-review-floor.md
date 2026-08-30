@@ -55,7 +55,7 @@ Future changes to this completeness floor or the verdict enum require a new deci
 
 ## Links
 
-- Implementation commit: `fix(audit): floor partial parser pass verdicts to review (#56)` (co-committed with this record)
+- Implementation commit: [`ad777bf2ec9667e91259fb0b5713f43196b35363`](https://github.com/Fanduzi/DeltaScope/commit/ad777bf2ec9667e91259fb0b5713f43196b35363) (`fix(audit): floor partial parser pass verdicts to review (#56)`)
 - Issue #56: https://github.com/Fanduzi/DeltaScope/issues/56
 - Issue #24: https://github.com/Fanduzi/DeltaScope/issues/24
 - Issue #43: https://github.com/Fanduzi/DeltaScope/issues/43

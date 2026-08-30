@@ -58,7 +58,7 @@ type Result struct {
 }
 ```
 
-`Verdict` 和 `Summary` 只描述进入正常规则评估的语句。当另一条有界语句解析失败时，`Audit` 仍返回该 `Result` 以及非空 error，并保留已审计的相邻语句。每条 `spec.Diagnostic` 可为 parser 失败语句携带可选的 1-based `line` 和 `column`。诊断不含原始 SQL 或 parser 内部信息。
+`Summary` 只描述进入正常规则评估的语句。当另一条有界语句解析失败时，`Audit` 仍返回该 `Result` 以及非空 error，并保留已审计的相邻语句。若该混合结果本来会是 `pass`，则 `Verdict` 上收到 `review`；已有的 `review` / `reject` 不会降级。每条 `spec.Diagnostic` 可为 parser 失败语句携带可选的 1-based `line` 和 `column`。诊断不含原始 SQL 或 parser 内部信息。
 
 ### Summary
 
@@ -237,8 +237,8 @@ const (
 
 | 值 | 含义 |
 |----|------|
-| `VerdictPass` | 所有语句均通过，且没有 warning 或 blocker 级别的发现。 |
-| `VerdictReview` | 存在一条或多条 warning 级别的发现，且没有 blocker。 |
+| `VerdictPass` | 所有语句均通过，且没有 warning 或 blocker 级别的发现。含 `parser_error` 诊断的混合结果是 `review` 而不是 `pass`。 |
+| `VerdictReview` | 存在一条或多条 warning 级别的发现，且没有 blocker。也用作混合 parser-error 在聚合本应为 `pass` 时的完整性下限。 |
 | `VerdictReject` | 存在一条或多条 blocker 级别的发现。 |
 
 ### ImpactSource
