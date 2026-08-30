@@ -61,6 +61,7 @@ These flags belong to `audit` only. Their canonical placement is after `audit`; 
 | Flag | Type | Default | Description |
 |------|------|---------|-------------|
 | `--format` | string | `markdown` | Output format: `markdown` (human-readable local report), `json` (stable machine-readable contract), `github-actions` (inline GitHub Actions annotations), `github-summary` (Markdown for `$GITHUB_STEP_SUMMARY`), `sarif` (SARIF 2.1.0 for GitHub Code Scanning and SARIF consumers), or `gitlab-codequality` (GitLab Code Quality artifact). |
+| `--include-skipped-rules` | bool | false | JSON only: add the complete per-rule skipped list as `rule_summary.skipped_rules`; the aggregate `rule_summary.skipped` field remains unchanged. Other formats are unchanged. |
 | `--fail-on` | string | `blocker` | Exit 1 threshold: `blocker`, `warning`, `notice`, or `none`. |
 
 ### Connection Flags (Metadata-Aware Mode)
@@ -433,7 +434,24 @@ Fingerprints are stable across runs so GitLab can track findings across pipeline
 
 #### Rule Summary
 
-JSON, markdown, and quiet output include a rule summary showing how many rules were loaded, how many were applicable to the given dialect, and how many were skipped. In JSON this appears as `rule_summary`, keeping the complete per-rule skipped list with every `rule_id` and `reason`. In markdown it renders as `## Rule Summary` with `Loaded`, `Applicable`, `Skipped with known reason`, and — when any skip reason is recorded — a `### Skip Reasons` subsection aggregating the skipped rules by reason code, ordered deterministically. Markdown never expands skipped rule IDs; request JSON when the exact per-rule list is needed. GitHub Actions and SARIF output do not include rule summary.
+JSON, markdown, and quiet output include a rule summary showing how many rules were loaded, how many were applicable to the given dialect, and how many were skipped. In CLI JSON this appears as `rule_summary`; `rule_summary.skipped` is always a deterministic, reason-sorted array of `{ "reason": "...", "count": N }` objects, with counts covering every skipped rule (and `[]` when none were skipped). It never contains `rule_id`. Pass `--include-skipped-rules` to add the stable full per-rule list in a separate `rule_summary.skipped_rules` field; that optional field is omitted by default, and the aggregate `skipped` field remains present. For example:
+
+```json
+{
+  "rule_summary": {
+    "loaded": 371,
+    "applicable": 181,
+    "skipped": [
+      {"reason": "dialect_mismatch", "count": 190}
+    ],
+    "skipped_rules": [
+      {"rule_id": "ddl.pg.alter.add_check.not_valid.require", "reason": "dialect_mismatch"}
+    ]
+  }
+}
+```
+
+Use `deltascope audit --format json --include-skipped-rules ...` when exact skipped rule IDs are needed. In markdown it renders as `## Rule Summary` with `Loaded`, `Applicable`, `Skipped with known reason`, and — when any skip reason is recorded — a `### Skip Reasons` subsection aggregating the skipped rules by reason code, ordered deterministically. Markdown never expands skipped rule IDs. GitHub Actions and SARIF output do not include rule summary.
 
 #### PostgreSQL Trust Signals
 

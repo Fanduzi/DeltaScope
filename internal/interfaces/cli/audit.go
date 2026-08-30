@@ -1,6 +1,6 @@
 // Package cli exposes the command-line adapter for DeltaScope.
-// input: audit command flags including audit-local output format and fail threshold, whether --sql was explicitly provided, SQL text from flags/files/stdin, password source/prompt dependencies, typed standard-library network errors, and application audit services
-// output: rendered audit results and located diagnostics, audit-only output validation, dialect-aware connection-option normalization with MySQL/TiDB catalog aliases and PostgreSQL schema/database validation, password resolution, offline existence caveats, and user-vs-runtime exit-code mapping through shared bounded connection-refused, connection, authentication, identity, and TLS categories
+// input: audit command flags including audit-local output format, skipped-rule detail, and fail threshold, whether --sql was explicitly provided, SQL text from flags/files/stdin, password source/prompt dependencies, typed standard-library network errors, and application audit services
+// output: rendered audit results and located diagnostics, audit-only output validation, CLI JSON skipped-rule aggregation with optional stable per-rule details, dialect-aware connection-option normalization with MySQL/TiDB catalog aliases and PostgreSQL schema/database validation, password resolution, offline existence caveats, and user-vs-runtime exit-code mapping through shared bounded connection-refused, connection, authentication, identity, and TLS categories
 // pos: CLI audit command implementation above the application service and output renderers
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sort"
 	"strings"
 	"syscall"
 	"time"
@@ -58,6 +59,7 @@ func newRuntimeError(message string) error {
 func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 	var inlineSQL string
 	var filePath string
+	var includeSkippedRules bool
 
 	cmd := &cobra.Command{
 		Use:   "audit",
@@ -133,7 +135,7 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 				return mapAuditError(exitCode, auditErr)
 			}
 
-			output, err := renderResult(options.Format, options.Quiet, result, runContext, filePath)
+			output, err := renderResult(options.Format, options.Quiet, result, runContext, filePath, includeSkippedRules)
 			if err != nil {
 				*exitCode = exitInternal
 				return err
@@ -162,6 +164,7 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 	cmd.Flags().StringVar(&inlineSQL, "sql", "", "inline SQL text to audit")
 	cmd.Flags().StringVar(&filePath, "file", "", "path to a SQL file to audit")
 	cmd.Flags().StringVar(&options.Format, "format", options.Format, "output format: markdown, json, github-actions, github-summary, sarif, or gitlab-codequality")
+	cmd.Flags().BoolVar(&includeSkippedRules, "include-skipped-rules", false, "include full skipped-rule details in JSON output")
 	cmd.Flags().StringVar(&options.FailOn, "fail-on", options.FailOn, "non-zero threshold: blocker, warning, notice, or none")
 	cmd.Flags().StringVarP(&options.Host, "host", "h", "", "database host for metadata-aware audit")
 	cmd.Flags().IntVarP(&options.Port, "port", "P", options.Port, "database port for metadata-aware audit (3306 for MySQL/TiDB/auto-detect; 5432 for explicit PostgreSQL)")
@@ -383,10 +386,10 @@ func hasRenderableAuditResult(result report.Result) bool {
 	return len(result.Statements) > 0 || len(result.GlobalFindings) > 0 || len(result.Unsupported) > 0 || result.RuleSummary != nil || result.Explanation != nil || result.Verdict != "" || result.Summary != (report.Summary{}) || len(result.Diagnostics) > 0
 }
 
-func renderResult(format string, quiet bool, result report.Result, runContext *auditRunContext, sourcePath string) ([]byte, error) {
+func renderResult(format string, quiet bool, result report.Result, runContext *auditRunContext, sourcePath string, includeSkippedRules bool) ([]byte, error) {
 	switch format {
 	case "json":
-		return renderJSONResult(result, runContext)
+		return renderJSONResultWithSkippedRules(result, runContext, includeSkippedRules)
 	case "github-actions":
 		return githubactions.Render(result, githubactions.Options{Path: sourcePath})
 	case "github-summary":
@@ -473,15 +476,70 @@ func insertActionSummaryNote(body []byte, runContext *auditRunContext) []byte {
 	return []byte(text[:insertAt] + runContext.Note + "\n\n" + text[insertAt:])
 }
 
+type cliJSONRuleSummary struct {
+	Loaded       int                `json:"loaded"`
+	Applicable   int                `json:"applicable"`
+	Skipped      []cliSkippedReason `json:"skipped"`
+	SkippedRules []rule.SkippedRule `json:"skipped_rules,omitempty"`
+}
+
+type cliSkippedReason struct {
+	Reason string `json:"reason"`
+	Count  int    `json:"count"`
+}
+
 func renderJSONResult(result report.Result, runContext *auditRunContext) ([]byte, error) {
+	return renderJSONResultWithSkippedRules(result, runContext, false)
+}
+
+func renderJSONResultWithSkippedRules(result report.Result, runContext *auditRunContext, includeSkippedRules bool) ([]byte, error) {
+	ruleSummary := result.RuleSummary
+	result = resultWithoutAggregateExplanations(result)
+	result.RuleSummary = nil
 	payload := struct {
 		report.Result
-		Context *auditRunContext `json:"context,omitempty"`
+		RuleSummary *cliJSONRuleSummary `json:"rule_summary,omitempty"`
+		Context     *auditRunContext    `json:"context,omitempty"`
 	}{
-		Result:  resultWithoutAggregateExplanations(result),
-		Context: runContext,
+		Result:      result,
+		RuleSummary: cliJSONRuleSummaryFor(ruleSummary, includeSkippedRules),
+		Context:     runContext,
 	}
 	return json.Marshal(payload)
+}
+
+func cliJSONRuleSummaryFor(summary *report.RuleSummary, includeSkippedRules bool) *cliJSONRuleSummary {
+	if summary == nil {
+		return nil
+	}
+	rendered := &cliJSONRuleSummary{
+		Loaded:     summary.Loaded,
+		Applicable: summary.Applicable,
+		Skipped:    aggregateSkippedRuleReasons(summary.Skipped),
+	}
+	if includeSkippedRules {
+		rendered.SkippedRules = append([]rule.SkippedRule(nil), summary.Skipped...)
+	}
+	return rendered
+}
+
+func aggregateSkippedRuleReasons(skipped []rule.SkippedRule) []cliSkippedReason {
+	counts := make(map[rule.SkipReason]int, len(skipped))
+	for _, skippedRule := range skipped {
+		counts[skippedRule.Reason]++
+	}
+
+	reasons := make([]rule.SkipReason, 0, len(counts))
+	for reason := range counts {
+		reasons = append(reasons, reason)
+	}
+	sort.Slice(reasons, func(i, j int) bool { return reasons[i] < reasons[j] })
+
+	groups := make([]cliSkippedReason, 0, len(reasons))
+	for _, reason := range reasons {
+		groups = append(groups, cliSkippedReason{Reason: string(reason), Count: counts[reason]})
+	}
+	return groups
 }
 
 func resultWithoutAggregateExplanations(result report.Result) report.Result {

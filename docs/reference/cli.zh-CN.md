@@ -56,6 +56,7 @@ deltascope audit --config ./deltascope.yaml --format json --file ./migrations/v2
 | 标志 | 类型 | 默认值 | 描述 |
 |------|------|--------|------|
 | `--format` | string | `markdown` | 输出格式：`markdown`（人类可读的本地报告）、`json`（稳定的机器可读契约）、`github-actions`（GitHub Actions 内联注解）、`github-summary`（写入 `$GITHUB_STEP_SUMMARY` 的 Markdown）、`sarif`（SARIF 2.1.0，用于 GitHub Code Scanning 和 SARIF 消费方）、或 `gitlab-codequality`（GitLab Code Quality 报告）。 |
+| `--include-skipped-rules` | bool | false | 仅 JSON：在 `rule_summary.skipped_rules` 中加入完整的逐规则跳过列表；聚合后的 `rule_summary.skipped` 字段保持不变。其他格式不变。 |
 | `--fail-on` | string | `blocker` | 退出码 1 的阈值：`blocker`、`warning`、`notice` 或 `none`。 |
 
 ### 连接标志（元数据感知模式）
@@ -376,7 +377,24 @@ Fingerprint 在不同运行之间保持稳定，GitLab 可据此跨流水线追�
 
 #### 规则摘要
 
-JSON、markdown 和 quiet 输出包含规则摘要，显示已加载、适用和跳过的规则数量。在 JSON 中以 `rule_summary` 字段出现，保留完整的逐规则跳过列表（每个 `rule_id` 和 `reason`）。在 markdown 中渲染为 `## Rule Summary` 区段，包含 `Loaded`、`Applicable`、`Skipped with known reason`，并在记录任何跳过原因时附带 `### Skip Reasons` 子区段，按原因代码聚合跳过规则并确定性排序。Markdown 不会展开被跳过的规则 ID；需要精确的逐规则列表时请使用 JSON。GitHub Actions 和 SARIF 输出不包含规则摘要。
+JSON、markdown 和 quiet 输出包含规则摘要，显示已加载、适用和跳过的规则数量。在 CLI JSON 中以 `rule_summary` 字段出现；`rule_summary.skipped` 始终是按原因确定性排序的 `{ "reason": "...", "count": N }` 对象数组，计数覆盖全部被跳过的规则（没有跳过规则时为 `[]`），且不会包含 `rule_id`。传入 `--include-skipped-rules` 后，才会在独立的 `rule_summary.skipped_rules` 字段中加入稳定的完整逐规则列表；该可选字段默认省略，聚合字段 `skipped` 仍然保留。例如：
+
+```json
+{
+  "rule_summary": {
+    "loaded": 371,
+    "applicable": 181,
+    "skipped": [
+      {"reason": "dialect_mismatch", "count": 190}
+    ],
+    "skipped_rules": [
+      {"rule_id": "ddl.pg.alter.add_check.not_valid.require", "reason": "dialect_mismatch"}
+    ]
+  }
+}
+```
+
+需要精确的跳过规则 ID 时，请使用 `deltascope audit --format json --include-skipped-rules ...`。在 markdown 中渲染为 `## Rule Summary` 区段，包含 `Loaded`、`Applicable`、`Skipped with known reason`，并在记录任何跳过原因时附带 `### Skip Reasons` 子区段，按原因代码聚合跳过规则并确定性排序。Markdown 不会展开被跳过的规则 ID。GitHub Actions 和 SARIF 输出不包含规则摘要。
 
 #### PostgreSQL 信任信号
 

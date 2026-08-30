@@ -1,6 +1,6 @@
 // Package cli verifies the Cobra CLI adapter behavior.
-// input: command-line args including audit-local output flags, stdin/file SQL sources, unread-stdin doubles for explicit --sql, password-prompt doubles, and config-init/version requests
-// output: end-to-end CLI behavior coverage for audit rendering/thresholds, exit codes, rendered output, and connection-flag validation
+// input: command-line args including audit-local output and skipped-rule flags, stdin/file SQL sources, unread-stdin doubles for explicit --sql, password-prompt doubles, and config-init/version requests
+// output: end-to-end CLI behavior coverage for audit rendering/thresholds, compact and opt-in JSON skipped-rule contracts, quiet JSON stability, exit codes, rendered output, and connection-flag validation
 // pos: interface-layer CLI test coverage
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -102,6 +102,26 @@ func TestAuditCommandSupportsSQLJSONOutput(t *testing.T) {
 	reasonCodes, ok := impact["reason_codes"].([]any)
 	if !ok || len(reasonCodes) != 1 || reasonCodes[0] != "missing_where" {
 		t.Fatalf("expected missing_where reason code, got %#v", impact["reason_codes"])
+	}
+	ruleSummary, ok := decoded["rule_summary"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected rule_summary object, got %#v", decoded["rule_summary"])
+	}
+	skipped, ok := ruleSummary["skipped"].([]any)
+	if !ok || len(skipped) == 0 {
+		t.Fatalf("expected aggregate skipped reasons, got %#v", ruleSummary["skipped"])
+	}
+	for i, raw := range skipped {
+		item, ok := raw.(map[string]any)
+		if !ok || item["reason"] == nil || item["count"] == nil {
+			t.Fatalf("expected skipped[%d] to contain only aggregate fields, got %#v", i, raw)
+		}
+		if _, ok := item["rule_id"]; ok {
+			t.Fatalf("default skipped[%d] must not include rule_id, got %#v", i, item)
+		}
+	}
+	if _, ok := ruleSummary["skipped_rules"]; ok {
+		t.Fatalf("default JSON must omit skipped_rules, got %#v", ruleSummary["skipped_rules"])
 	}
 }
 
@@ -1447,7 +1467,7 @@ func TestAuditHelpAdvertisesGitLabCodeQualityFormat(t *testing.T) {
 		t.Fatalf("expected exit code 0, got %d", code)
 	}
 	output := stdout.String()
-	for _, flag := range []string{"--format", "--fail-on", "gitlab-codequality"} {
+	for _, flag := range []string{"--format", "--fail-on", "--include-skipped-rules", "gitlab-codequality"} {
 		if !strings.Contains(output, flag) {
 			t.Fatalf("expected audit help to advertise %q, got %q", flag, output)
 		}
@@ -1860,7 +1880,7 @@ func TestRenderResultUsesQuietAndJSONBranches(t *testing.T) {
 		}},
 	}
 
-	quietOutput, err := renderResult("markdown", true, result, nil, "")
+	quietOutput, err := renderResult("markdown", true, result, nil, "", false)
 	if err != nil {
 		t.Fatalf("render quiet result: %v", err)
 	}
@@ -1868,7 +1888,7 @@ func TestRenderResultUsesQuietAndJSONBranches(t *testing.T) {
 		t.Fatalf("expected quiet finding output, got %q", string(quietOutput))
 	}
 
-	jsonOutput, err := renderResult("json", false, result, &auditRunContext{Mode: "offline", Dialect: "postgresql", DialectSource: "flag"}, "")
+	jsonOutput, err := renderResult("json", false, result, &auditRunContext{Mode: "offline", Dialect: "postgresql", DialectSource: "flag"}, "", false)
 	if err != nil {
 		t.Fatalf("render json result: %v", err)
 	}
@@ -1881,7 +1901,7 @@ func TestRenderResultUsesQuietAndJSONBranches(t *testing.T) {
 		t.Fatalf("expected json context payload, got %#v", decoded["context"])
 	}
 
-	markdownOutput, err := renderResult("yaml", false, report.Result{Verdict: report.VerdictPass}, nil, "")
+	markdownOutput, err := renderResult("yaml", false, report.Result{Verdict: report.VerdictPass}, nil, "", false)
 	if err != nil {
 		t.Fatalf("render fallback markdown result: %v", err)
 	}
@@ -2477,8 +2497,231 @@ func TestRootVersionFlagPrintsVersionOnly(t *testing.T) {
 	}
 }
 
-func TestRenderJSONResultIncludesRuleSummary(t *testing.T) {
+func TestRenderJSONResultCompactsSkippedRulesByReason(t *testing.T) {
 	output, err := renderJSONResult(report.Result{
+		Verdict: report.VerdictPass,
+		Summary: report.Summary{Statements: 1},
+		RuleSummary: &report.RuleSummary{
+			Loaded:     147,
+			Applicable: 103,
+			Skipped: []rule.SkippedRule{
+				{RuleID: "rule.z", Reason: "zzz.future.code"},
+				{RuleID: "rule.a", Reason: rule.SkipReasonDialectMismatch},
+				{RuleID: "rule.b", Reason: "zzz.future.code"},
+				{RuleID: "rule.c", Reason: "aaa.future.code"},
+			},
+		},
+	}, nil)
+	if err != nil {
+		t.Fatalf("render json: %v", err)
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal(output, &decoded); err != nil {
+		t.Fatalf("unmarshal: %v\noutput=%s", err, string(output))
+	}
+	summary, ok := decoded["rule_summary"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected rule_summary object, got %#v", decoded["rule_summary"])
+	}
+	skipped, ok := summary["skipped"].([]any)
+	if !ok || len(skipped) != 3 {
+		t.Fatalf("expected 3 aggregate skipped reasons, got %#v", summary["skipped"])
+	}
+	want := []struct {
+		reason string
+		count  float64
+	}{
+		{reason: "aaa.future.code", count: 1},
+		{reason: string(rule.SkipReasonDialectMismatch), count: 1},
+		{reason: "zzz.future.code", count: 2},
+	}
+	for i, raw := range skipped {
+		item, ok := raw.(map[string]any)
+		if !ok {
+			t.Fatalf("expected skipped[%d] object, got %#v", i, raw)
+		}
+		if item["reason"] != want[i].reason || item["count"] != want[i].count {
+			t.Fatalf("expected skipped[%d]=%#v, got %#v", i, want[i], item)
+		}
+		if _, ok := item["rule_id"]; ok {
+			t.Fatalf("default skipped[%d] must not include rule_id: %#v", i, item)
+		}
+	}
+	if _, ok := summary["skipped_rules"]; ok {
+		t.Fatalf("default JSON must omit skipped_rules, got %#v", summary["skipped_rules"])
+	}
+}
+
+func TestRenderJSONResultKeepsEmptySkippedReasonArray(t *testing.T) {
+	output, err := renderJSONResult(report.Result{
+		RuleSummary: &report.RuleSummary{Loaded: 2, Applicable: 2},
+	}, nil)
+	if err != nil {
+		t.Fatalf("render json: %v", err)
+	}
+
+	var decoded map[string]any
+	if err := json.Unmarshal(output, &decoded); err != nil {
+		t.Fatalf("unmarshal: %v\noutput=%s", err, string(output))
+	}
+	summary, ok := decoded["rule_summary"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected rule_summary object, got %#v", decoded["rule_summary"])
+	}
+	skipped, ok := summary["skipped"].([]any)
+	if !ok || len(skipped) != 0 {
+		t.Fatalf("expected empty skipped array, got %#v", summary["skipped"])
+	}
+	if _, ok := summary["skipped_rules"]; ok {
+		t.Fatalf("default JSON must omit skipped_rules, got %#v", summary["skipped_rules"])
+	}
+}
+
+func TestAuditCommandJSONIncludesStableSkippedRulesWhenRequested(t *testing.T) {
+	stdout := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "delete from users", "--format", "json", "--include-skipped-rules"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+	if code != exitAudit {
+		t.Fatalf("expected blocker exit code %d, got %d\noutput=%s", exitAudit, code, stdout.String())
+	}
+
+	decoded := decodeAuditJSON(t, stdout.String())
+	summary, ok := decoded["rule_summary"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected rule_summary object, got %#v", decoded["rule_summary"])
+	}
+	compact, ok := summary["skipped"].([]any)
+	if !ok || len(compact) == 0 {
+		t.Fatalf("expected aggregate skipped reasons, got %#v", summary["skipped"])
+	}
+	compactItem, ok := compact[0].(map[string]any)
+	if !ok {
+		t.Fatalf("expected aggregate skipped reason object, got %#v", compact[0])
+	}
+	if _, ok := compactItem["rule_id"]; ok {
+		t.Fatalf("aggregate skipped reason must not expose rule_id, got %#v", compactItem)
+	}
+
+	full, ok := summary["skipped_rules"].([]any)
+	if !ok || len(full) == 0 {
+		t.Fatalf("expected non-empty skipped_rules list, got %#v", summary["skipped_rules"])
+	}
+	previousRuleID := ""
+	for i, raw := range full {
+		item, ok := raw.(map[string]any)
+		if !ok {
+			t.Fatalf("expected skipped_rules[%d] object, got %#v", i, raw)
+		}
+		ruleID, _ := item["rule_id"].(string)
+		if ruleID == "" || (previousRuleID != "" && ruleID <= previousRuleID) {
+			t.Fatalf("expected skipped_rules ordered by rule_id, got previous=%q current=%q", previousRuleID, ruleID)
+		}
+		if item["reason"] != string(rule.SkipReasonDialectMismatch) {
+			t.Fatalf("expected skipped_rules[%d] dialect_mismatch, got %#v", i, item)
+		}
+		if _, ok := item["count"]; ok {
+			t.Fatalf("per-rule skipped_rules[%d] must not include count, got %#v", i, item)
+		}
+		previousRuleID = ruleID
+	}
+}
+
+func TestAuditCommandQuietJSONMatchesOrdinaryJSON(t *testing.T) {
+	run := func(args []string) (string, string, int) {
+		stdout := &strings.Builder{}
+		stderr := &strings.Builder{}
+		code := Execute(context.Background(), args, strings.NewReader(""), stdout, stderr)
+		return stdout.String(), stderr.String(), code
+	}
+
+	for _, tc := range []struct {
+		name  string
+		extra []string
+	}{
+		{name: "default"},
+		{name: "include skipped rules", extra: []string{"--include-skipped-rules"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ordinaryArgs := append([]string{"audit", "--sql", "delete from users", "--format", "json"}, tc.extra...)
+			quietArgs := append([]string{"audit", "--sql", "delete from users", "--format", "json", "--quiet"}, tc.extra...)
+			ordinaryOutput, ordinaryError, ordinaryCode := run(ordinaryArgs)
+			quietOutput, quietError, quietCode := run(quietArgs)
+
+			if ordinaryCode != quietCode {
+				t.Fatalf("quiet JSON changed exit code: ordinary=%d quiet=%d", ordinaryCode, quietCode)
+			}
+			if ordinaryError != quietError {
+				t.Fatalf("quiet JSON changed stderr: ordinary=%q quiet=%q", ordinaryError, quietError)
+			}
+			if ordinaryOutput != quietOutput {
+				t.Fatalf("quiet JSON changed stdout:\nordinary=%s\nquiet=%s", ordinaryOutput, quietOutput)
+			}
+		})
+	}
+}
+
+func TestIncludeSkippedRulesOnlyChangesJSONRendering(t *testing.T) {
+	result := report.Result{
+		Verdict: report.VerdictReject,
+		Summary: report.Summary{Statements: 1, Blockers: 1},
+		Statements: []report.StatementResult{{
+			Index: 0,
+			Kind:  "dml",
+			Findings: []rule.Finding{{
+				RuleID:  "dml.where.require",
+				Level:   rule.LevelBlocker,
+				Message: "where clause required",
+			}},
+		}},
+		RuleSummary: &report.RuleSummary{
+			Loaded:     2,
+			Applicable: 1,
+			Skipped: []rule.SkippedRule{{
+				RuleID: "ddl.pg.rule",
+				Reason: rule.SkipReasonDialectMismatch,
+			}},
+		},
+	}
+	runContext := &auditRunContext{Mode: "offline", Dialect: "mysql", DialectSource: "default"}
+	for _, tc := range []struct {
+		format string
+		quiet  bool
+	}{
+		{format: "markdown"},
+		{format: "markdown", quiet: true},
+		{format: "github-actions"},
+		{format: "github-summary"},
+		{format: "sarif"},
+		{format: "gitlab-codequality"},
+	} {
+		name := tc.format
+		if tc.quiet {
+			name += "/quiet"
+		}
+		t.Run(name, func(t *testing.T) {
+			without, err := renderResult(tc.format, tc.quiet, result, runContext, "", false)
+			if err != nil {
+				t.Fatalf("render without flag: %v", err)
+			}
+			with, err := renderResult(tc.format, tc.quiet, result, runContext, "", true)
+			if err != nil {
+				t.Fatalf("render with flag: %v", err)
+			}
+			if string(with) != string(without) {
+				t.Fatalf("include-skipped-rules changed %s output", tc.format)
+			}
+		})
+	}
+}
+
+func TestRenderJSONResultWithSkippedRulesPreservesPerRuleList(t *testing.T) {
+	output, err := renderJSONResultWithSkippedRules(report.Result{
 		Verdict: report.VerdictPass,
 		Summary: report.Summary{Statements: 1},
 		RuleSummary: &report.RuleSummary{
@@ -2490,7 +2733,7 @@ func TestRenderJSONResultIncludesRuleSummary(t *testing.T) {
 				{RuleID: "future.rule.id", Reason: "zzz.future.code"},
 			},
 		},
-	}, nil)
+	}, nil, true)
 	if err != nil {
 		t.Fatalf("render json: %v", err)
 	}
@@ -2509,12 +2752,12 @@ func TestRenderJSONResultIncludesRuleSummary(t *testing.T) {
 	if applicable, _ := summary["applicable"].(float64); applicable != 103 {
 		t.Fatalf("expected applicable=103, got %v", summary["applicable"])
 	}
-	skipped, ok := summary["skipped"].([]any)
+	skipped, ok := summary["skipped_rules"].([]any)
 	if !ok || len(skipped) != 3 {
-		t.Fatalf("expected 3 skipped rules, got %#v", summary["skipped"])
+		t.Fatalf("expected 3 skipped rules, got %#v", summary["skipped_rules"])
 	}
-	// JSON serializes the skipped slice in input order, so the expected list is the
-	// input order itself — this locks the complete per-rule list contract for Issue #17.
+	// The opt-in list preserves the existing deterministic input order so callers
+	// can continue consuming complete per-rule evidence.
 	wantIDs := []string{"ddl.pg.table.engine.allowlist", "ddl.pg.index.concurrent.require", "future.rule.id"}
 	for i, raw := range skipped {
 		item, _ := raw.(map[string]any)
@@ -2668,12 +2911,12 @@ func TestAuditCommandMarkdownRuleSummaryAggregateContract(t *testing.T) {
 		t.Fatalf("default markdown audit must not emit skipped PostgreSQL rule IDs, got:\n%s", output)
 	}
 
-	// The aggregate must be a single row whose count equals the complete JSON
-	// skipped-rule list length — no duplicate reason rows, no dropped entries.
+	// The aggregate must be a single row whose count equals the complete opt-in
+	// JSON skipped-rule list length — no duplicate reason rows, no dropped entries.
 	jsonOut := &strings.Builder{}
 	jsonCode := Execute(
 		context.Background(),
-		[]string{"audit", "--sql", "delete from users", "--format", "json"},
+		[]string{"audit", "--sql", "delete from users", "--format", "json", "--include-skipped-rules"},
 		strings.NewReader("\n"),
 		jsonOut,
 		&strings.Builder{},
@@ -2686,9 +2929,9 @@ func TestAuditCommandMarkdownRuleSummaryAggregateContract(t *testing.T) {
 		t.Fatalf("unmarshal json output: %v", err)
 	}
 	summary, _ := decoded["rule_summary"].(map[string]any)
-	skipped, _ := summary["skipped"].([]any)
+	skipped, _ := summary["skipped_rules"].([]any)
 	if len(skipped) == 0 {
-		t.Fatal("expected a non-empty JSON skipped list for the default MySQL audit")
+		t.Fatal("expected a non-empty JSON skipped_rules list for the default MySQL audit")
 	}
 	wantRow := "- Not applicable to current dialect: " + strconv.Itoa(len(skipped))
 	rowMatches := 0
