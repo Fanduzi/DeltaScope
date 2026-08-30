@@ -6,8 +6,8 @@ Native stdio runtime for the official DeltaScope MCP server. For client onboardi
 
 | File | Responsibility |
 |------|---------------|
-| `main.go` | Parses process flags, loads runtime config, merges logging settings, and starts the MCP stdio service |
-| `main_test.go` | Verifies command bootstrap, version fast-path, logging config, runtime config merge, and stdio smoke behavior |
+| `main.go` | Parses process flags and sole positional meta invocations, loads runtime config, merges logging settings, and starts the MCP stdio service |
+| `main_test.go` | Verifies command bootstrap, dashed/positional meta-invocation parity, logging config, runtime config merge, and stdio smoke behavior |
 | `main_e2e_test.go` | Verifies tagged Docker-backed metadata-aware MCP smoke against real MySQL/TiDB fixtures for direct and connection_ref flows, including DML target-table existence cases |
 | `main_e2e_postgresql_test.go` | Verifies tagged Docker-backed PostgreSQL MCP metadata audits with separate database and schema selections |
 
@@ -19,6 +19,7 @@ Native stdio runtime for the official DeltaScope MCP server. For client onboardi
 - MCP PostgreSQL metadata audits keep the database catalog and schema namespace as separate connection fields; the PG confidence fixture exercises explicit `database` plus `schema` inputs.
 - After startup, stdout is reserved for MCP stdio protocol traffic.
 - `-version` prints only the semantic version string and defaults to the release/source version from `pkg/deltascope.DefaultVersion` in source builds.
+- A sole positional `version` or `help` is an exact alias of `-version` or `-help`; other positional arguments retain their existing startup behavior.
 - `-log-level` sets log verbosity: `debug`, `info` (default), `warn`, `error`.
 - `-log-format` sets log format: `json` (default), `text`.
 - `-log-output` sets log destination: `stderr` (default), `file`. `stdout` is forbidden for MCP to protect the stdio protocol.

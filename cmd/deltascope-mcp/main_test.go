@@ -1,6 +1,6 @@
 // Package main verifies the DeltaScope MCP bootstrap behavior.
 // input: CLI args, stub MCP server builders, and captured stdout/stderr buffers
-// output: regression coverage for version fast-path and connections-path startup wiring
+// output: regression coverage for meta-invocation fast paths and connections-path startup wiring
 // pos: command-layer tests for the MCP stdio entrypoint
 // note: if this file changes, update this header and module README.md.
 package main
@@ -72,6 +72,66 @@ func TestRunVersionPrintsVersionWithoutBuildingServer(t *testing.T) {
 	}
 	if stderr.Len() != 0 {
 		t.Fatalf("expected empty stderr, got %q", stderr.String())
+	}
+}
+
+func TestRunPositionalMetaArgumentsMatchDashedFormsWithoutStartingServer(t *testing.T) {
+	previousVersion := Version
+	previousNewServer := newMCPServer
+	previousRunServer := runMCPServer
+	Version = "v9.9.9"
+	t.Cleanup(func() {
+		Version = previousVersion
+		newMCPServer = previousNewServer
+		runMCPServer = previousRunServer
+	})
+
+	server := sdkmcp.NewServer(&sdkmcp.Implementation{Name: "test", Version: "v0.0.1"}, nil)
+	newServerCalled := false
+	runServerCalled := false
+	newMCPServer = func(config mcpapi.Config) *sdkmcp.Server {
+		newServerCalled = true
+		return server
+	}
+	runMCPServer = func(server *sdkmcp.Server) error {
+		runServerCalled = true
+		return nil
+	}
+
+	for _, tc := range []struct {
+		name   string
+		dashed string
+	}{
+		{name: "version", dashed: "-version"},
+		{name: "help", dashed: "-help"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			newServerCalled = false
+			runServerCalled = false
+			var dashedStdout, dashedStderr bytes.Buffer
+			dashedExitCode := run([]string{tc.dashed}, &dashedStdout, &dashedStderr)
+
+			newServerCalled = false
+			runServerCalled = false
+			var positionalStdout, positionalStderr bytes.Buffer
+			positionalExitCode := run([]string{tc.name}, &positionalStdout, &positionalStderr)
+
+			if positionalExitCode != dashedExitCode {
+				t.Fatalf("expected positional %q exit %d, got %d", tc.name, dashedExitCode, positionalExitCode)
+			}
+			if positionalStdout.String() != dashedStdout.String() {
+				t.Fatalf("expected positional %q stdout %q, got %q", tc.name, dashedStdout.String(), positionalStdout.String())
+			}
+			if positionalStderr.String() != dashedStderr.String() {
+				t.Fatalf("expected positional %q stderr %q, got %q", tc.name, dashedStderr.String(), positionalStderr.String())
+			}
+			if newServerCalled {
+				t.Fatalf("expected positional %q to avoid server construction", tc.name)
+			}
+			if runServerCalled {
+				t.Fatalf("expected positional %q to avoid server startup", tc.name)
+			}
+		})
 	}
 }
 
