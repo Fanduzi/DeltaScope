@@ -109,7 +109,8 @@ that connection but do not activate metadata-aware mode on their own.
 | Missing or unreadable `--password-env` / `--password-file` | `invalid password source` | `2` |
 | Authentication failed and no password source was set | `password source required: use --password-env, --password-file, or --ask-password` | `2` |
 | Authentication failed after a password source was set | `authentication failed` | `3` |
-| Server unreachable or other dial failure | `connection failed` | `3` |
+| Typed connection refusal | `connection refused` | `3` |
+| Other server unreachable or dial failure | `connection failed` | `3` |
 | Connect timeout | `connection timed out` | `3` |
 | TLS certificate hostname mismatch | `TLS hostname mismatch` | `3` |
 | TLS certificate authority is unknown or untrusted | `TLS unknown certificate authority` | `3` |
@@ -123,6 +124,10 @@ remains enabled. Stock MySQL 8.4 auto-generated server certificates have no host
 supplying the server's `ca.pem` establishes trust but does not make that certificate valid for
 `localhost` or an IP address. Use a server certificate with a DNS/IP SAN matching `--host` and
 the corresponding trusted CA.
+
+Non-TLS protocol or handshake failures remain `connection failed` because the supported drivers
+do not expose a stable cross-driver typed signal for that category. The CLI does not infer it from
+raw driver text.
 
 Examples:
 

@@ -1,6 +1,6 @@
 // Package cli verifies metadata-aware connection failure exit codes and bounded messages.
-// input: Execute args and typed/wrapped driver errors for dial, authentication, password-source, and TLS failures
-// output: exit-code, one-line bounded stderr, TLS category, and no-leak coverage for metadata connection errors
+// input: Execute args and typed/wrapped network or driver errors for connection refusal, generic dial, timeout, authentication, password-source, and TLS failures
+// output: exit-code, one-line bounded stderr, connection/TLS categories, and no-leak coverage for metadata connection errors
 // pos: interface-layer contract tests for metadata connection error mapping
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -11,14 +11,28 @@ import (
 	"crypto/x509/pkix"
 	"errors"
 	"fmt"
+	"net"
 	"strings"
+	"syscall"
 	"testing"
 
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
 	gomysql "github.com/go-sql-driver/mysql"
 )
 
-func TestAuditUnreachableMetadataServerExitsRuntime(t *testing.T) {
+func TestAuditConnectionRefusedExitsRuntime(t *testing.T) {
+	previous := newMetadataClient
+	newMetadataClient = func(auditConnectionOptions) (metadataClient, error) {
+		refused := &net.OpError{
+			Op:   "dial",
+			Net:  "tcp",
+			Addr: &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 5432},
+			Err:  syscall.ECONNREFUSED,
+		}
+		return nil, fmt.Errorf("dsn=postgres://marker-user:marker-password@marker-host:5432/marker-db schema=marker-schema path=/marker/ca.pem version=marker-version: %w", refused)
+	}
+	t.Cleanup(func() { newMetadataClient = previous })
+
 	t.Setenv("DELTASCOPE_TEST_PASSWORD", "testpass")
 
 	stderr := &strings.Builder{}
@@ -27,8 +41,8 @@ func TestAuditUnreachableMetadataServerExitsRuntime(t *testing.T) {
 		[]string{
 			"audit",
 			"--sql", "alter table users drop column email",
-			"--host", "127.0.0.1",
-			"--port", "3999",
+			"--host", "db.internal",
+			"--port", "5432",
 			"--user", "root",
 			"--password-env", "DELTASCOPE_TEST_PASSWORD",
 			"--schema", "app",
@@ -42,10 +56,36 @@ func TestAuditUnreachableMetadataServerExitsRuntime(t *testing.T) {
 	if code != exitInternal {
 		t.Fatalf("expected exit %d for unreachable metadata server, got %d (stderr=%q)", exitInternal, code, stderr.String())
 	}
-	if stderr.String() != "connection failed\n" {
-		t.Fatalf("expected bounded connection failed message, got %q", stderr.String())
+	if stderr.String() != "connection refused\n" {
+		t.Fatalf("expected bounded connection refused message, got %q", stderr.String())
 	}
-	assertNoConnectionInternals(t, stderr.String(), "127.0.0.1", "3999", "root", "testpass", "app")
+	assertNoConnectionInternals(t, stderr.String(),
+		"db.internal", "5432", "root", "testpass", "app",
+		"marker-host", "marker-user", "marker-password", "marker-db", "marker-schema",
+		"postgres://", "/marker/ca.pem", "marker-version",
+	)
+}
+
+func TestMapAuditMetaErrorConnectionRefusedExitsRuntime(t *testing.T) {
+	err := &auditmeta.Error{
+		Kind:    auditmeta.ErrorConnectionOpen,
+		Message: "open metadata connection: wrapped network refusal",
+		Err: &net.OpError{
+			Op:   "dial",
+			Net:  "tcp",
+			Addr: &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1), Port: 5432},
+			Err:  syscall.ECONNREFUSED,
+		},
+	}
+
+	got := mapAuditMetaErrorToBounded(err)
+	if got.Error() != "connection refused" {
+		t.Fatalf("expected bounded connection refused message, got %q", got.Error())
+	}
+	if code := exitCodeForCLIError(got); code != exitInternal {
+		t.Fatalf("expected exit %d for connection refusal, got %d", exitInternal, code)
+	}
+	assertNoConnectionInternals(t, got.Error(), "127.0.0.1", "5432", "dial tcp")
 }
 
 func TestAuditAuthenticationFailureExitsRuntime(t *testing.T) {

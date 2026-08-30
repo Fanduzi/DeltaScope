@@ -91,7 +91,8 @@ deltascope audit --config ./deltascope.yaml --format json --file ./migrations/v2
 | `--password-env` / `--password-file` 缺失或不可读 | `invalid password source` | `2` |
 | 认证失败且未设置密码来源 | `password source required: use --password-env, --password-file, or --ask-password` | `2` |
 | 已设置密码来源后认证失败 | `authentication failed` | `3` |
-| 服务器不可达或其他拨号失败 | `connection failed` | `3` |
+| 类型化网络错误确认的连接被拒绝 | `connection refused` | `3` |
+| 其他服务器不可达或拨号失败 | `connection failed` | `3` |
 | 连接超时 | `connection timed out` | `3` |
 | TLS 证书主机名不匹配 | `TLS hostname mismatch` | `3` |
 | TLS 证书颁发机构未知或不受信任 | `TLS unknown certificate authority` | `3` |
@@ -100,6 +101,8 @@ deltascope audit --config ./deltascope.yaml --format json --file ./migrations/v2
 | 其他 TLS 握手失败 | `TLS handshake failed` | `3` |
 
 TLS 失败消息仅使用有界分类，不会包含目标 host 或地址、证书身份、凭据、DSN、CA 文件路径或原始驱动文本。主机名校验仍保持启用。Stock MySQL 8.4 自动生成的服务端证书没有可用于主机名校验的 SAN；即使提供服务端自己的 `ca.pem`，也只建立信任关系，不能让该证书对 `localhost` 或 IP 地址通过校验。请使用 DNS/IP SAN 与 `--host` 匹配且由相应受信任 CA 签发的服务端证书。
+
+非 TLS 协议或握手失败目前仍报告为 `connection failed`，因为当前支持的驱动没有为该类别提供稳定的跨驱动类型化信号。CLI 不会根据原始驱动文本猜测该类别。
 
 示例：
 

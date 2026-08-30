@@ -1,6 +1,6 @@
 // Package cli exposes the command-line adapter for DeltaScope.
-// input: audit command flags including audit-local output format and fail threshold, whether --sql was explicitly provided, SQL text from flags/files/stdin, password source/prompt dependencies, and application audit services
-// output: rendered audit results and located diagnostics, audit-only output validation, dialect-aware connection-option normalization with MySQL/TiDB catalog aliases and PostgreSQL schema/database validation, password resolution, offline existence caveats, and user-vs-runtime exit-code mapping through shared bounded connection, authentication, identity, and TLS categories
+// input: audit command flags including audit-local output format and fail threshold, whether --sql was explicitly provided, SQL text from flags/files/stdin, password source/prompt dependencies, typed standard-library network errors, and application audit services
+// output: rendered audit results and located diagnostics, audit-only output validation, dialect-aware connection-option normalization with MySQL/TiDB catalog aliases and PostgreSQL schema/database validation, password resolution, offline existence caveats, and user-vs-runtime exit-code mapping through shared bounded connection-refused, connection, authentication, identity, and TLS categories
 // pos: CLI audit command implementation above the application service and output renderers
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -15,6 +15,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"syscall"
 	"time"
 
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
@@ -691,6 +692,8 @@ func classifyConnectionError(err error) error {
 	switch {
 	case online.IsAuthenticationFailure(err):
 		return newRuntimeError("authentication failed")
+	case errors.Is(err, syscall.ECONNREFUSED):
+		return newRuntimeError("connection refused")
 	case errors.As(err, &hostnameErr), errors.As(err, &hostnameErrPtr),
 		strings.Contains(msg, "certificate is valid for"),
 		strings.Contains(msg, "cannot validate certificate"),
