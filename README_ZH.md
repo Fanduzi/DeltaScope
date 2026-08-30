@@ -61,7 +61,7 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.510.1/install
 
 ## MCP
 
-MCP 启动器会自己拉二进制，不必先装 CLI。启动器是 `npx -y @fanduzi/deltascope-mcp`。
+MCP 启动器会自己拉二进制，不必先装 CLI。启动器是 `npx -y --prefer-online @fanduzi/deltascope-mcp@latest`。
 
 `mcp.json` 示例：
 
@@ -70,7 +70,7 @@ MCP 启动器会自己拉二进制，不必先装 CLI。启动器是 `npx -y @fa
   "mcpServers": {
     "deltascope": {
       "command": "npx",
-      "args": ["-y", "@fanduzi/deltascope-mcp"]
+      "args": ["-y", "--prefer-online", "@fanduzi/deltascope-mcp@latest"]
     }
   }
 }
@@ -326,8 +326,8 @@ launcher 的前提：
 推荐 launcher：
 
 ```bash
-claude mcp add --scope user deltascope -- npx -y @fanduzi/deltascope-mcp
-codex mcp add deltascope -- npx -y @fanduzi/deltascope-mcp
+claude mcp add --scope user deltascope -- npx -y --prefer-online @fanduzi/deltascope-mcp@latest
+codex mcp add deltascope -- npx -y --prefer-online @fanduzi/deltascope-mcp@latest
 ```
 
 如果你需要通用 stdio TOML、原生 `deltascope-mcp`、direct connection、`connection_ref`、代理配置和常见错误说明，请看 [使用 DeltaScope MCP](docs/recipe/use-deltascope-mcp.zh-CN.md)。

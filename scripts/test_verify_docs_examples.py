@@ -293,7 +293,10 @@ class TestHistoricalIgnore(unittest.TestCase):
             )
             (rootp / "CHANGELOG.md").write_text("deltascope rules search fk\n")
             # A clean public doc so collect_files has something to scan.
-            (rootp / "README.md").write_text(md_with_formats())
+            (rootp / "README.md").write_text(
+                md_with_formats() + "npx -y --prefer-online "
+                "@fanduzi/deltascope-mcp@latest\n"
+            )
             self.assertEqual(vde.run_checks(root, None), [])
 
 
@@ -574,8 +577,9 @@ class TestFixtures(unittest.TestCase):
 class TestRunChecksEndToEnd(unittest.TestCase):
     def _write_clean_repo(self, root, github=VALID_GITHUB, gitlab=VALID_GITLAB):
         rootp = Path(root)
-        (rootp / "README.md").write_text(md_with_formats())
-        (rootp / "README_ZH.md").write_text(md_with_formats())
+        launcher = "npx -y --prefer-online @fanduzi/deltascope-mcp@latest\n"
+        (rootp / "README.md").write_text(md_with_formats() + launcher)
+        (rootp / "README_ZH.md").write_text(md_with_formats() + launcher)
         (rootp / "docs" / "reference").mkdir(parents=True)
         (rootp / "docs" / "reference" / "cli.md").write_text(
             cli_doc_with_formats_and_flags())
@@ -596,6 +600,55 @@ class TestRunChecksEndToEnd(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root:
             self._write_clean_repo(root)
             self.assertEqual(vde.run_checks(root, "v0.330.0"), [])
+
+    def test_active_mcp_launcher_surfaces_reject_unpinned_invocations(self):
+        with tempfile.TemporaryDirectory() as root:
+            self._write_clean_repo(root)
+            stale = "npx -y @fanduzi/deltascope-mcp"
+            surface_paths = {
+                "README.md",
+                "README_ZH.md",
+                "docs/recipe/use-deltascope-mcp.md",
+                "docs/recipe/use-deltascope-mcp.zh-CN.md",
+                "packages/deltascope-mcp/README.md",
+                "docs/landing/en/sql-migration-risk-checker.html",
+                "docs/landing/en/sql-audit-mcp-server.html",
+                "docs/landing/zh/sql-audit-mcp-server.html",
+                ".mcp.json",
+            }
+            for rel in sorted(surface_paths - {"README.md", "README_ZH.md", ".mcp.json"}):
+                path = Path(root) / rel
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(stale + "\n")
+            for rel in ("README.md", "README_ZH.md"):
+                with open(Path(root) / rel, "a") as fh:
+                    fh.write(stale + "\n")
+            (Path(root) / ".mcp.json").write_text(
+                '{"mcpServers":{"deltascope":{"command":"npx",'
+                '"args":["-y","@fanduzi/deltascope-mcp"]}}}\n'
+            )
+
+            failures = vde.run_checks(root, "v0.330.0")
+            launcher_failures = [f for f in failures if f.path in surface_paths]
+            self.assertEqual(
+                {f.path for f in launcher_failures},
+                surface_paths,
+            )
+
+    def test_active_mcp_launcher_surfaces_reject_mixed_invalid_invocation(self):
+        with tempfile.TemporaryDirectory() as root:
+            self._write_clean_repo(root)
+            recipe = Path(root) / "docs" / "recipe" / "use-deltascope-mcp.md"
+            recipe.parent.mkdir(parents=True, exist_ok=True)
+            recipe.write_text(
+                "npx -y --prefer-online @fanduzi/deltascope-mcp@latest\n"
+                "npx -y --prefer-online @fanduzi/deltascope-mcp\n"
+            )
+
+            failures = vde.run_checks(root, "v0.330.0")
+            self.assertTrue(
+                any(f.path == "docs/recipe/use-deltascope-mcp.md" for f in failures)
+            )
 
     def test_stale_command_in_public_doc_is_caught(self):
         with tempfile.TemporaryDirectory() as root:

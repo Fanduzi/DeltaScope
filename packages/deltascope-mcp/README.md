@@ -43,5 +43,5 @@ Example override:
 
 ```bash
 DELTASCOPE_MCP_BASE_URL=https://mirror.example.com/deltascope/releases/download \
-npx -y @fanduzi/deltascope-mcp
+npx -y --prefer-online @fanduzi/deltascope-mcp@latest
 ```

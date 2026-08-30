@@ -98,10 +98,10 @@ audit_sql({
 
     <h2>一键接入</h2>
     <pre><code># 添加到 Claude Code
-claude mcp add --scope user deltascope -- npx -y @fanduzi/deltascope-mcp
+claude mcp add --scope user deltascope -- npx -y --prefer-online @fanduzi/deltascope-mcp@latest
 
 # 添加到 Codex
-codex mcp add deltascope -- npx -y @fanduzi/deltascope-mcp</code></pre>
+codex mcp add deltascope -- npx -y --prefer-online @fanduzi/deltascope-mcp@latest</code></pre>
 
     <p>npm launcher 会自动下载并运行对应平台的 <code>deltascope-mcp</code> 二进制文件，无需手动安装。</p>
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: curated public docs/examples, optional repository root, and VERSION environment value
-# output: exit status plus line-anchored findings for known public documentation drift
+# output: exit status plus line-anchored findings for known public documentation and launcher drift
 # pos: static release contract gate for public documentation and example consistency
 # note: if this file changes, update this header and scripts/README.md.
 """Static docs/examples drift checker for DeltaScope public docs.
@@ -34,7 +34,9 @@ patterns in the current public docs and CI examples:
      fields and the ``ErrUnsupportedStatement`` sentinel must appear wherever
      the SDK result shape is documented), and
   9. the MCP README source-build version (it must not pin a literal
-     ``vX.Y.Z`` default; it should reference ``pkg/deltascope.DefaultVersion``).
+     ``vX.Y.Z`` default; it should reference ``pkg/deltascope.DefaultVersion``),
+ 10. active canonical MCP launcher surfaces (they must use the online-refreshed
+     ``npx -y --prefer-online @fanduzi/deltascope-mcp@latest`` spec).
 
 Usage (from the repository root):
 
@@ -57,6 +59,7 @@ context: ``docs/decisions/**``, ``docs/releases/**``, and ``CHANGELOG.md``.
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import sys
@@ -226,6 +229,28 @@ MCP_README = "cmd/deltascope-mcp/README.md"
 MCP_STALE_DEFAULT_VERSION_RE = re.compile(
     r"defaults\s+to\s*[`'\"]?\s*v\d+\.\d+\.\d+", re.IGNORECASE
 )
+
+MCP_LAUNCHER_COMMAND = "npx -y --prefer-online @fanduzi/deltascope-mcp@latest"
+MCP_LAUNCHER_INVOCATION_RE = re.compile(
+    r"\bnpx\b[^\n`<]*@fanduzi/deltascope-mcp(?:@[^\s`\"<),;]+)?"
+)
+MCP_LAUNCHER_SURFACE_FILES = (
+    "README.md",
+    "README_ZH.md",
+    "docs/recipe/use-deltascope-mcp.md",
+    "docs/recipe/use-deltascope-mcp.zh-CN.md",
+    "packages/deltascope-mcp/README.md",
+    "docs/landing/en/sql-migration-risk-checker.html",
+    "docs/landing/en/sql-audit-mcp-server.html",
+    "docs/landing/zh/sql-audit-mcp-server.html",
+)
+MCP_LAUNCHER_CONFIG = ".mcp.json"
+MCP_LAUNCHER_CONFIG_COMMAND = "npx"
+MCP_LAUNCHER_CONFIG_ARGS = [
+    "-y",
+    "--prefer-online",
+    "@fanduzi/deltascope-mcp@latest",
+]
 
 # Union of files the surface-contract checks read. Missing files are skipped
 # (consistent with check_format_inventory), so the guard catches missing
@@ -658,6 +683,52 @@ def check_mcp_readme_version(text: Optional[str]) -> List[Failure]:
     return failures
 
 
+def check_mcp_launcher_surfaces(root: Path) -> List[Failure]:
+    """Require the online-refreshed latest launcher on active public surfaces."""
+    failures: List[Failure] = []
+    for rel in MCP_LAUNCHER_SURFACE_FILES:
+        text = _read(root, rel)
+        if text is None:
+            continue
+        invocations = list(MCP_LAUNCHER_INVOCATION_RE.finditer(text))
+        for match in invocations:
+            invocation = match.group(0).strip().rstrip(".,;")
+            if invocation == MCP_LAUNCHER_COMMAND:
+                continue
+            failures.append(Failure(
+                path=rel,
+                line=line_number(text, match.start()),
+                message="active MCP launcher must use `%s`, found `%s`"
+                        % (MCP_LAUNCHER_COMMAND, invocation),
+            ))
+        if not invocations:
+            failures.append(Failure(
+                path=rel,
+                line=1,
+                message="active MCP launcher surface must include `%s`"
+                        % MCP_LAUNCHER_COMMAND,
+            ))
+
+    config_text = _read(root, MCP_LAUNCHER_CONFIG)
+    if config_text is not None:
+        try:
+            config = json.loads(config_text)
+            server = config["mcpServers"]["deltascope"]
+            command = server["command"]
+            args = server["args"]
+        except (KeyError, TypeError, json.JSONDecodeError):
+            command = None
+            args = None
+        if command != MCP_LAUNCHER_CONFIG_COMMAND or args != MCP_LAUNCHER_CONFIG_ARGS:
+            failures.append(Failure(
+                path=MCP_LAUNCHER_CONFIG,
+                line=1,
+                message="active MCP config must use command `npx` with args %r "
+                        "(`%s`)" % (MCP_LAUNCHER_CONFIG_ARGS, MCP_LAUNCHER_COMMAND),
+            ))
+    return failures
+
+
 def extract_version_pin(text: str) -> Optional[str]:
     """Return the ``DELTASCOPE_VERSION`` value (e.g. ``v0.330.0``) or None."""
     match = VERSION_PIN_RE.search(text)
@@ -804,6 +875,7 @@ def run_checks(root: str, expected_version: Optional[str]) -> List[Failure]:
     failures.extend(check_sdk_result_fields(surface_files))
 
     failures.extend(check_mcp_readme_version(_read(Path(root), MCP_README)))
+    failures.extend(check_mcp_launcher_surfaces(Path(root)))
 
     return failures
 

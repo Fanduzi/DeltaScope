@@ -61,7 +61,7 @@ curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.510.1/install
 
 ## MCP
 
-The MCP launcher fetches the `deltascope-mcp` binary for your platform. You do not need to install the CLI first. The launcher is `npx -y @fanduzi/deltascope-mcp`.
+The MCP launcher fetches the `deltascope-mcp` binary for your platform. You do not need to install the CLI first. The launcher is `npx -y --prefer-online @fanduzi/deltascope-mcp@latest`.
 
 Example `mcp.json`:
 
@@ -70,7 +70,7 @@ Example `mcp.json`:
   "mcpServers": {
     "deltascope": {
       "command": "npx",
-      "args": ["-y", "@fanduzi/deltascope-mcp"]
+      "args": ["-y", "--prefer-online", "@fanduzi/deltascope-mcp@latest"]
     }
   }
 }
@@ -326,8 +326,8 @@ Launcher requirements:
 Recommended launcher:
 
 ```bash
-claude mcp add --scope user deltascope -- npx -y @fanduzi/deltascope-mcp
-codex mcp add deltascope -- npx -y @fanduzi/deltascope-mcp
+claude mcp add --scope user deltascope -- npx -y --prefer-online @fanduzi/deltascope-mcp@latest
+codex mcp add deltascope -- npx -y --prefer-online @fanduzi/deltascope-mcp@latest
 ```
 
 For raw stdio TOML, native `deltascope-mcp`, direct connection, `connection_ref`, proxy setup, and common errors, see [Use DeltaScope MCP](docs/recipe/use-deltascope-mcp.md).

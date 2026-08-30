@@ -1,6 +1,6 @@
 # Use DeltaScope MCP
 
-DeltaScope ships `deltascope-mcp` as the canonical MCP stdio server. For day-one onboarding, the recommended launcher is `npx -y @fanduzi/deltascope-mcp`.
+DeltaScope ships `deltascope-mcp` as the canonical MCP stdio server. For day-one onboarding, the recommended launcher is `npx -y --prefer-online @fanduzi/deltascope-mcp@latest`.
 
 Use the launcher when you want a copy-and-use setup. Use the native binary when you need a fixed local executable or a custom `-connections-path`.
 
@@ -27,7 +27,7 @@ DeltaScope MCP exposes four official tools:
 
 These files list the existing stdio server. They do not change audit behavior.
 
-- Repo-root [`.mcp.json`](../../.mcp.json) is the stdio launcher config (`npx -y @fanduzi/deltascope-mcp`) for catalogs that auto-detect a repo-root MCP config.
+- Repo-root [`.mcp.json`](../../.mcp.json) is the stdio launcher config (`npx -y --prefer-online @fanduzi/deltascope-mcp@latest`) for catalogs that auto-detect a repo-root MCP config.
 - [`server.json`](../../server.json) is official MCP Registry metadata for namespace `io.github.fanduzi/deltascope`. The npm ownership marker is `mcpName` in [`packages/deltascope-mcp/package.json`](../../packages/deltascope-mcp/package.json). Listing on the official registry still requires a separate `mcp-publisher` publish after that marker is present on the published npm package.
 
 ## Claude Code
@@ -35,7 +35,7 @@ These files list the existing stdio server. They do not change audit behavior.
 Add the server with the recommended launcher:
 
 ```bash
-claude mcp add --scope user deltascope -- npx -y @fanduzi/deltascope-mcp
+claude mcp add --scope user deltascope -- npx -y --prefer-online @fanduzi/deltascope-mcp@latest
 ```
 
 ## Codex
@@ -43,7 +43,7 @@ claude mcp add --scope user deltascope -- npx -y @fanduzi/deltascope-mcp
 Add the same launcher through Codex:
 
 ```bash
-codex mcp add deltascope -- npx -y @fanduzi/deltascope-mcp
+codex mcp add deltascope -- npx -y --prefer-online @fanduzi/deltascope-mcp@latest
 ```
 
 ## Generic Stdio TOML
@@ -53,7 +53,7 @@ If your MCP client wants raw stdio configuration, point `command` at the launche
 ```toml
 [mcp_servers.deltascope]
 command = "npx"
-args = ["-y", "@fanduzi/deltascope-mcp"]
+args = ["-y", "--prefer-online", "@fanduzi/deltascope-mcp@latest"]
 startup_timeout_sec = 20
 ```
 

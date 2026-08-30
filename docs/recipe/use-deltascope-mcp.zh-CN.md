@@ -1,6 +1,6 @@
 # 使用 DeltaScope MCP
 
-DeltaScope 提供 `deltascope-mcp` 作为规范的 MCP stdio server。对于首次接入，推荐 launcher 入口是 `npx -y @fanduzi/deltascope-mcp`。
+DeltaScope 提供 `deltascope-mcp` 作为规范的 MCP stdio server。对于首次接入，推荐 launcher 入口是 `npx -y --prefer-online @fanduzi/deltascope-mcp@latest`。
 
 如果你想要“复制即可用”的体验，用 launcher。若你需要固定本地二进制或自定义 `-connections-path`，则使用原生 binary。
 
@@ -27,7 +27,7 @@ DeltaScope MCP 暴露四个官方工具：
 
 这些文件只用于登记已有的 stdio server，不会改变审核行为。
 
-- 仓库根目录的 [`.mcp.json`](../../.mcp.json) 是 stdio launcher 配置（`npx -y @fanduzi/deltascope-mcp`），供会自动检测仓库根 MCP 配置的目录使用。
+- 仓库根目录的 [`.mcp.json`](../../.mcp.json) 是 stdio launcher 配置（`npx -y --prefer-online @fanduzi/deltascope-mcp@latest`），供会自动检测仓库根 MCP 配置的目录使用。
 - [`server.json`](../../server.json) 是官方 MCP Registry 元数据，命名空间为 `io.github.fanduzi/deltascope`。npm 所有权标记是 [`packages/deltascope-mcp/package.json`](../../packages/deltascope-mcp/package.json) 中的 `mcpName`。要出现在官方 registry 上，仍需在已发布的 npm 包带上该标记后，单独执行 `mcp-publisher` 发布。
 
 ## Claude Code
@@ -35,7 +35,7 @@ DeltaScope MCP 暴露四个官方工具：
 用推荐 launcher 添加服务：
 
 ```bash
-claude mcp add --scope user deltascope -- npx -y @fanduzi/deltascope-mcp
+claude mcp add --scope user deltascope -- npx -y --prefer-online @fanduzi/deltascope-mcp@latest
 ```
 
 ## Codex
@@ -43,7 +43,7 @@ claude mcp add --scope user deltascope -- npx -y @fanduzi/deltascope-mcp
 在 Codex 里也用同一个 launcher：
 
 ```bash
-codex mcp add deltascope -- npx -y @fanduzi/deltascope-mcp
+codex mcp add deltascope -- npx -y --prefer-online @fanduzi/deltascope-mcp@latest
 ```
 
 ## 通用 Stdio TOML
@@ -53,7 +53,7 @@ codex mcp add deltascope -- npx -y @fanduzi/deltascope-mcp
 ```toml
 [mcp_servers.deltascope]
 command = "npx"
-args = ["-y", "@fanduzi/deltascope-mcp"]
+args = ["-y", "--prefer-online", "@fanduzi/deltascope-mcp@latest"]
 startup_timeout_sec = 20
 ```
 
