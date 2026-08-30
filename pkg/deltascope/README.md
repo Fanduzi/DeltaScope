@@ -28,6 +28,7 @@ Stable public package surface for library consumers.
 | audit_dml_table_existence_test.go | Verifies the public MySQL/TiDB DML missing-target blocker, existing-table behavior, and offline non-claim |
 | audit_ddl_lifecycle_mysql_test.go | Verifies MySQL/TiDB lifecycle findings, normalized notice identifiers, ALTER TABLE index-notice reuse/action metadata, and no-leak behavior |
 | audit_unsupported_diagnostics_evidence_test.go | Verifies parser-error calls return a non-nil error together with review-floored partial results, preserved valid statements/findings, and located safe diagnostics |
+| audit_unsupported_verdict_floor_postgresql_tag_test.go | Verifies public `Audit` floors PostgreSQL `SELECT 1` from pass to review while keeping `ErrUnsupportedStatement` and audited-only statements |
 | audit_postgresql_tag_test.go | Verifies the public PostgreSQL offline primary-key equality impact contract |
 | query_access_test.go | Verifies the public query access API with dialect routing, mode handling, JSON structure parity, and context cancellation |
 | query_access_probe_boundary_no_leak_test.go | No-leak regression for the MySQL/TiDB builtin-identity probe boundary: asserts injected markers, identity facts, candidates, session/context, manifest, raw SQL, and `severity` are absent from the SDK result and JSON mapping |
