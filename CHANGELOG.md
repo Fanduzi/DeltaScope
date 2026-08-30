@@ -6,6 +6,24 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.500.0] - 2026-08-30
+
+### Added
+
+- Partial parser-error recovery at statement boundaries, plus stripping of one leading UTF-8 BOM on the shared audit and Query Access input path. Valid siblings keep findings; any failed slice keeps exit 2. Not a fallback grammar.
+- Query Access contracts: explicit empty `--sql` exits 3 without reading stdin; `--format` / `--fail-on` stay audit-only; final `read_only` + `admissible` invariant; MySQL/TiDB schema binding; bounded PG17 version requirement. PostgreSQL 16 stays outside Query Access.
+- PostgreSQL metadata/catalog selection: schema requires `--database`; explicit dialect port `5432`; MCP `connection.database`. Offline PostgreSQL `id =` equality uses the existing shape estimate; planner output still wins when present.
+- MySQL/TiDB metadata rules: column-level PRIMARY KEY extraction, `dml.table.exists.require`, MODIFY nullability comparison with unknown-prior-state advisory, ALTER TABLE ADD INDEX normalization, lifecycle notice identifiers, and `--database` as catalog alias.
+- Corpus and CI: PR workflow runs `make sql-corpus-gates`. Supported rule-and-dialect fixture coverage is 586/586, 100.0%, 286 YAML files. This is not SQL syntax or grammar coverage.
+- Two catalog rules relative to v0.490.0 (373 total). Source-readiness 85/100 is a source-milestone dogfood score, not an SLA and not the previous published-package score.
+
+### Non-Goals
+
+- Not an MCP Query Access tool.
+- Not authorization, SQL execution, or PostgreSQL 16 Query Access.
+- Not a fallback grammar or a claim of SQL grammar coverage.
+- Not a severity field; not a change to existing published artifacts until this tag.
+
 ## [v0.490.0] - 2026-08-21
 
 ### Added

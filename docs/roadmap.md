@@ -4,7 +4,27 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.490.0 Audit Contract and Unified Online Query Access
+## Latest Completed Milestone: v0.500.0 Parser Recovery, Query Access Contracts, and Metadata Closure
+
+**Goal:** publish the #31–#53 source work that landed after v0.490.0: partial parser-error recovery and UTF-8 BOM stripping; Query Access empty-SQL, flag-ownership, schema-binding, and PG17 version-boundary contracts; PostgreSQL catalog/port/MCP selection and bounded offline DML impact; MySQL/TiDB metadata rules; corpus/CI fixture coverage; and the source-readiness 85 dogfood distinction. See `docs/releases/release-notes-v0.500.0.md`.
+
+### Completed Scope
+
+- Partial parser recovery at statement boundaries. Valid siblings keep findings; any failed slice keeps exit 2. One leading UTF-8 BOM is stripped. Not a fallback grammar.
+- Query Access contracts for empty `--sql`, audit-only flags, MySQL/TiDB schema binding, the final `read_only`/`admissible` invariant, and a bounded PG17 version requirement. PostgreSQL 16 stays outside Query Access. MCP still has no Query Access tool.
+- PostgreSQL metadata/catalog selection (`--database` with explicit schema, port `5432`, MCP `connection.database`) and bounded offline `id =` shape estimates. Planner output still wins when present.
+- MySQL/TiDB metadata rules: column-level PRIMARY KEY, `dml.table.exists.require`, MODIFY nullability comparison, ADD INDEX normalization, lifecycle notice identifiers, `--database` catalog alias.
+- Supported rule-and-dialect fixture coverage: 586/586 (100.0%) across 286 YAML fixtures; this is fixture coverage, not SQL syntax or grammar coverage. Rule catalog is 373 rules.
+- Decision records listed in `docs/releases/release-notes-v0.500.0.md` (Accepted; Related milestone/version: v0.500.0).
+
+### Non-Goals
+
+- Not an MCP Query Access tool.
+- Not authorization, SQL execution, or PostgreSQL 16 Query Access.
+- Not a fallback grammar or a claim of SQL grammar coverage.
+- Not a severity field; not an SLA. Source-readiness 85/100 describes this source milestone, not the previous published-package score.
+
+## Previous Completed Milestone: v0.490.0 Audit Contract and Unified Online Query Access
 
 **Goal:** publish the operator/agent audit-contract fixes and unified Query Access online session that landed after v0.480.0. Offline ALTER states existence was not checked; MCP `audit_sql` text carries findings; CLI empty-SQL, exit mapping, YAML encoding, and embedded catalog match the documented contract; SDK/CLI/HTTP share `NewOnlineQueryAccessSessionFromConn`. See `docs/releases/release-notes-v0.490.0.md`.
 

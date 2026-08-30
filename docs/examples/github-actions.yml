@@ -48,12 +48,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install DeltaScope CLI
-        # Pin a specific release for reproducible audits. v0.490.0 is the
+        # Pin a specific release for reproducible audits. v0.500.0 is the
         # current example release; github-summary and the annotation wording
         # first shipped in v0.330.0. Bump the pin when you adopt a newer
         # release.
         env:
-          DELTASCOPE_VERSION: v0.490.0
+          DELTASCOPE_VERSION: v0.500.0
         shell: bash
         run: |
           curl -fsSL "https://raw.githubusercontent.com/Fanduzi/DeltaScope/${DELTASCOPE_VERSION}/install.sh" | sh
