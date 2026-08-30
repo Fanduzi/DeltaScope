@@ -22,7 +22,7 @@
     "operatingSystem": "macOS, Linux",
     "description": "Offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. Catches risky DDL and DML before they reach a database.",
     "url": "https://github.com/Fanduzi/DeltaScope",
-    "softwareVersion": "v0.500.0",
+    "softwareVersion": "v0.510.0",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "license": "https://opensource.org/licenses/Apache-2.0"
   }
@@ -660,7 +660,7 @@
     <section class="hero">
       <div class="container" style="position:relative;">
         <div class="hero-badge animate-fade-up" style="animation-delay:0.05s;">
-          <span class="tag tag-new" data-i18n="hero.badge">v0.500.0 — Parser Recovery, Query Access Contracts, and Metadata Closure</span>
+          <span class="tag tag-new" data-i18n="hero.badge">v0.510.0 — Release Channel Parity, Compact CLI JSON, Parser Review Floor, and Connection Refusal</span>
         </div>
         <h1 class="animate-fade-up" style="animation-delay:0.12s;" data-i18n="hero.title">DeltaScope reviews SQL changes before they reach production</h1>
         <p class="hero-sub animate-fade-up" style="animation-delay:0.2s;" data-i18n="hero.sub">Run it in CI, locally, or through MCP to catch unsafe DDL and DML patterns across MySQL, TiDB, and PostgreSQL. DeltaScope turns migrations into actionable findings with rule IDs, severity, and CI-friendly output formats.</p>
@@ -1081,15 +1081,24 @@ Statement 1: CREATE TABLE
           <article class="release-spotlight">
             <div class="release-kicker" data-i18n="releases.currentLabel">Current release</div>
             <div class="release-version-row">
-            <div class="release-version">v0.500.0</div>
+            <div class="release-version">v0.510.0</div>
             <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.currentFocus">release focus</span>
           </div>
-            <div class="release-title" data-i18n="releases.currentTitle">Parser Recovery, Query Access Contracts, and Metadata Closure</div>
-            <div class="release-copy" data-i18n="releases.items.v05000">v0.500.0 ships partial parser-error recovery and leading UTF-8 BOM stripping; Query Access empty-SQL, flag-ownership, schema-binding, and PG17 version-boundary contracts; PostgreSQL catalog/port/MCP selection and bounded offline DML impact; MySQL/TiDB metadata rules; corpus/CI fixture coverage; and a source-readiness 85 dogfood that is not a published-package SLA. Not an MCP Query Access tool; not SQL execution or authorization; 100% is rule-and-dialect fixture coverage, not grammar coverage.</div>
-            <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.500.0.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.500.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.500.0.zh-CN.md">Read release notes →</a>
+            <div class="release-title" data-i18n="releases.currentTitle">Release Channel Parity, Compact CLI JSON, Parser Review Floor, and Connection Refusal</div>
+            <div class="release-copy" data-i18n="releases.items.v05100">v0.510.0 ships npm publication independent of Homebrew; compact CLI JSON skipped-rule aggregates with an opt-in per-rule list; a review floor for otherwise-passing mixed parser results across SDK, CLI, HTTP, and MCP; and a bounded CLI connection refused category. Not an MCP Query Access tool; not SQL execution or authorization; not a registered-rule catalog change; 100% is rule-and-dialect fixture coverage, not grammar coverage.</div>
+            <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.510.0.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.510.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.510.0.zh-CN.md">Read release notes →</a>
           </article>
 
           <div class="release-grid">
+            <article class="release-card">
+              <div class="release-card-head">
+                <div class="release-card-version">v0.500.0</div>
+                <div class="release-card-label" data-i18n="releases.labels.v05000">Parser Recovery, Query Access Contracts, and Metadata Closure</div>
+              </div>
+              <div class="release-card-copy" data-i18n="releases.items.v05000">v0.500.0 ships partial parser-error recovery and leading UTF-8 BOM stripping; Query Access empty-SQL, flag-ownership, schema-binding, and PG17 version-boundary contracts; PostgreSQL catalog/port/MCP selection and bounded offline DML impact; MySQL/TiDB metadata rules; corpus/CI fixture coverage; and a source-readiness 85 dogfood that is not a published-package SLA. Not an MCP Query Access tool; not SQL execution or authorization; 100% is rule-and-dialect fixture coverage, not grammar coverage.</div>
+              <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.500.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v05000" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.500.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.500.0.zh-CN.md">Open v0.500.0 notes →</a>
+            </article>
+
             <article class="release-card">
               <div class="release-card-head">
                 <div class="release-card-version">v0.490.0</div>
@@ -1106,15 +1115,6 @@ Statement 1: CREATE TABLE
               </div>
               <div class="release-card-copy" data-i18n="releases.items.v04800">v0.480.0 admits exact PostgreSQL 17 Query Access for SELECT COUNT(1) FROM one schema-qualified physical base table on a caller-owned online session. Trusted SDK, online CLI PostgreSQL options, and HTTP with an authorized connection_id share the same catalog-bound proof and return read_only + admissible with one read_table requirement. Default/offline, other PostgreSQL shapes, and MCP stay unchanged. Static analysis only; not authorization or SQL execution.</div>
               <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.480.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v04800" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.480.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.480.0.zh-CN.md">Open v0.480.0 notes →</a>
-            </article>
-
-            <article class="release-card">
-              <div class="release-card-head">
-                <div class="release-card-version">v0.470.0</div>
-                <div class="release-card-label" data-i18n="releases.labels.v04700">Release Recovery Provenance Enforcement</div>
-              </div>
-              <div class="release-card-copy" data-i18n="releases.items.v04700">v0.470.0 enforces release-recovery provenance: routine recovery accepts only future provenance-valid annotated tags whose targets are reachable from trusted origin/main, recovery dispatch runs only on refs/heads/main, and publishers check out the verified peeled tag target SHA. The recovery contract test is hermetic; historical v0.240.0 and v0.460.0 stay fail-closed. Release engineering only; no SQL audit, Query Access, SDK, CLI, HTTP, or MCP behavior change.</div>
-              <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.470.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v04700" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.470.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.470.0.zh-CN.md">Open v0.470.0 notes →</a>
             </article>
 
             <article class="release-card archive">
@@ -1199,7 +1199,7 @@ Statement 1: CREATE TABLE
               <div class="nav-logo-icon">DS</div>
               <span class="nav-logo-text">DeltaScope</span>
             </a>
-            <p data-i18n="footer.brand">Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.500.0 ships parser-error recovery, Query Access contracts, PostgreSQL catalog/impact alignment, and MySQL/TiDB metadata-rule closure. Default/offline Query Access fail closed for effect or barrier shapes; complete effect-free reads may be admissible. MCP has no Query Access tool. Static analysis only; not authorization or SQL execution.</p>
+            <p data-i18n="footer.brand">Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.510.0 ships npm/Homebrew channel independence, compact CLI JSON skipped-rule output, a mixed-parser review floor, and typed CLI connection refusal. Default/offline Query Access fail closed for effect or barrier shapes; complete effect-free reads may be admissible. MCP has no Query Access tool. Static analysis only; not authorization or SQL execution.</p>
             <div class="badge-row">
               <span class="tag tag-go">Go</span>
               <span class="tag tag-cli">Apache 2.0</span>
@@ -1211,7 +1211,7 @@ Statement 1: CREATE TABLE
               <li><a href="https://github.com/Fanduzi/DeltaScope#install" target="_blank" rel="noopener" data-i18n="footer.links.install">Install</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope#quick-start" target="_blank" rel="noopener" data-i18n="footer.links.quickstart">Quick Start</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope/releases" target="_blank" rel="noopener" data-i18n="footer.links.releases">Releases</a></li>
-              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.500.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.500.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.500.0.zh-CN.md">Release Notes v0.500.0</a></li>
+              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.510.0.md" target="_blank" rel="noopener" data-i18n="footer.links.latest" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.510.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.510.0.zh-CN.md">Release Notes v0.510.0</a></li>
             </ul>
           </div>
           <div class="footer-col">
@@ -1255,7 +1255,7 @@ Statement 1: CREATE TABLE
           install: 'Install'
         },
         hero: {
-          badge: 'v0.500.0 — Parser Recovery, Query Access Contracts, and Metadata Closure',
+          badge: 'v0.510.0 — Release Channel Parity, Compact CLI JSON, Parser Review Floor, and Connection Refusal',
           title: 'DeltaScope reviews SQL changes before they reach production',
           sub: 'Run it in CI, locally, or through MCP to catch unsafe DDL and DML patterns across MySQL, TiDB, and PostgreSQL. DeltaScope turns migrations into actionable findings with rule IDs, severity, and CI-friendly output formats.',
           ctaPrimary: 'Install DeltaScope',
@@ -1381,9 +1381,10 @@ Statement 1: CREATE TABLE
           sub: 'The landing page highlights the current release and a short set of recent milestones. Older versions stay in the release archive so this page does not become a changelog.',
           currentLabel: 'Current release',
           currentFocus: 'release focus',
-          currentTitle: 'Parser Recovery, Query Access Contracts, and Metadata Closure',
+          currentTitle: 'Release Channel Parity, Compact CLI JSON, Parser Review Floor, and Connection Refusal',
           currentLink: 'Read release notes →',
           labels: {
+            v05100: 'Release Channel Parity, Compact CLI JSON, Parser Review Floor, and Connection Refusal',
             v05000: 'Parser Recovery, Query Access Contracts, and Metadata Closure',
             v04900: 'Audit Contract and Unified Online Query Access',
             v04800: 'PG17 COUNT(1) Online Query Access',
@@ -1426,6 +1427,7 @@ Statement 1: CREATE TABLE
             v01200: 'PostgreSQL Migration Safety Metadata'
           },
           links: {
+            v05100: 'Open v0.510.0 notes →',
             v05000: 'Open v0.500.0 notes →',
             v04900: 'Open v0.490.0 notes →',
             v04800: 'Open v0.480.0 notes →',
@@ -1471,6 +1473,7 @@ Statement 1: CREATE TABLE
           archiveDesc: 'Browse the full release history when you want older milestones, detailed changelogs, or download artifacts beyond the latest focus items.',
           archiveLink: 'View all release notes →',
           items: {
+            v05100: 'v0.510.0 ships npm publication independent of Homebrew; compact CLI JSON skipped-rule aggregates with an opt-in per-rule list; a review floor for otherwise-passing mixed parser results across SDK, CLI, HTTP, and MCP; and a bounded CLI connection refused category. Not an MCP Query Access tool; not SQL execution or authorization; not a registered-rule catalog change; 100% is rule-and-dialect fixture coverage, not grammar coverage.',
             v05000: 'v0.500.0 ships partial parser-error recovery and leading UTF-8 BOM stripping; Query Access empty-SQL, flag-ownership, schema-binding, and PG17 version-boundary contracts; PostgreSQL catalog/port/MCP selection and bounded offline DML impact; MySQL/TiDB metadata rules; corpus/CI fixture coverage; and a source-readiness 85 dogfood that is not a published-package SLA. Not an MCP Query Access tool; not SQL execution or authorization; 100% is rule-and-dialect fixture coverage, not grammar coverage.',
             v04900: 'v0.490.0 ships a unified Query Access online session for SDK, CLI, and HTTP; compact MCP audit_sql text and list_rules; CLI empty-SQL, exit-code, and catalog-embed fixes; aggregated Markdown skip reasons; and an offline existence caveat on CLI, HTTP, and MCP context. No-leak Query Access evidence is unchanged. Not an MCP Query Access tool; not a registered-rule catalog change; not SQL execution or authorization.',
             v04800: 'v0.480.0 admits exact PostgreSQL 17 Query Access for SELECT COUNT(1) FROM one schema-qualified physical base table on a caller-owned online session. Trusted SDK, online CLI PostgreSQL options, and HTTP with an authorized connection_id share the same catalog-bound proof and return read_only + admissible with one read_table requirement. Default/offline, other PostgreSQL shapes, and MCP stay unchanged. Static analysis only; not authorization or SQL execution.',
@@ -1523,14 +1526,14 @@ Statement 1: CREATE TABLE
           secondary: 'Read Quick Start'
         },
         footer: {
-          brand: 'Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.500.0 ships parser-error recovery, Query Access contracts, PostgreSQL catalog/impact alignment, and MySQL/TiDB metadata-rule closure. Default/offline Query Access fail closed for effect or barrier shapes; complete effect-free reads may be admissible. MCP has no Query Access tool. Static analysis only; not authorization or SQL execution.',
+          brand: 'Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. DeltaScope gives CLI, HTTP, MCP, and Go SDK users one consistent review path before SQL reaches production. v0.510.0 ships npm/Homebrew channel independence, compact CLI JSON skipped-rule output, a mixed-parser review floor, and typed CLI connection refusal. Default/offline Query Access fail closed for effect or barrier shapes; complete effect-free reads may be admissible. MCP has no Query Access tool. Static analysis only; not authorization or SQL execution.',
           start: 'Start',
           docs: 'Workflow Docs',
           community: 'Community',
           copyright: '© 2026 Fanduzi. DeltaScope is Apache 2.0 licensed.',
           version: '',
           links: {
-            install: 'Install', quickstart: 'Quick Start', releases: 'Releases', latest: 'Release Notes v0.500.0',
+            install: 'Install', quickstart: 'Quick Start', releases: 'Releases', latest: 'Release Notes v0.510.0',
             migration: 'Migration Review', ci: 'CI Gate', ai: 'AI Agents', reference: 'Reference Docs', author: 'Author'
           }
         }
@@ -1548,7 +1551,7 @@ Statement 1: CREATE TABLE
           install: '安装'
         },
         hero: {
-          badge: 'v0.500.0 —— 解析恢复、Query Access 契约与元数据闭合',
+          badge: 'v0.510.0 —— 发布通道解耦、CLI JSON 压缩、解析 review 下限与连接拒绝分类',
           title: 'DeltaScope 在 SQL 变更进入生产前完成审查',
           sub: '你可以在 CI、本地命令行或 MCP 中运行它，提前发现 MySQL、TiDB 和 PostgreSQL 的高风险 DDL/DML 模式，并输出带规则 ID、级别和修复建议的审查结果。',
           ctaPrimary: '安装 DeltaScope',
@@ -1674,9 +1677,10 @@ Statement 1: CREATE TABLE
           sub: '首页只突出当前版本和少量近期里程碑；更早版本放到发布归档，避免首页变成 changelog。',
           currentLabel: '当前版本',
           currentFocus: 'release focus',
-          currentTitle: '解析恢复、Query Access 契约与元数据闭合',
+          currentTitle: '发布通道解耦、CLI JSON 压缩、解析 review 下限与连接拒绝分类',
           currentLink: '查看发布说明 →',
           labels: {
+            v05100: '发布通道解耦、CLI JSON 压缩、解析 review 下限与连接拒绝分类',
             v05000: '解析恢复、Query Access 契约与元数据闭合',
             v04900: '审计契约与统一在线 Query Access',
             v04800: 'PG17 COUNT(1) 在线 Query Access',
@@ -1719,6 +1723,7 @@ Statement 1: CREATE TABLE
             v01200: 'PostgreSQL 迁移安全语义元数据'
           },
           links: {
+            v05100: '查看 v0.510.0 发布说明 →',
             v05000: '查看 v0.500.0 发布说明 →',
             v04900: '查看 v0.490.0 发布说明 →',
             v04800: '查看 v0.480.0 发布说明 →',
@@ -1765,6 +1770,7 @@ Statement 1: CREATE TABLE
           archiveDesc: '如果你想查看更早的里程碑、完整 changelog 或下载历史产物，可以从这里进入完整发布历史。',
           archiveLink: '查看全部发布说明 →',
           items: {
+            v05100: 'v0.510.0 发布 npm 与 Homebrew 解耦、CLI JSON skipped-rule 聚合与可选完整列表、跨 SDK/CLI/HTTP/MCP 的混合解析 pass 到 review 下限，以及有界 CLI connection refused 分类。不是 MCP Query Access 工具；不执行 SQL，也不是鉴权；不改变已注册规则目录；100% 是 rule-and-dialect fixture coverage，不是 grammar coverage。',
             v05000: 'v0.500.0 发布部分 parser-error 恢复与前导 UTF-8 BOM 剥离；Query Access 空 SQL、flag 归属、schema 绑定与 PG17 版本边界契约；PostgreSQL 目录/端口/MCP 选择与有界离线 DML 影响估计；MySQL/TiDB 元数据规则；语料/CI fixture 覆盖；以及源码就绪度 85 dogfood（不是已发布包的 SLA）。不是 MCP Query Access 工具；不执行 SQL，也不是鉴权；100% 是 rule-and-dialect fixture coverage，不是 grammar coverage。',
             v04900: 'v0.490.0 发布统一 Query Access 在线 session（SDK/CLI/HTTP）、MCP 精简 audit_sql 文本与 list_rules、CLI 空 SQL/退出码/内嵌目录修复、聚合 Markdown skip 原因，以及离线 CLI/HTTP/MCP 的存在性限制说明。Query Access 不泄漏证据不变。不是 MCP Query Access 工具；不改变已注册规则目录；不执行 SQL，也不是鉴权。',
             v04800: 'v0.480.0 在调用方持有的在线 session 上接纳精确的 PostgreSQL 17 Query Access：SELECT COUNT(1) FROM 一个 schema 限定的物理基表。受信任 SDK、CLI 在线 PostgreSQL 选项，以及带授权 connection_id 的 HTTP 共享同一条目录证明，返回 read_only + admissible 与一条 read_table 要求。默认/离线、其他 PostgreSQL 形态与 MCP 不变。仅静态分析；不是鉴权，也不执行 SQL。',
@@ -1814,14 +1820,14 @@ Statement 1: CREATE TABLE
           secondary: '查看 Quick Start'
         },
         footer: {
-          brand: '面向 MySQL、TiDB 和 PostgreSQL 的离线优先 DDL / DML 审计引擎。DeltaScope 让 CLI、HTTP、MCP 和 Go SDK 复用同一条上线前 SQL 审查路径。v0.500.0 发布 parser-error 恢复、Query Access 契约、PostgreSQL 目录/影响估计对齐，以及 MySQL/TiDB 元数据规则闭合。默认/离线 Query Access 对带效果或触发边界的形状保持 fail-closed；完整的无效果读取可以是 admissible。MCP 没有 Query Access 工具。仅静态分析；不是鉴权，也不执行 SQL。',
+          brand: '面向 MySQL、TiDB 和 PostgreSQL 的离线优先 DDL / DML 审计引擎。DeltaScope 让 CLI、HTTP、MCP 和 Go SDK 复用同一条上线前 SQL 审查路径。v0.510.0 发布 npm 与 Homebrew 通道解耦、CLI JSON skipped-rule 压缩、混合解析 review 下限，以及有类型的 CLI 连接拒绝分类。默认/离线 Query Access 对带效果或触发边界的形状保持 fail-closed；完整的无效果读取可以是 admissible。MCP 没有 Query Access 工具。仅静态分析；不是鉴权，也不执行 SQL。',
           start: '开始',
           docs: '工作流文档',
           community: '社区',
           copyright: '© 2026 Fanduzi. DeltaScope 采用 Apache 2.0 许可。',
           version: '',
           links: {
-            install: '安装', quickstart: 'Quick Start', releases: '发布版本', latest: 'v0.500.0 发布说明',
+            install: '安装', quickstart: 'Quick Start', releases: '发布版本', latest: 'v0.510.0 发布说明',
             migration: '迁移审查', ci: 'CI 门禁', ai: 'AI Agent', reference: '参考文档', author: '作者'
           }
         }

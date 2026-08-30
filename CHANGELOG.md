@@ -6,6 +6,22 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.510.0] - 2026-08-30
+
+### Added
+
+- npm publication is independent of Homebrew: `publish-mcp-launcher-package` waits on provenance and the four platform-build jobs, not Homebrew publish or install verification. Historical `@fanduzi/deltascope-mcp@0.500.0` is not recovered by this tag.
+- Default CLI JSON compact-skips `rule_summary.skipped` into `{reason, count}` aggregates; `--include-skipped-rules` adds the per-rule `skipped_rules` list. SDK, HTTP, and MCP output are unchanged.
+- Mixed parser results that would have been `pass` are floored to `review` across SDK, CLI, HTTP, and MCP when any statement is an unaudited `parser_error`. Existing `review`/`reject` and wholly unparseable behavior stay unchanged.
+- Metadata-aware CLI typed TCP refusal is `connection refused` with exit 3. Other non-TLS dial failures remain `connection failed`. No host, port, DSN, or driver text in portable output.
+
+### Non-Goals
+
+- Not an MCP Query Access tool.
+- Not authorization, SQL execution, or a registered-rule catalog change.
+- Not a new verdict enum, fallback grammar, or SQL grammar coverage claim.
+- Not a severity field; not a change to existing published artifacts until this tag.
+
 ## [v0.500.0] - 2026-08-30
 
 ### Added

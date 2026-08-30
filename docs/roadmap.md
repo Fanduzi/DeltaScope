@@ -4,7 +4,27 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.500.0 Parser Recovery, Query Access Contracts, and Metadata Closure
+## Latest Completed Milestone: v0.510.0 Release Channel Parity, Compact CLI JSON, Parser Review Floor, and Connection Refusal
+
+**Goal:** publish the #54–#57 source work that landed after v0.500.0: npm publication independent of Homebrew; compact CLI JSON skipped-rule aggregates with an opt-in per-rule list; a `review` floor for otherwise-passing mixed parser results; and a bounded CLI `connection refused` category. See `docs/releases/release-notes-v0.510.0.md`.
+
+### Completed Scope
+
+- `publish-mcp-launcher-package` waits on provenance and the four platform-build jobs. Homebrew publish and install verification still run, but they no longer gate npm. Historical `@fanduzi/deltascope-mcp@0.500.0` is not recovered by this tag.
+- Default CLI JSON emits `rule_summary.skipped` as `{reason, count}` aggregates. `--include-skipped-rules` adds `skipped_rules`. SDK, HTTP, MCP, Markdown, and other formats are unchanged.
+- Mixed/partial parser results cannot verdict `pass` when any statement is an unaudited `parser_error`; they floor to `review` across SDK, CLI, HTTP, and MCP. Existing `review`/`reject` and wholly unparseable behavior stay unchanged.
+- Metadata-aware CLI typed TCP refusal is `connection refused` with exit 3. Other non-TLS dial failures remain `connection failed`. Portable output does not include host, port, DSN, or driver text.
+- Supported rule-and-dialect fixture coverage remains 586/586 (100.0%) across 286 YAML fixtures; this is fixture coverage, not SQL syntax or grammar coverage. Rule catalog remains 373 rules.
+- Decision records listed in `docs/releases/release-notes-v0.510.0.md` (Accepted; Related milestone/version: v0.510.0).
+
+### Non-Goals
+
+- Not an MCP Query Access tool.
+- Not authorization, SQL execution, or a registered-rule catalog change.
+- Not a new verdict enum, fallback grammar, or a claim of SQL grammar coverage.
+- Not a severity field; not a recovery publish of `@fanduzi/deltascope-mcp@0.500.0`.
+
+## Previous Completed Milestone: v0.500.0 Parser Recovery, Query Access Contracts, and Metadata Closure
 
 **Goal:** publish the #31–#53 source work that landed after v0.490.0: partial parser-error recovery and UTF-8 BOM stripping; Query Access empty-SQL, flag-ownership, schema-binding, and PG17 version-boundary contracts; PostgreSQL catalog/port/MCP selection and bounded offline DML impact; MySQL/TiDB metadata rules; corpus/CI fixture coverage; and the source-readiness 85 dogfood distinction. See `docs/releases/release-notes-v0.500.0.md`.
 
