@@ -3,7 +3,7 @@
   "name": "io.github.fanduzi/deltascope",
   "title": "DeltaScope SQL Audit",
   "description": "Offline-first SQL audit for MySQL, TiDB, and PostgreSQL with optional read-only metadata.",
-  "version": "0.510.0",
+  "version": "0.510.1",
   "websiteUrl": "https://deltascope.pages.dev/en/sql-audit-mcp-server",
   "repository": {
     "url": "https://github.com/Fanduzi/DeltaScope",
@@ -15,7 +15,7 @@
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@fanduzi/deltascope-mcp",
-      "version": "0.510.0",
+      "version": "0.510.1",
       "transport": {
         "type": "stdio"
       }

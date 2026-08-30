@@ -1,14 +1,19 @@
-# DeltaScope v0.510.0 Release Notes
+# DeltaScope v0.510.1 Release Notes
 
-Status: Official GitHub Actions run 33302045413 passed provenance then failed in `TestAuditCommandLoadsTLSCAFile` before any assets. This is not a successful published GitHub Release. v0.510.1 republishes this source work plus the Linux test-contract correction; see `docs/releases/release-notes-v0.510.1.md`.
+## Summary - Linux Test Contract Hotfix and #54–#57 Republish
 
-## Summary - Release Channel Parity, Compact CLI JSON, Parser Review Floor, and Connection Refusal
+v0.510.1 republishes the already-reviewed #54–#57 source work and adds a deterministic Linux test-contract correction. Official v0.510.0 GitHub Actions run 33302045413 passed provenance then failed in `TestAuditCommandLoadsTLSCAFile` before any assets: empty Linux loopback returned bounded `connection refused`, while that test allowlist only accepted TLS hostname/certificate, `connection failed`, or `connection timed out`. v0.510.0 is not a successful published GitHub Release. This hotfix extends only that bounded-runtime assertion; production mapping is unchanged.
 
-v0.510.0 publishes the #54–#57 source work that landed after v0.500.0. The tag-triggered workflow publishes `@fanduzi/deltascope-mcp` even if Homebrew cask publish or install verification fails, provided provenance and platform builds succeed. Default CLI JSON compact-skips dialect-heavy skip lists into `{reason, count}` aggregates; `--include-skipped-rules` restores the per-rule list. Mixed migrations that would have verdict `pass` despite an unaudited `parser_error` diagnostic are floored to `review` across SDK, CLI, HTTP, and MCP. Metadata-aware CLI TCP refusal is a bounded `connection refused` exit 3.
+The tag-triggered workflow publishes `@fanduzi/deltascope-mcp` even if Homebrew cask publish or install verification fails, provided provenance and platform builds succeed. Default CLI JSON compact-skips dialect-heavy skip lists into `{reason, count}` aggregates; `--include-skipped-rules` restores the per-rule list. Mixed migrations that would have verdict `pass` despite an unaudited `parser_error` diagnostic are floored to `review` across SDK, CLI, HTTP, and MCP. Metadata-aware CLI TCP refusal is a bounded `connection refused` exit 3.
 
-This is still static analysis. DeltaScope does not execute submitted SQL, retrieve query results, or decide authorization, grants, RLS, or masking. MCP still has no Query Access tool. The registered audit rule catalog is unchanged at 373 rules. Supported rule-and-dialect fixture coverage remains 586/586, 100.0%, across 286 YAML files; that is not SQL syntax or grammar coverage. Recovered `@fanduzi/deltascope-mcp@0.500.0` is a separate historical release and remains unchanged by v0.510.0.
+This is still static analysis. DeltaScope does not execute submitted SQL, retrieve query results, or decide authorization, grants, RLS, or masking. MCP still has no Query Access tool. The registered audit rule catalog is unchanged at 373 rules. Supported rule-and-dialect fixture coverage remains 586/586, 100.0%, across 286 YAML files; that is not SQL syntax or grammar coverage. Recovered `@fanduzi/deltascope-mcp@0.500.0` is a separate historical release and remains unchanged by v0.510.1.
 
 ## What Changed
+
+### Linux TLS CA Test Contract
+
+- `TestAuditCommandLoadsTLSCAFile` now accepts bounded `connection refused` after a valid CA parse, in addition to TLS hostname/certificate, `connection failed`, and `connection timed out`.
+- No production classifier, message, or exit-code change. Typed `syscall.ECONNREFUSED` remains `connection refused` with exit 3 per #57.
 
 ### Release Channel Parity (#54)
 
@@ -42,10 +47,11 @@ This is still static analysis. DeltaScope does not execute submitted SQL, retrie
 - `level` remains the public audit priority field; no severity field is introduced.
 - The registered audit rule catalog, SQL corpus fixture coverage, and DDL coverage catalog counts are unchanged from v0.500.0.
 - Existing release tags, GitHub Releases, npm packages, and Homebrew casks are untouched until this tag publishes.
+- Historical v0.510.0 notes remain; v0.510.0 is not advertised as a successful published GitHub Release and has no landing history card.
 
 ## Non-Goals
 
-- Not a recovery publish of `@fanduzi/deltascope-mcp@0.500.0`.
+- Not a successful published GitHub Release of v0.510.0, and not a retag or rewrite of existing tags.
 - Not an MCP Query Access tool.
 - Not authorization, grants, roles, RLS, masking, rewrite, SQL execution, or data-returning APIs.
 - Not a new verdict enum, fallback grammar, or semantic guessing for parser-failed statements.
@@ -53,6 +59,7 @@ This is still static analysis. DeltaScope does not execute submitted SQL, retrie
 - Not changing SDK, HTTP, or MCP skipped-rule JSON shape.
 - Not a registered-rule catalog change and not SQL syntax or grammar coverage.
 - Not a severity field; not a change to any previously published artifact or existing tag.
+- Not a production remapping of `connection refused` into `connection failed`.
 
 ## Rule Catalog Facts
 
@@ -86,9 +93,10 @@ The registered audit rule catalog is unchanged relative to v0.500.0.
 
 ## Decision Records
 
-- `docs/decisions/2026-08-30-release-channel-npm-homebrew-parity.md` (this release; #54)
-- `docs/decisions/2026-08-30-cli-json-skipped-rule-compaction.md` (this release; #55)
-- `docs/decisions/2026-08-30-partial-parser-error-verdict-review-floor.md` (this release; #56)
-- `docs/decisions/2026-08-30-cli-connection-error-categories.md` (this release; #57)
+- `docs/decisions/2026-08-30-v0.510.1-linux-tls-ca-test-contract.md` (this release; Linux test contract)
+- `docs/decisions/2026-08-30-release-channel-npm-homebrew-parity.md` (#54)
+- `docs/decisions/2026-08-30-cli-json-skipped-rule-compaction.md` (#55)
+- `docs/decisions/2026-08-30-partial-parser-error-verdict-review-floor.md` (#56)
+- `docs/decisions/2026-08-30-cli-connection-error-categories.md` (#57)
 - `docs/decisions/2026-08-30-partial-parser-error-recovery.md` (v0.500.0; #43)
 - `docs/decisions/2026-08-17-cli-metadata-connection-exit-mapping.md` (v0.490.0; #23)
