@@ -1,6 +1,6 @@
 // Package httpapi verifies HTTP diagnostic result contracts.
 // input: offline HTTP audit requests containing parser-error and valid SQL statements
-// output: bounded error envelopes that preserve partial audit results and diagnostic evidence
+// output: bounded error envelopes that preserve review-floored partial audit results and diagnostic evidence
 // pos: HTTP interface parser-diagnostic and partial-result regression coverage
 // note: if this file changes, update this header and module README.md.
 package httpapi
@@ -103,7 +103,7 @@ func TestHTTPParserErrorResponsePreservesPartialAuditResult(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new handler: %v", err)
 	}
-	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"ALTER TABLE users ADD COLUMN x INT;\nCREATE INDEX CONCURRENTLY idx_x ON users (x);\nDELETE FROM users;","dialect":"mysql"}`))
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"ALTER TABLE users DROP COLUMN email;\nCREATE INDEX CONCURRENTLY idx_users_name ON users(name);\nDELETE FROM users WHERE id = 1;","dialect":"mysql"}`))
 	req.Header.Set("Content-Type", "application/json")
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
@@ -115,13 +115,16 @@ func TestHTTPParserErrorResponsePreservesPartialAuditResult(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
+	if payload["verdict"] != "review" {
+		t.Fatalf("expected parser-error review floor, got %s", rec.Body.String())
+	}
 	summary, _ := payload["summary"].(map[string]any)
 	if summary["statements"] != float64(2) {
 		t.Fatalf("expected two audited statements, got %s", rec.Body.String())
 	}
 	statements, _ := payload["statements"].([]any)
-	if len(statements) != 2 || !strings.Contains(rec.Body.String(), "dml.where.require") {
-		t.Fatalf("expected valid statements and DELETE finding, got %s", rec.Body.String())
+	if len(statements) != 2 || !strings.Contains(rec.Body.String(), "ddl.alter.drop_column.notice") {
+		t.Fatalf("expected valid statements and DROP COLUMN notice, got %s", rec.Body.String())
 	}
 	diagnostics, _ := payload["diagnostics"].([]any)
 	if len(diagnostics) != 1 || diagnostics[0].(map[string]any)["line"] != float64(2) {
@@ -131,7 +134,7 @@ func TestHTTPParserErrorResponsePreservesPartialAuditResult(t *testing.T) {
 	if runContext["mode"] != "offline" || runContext["dialect"] != "mysql" {
 		t.Fatalf("expected normal offline context on partial result, got %s", rec.Body.String())
 	}
-	if strings.Contains(rec.Body.String(), "idx_x") {
+	if strings.Contains(rec.Body.String(), "idx_users_name") {
 		t.Fatalf("HTTP diagnostic response leaked invalid SQL text: %s", rec.Body.String())
 	}
 }

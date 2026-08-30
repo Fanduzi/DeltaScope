@@ -1,6 +1,6 @@
 // Package cli verifies CLI unsupported-diagnostics evidence rendering.
 // input: parser-error SQL through Execute and diagnostic render helpers
-// output: JSON/text/markdown/quiet diagnostic field and no-leak coverage
+// output: JSON/text/markdown/quiet diagnostic fields, partial-result review floors, and no-leak coverage
 // pos: interface-layer diagnostics evidence tests
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -95,7 +95,7 @@ func TestCLIParserErrorJSONPreservesPartialAuditResult(t *testing.T) {
 	stderr := &strings.Builder{}
 	code := Execute(
 		context.Background(),
-		[]string{"audit", "--sql", "ALTER TABLE users ADD COLUMN x INT;\nCREATE INDEX CONCURRENTLY idx_x ON users (x);\nDELETE FROM users;", "--dialect", "mysql", "--format", "json"},
+		[]string{"audit", "--sql", "ALTER TABLE users DROP COLUMN email;\nCREATE INDEX CONCURRENTLY idx_users_name ON users(name);\nDELETE FROM users WHERE id = 1;", "--dialect", "mysql", "--format", "json"},
 		strings.NewReader(""),
 		stdout,
 		stderr,
@@ -107,20 +107,43 @@ func TestCLIParserErrorJSONPreservesPartialAuditResult(t *testing.T) {
 	if err := json.Unmarshal([]byte(stdout.String()), &payload); err != nil {
 		t.Fatalf("decode JSON output: %v\noutput was: %s", err, stdout.String())
 	}
+	if payload["verdict"] != "review" {
+		t.Fatalf("expected parser-error review floor, got %#v", payload["verdict"])
+	}
 	summary, _ := payload["summary"].(map[string]any)
 	if summary["statements"] != float64(2) {
 		t.Fatalf("expected two audited statements, got %s", stdout.String())
 	}
 	statements, _ := payload["statements"].([]any)
-	if len(statements) != 2 || !strings.Contains(stdout.String(), "dml.where.require") {
-		t.Fatalf("expected valid statements and DELETE finding, got %s", stdout.String())
+	if len(statements) != 2 || !strings.Contains(stdout.String(), "ddl.alter.drop_column.notice") {
+		t.Fatalf("expected valid statements and DROP COLUMN notice, got %s", stdout.String())
 	}
 	diagnostics, _ := payload["diagnostics"].([]any)
 	if len(diagnostics) != 1 || diagnostics[0].(map[string]any)["line"] != float64(2) {
 		t.Fatalf("expected one line-2 parser diagnostic, got %s", stdout.String())
 	}
-	if strings.Contains(stdout.String()+stderr.String(), "idx_x") {
+	if strings.Contains(stdout.String()+stderr.String(), "idx_users_name") {
 		t.Fatalf("CLI diagnostic output leaked invalid SQL text: stdout=%q stderr=%q", stdout.String(), stderr.String())
+	}
+}
+
+func TestCLIPartialParserErrorMarkdownAppliesReviewFloor(t *testing.T) {
+	t.Parallel()
+
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", "ALTER TABLE users DROP COLUMN email;\nCREATE INDEX CONCURRENTLY idx_users_name ON users(name);\nDELETE FROM users WHERE id = 1;", "--dialect", "mysql"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+	if code != exitUser {
+		t.Fatalf("expected exit %d for partial parser-error SQL, got %d", exitUser, code)
+	}
+	if !strings.Contains(stdout.String(), "Verdict: `review`") {
+		t.Fatalf("expected parser-error review floor, got %s", stdout.String())
 	}
 }
 

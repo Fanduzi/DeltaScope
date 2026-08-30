@@ -19,6 +19,7 @@ Thin MCP adapter for exposing DeltaScope audit and rule-discovery capabilities t
 | `rule_tools_test.go` | Verifies compact `list_rules` rows, the text-only surface, `describe_rule`, and `get_capabilities` |
 | `server.go` | Builds the MCP server and registers the official DeltaScope tools |
 | `server_test.go` | Verifies MCP bootstrap, registration, metadata-aware context, and parser-error partial-result preservation |
+| `server_unsupported_diagnostics_evidence_test.go` | Verifies MCP parser errors preserve review-floored partial results, audited siblings/findings, context, structured error signaling, locations, and no-leak boundaries |
 | `tool_errors.go` | Shapes stable structured MCP tool errors while embedding the partial audit result and context when diagnostics are present |
 
 ## Exports
@@ -37,7 +38,7 @@ Thin MCP adapter for exposing DeltaScope audit and rule-discovery capabilities t
 - The current scope supports stdio MCP bootstrap, offline audit for MySQL, TiDB, and PostgreSQL, plus metadata-aware audit for MySQL/TiDB-compatible instances and PostgreSQL on the PG-capable builds.
 - Connection-backed PostgreSQL MCP audit requests follow the same shared metadata-preparation path as the other transports and should preserve explicit metadata-aware context rather than downgrading silently.
 - `get_capabilities` is MCP-client-facing and summarizes transport, official tool names, audit modes, dialect support, top-level and connection inputs (including `connection.database`), audit result fields, context fields (`mode`, `dialect`, `dialect_source`, `schema`, `schema_source`, `metadata_source`, `note`, `unproven`), metadata features, and the stable structured error codes the server advertises (`bad_request`, `connection_invalid`, `connection_failed`, `config_invalid`).
-- Audit results also carry additive `unsupported` (`[]spec.UnsupportedDetail`) and `diagnostics` (`[]spec.Diagnostic`) arrays. Parser-error tool results retain valid audited statements/findings and normal MCP context inside `structuredContent`, add a bounded code/message, and remain errors so clients cannot treat a partial audit as success; empty arrays are omitted and are not listed in `result_fields`.
+- Audit results also carry additive `unsupported` (`[]spec.UnsupportedDetail`) and `diagnostics` (`[]spec.Diagnostic`) arrays. Parser-error tool results retain valid audited statements/findings, the shared partial-result review floor, and normal MCP context inside `structuredContent`, add a bounded code/message, and remain errors so clients cannot treat a partial audit as success; empty arrays are omitted and are not listed in `result_fields`.
 - `connect_timeout` is an accepted direct and named connection input (duration string like `5s`); empty/omitted/`0s` falls back to runtime config default, invalid/negative values return `connection_invalid`. It is not listed in the `connection_inputs` summary.
 - In addition to the structured errors `get_capabilities` advertises, recovered tool panics return `internal_error`; this code is not part of the advertised `structured_errors` list.
 - `tool_errors.go` maps `connection connect_timeout` validation errors to `connection_invalid`.

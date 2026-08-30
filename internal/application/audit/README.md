@@ -30,8 +30,8 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 | evaluate.go | Applies registered rules, enriches findings with explanation metadata, and aggregates statement/global findings into report output while preserving statement-level DML `impact` estimates |
 | evaluate_test.go | Verifies application-owned report-flow integration and explanation enrichment over the rule registry |
 | explain.go | Joins evaluated findings with shipped catalog metadata and statement metadata availability notes |
-| service.go | Normalizes one leading UTF-8 BOM before empty-input validation, then orchestrates policy loading, per-statement parser recovery, extraction, metadata enrichment, impact refinement, evaluation, preserved partial results, and fail-closed diagnostics for parser-error and unsupported outcomes |
-| service_test.go | Verifies parser recovery and diagnostics, defaults/config overrides, metadata enrichment including MySQL/TiDB MODIFY nullability state, DML impact, schema plumbing, and existing unsupported contracts |
+| service.go | Normalizes one leading UTF-8 BOM before empty-input validation, then orchestrates policy loading, per-statement parser recovery, extraction, metadata enrichment, impact refinement, evaluation, preserved partial results, a review floor for otherwise-passing partial parser failures, and fail-closed diagnostics for parser-error and unsupported outcomes |
+| service_test.go | Verifies parser recovery, diagnostics, the partial-parser review floor, defaults/config overrides, metadata enrichment including MySQL/TiDB MODIFY nullability state, DML impact, schema plumbing, and existing unsupported contracts |
 | corpus_coverage_test.go | Verifies every non-deferred shipped rule has corpus coverage for its supported dialect targets, including MySQL/TiDB-only metadata rules |
 | metadata.go | Defines the optional metadata-provider, index-owner resolver, plan estimator, and object-resolver seams, then attaches resolved target schema, instance, target-table, and non-table object snapshots to statements before evaluation |
 | dml_table_existence_test.go | Verifies MySQL/TiDB missing and existing DML target behavior, qualified-schema enrichment, joined mutation-target extraction, and metadata lookup error propagation |
@@ -68,7 +68,7 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 
 ## Notes
 
-- `report.Result` carries additive diagnostics. A parser failure affects only its bounded top-level statement: valid siblings continue through extraction, metadata, evaluation, findings, impact, and source-location attachment in original order. Each failed statement produces one `audited=false` parser diagnostic with optional 1-based `line`/`column`; the overall call still returns an error so process surfaces exit 2. Diagnostics never contain raw SQL text, parser `near ...` fragments, or other forbidden payload.
+- `report.Result` carries additive diagnostics. A parser failure affects only its bounded top-level statement: valid siblings continue through extraction, metadata, evaluation, findings, impact, and source-location attachment in original order. Each failed statement produces one `audited=false` parser diagnostic with optional 1-based `line`/`column`; an otherwise-`pass` partial result is floored to `review`, while existing `review`/`reject` results remain unchanged. The overall call still returns an error so process surfaces exit 2. Diagnostics never contain raw SQL text, parser `near ...` fragments, or other forbidden payload.
 - Statement-boundary recovery is lexical and deliberately narrow. It recognizes supported quote/comment forms needed to avoid false semicolon boundaries, then delegates every slice to the existing dialect parser. It does not add grammar fallbacks or guess semantics for failed text.
 
 ## Dependencies

@@ -1,6 +1,6 @@
 // Package audit orchestrates audit use cases at the application layer.
 // input: audit requests carrying SQL text, dialect, optional policy override paths, optional metadata providers, and shared input normalization
-// output: end-to-end audit results assembled from policy loading, parsing, extraction, metadata enrichment, post-enrichment impact refinement, and rule evaluation
+// output: end-to-end audit results assembled from policy loading, parsing, extraction, metadata enrichment, rule evaluation, and a review floor for partial parser failures
 // pos: application service entrypoint for the unified offline/metadata-aware SQL audit use case with preserved statement impact estimates
 // note: if this file changes, update this header and module README.md.
 package audit
@@ -155,6 +155,9 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 	}
 	if len(parsed.failures) > 0 {
 		result.Diagnostics = append(result.Diagnostics, parserFailureDiagnostics(parsed.failures, request.Dialect)...)
+		if result.Verdict == report.VerdictPass {
+			result.Verdict = report.VerdictReview
+		}
 		if len(result.Unsupported) > 0 {
 			result.Diagnostics = append(result.Diagnostics, newUnsupportedStatementDiagnostic(request.Dialect))
 		}

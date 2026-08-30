@@ -27,7 +27,7 @@ Stable public package surface for library consumers.
 | audit_test.go | Verifies the public audit API with defaults, overrides, multi-statement and wholly-unparsable diagnostics, PostgreSQL routing, and metadata-aware request plumbing |
 | audit_dml_table_existence_test.go | Verifies the public MySQL/TiDB DML missing-target blocker, existing-table behavior, and offline non-claim |
 | audit_ddl_lifecycle_mysql_test.go | Verifies MySQL/TiDB lifecycle findings, normalized notice identifiers, ALTER TABLE index-notice reuse/action metadata, and no-leak behavior |
-| audit_unsupported_diagnostics_evidence_test.go | Verifies parser-error calls return a non-nil error together with preserved valid statement results, findings, and located safe diagnostics |
+| audit_unsupported_diagnostics_evidence_test.go | Verifies parser-error calls return a non-nil error together with review-floored partial results, preserved valid statements/findings, and located safe diagnostics |
 | audit_postgresql_tag_test.go | Verifies the public PostgreSQL offline primary-key equality impact contract |
 | query_access_test.go | Verifies the public query access API with dialect routing, mode handling, JSON structure parity, and context cancellation |
 | query_access_probe_boundary_no_leak_test.go | No-leak regression for the MySQL/TiDB builtin-identity probe boundary: asserts injected markers, identity facts, candidates, session/context, manifest, raw SQL, and `severity` are absent from the SDK result and JSON mapping |
@@ -149,7 +149,7 @@ The unified online-session suite owns exhaustive semantic and detailed-probe evi
 - `Request` now carries top-level `Schema` and `MetadataProvider` fields so CLI, HTTP, and library consumers can opt into metadata-aware audits without changing the offline call shape.
 - Public `MetadataProvider` stays minimal; standalone PostgreSQL index-owner resolution remains an internal optional seam behind the application metadata enrichment layer.
 - `Result` and `StatementResult` expose an optional `Explanation` field for additive shared result context without changing verdict semantics. The built-in audit flow populates these aggregate fields whenever findings are present.
-- `Result` now also exposes `Unsupported` (`[]spec.UnsupportedDetail`) and `Diagnostics` (`[]spec.Diagnostic`) arrays so library consumers can inspect structured partial-support and parser-error/unsupported-statement outcomes.
+- `Result` now also exposes `Unsupported` (`[]spec.UnsupportedDetail`) and `Diagnostics` (`[]spec.Diagnostic`) arrays so library consumers can inspect structured partial-support and parser-error/unsupported-statement outcomes. A partial result with an unaudited parser-error diagnostic is floored from `pass` to `review`; existing `review`/`reject` verdicts and wholly unparseable behavior remain unchanged.
 - `ErrUnsupportedStatement` is returned when unsupported statements are present, while still returning a populated `Result` for supported statements.
 - `Finding` now exposes an optional `Explanation` field so library consumers can read structured per-finding `why`, `risk`, `suggestion`, and metadata-status notes directly.
 - `DefaultVersion` is `v0.500.0`, matching the current repository release baseline for source builds.

@@ -1,6 +1,6 @@
 // Package audit verifies the application audit service behavior.
 // input: audit service requests with SQL, dialect, optional config, and metadata provider
-// output: end-to-end application audit coverage over policy loading, partial parsing, extraction, metadata enrichment, and rules
+// output: end-to-end application audit coverage over policy loading, partial-parser verdict floors, extraction, metadata enrichment, and rules
 // pos: application audit service test coverage
 // note: if this file changes, update this header and module README.md.
 package audit
@@ -367,6 +367,9 @@ func TestAuditPreservesValidStatementsAroundParserError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected parser-error result to remain non-nil")
 	}
+	if result.Verdict != report.VerdictReject {
+		t.Fatalf("expected existing reject verdict to remain unchanged, got %q", result.Verdict)
+	}
 	if len(result.Statements) != 2 {
 		t.Fatalf("expected two audited statements, got %#v", result.Statements)
 	}
@@ -408,6 +411,39 @@ func TestAuditPreservesValidStatementsAroundParserError(t *testing.T) {
 	}
 	if diagnostic["line"] != float64(2) || diagnostic["column"] != float64(1) {
 		t.Fatalf("expected parser diagnostic at line 2 column 1, got %s", diagnosticJSON)
+	}
+}
+
+func TestAuditPartialParserErrorFloorsPassVerdictToReview(t *testing.T) {
+	t.Parallel()
+
+	result, err := AuditSQL(context.Background(), Request{
+		SQL: "ALTER TABLE users DROP COLUMN email;\n" +
+			"CREATE INDEX CONCURRENTLY idx_users_name ON users(name);\n" +
+			"DELETE FROM users WHERE id = 1;",
+		Dialect: spec.DialectMySQL,
+	})
+	if err == nil {
+		t.Fatal("expected parser-error result to remain non-nil")
+	}
+	if result.Verdict != report.VerdictReview {
+		t.Fatalf("expected parser-error review floor, got %q", result.Verdict)
+	}
+}
+
+func TestAuditPartialParserErrorKeepsReviewVerdict(t *testing.T) {
+	t.Parallel()
+
+	result, err := AuditSQL(context.Background(), Request{
+		SQL: "UPDATE users SET name = 'updated' WHERE id = 1 LIMIT 1;\n" +
+			"CREATE INDEX CONCURRENTLY idx_users_name ON users(name);",
+		Dialect: spec.DialectMySQL,
+	})
+	if err == nil {
+		t.Fatal("expected parser-error result to remain non-nil")
+	}
+	if result.Verdict != report.VerdictReview {
+		t.Fatalf("expected existing review verdict to remain unchanged, got %q", result.Verdict)
 	}
 }
 

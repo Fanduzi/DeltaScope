@@ -1,6 +1,6 @@
 // Package mcpapi verifies MCP diagnostic result contracts.
 // input: audit_sql calls containing parser-error and valid SQL statements
-// output: bounded MCP errors that preserve partial audit results and diagnostic evidence
+// output: bounded MCP errors that preserve review-floored partial audit results and diagnostic evidence
 // pos: MCP interface parser-diagnostic and partial-result regression coverage
 // note: if this file changes, update this header and module README.md.
 package mcpapi
@@ -97,7 +97,7 @@ func TestMCPParserErrorResponsePreservesPartialAuditResult(t *testing.T) {
 	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
 		Name: "audit_sql",
 		Arguments: map[string]any{
-			"sql":     "ALTER TABLE users ADD COLUMN x INT;\nCREATE INDEX CONCURRENTLY idx_x ON users (x);\nDELETE FROM users;",
+			"sql":     "ALTER TABLE users DROP COLUMN email;\nCREATE INDEX CONCURRENTLY idx_users_name ON users(name);\nDELETE FROM users WHERE id = 1;",
 			"dialect": "mysql",
 		},
 	})
@@ -112,13 +112,16 @@ func TestMCPParserErrorResponsePreservesPartialAuditResult(t *testing.T) {
 		t.Fatalf("expected structured map result, got %T", result.StructuredContent)
 	}
 	bodyJSON, _ := json.Marshal(body)
+	if body["verdict"] != "review" {
+		t.Fatalf("expected parser-error review floor, got %s", bodyJSON)
+	}
 	summary, _ := body["summary"].(map[string]any)
 	if summary["statements"] != float64(2) {
 		t.Fatalf("expected two audited statements, got %s", bodyJSON)
 	}
 	statements, _ := body["statements"].([]any)
-	if len(statements) != 2 || !strings.Contains(string(bodyJSON), "dml.where.require") {
-		t.Fatalf("expected valid statements and DELETE finding, got %s", bodyJSON)
+	if len(statements) != 2 || !strings.Contains(string(bodyJSON), "ddl.alter.drop_column.notice") {
+		t.Fatalf("expected valid statements and DROP COLUMN notice, got %s", bodyJSON)
 	}
 	diagnostics, _ := body["diagnostics"].([]any)
 	if len(diagnostics) != 1 || diagnostics[0].(map[string]any)["line"] != float64(2) {
@@ -128,7 +131,7 @@ func TestMCPParserErrorResponsePreservesPartialAuditResult(t *testing.T) {
 	if runContext["mode"] != "offline" || runContext["dialect"] != "mysql" {
 		t.Fatalf("expected normal offline context on partial result, got %s", bodyJSON)
 	}
-	if strings.Contains(string(bodyJSON), "idx_x") {
+	if strings.Contains(string(bodyJSON), "idx_users_name") {
 		t.Fatalf("MCP diagnostic response leaked invalid SQL text: %s", bodyJSON)
 	}
 }

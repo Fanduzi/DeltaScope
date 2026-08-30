@@ -1,6 +1,6 @@
 // Package deltascope verifies public SDK diagnostic result contracts.
 // input: public audit requests containing parser-error and valid SQL statements
-// output: bounded SDK errors that preserve partial audit results and diagnostic evidence
+// output: bounded SDK errors that preserve review-floored partial audit results and diagnostic evidence
 // pos: stable public package parser-diagnostic and partial-result regression coverage
 // note: if this file changes, update this header and module README.md.
 package deltascope
@@ -78,9 +78,9 @@ func TestAuditParserErrorPreservesPartialSDKResult(t *testing.T) {
 	t.Parallel()
 
 	result, err := Audit(context.Background(), Request{
-		SQL: "ALTER TABLE users ADD COLUMN x INT;\n" +
-			"CREATE INDEX CONCURRENTLY idx_x ON users (x);\n" +
-			"DELETE FROM users;",
+		SQL: "ALTER TABLE users DROP COLUMN email;\n" +
+			"CREATE INDEX CONCURRENTLY idx_users_name ON users(name);\n" +
+			"DELETE FROM users WHERE id = 1;",
 		Dialect: DialectMySQL,
 	})
 	if err == nil {
@@ -89,12 +89,15 @@ func TestAuditParserErrorPreservesPartialSDKResult(t *testing.T) {
 	if len(result.Statements) != 2 || result.Summary.Statements != 2 {
 		t.Fatalf("expected two audited statements, got %#v", result.Statements)
 	}
-	foundDeleteFinding := false
-	for _, finding := range result.Statements[1].Findings {
-		foundDeleteFinding = foundDeleteFinding || finding.RuleID == "dml.where.require"
+	if result.Verdict != VerdictReview {
+		t.Fatalf("expected parser-error review floor, got %q", result.Verdict)
 	}
-	if !foundDeleteFinding {
-		t.Fatalf("expected trailing DELETE finding, got %#v", result.Statements[1].Findings)
+	foundDropColumnNotice := false
+	for _, finding := range result.Statements[0].Findings {
+		foundDropColumnNotice = foundDropColumnNotice || finding.RuleID == "ddl.alter.drop_column.notice"
+	}
+	if !foundDropColumnNotice {
+		t.Fatalf("expected retained DROP COLUMN notice, got %#v", result.Statements[0].Findings)
 	}
 	if result.Statements[1].Impact == nil {
 		t.Fatalf("expected trailing DELETE impact to be preserved, got %#v", result.Statements[1])
@@ -106,7 +109,7 @@ func TestAuditParserErrorPreservesPartialSDKResult(t *testing.T) {
 	if marshalErr != nil {
 		t.Fatalf("marshal public result: %v", marshalErr)
 	}
-	if strings.Contains(string(payload), "idx_x") {
+	if strings.Contains(string(payload), "idx_users_name") {
 		t.Fatalf("public result leaked invalid SQL text: %s", payload)
 	}
 }

@@ -32,7 +32,7 @@ CLI adapter layer for the DeltaScope application.
 | cli_offline_existence_test.go | Locks offline ALTER DROP COLUMN / ALTER missing-table as pass, with existence-not-checked copy on markdown Action Summary, quiet `[context]`, and JSON `context.note` / `context.unproven`, and documents that `--quiet --format json` keeps the JSON contract |
 | cli_user_input_exit_test.go | Verifies unknown flags and unparseable SQL exit 2, parser-error JSON keeps an empty verdict with `diagnostics[].classification == parser_error`, and existing format/dialect/missing-file user errors stay at exit 2 |
 | cli_metadata_connection_exit_test.go | Verifies metadata-aware connection failures exit 3 with bounded dial/auth/timeout and TLS category messages, typed MySQL/pgx TLS signals, no-leak output, omitted password source after auth failure exits 2, and missing `--password-env` stays exit 2 without connecting |
-| cli_unsupported_diagnostics_evidence_test.go | Verifies mixed parser-error JSON preserves valid statements/findings, and text renderers show bounded diagnostic locations without leaking SQL |
+| cli_unsupported_diagnostics_evidence_test.go | Verifies mixed parser-error JSON/Markdown applies the review floor while preserving valid statements/findings, bounded diagnostic locations, exit 2, and no-leak behavior |
 | ddl_coverage_test.go | Verifies ddl-coverage command filtering, text/JSON output, empty results, invalid flags, no-leak sanity across all 400 catalog entries, embedded-catalog lookup from an empty working directory, and exit 2 when a `--catalog` override is missing |
 | rules_catalog_test.go | Verifies rules list filtering (dialect, level, kind, category, search, limit), rules explain detail output, text/JSON formats, invalid flags, empty results, and no-severity sanity |
 | audit_metadata_test.go | Verifies metadata-aware CLI wiring for dialect detection, MySQL/TiDB database/schema aliases and conflicts, schema inference, PostgreSQL schema/database usage validation, create-table partial behavior, dialect-aware port defaults, and metadata-connect-timeout flag validation |
@@ -55,7 +55,7 @@ CLI adapter layer for the DeltaScope application.
 - `deltascope --version` prints the build version plus compiled dialect surface.
 - `deltascope version` prints the ASCII logo plus the build version and compiled dialect surface.
 - Audit file, inline, and stdin SQL pass through the shared one-leading-UTF-8-BOM normalization before parsing.
-- A parser error in one bounded migration statement still renders audited siblings in source order, emits only the bad statement's safe diagnostic, and exits 2.
+- A parser error in one bounded migration statement still renders audited siblings in source order, emits only the bad statement's safe diagnostic, and exits 2. If those siblings otherwise compute `pass`, JSON and Markdown render `review`; existing `review`/`reject` verdicts do not downgrade.
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.
