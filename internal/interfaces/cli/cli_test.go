@@ -6,6 +6,7 @@
 package cli
 
 import (
+	"bytes"
 	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
@@ -2713,7 +2714,7 @@ func TestIncludeSkippedRulesOnlyChangesJSONRendering(t *testing.T) {
 			if err != nil {
 				t.Fatalf("render with flag: %v", err)
 			}
-			if string(with) != string(without) {
+			if !bytes.Equal(with, without) {
 				t.Fatalf("include-skipped-rules changed %s output", tc.format)
 			}
 		})
