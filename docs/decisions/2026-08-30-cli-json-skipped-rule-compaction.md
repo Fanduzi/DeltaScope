@@ -4,7 +4,7 @@
 - Status: Accepted
 - Issue: [#55](https://github.com/Fanduzi/DeltaScope/issues/55)
 - Related decision: [Aggregate Markdown Rule Skip Reasons](2026-08-17-markdown-rule-summary-aggregation.md)
-- Related commit subject: `fix(cli): compact audit JSON skipped rules (#55)` (co-committed with this record)
+- Related commits: [`6b4dffaaffaa20b2d1eacb26d08a282170013436`](https://github.com/Fanduzi/DeltaScope/commit/6b4dffaaffaa20b2d1eacb26d08a282170013436) (`fix(cli): compact audit JSON skipped rules (#55)`)
 - Related tests: `internal/interfaces/cli/cli_test.go`
 - Related docs: `docs/reference/cli.md`, `docs/reference/cli.zh-CN.md`
 

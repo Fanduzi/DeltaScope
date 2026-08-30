@@ -3,8 +3,7 @@
 Date: 2026-08-30
 Status: Accepted
 Related issue: [#57](https://github.com/Fanduzi/DeltaScope/issues/57)
-Related commit:
-- `fix(cli): classify typed connection refusal (#57)` (co-committed with this record)
+Related commits: [`bc9193c86b08a076ca0282471d7991b561b1a458`](https://github.com/Fanduzi/DeltaScope/commit/bc9193c86b08a076ca0282471d7991b561b1a458) (`fix(cli): classify typed connection refusal (#57)`)
 Related decisions:
 - `2026-08-17-cli-metadata-connection-exit-mapping.md` (#23)
 - `2026-08-30-cli-postgresql-default-port.md` (#38)

@@ -3,6 +3,7 @@
 Date: 2026-08-30
 Status: Accepted
 Related issue: GitHub issue #56
+Related commits: [`ad777bf2ec9667e91259fb0b5713f43196b35363`](https://github.com/Fanduzi/DeltaScope/commit/ad777bf2ec9667e91259fb0b5713f43196b35363) (`fix(audit): floor partial parser pass verdicts to review (#56)`)
 Related decisions:
 - `2026-08-17-cli-user-input-exit-mapping.md` (issue #24)
 - `2026-08-30-partial-parser-error-recovery.md` (issue #43)
