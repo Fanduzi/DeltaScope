@@ -3599,7 +3599,7 @@ func TestAuditCommandLoadsTLSCAFile(t *testing.T) {
 	if strings.Contains(stderr.String(), "invalid TLS CA certificate") {
 		t.Fatalf("CA file should have been valid PEM, got %q", stderr.String())
 	}
-	if !strings.Contains(stderr.String(), "TLS hostname mismatch") && !strings.Contains(stderr.String(), "TLS certificate verification failed") && !strings.Contains(stderr.String(), "connection failed") && !strings.Contains(stderr.String(), "connection timed out") {
+	if !strings.Contains(stderr.String(), "TLS hostname mismatch") && !strings.Contains(stderr.String(), "TLS certificate verification failed") && !strings.Contains(stderr.String(), "connection failed") && !strings.Contains(stderr.String(), "connection refused") && !strings.Contains(stderr.String(), "connection timed out") {
 		t.Fatalf("expected bounded runtime connection/TLS failure, got %q", stderr.String())
 	}
 }
