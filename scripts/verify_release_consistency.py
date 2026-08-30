@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# input: release docs and versioned release facts under the repository root
+# input: release docs, landing release cards, and versioned release facts
 # output: release-surface consistency errors or a labeled fact summary
 # pos: static release contract checker for cross-surface facts
 # note: if this file changes, update this header and scripts/README.md.
@@ -1012,6 +1012,35 @@ def _extract_landing_recent_cards(text):
     )
 
 
+def _validate_landing_release_card_fields(text, errors):
+    for card in re.findall(
+        r'<article class="release-card">(.*?)</article>', text, re.DOTALL
+    ):
+        version_match = re.search(
+            r'<div class="release-card-version">(v\d+\.\d+\.\d+)</div>',
+            card,
+        )
+        if version_match is None:
+            errors.append("docs/landing/index.html release card has no version")
+            continue
+
+        version = version_match.group(1)
+        key = version.replace(".", "")
+        expected = (
+            f'data-i18n="releases.labels.{key}"',
+            f'data-i18n="releases.items.{key}"',
+            f'data-i18n="releases.links.{key}"',
+            rf'href="[^"]*release-notes-{re.escape(version)}\.md"',
+            rf'data-i18n-href-en="[^"]*release-notes-{re.escape(version)}\.md"',
+            rf'data-i18n-href-zh="[^"]*release-notes-{re.escape(version)}\.zh-CN\.md"',
+        )
+        for field in expected:
+            if not re.search(field, card):
+                errors.append(
+                    f"docs/landing/index.html release card {version} missing {field}"
+                )
+
+
 def _surface_files(version):
     return [t.format(version=version) for t in RELEASE_SURFACE_TEMPLATES]
 
@@ -1098,6 +1127,7 @@ def _validate_release_sequence(root, version, errors):
 
     landing = _read_file(root, "docs/landing/index.html")
     recent_cards = _extract_landing_recent_cards(landing)
+    _validate_landing_release_card_fields(landing, errors)
 
     if len(recent_cards) != 3:
         errors.append(

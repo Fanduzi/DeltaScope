@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# input: release consistency checker and temporary release-surface fixtures
+# input: release consistency checker and temporary release-surface/card fixtures
 # output: passing or failing assertions for release consistency contracts
 # pos: unit tests for the static release contract checker
 # note: if this file changes, update this header and scripts/README.md.
@@ -99,9 +99,30 @@ def _correct_v0170_fixture():
         # --- landing ---
         "docs/landing/index.html": (
             '<html>\n<body>\n'
+            '<article class="release-card">\n'
             '<div class="release-card-version">v0.160.0</div>\n'
+            '<div data-i18n="releases.labels.v01600"></div>\n'
+            '<div data-i18n="releases.items.v01600"></div>\n'
+            '<a href="release-notes-v0.160.0.md" data-i18n="releases.links.v01600" '
+            'data-i18n-href-en="release-notes-v0.160.0.md" '
+            'data-i18n-href-zh="release-notes-v0.160.0.zh-CN.md"></a>\n'
+            '</article>\n'
+            '<article class="release-card">\n'
             '<div class="release-card-version">v0.150.0</div>\n'
+            '<div data-i18n="releases.labels.v01500"></div>\n'
+            '<div data-i18n="releases.items.v01500"></div>\n'
+            '<a href="release-notes-v0.150.0.md" data-i18n="releases.links.v01500" '
+            'data-i18n-href-en="release-notes-v0.150.0.md" '
+            'data-i18n-href-zh="release-notes-v0.150.0.zh-CN.md"></a>\n'
+            '</article>\n'
+            '<article class="release-card">\n'
             '<div class="release-card-version">v0.140.0</div>\n'
+            '<div data-i18n="releases.labels.v01400"></div>\n'
+            '<div data-i18n="releases.items.v01400"></div>\n'
+            '<a href="release-notes-v0.140.0.md" data-i18n="releases.links.v01400" '
+            'data-i18n-href-en="release-notes-v0.140.0.md" '
+            'data-i18n-href-zh="release-notes-v0.140.0.zh-CN.md"></a>\n'
+            '</article>\n'
             '<span class="current-release">v0.170.0</span>\n'
             '</body>\n</html>\n'
         ),
@@ -187,6 +208,48 @@ class TestReleaseConsistency(unittest.TestCase):
         )
         with self.assertRaises(vrc.ReleaseConsistencyError):
             self._validate_with_fixture({"docs/landing/index.html": stale_landing})
+
+    def test_rejects_swapped_landing_release_card_fields(self):
+        """Each displayed release card must keep its versioned fields paired."""
+        landing = _correct_v0170_fixture()["docs/landing/index.html"]
+        swaps = {
+            "version": (
+                '<div class="release-card-version">v0.160.0</div>',
+                '<div class="release-card-version">v0.150.0</div>',
+            ),
+            "i18n label key": (
+                'data-i18n="releases.labels.v01600"',
+                'data-i18n="releases.labels.v01500"',
+            ),
+            "i18n text key": (
+                'data-i18n="releases.items.v01600"',
+                'data-i18n="releases.items.v01500"',
+            ),
+            "link key": (
+                'data-i18n="releases.links.v01600"',
+                'data-i18n="releases.links.v01500"',
+            ),
+            "href": (
+                'href="release-notes-v0.160.0.md"',
+                'href="release-notes-v0.150.0.md"',
+            ),
+            "i18n href en": (
+                'data-i18n-href-en="release-notes-v0.160.0.md"',
+                'data-i18n-href-en="release-notes-v0.150.0.md"',
+            ),
+            "i18n href zh": (
+                'data-i18n-href-zh="release-notes-v0.160.0.zh-CN.md"',
+                'data-i18n-href-zh="release-notes-v0.150.0.zh-CN.md"',
+            ),
+        }
+        for field, (correct, swapped) in swaps.items():
+            with self.subTest(field=field):
+                with self.assertRaises(vrc.ReleaseConsistencyError):
+                    self._validate_with_fixture({
+                        "docs/landing/index.html": landing.replace(
+                            correct, swapped, 1
+                        ),
+                    })
 
     # --- RED paths: residual census ---
 
