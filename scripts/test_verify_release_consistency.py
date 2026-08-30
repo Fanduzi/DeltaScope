@@ -251,6 +251,21 @@ class TestReleaseConsistency(unittest.TestCase):
                         ),
                     })
 
+    def test_rejects_swapped_field_on_multi_class_landing_release_card(self):
+        """A multi-class release card must reject its swapped v0.500.0 field."""
+        landing = _correct_v0170_fixture()["docs/landing/index.html"]
+        landing = landing.replace(
+            '<article class="release-card">',
+            '<article class="featured release-card">',
+            1,
+        ).replace(
+            'data-i18n="releases.labels.v01600"',
+            'data-i18n="releases.labels.v05000"',
+            1,
+        )
+        with self.assertRaises(vrc.ReleaseConsistencyError):
+            self._validate_with_fixture({"docs/landing/index.html": landing})
+
     # --- RED paths: residual census ---
 
     def test_rejects_finding_covered_64(self):

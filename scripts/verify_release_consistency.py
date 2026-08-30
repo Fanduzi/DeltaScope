@@ -1013,9 +1013,13 @@ def _extract_landing_recent_cards(text):
 
 
 def _validate_landing_release_card_fields(text, errors):
-    for card in re.findall(
-        r'<article class="release-card">(.*?)</article>', text, re.DOTALL
+    for classes, card in re.findall(
+        r'<article\b[^>]*\sclass="([^"]*)"[^>]*>(.*?)</article>',
+        text,
+        re.DOTALL,
     ):
+        if "release-card" not in classes.split() or "archive" in classes.split():
+            continue
         version_match = re.search(
             r'<div class="release-card-version">(v\d+\.\d+\.\d+)</div>',
             card,
