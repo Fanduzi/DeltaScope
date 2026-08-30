@@ -43,8 +43,12 @@ func run(args []string, stdout io.Writer, stderr io.Writer) int {
 		}
 	}()
 
-	if len(args) == 1 && (args[0] == "version" || args[0] == "help") {
-		args = []string{"-" + args[0]}
+	if len(args) == 1 {
+		for _, arg := range args {
+			if arg == "version" || arg == "help" {
+				args = []string{"-" + arg}
+			}
+		}
 	}
 
 	flags := flag.NewFlagSet("deltascope-mcp", flag.ContinueOnError)
