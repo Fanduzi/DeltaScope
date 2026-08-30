@@ -4,7 +4,7 @@ Date: 2026-08-30
 Status: Accepted
 Related milestone/version:
 Related issue: GitHub issue #60
-Related commits:
+Related commits: [`d9820752dfa8ca5e1e2404d80362d7cfe2b711ea`](https://github.com/Fanduzi/DeltaScope/commit/d9820752dfa8ca5e1e2404d80362d7cfe2b711ea) (`fix(audit): floor unsupported pass verdicts to review (#60)`)
 Related tests:
 - `internal/application/audit/service_unsupported_verdict_floor_postgresql_tag_test.go`
 - `pkg/deltascope/audit_unsupported_verdict_floor_postgresql_tag_test.go`
@@ -74,6 +74,7 @@ Future changes to this completeness floor or the verdict enum require a new deci
 
 ## Links
 
+- Implementation commit: [`d9820752dfa8ca5e1e2404d80362d7cfe2b711ea`](https://github.com/Fanduzi/DeltaScope/commit/d9820752dfa8ca5e1e2404d80362d7cfe2b711ea) (`fix(audit): floor unsupported pass verdicts to review (#60)`)
 - Issue #60: https://github.com/Fanduzi/DeltaScope/issues/60
 - Issue #56: https://github.com/Fanduzi/DeltaScope/issues/56
 - Related decision: `docs/decisions/2026-08-30-partial-parser-error-verdict-review-floor.md`
