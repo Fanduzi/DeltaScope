@@ -4,7 +4,7 @@
 
 v0.510.0 publishes the #54–#57 source work that landed after v0.500.0. The tag-triggered workflow publishes `@fanduzi/deltascope-mcp` even if Homebrew cask publish or install verification fails, provided provenance and platform builds succeed. Default CLI JSON compact-skips dialect-heavy skip lists into `{reason, count}` aggregates; `--include-skipped-rules` restores the per-rule list. Mixed migrations that would have verdict `pass` despite an unaudited `parser_error` diagnostic are floored to `review` across SDK, CLI, HTTP, and MCP. Metadata-aware CLI TCP refusal is a bounded `connection refused` exit 3.
 
-This is still static analysis. DeltaScope does not execute submitted SQL, retrieve query results, or decide authorization, grants, RLS, or masking. MCP still has no Query Access tool. The registered audit rule catalog is unchanged at 373 rules. Supported rule-and-dialect fixture coverage remains 586/586, 100.0%, across 286 YAML files; that is not SQL syntax or grammar coverage. Historical `@fanduzi/deltascope-mcp@0.500.0` absence is not repaired by this tag.
+This is still static analysis. DeltaScope does not execute submitted SQL, retrieve query results, or decide authorization, grants, RLS, or masking. MCP still has no Query Access tool. The registered audit rule catalog is unchanged at 373 rules. Supported rule-and-dialect fixture coverage remains 586/586, 100.0%, across 286 YAML files; that is not SQL syntax or grammar coverage. Recovered `@fanduzi/deltascope-mcp@0.500.0` is a separate historical release and remains unchanged by v0.510.0.
 
 ## What Changed
 

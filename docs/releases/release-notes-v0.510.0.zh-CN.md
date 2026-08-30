@@ -4,7 +4,7 @@
 
 v0.510.0 发布 v0.500.0 之后落地的 #54–#57 源码工作。在 provenance 与平台构建成功的前提下，即使 Homebrew cask 发布或安装验证失败，tag 触发的工作流仍会发布 `@fanduzi/deltascope-mcp`。默认 CLI JSON 把方言上大量的 skip 列表压缩为 `{reason, count}` 聚合；`--include-skipped-rules` 恢复逐规则列表。混合迁移在存在未审计 `parser_error` 诊断时，即使 findings 只有 notice，也不会再给出 `pass`，而是在 SDK、CLI、HTTP、MCP 上落到 `review`。元数据感知 CLI 的 TCP 拒绝是有界的 `connection refused`，退出码 3。
 
-这仍是静态分析。DeltaScope 不执行提交的 SQL、不取回查询结果，也不做授权、授权清单、RLS 或脱敏判定。MCP 仍然没有 Query Access 工具。已注册审核规则目录仍为 373 条。支持的 rule-and-dialect fixture coverage 仍为 586/586、100.0%、286 个 YAML 文件；这不是 SQL 语法或 grammar coverage。历史上缺失的 `@fanduzi/deltascope-mcp@0.500.0` 不会由本 tag 补发。
+这仍是静态分析。DeltaScope 不执行提交的 SQL、不取回查询结果，也不做授权、授权清单、RLS 或脱敏判定。MCP 仍然没有 Query Access 工具。已注册审核规则目录仍为 373 条。支持的 rule-and-dialect fixture coverage 仍为 586/586、100.0%、286 个 YAML 文件；这不是 SQL 语法或 grammar coverage。已恢复的 `@fanduzi/deltascope-mcp@0.500.0` 是独立的历史发布，v0.510.0 不会改动它。
 
 ## 变更内容
 

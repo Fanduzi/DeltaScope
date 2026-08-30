@@ -10,7 +10,7 @@ It is not a promise of exhaustive SQL grammar support. DeltaScope continues to p
 
 ### Completed Scope
 
-- `publish-mcp-launcher-package` waits on provenance and the four platform-build jobs. Homebrew publish and install verification still run, but they no longer gate npm. Historical `@fanduzi/deltascope-mcp@0.500.0` is not recovered by this tag.
+- `publish-mcp-launcher-package` waits on provenance and the four platform-build jobs. Homebrew publish and install verification still run, but they no longer gate npm. Recovered `@fanduzi/deltascope-mcp@0.500.0` is a separate historical release and remains unchanged by v0.510.0.
 - Default CLI JSON emits `rule_summary.skipped` as `{reason, count}` aggregates. `--include-skipped-rules` adds `skipped_rules`. SDK, HTTP, MCP, Markdown, and other formats are unchanged.
 - Mixed/partial parser results cannot verdict `pass` when any statement is an unaudited `parser_error`; they floor to `review` across SDK, CLI, HTTP, and MCP. Existing `review`/`reject` and wholly unparseable behavior stay unchanged.
 - Metadata-aware CLI typed TCP refusal is `connection refused` with exit 3. Other non-TLS dial failures remain `connection failed`. Portable output does not include host, port, DSN, or driver text.

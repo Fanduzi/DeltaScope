@@ -10,7 +10,7 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ### Added
 
-- npm publication is independent of Homebrew: `publish-mcp-launcher-package` waits on provenance and the four platform-build jobs, not Homebrew publish or install verification. Historical `@fanduzi/deltascope-mcp@0.500.0` is not recovered by this tag.
+- npm publication is independent of Homebrew: `publish-mcp-launcher-package` waits on provenance and the four platform-build jobs, not Homebrew publish or install verification. Recovered `@fanduzi/deltascope-mcp@0.500.0` is a separate historical release and remains unchanged by v0.510.0.
 - Default CLI JSON compact-skips `rule_summary.skipped` into `{reason, count}` aggregates; `--include-skipped-rules` adds the per-rule `skipped_rules` list. SDK, HTTP, and MCP output are unchanged.
 - Mixed parser results that would have been `pass` are floored to `review` across SDK, CLI, HTTP, and MCP when any statement is an unaudited `parser_error`. Existing `review`/`reject` and wholly unparseable behavior stay unchanged.
 - Metadata-aware CLI typed TCP refusal is `connection refused` with exit 3. Other non-TLS dial failures remain `connection failed`. No host, port, DSN, or driver text in portable output.
