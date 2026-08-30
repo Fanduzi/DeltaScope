@@ -55,8 +55,8 @@ brew install --cask deltascope
 Pin a specific release:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.510.1/install.sh | \
-  DELTASCOPE_VERSION=v0.510.1 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.510.2/install.sh | \
+  DELTASCOPE_VERSION=v0.510.2 sh
 ```
 
 ## MCP

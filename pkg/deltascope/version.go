@@ -7,7 +7,7 @@ package deltascope
 
 const (
 	// DefaultVersion is the repository's current default semantic version.
-	DefaultVersion = "v0.510.1"
+	DefaultVersion = "v0.510.2"
 
 	// Logo is the canonical ASCII DeltaScope banner used by human-facing commands.
 	Logo = "    ____       ____        _____                     \n" +

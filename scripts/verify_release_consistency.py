@@ -21,6 +21,37 @@ SQL_CORPUS_METRIC_LABEL_ZH = "支持的 rule-and-dialect fixture coverage"
 
 
 RELEASE_FACTS = {
+    "v0.510.2": {
+        "pg_alter_table_config_entries": 53,
+        "sql_corpus": {
+            "supported_rule_dialect_targets": 586,
+            "covered_rule_dialect_targets": 586,
+            "coverage_percent": "100.0",
+            "expected_yaml_files_total": 286,
+            "metric_label": SQL_CORPUS_METRIC_LABEL,
+            "metric_label_zh": SQL_CORPUS_METRIC_LABEL_ZH,
+        },
+        "required_rule_ids": [],
+        "ddl_coverage_catalog": {
+            "total_entries": 407,
+            "mysql_entries": 62,
+            "tidb_entries": 55,
+            "postgresql_entries": 290,
+            "parser_upgrade_candidate_count": 18,
+        },
+        "rule_catalog": {
+            "total_rules": 373,
+            "level_blocker": 73,
+            "level_warning": 142,
+            "level_notice": 158,
+            "dialect_common": 177,
+            "dialect_postgresql": 191,
+            "dialect_mysql": 1,
+            "dialect_tidb": 2,
+            "kind_ddl": 362,
+            "kind_dml": 11,
+        },
+    },
     "v0.510.1": {
         "pg_alter_table_config_entries": 53,
         "sql_corpus": {

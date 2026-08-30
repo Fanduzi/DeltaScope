@@ -6,6 +6,14 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.510.2] - 2026-08-30
+
+### Fixed
+
+- #60 floors an otherwise-passing audit to `review` when an unsupported statement remains unaudited.
+- #61 makes active MCP launcher examples use `npx -y --prefer-online @fanduzi/deltascope-mcp@latest`.
+- #62 makes sole `deltascope-mcp version` and `help` invocations exactly alias their dashed forms without starting MCP stdio.
+
 ## [v0.510.1] - 2026-08-30
 
 ### Added
