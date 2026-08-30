@@ -499,7 +499,8 @@ release-from-candidate-dry-run:
 
 # release-provenance-contract-test: verify the release workflow's provenance
 # dependency graph. Parses needs DAG and checks that every mutation job is
-# transitively downstream of provenance.
+# transitively downstream of provenance, and that npm publication does not
+# wait on Homebrew jobs.
 release-provenance-contract-test:
 	python3 scripts/test_verify_release_workflow_provenance.py
 

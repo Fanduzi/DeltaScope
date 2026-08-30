@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# input: check_provenance_contract and temporary workflow fixtures
+# output: pass/fail evidence that provenance DAG and npm/Homebrew channel checks reject tampered workflows
+# pos: adversarial tests for the tag-triggered release workflow provenance checker
+# note: if this file changes, update this header and scripts/README.md.
 """Adversarial and negative tests for the provenance contract checker.
 
 Table-driven fixtures covering:
@@ -93,6 +97,21 @@ VALID_RELEASE_LINUX = """\
 """
 
 VALID_TAIL = """\
+  release-linux-arm64:
+    needs: release-linux
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo linux-arm64
+  release-macos-arm64:
+    needs: release-linux
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo macos-arm64
+  release-macos-amd64:
+    needs: release-linux
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo macos-amd64
   publish-homebrew-cask:
     needs:
       - release-linux
@@ -101,7 +120,10 @@ VALID_TAIL = """\
       - run: git push origin HEAD:main
   publish-mcp-launcher-package:
     needs:
-      - publish-homebrew-cask
+      - release-linux
+      - release-linux-arm64
+      - release-macos-arm64
+      - release-macos-amd64
     runs-on: ubuntu-latest
     steps:
       - run: npm publish --access public --provenance ./packages/deltascope-mcp

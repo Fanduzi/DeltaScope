@@ -346,7 +346,6 @@ jobs:
       - release-linux-arm64
       - release-macos-arm64
       - release-macos-amd64
-      - verify-homebrew-cask-install
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:

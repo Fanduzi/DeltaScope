@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # input: none
 # output: validation that release workflow Homebrew verification avoids noisy tolerated cleanup,
-#         that the provenance dependency DAG gates all mutation jobs, and that the
-#         recovery workflow enforces the provenance admission contract.
+#         that the provenance dependency DAG gates all mutation jobs and keeps npm
+#         publication off the Homebrew path, and that the recovery workflow enforces
+#         the provenance admission contract.
 # pos: release contract gate protecting verify-homebrew-cask-install from false GitHub Actions annotations
 #      and enforcing the provenance dependency graph across release and recovery workflows.
 # note: if this file changes, update this header and scripts/README.md.

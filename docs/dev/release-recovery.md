@@ -14,7 +14,7 @@ When a release partially fails, use this guide to determine the correct recovery
 | Failure point | Recovery action |
 |---------------|-----------------|
 | Failure **before** GitHub Release exists (e.g. build error, test gate failure) | Fix the problem and rerun the full `release.yml` workflow by re-pushing the tag |
-| GitHub Release assets exist, **Homebrew** failed | Run `release-recover.yml` with `recover_homebrew=true`, `recover_npm=false` |
+| GitHub Release assets exist, **Homebrew** failed | Inspect npm separately. If npm published, run `release-recover.yml` with `recover_homebrew=true`, `recover_npm=false`. Homebrew no longer gates npm on the tag-triggered `release.yml` path. |
 | GitHub Release assets exist, Homebrew verified, **npm** failed | Run `release-recover.yml` with `recover_homebrew=false`, `recover_npm=true` |
 | GitHub Release assets exist, **both** Homebrew and npm failed | Run `release-recover.yml` with both enabled (defaults) |
 | Assets **missing or wrong** | Stop. This requires an explicit tag/release replacement decision. Delete the release and tag only after confirming the replacement plan. |

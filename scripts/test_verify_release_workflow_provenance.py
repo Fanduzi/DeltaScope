@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+# input: .github/workflows/release.yml
+# output: validation that provenance gates mutation jobs and that npm publication
+#         stays independent of Homebrew while remaining on platform-build jobs
+# pos: release contract gate for the tag-triggered release workflow needs DAG
+# note: if this file changes, update this header and scripts/README.md.
 """Workflow provenance contract checker.
 
 Parses .github/workflows/release.yml using stdlib-only YAML parsing
@@ -14,6 +19,9 @@ and emits per-step records to verify:
 7. Every job containing GoReleaser (action or CLI), GitHub Release mutation,
    npm publish, or Homebrew cask mutation is reachable only after provenance
    succeeds.
+8. publish-mcp-launcher-package exists, directly needs the four platform-build
+   jobs, is transitively downstream of provenance, and is not downstream of
+   publish-homebrew-cask or verify-homebrew-cask-install.
 """
 
 import re
@@ -447,6 +455,32 @@ def check_provenance_contract(workflow_path: Path) -> List[str]:
             if not _is_reachable_from(needs_map, job_name, 'provenance'):
                 violations.append(f"mutation job '{job_name}' ({reason}) is NOT transitively downstream of provenance")
                 break
+
+    # 8. npm publication stays on platform builds and off the Homebrew path
+    npm_job = 'publish-mcp-launcher-package'
+    if npm_job not in job_names:
+        violations.append(f"missing '{npm_job}' job")
+    else:
+        npm_needs = needs_map.get(npm_job, [])
+        for required in (
+            'release-linux',
+            'release-linux-arm64',
+            'release-macos-arm64',
+            'release-macos-amd64',
+        ):
+            if required not in npm_needs:
+                violations.append(
+                    f"{npm_job} needs={npm_needs}, missing direct '{required}'"
+                )
+        if not _is_reachable_from(needs_map, npm_job, 'provenance'):
+            violations.append(
+                f"{npm_job} is not transitively downstream of provenance"
+            )
+        for forbidden in ('publish-homebrew-cask', 'verify-homebrew-cask-install'):
+            if _is_reachable_from(needs_map, npm_job, forbidden):
+                violations.append(
+                    f"{npm_job} is transitively downstream of Homebrew job '{forbidden}'"
+                )
 
     return violations
 
