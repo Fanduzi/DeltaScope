@@ -6,6 +6,16 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.510.3] - 2026-08-31
+
+### Fixed
+
+- [#64](https://github.com/Fanduzi/DeltaScope/issues/64) adds `connection.connect_timeout` to `get_capabilities.connection_inputs` and verifies real in-memory `tools/list` versus `get_capabilities` tool-call parity.
+
+### Non-Goals
+
+- Additive discovery-output correction only: no timeout parsing, defaults, connection behavior, errors, credentials, tools, or input-schema change.
+
 ## [v0.510.2] - 2026-08-30
 
 ### Fixed

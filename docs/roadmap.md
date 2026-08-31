@@ -4,26 +4,22 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.510.2 Audit Review Floor and MCP Invocation Fixes
+## Latest Completed Milestone: v0.510.3 MCP Connect Timeout Capability Discovery
 
-**Goal:** ship the existing #60–#62 decisions: keep otherwise-passing unsupported audits at `review`, use an upgrade-safe MCP launcher example, and make sole MCP positional meta invocations alias the established dashed forms. See `docs/releases/release-notes-v0.510.2.md`.
+**Goal:** correct MCP discovery output so clients see the existing `connection.connect_timeout` input, with an in-memory `tools/list` versus `get_capabilities` tool-call parity test. See `docs/releases/release-notes-v0.510.3.md` and `docs/decisions/2026-08-31-mcp-connect-timeout-capability.md`.
 
 ### Completed Scope
 
-- #60 floors an otherwise-passing audit to `review` when an unsupported statement remains unaudited; existing `review` and `reject` verdicts are unchanged.
-- #61 standardizes active MCP launcher examples on `npx -y --prefer-online @fanduzi/deltascope-mcp@latest` without changing launcher runtime behavior.
-- #62 aliases sole positional `version` and `help` to `-version` and `-help` before MCP server startup; other positional arguments are unchanged.
+- [#64](https://github.com/Fanduzi/DeltaScope/issues/64) adds `connection.connect_timeout` to `get_capabilities.connection_inputs`, retaining the public `audit_sql.connection` order.
+- `TestGetCapabilitiesConnectionInputsMatchAuditSQLSchema` compares a real in-memory `tools/list` audit schema with a real `get_capabilities` tool call, preventing discovery drift.
 - Supported rule-and-dialect fixture coverage remains 586/586 (100.0%) across 286 YAML fixtures; this is fixture coverage, not SQL syntax or grammar coverage. Rule catalog remains 373 rules.
-- Existing decision records for #60, #61, and #62 remain authoritative; no new boundary is introduced.
+- Existing #64 ADR remains authoritative; no additional decision record is needed because this is an additive discovery-output correction.
 
 ### Non-Goals
 
-- Not a successful published GitHub Release of v0.510.0, and not a v0.510.0 landing history card.
-- Not an MCP Query Access tool.
-- Not authorization, SQL execution, or a registered-rule catalog change.
+- Additive discovery-output correction only: not timeout parsing, defaults, connection behavior, errors, credentials, tools, or input schema.
+- Not an MCP Query Access tool, authorization, SQL execution, or a registered-rule catalog change.
 - Not a new verdict enum, fallback grammar, or a claim of SQL grammar coverage.
-- Not a severity field; not a recovery publish of `@fanduzi/deltascope-mcp@0.500.0`.
-- Not a production remapping of `connection refused`.
 
 ## Previous Completed Milestone: v0.500.0 Parser Recovery, Query Access Contracts, and Metadata Closure
 
