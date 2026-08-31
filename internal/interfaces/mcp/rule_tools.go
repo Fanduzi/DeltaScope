@@ -182,6 +182,7 @@ func capabilitiesPayload(connectionsPath string) capabilitiesResponse {
 			"connection.password",
 			"connection.password_env",
 			"connection.password_file",
+			"connection.connect_timeout",
 		},
 		InputRules:                []string{"connection_ref and connection are mutually exclusive", "top-level dialect overrides connection.dialect when both are set", "connection inputs support mysql, tidb, and postgresql metadata-aware audit"},
 		ConnectionRefPath:         connectionsPath,

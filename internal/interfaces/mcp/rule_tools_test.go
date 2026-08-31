@@ -248,7 +248,7 @@ func TestGetCapabilitiesToolReturnsKnownSummary(t *testing.T) {
 		AuditModes:                []string{"offline", "metadata-aware"},
 		Dialects:                  []string{"mysql", "tidb", "postgresql"},
 		TopLevelInputs:            []string{"sql", "dialect", "config_path", "connection_ref", "connection"},
-		ConnectionInputs:          []string{"connection.host", "connection.port", "connection.socket", "connection.user", "connection.database", "connection.schema", "connection.dialect", "connection.password", "connection.password_env", "connection.password_file"},
+		ConnectionInputs:          []string{"connection.host", "connection.port", "connection.socket", "connection.user", "connection.database", "connection.schema", "connection.dialect", "connection.password", "connection.password_env", "connection.password_file", "connection.connect_timeout"},
 		InputRules:                []string{"connection_ref and connection are mutually exclusive", "top-level dialect overrides connection.dialect when both are set", "connection inputs support mysql, tidb, and postgresql metadata-aware audit"},
 		ConnectionRefPath:         "~/.config/deltascope/connections.yaml",
 		ConnectionRefOverrideFlag: "-connections-path",

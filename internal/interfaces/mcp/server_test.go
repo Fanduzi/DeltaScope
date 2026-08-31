@@ -1,6 +1,6 @@
 // Package mcpapi verifies the MCP interface bootstrap and tool surface.
 // input: MCP server construction, in-memory transports, tool discovery requests, and inline metadata connection fields
-// output: regression coverage for the official DeltaScope MCP server bootstrap and database-aware audit wiring
+// output: regression coverage for the official DeltaScope MCP server bootstrap, capability discovery, and database-aware audit wiring
 // pos: interface-level tests for the MCP adapter module
 // note: if this file changes, update this header and module README.md.
 package mcpapi
@@ -177,6 +177,77 @@ func TestAuditSQLInputSchemaIncludesConnectionDatabase(t *testing.T) {
 	}
 	if !strings.Contains(string(schema), `"database"`) || !strings.Contains(string(schema), `"schema"`) {
 		t.Fatalf("audit_sql input schema must advertise separate database/schema fields: %s", schema)
+	}
+}
+
+func TestGetCapabilitiesConnectionInputsMatchAuditSQLSchema(t *testing.T) {
+	t.Parallel()
+
+	session, err := connectClientSession(context.Background(), NewServer(Config{Version: "test-version"}))
+	if err != nil {
+		t.Fatalf("connect session: %v", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	tools, err := collectTools(context.Background(), session.Tools(context.Background(), nil))
+	if err != nil {
+		t.Fatalf("list tools: %v", err)
+	}
+	auditTool, ok := tools["audit_sql"]
+	if !ok {
+		t.Fatal("tools/list missing audit_sql")
+	}
+	inputSchema, ok := auditTool.InputSchema.(map[string]any)
+	if !ok {
+		t.Fatalf("audit_sql input schema type = %T", auditTool.InputSchema)
+	}
+	inputProperties, ok := inputSchema["properties"].(map[string]any)
+	if !ok {
+		t.Fatalf("audit_sql input schema missing properties: %#v", inputSchema)
+	}
+	connectionSchema, ok := inputProperties["connection"].(map[string]any)
+	if !ok {
+		t.Fatalf("audit_sql input schema missing connection: %#v", inputProperties)
+	}
+	connectionProperties, ok := connectionSchema["properties"].(map[string]any)
+	if !ok {
+		t.Fatalf("audit_sql connection schema missing properties: %#v", connectionSchema)
+	}
+	fromSchema := make([]string, 0, len(connectionProperties))
+	for name := range connectionProperties {
+		fromSchema = append(fromSchema, "connection."+name)
+	}
+
+	result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{Name: "get_capabilities"})
+	if err != nil {
+		t.Fatalf("call get_capabilities: %v", err)
+	}
+	if result.IsError {
+		t.Fatalf("get_capabilities returned tool error: %#v", result)
+	}
+	capabilities, ok := result.StructuredContent.(map[string]any)
+	if !ok {
+		t.Fatalf("get_capabilities structured content type = %T", result.StructuredContent)
+	}
+	values, ok := capabilities["connection_inputs"].([]any)
+	if !ok {
+		t.Fatalf("get_capabilities connection_inputs = %#v", capabilities["connection_inputs"])
+	}
+	fromCapabilities := make([]string, 0, len(values))
+	for _, value := range values {
+		input, ok := value.(string)
+		if !ok {
+			t.Fatalf("get_capabilities connection input type = %T", value)
+		}
+		fromCapabilities = append(fromCapabilities, input)
+	}
+
+	want := slices.Clone(fromSchema)
+	got := slices.Clone(fromCapabilities)
+	slices.Sort(want)
+	slices.Sort(got)
+	if !slices.Equal(got, want) {
+		t.Fatalf("connection input mismatch:\naudit_sql schema: %q\nget_capabilities: %q", want, got)
 	}
 }
 
