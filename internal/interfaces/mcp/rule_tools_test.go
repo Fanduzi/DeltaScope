@@ -1,6 +1,6 @@
 // Package mcpapi verifies MCP rule-discovery tool behavior.
 // input: MCP rule tool handlers plus shipped rule catalog and connection capability expectations
-// output: focused coverage for compact list_rules rows, list_rules text surface, describe_rule, and database-aware get_capabilities
+// output: focused coverage for compact list_rules rows, list_rules text surface, describe_rule, and get_capabilities connection.connect_timeout ordering/regression behavior
 // pos: interface-layer tests for MCP rule-discovery behavior
 // note: if this file changes, update this header and module README.md.
 package mcpapi
