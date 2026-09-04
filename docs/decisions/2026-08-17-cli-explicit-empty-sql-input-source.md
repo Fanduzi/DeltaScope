@@ -1,11 +1,12 @@
 # Decision: Treat Explicit Empty `--sql` as Provided Input
 
-Date: 2026-08-17 (updated 2026-08-30)
+Date: 2026-08-17 (updated 2026-09-04)
 Status: Accepted
-Related milestone/version: issue #19; follow-up issue #32
+Related milestone/version: issue #19; follow-up issues #32, #68
 Related commits:
 Related tests:
 - `TestAuditCommandRejectsExplicitEmptySQLWithoutReadingStdin`
+- `TestExplicitEmptySQLErrorsNameTheirCommands`
 - `TestAuditCommandRejectsEmptyFileInput`
 - `TestResolveAuditSQLRejectsConflictingOrEmptyInput`
 - `TestAuditCommandSupportsStdinInput`
@@ -36,14 +37,14 @@ empty` and exit 2. MCP `audit_sql sql=""` already fail-closes with `bad_request`
 ## Decision
 
 If the `--sql` flag is present (`Flags().Changed("sql")`), that value is the SQL
-input. Empty or whitespace-only `--sql` fails immediately with
-`SQL input must not be empty` and exit 2, without reading stdin.
+input. Empty or whitespace-only `--sql` fails immediately without reading stdin.
 
-The same source-selection rule applies to `query-access analyze`. Its explicit
-empty or whitespace-only `--sql` fails immediately with the same message and
-exit 3, preserving the Query Access usage-error contract. A missing or
-unreadable Query Access `--file` returns the bounded message `cannot read SQL
-file` with exit 3 and no OS error or filesystem path.
+Issue #68 keeps the exit classes split and names each command in the error text:
+`audit: SQL input must not be empty` with exit 2, and
+`query-access: SQL input must not be empty` with exit 3. The two stderr texts
+must not be identical. A missing or unreadable Query Access `--file` returns the
+bounded message `cannot read SQL file` with exit 3 and no OS error or filesystem
+path.
 
 `--file` empty content and omitted-flag stdin audits keep their existing behavior.
 MCP empty-SQL handling is unchanged.
@@ -58,13 +59,16 @@ from a missing flag.
 ## Public Contract
 
 - Explicit `--sql`, including `""` and whitespace-only text, is the audit SQL source.
-- Empty explicit `--sql` exits 2 with `SQL input must not be empty` and does not
-  read stdin.
+- Empty explicit `--sql` on `audit` exits 2 with `audit: SQL input must not be empty`
+  and does not read stdin.
 - `echo 'delete from users' | deltascope audit` is unchanged.
-- Empty `--file` content still exits 2 with `SQL input must not be empty`.
+- Empty `--file` content still exits 2 with `audit: SQL input must not be empty`.
 - MCP empty SQL remains `isError` / `code=bad_request` / `audit SQL must not be empty`.
 - Query Access with neither `--sql` nor `--file` reads stdin; empty stdin exits 3
-  with `SQL input must not be empty`.
+  with `query-access: SQL input must not be empty`.
+- Empty explicit `--sql` on `query-access analyze` exits 3 with
+  `query-access: SQL input must not be empty` and does not read stdin.
+- The two empty-SQL stderr texts are not identical; each names its command.
 - Query Access valid inline, file, and stdin inputs retain their result and
   admission exit codes.
 
@@ -81,8 +85,9 @@ CLI `Execute` tests pass a stdin reader that fails if read, proving `--sql ""` a
 `--sql "   "` do not fall through. Existing stdin and empty-file tests remain.
 Query Access `Execute` tests prove the same behavior with a non-EOF stdin reader,
 preserve empty-stdin/file/stdin behavior, and assert missing-file path redaction.
-MCP `TestAuditSQLToolReturnsStructuredErrorForEmptySQL` remains the empty-SQL
-fail-closed check.
+The two empty-`--sql` stderr texts are asserted distinct and command-named, with
+exit 2 versus 3 unchanged. MCP `TestAuditSQLToolReturnsStructuredErrorForEmptySQL`
+remains the empty-SQL fail-closed check.
 
 ## Consequences
 
@@ -93,6 +98,8 @@ through to another source.
 ## Links
 
 - Issue: https://github.com/Fanduzi/DeltaScope/issues/19
-- Follow-up issue: https://github.com/Fanduzi/DeltaScope/issues/32
+- Follow-up issues: https://github.com/Fanduzi/DeltaScope/issues/32,
+  https://github.com/Fanduzi/DeltaScope/issues/68
 - Tests: `internal/interfaces/cli/cli_test.go`, `internal/interfaces/cli/query_access_test.go`, `internal/interfaces/mcp/server_test.go`
 - Docs: `docs/reference/cli.md`, `docs/reference/cli.zh-CN.md`, `docs/reference/query-access-analysis.md`
+- Related: `docs/decisions/2026-09-04-named-public-signals.md`

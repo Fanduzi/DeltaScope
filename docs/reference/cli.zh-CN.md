@@ -25,7 +25,7 @@ Cobra 还会为每个命令提供内建的 `-h` / `--help` 标志。主机使用
 
 ### 输入
 
-三种输入来源互斥。若未提供 `--sql` 和 `--file`，`deltascope audit` 将从 stdin 读取，便于通过管道传递 SQL。显式传入的 `--sql`（包括 `""` 或仅空白）就是 SQL 输入；空值会立即以 `SQL input must not be empty` 失败并退出码 2，而不会回退到 stdin。
+三种输入来源互斥。若未提供 `--sql` 和 `--file`，`deltascope audit` 将从 stdin 读取，便于通过管道传递 SQL。显式传入的 `--sql`（包括 `""` 或仅空白）就是 SQL 输入；空值会立即以 `audit: SQL input must not be empty` 失败并退出码 2，而不会回退到 stdin。
 
 | 标志 | 描述 |
 |------|------|
@@ -1425,12 +1425,29 @@ deltascope --version
 
 ## 退出码
 
+`audit` 与 `query-access analyze` 使用不同的退出码表。不要把 Query Access 的退出码当成审计 Fail Threshold 结果。`deltascope audit --help` 和 `deltascope query-access analyze --help` 打印同一套表。
+
+### audit
+
 | 退出码 | 含义 |
 |:------:|------|
-| `0` | 审计完成且发现低于 `--fail-on` 阈值；或非审计命令成功完成。 |
+| `0` | 审计完成且发现低于 `--fail-on` 阈值；或非审计、非 Query Access 命令成功完成。 |
 | `1` | 审计完成，且至少一条发现达到或超过 `--fail-on` 阈值。 |
-| `2` | 用户输入错误：无效标志、格式错误的 SQL、不可读或无效的配置文件、`--dialect` 冲突，或 schema 解析模糊。 |
+| `2` | 用户输入错误：无效标志、格式错误的 SQL、空 `--sql`、不可读或无效的配置文件、`--dialect` 冲突，或 schema 解析模糊。 |
 | `3` | 运行时或内部错误（意外错误、元数据感知模式下的连接失败等）。 |
+
+显式空 `--sql` 打印 `audit: SQL input must not be empty`，以退出码 `2` 退出，且不读取 stdin。
+
+### query-access analyze
+
+| 退出码 | 含义 |
+|:------:|------|
+| `0` | 可准入（admissible）。 |
+| `1` | 已拒绝（rejected）。 |
+| `2` | 准入不确定（indeterminate）。 |
+| `3` | 用法或连接错误，包括空 `--sql`。 |
+
+显式空 `--sql` 打印 `query-access: SQL input must not be empty`，以退出码 `3` 退出，且不读取 stdin。
 
 ---
 

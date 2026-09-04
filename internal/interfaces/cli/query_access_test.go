@@ -1,6 +1,6 @@
 // Package cli verifies CLI query access command behavior.
 // input: synthetic CLI invocations covering audit-only flag boundaries, SQL sources, catalog/schema hints, unified online-session routing, and the PostgreSQL PG17 version boundary
-// output: coverage for query access JSON output, exit codes, input-source validation, alias/conflict binding, bounded connection/authentication/version messages, and close ownership
+// output: coverage for query access JSON output, exit codes, command-named empty --sql errors, advertised Query Access exit table, input-source validation, alias/conflict binding, bounded connection/authentication/version messages, and close ownership
 // pos: CLI adapter behavior and unified online migration coverage for query access
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -532,8 +532,19 @@ func TestQueryAccessAnalyzeHelpShowsConnectionFlags(t *testing.T) {
 			t.Errorf("expected %q in help output", flag)
 		}
 	}
-	if !bytes.Contains(stdout.Bytes(), []byte("Explicit empty or whitespace-only --sql fails with exit 3 without reading stdin.")) {
+	if !bytes.Contains(stdout.Bytes(), []byte(`fails with "query-access: SQL input must not be empty" and exit 3 without reading stdin.`)) {
 		t.Fatalf("expected explicit empty SQL input contract in help output:\n%s", stdout.String())
+	}
+	for _, want := range []string{
+		"Exit codes:",
+		"0  admissible",
+		"1  rejected",
+		"2  indeterminate",
+		"3  usage or connection error (including empty --sql)",
+	} {
+		if !bytes.Contains(stdout.Bytes(), []byte(want)) {
+			t.Fatalf("expected query-access analyze --help to document %q, got:\n%s", want, stdout.String())
+		}
 	}
 	if !bytes.Contains(stdout.Bytes(), []byte("online PostgreSQL Query Access requires PostgreSQL 17")) {
 		t.Fatalf("expected PostgreSQL online version requirement in help output:\n%s", stdout.String())
@@ -589,8 +600,8 @@ func TestQueryAccessAnalyzeEmptyStdin(t *testing.T) {
 	if exitCode != exitQueryAccessUsageError {
 		t.Fatalf("expected exit code %d, got %d: %s", exitQueryAccessUsageError, exitCode, stderr.String())
 	}
-	if stderr.String() != "SQL input must not be empty\n" {
-		t.Fatalf("expected bounded empty SQL error, got %q", stderr.String())
+	if stderr.String() != "query-access: SQL input must not be empty\n" {
+		t.Fatalf("expected query-access-named empty SQL error, got %q", stderr.String())
 	}
 }
 
@@ -606,8 +617,8 @@ func TestQueryAccessAnalyzeRejectsExplicitEmptySQLWithoutReadingStdin(t *testing
 			if exitCode != exitQueryAccessUsageError {
 				t.Fatalf("expected exit code %d, got %d: %s", exitQueryAccessUsageError, exitCode, stderr.String())
 			}
-			if stderr.String() != "SQL input must not be empty\n" {
-				t.Fatalf("expected bounded empty SQL error, got %q", stderr.String())
+			if stderr.String() != "query-access: SQL input must not be empty\n" {
+				t.Fatalf("expected query-access-named empty SQL error, got %q", stderr.String())
 			}
 		})
 	}

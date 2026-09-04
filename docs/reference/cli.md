@@ -30,7 +30,7 @@ Audit one or more SQL statements from inline text, a file, or standard input.
 The three input sources are mutually exclusive. If `--sql` and `--file` are both omitted,
 `deltascope audit` reads from stdin, making it easy to pipe SQL through the tool. An explicit
 `--sql` value, including `""` or whitespace-only text, is the SQL input and is rejected with
-`SQL input must not be empty` (exit 2) instead of falling through to stdin.
+`audit: SQL input must not be empty` (exit 2) instead of falling through to stdin.
 
 | Flag | Description |
 |------|-------------|
@@ -1525,12 +1525,31 @@ deltascope --version
 
 ## Exit Codes
 
+`audit` and `query-access analyze` use different exit tables. Do not treat a Query Access
+exit as an audit Fail Threshold result. `deltascope audit --help` and
+`deltascope query-access analyze --help` print the same tables.
+
+### audit
+
 | Exit Code | Meaning |
 |:---------:|---------|
-| `0` | Audit completed and findings are below the `--fail-on` threshold; or a non-audit command completed successfully. |
+| `0` | Audit completed and findings are below the `--fail-on` threshold; or a non-audit, non-Query-Access command completed successfully. |
 | `1` | Audit completed and at least one finding met or exceeded the `--fail-on` threshold. |
-| `2` | Bad user input: invalid flags, malformed SQL, unreadable or invalid config file, conflicting `--dialect`, or ambiguous schema resolution. |
+| `2` | User error: invalid flags, malformed SQL, empty `--sql`, unreadable or invalid config file, conflicting `--dialect`, or ambiguous schema resolution. |
 | `3` | Runtime or internal failure (unexpected error, connection failure in metadata-aware mode, etc.). |
+
+Empty explicit `--sql` prints `audit: SQL input must not be empty` and exits `2` without reading stdin.
+
+### query-access analyze
+
+| Exit Code | Meaning |
+|:---------:|---------|
+| `0` | Admissible. |
+| `1` | Rejected. |
+| `2` | Indeterminate admission. |
+| `3` | Usage or connection error, including empty `--sql`. |
+
+Empty explicit `--sql` prints `query-access: SQL input must not be empty` and exits `3` without reading stdin.
 
 ---
 

@@ -1,6 +1,6 @@
 // Package cli verifies the Cobra CLI adapter behavior.
 // input: command-line args including audit-local output and skipped-rule flags, stdin/file SQL sources, unread-stdin doubles for explicit --sql, password-prompt doubles, MySQL-style -H/-P/-u/-D connection flags, and config-init/version requests
-// output: end-to-end CLI behavior coverage for audit rendering/thresholds, compact and opt-in JSON skipped-rule contracts, quiet JSON stability, exit codes, rendered output, and connection-flag validation including -H host shorthand
+// output: end-to-end CLI behavior coverage for audit rendering/thresholds, compact and opt-in JSON skipped-rule contracts, quiet JSON stability, exit codes, distinct audit-named empty --sql errors, advertised audit exit table, rendered output, and connection-flag validation including -H host shorthand
 // pos: interface-layer CLI test coverage
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -232,13 +232,82 @@ func TestAuditCommandRejectsExplicitEmptySQLWithoutReadingStdin(t *testing.T) {
 				&strings.Builder{},
 				stderr,
 			)
-			if code != 2 {
-				t.Fatalf("expected user error exit code 2, got %d", code)
+			if code != exitUser {
+				t.Fatalf("expected user error exit code %d, got %d", exitUser, code)
 			}
-			if !strings.Contains(stderr.String(), "SQL input must not be empty") {
-				t.Fatalf("expected empty SQL error, got %q", stderr.String())
+			got := stderr.String()
+			if got != "audit: SQL input must not be empty\n" {
+				t.Fatalf("expected audit-named empty SQL error, got %q", got)
 			}
 		})
+	}
+}
+
+func TestExplicitEmptySQLErrorsNameTheirCommands(t *testing.T) {
+	auditStderr := &strings.Builder{}
+	auditCode := Execute(
+		context.Background(),
+		[]string{"audit", "--sql", ""},
+		unexpectedStdinReader{t: t},
+		&strings.Builder{},
+		auditStderr,
+	)
+	queryStderr := &strings.Builder{}
+	queryCode := Execute(
+		context.Background(),
+		[]string{"query-access", "analyze", "--sql", ""},
+		unexpectedStdinReader{t: t},
+		&strings.Builder{},
+		queryStderr,
+	)
+
+	if auditCode != exitUser {
+		t.Fatalf("expected audit empty --sql exit %d, got %d", exitUser, auditCode)
+	}
+	if queryCode != exitQueryAccessUsageError {
+		t.Fatalf("expected query-access empty --sql exit %d, got %d", exitQueryAccessUsageError, queryCode)
+	}
+	auditErr := auditStderr.String()
+	queryErr := queryStderr.String()
+	if auditErr == queryErr {
+		t.Fatalf("empty --sql error texts must not be identical, both %q", auditErr)
+	}
+	if !strings.Contains(auditErr, "SQL input must not be empty") || !strings.Contains(queryErr, "SQL input must not be empty") {
+		t.Fatalf("both empty --sql errors must say SQL input must not be empty, audit=%q query-access=%q", auditErr, queryErr)
+	}
+	if !strings.Contains(auditErr, "audit") {
+		t.Fatalf("audit empty --sql error must name the audit command, got %q", auditErr)
+	}
+	if !strings.Contains(queryErr, "query-access") {
+		t.Fatalf("query-access empty --sql error must name the query-access command, got %q", queryErr)
+	}
+}
+
+func TestAuditHelpDocumentsExitTable(t *testing.T) {
+	stdout := &strings.Builder{}
+	stderr := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"audit", "--help"},
+		strings.NewReader(""),
+		stdout,
+		stderr,
+	)
+	if code != exitOK {
+		t.Fatalf("expected exit %d for audit --help, got %d (stderr=%q stdout=%q)", exitOK, code, stderr.String(), stdout.String())
+	}
+	got := stdout.String()
+	for _, want := range []string{
+		`fails with "audit: SQL input must not be empty" and exit 2 without reading stdin`,
+		"Exit codes:",
+		"0  completed; findings below --fail-on",
+		"1  findings met or exceeded --fail-on",
+		"2  user error (including empty --sql)",
+		"3  runtime or connection failure",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("expected audit --help to document %q, got %q", want, got)
+		}
 	}
 }
 
@@ -259,8 +328,8 @@ func TestAuditCommandRejectsEmptyFileInput(t *testing.T) {
 	if code != 2 {
 		t.Fatalf("expected user error exit code 2, got %d", code)
 	}
-	if !strings.Contains(stderr.String(), "SQL input must not be empty") {
-		t.Fatalf("expected empty SQL error, got %q", stderr.String())
+	if stderr.String() != "audit: SQL input must not be empty\n" {
+		t.Fatalf("expected audit-named empty SQL error, got %q", stderr.String())
 	}
 }
 

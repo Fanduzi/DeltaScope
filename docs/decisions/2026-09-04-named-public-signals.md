@@ -16,6 +16,11 @@ Related tests:
 - `TestListAndDescribeDefaultDisabledImpactRules`
 - `TestInspect_DefaultDisabledImpactRule`
 - `TestInspect_AllowsDefaultDisabledImpactRules`
+- `TestAuditCommandRejectsExplicitEmptySQLWithoutReadingStdin`
+- `TestExplicitEmptySQLErrorsNameTheirCommands`
+- `TestAuditHelpDocumentsExitTable`
+- `TestQueryAccessAnalyzeRejectsExplicitEmptySQLWithoutReadingStdin`
+- `TestQueryAccessAnalyzeHelpShowsConnectionFlags`
 Related docs:
 - `CONTEXT.md`
 - `docs/reference/audit-capability-matrix.md`
@@ -120,10 +125,15 @@ exit classes, or Default Policy.
   statement impact object and emit no findings from those IDs. Enabling them
   in config still produces findings from that object. Capability matrix and
   CLI reference now call them opt-in.
-- #65, #68, #69, #72: pending implementation. Expected evidence includes CLI
-  JSON tests for `fail_on_triggered`, distinct empty-SQL error strings with
-  unchanged exit codes, launcher failure below Node 24, and `get_capabilities`
-  Query Access declaration tests.
+- #68: CLI `Execute` tests keep `audit --sql ""` at exit 2 and
+  `query-access analyze --sql ""` at exit 3 without reading stdin. The
+  stderr texts are distinct: `audit: SQL input must not be empty` versus
+  `query-access: SQL input must not be empty`. `audit --help` and
+  `query-access analyze --help` plus the CLI reference document both exit
+  tables.
+- #65, #69, #72: pending implementation. Expected evidence includes CLI
+  JSON tests for `fail_on_triggered`, launcher failure below Node 24, and
+  `get_capabilities` Query Access declaration tests.
 
 ## Consequences
 

@@ -78,7 +78,7 @@ Projection-only mode emits a `projection_only_inference_risk` warning when non-p
 
 `query-access analyze` accepts SQL from mutually exclusive `--sql`, `--file`, or
 stdin when both flags are omitted. Flag presence selects the source: an explicit
-`--sql ""` or whitespace-only value fails immediately with `SQL input must not be
+`--sql ""` or whitespace-only value fails immediately with `query-access: SQL input must not be
 empty` and exit 3 without reading stdin. Empty stdin returns the same bounded
 message and exit code. If `--file` cannot be opened, the command returns
 `cannot read SQL file` with exit 3 and does not expose the OS error or filesystem
@@ -205,7 +205,16 @@ deltascope query-access analyze --file ./query.sql --dialect postgresql --mode p
 deltascope query-access analyze --sql "SELECT id, name FROM users WHERE id = 1" --host 127.0.0.1 --port 3306 --user root --ask-password --schema app
 ```
 
-Exit codes: `0` = admissible, `1` = rejected, `2` = indeterminate, `3` = usage or connection error. The CLI always emits the fixed Query Access JSON document; audit-only `--format` and `--fail-on` flags are unsupported in either command position and fail with exit 3 without analysis output. Online PostgreSQL Query Access intentionally requires PostgreSQL 17; a reachable unsupported PostgreSQL identity exits 3 with the bounded message `online PostgreSQL Query Access requires PostgreSQL 17`.
+This exit table is not the audit Fail Threshold table. `deltascope query-access analyze --help` prints it; `deltascope audit --help` prints the audit table.
+
+| Exit Code | Meaning |
+|:---------:|---------|
+| `0` | Admissible. |
+| `1` | Rejected. |
+| `2` | Indeterminate admission. |
+| `3` | Usage or connection error, including empty `--sql`. |
+
+Empty explicit `--sql` prints `query-access: SQL input must not be empty` and exits `3` without reading stdin. The CLI always emits the fixed Query Access JSON document; audit-only `--format` and `--fail-on` flags are unsupported in either command position and fail with exit 3 without analysis output. Online PostgreSQL Query Access intentionally requires PostgreSQL 17; a reachable unsupported PostgreSQL identity exits 3 with the bounded message `online PostgreSQL Query Access requires PostgreSQL 17`.
 
 In online MySQL/TiDB mode, `--database` and `--schema` are catalog aliases:
 either one supplies the connection catalog and the request's default qualifier

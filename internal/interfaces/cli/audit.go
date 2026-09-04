@@ -1,6 +1,6 @@
 // Package cli exposes the command-line adapter for DeltaScope.
 // input: audit command flags including -h/--help versus -H/--host, audit-local output format, skipped-rule detail, and fail threshold, whether --sql was explicitly provided, SQL text from flags/files/stdin, password source/prompt dependencies, typed standard-library network errors, and application audit services
-// output: rendered audit results and located diagnostics, audit-only output validation, CLI JSON skipped-rule aggregation with optional stable per-rule details, dialect-aware connection-option normalization with MySQL/TiDB catalog aliases and PostgreSQL schema/database validation, password resolution, offline existence caveats, and user-vs-runtime exit-code mapping through shared bounded connection-refused, connection, authentication, identity, and TLS categories
+// output: rendered audit results and located diagnostics, audit-only output validation, command-named empty-SQL usage errors, advertised audit exit table, CLI JSON skipped-rule aggregation with optional stable per-rule details, dialect-aware connection-option normalization with MySQL/TiDB catalog aliases and PostgreSQL schema/database validation, password resolution, offline existence caveats, and user-vs-runtime exit-code mapping through shared bounded connection-refused, connection, authentication, identity, and TLS categories
 // pos: CLI audit command implementation above the application service and output renderers
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -65,7 +65,13 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 		Use:   "audit",
 		Short: "Audit SQL from flags, files, or stdin",
 		Long: "Audit SQL in offline mode or enrich the same audit engine with live metadata.\n" +
-			"When connection flags are present, DeltaScope uses metadata-aware mode, auto-detects the dialect, and infers schema when possible for mysql, tidb, and postgresql connections.",
+			"When connection flags are present, DeltaScope uses metadata-aware mode, auto-detects the dialect, and infers schema when possible for mysql, tidb, and postgresql connections.\n" +
+			"SQL input comes from --sql, --file, or stdin. Explicit empty or whitespace-only --sql fails with \"audit: SQL input must not be empty\" and exit 2 without reading stdin.\n" +
+			"Exit codes:\n" +
+			"  0  completed; findings below --fail-on\n" +
+			"  1  findings met or exceeded --fail-on\n" +
+			"  2  user error (including empty --sql)\n" +
+			"  3  runtime or connection failure",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			switch options.Format {
 			case "markdown", "json", "github-actions", "github-summary", "sarif", "gitlab-codequality":
@@ -311,13 +317,15 @@ func (o auditConnectionOptions) Enabled() bool {
 	return o.Host != "" || o.PortSet || o.User != "" || o.Password != "" || o.Schema != "" || o.Socket != ""
 }
 
+const emptyAuditSQLMessage = "audit: SQL input must not be empty"
+
 func resolveAuditSQL(ctx context.Context, stdin io.Reader, inlineSQL string, filePath string, stderr io.Writer, interactive bool, sqlProvided bool) (string, error) {
 	if sqlProvided && strings.TrimSpace(filePath) != "" {
 		return "", newUserError("use either --sql or --file, not both")
 	}
 	if sqlProvided {
 		if strings.TrimSpace(inlineSQL) == "" {
-			return "", newUserError("SQL input must not be empty")
+			return "", newUserError(emptyAuditSQLMessage)
 		}
 		return inlineSQL, nil
 	}
@@ -330,7 +338,7 @@ func resolveAuditSQL(ctx context.Context, stdin io.Reader, inlineSQL string, fil
 			return "", err
 		}
 		if strings.TrimSpace(string(content)) == "" {
-			return "", newUserError("SQL input must not be empty")
+			return "", newUserError(emptyAuditSQLMessage)
 		}
 		return string(content), nil
 	}
@@ -349,7 +357,7 @@ func resolveAuditSQL(ctx context.Context, stdin io.Reader, inlineSQL string, fil
 		return "", err
 	}
 	if strings.TrimSpace(string(content)) == "" {
-		return "", newUserError("SQL input must not be empty")
+		return "", newUserError(emptyAuditSQLMessage)
 	}
 	return string(content), nil
 }
