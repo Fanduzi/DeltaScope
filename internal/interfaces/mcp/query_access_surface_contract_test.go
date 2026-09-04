@@ -1,6 +1,6 @@
 // Package mcpapi verifies that Query Access remains outside the MCP tool surface.
 // input: MCP server tool discovery
-// output: no query-access tool registration
+// output: no query-access tool registration; official tool list remains the four existing tools
 // pos: cross-surface contract coverage
 package mcpapi
 
@@ -29,5 +29,9 @@ func TestQueryAccessPureEffectSurfaceContract(t *testing.T) {
 		if tool == "query_access" || tool == "query-access" {
 			t.Fatalf("unexpected Query Access MCP tool %q", tool)
 		}
+	}
+	want := []string{"audit_sql", "describe_rule", "get_capabilities", "list_rules"}
+	if len(tools) != len(want) {
+		t.Fatalf("tool count = %d (%#v), want exactly %d official tools", len(tools), tools, len(want))
 	}
 }

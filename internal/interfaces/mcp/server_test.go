@@ -65,7 +65,7 @@ func TestNewServerPublishesOutputSchemasForCoreTools(t *testing.T) {
 		"audit_sql":        {"verdict", "context"},
 		"describe_rule":    {"rule_id", "summary"},
 		"list_rules":       {"count", "rules"},
-		"get_capabilities": {"dialects", "audit_modes"},
+		"get_capabilities": {"dialects", "audit_modes", "query_access"},
 	}
 
 	for name, props := range required {
@@ -119,6 +119,28 @@ func TestNewServerPublishesOutputSchemasForCoreTools(t *testing.T) {
 	for _, prop := range []string{"description", "why", "risk", "suggestion", "config_example", "trigger_example"} {
 		if _, ok := ruleProps[prop]; ok {
 			t.Fatalf("list_rules compact row still publishes full-body field %q", prop)
+		}
+	}
+
+	capabilitiesSchema, ok := tools["get_capabilities"].OutputSchema.(map[string]any)
+	if !ok {
+		t.Fatalf("get_capabilities output schema type = %T", tools["get_capabilities"].OutputSchema)
+	}
+	capabilitiesProps, ok := capabilitiesSchema["properties"].(map[string]any)
+	if !ok {
+		t.Fatalf("get_capabilities schema missing properties: %#v", capabilitiesSchema)
+	}
+	queryAccessSchema, ok := capabilitiesProps["query_access"].(map[string]any)
+	if !ok {
+		t.Fatalf("get_capabilities schema missing query_access: %#v", capabilitiesProps)
+	}
+	queryAccessProps, ok := queryAccessSchema["properties"].(map[string]any)
+	if !ok {
+		t.Fatalf("get_capabilities query_access missing properties: %#v", queryAccessSchema)
+	}
+	for _, prop := range []string{"available", "surfaces"} {
+		if _, ok := queryAccessProps[prop]; !ok {
+			t.Fatalf("get_capabilities query_access missing %q: %#v", prop, queryAccessProps)
 		}
 	}
 

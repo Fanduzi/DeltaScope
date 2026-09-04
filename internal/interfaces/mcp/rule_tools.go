@@ -1,6 +1,6 @@
 // Package mcpapi exposes the MCP adapter for DeltaScope.
 // input: shipped rule catalog entries and DeltaScope capability metadata for MCP rule tools
-// output: full describe_rule bodies, compact list_rules rows plus text catalog, and get_capabilities summaries including the public connection.connect_timeout capability and offline existence context_fields
+// output: full describe_rule bodies, compact list_rules rows plus text catalog, and get_capabilities summaries including query_access unavailability, the public connection.connect_timeout capability, and offline existence context_fields
 // pos: MCP rule-discovery helpers above the domain rule catalog
 // note: if this file changes, update this header and module README.md.
 package mcpapi
@@ -49,22 +49,30 @@ type listRulesResponse struct {
 	Rules []ruleListItem `json:"rules"`
 }
 
+// queryAccessCapability is the get_capabilities Query Access discovery object.
+// Surfaces order is stable: cli, then http.
+type queryAccessCapability struct {
+	Available bool     `json:"available"`
+	Surfaces  []string `json:"surfaces"`
+}
+
 type capabilitiesResponse struct {
-	Transport                 string   `json:"transport"`
-	Tools                     []string `json:"tools"`
-	AuditModes                []string `json:"audit_modes"`
-	Dialects                  []string `json:"dialects"`
-	TopLevelInputs            []string `json:"top_level_inputs"`
-	ConnectionInputs          []string `json:"connection_inputs"`
-	InputRules                []string `json:"input_rules"`
-	ConnectionRefPath         string   `json:"connection_ref_path"`
-	ConnectionRefOverrideFlag string   `json:"connection_ref_override_flag"`
-	ResultFields              []string `json:"result_fields"`
-	ContextFields             []string `json:"context_fields"`
-	StructuredErrors          []string `json:"structured_errors"`
-	MetadataFeatures          []string `json:"metadata_features"`
-	RuleCatalogTools          []string `json:"rule_catalog_tools"`
-	CapabilityVersion         string   `json:"capability_version"`
+	Transport                 string                `json:"transport"`
+	Tools                     []string              `json:"tools"`
+	QueryAccess               queryAccessCapability `json:"query_access"`
+	AuditModes                []string              `json:"audit_modes"`
+	Dialects                  []string              `json:"dialects"`
+	TopLevelInputs            []string              `json:"top_level_inputs"`
+	ConnectionInputs          []string              `json:"connection_inputs"`
+	InputRules                []string              `json:"input_rules"`
+	ConnectionRefPath         string                `json:"connection_ref_path"`
+	ConnectionRefOverrideFlag string                `json:"connection_ref_override_flag"`
+	ResultFields              []string              `json:"result_fields"`
+	ContextFields             []string              `json:"context_fields"`
+	StructuredErrors          []string              `json:"structured_errors"`
+	MetadataFeatures          []string              `json:"metadata_features"`
+	RuleCatalogTools          []string              `json:"rule_catalog_tools"`
+	CapabilityVersion         string                `json:"capability_version"`
 }
 
 func describeRulePayload(ruleID string) (ruleDescription, error) {
@@ -161,6 +169,10 @@ func capabilitiesPayload(connectionsPath string) capabilitiesResponse {
 			"describe_rule",
 			"list_rules",
 			"get_capabilities",
+		},
+		QueryAccess: queryAccessCapability{
+			Available: false,
+			Surfaces:  []string{"cli", "http"},
 		},
 		AuditModes: []string{"offline", "metadata-aware"},
 		Dialects:   []string{"mysql", "tidb", "postgresql"},

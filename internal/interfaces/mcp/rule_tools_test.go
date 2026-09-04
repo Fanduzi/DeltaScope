@@ -1,6 +1,6 @@
 // Package mcpapi verifies MCP rule-discovery tool behavior.
 // input: MCP rule tool handlers plus shipped rule catalog and connection capability expectations
-// output: focused coverage for compact list_rules rows, list_rules text surface, describe_rule, and get_capabilities connection.connect_timeout ordering/regression behavior
+// output: focused coverage for compact list_rules rows, list_rules text surface, describe_rule, get_capabilities Query Access unavailability, and connection.connect_timeout ordering/regression behavior
 // pos: interface-layer tests for MCP rule-discovery behavior
 // note: if this file changes, update this header and module README.md.
 package mcpapi
@@ -245,6 +245,10 @@ func TestGetCapabilitiesToolReturnsKnownSummary(t *testing.T) {
 			"list_rules",
 			"get_capabilities",
 		},
+		QueryAccess: queryAccessCapability{
+			Available: false,
+			Surfaces:  []string{"cli", "http"},
+		},
 		AuditModes:                []string{"offline", "metadata-aware"},
 		Dialects:                  []string{"mysql", "tidb", "postgresql"},
 		TopLevelInputs:            []string{"sql", "dialect", "config_path", "connection_ref", "connection"},
@@ -261,6 +265,65 @@ func TestGetCapabilitiesToolReturnsKnownSummary(t *testing.T) {
 	}
 	if !reflect.DeepEqual(resp, want) {
 		t.Fatalf("unexpected capabilities:\n got: %+v\nwant: %+v", resp, want)
+	}
+}
+
+func TestGetCapabilitiesDeclaresQueryAccessUnavailableOnMCP(t *testing.T) {
+	t.Parallel()
+
+	_, got, err := newGetCapabilitiesTool(Config{})(context.Background(), nil, getCapabilitiesInput{})
+	if err != nil {
+		t.Fatalf("get capabilities: %v", err)
+	}
+
+	raw, err := json.Marshal(got)
+	if err != nil {
+		t.Fatalf("marshal capabilities: %v", err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		t.Fatalf("unmarshal capabilities: %v", err)
+	}
+
+	queryAccess, ok := payload["query_access"].(map[string]any)
+	if !ok {
+		t.Fatalf("query_access missing or wrong type: %#v", payload["query_access"])
+	}
+	if queryAccess["available"] != false {
+		t.Fatalf("query_access.available = %#v, want false", queryAccess["available"])
+	}
+	surfaces, ok := queryAccess["surfaces"].([]any)
+	if !ok {
+		t.Fatalf("query_access.surfaces type = %T", queryAccess["surfaces"])
+	}
+	gotSurfaces := make([]string, len(surfaces))
+	for i, value := range surfaces {
+		surface, ok := value.(string)
+		if !ok {
+			t.Fatalf("query_access.surfaces[%d] type = %T", i, value)
+		}
+		gotSurfaces[i] = surface
+	}
+	wantSurfaces := []string{"cli", "http"}
+	if !reflect.DeepEqual(gotSurfaces, wantSurfaces) {
+		t.Fatalf("query_access.surfaces = %#v, want %#v", gotSurfaces, wantSurfaces)
+	}
+
+	tools, ok := payload["tools"].([]any)
+	if !ok {
+		t.Fatalf("tools type = %T", payload["tools"])
+	}
+	gotTools := make([]string, len(tools))
+	for i, value := range tools {
+		tool, ok := value.(string)
+		if !ok {
+			t.Fatalf("tools[%d] type = %T", i, value)
+		}
+		gotTools[i] = tool
+	}
+	wantTools := []string{"audit_sql", "describe_rule", "list_rules", "get_capabilities"}
+	if !reflect.DeepEqual(gotTools, wantTools) {
+		t.Fatalf("tools = %#v, want %#v", gotTools, wantTools)
 	}
 }
 
