@@ -21,8 +21,16 @@ import (
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-// Version is the build version printed by the MCP service entrypoint.
-var Version = publicapi.DefaultVersion
+// Version is the optional ldflags-injected release version printed by the
+// MCP service entrypoint. Empty means the process reports Go build information.
+var Version string
+
+func currentVersion() string {
+	if Version != "" {
+		return Version
+	}
+	return publicapi.ReportedVersion()
+}
 
 var newMCPServer = mcpapi.NewServer
 var runMCPServer = func(server *sdkmcp.Server) error {
@@ -70,7 +78,7 @@ func run(args []string, stdout io.Writer, stderr io.Writer) int {
 		return 2
 	}
 	if *showVersion {
-		_, _ = fmt.Fprintln(stdout, Version)
+		_, _ = fmt.Fprintln(stdout, currentVersion())
 		return 0
 	}
 
@@ -104,7 +112,7 @@ func run(args []string, stdout io.Writer, stderr io.Writer) int {
 	}
 
 	server := newMCPServer(mcpapi.Config{
-		Version:                Version,
+		Version:                currentVersion(),
 		ConnectionsPath:        *connectionsPath,
 		Logger:                 slogLogger,
 		MetadataConnectTimeout: metadataTimeout,

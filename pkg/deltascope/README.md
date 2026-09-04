@@ -23,7 +23,8 @@ Stable public package surface for library consumers.
 | query_access_online_session_postgresql_tag_test.go | Verifies PostgreSQL 17 routing through the unified entry: exact COUNT(1) admission, excluded-shape and foreign-table fail-closed behavior, ordered recording-driver no-execution/no-leak, ownership, validation, and bounded failures (postgresql build tag) |
 | query_access_online_session_postgresql_notag_test.go | Verifies the no-tag build keeps the unified symbols, fails an observed PostgreSQL target closed, and preserves legacy PostgreSQL stubs |
 | query_access_online_session_postgresql_integration_test.go | Real PG17 same-backend-session proof, COUNT(1)/excluded-shape/parse-failure/foreign-table evidence, and unified-versus-legacy equivalence for the unified online entry (postgresql + integration build tags) |
-| version.go | Publishes the default semantic version and canonical ASCII logo |
+| version.go | Publishes `ReportedVersion()`, the `DefaultVersion` fallback, and the canonical ASCII logo |
+| version_test.go | Verifies untagged, devel, and pseudo-version builds do not claim `DefaultVersion` as the sole version, and that tagged versions and the absent-build-info fallback stay intact |
 | audit_test.go | Verifies the public audit API with defaults, overrides, multi-statement and wholly-unparsable diagnostics, PostgreSQL routing, and metadata-aware request plumbing |
 | audit_dml_table_existence_test.go | Verifies the public MySQL/TiDB DML missing-target blocker, existing-table behavior, and offline non-claim |
 | audit_ddl_lifecycle_mysql_test.go | Verifies MySQL/TiDB lifecycle findings, normalized notice identifiers, ALTER TABLE index-notice reuse/action metadata, and no-leak behavior |
@@ -60,6 +61,7 @@ Stable public package surface for library consumers.
   Includes `DialectPostgreSQL` for PostgreSQL request routing support
 - `Verdict`
 - `DefaultVersion`
+- `ReportedVersion()`
 - `Logo`
 - `AnalyzeQueryAccess(ctx, request)`
   Performs query access analysis and returns read classification, admission, and permission requirements
@@ -153,8 +155,9 @@ The unified online-session suite owns exhaustive semantic and detailed-probe evi
 - `Result` now also exposes `Unsupported` (`[]spec.UnsupportedDetail`) and `Diagnostics` (`[]spec.Diagnostic`) arrays so library consumers can inspect structured partial-support and parser-error/unsupported-statement outcomes. A partial result with an unaudited parser-error diagnostic is floored from `pass` to `review`; existing `review`/`reject` verdicts and wholly unparseable behavior remain unchanged.
 - `ErrUnsupportedStatement` is returned when unsupported statements are present, while still returning a populated `Result` for supported statements.
 - `Finding` now exposes an optional `Explanation` field so library consumers can read structured per-finding `why`, `risk`, `suggestion`, and metadata-status notes directly.
-- `DefaultVersion` is `v0.510.3`, matching the current repository release baseline for source builds.
-- Release surface gates verify that `DefaultVersion` stays aligned with the release tag so source-built binaries do not drift behind published artifacts.
+- `DefaultVersion` is `v0.510.3`, the fallback when Go build information is absent.
+- `ReportedVersion()` prefers the Go module version (tag or pseudo-version) or VCS revision (`devel-<rev>` / `devel-<rev>-dirty`) so untagged, devel, and `go install @main` builds do not claim the last release tag as the sole version.
+- Release ldflags still override CLI, server, and MCP `Version` to the release tag. Release surface gates keep `DefaultVersion` aligned with that tag as the absent-build-info fallback.
 
 ## Dependencies
 - Upstream: external library consumers

@@ -16,6 +16,7 @@ import (
 
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/logger"
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig"
+	publicapi "github.com/Fanduzi/DeltaScope/pkg/deltascope"
 )
 
 func TestParseCSV(t *testing.T) {
@@ -44,8 +45,26 @@ func TestParseCSV(t *testing.T) {
 }
 
 func TestVersionDefaultsToPublicAPIVersion(t *testing.T) {
-	if Version == "" {
+	previous := Version
+	Version = ""
+	t.Cleanup(func() { Version = previous })
+
+	got := currentVersion()
+	if got == "" {
 		t.Fatal("expected non-empty default version")
+	}
+	if got != publicapi.ReportedVersion() {
+		t.Fatalf("currentVersion() = %q, want ReportedVersion %q", got, publicapi.ReportedVersion())
+	}
+}
+
+func TestCurrentVersionPrefersLdflagsOverride(t *testing.T) {
+	previous := Version
+	Version = "v0.510.3"
+	t.Cleanup(func() { Version = previous })
+
+	if got := currentVersion(); got != "v0.510.3" {
+		t.Fatalf("currentVersion() = %q, want ldflags release tag", got)
 	}
 }
 

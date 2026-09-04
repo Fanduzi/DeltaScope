@@ -13,7 +13,7 @@
 | `--config` | string | （无） | YAML 策略配置文件路径。省略时使用 `policy.Default()`。 |
 | `--dialect` | string | `mysql` | SQL 方言：`mysql`、`tidb` 或 `postgresql`。PostgreSQL 需要使用 PG-capable DeltaScope 二进制。从 `v0.17.0` 公开 release 开始，受支持的 macOS 和 Linux `deltascope` 主 archive 都直接提供该能力，因此 PostgreSQL offline 审计走的就是正常主 CLI 路径。在元数据感知模式下，方言从在线的 MySQL/TiDB 兼容实例自动检测；若显式指定的 `--dialect` 与检测结果冲突，命令将以退出码 2 退出。 |
 | `--quiet` | bool | false | 抑制非结果输出。在 `markdown` 输出模式下，每条发现以单行形式打印；与 `--format json` 一起使用时，不会改变 JSON 契约。 |
-| `--version` | bool | false | 仅打印语义化版本字符串后退出。 |
+| `--version` | bool | false | 打印构建版本和已编译方言后退出。发行包打印发行 tag；源码构建和 `go install @main` 打印 Go 模块版本或 VCS 信息。 |
 
 Cobra 还会为每个命令提供内建的 `--help` 标志。
 
@@ -1409,7 +1409,7 @@ JSON 输出（`--format json`）返回稳定的机器可读契约：
 
 ## deltascope version
 
-打印完整版本字符串，若有构建元数据则一并包含。
+打印完整版本字符串和已编译方言。发行 ldflags 构建打印发行 tag。未打 tag 的源码构建和 `go install ...@main` 打印 Go 模块版本或 VCS 修订（`devel-<rev>` / `devel-<rev>-dirty`），而不是上次发布的 `DefaultVersion`。
 
 ```bash
 deltascope version

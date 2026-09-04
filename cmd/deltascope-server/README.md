@@ -7,7 +7,7 @@ HTTP service entrypoint exposes DeltaScope audit and metadata-aware review over 
 | File | Responsibility |
 |------|---------------|
 | main.go | Parses process flags, loads runtime config, merges logging settings, and starts the HTTP service |
-| main_test.go | Verifies CLI flag parsing, logging config from flags, and runtime config merge helpers |
+| main_test.go | Verifies CLI flag parsing, `-version` ldflags vs `ReportedVersion()` fallback, logging config from flags, and runtime config merge helpers |
 | main_e2e_test.go | Runs Docker-backed MySQL/TiDB metadata-aware HTTP e2e coverage against the real server binary using registry-backed `connection_id` payloads, DML target-table existence cases, and no-leak assertions |
 | main_e2e_postgresql_test.go | Runs Docker-backed PostgreSQL metadata-aware HTTP audit e2e via registry-backed authorized `connection_id` |
 | main_e2e_postgresql_query_access_test.go | Verifies Docker-backed PG17 COUNT(1) query-access behavior through the HTTP connection_id surface, including foreign-table fail-closed |
@@ -30,7 +30,7 @@ HTTP service entrypoint exposes DeltaScope audit and metadata-aware review over 
 - `-log-max-backups` max number of rotated log files to retain. Default: 3.
 - `-log-max-age-days` max number of days to retain rotated log files. Default: 30.
 - `-log-compress` compress rotated log files. Default: true.
-- `-version` prints only the semantic version string and defaults to the repository `DefaultVersion` in source builds.
+- `-version` prints the build version. Release ldflags print the tag. Source and `go install @main` builds print `pkg/deltascope.ReportedVersion()` (module version or VCS `devel-<rev>`). `DefaultVersion` is used only when build information is absent.
 - `-runtime-config <path>` loads a runtime YAML config for logging and other service settings. Explicit flags override runtime config values; runtime config overrides hardcoded defaults.
 - `metadata.connect_timeout` in runtime config sets the default metadata connect timeout for HTTP metadata-aware audit. Omitted or empty means no default (uses the opener's internal default). Invalid or negative values cause startup to fail with exit code 2.
 - `main_e2e_postgresql_query_access_test.go` is retained as HTTP real-route evidence; semantic shape breadth belongs to the unified SDK suite.

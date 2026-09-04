@@ -11,8 +11,6 @@ import (
 	"io"
 	"os"
 	"strings"
-
-	publicapi "github.com/Fanduzi/DeltaScope/pkg/deltascope"
 )
 
 const (
@@ -22,8 +20,9 @@ const (
 	exitInternal = 3
 )
 
-// Version is the build version printed by the version command.
-var Version = publicapi.DefaultVersion
+// Version is the optional ldflags-injected release version printed by the
+// version command. Empty means the process reports Go build information.
+var Version string
 
 // Run executes the CLI against the current process environment and exits.
 func Run() {

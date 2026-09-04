@@ -25,8 +25,16 @@ import (
 	publicapi "github.com/Fanduzi/DeltaScope/pkg/deltascope"
 )
 
-// Version is the build version printed by the HTTP service entrypoint.
-var Version = publicapi.DefaultVersion
+// Version is the optional ldflags-injected release version printed by the
+// HTTP service entrypoint. Empty means the process reports Go build information.
+var Version string
+
+func currentVersion() string {
+	if Version != "" {
+		return Version
+	}
+	return publicapi.ReportedVersion()
+}
 
 func main() {
 	listen := flag.String("listen", "127.0.0.1:8083", "HTTP listen address")
@@ -52,7 +60,7 @@ func main() {
 	flag.Parse()
 
 	if *showVersion {
-		fmt.Println(Version)
+		fmt.Println(currentVersion())
 		return
 	}
 
@@ -94,7 +102,7 @@ func main() {
 		os.Exit(2)
 	}
 
-	server, err := httpapi.NewServer(*listen, *configPath, Version, httpapi.WithRegistry(registry), httpapi.WithSlogLogger(slogLogger), httpapi.WithMiddlewareConfig(httpapi.MiddlewareConfig{
+	server, err := httpapi.NewServer(*listen, *configPath, currentVersion(), httpapi.WithRegistry(registry), httpapi.WithSlogLogger(slogLogger), httpapi.WithMiddlewareConfig(httpapi.MiddlewareConfig{
 		MetricsEnabled: metricsEnabled,
 		RateLimit: httpapi.RateLimitConfig{
 			Enabled:    *rateLimitEnabled,

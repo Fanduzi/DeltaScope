@@ -15,7 +15,7 @@ These flags apply to all subcommands.
 | `--config` | string | (none) | Path to YAML policy config file. When omitted, `policy.Default()` is used. |
 | `--dialect` | string | `mysql` | SQL dialect: `mysql`, `tidb`, or `postgresql`. PostgreSQL requires a PG-capable DeltaScope binary. Starting with the `v0.17.0` public release line, the supported macOS and Linux `deltascope` archives are PG-capable, so PostgreSQL offline audit uses the normal main CLI path. In metadata-aware mode, dialect is auto-detected from the live MySQL/TiDB-compatible instance; an explicit `--dialect` that conflicts with the detected dialect causes exit 2. |
 | `--quiet` | bool | false | Suppress non-result output. With markdown output, each finding is printed as a single line; JSON output is unchanged. |
-| `--version` | bool | false | Print only the semantic version string and exit. |
+| `--version` | bool | false | Print the build version and compiled dialects, then exit. Release archives print the release tag. Source and `go install @main` builds print Go module or VCS information. |
 
 Cobra also exposes a built-in `--help` flag on every command.
 
@@ -1506,7 +1506,10 @@ Query results reflect verified catalog entries. An empty result means no catalog
 
 ## deltascope version
 
-Prints the full version string, including build metadata if available.
+Prints the full version string, including compiled dialects. Release ldflags
+builds print the release tag. Untagged source builds and `go install ...@main`
+print the Go module version or VCS revision (`devel-<rev>` / `devel-<rev>-dirty`)
+instead of the last shipped `DefaultVersion`.
 
 ```bash
 deltascope version

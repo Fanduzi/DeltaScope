@@ -19,6 +19,7 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/logger"
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig"
 	mcpapi "github.com/Fanduzi/DeltaScope/internal/interfaces/mcp"
+	publicapi "github.com/Fanduzi/DeltaScope/pkg/deltascope"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -39,6 +40,70 @@ func TestMain(m *testing.M) {
 		os.Exit(run([]string{}, os.Stdout, os.Stderr))
 	}
 	os.Exit(m.Run())
+}
+
+func TestCurrentVersionUsesReportedVersionWhenUnset(t *testing.T) {
+	previous := Version
+	Version = ""
+	t.Cleanup(func() { Version = previous })
+
+	got := currentVersion()
+	if got == "" {
+		t.Fatal("expected non-empty default version")
+	}
+	if got != publicapi.ReportedVersion() {
+		t.Fatalf("currentVersion() = %q, want ReportedVersion %q", got, publicapi.ReportedVersion())
+	}
+}
+
+func TestCurrentVersionPrefersLdflagsOverride(t *testing.T) {
+	previous := Version
+	Version = "v0.510.3"
+	t.Cleanup(func() { Version = previous })
+
+	if got := currentVersion(); got != "v0.510.3" {
+		t.Fatalf("currentVersion() = %q, want ldflags release tag", got)
+	}
+}
+
+func TestRunVersionPrintsReportedVersionWhenUnset(t *testing.T) {
+	previousVersion := Version
+	previousNewServer := newMCPServer
+	previousRunServer := runMCPServer
+	Version = ""
+	t.Cleanup(func() {
+		Version = previousVersion
+		newMCPServer = previousNewServer
+		runMCPServer = previousRunServer
+	})
+
+	newMCPServer = func(config mcpapi.Config) *sdkmcp.Server {
+		t.Fatal("expected -version to avoid server construction")
+		return nil
+	}
+	runMCPServer = func(server *sdkmcp.Server) error {
+		t.Fatal("expected -version to avoid server startup")
+		return nil
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	exitCode := run([]string{"-version"}, &stdout, &stderr)
+	if exitCode != 0 {
+		t.Fatalf("expected zero exit code, got %d", exitCode)
+	}
+	want := currentVersion()
+	if got := stdout.String(); got != want+"\n" {
+		t.Fatalf("unexpected stdout: %q, want %q", got, want+"\n")
+	}
+	if want == publicapi.DefaultVersion {
+		t.Log("live build info fell back to DefaultVersion")
+	} else if strings.TrimSpace(stdout.String()) == publicapi.DefaultVersion {
+		t.Fatalf("untagged build claimed DefaultVersion %q as the sole version", publicapi.DefaultVersion)
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("expected empty stderr, got %q", stderr.String())
+	}
 }
 
 func TestRunVersionPrintsVersionWithoutBuildingServer(t *testing.T) {
