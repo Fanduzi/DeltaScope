@@ -17,7 +17,7 @@ These flags apply to all subcommands.
 | `--quiet` | bool | false | Suppress non-result output. With markdown output, each finding is printed as a single line; JSON output is unchanged. |
 | `--version` | bool | false | Print the build version and compiled dialects, then exit. Release archives print the release tag. Source and `go install @main` builds print Go module or VCS information. |
 
-Cobra also exposes a built-in `--help` flag on every command.
+Cobra also exposes built-in `-h` / `--help` flags on every command. Host uses `--host` and `-H`; bare `-h` prints help and exits 0.
 
 ---
 
@@ -74,7 +74,7 @@ that connection but do not activate metadata-aware mode on their own.
 
 | Flag | Short | Default | Description |
 |------|-------|---------|-------------|
-| `--host` | `-h` | (none) | Database host address |
+| `--host` | `-H` | (none) | Database host address |
 | `--port` | `-P` | `3306` | Port number. With `--port` omitted, defaults to `5432` only when `--dialect postgresql` is explicit; otherwise defaults to `3306`. An explicit port always wins. |
 | `--user` | `-u` | (none) | Database user |
 | `--password-env` | | (none) | Environment variable that contains the database password |

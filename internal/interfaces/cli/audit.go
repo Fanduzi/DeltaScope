@@ -1,5 +1,5 @@
 // Package cli exposes the command-line adapter for DeltaScope.
-// input: audit command flags including audit-local output format, skipped-rule detail, and fail threshold, whether --sql was explicitly provided, SQL text from flags/files/stdin, password source/prompt dependencies, typed standard-library network errors, and application audit services
+// input: audit command flags including -h/--help versus -H/--host, audit-local output format, skipped-rule detail, and fail threshold, whether --sql was explicitly provided, SQL text from flags/files/stdin, password source/prompt dependencies, typed standard-library network errors, and application audit services
 // output: rendered audit results and located diagnostics, audit-only output validation, CLI JSON skipped-rule aggregation with optional stable per-rule details, dialect-aware connection-option normalization with MySQL/TiDB catalog aliases and PostgreSQL schema/database validation, password resolution, offline existence caveats, and user-vs-runtime exit-code mapping through shared bounded connection-refused, connection, authentication, identity, and TLS categories
 // pos: CLI audit command implementation above the application service and output renderers
 // note: if this file changes, update this header and module README.md.
@@ -160,13 +160,13 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().BoolP("help", "", false, "help for audit")
+	cmd.Flags().BoolP("help", "h", false, "help for audit")
 	cmd.Flags().StringVar(&inlineSQL, "sql", "", "inline SQL text to audit")
 	cmd.Flags().StringVar(&filePath, "file", "", "path to a SQL file to audit")
 	cmd.Flags().StringVar(&options.Format, "format", options.Format, "output format: markdown, json, github-actions, github-summary, sarif, or gitlab-codequality")
 	cmd.Flags().BoolVar(&includeSkippedRules, "include-skipped-rules", false, "include full skipped-rule details in JSON output")
 	cmd.Flags().StringVar(&options.FailOn, "fail-on", options.FailOn, "non-zero threshold: blocker, warning, notice, or none")
-	cmd.Flags().StringVarP(&options.Host, "host", "h", "", "database host for metadata-aware audit")
+	cmd.Flags().StringVarP(&options.Host, "host", "H", "", "database host for metadata-aware audit")
 	cmd.Flags().IntVarP(&options.Port, "port", "P", options.Port, "database port for metadata-aware audit (3306 for MySQL/TiDB/auto-detect; 5432 for explicit PostgreSQL)")
 	cmd.Flags().StringVarP(&options.User, "user", "u", "", "database user for metadata-aware audit")
 	cmd.Flags().StringVar(&options.PasswordEnv, "password-env", "", "environment variable that contains the database password for metadata-aware audit")

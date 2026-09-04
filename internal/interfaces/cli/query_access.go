@@ -1,5 +1,5 @@
 // Package cli exposes the command-line adapter for DeltaScope.
-// input: query-access command flags including dialect-aware connection and catalog/schema hints, flag-presence-aware SQL text from --sql/--file/stdin, and the unified public online query access API
+// input: query-access command flags including -h/--help versus -H/--host, dialect-aware connection and catalog/schema hints, flag-presence-aware SQL text from --sql/--file/stdin, and the unified public online query access API
 // output: rendered offline or alias-bound identity-routed online query access results in JSON format, exit-code mapping, and shared bounded connection/authentication/timeout/TLS/version-boundary errors
 // pos: CLI query-access command implementation above offline analysis and the opaque unified online session boundary
 // note: if this file changes, update this header and module README.md.
@@ -106,8 +106,8 @@ func newQueryAccessAnalyzeCmd(options *cliOptions, exitCode *int) *cobra.Command
 	cmd.Flags().StringVar(&filePath, "file", "", "path to a SQL file to analyze")
 	cmd.Flags().StringVar(&mode, "mode", "", "analysis mode: strict or projection_only (default strict)")
 	cmd.Flags().StringVar(&defaultSchema, "default-schema", "", "default schema for unqualified references")
-	cmd.Flags().BoolP("help", "", false, "help for analyze")
-	cmd.Flags().StringVarP(&options.Host, "host", "h", "", "database host for online query access")
+	cmd.Flags().BoolP("help", "h", false, "help for analyze")
+	cmd.Flags().StringVarP(&options.Host, "host", "H", "", "database host for online query access")
 	cmd.Flags().IntVarP(&options.Port, "port", "P", options.Port, "database port for online query access (3306 for MySQL/TiDB/auto-detect; 5432 for explicit PostgreSQL)")
 	cmd.Flags().StringVarP(&options.User, "user", "u", "", "database user for online query access")
 	cmd.Flags().StringVar(&options.PasswordEnv, "password-env", "", "environment variable that contains the database password for online query access")

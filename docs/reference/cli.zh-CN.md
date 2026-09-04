@@ -15,7 +15,7 @@
 | `--quiet` | bool | false | 抑制非结果输出。在 `markdown` 输出模式下，每条发现以单行形式打印；与 `--format json` 一起使用时，不会改变 JSON 契约。 |
 | `--version` | bool | false | 打印构建版本和已编译方言后退出。发行包打印发行 tag；源码构建和 `go install @main` 打印 Go 模块版本或 VCS 信息。 |
 
-Cobra 还会为每个命令提供内建的 `--help` 标志。
+Cobra 还会为每个命令提供内建的 `-h` / `--help` 标志。主机使用 `--host` 和 `-H`；单独的 `-h` 打印帮助并以退出码 0 退出。
 
 ---
 
@@ -65,7 +65,7 @@ deltascope audit --config ./deltascope.yaml --format json --file ./migrations/v2
 
 | 标志 | 简写 | 默认值 | 描述 |
 |------|------|--------|------|
-| `--host` | `-h` | （无） | MySQL/TiDB 主机地址 |
+| `--host` | `-H` | （无） | MySQL/TiDB 主机地址 |
 | `--port` | `-P` | `3306` | 端口号。省略 `--port` 时，仅在显式指定 `--dialect postgresql` 的情况下默认为 `5432`；其他情况默认为 `3306`。显式传入的端口始终优先。 |
 | `--user` | `-u` | （无） | 数据库用户名 |
 | `--password-env` | | （无） | 包含数据库密码的环境变量名 |
