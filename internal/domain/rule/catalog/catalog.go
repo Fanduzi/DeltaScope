@@ -1,6 +1,6 @@
 // Package catalog defines explanation-oriented metadata for shipped audit rules.
-// input: built-in policy defaults, rule IDs, and catalog template heuristics for shipped rules
-// output: stable rule catalog entries for CLI discovery, search, and rule-detail rendering
+// input: built-in policy defaults, shipped opt-in catalog-only rules, rule IDs, and catalog template heuristics
+// output: stable rule catalog entries for CLI discovery, search, and rule-detail rendering, including default-disabled shipped rules
 // pos: explanation-oriented rule metadata layer above execution-only rule registration
 // note: if this file changes, update this header and module README.md.
 package catalog
@@ -95,16 +95,16 @@ func Search(query string) []Entry {
 }
 
 func buildEntries() []Entry {
-	defaults := domainpolicy.Default()
-	ids := make([]string, 0, len(defaults.Rules))
-	for ruleID := range defaults.Rules {
+	rules := shippedCatalogPolicies()
+	ids := make([]string, 0, len(rules))
+	for ruleID := range rules {
 		ids = append(ids, ruleID)
 	}
 	sort.Strings(ids)
 
 	items := make([]Entry, 0, len(ids))
 	for _, ruleID := range ids {
-		policy := defaults.Rules[ruleID]
+		policy := rules[ruleID]
 		entry := Entry{
 			RuleID:          ruleID,
 			ConfigKey:       ruleID,
@@ -138,6 +138,44 @@ func buildEntries() []Entry {
 		items = append(items, entry)
 	}
 	return items
+}
+
+// shippedCatalogPolicies is Default Policy plus shipped rules that discovery
+// must describe even when Default Policy does not enable them.
+func shippedCatalogPolicies() map[string]domainpolicy.RulePolicy {
+	defaults := domainpolicy.Default()
+	rules := make(map[string]domainpolicy.RulePolicy, len(defaults.Rules)+len(optInCatalogRules))
+	for ruleID, policy := range defaults.Rules {
+		rules[ruleID] = policy
+	}
+	for ruleID, policy := range optInCatalogRules {
+		if _, exists := rules[ruleID]; exists {
+			continue
+		}
+		rules[ruleID] = policy
+	}
+	return rules
+}
+
+var optInCatalogRules = map[string]domainpolicy.RulePolicy{
+	"dml.impact.estimate": {
+		Enabled: false,
+		Level:   rule.LevelNotice,
+	},
+	"dml.impact.rows.max_count": {
+		Enabled: false,
+		Level:   rule.LevelWarning,
+		Params: map[string]any{
+			"value": 1000,
+		},
+	},
+	"dml.impact.ratio.max_percent": {
+		Enabled: false,
+		Level:   rule.LevelWarning,
+		Params: map[string]any{
+			"value": 10,
+		},
+	},
 }
 
 func cloneEntry(in Entry) Entry {
@@ -651,7 +689,7 @@ func tagsForRule(ruleID string) []string {
 }
 
 // sourceForRule returns the provenance of catalog metadata.
-// All current entries derive from the shipped default policy.
+// Entries derive from shipped Default Policy or catalog-only opt-in rules.
 func sourceForRule() string {
 	return "policy"
 }

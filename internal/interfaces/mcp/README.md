@@ -16,7 +16,7 @@ Thin MCP adapter for exposing DeltaScope audit and rule-discovery capabilities t
 | `connection_test.go` | Verifies MCP connection normalization and safety rules |
 | `output_schema.go` | Publishes explicit success output schemas for official MCP tools |
 | `rule_tools.go` | Builds structured payloads and compact `list_rules` text for MCP rule-discovery tools, including `query_access` unavailability on `get_capabilities`, database-aware connection inputs, and `note` / `unproven` on `get_capabilities` context_fields |
-| `rule_tools_test.go` | Verifies compact `list_rules` rows, the text-only surface, `describe_rule`, and `get_capabilities` including Query Access unavailability |
+| `rule_tools_test.go` | Verifies compact `list_rules` rows, the text-only surface, `describe_rule`, default-disabled `dml.impact.*` catalog rows, and `get_capabilities` including Query Access unavailability |
 | `server.go` | Builds the MCP server and registers the official DeltaScope tools |
 | `server_test.go` | Verifies MCP bootstrap, registration, metadata-aware context, and parser-error partial-result preservation |
 | `server_unsupported_diagnostics_evidence_test.go` | Verifies MCP parser errors preserve review-floored partial results, audited siblings/findings, context, structured error signaling, locations, and no-leak boundaries |

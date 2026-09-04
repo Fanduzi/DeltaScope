@@ -77,15 +77,14 @@ func Inspect(ctx context.Context, req Request) (Result, error) {
 		return Result{}, errors.New("rule id must not be empty")
 	}
 
-	if _, ok := catalog.Lookup(req.RuleID); !ok {
+	entry, ok := catalog.Lookup(req.RuleID)
+	if !ok {
 		return Result{}, fmt.Errorf("rule %q not found", req.RuleID)
 	}
 
 	defaults := policy.Default()
-	defaultRule, ok := defaults.Rules[req.RuleID]
+	defaultRule, ok := shippedRulePolicy(defaults, entry)
 	if !ok {
-		// catalog.Lookup and policy.Default are both derived from the shipped rule set,
-		// so this should be unreachable. Guard anyway so we never dereference a zero value.
 		return Result{}, fmt.Errorf("rule %q not found", req.RuleID)
 	}
 
@@ -104,10 +103,12 @@ func Inspect(ctx context.Context, req Request) (Result, error) {
 		}
 		loaded, ok := effective.Rules[req.RuleID]
 		if !ok {
-			// LoadPolicy merges into defaults, so the rule is always present.
-			return Result{}, fmt.Errorf("rule %q not found after loading config", req.RuleID)
+			// Catalog-only opt-in rules are absent from Default Policy, so LoadPolicy
+			// only includes them when the caller mentions the rule.
+			currentRule = defaultRule
+		} else {
+			currentRule = loaded
 		}
-		currentRule = loaded
 
 		raw, err := readRawConfig(req.ConfigPath)
 		if err != nil {
@@ -388,7 +389,11 @@ func validateRawConfig(raw rawConfigFile) error {
 
 	for _, ruleID := range ruleIDs {
 		rawRule := raw.Rules[ruleID]
-		defaultRule, ok := defaults.Rules[ruleID]
+		entry, ok := catalog.Lookup(ruleID)
+		if !ok {
+			return fmt.Errorf("unknown rule %q", ruleID)
+		}
+		defaultRule, ok := shippedRulePolicy(defaults, entry)
 		if !ok {
 			return fmt.Errorf("unknown rule %q", ruleID)
 		}
@@ -403,6 +408,17 @@ func validateRawConfig(raw rawConfigFile) error {
 		}
 	}
 	return nil
+}
+
+func shippedRulePolicy(defaults policy.Policy, entry catalog.Entry) (policy.RulePolicy, bool) {
+	if ruleCfg, ok := defaults.Rules[entry.RuleID]; ok {
+		return ruleCfg, true
+	}
+	return policy.RulePolicy{
+		Enabled: entry.DefaultEnabled,
+		Level:   entry.DefaultLevel,
+		Params:  cloneParams(entry.DefaultParams),
+	}, true
 }
 
 func validateRuleParams(ruleID string, rawParams map[string]any, defaultParams map[string]any) error {

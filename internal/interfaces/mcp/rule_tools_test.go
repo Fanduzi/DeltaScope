@@ -193,6 +193,45 @@ func TestListRulesCallReturnsCompactCatalogRows(t *testing.T) {
 	}
 }
 
+func TestListAndDescribeDefaultDisabledImpactRules(t *testing.T) {
+	t.Parallel()
+
+	session := newRuleToolSession(t)
+	listed := callRuleTool(t, session, "list_rules", map[string]any{"query": "dml.impact"})
+	body := requireStructuredMap(t, listed)
+	rules, ok := body["rules"].([]any)
+	if !ok {
+		t.Fatalf("expected rules array, got %#v", body["rules"])
+	}
+	found := map[string]bool{}
+	for _, raw := range rules {
+		row, ok := raw.(map[string]any)
+		if !ok {
+			t.Fatalf("expected rule object, got %T", raw)
+		}
+		assertCompactListRuleMap(t, row)
+		ruleID, _ := row["rule_id"].(string)
+		found[ruleID] = true
+	}
+	for _, ruleID := range []string{
+		"dml.impact.estimate",
+		"dml.impact.rows.max_count",
+		"dml.impact.ratio.max_percent",
+	} {
+		if !found[ruleID] {
+			t.Fatalf("list_rules must include %q", ruleID)
+		}
+		described := callRuleTool(t, session, "describe_rule", map[string]any{"rule_id": ruleID})
+		desc := requireStructuredMap(t, described)
+		if desc["rule_id"] != ruleID {
+			t.Fatalf("describe_rule rule_id = %#v, want %s", desc["rule_id"], ruleID)
+		}
+		if desc["default_enabled"] != false {
+			t.Fatalf("describe_rule must mark %s default-disabled, got %#v", ruleID, desc["default_enabled"])
+		}
+	}
+}
+
 func TestListRulesCallTextIsNotStructuredJSON(t *testing.T) {
 	t.Parallel()
 

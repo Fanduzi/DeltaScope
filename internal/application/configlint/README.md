@@ -28,7 +28,8 @@ flag land in a later task.
   distinguishable from an explicit empty/zero value, and validates it with the same
   semantics as `deltascope config lint` (unknown rule, invalid level, unknown param, param
   type mismatch) plus malformed-YAML and missing/unreadable-file handling.
-- Compares each mentioned rule against the built-in `policy.Default()` and emits a warning
+- Treats the Rule Catalog as the known-rule set, so default-disabled catalog-only rules such as `dml.impact.*` are valid opt-in config keys.
+- Compares each mentioned rule against the shipped catalog/default policy snapshot and emits a warning
   when replacement changes effective behavior:
   1. default `enabled` is true but the override omits `enabled` (rule goes OFF),
   2. default `level` is non-empty but the override omits it (level becomes empty),
@@ -64,7 +65,7 @@ deferred cleanup, tracked in
 ## Dependencies
 
 - Upstream: (none yet; the CLI `config lint` command will call `Inspect` in a later task)
-- Downstream: `internal/domain/policy`, `internal/domain/rule`
+- Downstream: `internal/domain/policy`, `internal/domain/rule`, `internal/domain/rule/catalog`
 
 ## Update Rule
 

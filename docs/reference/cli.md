@@ -331,7 +331,7 @@ When DeltaScope audits `UPDATE` or `DELETE`, it may add an `impact` object to ea
 
 Offline mode uses SQL shape only. MySQL, TiDB, and PostgreSQL share the bounded single-table `id =` literal/parameter equality heuristic; PostgreSQL `$1` placeholders are supported. Non-equality, `OR`, range, and unrecognized-column predicates remain unknown, while a missing `WHERE` remains a full-table estimate. Metadata-aware mode may refine the estimate with read-only table statistics (MySQL/TiDB) or via the PostgreSQL query planner (`EXPLAIN`). A live PostgreSQL estimate remains `source: plan` and overrides the shape estimate. DeltaScope does not execute the DML and does not run `EXPLAIN ANALYZE`.
 
-Threshold rules `dml.impact.rows.max_count` and `dml.impact.ratio.max_percent` consume this additive statement-level payload when it is available. The payload itself is attached in the audit flow before rule evaluation.
+Threshold rules `dml.impact.rows.max_count` and `dml.impact.ratio.max_percent` are opt-in: they are cataloged as default-disabled and consume this additive statement-level payload only when caller config enables them. The payload itself is attached in the audit flow before rule evaluation, including default audits.
 
 #### Metadata-Aware JSON Output
 

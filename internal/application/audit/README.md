@@ -27,6 +27,7 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 | impact_postgresql_tag_test.go | Verifies PostgreSQL offline primary-key equality and planner impact-source precedence |
 | impact.go | Maps extracted DML predicate shapes to conservative offline impact estimates, populates statement `impact` objects with `estimated_rows`, `estimated_ratio`, `risk_level`, `confidence`, `source`, `reason_codes`, and optional `notes`, upgrades shape-derived sources to metadata after enrichment, and refines the narrow primary-key-on-`id` case when metadata snapshots confirm `PRIMARY(id)` plus optional `table_rows` facts |
 | impact_test.go | Verifies shape-only impact estimation plus post-enrichment metadata source upgrades, unique-equality refinement, and offline preservation behavior for representative UPDATE and DELETE shapes and their additive `impact` payloads |
+| impact_optin_test.go | Verifies default UPDATE/DELETE audits keep the statement impact object without `dml.impact.*` findings, and that enabling those rules in config still emits findings from that object |
 | evaluate.go | Applies registered rules, enriches findings with explanation metadata, and aggregates statement/global findings into report output while preserving statement-level DML `impact` estimates |
 | evaluate_test.go | Verifies application-owned report-flow integration and explanation enrichment over the rule registry |
 | explain.go | Joins evaluated findings with shipped catalog metadata and statement metadata availability notes |

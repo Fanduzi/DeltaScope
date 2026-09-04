@@ -61,3 +61,20 @@ func TestDefaultMetadataExistenceRulesStayEnabled(t *testing.T) {
 		}
 	}
 }
+
+func TestDefaultPolicyDoesNotEnableImpactRules(t *testing.T) {
+	t.Parallel()
+	p := Default()
+	for _, ruleID := range []string{
+		"dml.impact.estimate",
+		"dml.impact.rows.max_count",
+		"dml.impact.ratio.max_percent",
+	} {
+		if ruleCfg, ok := p.Rules[ruleID]; ok && ruleCfg.Enabled {
+			t.Fatalf("Default Policy must not enable %s, got %#v", ruleID, ruleCfg)
+		}
+		if _, ok := p.Rules[ruleID]; ok {
+			t.Fatalf("Default Policy must not include %s", ruleID)
+		}
+	}
+}

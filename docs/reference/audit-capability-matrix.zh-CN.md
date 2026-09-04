@@ -1192,6 +1192,16 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 |---------|---------|:----:|:------:|---------|
 | `dml.table.denylist.forbid` | DML 操作的目标表在配置的 Schema 级或表级拒绝列表中 | ✓ | ✗ | blocker |
 
+### 影响估算
+
+这些阈值/估算规则出现在规则目录中，且默认禁用。它们不在 Default Policy 中。需要调用方配置显式启用后才会产生 finding。默认的 `UPDATE`/`DELETE` 审计仍会附加语句级 `impact` 对象；该对象本身不是 finding。
+
+| 规则 ID | 检查描述 | 离线 | 元数据 | 默认级别 |
+|---------|---------|:----:|:------:|---------|
+| `dml.impact.estimate` | 将预计算的保守语句级 `impact` 估算作为规则输出 | ✓ | ✓ | notice（opt-in） |
+| `dml.impact.rows.max_count` | 保守估算的受影响行数超过配置阈值 | ✓ | ✓ | warning（opt-in） |
+| `dml.impact.ratio.max_percent` | 保守估算的受影响行比例超过配置阈值 | ✓ | ✓ | warning（opt-in） |
+
 离线影响估算路径按方言标准化。MySQL、TiDB 和 PostgreSQL 的单表 `id =` 字面量或参数等值条件都使用有界的 `pk_equality` 估算（`estimated_rows: 1`、低风险、高置信度、`source: shape`）。PostgreSQL `$1` 占位符遵循相同契约。非等值、`OR`、范围和未识别列仍保持 unknown；缺少 `WHERE` 保持现有的全表估算。在线 PostgreSQL 的 `EXPLAIN` 结果仍使用 `source: plan`，并覆盖形状估算。
 
 ### 表存在性

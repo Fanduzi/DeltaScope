@@ -168,6 +168,27 @@ func TestRegisterAddsImpactRulesInDeterministicOrder(t *testing.T) {
 	}
 }
 
+func TestRegisterSkipsDefaultDisabledImpactRules(t *testing.T) {
+	t.Parallel()
+	registry := rule.NewRegistry()
+	if err := Register(registry, policy.Default()); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+
+	gotIDs := registeredStatementRuleIDs(t, registry)
+	for _, ruleID := range []string{
+		"dml.impact.estimate",
+		"dml.impact.rows.max_count",
+		"dml.impact.ratio.max_percent",
+	} {
+		for _, got := range gotIDs {
+			if got == ruleID {
+				t.Fatalf("Default Policy must not load %q, got %#v", ruleID, gotIDs)
+			}
+		}
+	}
+}
+
 func TestRegisterSkipsDisabledDMLRules(t *testing.T) {
 	t.Parallel()
 	registry := rule.NewRegistry()

@@ -433,8 +433,8 @@ func renderRulesExplainText(entry rulecatalog.Entry) string {
 }
 
 // resolveDefaultRulePolicy returns the shipped default policy for one rule from
-// policy.Default(). catalog entries are themselves derived from policy.Default,
-// so the lookup always succeeds; the fallback guards an unreachable drift case.
+// policy.Default(). Catalog-only opt-in rules are absent from Default Policy, so
+// the fallback uses the catalog entry's default-disabled values.
 func resolveDefaultRulePolicy(entry rulecatalog.Entry) policy.RulePolicy {
 	if rp, ok := policy.Default().Rules[entry.RuleID]; ok {
 		return rp

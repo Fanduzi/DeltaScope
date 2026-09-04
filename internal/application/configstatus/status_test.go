@@ -417,6 +417,19 @@ rules:
 	})
 }
 
+func TestInspect_DefaultDisabledImpactRule(t *testing.T) {
+	res, err := Inspect(t.Context(), Request{RuleID: "dml.impact.rows.max_count"})
+	if err != nil {
+		t.Fatalf("expected cataloged opt-in rule to be inspectable, got %v", err)
+	}
+	if res.Status.Enabled || res.Status.State != "off" {
+		t.Fatalf("expected default-disabled impact rule, got enabled=%v state=%q", res.Status.Enabled, res.Status.State)
+	}
+	if res.Default.Enabled || res.Current.Enabled {
+		t.Fatalf("expected default and current snapshots to stay disabled, got default=%+v current=%+v", res.Default, res.Current)
+	}
+}
+
 func TestInspect_ClonesParams(t *testing.T) {
 	path := writeConfig(t, `
 rules:

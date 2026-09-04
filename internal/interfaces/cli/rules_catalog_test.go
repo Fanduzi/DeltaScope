@@ -360,6 +360,41 @@ func TestRulesExplainJSON_NoSeverity(t *testing.T) {
 
 // --- Test 16: rules explain JSON stays free of text-only labels ---
 
+func TestRulesListAndExplainDefaultDisabledImpactRules(t *testing.T) {
+	code, stdout, stderr := runRulesCLI(t, []string{"rules", "list", "--search", "dml.impact", "--format", "json"})
+	if code != 0 {
+		t.Fatalf("exit code = %d, want 0; stderr=%s", code, stderr)
+	}
+	listed := mustParseRulesListJSON(t, stdout)
+	found := map[string]rulesListJSONRule{}
+	for _, rule := range listed.Rules {
+		found[rule.RuleID] = rule
+		if rule.Enabled {
+			t.Fatalf("rules list must mark %s default-disabled", rule.RuleID)
+		}
+	}
+	for _, ruleID := range []string{
+		"dml.impact.estimate",
+		"dml.impact.rows.max_count",
+		"dml.impact.ratio.max_percent",
+	} {
+		if _, ok := found[ruleID]; !ok {
+			t.Fatalf("rules list must include %q", ruleID)
+		}
+		explainCode, explainOut, explainErr := runRulesCLI(t, []string{"rules", "explain", ruleID, "--format", "json"})
+		if explainCode != 0 {
+			t.Fatalf("explain %s exit code = %d, want 0; stderr=%s", ruleID, explainCode, explainErr)
+		}
+		explained := mustParseRulesExplainJSON(t, explainOut)
+		if explained.Rule.RuleID != ruleID {
+			t.Fatalf("explain rule_id = %q, want %s", explained.Rule.RuleID, ruleID)
+		}
+		if explained.Rule.Enabled {
+			t.Fatalf("rules explain must mark %s default-disabled", ruleID)
+		}
+	}
+}
+
 func TestRulesExplainJSON_NoTextOnlyLabels(t *testing.T) {
 	code, stdout, stderr := runRulesCLI(t, []string{"rules", "explain", "dml.where.require", "--format", "json"})
 	if code != 0 {

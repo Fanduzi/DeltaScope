@@ -23,7 +23,8 @@ optional YAML config file. This is the core data layer for the future
 ## What it does
 
 - Reads the built-in default policy (`policy.Default`) and the rule catalog
-  (`catalog.Lookup`).
+  (`catalog.Lookup`). Catalog-only opt-in rules are inspectable as default-disabled
+  even when Default Policy does not include them.
 - Loads the effective policy via the existing `viperconfig.LoadPolicy` when a config path
   is supplied, and uses its output **verbatim** as the "current" snapshot.
 - Compares default versus current `enabled`, `level`, and params, producing deterministic

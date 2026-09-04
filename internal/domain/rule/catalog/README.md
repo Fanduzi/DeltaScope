@@ -6,7 +6,7 @@ Explanation-oriented metadata for shipped DeltaScope rules, with discoverability
 
 | File | Responsibility |
 |------|---------------|
-| catalog.go | Builds stable catalog entries from shipped defaults, explanation templates, and discoverability metadata for CLI discovery, including dialect and metadata-aware scope for the MODIFY nullability fallback advisory |
+| catalog.go | Builds stable catalog entries from shipped defaults plus default-disabled opt-in rules, explanation templates, and discoverability metadata for CLI discovery, including dialect and metadata-aware scope for the MODIFY nullability fallback advisory |
 | query.go | Structured query core: Query/Result types, Validate, QueryEntries with dialect/level/kind/category/search/limit filters |
 | catalog_test.go | Verifies catalog completeness, lookup stability, and metadata-aware flags |
 | catalog_discoverability_test.go | Verifies rule discoverability contract: completeness, field validity, deterministic ordering, dialect/category coverage, drift prevention |
@@ -34,7 +34,7 @@ Explanation-oriented metadata for shipped DeltaScope rules, with discoverability
 | Summary | Yes | One-line human-readable description |
 | Description | Yes | Detailed description with scope and metadata mode |
 | StatementKinds | Yes | SQL statement kinds: `ddl` or `dml` |
-| DefaultEnabled | Yes | Default enabled state from shipped policy |
+| DefaultEnabled | Yes | Default enabled state from shipped policy; catalog-only opt-in rules are `false` |
 | DefaultLevel | Yes | One of `blocker`, `warning`, `notice` |
 | DefaultParams | Yes | Default parameter map from shipped policy |
 | MetadataAware | Yes | Whether the rule uses live metadata |
@@ -54,15 +54,17 @@ Explanation-oriented metadata for shipped DeltaScope rules, with discoverability
 
 ## Derivation Strategy
 
-Catalog entries derive from the shipped default policy (`domainpolicy.Default()`):
-- **Enabled/Level/Params**: read directly from default policy
+Catalog entries derive from the shipped default policy (`domainpolicy.Default()`) unioned with catalog-only opt-in rules. Catalog generation is not Default Policy keys only.
+- **Enabled/Level/Params**: read from default policy when present; catalog-only rules ship `default_enabled: false` with their intended enable-time level/params
 - **Dialects**: derived from rule ID prefix (`ddl.pg.*` → `postgresql`, `ddl.tidb.*` → `tidb`, `.merge.mysql.` → `mysql`, `.merge.tidb.` → `tidb`, the MODIFY unknown-prior-state advisory and `dml.table.exists.require` → `mysql`/`tidb`, else → `common`)
 - **Category**: derived from rule ID segments (e.g., `ddl.table.*` → `table`, `ddl.alter.*` → `alter_table`, `dml.*` → `dml_safety`)
 - **Tags**: synthesized from kind + dialect + category + action suffix
-- **Source**: always `policy` since all entries derive from default policy
+- **Source**: `policy` for shipped product metadata, including default-disabled catalog-only rules
 - **Explanation fields** (Why/Risk/Suggestion/Summary): generated from rule ID pattern heuristics
 
-No supplemental hand-maintained metadata is used. All enrichment derives from the rule ID and default policy, preventing drift.
+The current catalog-only opt-in IDs are `dml.impact.estimate`, `dml.impact.rows.max_count`, and `dml.impact.ratio.max_percent`. They are discoverable and default-disabled; Default Policy does not enable them.
+
+No other supplemental hand-maintained metadata is used. Remaining enrichment derives from the rule ID and shipped policy values, preventing drift.
 
 The metadata-aware DML target-table existence entry is an explicit dialect exception because its execution rule is intentionally MySQL/TiDB-only while retaining the stable `dml.*` ID family.
 

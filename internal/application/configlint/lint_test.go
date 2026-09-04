@@ -517,6 +517,29 @@ rules:
 	}
 }
 
+func TestInspect_AllowsDefaultDisabledImpactRules(t *testing.T) {
+	path := writeConfig(t, `
+rules:
+  dml.impact.rows.max_count:
+    enabled: true
+    level: warning
+    params:
+      value: 1000
+  dml.impact.ratio.max_percent:
+    enabled: true
+    level: warning
+    params:
+      value: 10
+`)
+	res, err := Inspect(t.Context(), Request{Path: path})
+	if err != nil {
+		t.Fatalf("expected opt-in impact rules to lint as known catalog rules, got %v", err)
+	}
+	if len(res.Warnings) != 0 {
+		t.Fatalf("expected no replacement warnings for complete opt-in overrides, got %#v", res.Warnings)
+	}
+}
+
 func warningsEqual(a, b []Warning) bool {
 	if len(a) != len(b) {
 		return false

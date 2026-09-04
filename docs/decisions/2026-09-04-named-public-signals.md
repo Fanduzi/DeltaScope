@@ -5,8 +5,20 @@ Status: Accepted
 Related milestone/version: issues #65, #68, #69, #72, #74
 Related commits:
 Related tests:
+- `TestLookupReturnsDefaultDisabledImpactRules`
+- `TestSearchFindsDefaultDisabledImpactRules`
+- `TestCatalogIncludesShippedRulesOutsideDefaultPolicy`
+- `TestDefaultPolicyDoesNotEnableImpactRules`
+- `TestRegisterSkipsDefaultDisabledImpactRules`
+- `TestDefaultAuditDoesNotEmitImpactRuleFindings`
+- `TestEnabledImpactConfigEmitsFindingsFromImpactObject`
+- `TestRulesListAndExplainDefaultDisabledImpactRules`
+- `TestListAndDescribeDefaultDisabledImpactRules`
+- `TestInspect_DefaultDisabledImpactRule`
+- `TestInspect_AllowsDefaultDisabledImpactRules`
 Related docs:
 - `CONTEXT.md`
+- `docs/reference/audit-capability-matrix.md`
 - `docs/decisions/2026-08-17-cli-explicit-empty-sql-input-source.md`
 - `docs/decisions/2026-08-17-cli-user-input-exit-mapping.md`
 - `docs/decisions/2026-08-30-mcp-launcher-upgrade-safe-install.md`
@@ -101,11 +113,17 @@ exit classes, or Default Policy.
 
 ## Verification Evidence
 
-Pending implementation of issues #65, #68, #69, #72, and #74. Expected
-evidence includes CLI JSON tests for `fail_on_triggered`, distinct empty-SQL
-error strings with unchanged exit codes, launcher failure below Node 24,
-`get_capabilities` Query Access declaration tests, and Rule Catalog entries
-for default-disabled `dml.impact.*` rules.
+- #74: Rule Catalog `Lookup`/`Search`, `rules list`, `list_rules`, and
+  `describe_rule` return `dml.impact.estimate`, `dml.impact.rows.max_count`,
+  and `dml.impact.ratio.max_percent` with `default_enabled: false`. Default
+  Policy does not include those keys. Default UPDATE/DELETE audits keep the
+  statement impact object and emit no findings from those IDs. Enabling them
+  in config still produces findings from that object. Capability matrix and
+  CLI reference now call them opt-in.
+- #65, #68, #69, #72: pending implementation. Expected evidence includes CLI
+  JSON tests for `fail_on_triggered`, distinct empty-SQL error strings with
+  unchanged exit codes, launcher failure below Node 24, and `get_capabilities`
+  Query Access declaration tests.
 
 ## Consequences
 

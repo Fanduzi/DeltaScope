@@ -18,7 +18,7 @@ func deriveWarnings(raw rawConfigFile) []Warning {
 	defaults := policy.Default()
 	var warnings []Warning
 	for _, ruleID := range mapStringKeys(raw.Rules) {
-		def, ok := defaults.Rules[ruleID]
+		def, ok := shippedRulePolicy(defaults, ruleID)
 		if !ok {
 			continue
 		}

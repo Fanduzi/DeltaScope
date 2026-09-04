@@ -7,14 +7,17 @@ import (
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
+	"github.com/Fanduzi/DeltaScope/internal/domain/rule/catalog"
 )
 
 // validateRaw mirrors the semantic validation performed by the CLI `config lint`
 // command and by internal/application/configstatus: it rejects unknown rules,
 // invalid levels, unknown params, and param type mismatches so lint never
-// silently accepts a malformed config. Rule IDs are visited in sorted order for
-// deterministic error reporting. This deliberately stays in sync with both
-// existing validators; if those rules diverge, update all three together.
+// silently accepts a malformed config. Known rules come from the Rule Catalog,
+// which may include default-disabled shipped rules absent from Default Policy.
+// Rule IDs are visited in sorted order for deterministic error reporting. This
+// deliberately stays in sync with both existing validators; if those rules
+// diverge, update all three together.
 func validateRaw(raw rawConfigFile) error {
 	defaults := policy.Default()
 	ruleIDs := make([]string, 0, len(raw.Rules))
@@ -25,7 +28,7 @@ func validateRaw(raw rawConfigFile) error {
 
 	for _, ruleID := range ruleIDs {
 		rawRule := raw.Rules[ruleID]
-		defaultRule, ok := defaults.Rules[ruleID]
+		defaultRule, ok := shippedRulePolicy(defaults, ruleID)
 		if !ok {
 			return fmt.Errorf("unknown rule %q", ruleID)
 		}
@@ -40,6 +43,21 @@ func validateRaw(raw rawConfigFile) error {
 		}
 	}
 	return nil
+}
+
+func shippedRulePolicy(defaults policy.Policy, ruleID string) (policy.RulePolicy, bool) {
+	if ruleCfg, ok := defaults.Rules[ruleID]; ok {
+		return ruleCfg, true
+	}
+	entry, ok := catalog.Lookup(ruleID)
+	if !ok {
+		return policy.RulePolicy{}, false
+	}
+	return policy.RulePolicy{
+		Enabled: entry.DefaultEnabled,
+		Level:   entry.DefaultLevel,
+		Params:  entry.DefaultParams,
+	}, true
 }
 
 func validateRuleParams(ruleID string, rawParams map[string]any, defaultParams map[string]any) error {

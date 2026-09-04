@@ -47,6 +47,8 @@ First Tier-1 DML rule batch for offline update/delete/insert checks.
 
 `dml.table.exists.require` evaluates a single resolved mutation target. Ambiguous multi-target UPDATE/DELETE statements fail closed until the statement model carries per-target snapshots.
 
+`dml.impact.estimate`, `dml.impact.rows.max_count`, and `dml.impact.ratio.max_percent` are cataloged as default-disabled. Default Policy does not enable them; caller config must opt in before they emit findings.
+
 ## Object-Scope Denylist Surface
 
 - `dml.table.denylist.forbid`
@@ -56,8 +58,8 @@ First Tier-1 DML rule batch for offline update/delete/insert checks.
 
 ## Impact Output Surface
 
-- the audit flow attaches a conservative statement-level `impact` object for `UPDATE` and `DELETE` before rule evaluation
-- `dml.impact.estimate` reports that precomputed estimate as rule output; it does not control whether the payload exists
+- the audit flow attaches a conservative statement-level `impact` object for `UPDATE` and `DELETE` before rule evaluation, including default audits that do not load the impact rules
+- `dml.impact.estimate` reports that precomputed estimate as rule output when enabled; it does not control whether the payload exists
 - the additive payload includes `estimated_rows`, `estimated_ratio`, `risk_level`, `confidence`, `source`, `reason_codes`, and optional `notes`
 - offline mode uses SQL shape only
 - metadata-aware mode may refine the estimate with read-only table statistics

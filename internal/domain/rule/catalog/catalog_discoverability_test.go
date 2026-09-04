@@ -1,5 +1,5 @@
 // Package catalog verifies rule catalog discoverability metadata.
-// input: built-in policy defaults plus catalog entries with dialects, category, tags, and source
+// input: built-in policy defaults plus catalog entries, including default-disabled opt-in rules, with dialects, category, tags, and source
 // output: regression coverage for catalog completeness, field validity, deterministic ordering, and discoverability contract
 // pos: shipped rule discoverability catalog test coverage
 // note: if this file changes, update this header and module README.md.
@@ -54,7 +54,10 @@ func TestEveryCatalogEntryCorrespondsToRealRule(t *testing.T) {
 	items := All()
 
 	for _, entry := range items {
-		if _, ok := defaults.Rules[entry.RuleID]; !ok {
+		if _, ok := defaults.Rules[entry.RuleID]; ok {
+			continue
+		}
+		if _, ok := optInCatalogRules[entry.RuleID]; !ok {
 			t.Errorf("catalog entry %q has no corresponding registered rule", entry.RuleID)
 		}
 	}
@@ -411,14 +414,13 @@ func TestDialectsForRuleKnownPatterns(t *testing.T) {
 // non-empty, non-"unknown", non-"other" category.
 func TestCategoryForRuleCoversAllRules(t *testing.T) {
 	t.Parallel()
-	defaults := domainpolicy.Default()
-	for ruleID := range defaults.Rules {
-		cat := categoryForRule(ruleID)
+	for _, entry := range All() {
+		cat := categoryForRule(entry.RuleID)
 		if cat == "" {
-			t.Errorf("rule %q has empty category", ruleID)
+			t.Errorf("rule %q has empty category", entry.RuleID)
 		}
 		if cat == "unknown" || cat == "other" {
-			t.Errorf("rule %q has fallback category %q — add a mapping", ruleID, cat)
+			t.Errorf("rule %q has fallback category %q — add a mapping", entry.RuleID, cat)
 		}
 	}
 }

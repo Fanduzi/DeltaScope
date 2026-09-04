@@ -18,7 +18,7 @@ This matrix lists every rule shipped with DeltaScope, its rule ID, whether it ru
 
 | Capability | Status | Notes |
 |------------|--------|-------|
-| affected-row threshold | covered | the audit flow computes conservative statement-level impact estimates through shape and metadata-aware facts, and `dml.impact.estimate` / `dml.impact.rows.max_count` / `dml.impact.ratio.max_percent` consume or report that shared payload |
+| affected-row threshold | opt-in | the audit flow computes conservative statement-level impact estimates by default; `dml.impact.estimate` / `dml.impact.rows.max_count` / `dml.impact.ratio.max_percent` are cataloged as default-disabled and require caller config to emit findings |
 
 ---
 
@@ -1207,11 +1207,13 @@ Surface contract for unsupported statements:
 
 ### Impact Estimation
 
+These threshold/estimate rules are in the Rule Catalog as default-disabled. They are not in Default Policy. Enable them in caller config to emit findings. Default `UPDATE`/`DELETE` audits still attach the statement-level `impact` object; that payload is not a finding.
+
 | Rule ID | Check Description | Offline | Metadata | Default Level |
 |---------|-------------------|:-------:|:--------:|---------------|
-| `dml.impact.estimate` | Surface the precomputed conservative statement-level `impact` estimate for `UPDATE` and `DELETE` in rule output | ✓ | ✓ | notice |
-| `dml.impact.rows.max_count` | Conservative estimated affected-row count exceeds the configured threshold | ✓ | ✓ | warning |
-| `dml.impact.ratio.max_percent` | Conservative estimated affected-row ratio exceeds the configured threshold | ✓ | ✓ | warning |
+| `dml.impact.estimate` | Surface the precomputed conservative statement-level `impact` estimate for `UPDATE` and `DELETE` in rule output | ✓ | ✓ | notice (opt-in) |
+| `dml.impact.rows.max_count` | Conservative estimated affected-row count exceeds the configured threshold | ✓ | ✓ | warning (opt-in) |
+| `dml.impact.ratio.max_percent` | Conservative estimated affected-row ratio exceeds the configured threshold | ✓ | ✓ | warning (opt-in) |
 
 The offline impact path is dialect-normalized. For MySQL, TiDB, and PostgreSQL, a single-table `id =` literal or parameter equality uses the bounded `pk_equality` estimate (`estimated_rows: 1`, low risk, high confidence, `source: shape`). PostgreSQL `$1` placeholders follow the same contract. Non-equality, `OR`, range, and unrecognized-column predicates remain unknown; missing `WHERE` keeps its existing full-table estimate. A live PostgreSQL `EXPLAIN` result remains `source: plan` and overrides the shape estimate.
 

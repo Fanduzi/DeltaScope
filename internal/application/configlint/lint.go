@@ -1,6 +1,6 @@
 // Package configlint derives rule-level replacement warnings for a DeltaScope
 // YAML config file without changing validation, audit, or policy behavior.
-// input: a config file path and built-in default policy metadata
+// input: a config file path, built-in default policy metadata, and the shipped rule catalog
 // output: deterministic replacement-hazard warnings for mentioned rules
 // pos: application use case for config lint warnings, below the CLI surface
 // note: if this file changes, update this header and module README.md.
