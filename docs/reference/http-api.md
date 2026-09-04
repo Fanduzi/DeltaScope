@@ -251,7 +251,7 @@ Audits one or more SQL statements. The request body must be a single JSON object
 | `schema` | string | No | Optional schema name used by offline and metadata-aware audits. When both top-level `schema` and the named connection's `schema` are supplied, the top-level value takes precedence. |
 | `connection_id` | string | No | References a named connection defined in the server's runtime config. The named connection provides host, port, user, schema, dialect, and credential configuration. HTTP requests cannot submit credentials directly. |
 
-> **Note:** The server uses `DisallowUnknownFields`. Sending extra fields that are not listed above returns a `400 invalid_json` error.
+> **Note:** The server uses `DisallowUnknownFields`. Sending extra fields that are not listed above returns a `400 invalid_json` error. The removed `connection` object and MCP's `connection_ref` are named exceptions: they return `400 invalid_request`. HTTP uses `connection_id` and does not accept `connection_ref` as an alias.
 >
 > **Body size limit:** `POST /v1/audit` accepts request bodies up to 1 MiB. Larger bodies are rejected with `400 invalid_json` because the HTTP adapter enforces the limit before JSON decoding.
 
@@ -404,7 +404,8 @@ When no rule fires, `verdict` is `pass`. Empty `findings` and `global_findings` 
 
 | HTTP Status | Error Code | Trigger |
 |-------------|------------|---------|
-| 400 | `invalid_json` | Request body is not valid JSON, contains unknown fields, contains more than one JSON object, or exceeds the 1 MiB request-body limit |
+| 400 | `invalid_json` | Request body is not valid JSON, contains unknown fields (other than the named `connection` / `connection_ref` exceptions), contains more than one JSON object, or exceeds the 1 MiB request-body limit |
+| 400 | `invalid_request` | Request includes the removed `connection` object, or MCP's `connection_ref`. HTTP uses `connection_id` and does not accept `connection_ref` as an alias |
 | 400 | `bad_request` | `sql` field is empty, or `dialect` value is unrecognized |
 | 400 | `connection_invalid` | `connection_id` references a named connection that does not exist in the server's runtime config, or the named connection is malformed, or schema-hint-required / ambiguous schema inference was triggered during metadata-aware execution |
 | 502 | `connection_failed` | DeltaScope could not open the metadata connection, detect dialect, or resolve schema information from the live database |

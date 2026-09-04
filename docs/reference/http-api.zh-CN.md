@@ -251,7 +251,7 @@ curl http://127.0.0.1:8083/v1/rules/dml.where.require
 | `schema` | string | 否 | 离线审计和元数据感知审计都可使用的可选 schema 名称；如果同时提供顶层 `schema` 和命名连接的 `schema`，以顶层值为准 |
 | `connection_id` | string | 否 | 引用服务端 runtime config 中定义的命名连接。命名连接提供 host、port、user、schema、dialect 和凭据配置。HTTP 请求不能直接提交凭据。 |
 
-> **注意：** 服务器启用了 `DisallowUnknownFields`。传入上述列表之外的额外字段将返回 `400 invalid_json` 错误。
+> **注意：** 服务器启用了 `DisallowUnknownFields`。传入上述列表之外的额外字段将返回 `400 invalid_json` 错误。已移除的 `connection` 对象以及 MCP 的 `connection_ref` 是具名字段例外：它们返回 `400 invalid_request`。HTTP 使用 `connection_id`，不接受 `connection_ref` 作为别名。
 >
 > **请求体大小限制：** `POST /v1/audit` 最多接受 1 MiB 的请求体。超过该大小时，HTTP 适配层会在 JSON 解码前直接拒绝，并返回 `400 invalid_json`。
 
@@ -392,7 +392,8 @@ curl http://127.0.0.1:8083/v1/rules/dml.where.require
 
 | HTTP 状态码 | 错误码 | 触发条件 |
 |-------------|--------|----------|
-| 400 | `invalid_json` | 请求体不是合法 JSON、包含未知字段、包含多个 JSON 对象，或超过 1 MiB 请求体大小限制 |
+| 400 | `invalid_json` | 请求体不是合法 JSON、包含未知字段（`connection` / `connection_ref` 具名例外除外）、包含多个 JSON 对象，或超过 1 MiB 请求体大小限制 |
+| 400 | `invalid_request` | 请求包含已移除的 `connection` 对象，或包含 MCP 的 `connection_ref`。HTTP 使用 `connection_id`，不接受 `connection_ref` 作为别名 |
 | 400 | `bad_request` | `sql` 字段为空，或 `dialect` 值无法识别 |
 | 400 | `connection_invalid` | `connection_id` 引用了服务端 runtime config 中不存在的命名连接、命名连接格式无效，或在元数据感知执行中触发了 schema-hint-required / schema 推断不明确的场景 |
 | 502 | `connection_failed` | DeltaScope 无法打开元数据连接、探测方言，或无法从实时数据库解析 schema 信息 |

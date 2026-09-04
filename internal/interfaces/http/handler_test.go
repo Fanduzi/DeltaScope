@@ -1,6 +1,6 @@
 // Package httpapi verifies HTTP request binding and response mapping.
 // input: synthetic HTTP requests against the DeltaScope HTTP adapter
-// output: focused coverage for health, version, rule/capability discovery, audit success, and structured error responses including advertised online identity/authentication errors
+// output: focused coverage for health, version, rule/capability discovery, audit success, structured error responses including advertised online identity/authentication errors, and field-level rejection of MCP connection_ref
 // pos: interface adapter test coverage for the HTTP service surface
 // note: if this file changes, update this header and module README.md.
 package httpapi
@@ -352,6 +352,75 @@ func TestHandlerAuditReturnsLegacyConnectionRejection(t *testing.T) {
 	}
 	if !bytes.Contains(rec.Body.Bytes(), []byte("connection_id")) {
 		t.Fatalf("expected hint about connection_id in message, got %q", rec.Body.String())
+	}
+}
+
+func TestHandlerAuditRejectsConnectionRefAsInvalidRequest(t *testing.T) {
+	handler, err := NewHandler("", "test-build")
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	tests := []struct {
+		name    string
+		payload string
+	}{
+		{
+			name:    "connection_ref_only",
+			payload: `{"sql":"SELECT 1","connection_ref":"prod_readonly"}`,
+		},
+		{
+			name:    "connection_ref_with_connection_id",
+			payload: `{"sql":"SELECT 1","connection_id":"local_mysql","connection_ref":"prod_readonly"}`,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(tc.payload))
+			req.Header.Set("Content-Type", "application/json")
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+
+			if rec.Code != http.StatusBadRequest {
+				t.Fatalf("expected 400, got %d: %s", rec.Code, rec.Body.String())
+			}
+			body := rec.Body.String()
+			if bytes.Contains(rec.Body.Bytes(), []byte(`"invalid_json"`)) {
+				t.Fatalf("connection_ref must not be classified as invalid_json, got %q", body)
+			}
+			if !bytes.Contains(rec.Body.Bytes(), []byte(`"invalid_request"`)) {
+				t.Fatalf("expected invalid_request code, got %q", body)
+			}
+			if !strings.Contains(body, "connection_id") {
+				t.Fatalf("expected message to name connection_id, got %q", body)
+			}
+			if !strings.Contains(body, "connection_ref") {
+				t.Fatalf("expected message to name connection_ref, got %q", body)
+			}
+		})
+	}
+}
+
+func TestHandlerAuditMalformedJSONWithConnectionRefRemainsInvalidJSON(t *testing.T) {
+	handler, err := NewHandler("", "test-build")
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBufferString(`{"sql":"SELECT 1","connection_ref":`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d: %s", rec.Code, rec.Body.String())
+	}
+	if !bytes.Contains(rec.Body.Bytes(), []byte(`"invalid_json"`)) {
+		t.Fatalf("expected invalid_json for malformed JSON, got %q", rec.Body.String())
+	}
+	if bytes.Contains(rec.Body.Bytes(), []byte(`"invalid_request"`)) {
+		t.Fatalf("malformed JSON must not be classified as invalid_request, got %q", rec.Body.String())
 	}
 }
 

@@ -1,6 +1,6 @@
 // Package httpapi exposes the HTTP adapter for DeltaScope.
 // input: HTTP requests carrying SQL audit payloads plus service-level config/version wiring
-// output: JSON audit, partial audit error results, rule-catalog, capability, health, readiness, version, and structured access log lines
+// output: JSON audit, partial audit error results, named invalid_request envelopes for rejected connection/connection_ref fields, rule-catalog, capability, health, readiness, version, and structured access log lines
 // pos: interface adapter between net/http and the public DeltaScope audit API
 // note: if this file changes, update this header and module README.md.
 package httpapi
@@ -572,12 +572,20 @@ func handleAudit(
 		return
 	}
 
-	var legacyCheck struct {
-		Connection json.RawMessage `json:"connection"`
+	// HTTP uses connection_id. MCP's connection_ref is a named client error, not opaque invalid_json.
+	var rejectedFields struct {
+		Connection    json.RawMessage `json:"connection"`
+		ConnectionRef json.RawMessage `json:"connection_ref"`
 	}
-	if err := json.Unmarshal(bodyBytes, &legacyCheck); err == nil && legacyCheck.Connection != nil {
-		writeError(w, http.StatusBadRequest, "invalid_request", "connection field is no longer accepted; use connection_id")
-		return
+	if err := json.Unmarshal(bodyBytes, &rejectedFields); err == nil {
+		if rejectedFields.Connection != nil {
+			writeError(w, http.StatusBadRequest, "invalid_request", "connection field is no longer accepted; use connection_id")
+			return
+		}
+		if rejectedFields.ConnectionRef != nil {
+			writeError(w, http.StatusBadRequest, "invalid_request", "HTTP uses connection_id; connection_ref is not accepted")
+			return
+		}
 	}
 
 	var request auditRequest
