@@ -3,6 +3,32 @@
 DeltaScope statically determines database-operation and object-access effects
 without executing the analyzed SQL.
 
+## Audit
+
+**Verdict**:
+The quality judgment of a completed audit: `reject` when blockers exist,
+`review` when warnings exist, `pass` otherwise. Notices do not change Verdict.
+_Avoid_: success, CI status, exit code, fail-on
+
+**Finding Level**:
+blocker, warning, or notice on one finding. Only blocker and warning feed
+Verdict.
+_Avoid_: severity, priority, exit threshold
+
+**Fail Threshold**:
+A caller-chosen finding-count bar for process exit. It is not Verdict.
+_Avoid_: verdict, CI verdict
+
+**Rule Catalog**:
+The shipped list of rules that discovery surfaces describe. It may include
+rules that Default Policy does not enable.
+_Avoid_: loaded rules, registry, default policy
+
+**Default Policy**:
+The enabled-rule set used when the caller supplies no config. It is a subset
+of the Rule Catalog, not the Catalog itself.
+_Avoid_: catalog, loaded
+
 ## Query Access
 
 **Online Query Access Session**:
