@@ -50,12 +50,16 @@ type Location struct {
 	Column int `json:"column,omitempty"`
 }
 
-// SkipReason describes why a loaded rule did not apply to a statement.
+// SkipReason describes why a rule did not apply or was not Loaded.
 type SkipReason string
 
 const (
 	// SkipReasonDialectMismatch indicates the rule targets a different dialect.
 	SkipReasonDialectMismatch SkipReason = "dialect_mismatch"
+	// SkipReasonFKForbid indicates a foreign-key naming rule is not Loaded because
+	// ddl.table.foreign_key.forbid is enabled. The rule remains in the Rule Catalog
+	// and Default Policy; it is suppressed, not missing.
+	SkipReasonFKForbid SkipReason = "fk_forbid"
 )
 
 // SkippedRule records one loaded rule that did not apply to a specific statement.

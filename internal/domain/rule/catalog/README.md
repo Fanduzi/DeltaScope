@@ -64,6 +64,8 @@ Catalog entries derive from the shipped default policy (`domainpolicy.Default()`
 
 The current catalog-only opt-in IDs are `dml.impact.estimate`, `dml.impact.rows.max_count`, and `dml.impact.ratio.max_percent`. They are discoverable and default-disabled; Default Policy does not enable them.
 
+Catalog count is not Loaded count. Audit `rule_summary.loaded` is the registered statement-rule set. Default Policy foreign-key naming rules remain cataloged and enabled; `ddl.table.foreign_key.forbid` keeps them from being Loaded (`fk_forbid`).
+
 No other supplemental hand-maintained metadata is used. Remaining enrichment derives from the rule ID and shipped policy values, preventing drift.
 
 The metadata-aware DML target-table existence entry is an explicit dialect exception because its execution rule is intentionally MySQL/TiDB-only while retaining the stable `dml.*` ID family.

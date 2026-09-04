@@ -8,13 +8,18 @@ Policy model for rule configuration and future audit settings.
 |------|---------------|
 | policy.go | Defines policy and per-rule configuration |
 | defaults.go | Defines the built-in rule policy, including create-table identifier governance, expanded column/type-family breadth rules, primary-key semantics, indexes, alter restrictions, shipped semantic alter rules including the MODIFY unknown-prior-state nullability advisory, metadata-backed existence rules, object-lifecycle rules for view/drop/truncate, table options/object shape, database lifecycle rules for MySQL/TiDB, and the Tier-1 DML rule set |
+| suppression.go | Names FK-forbid suppression of Default Policy foreign-key naming rules that stay enabled but are not Loaded |
 | policy_test.go | Verifies flexible per-rule parameter modeling |
+| suppression_test.go | Verifies Default Policy keeps FK naming enabled and suppressed, not missing |
 
 ## Exports
 
 - `RulePolicy`
 - `Policy`
 - `Default()`
+- `ForeignKeyForbidRuleID`
+- `ForeignKeyNamingRuleIDs`
+- `SuppressesForeignKeyNaming(cfg Policy, ruleID string) bool`
 
 ## Notes
 
@@ -39,6 +44,7 @@ Policy model for rule configuration and future audit settings.
 - The default policy now also exposes DDL and DML table denylist hooks via `schemas`, `tables`, and `qualified_tables`; the shipped defaults keep those lists empty so the rules stay inert until a team populates them.
 - The default policy also enables `dml.table.exists.require`; it blocks only definitively absent MySQL/TiDB DML target tables when live table metadata is attached and stays inert offline and for PostgreSQL.
 - Default Policy does not include `dml.impact.estimate`, `dml.impact.rows.max_count`, or `dml.impact.ratio.max_percent`. Those IDs stay in the Rule Catalog as default-disabled opt-in rules.
+- Default Policy still enables `ddl.constraint.foreign_key.name.prefix.require`, `ddl.constraint.foreign_key.name.suffix.require`, and `ddl.constraint.foreign_key.name.contains.require`. While `ddl.table.foreign_key.forbid` is enabled they are not Loaded (`fk_forbid`). They are suppressed, not missing.
 
 ## Dependencies
 - Upstream: application policy loading and future config adapters

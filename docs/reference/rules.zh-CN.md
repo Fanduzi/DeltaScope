@@ -37,7 +37,14 @@ DeltaScope 将所有审计逻辑以可发现的稳定规则 ID 形式提供，�
 
 ## 发现规则
 
-DeltaScope 提供两个只读的规则元数据查询命令。这些命令查询内置规则目录——不执行审计、不解析 SQL、不调用审计服务。
+DeltaScope 提供两个只读的规则元数据查询命令。这些命令查询内置 **Rule Catalog**——不执行审计、不解析 SQL、不调用审计服务。
+
+Catalog、Default Policy、Loaded 和 suppressions 是不同的计数：
+
+- `deltascope rules list` 报告 Rule Catalog，包含默认禁用的 `dml.impact.*`。
+- Default Policy 是无调用方配置时的启用规则集。它不启用 `dml.impact.*`。
+- 审计 `rule_summary.loaded` 是该次审计实际注册的语句规则集。不要把 Catalog 计数当成 Loaded 计数。
+- 三条 `ddl.constraint.foreign_key.name.*` 仍在 Catalog 和 Default Policy 中。当 `ddl.table.foreign_key.forbid` 启用时它们不会 Loaded；`config status` 以原因 `fk_forbid` 报告，因此它们是被抑制，不是缺失。
 
 DeltaScope 使用已有的 `level` 字段（取值为 `blocker`、`warning`、`notice`）来表示严重程度。该字段在发现 JSON、配置 YAML 和目录输出中均命名为 `level`，不存在单独的 `severity` 字段。
 

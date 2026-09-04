@@ -378,15 +378,22 @@ Fingerprint 在不同运行之间保持稳定，GitLab 可据此跨流水线追�
 
 #### 规则摘要
 
-JSON、markdown 和 quiet 输出包含规则摘要，显示已加载、适用和跳过的规则数量。在 CLI JSON 中以 `rule_summary` 字段出现；`rule_summary.skipped` 始终是按原因确定性排序的 `{ "reason": "...", "count": N }` 对象数组，计数覆盖全部被跳过的规则（没有跳过规则时为 `[]`），且不会包含 `rule_id`。传入 `--include-skipped-rules` 后，才会在独立的 `rule_summary.skipped_rules` 字段中加入稳定的完整逐规则列表；该可选字段默认省略，聚合字段 `skipped` 仍然保留。例如：
+JSON、markdown 和 quiet 输出包含规则摘要，显示本次审计 **Loaded**（已注册）的规则数量、适用数量，以及带已知原因的跳过数量。这些计数与 Rule Catalog、Default Policy 不是同一事实：
+
+- **Rule Catalog** — `deltascope rules list` / `list_rules`。包含默认禁用的目录专用规则，例如 `dml.impact.*`。
+- **Default Policy** — 调用方未提供配置时使用的启用规则集。它不启用 `dml.impact.*`。
+- **Loaded** — `rule_summary.loaded`。本次审计实际注册的语句规则。它不是 Catalog 大小，也不是 Default Policy 键数量。目录专用 opt-in 规则除非被启用，否则不会 Loaded。三条 `ddl.constraint.foreign_key.name.*` 规则仍在 Default Policy 中，但在 `ddl.table.foreign_key.forbid` 启用时不会 Loaded；`config status` 以原因 `fk_forbid` 报告。
+- **Skipped** — 已 Loaded 但未适用的规则，已知原因如 `dialect_mismatch`。FK-forbid 抑制不是逐语句 skip。
+
+在 CLI JSON 中以 `rule_summary` 字段出现；`rule_summary.skipped` 始终是按原因确定性排序的 `{ "reason": "...", "count": N }` 对象数组，计数覆盖全部被跳过的规则（没有跳过规则时为 `[]`），且不会包含 `rule_id`。传入 `--include-skipped-rules` 后，才会在独立的 `rule_summary.skipped_rules` 字段中加入稳定的完整逐规则列表；该可选字段默认省略，聚合字段 `skipped` 仍然保留。下面的数字只说明形状，不是冻结的 Catalog 或 Loaded 大小：
 
 ```json
 {
   "rule_summary": {
-    "loaded": 371,
-    "applicable": 181,
+    "loaded": 12,
+    "applicable": 4,
     "skipped": [
-      {"reason": "dialect_mismatch", "count": 190}
+      {"reason": "dialect_mismatch", "count": 8}
     ],
     "skipped_rules": [
       {"rule_id": "ddl.pg.alter.add_check.not_valid.require", "reason": "dialect_mismatch"}
@@ -837,11 +844,11 @@ deltascope audit \
 
 ## deltascope rules
 
-用于发现和检查已注册规则集的命令。这些是只读的规则元数据查询命令——不执行审计、不解析 SQL、不调用审计服务。
+用于发现和检查 **Rule Catalog** 的命令。这些是只读的规则元数据查询命令——不执行审计、不解析 SQL、不调用审计服务。`rules list` 的 `summary.total` 是 Catalog 计数，不是 `rule_summary.loaded`，也不是 Default Policy 键数量。Catalog 行可以是默认禁用（`dml.impact.*`），也可以是 Default Policy 启用但未 Loaded（`fk_forbid` 下的 `ddl.constraint.foreign_key.name.*`）。
 
 ### rules list
 
-从内置目录列出规则，支持可选过滤。
+从内置 Rule Catalog 列出规则，支持可选过滤。
 
 | 标志 | 类型 | 默认值 | 描述 |
 |------|------|--------|------|
@@ -1100,7 +1107,8 @@ deltascope config show-default
 
 ### config status
 
-查看某一条 shipped rule 在当前配置下的有效状态（effective status）。它回答的问题是：这条规则当前是 ON 还是 OFF？如果触发，会使用哪个 `level`？
+查看某一条 shipped rule 在当前配置下的有效状态（effective status）。它回答的问题是：这条规则在 Default Policy（或你的配置）里是 ON 还是 OFF？是否 Loaded？如果触发，会使用哪个 `level`？
+内置 baseline 下的外键命名规则在 Default Policy 中保持 ON，但不会 Loaded；`config status` 以 `fk_forbid` 报告，而不是把它们当成缺失。
 
 ```bash
 deltascope config status <rule-id> [--format text|json]
@@ -1155,6 +1163,23 @@ Current:
 Rule details:
   deltascope rules explain dml.where.require
 ```
+
+FK-forbid 抑制的命名规则——仍在 Rule Catalog 和 Default Policy 中，但未 Loaded：
+
+```bash
+deltascope config status ddl.constraint.foreign_key.name.prefix.require
+```
+
+```text
+Rule: ddl.constraint.foreign_key.name.prefix.require
+
+Current status:
+  ON
+  Not Loaded: fk_forbid (suppressed by ddl.table.foreign_key.forbid).
+  This rule will not produce findings while that suppression applies.
+```
+
+同一组三个 ID（`prefix` / `suffix` / `contains`）共用这个原因。它们是被抑制，不是缺失。禁用 `ddl.table.foreign_key.forbid` 后才会 Loaded。
 
 完整字段覆盖——所有字段都写明，只有 `level` 不同，规则保持 ON：
 
@@ -1257,7 +1282,8 @@ deltascope config status dml.where.require --format json
   "status": {
     "enabled": true,
     "level": "blocker",
-    "state": "on"
+    "state": "on",
+    "loaded": true
   },
   "default": {
     "enabled": true,
@@ -1291,9 +1317,11 @@ deltascope config status dml.where.require --format json
 |---|---|
 | `version` | DeltaScope 构建版本 |
 | `rule_id` | 请求的 rule ID |
-| `status.enabled` | 有效的启用状态 |
+| `status.enabled` | 有效的启用状态（Default Policy 或配置） |
 | `status.level` | 有效的规则 level |
 | `status.state` | `on` 或 `off` |
+| `status.loaded` | 该规则是否已为审计注册。与 Catalog 以及 `status.enabled` 都不是同一事实。 |
+| `suppression` | 当 Default Policy 启用的规则未 Loaded 时出现。三条 `ddl.constraint.foreign_key.name.*` 规则的 `reason` 为 `fk_forbid`；`by` 为 `ddl.table.foreign_key.forbid`。 |
 | `default` | 该规则的内置默认策略取值 |
 | `current` | 加载配置后的有效取值 |
 | `config_effect.has_config` | 是否提供了全局 `--config` |

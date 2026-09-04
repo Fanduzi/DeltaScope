@@ -39,7 +39,14 @@ The `--fail-on` flag controls which verdict threshold causes the CLI to exit wit
 
 ## Discovering Rules
 
-DeltaScope provides two read-only metadata lookup commands for rule discovery. These commands inspect the shipped rule catalog — they do not execute audits, parse SQL, or call the audit service.
+DeltaScope provides two read-only metadata lookup commands for rule discovery. These commands inspect the shipped **Rule Catalog** — they do not execute audits, parse SQL, or call the audit service.
+
+Catalog, Default Policy, Loaded, and suppressions are different counts:
+
+- `deltascope rules list` reports the Rule Catalog, including default-disabled `dml.impact.*` rules.
+- Default Policy is the enabled-rule set with no caller config. It does not enable `dml.impact.*`.
+- Audit `rule_summary.loaded` is the registered statement-rule set for that audit. Do not treat Catalog count as Loaded count.
+- The three `ddl.constraint.foreign_key.name.*` rules stay in Catalog and Default Policy. While `ddl.table.foreign_key.forbid` is enabled they are not Loaded; `config status` reports reason `fk_forbid` so they read as suppressed, not missing.
 
 The existing `level` field (with values `blocker`, `warning`, `notice`) is DeltaScope's severity-like field. It is called `level` in the finding JSON, config YAML, and catalog output. There is no separate `severity` field.
 

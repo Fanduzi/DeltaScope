@@ -11,7 +11,8 @@ Docker, databases, or secrets. It only looks for known, high-risk drift
 patterns in the current public docs and CI examples:
 
   1. stale rule-inspection commands (``deltascope rules show`` /
-     ``deltascope rules search``),
+     ``deltascope rules search``) and frozen CLI ``"loaded": 371`` examples
+     that treated Loaded as the Rule Catalog count,
   2. audit output-format inventory (every current format must appear in the
      files that list formats),
   3. the GitHub Actions example shape (structurally ``permissions.contents:
@@ -117,6 +118,9 @@ STALE_COMMANDS = [
     (re.compile(r"\brules\s+show\b"), "use `deltascope rules explain <rule-id>`"),
     (re.compile(r"\brules\s+search\b"), "use `deltascope rules list --search <query>`"),
 ]
+
+# Frozen Loaded numbers that were presented as if they were Catalog size.
+STALE_LOADED_EXAMPLE_RE = re.compile(r'"loaded"\s*:\s*371\b')
 
 # GitHub Actions example: required command fragments that must appear inside a
 # `run:` block. Each entry pairs the fragment with the nearest section anchors
@@ -522,6 +526,24 @@ def check_stale_commands(files: List[File]) -> List[Failure]:
     return failures
 
 
+def check_stale_loaded_examples(files: List[File]) -> List[Failure]:
+    """Reject frozen Loaded numbers that were mistaken for Catalog size."""
+    failures: List[Failure] = []
+    for f in files:
+        if f.rel_path not in CLI_AUDIT_FLAG_FILES:
+            continue
+        for match in STALE_LOADED_EXAMPLE_RE.finditer(f.text):
+            failures.append(
+                Failure(
+                    path=f.rel_path,
+                    line=line_number(f.text, match.start()),
+                    message='CLI rule_summary example must not freeze `"loaded": 371`; '
+                            "Loaded is not the Rule Catalog count",
+                )
+            )
+    return failures
+
+
 def check_format_inventory(files: List[File]) -> List[Failure]:
     by_path = {f.rel_path: f for f in files}
     failures: List[Failure] = []
@@ -910,6 +932,7 @@ def run_checks(root: str, expected_version: Optional[str]) -> List[Failure]:
     files = collect_files(root)
     failures: List[Failure] = []
     failures.extend(check_stale_commands(files))
+    failures.extend(check_stale_loaded_examples(files))
     failures.extend(check_format_inventory(files))
     failures.extend(check_severity_language(files))
     failures.extend(check_postgresql_metadata_examples(files))

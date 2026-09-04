@@ -321,3 +321,59 @@ func TestConfigStatus_InvalidConfig(t *testing.T) {
 		t.Fatalf("expected a useful error message on stderr")
 	}
 }
+
+func TestConfigStatus_FKForbidSuppressedNamingText(t *testing.T) {
+	stdout := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"config", "status", "ddl.constraint.foreign_key.name.prefix.require"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d", code)
+	}
+	output := stdout.String()
+	for _, expected := range []string{
+		"Rule: ddl.constraint.foreign_key.name.prefix.require",
+		"ON",
+		"Not Loaded: fk_forbid (suppressed by ddl.table.foreign_key.forbid).",
+		"This rule will not produce findings while that suppression applies.",
+	} {
+		if !strings.Contains(output, expected) {
+			t.Fatalf("expected output to contain %q, got:\n%s", expected, output)
+		}
+	}
+	if strings.Contains(output, "Findings from this rule fail as:") {
+		t.Fatalf("suppressed rules must not claim they will emit findings:\n%s", output)
+	}
+}
+
+func TestConfigStatus_FKForbidSuppressedNamingJSON(t *testing.T) {
+	stdout := &strings.Builder{}
+	code := Execute(
+		context.Background(),
+		[]string{"config", "status", "ddl.constraint.foreign_key.name.suffix.require", "--format", "json"},
+		strings.NewReader(""),
+		stdout,
+		&strings.Builder{},
+	)
+	if code != 0 {
+		t.Fatalf("expected exit code 0, got %d", code)
+	}
+	raw := stdout.String()
+	var result configstatus.Result
+	if err := json.Unmarshal([]byte(raw), &result); err != nil {
+		t.Fatalf("unmarshal config status JSON: %v\nraw: %s", err, raw)
+	}
+	if result.Status.State != "on" || !result.Status.Enabled {
+		t.Fatalf("expected Default Policy ON, got enabled=%v state=%q", result.Status.Enabled, result.Status.State)
+	}
+	if result.Status.Loaded {
+		t.Fatalf("expected loaded=false for fk_forbid suppression")
+	}
+	if result.Suppression == nil || result.Suppression.Reason != "fk_forbid" || result.Suppression.By != "ddl.table.foreign_key.forbid" {
+		t.Fatalf("expected fk_forbid suppression, got %+v", result.Suppression)
+	}
+}

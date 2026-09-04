@@ -271,6 +271,31 @@ class TestStaleCommands(unittest.TestCase):
         self.assertEqual(vde.check_stale_commands(files), [])
 
 
+class TestStaleLoadedExamples(unittest.TestCase):
+    def test_frozen_loaded_371_fails_on_cli_reference(self):
+        files = [vde.File(
+            "docs/reference/cli.md",
+            '  "rule_summary": {\n    "loaded": 371,\n  }\n',
+        )]
+        failures = vde.check_stale_loaded_examples(files)
+        self.assertEqual(len(failures), 1)
+        self.assertEqual(failures[0].path, "docs/reference/cli.md")
+        self.assertEqual(failures[0].line, 2)
+        self.assertIn("loaded", failures[0].message)
+        self.assertIn("Catalog", failures[0].message)
+
+    def test_illustrative_loaded_count_passes(self):
+        files = [vde.File(
+            "docs/reference/cli.md",
+            '  "rule_summary": {\n    "loaded": 12,\n  }\n',
+        )]
+        self.assertEqual(vde.check_stale_loaded_examples(files), [])
+
+    def test_ignores_non_cli_files(self):
+        files = [vde.File("README.md", '"loaded": 371\n')]
+        self.assertEqual(vde.check_stale_loaded_examples(files), [])
+
+
 class TestHistoricalIgnore(unittest.TestCase):
     def test_historical_files_are_not_collected(self):
         with tempfile.TemporaryDirectory() as root:

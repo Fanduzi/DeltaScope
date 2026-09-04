@@ -1,6 +1,8 @@
 # Inspect Rules and Config
 
-Use the built-in discovery commands to understand what DeltaScope will enforce before running a large audit. These commands require no database connection and work entirely from the compiled rule registry and your policy file.
+Use the built-in discovery commands to understand what DeltaScope will enforce before running a large audit. These commands require no database connection and work entirely from the compiled Rule Catalog and your policy file.
+
+`rules list` is the Rule Catalog. Audit `rule_summary.loaded` is the registered set for that run. They are different counts: Catalog includes default-disabled `dml.impact.*`, and Default Policy still lists the three `ddl.constraint.foreign_key.name.*` rules that `ddl.table.foreign_key.forbid` suppresses. `config status` names that suppression as `fk_forbid` rather than treating the rules as missing.
 
 The recommended loop when you are about to change a rule override:
 

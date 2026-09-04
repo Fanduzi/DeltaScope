@@ -4,9 +4,10 @@
 //
 //	and the existing Viper-backed policy loader
 //
-// output: a stable Result describing whether the rule is ON or OFF, its effective level,
+// output: a stable Result describing whether the rule is ON or OFF, whether it is Loaded,
 //
-//	its default versus current policy snapshot, and what the user's config changed
+//	its effective level, default versus current policy snapshot, FK-forbid suppression,
+//	and what the user's config changed
 //
 // pos: application use case for single-rule config status, below the CLI surface
 // note: if this file changes, update this header and module README.md.
@@ -41,14 +42,24 @@ type Result struct {
 	Default            RulePolicySnapshot `json:"default"`
 	Current            RulePolicySnapshot `json:"current"`
 	ConfigEffect       ConfigEffect       `json:"config_effect"`
+	Suppression        *Suppression       `json:"suppression,omitempty"`
 	RuleDetailsCommand string             `json:"rule_details_command"`
 }
 
 // RuleStatus reports the effective runtime state of the rule.
+// Enabled/State follow Default Policy (or the caller's config). Loaded is the
+// distinct registration fact: a rule can be enabled and still not Loaded.
 type RuleStatus struct {
 	Enabled bool       `json:"enabled"`
 	Level   rule.Level `json:"level"`
 	State   string     `json:"state"`
+	Loaded  bool       `json:"loaded"`
+}
+
+// Suppression names why an enabled Default Policy rule is not Loaded.
+type Suppression struct {
+	Reason string `json:"reason"`
+	By     string `json:"by"`
 }
 
 // RulePolicySnapshot captures the enabled flag, level, and params for one policy source.
@@ -89,6 +100,7 @@ func Inspect(ctx context.Context, req Request) (Result, error) {
 	}
 
 	currentRule := defaultRule
+	currentPolicy := defaults
 	effect := ConfigEffect{}
 
 	if req.ConfigPath == "" {
@@ -101,6 +113,7 @@ func Inspect(ctx context.Context, req Request) (Result, error) {
 		if err != nil {
 			return Result{}, fmt.Errorf("load policy config %q: %w", req.ConfigPath, err)
 		}
+		currentPolicy = effective
 		loaded, ok := effective.Rules[req.RuleID]
 		if !ok {
 			// Catalog-only opt-in rules are absent from Default Policy, so LoadPolicy
@@ -147,6 +160,7 @@ func Inspect(ctx context.Context, req Request) (Result, error) {
 	if currentRule.Enabled {
 		state = "on"
 	}
+	suppression := foreignKeyNamingSuppression(currentPolicy, req.RuleID)
 
 	return Result{
 		RuleID: req.RuleID,
@@ -154,12 +168,24 @@ func Inspect(ctx context.Context, req Request) (Result, error) {
 			Enabled: currentRule.Enabled,
 			Level:   currentRule.Level,
 			State:   state,
+			Loaded:  currentRule.Enabled && suppression == nil,
 		},
 		Default:            snapshotRulePolicy(defaultRule),
 		Current:            snapshotRulePolicy(currentRule),
 		ConfigEffect:       effect,
+		Suppression:        suppression,
 		RuleDetailsCommand: fmt.Sprintf("deltascope rules explain %s", req.RuleID),
 	}, nil
+}
+
+func foreignKeyNamingSuppression(cfg policy.Policy, ruleID string) *Suppression {
+	if !policy.SuppressesForeignKeyNaming(cfg, ruleID) {
+		return nil
+	}
+	return &Suppression{
+		Reason: string(rule.SkipReasonFKForbid),
+		By:     policy.ForeignKeyForbidRuleID,
+	}
 }
 
 // snapshotRulePolicy clones a RulePolicy into an immutable snapshot.

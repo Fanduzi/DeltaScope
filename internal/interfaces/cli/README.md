@@ -23,7 +23,7 @@ CLI adapter layer for the DeltaScope application.
 | config.go | Implements the `config` command group, including `lint` (semantic validation plus rule-level replacement-hazard warnings and `--strict`), `show-default`, and wiring for `status` |
 | config_init.go | Implements `config init` and emits a deterministic default YAML template with empty string params encoded as `""` |
 | config_init_test.go | Verifies `config init` / `show-default` / shipped example YAML lint clean, encode empty strings as quoted YAML, preserve a hand-written full-spec override, and leave default-policy audit findings unchanged |
-| config_status.go | Implements `config status <rule-id>`, showing the effective ON/OFF state, level, default/current snapshots, and config effect for one rule via the config status application service, with text and JSON output |
+| config_status.go | Implements `config status <rule-id>`, showing the effective ON/OFF state, Loaded, level, default/current snapshots, config effect, and FK-forbid suppression for one rule via the config status application service, with text and JSON output |
 | capabilities.go | Implements the `capabilities` summary command and shared rendering helpers for human/agent discovery of shipped dialects, modes, inputs, outputs, and public surfaces (`cli`, `http`, `mcp`, `go-api`) |
 | ddl_coverage.go | Implements the `ddl-coverage` command for querying the generated (embedded) DDL coverage catalog with text and JSON output, flag validation, filter rendering, and exit-2 catalog-unavailable mapping for a missing `--catalog` override |
 | capability_surface.go | Defines the pure-Go build capability surface and root CLI wording |
@@ -40,7 +40,7 @@ CLI adapter layer for the DeltaScope application.
 | rules_catalog_test.go | Verifies rules list filtering (dialect, level, kind, category, search, limit), rules explain detail output, text/JSON formats, invalid flags, empty results, no-severity sanity, and default-disabled `dml.impact.*` catalog rows |
 | audit_metadata_test.go | Verifies metadata-aware CLI wiring for dialect detection, MySQL/TiDB database/schema aliases and conflicts, schema inference, PostgreSQL schema/database usage validation, create-table partial behavior, dialect-aware port defaults, and metadata-connect-timeout flag validation |
 | audit_dml_table_existence_test.go | Verifies metadata-aware MySQL/TiDB INSERT/UPDATE/DELETE missing-target findings and their stable JSON shape |
-| config_status_test.go | Verifies config status text/JSON output, partial-replacement danger wording, disabled-rule wording, and error mapping (missing rule id, unknown rule, invalid format, invalid config) with no severity field |
+| config_status_test.go | Verifies config status text/JSON output, partial-replacement danger wording, disabled-rule wording, FK-forbid suppression wording, and error mapping (missing rule id, unknown rule, invalid format, invalid config) with no severity field |
 | config_lint_test.go | Verifies config lint warnings (level-only replacement hazard), `Config OK` / `Config OK with warnings` output and exit-code matrix, `--strict`, error precedence, deterministic warning ordering, existing invalid-value errors, and YAML-null string params still failing the type check, with no severity field |
 
 ## Exports

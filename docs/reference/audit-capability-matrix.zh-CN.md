@@ -101,7 +101,7 @@
 
 ### 约束级检查
 
-约束的 structured naming governance 只针对显式命名对象生效。未命名约束和隐式名称会被跳过。外键命名规则只在策略允许外键存在时才有意义；在内置默认 baseline 下，`ddl.table.foreign_key.forbid` 会抑制外键命名检查。
+约束的 structured naming governance 只针对显式命名对象生效。未命名约束和隐式名称会被跳过。外键命名规则只在策略允许外键存在时才有意义；在内置默认 baseline 下，`ddl.table.foreign_key.forbid` 会抑制外键命名检查。这三条 ID（`ddl.constraint.foreign_key.name.prefix.require`、`ddl.constraint.foreign_key.name.suffix.require`、`ddl.constraint.foreign_key.name.contains.require`）仍在 Rule Catalog 和 Default Policy 中，但不会 Loaded。`config status` 以原因 `fk_forbid` 报告，而不是把它们当成缺失。
 
 | 规则 ID | 检查描述 | 离线 | 元数据 | 默认级别 |
 |---------|---------|:----:|:------:|---------|
@@ -1268,7 +1268,7 @@ PostgreSQL 元数据感知审核现在解析选定的非表对象元数据，并
 | MySQL DML RETURNING 不支持通知 | 已覆盖 | 在 MySQL 方言下，当解析出的 DML 语句带有 `RETURNING` 子句时，发出 `dialect.mysql.returning.unsupported.notice` 全局建议性告警（TiDB parser 可识别 `INSERT`、`UPDATE` 和单表 `DELETE` 的 `RETURNING`）。MySQL Server 不支持 DML `RETURNING`；如果 SQL 目标是 TiDB，用 `--dialect tidb` 重跑。TiDB 方言接受 `RETURNING`，不会触发该通知。 |
 | PostgreSQL 能力边界错误 | 已覆盖 | 未支持的 PG 功能面返回类型化的 `PostgreSQLCapabilityBoundaryError`，取代启发式字符串匹配，使 CI 和工具能区分已知限制和真正的失败。 |
 | 离线信任上下文可见性 | 已覆盖 | CLI json/markdown/quiet、HTTP `POST /v1/audit` 和 MCP `audit_sql` 报告审计上下文。离线 `context` 在 CLI JSON、HTTP JSON 和 MCP `structuredContent` 上包含 `note`（`existence not checked (no database connection)`）和 `unproven`（`column_exists`、`table_exists`）。CLI markdown 把同一行放在 Action Summary 与 Audit Context；quiet 放在 `[context]`；MCP `content[0].text` 在精简摘要里加这一行，不转储 structured context。元数据感知结果省略 `note` / `unproven`。`pkg/deltascope.Result` 没有 `context`。`github-actions` 和 `sarif` 格式仅输出告警结果，不包含上下文元数据。 |
-| 规则摘要 / 跳过规则可见性 | 已覆盖 | CLI 输出格式（json、markdown、quiet）报告已加载、适用和跳过的规则计数，方便确认当前方言下哪些规则运行了。`github-actions` 和 `sarif` 格式仅输出告警结果，不包含规则摘要元数据。 |
+| 规则摘要 / 跳过规则可见性 | 已覆盖 | CLI 输出格式（json、markdown、quiet）报告 Loaded、适用和跳过的规则计数。Loaded 不是 Rule Catalog 大小，也不是 Default Policy 键数量。FK-forbid 命名抑制由 `config status` 以 `fk_forbid` 命名。`github-actions` 和 `sarif` 格式仅输出告警结果，不包含规则摘要元数据。 |
 | 启发式误报排除 | 已覆盖 | PostgreSQL 语法启发式不对字符串字面量、双引号标识符、反引号标识符、行注释或块注释中的标记触发。 |
 | Parser-error unsupported 合同 | 已覆盖 | 当所选方言 parser 无法解析某条 tracked DDL 语句时，所有公共面（SDK、CLI、HTTP、MCP）返回诊断信息，说明未执行审计且未从未解析 SQL 推断任何 findings。这不是 fallback parser —— DeltaScope 不从 parser-error SQL 提取事实或产生 findings。不增加 parser 支持、fallback 解析或新 SQL 审计规则。parser-error 数量不会减少。 |
 | Unsupported diagnostics evidence（v0.230.0） | 已覆盖 | Parser-error 和 unsupported statement 结果通过所有公共面（SDK、CLI JSON/文本、HTTP、MCP）暴露结构化诊断证据（`classification`、`reason`、`action_hint`、`audited`、`dialect`、`guidance_code`、`evidence_ref`）。`guidance_code` 和 `evidence_ref` 为可选字段（v0.260.0+），仅在诊断匹配已知不支持边界时出现。诊断不包含原始 SQL 文本、parser `near ...` 片段、routine body 或其他禁止载荷。这不是 parser 支持、不是 fallback parser、不是新增 SQL 审计规则。parser-error 数量不会减少。census 不变。 |

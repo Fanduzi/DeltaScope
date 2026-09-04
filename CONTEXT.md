@@ -29,6 +29,18 @@ The enabled-rule set used when the caller supplies no config. It is a subset
 of the Rule Catalog, not the Catalog itself.
 _Avoid_: catalog, loaded
 
+**Loaded**:
+The statement-rule set actually registered for one audit (`rule_summary.loaded`).
+It is a subset of Default Policy, not the Rule Catalog count.
+_Avoid_: catalog, default policy
+
+**Suppression**:
+A Default Policy rule that stays enabled but is not Loaded because another
+rule forbids the subject. Under the shipped baseline,
+`ddl.table.foreign_key.forbid` suppresses the three
+`ddl.constraint.foreign_key.name.*` rules with reason `fk_forbid`.
+_Avoid_: missing, skipped, catalog gap
+
 ## Query Access
 
 **Online Query Access Session**:

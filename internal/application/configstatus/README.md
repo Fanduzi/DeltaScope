@@ -8,16 +8,17 @@ optional YAML config file. This is the core data layer for the future
 
 | File | Responsibility |
 |------|---------------|
-| `status.go` | `Inspect` derives ON/OFF, effective level, default vs current snapshots, and config effect for one rule |
-| `status_test.go` | Verifies default-only, override, replacement-danger, validation, cloning, and JSON behavior |
+| `status.go` | `Inspect` derives ON/OFF, Loaded, effective level, default vs current snapshots, config effect, and FK-forbid suppression for one rule |
+| `status_test.go` | Verifies default-only, override, replacement-danger, validation, cloning, JSON, default-disabled catalog-only rules, and FK-forbid suppression |
 
 ## Exports
 
 - `Request` — `{ RuleID, ConfigPath }`
-- `Result` — `{ RuleID, Status, Default, Current, ConfigEffect, RuleDetailsCommand }`
-- `RuleStatus` — `{ Enabled, Level, State }`
+- `Result` — `{ RuleID, Status, Default, Current, ConfigEffect, Suppression, RuleDetailsCommand }`
+- `RuleStatus` — `{ Enabled, Level, State, Loaded }`
 - `RulePolicySnapshot` — `{ Enabled, Level, Params }`
 - `ConfigEffect` — `{ HasConfig, HasOverride, ChangedFields, Messages }`
+- `Suppression` — `{ Reason, By }` for enabled Default Policy rules that are not Loaded
 - `Inspect(ctx, Request) (Result, error)`
 
 ## What it does
@@ -33,6 +34,10 @@ optional YAML config file. This is the core data layer for the future
   invalid level, unknown param, param type mismatch) so malformed configs error instead of
   producing partial status.
 - Clones all params maps before returning; it never mutates the default or effective policy.
+- Reports `status.loaded` separately from `status.enabled`. Under the shipped baseline the three
+  `ddl.constraint.foreign_key.name.*` rules stay enabled and are not Loaded; `suppression.reason`
+  is `fk_forbid`. Catalog-only `dml.impact.*` rules are inspectable as default-disabled without
+  a suppression.
 
 ## What it does not do
 

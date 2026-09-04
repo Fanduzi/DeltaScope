@@ -1,6 +1,8 @@
 # 查看规则与配置
 
-在运行大批量审计前，使用内置的发现命令了解 DeltaScope 将执行哪些规则。这些命令无需数据库连接，完全基于编译好的规则注册表和策略文件运行。
+在运行大批量审计前，使用内置的发现命令了解 DeltaScope 将执行哪些规则。这些命令无需数据库连接，完全基于编译好的 Rule Catalog 和策略文件运行。
+
+`rules list` 是 Rule Catalog。审计 `rule_summary.loaded` 是该次运行实际注册的集合。它们是不同的计数：Catalog 包含默认禁用的 `dml.impact.*`，Default Policy 仍列出被 `ddl.table.foreign_key.forbid` 抑制的三条 `ddl.constraint.foreign_key.name.*`。`config status` 以 `fk_forbid` 命名这次抑制，而不是把它们当成缺失。
 
 当你准备修改某条规则的覆盖时，推荐的闭环：
 

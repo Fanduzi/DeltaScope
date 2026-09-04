@@ -2,7 +2,7 @@
 
 Date: 2026-09-04
 Status: Accepted
-Related milestone/version: issues #65, #68, #69, #72, #74
+Related milestone/version: issues #65, #67, #68, #69, #72, #74
 Related commits:
 Related tests:
 - `TestLookupReturnsDefaultDisabledImpactRules`
@@ -26,6 +26,12 @@ Related tests:
 - `TestAuditSQLCallTextIncludesFindingSummary`
 - `TestQueryAccessAnalyzeRejectsExplicitEmptySQLWithoutReadingStdin`
 - `TestQueryAccessAnalyzeHelpShowsConnectionFlags`
+- `TestDefaultPolicySuppressesForeignKeyNaming`
+- `TestInspect_DefaultPolicyFKNamingIsSuppressedNotMissing`
+- `TestInspect_FKNamingLoadsWhenForbidDisabled`
+- `TestConfigStatus_FKForbidSuppressedNamingText`
+- `TestConfigStatus_FKForbidSuppressedNamingJSON`
+- `TestMarkdownRenderNamesFKForbidSkipReason``
 Related docs:
 - `CONTEXT.md`
 - `docs/reference/audit-capability-matrix.md`
@@ -47,6 +53,8 @@ looked like one fact, or a surface stayed silent about a negative capability.
   `get_capabilities` does not say so.
 - #74: `dml.impact.*` rules are registered in code and described as covered,
   but they are absent from the Rule Catalog and Default Policy.
+- #67: `rules list`, audit `rule_summary.loaded`, and CLI examples collapsed
+  Catalog, Default Policy, Loaded, and FK-forbid suppressions into one count.
 
 Existing accepted records already split some of these facts: Verdict is
 `pass` / `review` / `reject` only; Query Access keeps its own exit table;
@@ -74,9 +82,14 @@ Per issue:
   disabled. Do not enable them in Default Policy. Align capability-matrix
   and reference docs with opt-in status. The statement-level impact object
   remains the default audit payload; it is not a finding.
+- **#67:** Name Rule Catalog, Default Policy, Loaded, and suppressions as
+  different facts. Do not freeze a Loaded number that will drift. Keep
+  FK-forbid naming rules in Catalog and Default Policy; `config status`
+  reports reason `fk_forbid` so they read as suppressed, not missing.
 
 The Rule Catalog may list rules that Default Policy does not enable.
 Catalog generation must not equal Default Policy keys.
+Do not treat Catalog count as Loaded count.
 
 ## Rationale
 
@@ -109,6 +122,9 @@ exit classes, or Default Policy.
 - `dml.impact.*` threshold/estimate rules are discoverable, default-disabled,
   and require caller config to emit findings. Default audits do not change
   Verdict because of these rules.
+- Rule Catalog, Default Policy, Loaded, and suppressions remain different
+  counts. `config status` reports `status.loaded` and, for FK naming rules
+  under the shipped baseline, `suppression.reason=fk_forbid`.
 
 ## Deferred / Out Of Scope
 
@@ -117,7 +133,8 @@ exit classes, or Default Policy.
 - Lowering npm `engines` to Node 20 (#69)
 - Adding a Query Access MCP tool (#72)
 - Enabling `dml.impact.*` in Default Policy, or deleting those rules (#74)
-- Issues #66, #67, #70, #71, #73, #75, #76
+- Enabling FK-forbid suppressed naming rules by default (#67)
+- Issues #66, #70, #71, #73, #75, #76
 - Adding `error` / `unsupported` Verdict values
 - Changing HTTP, SDK, or MCP status mapping for Fail Threshold
 
@@ -147,6 +164,13 @@ exit classes, or Default Policy.
 - #69, #72: pending implementation. Expected evidence includes launcher
   failure below Node 24 and `get_capabilities` Query Access declaration
   tests.
+- #67: `config status` on `ddl.constraint.foreign_key.name.*` keeps Default
+  Policy `enabled`/`on` and reports `loaded: false` with
+  `suppression.reason=fk_forbid` and `suppression.by=ddl.table.foreign_key.forbid`.
+  Disabling the forbid rule Loads the naming rule. CLI reference no longer
+  freezes `"loaded": 371`. Docs name Catalog, Default Policy, Loaded, and
+  suppressions as different facts. Default Policy still does not enable
+  `dml.impact.*`.
 
 ## Consequences
 
@@ -164,7 +188,7 @@ impact rules.
 
 ## Links
 
-- Issues: #65, #68, #69, #72, #74
+- Issues: #65, #67, #68, #69, #72, #74
 - Glossary: `CONTEXT.md`
 - Prior records:
   - `docs/decisions/2026-08-17-cli-explicit-empty-sql-input-source.md`

@@ -435,15 +435,22 @@ Fingerprints are stable across runs so GitLab can track findings across pipeline
 
 #### Rule Summary
 
-JSON, markdown, and quiet output include a rule summary showing how many rules were loaded, how many were applicable to the given dialect, and how many were skipped. In CLI JSON this appears as `rule_summary`; `rule_summary.skipped` is always a deterministic, reason-sorted array of `{ "reason": "...", "count": N }` objects, with counts covering every skipped rule (and `[]` when none were skipped). It never contains `rule_id`. Pass `--include-skipped-rules` to add the stable full per-rule list in a separate `rule_summary.skipped_rules` field; that optional field is omitted by default, and the aggregate `skipped` field remains present. For example:
+JSON, markdown, and quiet output include a rule summary showing how many rules were **Loaded** for this audit, how many were applicable, and how many were skipped with a known reason. These are different facts from Rule Catalog and Default Policy:
+
+- **Rule Catalog** — `deltascope rules list` / `list_rules`. Includes default-disabled catalog-only rules such as `dml.impact.*`.
+- **Default Policy** — the enabled-rule set used when the caller supplies no config. It does not enable `dml.impact.*`.
+- **Loaded** — `rule_summary.loaded`. Statement rules actually registered for this audit. It is not the Catalog size and not the Default Policy key count. Catalog-only opt-in rules are not Loaded unless enabled. The three `ddl.constraint.foreign_key.name.*` rules stay in Default Policy but are not Loaded while `ddl.table.foreign_key.forbid` is enabled; `config status` reports that as reason `fk_forbid`.
+- **Skipped** — Loaded rules that did not apply, with a known reason such as `dialect_mismatch`. FK-forbid suppression is not a per-statement skip.
+
+In CLI JSON this appears as `rule_summary`; `rule_summary.skipped` is always a deterministic, reason-sorted array of `{ "reason": "...", "count": N }` objects, with counts covering every skipped rule (and `[]` when none were skipped). It never contains `rule_id`. Pass `--include-skipped-rules` to add the stable full per-rule list in a separate `rule_summary.skipped_rules` field; that optional field is omitted by default, and the aggregate `skipped` field remains present. Example counts below show shape only; they are not a frozen Catalog or Loaded size:
 
 ```json
 {
   "rule_summary": {
-    "loaded": 371,
-    "applicable": 181,
+    "loaded": 12,
+    "applicable": 4,
     "skipped": [
-      {"reason": "dialect_mismatch", "count": 190}
+      {"reason": "dialect_mismatch", "count": 8}
     ],
     "skipped_rules": [
       {"rule_id": "ddl.pg.alter.add_check.not_valid.require", "reason": "dialect_mismatch"}
@@ -904,11 +911,11 @@ This is useful for scripted processing or minimalist CI log output.
 
 ## deltascope rules
 
-Commands for discovering and inspecting the registered rule set. These are read-only metadata lookup commands — they do not execute audits, parse SQL, or call the audit service.
+Commands for discovering and inspecting the **Rule Catalog**. These are read-only metadata lookup commands — they do not execute audits, parse SQL, or call the audit service. `rules list` `summary.total` is the Catalog count, not `rule_summary.loaded` and not the Default Policy key count. Catalog rows may be default-disabled (`dml.impact.*`) or Default Policy enabled but not Loaded (`ddl.constraint.foreign_key.name.*` under `fk_forbid`).
 
 ### rules list
 
-List rules from the shipped catalog with optional filters.
+List rules from the shipped Rule Catalog with optional filters.
 
 | Flag | Type | Default | Description |
 |------|------|---------|-------------|
@@ -1184,7 +1191,9 @@ deltascope config show-default
 ### config status
 
 Show the effective status of one shipped rule under the current config. It answers: is this rule
-ON or OFF right now, and which `level` will it use if it fires?
+ON or OFF in Default Policy (or your config), is it Loaded, and which `level` will it use if it fires?
+FK naming rules under the shipped baseline stay ON in Default Policy and are not Loaded;
+`config status` names that as `fk_forbid` rather than treating the rules as missing.
 
 ```bash
 deltascope config status <rule-id> [--format text|json]
@@ -1245,6 +1254,23 @@ Current:
 Rule details:
   deltascope rules explain dml.where.require
 ```
+
+FK-forbid suppressed naming rule — still in the Rule Catalog and Default Policy, not Loaded:
+
+```bash
+deltascope config status ddl.constraint.foreign_key.name.prefix.require
+```
+
+```text
+Rule: ddl.constraint.foreign_key.name.prefix.require
+
+Current status:
+  ON
+  Not Loaded: fk_forbid (suppressed by ddl.table.foreign_key.forbid).
+  This rule will not produce findings while that suppression applies.
+```
+
+The same three IDs (`prefix` / `suffix` / `contains`) share this reason. They are suppressed, not missing. Disable `ddl.table.foreign_key.forbid` to Load them.
 
 Full-spec override — every field specified, only `level` differs, rule stays ON:
 
@@ -1350,7 +1376,8 @@ deltascope config status dml.where.require --format json
   "status": {
     "enabled": true,
     "level": "blocker",
-    "state": "on"
+    "state": "on",
+    "loaded": true
   },
   "default": {
     "enabled": true,
@@ -1384,9 +1411,11 @@ Required JSON fields:
 |---|---|
 | `version` | DeltaScope build version |
 | `rule_id` | Requested rule ID |
-| `status.enabled` | Effective enabled state |
+| `status.enabled` | Effective enabled state (Default Policy or config) |
 | `status.level` | Effective rule level |
 | `status.state` | `on` or `off` |
+| `status.loaded` | Whether the rule is registered for audit. Distinct from Catalog and from `status.enabled`. |
+| `suppression` | Present when an enabled Default Policy rule is not Loaded. `reason` is `fk_forbid` for the three `ddl.constraint.foreign_key.name.*` rules; `by` is `ddl.table.foreign_key.forbid`. |
 | `default` | Built-in default policy values for the rule |
 | `current` | Effective values after config loading |
 | `config_effect.has_config` | Whether global `--config` was supplied |

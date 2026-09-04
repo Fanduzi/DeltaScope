@@ -6,7 +6,7 @@ Rule contracts, registration, and finding types for audit evaluation.
 
 | File | Responsibility |
 |------|---------------|
-| rule.go | Defines finding severity and finding metadata |
+| rule.go | Defines finding severity, finding metadata, and skip/suppression reason codes including `dialect_mismatch` and `fk_forbid` |
 | registry.go | Registers statement/global rules, enforces rule IDs, and evaluates them deterministically |
 | registry_test.go | Verifies registry behavior, ID enforcement, and deterministic execution |
 | catalog/README.md | Documents the explanation-oriented shipped-rule catalog module |

@@ -83,7 +83,7 @@ unknown rule "ddl.table.comments.require"
 
 ### config status
 
-`deltascope config status <rule-id>` 展示某条规则在当前配置下是 ON 还是 OFF、触发时会使用哪个 `level`，以及你的配置相对于默认值改动了 `enabled`、`level` 或哪些 params。配置文件通过全局 `--config` 标志选择。
+`deltascope config status <rule-id>` 展示某条规则在当前配置下是 ON 还是 OFF、是否 Loaded、触发时会使用哪个 `level`，以及你的配置相对于默认值改动了 `enabled`、`level` 或哪些 params。配置文件通过全局 `--config` 标志选择。内置 baseline 下，`config status ddl.constraint.foreign_key.name.prefix.require` 在 Default Policy 中保持 ON，并以 `fk_forbid` 报告，因为 `ddl.table.foreign_key.forbid` 使这些命名规则不会 Loaded。它们是被抑制，不是缺失。
 
 ```bash
 deltascope config status dml.where.require
@@ -577,6 +577,8 @@ rules:
 ### `ddl.table.foreign_key.forbid`
 
 禁止在 `CREATE TABLE` 中定义外键（FOREIGN KEY）。
+
+该规则启用时，Default Policy 仍把三条 `ddl.constraint.foreign_key.name.*` 列为 enabled，但它们不会 Loaded。`config status` 以 `fk_forbid` 命名这次抑制。禁用这条 forbid 规则后才会 Loaded 命名检查。
 
 - **默认**：已启用，级别 `blocker`
 

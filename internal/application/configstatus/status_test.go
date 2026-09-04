@@ -44,8 +44,11 @@ func TestInspect_DefaultOnlyRule(t *testing.T) {
 	if res.RuleID != "dml.where.require" {
 		t.Fatalf("rule id = %q", res.RuleID)
 	}
-	if !res.Status.Enabled || res.Status.State != "on" {
-		t.Fatalf("expected status ON, got enabled=%v state=%q", res.Status.Enabled, res.Status.State)
+	if !res.Status.Enabled || res.Status.State != "on" || !res.Status.Loaded {
+		t.Fatalf("expected status ON and Loaded, got enabled=%v state=%q loaded=%v", res.Status.Enabled, res.Status.State, res.Status.Loaded)
+	}
+	if res.Suppression != nil {
+		t.Fatalf("did not expect suppression on a Loaded rule, got %+v", res.Suppression)
 	}
 	if res.Status.Level != rule.LevelBlocker {
 		t.Fatalf("expected level blocker, got %q", res.Status.Level)
@@ -422,11 +425,66 @@ func TestInspect_DefaultDisabledImpactRule(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected cataloged opt-in rule to be inspectable, got %v", err)
 	}
-	if res.Status.Enabled || res.Status.State != "off" {
-		t.Fatalf("expected default-disabled impact rule, got enabled=%v state=%q", res.Status.Enabled, res.Status.State)
+	if res.Status.Enabled || res.Status.State != "off" || res.Status.Loaded {
+		t.Fatalf("expected default-disabled impact rule, got enabled=%v state=%q loaded=%v", res.Status.Enabled, res.Status.State, res.Status.Loaded)
 	}
 	if res.Default.Enabled || res.Current.Enabled {
 		t.Fatalf("expected default and current snapshots to stay disabled, got default=%+v current=%+v", res.Default, res.Current)
+	}
+	if res.Suppression != nil {
+		t.Fatalf("catalog-only opt-in rules are not Loaded because they are disabled, not suppressed, got %+v", res.Suppression)
+	}
+}
+
+func TestInspect_DefaultPolicyFKNamingIsSuppressedNotMissing(t *testing.T) {
+	for _, ruleID := range []string{
+		"ddl.constraint.foreign_key.name.prefix.require",
+		"ddl.constraint.foreign_key.name.suffix.require",
+		"ddl.constraint.foreign_key.name.contains.require",
+	} {
+		res, err := Inspect(t.Context(), Request{RuleID: ruleID})
+		if err != nil {
+			t.Fatalf("%s: expected cataloged Default Policy rule, got %v", ruleID, err)
+		}
+		if !res.Status.Enabled || res.Status.State != "on" {
+			t.Fatalf("%s: expected Default Policy ON, got enabled=%v state=%q", ruleID, res.Status.Enabled, res.Status.State)
+		}
+		if res.Status.Loaded {
+			t.Fatalf("%s: FK naming must not be Loaded while fk_forbid applies", ruleID)
+		}
+		if res.Suppression == nil {
+			t.Fatalf("%s: expected fk_forbid suppression, not a missing rule", ruleID)
+		}
+		if res.Suppression.Reason != string(rule.SkipReasonFKForbid) {
+			t.Fatalf("%s: suppression.reason = %q, want %q", ruleID, res.Suppression.Reason, rule.SkipReasonFKForbid)
+		}
+		if res.Suppression.By != "ddl.table.foreign_key.forbid" {
+			t.Fatalf("%s: suppression.by = %q", ruleID, res.Suppression.By)
+		}
+	}
+}
+
+func TestInspect_FKNamingLoadsWhenForbidDisabled(t *testing.T) {
+	path := writeConfig(t, `
+rules:
+  ddl.table.foreign_key.forbid:
+    enabled: false
+    level: blocker
+    params:
+      forbid: true
+`)
+	res, err := Inspect(t.Context(), Request{
+		RuleID:     "ddl.constraint.foreign_key.name.prefix.require",
+		ConfigPath: path,
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if !res.Status.Enabled || !res.Status.Loaded {
+		t.Fatalf("expected naming rule to Load when forbid is disabled, got enabled=%v loaded=%v", res.Status.Enabled, res.Status.Loaded)
+	}
+	if res.Suppression != nil {
+		t.Fatalf("did not expect suppression when forbid is disabled, got %+v", res.Suppression)
 	}
 }
 
@@ -527,7 +585,17 @@ func equalResult(a, b Result) bool {
 			return false
 		}
 	}
+	if !sameSuppression(a.Suppression, b.Suppression) {
+		return false
+	}
 	return a.RuleDetailsCommand == b.RuleDetailsCommand
+}
+
+func sameSuppression(a, b *Suppression) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return a.Reason == b.Reason && a.By == b.By
 }
 
 func sameSnapshot(a, b RulePolicySnapshot) bool {

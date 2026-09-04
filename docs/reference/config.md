@@ -84,8 +84,11 @@ unknown rule "ddl.table.comments.require"
 ### config status
 
 `deltascope config status <rule-id>` shows whether one rule is ON or OFF under the active config,
-which `level` it will use if it fires, and how your config changed `enabled`, `level`, or params
-versus the default. The config file is selected with the global `--config` flag.
+whether it is Loaded, which `level` it will use if it fires, and how your config changed `enabled`,
+`level`, or params versus the default. The config file is selected with the global `--config` flag.
+Under the shipped baseline, `config status ddl.constraint.foreign_key.name.prefix.require` stays
+ON in Default Policy and reports `fk_forbid` because `ddl.table.foreign_key.forbid` keeps those
+naming rules from being Loaded. They are suppressed, not missing.
 
 ```bash
 deltascope config status dml.where.require
@@ -772,6 +775,11 @@ rules:
 #### ddl.table.foreign_key.forbid
 
 Forbids `FOREIGN KEY` constraints in `CREATE TABLE`.
+
+While this rule is enabled, Default Policy still lists the three
+`ddl.constraint.foreign_key.name.*` rules as enabled, but they are not Loaded.
+`config status` names that suppression as `fk_forbid`. Disable this forbid rule
+to Load the naming checks.
 
 **Default:** `enabled: true`, `level: blocker`
 

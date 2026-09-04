@@ -449,6 +449,28 @@ func TestMarkdownRenderAggregatesSkippedReasons(t *testing.T) {
 	assertNotContains(t, output, "ddl.pg.index.concurrent.require")
 }
 
+func TestMarkdownRenderNamesFKForbidSkipReason(t *testing.T) {
+	t.Parallel()
+	rendered, err := Render(report.Result{
+		Verdict: report.VerdictPass,
+		Summary: report.Summary{Statements: 1},
+		RuleSummary: &report.RuleSummary{
+			Loaded:     10,
+			Applicable: 9,
+			Skipped: []rule.SkippedRule{
+				{RuleID: "ddl.constraint.foreign_key.name.prefix.require", Reason: rule.SkipReasonFKForbid},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+	output := string(rendered)
+	assertContains(t, output, "### Skip Reasons")
+	assertContains(t, output, "- Suppressed by ddl.table.foreign_key.forbid: 1")
+	assertNotContains(t, output, "ddl.constraint.foreign_key.name.prefix.require")
+}
+
 func TestMarkdownRenderOmitsSkippedSectionWhenEmpty(t *testing.T) {
 	t.Parallel()
 	rendered, err := Render(report.Result{

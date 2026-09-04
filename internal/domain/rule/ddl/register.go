@@ -656,7 +656,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		if !ok || !ruleCfg.Enabled {
 			continue
 		}
-		if suppressesForeignKeyConstraintNaming(cfg, factory.ruleID) {
+		if policy.SuppressesForeignKeyNaming(cfg, factory.ruleID) {
 			continue
 		}
 
@@ -695,22 +695,4 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 	}
 
 	return nil
-}
-
-func suppressesForeignKeyConstraintNaming(cfg policy.Policy, ruleID string) bool {
-	switch ruleID {
-	case ruleIDConstraintForeignKeyNamePrefixRequire, ruleIDConstraintForeignKeyNameSuffixRequire, ruleIDConstraintForeignKeyNameContainsRequire:
-	default:
-		return false
-	}
-
-	forbidCfg, ok := cfg.Rules[ruleIDTableForeignKeyForbid]
-	if !ok || !forbidCfg.Enabled {
-		return false
-	}
-	forbid, err := boolParam(ruleIDTableForeignKeyForbid, forbidCfg, "forbid", true)
-	if err != nil {
-		return false
-	}
-	return forbid
 }

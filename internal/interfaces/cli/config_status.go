@@ -1,6 +1,6 @@
 // Package cli exposes the command-line adapter for DeltaScope.
 // input: a rule ID, the global --config policy path, and the config status application service
-// output: human and JSON status for one shipped rule under the default policy plus optional config
+// output: human and JSON status for one shipped rule under the default policy plus optional config, including Loaded and fk_forbid suppression
 // pos: CLI config status command above the application config status use case
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -76,6 +76,7 @@ type configStatusJSONOutput struct {
 	Default            configstatus.RulePolicySnapshot `json:"default"`
 	Current            configstatus.RulePolicySnapshot `json:"current"`
 	ConfigEffect       configstatus.ConfigEffect       `json:"config_effect"`
+	Suppression        *configstatus.Suppression       `json:"suppression,omitempty"`
 	RuleDetailsCommand string                          `json:"rule_details_command"`
 }
 
@@ -89,6 +90,7 @@ func renderConfigStatusJSON(result configstatus.Result) (string, error) {
 		Default:            result.Default,
 		Current:            result.Current,
 		ConfigEffect:       result.ConfigEffect,
+		Suppression:        result.Suppression,
 		RuleDetailsCommand: result.RuleDetailsCommand,
 	}
 	data, err := json.MarshalIndent(out, "", "  ")
@@ -109,7 +111,10 @@ func renderConfigStatusText(result configstatus.Result) string {
 
 	b.WriteString("Current status:\n")
 	fmt.Fprintf(&b, "  %s\n", strings.ToUpper(result.Status.State))
-	if result.Status.State == "on" {
+	if result.Suppression != nil {
+		fmt.Fprintf(&b, "  Not Loaded: %s (suppressed by %s).\n", result.Suppression.Reason, result.Suppression.By)
+		b.WriteString("  This rule will not produce findings while that suppression applies.\n")
+	} else if result.Status.State == "on" {
 		fmt.Fprintf(&b, "  Findings from this rule fail as: %s.\n", string(result.Status.Level))
 	} else {
 		b.WriteString("  This rule will not produce findings.\n")
