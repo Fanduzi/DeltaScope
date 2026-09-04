@@ -6,6 +6,17 @@ import { spawn } from "node:child_process";
 import { resolveCacheBinaryPath, resolveCacheMetadataPath } from "./cache.js";
 import { resolvePlatform } from "./releases.js";
 
+const MINIMUM_NODE_MAJOR = 24;
+
+export function requireSupportedNodeVersion(nodeVersion = process.version) {
+  const major = Number.parseInt(String(nodeVersion).replace(/^v/i, ""), 10);
+  if (!Number.isInteger(major) || major < MINIMUM_NODE_MAJOR) {
+    throw new Error(
+      `DeltaScope MCP launcher requires Node.js ${MINIMUM_NODE_MAJOR} or newer; current version is ${nodeVersion}`
+    );
+  }
+}
+
 async function fileExists(targetPath) {
   try {
     await fs.access(targetPath);
@@ -135,6 +146,22 @@ export async function ensureExecutable({
 
 export function spawnBinary(binaryPath, args = [], options = {}) {
   return spawn(binaryPath, args, options);
+}
+
+export async function bootstrapLauncher({
+  nodeVersion = process.version,
+  args = [],
+  spawnOptions = {},
+  spawnBinary: spawnBinaryImpl = spawnBinary,
+  onReady,
+  ...ensureOptions
+} = {}) {
+  requireSupportedNodeVersion(nodeVersion);
+  const binaryPath = await ensureExecutable(ensureOptions);
+  if (typeof onReady === "function") {
+    onReady(binaryPath);
+  }
+  return spawnBinaryImpl(binaryPath, args, spawnOptions);
 }
 
 export function formatBootstrapContext({ version, platform, archiveURL, destinationPath }) {

@@ -5,9 +5,9 @@ import process from "node:process";
 
 import { downloadAndExtractBinary } from "../lib/download.js";
 import {
-  ensureExecutable,
+  bootstrapLauncher,
   formatBootstrapContext,
-  spawnBinary,
+  requireSupportedNodeVersion,
 } from "../lib/launcher.js";
 import {
   resolveArchiveName,
@@ -16,6 +16,8 @@ import {
   resolveDeltaScopeVersion,
   resolvePlatform,
 } from "../lib/releases.js";
+
+requireSupportedNodeVersion();
 
 const packageJson = JSON.parse(
   await fs.readFile(new URL("../package.json", import.meta.url), "utf8"),
@@ -51,11 +53,19 @@ function log(message) {
 log(`resolved DeltaScope version ${version}`);
 log(`detected platform ${platform.os}-${platform.arch}`);
 
-const binaryPath = await ensureExecutable({
+const child = await bootstrapLauncher({
   version,
   platform,
   archiveURL,
   checksumsURL,
+  args: process.argv.slice(2),
+  spawnOptions: {
+    stdio: "inherit",
+    env: process.env,
+  },
+  onReady: (binaryPath) => {
+    log(`launching native binary ${binaryPath}`);
+  },
   downloadBinary: (destinationPath) =>
     (async () => {
       log(`cache miss; downloading ${archiveURL}`);
@@ -89,13 +99,6 @@ const binaryPath = await ensureExecutable({
         throw error;
       }
     })(),
-});
-
-log(`launching native binary ${binaryPath}`);
-
-const child = spawnBinary(binaryPath, process.argv.slice(2), {
-  stdio: "inherit",
-  env: process.env,
 });
 
 child.on("error", (error) => {

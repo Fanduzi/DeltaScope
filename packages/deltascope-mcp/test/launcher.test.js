@@ -5,7 +5,12 @@ import os from "node:os";
 import path from "node:path";
 
 import { resolveCacheBinaryPath, resolveCacheMetadataPath } from "../lib/cache.js";
-import { ensureExecutable, formatBootstrapContext } from "../lib/launcher.js";
+import {
+  bootstrapLauncher,
+  ensureExecutable,
+  formatBootstrapContext,
+  requireSupportedNodeVersion,
+} from "../lib/launcher.js";
 
 test("ensureExecutable reuses a cached binary without downloading", async () => {
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "deltascope-mcp-cache-"));
@@ -163,4 +168,115 @@ test("formatBootstrapContext includes proxy guidance for download failures", () 
   assert.match(text, /darwin-arm64/);
   assert.match(text, /NODE_USE_ENV_PROXY=1/);
   assert.match(text, /\/tmp\/cache\/deltascope-mcp/);
+});
+
+test("requireSupportedNodeVersion fails closed below Node 24 with a Node 24+ message", () => {
+  for (const nodeVersion of ["v20.19.0", "v20.0.0", "v23.11.0", "20.19.5"]) {
+    assert.throws(
+      () => requireSupportedNodeVersion(nodeVersion),
+      (error) => {
+        assert.match(error.message, /Node\.js 24/);
+        return true;
+      },
+    );
+  }
+});
+
+test("requireSupportedNodeVersion accepts Node 24 and newer", () => {
+  for (const nodeVersion of ["v24.0.0", "v24.1.0", "v25.9.0"]) {
+    assert.doesNotThrow(() => requireSupportedNodeVersion(nodeVersion));
+  }
+});
+
+test("bootstrapLauncher fails closed on Node 20 before download or spawn", async () => {
+  let downloadCalls = 0;
+  let spawnCalls = 0;
+
+  await assert.rejects(
+    () =>
+      bootstrapLauncher({
+        nodeVersion: "v20.19.0",
+        version: "v0.7.0",
+        platform: { os: "linux", arch: "amd64" },
+        downloadBinary: async () => {
+          downloadCalls += 1;
+          throw new Error("native download must not run on Node 20");
+        },
+        spawnBinary: () => {
+          spawnCalls += 1;
+          throw new Error("native spawn must not run on Node 20");
+        },
+      }),
+    (error) => {
+      assert.match(error.message, /Node\.js 24/);
+      return true;
+    },
+  );
+
+  assert.equal(downloadCalls, 0);
+  assert.equal(spawnCalls, 0);
+});
+
+test("bootstrapLauncher starts the native binary on Node 24+", async () => {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "deltascope-mcp-bootstrap-"));
+  const cachedBinary = resolveCacheBinaryPath({
+    homeDir: tempDir,
+    version: "v0.7.0",
+    os: "linux",
+    arch: "amd64",
+  });
+  const metadataPath = resolveCacheMetadataPath({
+    homeDir: tempDir,
+    version: "v0.7.0",
+    os: "linux",
+    arch: "amd64",
+  });
+  await fs.mkdir(path.dirname(cachedBinary), { recursive: true });
+  await fs.writeFile(cachedBinary, "#!/bin/sh\nexit 0\n", { mode: 0o755 });
+  await fs.writeFile(
+    metadataPath,
+    `${JSON.stringify({
+      version: "v0.7.0",
+      os: "linux",
+      arch: "amd64",
+      archiveURL: "https://github.com/Fanduzi/DeltaScope/releases/download/v0.7.0/deltascope_0.7.0_linux_amd64.tar.gz",
+      checksumsURL: "https://github.com/Fanduzi/DeltaScope/releases/download/v0.7.0/deltascope_0.7.0_checksums.txt",
+      archiveChecksum: "abc123",
+    })}\n`,
+  );
+
+  let downloadCalls = 0;
+  const spawned = [];
+  const fakeChild = { pid: 4242 };
+  const child = await bootstrapLauncher({
+    nodeVersion: "v24.0.0",
+    version: "v0.7.0",
+    homeDir: tempDir,
+    platform: { os: "linux", arch: "amd64" },
+    archiveURL: "https://github.com/Fanduzi/DeltaScope/releases/download/v0.7.0/deltascope_0.7.0_linux_amd64.tar.gz",
+    checksumsURL: "https://github.com/Fanduzi/DeltaScope/releases/download/v0.7.0/deltascope_0.7.0_checksums.txt",
+    args: ["-connections-path", "/tmp/connections.yaml"],
+    spawnOptions: { stdio: "ignore" },
+    downloadBinary: async () => {
+      downloadCalls += 1;
+      throw new Error("Node 24+ cache hit must not download");
+    },
+    spawnBinary: (binaryPath, args, options) => {
+      spawned.push({ binaryPath, args, options });
+      return fakeChild;
+    },
+  });
+
+  assert.equal(child, fakeChild);
+  assert.equal(downloadCalls, 0);
+  assert.equal(spawned.length, 1);
+  assert.equal(spawned[0].binaryPath, cachedBinary);
+  assert.deepEqual(spawned[0].args, ["-connections-path", "/tmp/connections.yaml"]);
+});
+
+test("package.json engines.node remains >=24", async () => {
+  const packageJson = JSON.parse(
+    await fs.readFile(new URL("../package.json", import.meta.url), "utf8"),
+  );
+  assert.equal(packageJson.engines.node, ">=24");
 });
