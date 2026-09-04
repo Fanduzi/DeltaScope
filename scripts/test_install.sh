@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # input: install.sh plus local fake curl/wget clients and a fixture archive
-# output: hermetic regression coverage for release discovery and pinned installs
+# output: hermetic regression coverage for release discovery, pinned installs, and unprefixed semver pins
 # pos: shell-level contract test for the public POSIX installer boundary
 # note: if this file changes, update this header and scripts/README.md.
 
@@ -116,6 +116,7 @@ case "${url}" in
     ;;
   https://github.com/Fanduzi/DeltaScope/releases/download/*)
     printf 'asset\n' >> "${log}"
+    printf 'download-url:%s\n' "${url}" >> "${log}"
     [ -n "${output}" ] && [ "${output}" != '-' ] || exit 1
     cp "${FAKE_ARCHIVE}" "${output}"
     ;;
@@ -158,14 +159,18 @@ run_case() {
   CASE_STATUS="${status}"
 }
 
-expect_success() {
-  local description="$1"
+expect_success_with_version() {
+  local description="$1" version="$2"
 
-  if [ "${CASE_STATUS}" -eq 0 ] && [ -f "${CASE_DIR}/install/deltascope" ] && grep -Fq 'Version: v1.2.3' "${CASE_DIR}/stdout"; then
+  if [ "${CASE_STATUS}" -eq 0 ] && [ -f "${CASE_DIR}/install/deltascope" ] && grep -Fq "Version: ${version}" "${CASE_DIR}/stdout"; then
     pass "${description}"
   else
     fail "${description}"
   fi
+}
+
+expect_success() {
+  expect_success_with_version "$1" 'v1.2.3'
 }
 
 expect_failure_with_pin_hint() {
@@ -227,6 +232,16 @@ expect_only_asset_call() {
   fi
 }
 
+expect_download_tag() {
+  local description="$1" tag="$2"
+
+  if grep -Fq "/releases/download/${tag}/" "${CASE_DIR}/calls.log"; then
+    pass "${description}"
+  else
+    fail "${description}"
+  fi
+}
+
 echo '=== test_install (hermetic) ==='
 
 for client in curl wget; do
@@ -254,6 +269,20 @@ for client in curl wget; do
   run_case pinned "${client}" failure failure v1.2.3
   expect_success "${client}: pinned install succeeds without discovery"
   expect_only_asset_call "${client}: pinned install calls only the release asset"
+  expect_download_tag "${client}: prefixed semver pin requests the v-prefixed tag" 'v1.2.3'
+
+  run_case pinned-unprefixed "${client}" failure failure 0.510.3
+  expect_success_with_version "${client}: unprefixed semver pin installs the v-prefixed release" 'v0.510.3'
+  expect_only_asset_call "${client}: unprefixed semver pin calls only the release asset"
+  expect_download_tag "${client}: unprefixed semver pin requests the v-prefixed tag" 'v0.510.3'
+
+  run_case pinned-prefixed-issue-tag "${client}" failure failure v0.510.3
+  expect_success_with_version "${client}: v-prefixed semver pin stays on the v-prefixed release" 'v0.510.3'
+  expect_download_tag "${client}: v-prefixed semver pin requests the v-prefixed tag" 'v0.510.3'
+
+  run_case pinned-nonsemver "${client}" failure failure latest
+  expect_success_with_version "${client}: non-semver pin is not rewritten" 'latest'
+  expect_download_tag "${client}: non-semver pin keeps the original download tag" 'latest'
 done
 
 printf '\nResults: %d passed, %d failed\n' "${PASSED}" "${FAILED}"

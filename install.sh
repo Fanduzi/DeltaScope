@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# input: release version selectors, host os/arch facts, GitHub release metadata, and release archives from the DeltaScope repository
+# input: release version selectors (bare or v-prefixed major.minor.patch), host os/arch facts, GitHub release metadata, and release archives from the DeltaScope repository
 # output: installed DeltaScope release binaries under a local operator-selected bin directory
 # pos: release-facing installer that resolves a validated release tag into local binaries
 # note: if this file changes, update this header and module README.md.
@@ -144,6 +144,16 @@ download_file() {
   else
     fail "missing downloader: need curl or wget"
   fi
+}
+
+prefix_bare_semver() {
+  version="$1"
+  bare="$(printf '%s\n' "${version}" | sed -n '/^[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*$/p')"
+  if [ -n "${bare}" ]; then
+    printf 'v%s\n' "${bare}"
+    return
+  fi
+  printf '%s\n' "${version}"
 }
 
 version_gte() {
@@ -330,6 +340,7 @@ if [ -z "${VERSION}" ]; then
 fi
 
 [ -n "${VERSION}" ] || fail "could not resolve a release version"
+VERSION="$(prefix_bare_semver "${VERSION}")"
 BINARIES="$(resolve_binaries)"
 
 if is_interactive && [ -z "${BINARIES_SET}" ]; then
