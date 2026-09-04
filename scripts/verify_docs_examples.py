@@ -17,8 +17,10 @@ patterns in the current public docs and CI examples:
   3. the GitHub Actions example shape (structurally ``permissions.contents:
      read`` at top-level or per-job, ``config lint --strict``, ``github-actions``
      annotations, ``github-summary`` job summary, no PR-comment bot behavior, no
-     token handling, no ``workflow_dispatch``, and a ``DELTASCOPE_VERSION`` pin
-     that matches ``$VERSION`` when supplied),
+     token handling, no ``workflow_dispatch``, a ``DELTASCOPE_VERSION`` pin
+     that matches ``$VERSION`` when supplied, and the ``action.yml``
+     ``uses: Fanduzi/deltascope@vX.Y.Z`` example pin — a published stable tag,
+     never a floating ``@v0``),
   4. the GitLab example shape (must use ``--format gitlab-codequality``, must
      expose ``artifacts.reports.codequality`` with a ``gl-code-quality-report.json``
      report, and must not use the GitHub-specific formats),
@@ -43,7 +45,8 @@ Usage (from the repository root):
     python3 scripts/verify_docs_examples.py [root]
 
 When ``VERSION=vX.Y.Z`` is set in the environment, the GitHub Actions example
-must pin ``DELTASCOPE_VERSION`` to that exact version. Exit 0 on success
+must pin ``DELTASCOPE_VERSION`` to that exact version and ``action.yml`` must
+pin ``uses: Fanduzi/deltascope@`` to the same tag. Exit 0 on success
 (``docs-examples: PASS``), exit 1 on failure (``docs-examples: FAIL`` followed
 by one ``path:line: message`` line per finding).
 
@@ -95,6 +98,7 @@ SCAN_FILES = [
 GITHUB_EXAMPLE = "docs/examples/github-actions.yml"
 GITLAB_EXAMPLE = "docs/examples/gitlab-ci.yml"
 RUNTIME_CONFIG = "docs/examples/runtime-config.yaml"
+ACTION_YML = "action.yml"
 
 CURRENT_FORMATS = [
     "markdown",
@@ -164,6 +168,11 @@ SEVERITY_ALLOW = [
 ]
 
 VERSION_PIN_RE = re.compile(r"DELTASCOPE_VERSION:\s*[\"']?(v\d+\.\d+\.\d+)", re.IGNORECASE)
+ACTION_USES_RE = re.compile(
+    r"uses:\s*Fanduzi/deltascope@([^\s`\"']+)",
+    re.IGNORECASE,
+)
+STABLE_TAG_RE = re.compile(r"^v\d+\.\d+\.\d+$")
 
 
 # --------------------------------------------------------------------------- #
@@ -737,6 +746,57 @@ def extract_version_pin(text: str) -> Optional[str]:
     return match.group(1)
 
 
+def check_action_yml_pin(
+    text: Optional[str], expected_version: Optional[str]
+) -> List[Failure]:
+    """Require the composite-action usage example to pin a stable ``vX.Y.Z`` tag.
+
+    ``action.yml`` documents how callers consume the Action via
+    ``uses: Fanduzi/deltascope@<tag>``. That tag must be a published stable
+    release (``vX.Y.Z``), not a floating ``@v0`` or ``@latest``. When
+    ``expected_version`` is supplied (release ``VERSION``), every pin must
+    match it. Returns no findings when the file is absent.
+    """
+    failures: List[Failure] = []
+    if text is None:
+        return failures
+    matches = list(ACTION_USES_RE.finditer(text))
+    if not matches:
+        failures.append(
+            Failure(
+                path=ACTION_YML,
+                line=1,
+                message="action.yml must include a `uses: Fanduzi/deltascope@vX.Y.Z` "
+                        "example pin; do not invent a floating `@v0` tag",
+            )
+        )
+        return failures
+    for match in matches:
+        ref = match.group(1)
+        line = line_number(text, match.start())
+        if STABLE_TAG_RE.match(ref) is None:
+            failures.append(
+                Failure(
+                    path=ACTION_YML,
+                    line=line,
+                    message="action.yml uses pin `%s` is not a published stable "
+                            "`vX.Y.Z` tag; do not invent a floating `@v0`"
+                            % ref,
+                )
+            )
+            continue
+        if expected_version is not None and ref != expected_version:
+            failures.append(
+                Failure(
+                    path=ACTION_YML,
+                    line=line,
+                    message="action.yml uses pin %s does not match VERSION %s"
+                            % (ref, expected_version),
+                )
+            )
+    return failures
+
+
 def check_github_actions_example(
     text: str, expected_version: Optional[str]
 ) -> List[Failure]:
@@ -876,6 +936,7 @@ def run_checks(root: str, expected_version: Optional[str]) -> List[Failure]:
 
     failures.extend(check_mcp_readme_version(_read(Path(root), MCP_README)))
     failures.extend(check_mcp_launcher_surfaces(Path(root)))
+    failures.extend(check_action_yml_pin(_read(Path(root), ACTION_YML), expected_version))
 
     return failures
 

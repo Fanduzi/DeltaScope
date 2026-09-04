@@ -1,0 +1,4 @@
+# Canonical valid composite-action usage pin for the docs drift checker.
+# The real header lives in action.yml. Pinned to v0.330.0 so VERSION checks
+# match the other docs-example fixtures.
+uses: Fanduzi/deltascope@v0.330.0

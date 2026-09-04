@@ -112,6 +112,11 @@ sql-audit:
       codequality: gl-code-quality-report.json
 """
 
+VALID_ACTION = """\
+# pos: composite action entrypoint consumed by caller workflows via `uses: Fanduzi/deltascope@v0.330.0`
+name: 'DeltaScope SQL Audit'
+"""
+
 
 def github_without(token):
     """VALID_GITHUB with the first occurrence of ``token`` removed."""
@@ -550,6 +555,12 @@ class TestLineNumbersNeverZero(unittest.TestCase):
                 VALID_GITLAB.split("  artifacts:")[0])),
             ("mcp_stale_version", lambda: vde.check_mcp_readme_version(
                 "- defaults to `v0.13.1` in source builds.\n")),
+            ("action_missing_pin", lambda: vde.check_action_yml_pin(
+                "name: 'DeltaScope SQL Audit'\n", "v0.330.0")),
+            ("action_stale_pin", lambda: vde.check_action_yml_pin(
+                VALID_ACTION, "v0.510.3")),
+            ("action_floating_major", lambda: vde.check_action_yml_pin(
+                "uses: Fanduzi/deltascope@v0\n", "v0.510.3")),
         ]
 
     def test_no_finding_uses_line_zero(self):
@@ -573,6 +584,10 @@ class TestFixtures(unittest.TestCase):
         text = (FIXTURES_DIR / "gitlab-ci-valid.yml").read_text(encoding="utf-8")
         self.assertEqual(vde.check_gitlab_example(text), [])
 
+    def test_action_yml_fixture_passes(self):
+        text = (FIXTURES_DIR / "action-yml-valid.yml").read_text(encoding="utf-8")
+        self.assertEqual(vde.check_action_yml_pin(text, "v0.330.0"), [])
+
 
 class TestRunChecksEndToEnd(unittest.TestCase):
     def _write_clean_repo(self, root, github=VALID_GITHUB, gitlab=VALID_GITLAB):
@@ -595,6 +610,7 @@ class TestRunChecksEndToEnd(unittest.TestCase):
         (rootp / "docs" / "examples" / "github-actions.yml").write_text(github)
         (rootp / "docs" / "examples" / "gitlab-ci.yml").write_text(gitlab)
         (rootp / "docs" / "examples" / "runtime-config.yaml").write_text("# clean\n")
+        (rootp / "action.yml").write_text(VALID_ACTION)
 
     def test_clean_repo_passes(self):
         with tempfile.TemporaryDirectory() as root:
@@ -648,6 +664,20 @@ class TestRunChecksEndToEnd(unittest.TestCase):
             failures = vde.run_checks(root, "v0.330.0")
             self.assertTrue(
                 any(f.path == "docs/recipe/use-deltascope-mcp.md" for f in failures)
+            )
+
+    def test_stale_action_yml_pin_is_caught(self):
+        with tempfile.TemporaryDirectory() as root:
+            self._write_clean_repo(root)
+            (Path(root) / "action.yml").write_text(
+                "uses: Fanduzi/deltascope@v0.13.1\n"
+            )
+            failures = vde.run_checks(root, "v0.330.0")
+            self.assertTrue(
+                any(
+                    f.path == "action.yml" and "v0.13.1" in f.message
+                    for f in failures
+                )
             )
 
     def test_stale_command_in_public_doc_is_caught(self):
@@ -842,6 +872,51 @@ class TestSdkResultFields(unittest.TestCase):
 
     def test_missing_file_is_skipped(self):
         self.assertEqual(vde.check_sdk_result_fields([]), [])
+
+
+class TestActionYmlPin(unittest.TestCase):
+    def test_stable_pin_matches_version(self):
+        self.assertEqual(vde.check_action_yml_pin(VALID_ACTION, "v0.330.0"), [])
+
+    def test_stable_pin_without_version_passes(self):
+        self.assertEqual(vde.check_action_yml_pin(VALID_ACTION, None), [])
+
+    def test_stale_v0_13_1_fails_when_version_set(self):
+        text = "uses: Fanduzi/deltascope@v0.13.1\n"
+        failures = vde.check_action_yml_pin(text, "v0.510.3")
+        self.assertEqual(len(failures), 1)
+        self.assertIn("v0.13.1", failures[0].message)
+        self.assertIn("v0.510.3", failures[0].message)
+        self.assertEqual(failures[0].path, vde.ACTION_YML)
+        self.assertEqual(failures[0].line, 1)
+
+    def test_floating_v0_is_rejected(self):
+        text = "uses: Fanduzi/deltascope@v0\n"
+        failures = vde.check_action_yml_pin(text, "v0.510.3")
+        self.assertEqual(len(failures), 1)
+        self.assertIn("@v0", failures[0].message)
+        self.assertEqual(failures[0].line, 1)
+
+    def test_latest_ref_is_rejected(self):
+        text = "uses: Fanduzi/deltascope@latest\n"
+        failures = vde.check_action_yml_pin(text, None)
+        self.assertEqual(len(failures), 1)
+        self.assertIn("latest", failures[0].message)
+
+    def test_missing_pin_fails(self):
+        failures = vde.check_action_yml_pin("name: 'DeltaScope SQL Audit'\n", None)
+        self.assertEqual(len(failures), 1)
+        self.assertIn("uses: Fanduzi/deltascope@vX.Y.Z", failures[0].message)
+        self.assertEqual(failures[0].line, 1)
+
+    def test_absent_file_is_skipped(self):
+        self.assertEqual(vde.check_action_yml_pin(None, "v0.510.3"), [])
+
+    def test_stale_pin_reports_actual_line(self):
+        text = "name: x\n# comment\nuses: Fanduzi/deltascope@v0.13.1\n"
+        failures = vde.check_action_yml_pin(text, "v0.510.3")
+        self.assertEqual(len(failures), 1)
+        self.assertEqual(failures[0].line, 3)
 
 
 class TestMcpReadmeVersion(unittest.TestCase):
