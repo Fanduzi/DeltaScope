@@ -437,4 +437,4 @@ if err != nil {
 - `deltascope audit --format json ...` （CLI）
 - `POST /v1/audit` （HTTP）
 
-产生共享的结果主体结构。库的 `Result` 类型序列化后与 HTTP 响应体主体一致；CLI `--format json` 在此基础上额外包裹顶层 `context` 字段，用于描述运行模式、方言来源和 schema 解析来源。
+产生共享的结果主体结构。库的 `Result` 类型序列化后与 HTTP 响应体主体一致；CLI `--format json` 在此基础上额外包裹顶层 `context` 字段（运行模式、方言来源和 schema 解析来源）以及 `fail_on_triggered`（CLI Fail Threshold 覆盖层）。SDK、HTTP 和 MCP 的 Result 不包含 `fail_on_triggered`。Fail Threshold 不改变 Verdict。

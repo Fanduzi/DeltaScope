@@ -113,7 +113,7 @@ func TestRenderSurfacesCarryOfflineExistenceNote(t *testing.T) {
 		t.Fatalf("quiet context line must carry the caveat, got %q", quiet)
 	}
 
-	jsonBytes, err := renderJSONResult(result, runContext)
+	jsonBytes, err := renderJSONResult(result, runContext, "blocker")
 	if err != nil {
 		t.Fatalf("render json: %v", err)
 	}
@@ -128,7 +128,7 @@ func TestMetadataAwareContextOmitsOfflineExistenceNote(t *testing.T) {
 		DialectSource: "detected",
 		Schema:        "app",
 		SchemaSource:  "flag",
-	})
+	}, "blocker")
 	if err != nil {
 		t.Fatalf("render json: %v", err)
 	}

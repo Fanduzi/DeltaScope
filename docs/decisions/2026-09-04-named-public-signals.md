@@ -19,6 +19,11 @@ Related tests:
 - `TestAuditCommandRejectsExplicitEmptySQLWithoutReadingStdin`
 - `TestExplicitEmptySQLErrorsNameTheirCommands`
 - `TestAuditHelpDocumentsExitTable`
+- `TestAuditJSONNamesFailThresholdSeparatelyFromVerdict`
+- `TestRenderJSONResultNamesFailOnTriggeredBesideVerdict`
+- `TestPublicResultJSONOmitsFailOnTriggered`
+- `TestHandlerAuditReturnsJSONResult`
+- `TestAuditSQLCallTextIncludesFindingSummary`
 - `TestQueryAccessAnalyzeRejectsExplicitEmptySQLWithoutReadingStdin`
 - `TestQueryAccessAnalyzeHelpShowsConnectionFlags`
 Related docs:
@@ -131,9 +136,17 @@ exit classes, or Default Policy.
   `query-access: SQL input must not be empty`. `audit --help` and
   `query-access analyze --help` plus the CLI reference document both exit
   tables.
-- #65, #69, #72: pending implementation. Expected evidence includes CLI
-  JSON tests for `fail_on_triggered`, launcher failure below Node 24, and
-  `get_capabilities` Query Access declaration tests.
+- #65: CLI JSON `Execute` tests keep notices-only `--fail-on notice
+  --format json` at exit 1 with `verdict` `pass` and `fail_on_triggered`
+  true; the same audit with default Fail Threshold (blocker) exits 0 with
+  `verdict` `pass` and `fail_on_triggered` false. Warnings-only stays
+  `review` and blockers stay `reject`. The JSON document seam test names
+  `fail_on_triggered` beside Result without changing Verdict. SDK, HTTP,
+  and MCP Result JSON omit the field. `audit --help` and the CLI
+  reference state that Fail Threshold does not change Verdict.
+- #69, #72: pending implementation. Expected evidence includes launcher
+  failure below Node 24 and `get_capabilities` Query Access declaration
+  tests.
 
 ## Consequences
 

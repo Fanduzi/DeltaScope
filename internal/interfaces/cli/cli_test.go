@@ -1,6 +1,6 @@
 // Package cli verifies the Cobra CLI adapter behavior.
 // input: command-line args including audit-local output and skipped-rule flags, stdin/file SQL sources, unread-stdin doubles for explicit --sql, password-prompt doubles, MySQL-style -H/-P/-u/-D connection flags, and config-init/version requests
-// output: end-to-end CLI behavior coverage for audit rendering/thresholds, compact and opt-in JSON skipped-rule contracts, quiet JSON stability, exit codes, distinct audit-named empty --sql errors, advertised audit exit table, rendered output, and connection-flag validation including -H host shorthand
+// output: end-to-end CLI behavior coverage for audit rendering/thresholds, CLI JSON fail_on_triggered beside unchanged Verdict, compact and opt-in JSON skipped-rule contracts, quiet JSON stability, exit codes, distinct audit-named empty --sql errors, advertised audit exit table, rendered output, and connection-flag validation including -H host shorthand
 // pos: interface-layer CLI test coverage
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -299,6 +299,8 @@ func TestAuditHelpDocumentsExitTable(t *testing.T) {
 	got := stdout.String()
 	for _, want := range []string{
 		`fails with "audit: SQL input must not be empty" and exit 2 without reading stdin`,
+		"Fail Threshold (--fail-on) controls process exit only; it does not change Verdict",
+		"does not change Verdict",
 		"Exit codes:",
 		"0  completed; findings below --fail-on",
 		"1  findings met or exceeded --fail-on",
@@ -428,6 +430,71 @@ func TestAuditCommandHonorsFailOnThreshold(t *testing.T) {
 	}
 	if !strings.Contains(stdout.String(), "table comment is required") {
 		t.Fatalf("expected warning finding in output, got %s", stdout.String())
+	}
+}
+
+func TestAuditJSONNamesFailThresholdSeparatelyFromVerdict(t *testing.T) {
+	const noticesOnlySQL = "insert into users(id) values (1) returning id;"
+	tests := []struct {
+		name          string
+		args          []string
+		wantCode      int
+		wantVerdict   string
+		wantTriggered bool
+	}{
+		{
+			name:          "notices-only fail-on notice",
+			args:          []string{"audit", "--sql", noticesOnlySQL, "--dialect", "mysql", "--fail-on", "notice", "--format", "json"},
+			wantCode:      exitAudit,
+			wantVerdict:   "pass",
+			wantTriggered: true,
+		},
+		{
+			name:          "notices-only default blocker",
+			args:          []string{"audit", "--sql", noticesOnlySQL, "--dialect", "mysql", "--format", "json"},
+			wantCode:      exitOK,
+			wantVerdict:   "pass",
+			wantTriggered: false,
+		},
+		{
+			name:          "warnings-only default blocker",
+			args:          []string{"audit", "--sql", "update users set name = 'x' where id = 1 limit 1", "--format", "json"},
+			wantCode:      exitOK,
+			wantVerdict:   "review",
+			wantTriggered: false,
+		},
+		{
+			name:          "blockers default fail-on",
+			args:          []string{"audit", "--sql", "delete from users", "--format", "json"},
+			wantCode:      exitAudit,
+			wantVerdict:   "reject",
+			wantTriggered: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			stdout := &strings.Builder{}
+			stderr := &strings.Builder{}
+			code := Execute(context.Background(), tc.args, strings.NewReader(""), stdout, stderr)
+			if code != tc.wantCode {
+				t.Fatalf("expected exit code %d, got %d\nstderr=%s\nstdout=%s", tc.wantCode, code, stderr.String(), stdout.String())
+			}
+			if stderr.Len() != 0 {
+				t.Fatalf("expected no stderr, got %q", stderr.String())
+			}
+			decoded := decodeAuditJSON(t, stdout.String())
+			if decoded["verdict"] != tc.wantVerdict {
+				t.Fatalf("expected verdict %q, got %#v", tc.wantVerdict, decoded["verdict"])
+			}
+			gotTriggered, ok := decoded["fail_on_triggered"].(bool)
+			if !ok {
+				t.Fatalf("expected fail_on_triggered bool beside Result, got %#v", decoded["fail_on_triggered"])
+			}
+			if gotTriggered != tc.wantTriggered {
+				t.Fatalf("expected fail_on_triggered=%v, got %v", tc.wantTriggered, gotTriggered)
+			}
+		})
 	}
 }
 
@@ -1704,7 +1771,7 @@ func TestRenderJSONResultIncludesFindingExplanationFields(t *testing.T) {
 				},
 			}},
 		}},
-	}, nil)
+	}, nil, "blocker")
 	if err != nil {
 		t.Fatalf("render json: %v", err)
 	}
@@ -1801,7 +1868,7 @@ func TestRenderJSONResultOmitsAggregateExplanations(t *testing.T) {
 				},
 			}},
 		}},
-	}, &auditRunContext{Mode: "offline", Dialect: "mysql", DialectSource: "default"})
+	}, &auditRunContext{Mode: "offline", Dialect: "mysql", DialectSource: "default"}, "blocker")
 	if err != nil {
 		t.Fatalf("render json: %v", err)
 	}
@@ -1859,7 +1926,7 @@ func TestRenderJSONResultIncludesStatementImpact(t *testing.T) {
 				ReasonCodes:    []string{"indexed_range"},
 			},
 		}},
-	}, nil)
+	}, nil, "blocker")
 	if err != nil {
 		t.Fatalf("render json: %v", err)
 	}
@@ -1919,7 +1986,7 @@ func TestRenderJSONResultIncludesUnsupportedStatements(t *testing.T) {
 			SQL:     "select 1",
 			Reason:  "postgresql statement type is not in the approved v1 subset",
 		}},
-	}, nil)
+	}, nil, "blocker")
 	if err != nil {
 		t.Fatalf("render json: %v", err)
 	}
@@ -1950,7 +2017,7 @@ func TestRenderResultUsesQuietAndJSONBranches(t *testing.T) {
 		}},
 	}
 
-	quietOutput, err := renderResult("markdown", true, result, nil, "", false)
+	quietOutput, err := renderResult("markdown", true, result, nil, "", false, "blocker")
 	if err != nil {
 		t.Fatalf("render quiet result: %v", err)
 	}
@@ -1958,7 +2025,7 @@ func TestRenderResultUsesQuietAndJSONBranches(t *testing.T) {
 		t.Fatalf("expected quiet finding output, got %q", string(quietOutput))
 	}
 
-	jsonOutput, err := renderResult("json", false, result, &auditRunContext{Mode: "offline", Dialect: "postgresql", DialectSource: "flag"}, "", false)
+	jsonOutput, err := renderResult("json", false, result, &auditRunContext{Mode: "offline", Dialect: "postgresql", DialectSource: "flag"}, "", false, "blocker")
 	if err != nil {
 		t.Fatalf("render json result: %v", err)
 	}
@@ -1971,7 +2038,7 @@ func TestRenderResultUsesQuietAndJSONBranches(t *testing.T) {
 		t.Fatalf("expected json context payload, got %#v", decoded["context"])
 	}
 
-	markdownOutput, err := renderResult("yaml", false, report.Result{Verdict: report.VerdictPass}, nil, "", false)
+	markdownOutput, err := renderResult("yaml", false, report.Result{Verdict: report.VerdictPass}, nil, "", false, "blocker")
 	if err != nil {
 		t.Fatalf("render fallback markdown result: %v", err)
 	}
@@ -2009,6 +2076,88 @@ func TestExitCodeForResultRespectsThresholds(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			if got := exitCodeForResult(report.Result{Summary: tc.summary}, tc.threshold); got != tc.want {
 				t.Fatalf("exitCodeForResult(%+v, %q) = %d, want %d", tc.summary, tc.threshold, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestRenderJSONResultNamesFailOnTriggeredBesideVerdict(t *testing.T) {
+	tests := []struct {
+		name          string
+		result        report.Result
+		failOn        string
+		wantTriggered bool
+		wantVerdict   report.Verdict
+	}{
+		{
+			name: "notices-only fail-on notice",
+			result: report.Result{
+				Verdict: report.VerdictPass,
+				Summary: report.Summary{Statements: 1, Notices: 1},
+			},
+			failOn:        "notice",
+			wantTriggered: true,
+			wantVerdict:   report.VerdictPass,
+		},
+		{
+			name: "notices-only default blocker",
+			result: report.Result{
+				Verdict: report.VerdictPass,
+				Summary: report.Summary{Statements: 1, Notices: 1},
+			},
+			failOn:        "blocker",
+			wantTriggered: false,
+			wantVerdict:   report.VerdictPass,
+		},
+		{
+			name: "warnings-only default blocker",
+			result: report.Result{
+				Verdict: report.VerdictReview,
+				Summary: report.Summary{Statements: 1, Warnings: 1},
+			},
+			failOn:        "blocker",
+			wantTriggered: false,
+			wantVerdict:   report.VerdictReview,
+		},
+		{
+			name: "blockers default fail-on",
+			result: report.Result{
+				Verdict: report.VerdictReject,
+				Summary: report.Summary{Statements: 1, Blockers: 1},
+			},
+			failOn:        "blocker",
+			wantTriggered: true,
+			wantVerdict:   report.VerdictReject,
+		},
+		{
+			name: "unsupported without findings does not set fail_on_triggered",
+			result: report.Result{
+				Verdict:     report.VerdictPass,
+				Summary:     report.Summary{Statements: 1},
+				Unsupported: []spec.UnsupportedDetail{{Feature: "select", Reason: "not supported"}},
+			},
+			failOn:        "blocker",
+			wantTriggered: false,
+			wantVerdict:   report.VerdictPass,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			output, err := renderJSONResult(tc.result, nil, tc.failOn)
+			if err != nil {
+				t.Fatalf("render json: %v", err)
+			}
+			decoded := decodeAuditJSON(t, string(output))
+			if decoded["verdict"] != string(tc.wantVerdict) {
+				t.Fatalf("expected verdict %q, got %#v", tc.wantVerdict, decoded["verdict"])
+			}
+			gotTriggered, ok := decoded["fail_on_triggered"].(bool)
+			if !ok {
+				t.Fatalf("expected fail_on_triggered bool beside Result, got %#v", decoded["fail_on_triggered"])
+			}
+			if gotTriggered != tc.wantTriggered {
+				t.Fatalf("expected fail_on_triggered=%v, got %v", tc.wantTriggered, gotTriggered)
 			}
 		})
 	}
@@ -2581,7 +2730,7 @@ func TestRenderJSONResultCompactsSkippedRulesByReason(t *testing.T) {
 				{RuleID: "rule.c", Reason: "aaa.future.code"},
 			},
 		},
-	}, nil)
+	}, nil, "blocker")
 	if err != nil {
 		t.Fatalf("render json: %v", err)
 	}
@@ -2626,7 +2775,7 @@ func TestRenderJSONResultCompactsSkippedRulesByReason(t *testing.T) {
 func TestRenderJSONResultKeepsEmptySkippedReasonArray(t *testing.T) {
 	output, err := renderJSONResult(report.Result{
 		RuleSummary: &report.RuleSummary{Loaded: 2, Applicable: 2},
-	}, nil)
+	}, nil, "blocker")
 	if err != nil {
 		t.Fatalf("render json: %v", err)
 	}
@@ -2775,11 +2924,11 @@ func TestIncludeSkippedRulesOnlyChangesJSONRendering(t *testing.T) {
 			name += "/quiet"
 		}
 		t.Run(name, func(t *testing.T) {
-			without, err := renderResult(tc.format, tc.quiet, result, runContext, "", false)
+			without, err := renderResult(tc.format, tc.quiet, result, runContext, "", false, "blocker")
 			if err != nil {
 				t.Fatalf("render without flag: %v", err)
 			}
-			with, err := renderResult(tc.format, tc.quiet, result, runContext, "", true)
+			with, err := renderResult(tc.format, tc.quiet, result, runContext, "", true, "blocker")
 			if err != nil {
 				t.Fatalf("render with flag: %v", err)
 			}
@@ -2803,7 +2952,7 @@ func TestRenderJSONResultWithSkippedRulesPreservesPerRuleList(t *testing.T) {
 				{RuleID: "future.rule.id", Reason: "zzz.future.code"},
 			},
 		},
-	}, nil, true)
+	}, nil, true, "blocker")
 	if err != nil {
 		t.Fatalf("render json: %v", err)
 	}

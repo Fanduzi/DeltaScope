@@ -1,6 +1,6 @@
 // Package mcpapi verifies MCP audit_sql tool behavior.
 // input: in-process MCP audit_sql CallTool sessions and shipped default policy
-// output: coverage for compact audit_sql text, structured result, and offline existence caveats
+// output: coverage for compact audit_sql text, structured result without CLI-only fail_on_triggered, and offline existence caveats
 // pos: interface-layer tests for MCP audit_sql content vs structuredContent
 // note: if this file changes, update this header and module README.md.
 package mcpapi
@@ -45,6 +45,9 @@ func TestAuditSQLCallTextIncludesFindingSummary(t *testing.T) {
 	body := requireAuditStructuredMap(t, result)
 	if body["verdict"] != "reject" {
 		t.Fatalf("structured verdict = %#v, want reject", body["verdict"])
+	}
+	if _, ok := body["fail_on_triggered"]; ok {
+		t.Fatalf("MCP Result JSON must not include fail_on_triggered, got %#v", body["fail_on_triggered"])
 	}
 	summary, ok := body["summary"].(map[string]any)
 	if !ok {

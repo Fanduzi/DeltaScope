@@ -57,7 +57,7 @@ deltascope audit --config ./deltascope.yaml --format json --file ./migrations/v2
 |------|------|--------|------|
 | `--format` | string | `markdown` | 输出格式：`markdown`（人类可读的本地报告）、`json`（稳定的机器可读契约）、`github-actions`（GitHub Actions 内联注解）、`github-summary`（写入 `$GITHUB_STEP_SUMMARY` 的 Markdown）、`sarif`（SARIF 2.1.0，用于 GitHub Code Scanning 和 SARIF 消费方）、或 `gitlab-codequality`（GitLab Code Quality 报告）。 |
 | `--include-skipped-rules` | bool | false | 仅 JSON：在 `rule_summary.skipped_rules` 中加入完整的逐规则跳过列表；聚合后的 `rule_summary.skipped` 字段保持不变。其他格式不变。 |
-| `--fail-on` | string | `blocker` | 退出码 1 的阈值：`blocker`、`warning`、`notice` 或 `none`。 |
+| `--fail-on` | string | `blocker` | 进程退出的 Fail Threshold：`blocker`、`warning`、`notice` 或 `none`。只控制退出码，不改变 Verdict。 |
 
 ### 连接标志（元数据感知模式）
 
@@ -221,7 +221,7 @@ Statement 1 has 1 finding(s)
 deltascope audit --format json --sql "DELETE FROM users"
 ```
 
-CLI JSON 始终包含顶层 `context` 对象。离线模式下它说明方言来源，并在未检查对象存在性时给出 `note` / `unproven`；metadata-aware 模式下它还包含 schema 的解析结果。
+CLI JSON 始终包含顶层 `context` 对象。离线模式下它说明方言来源，并在未检查对象存在性时给出 `note` / `unproven`；metadata-aware 模式下它还包含 schema 的解析结果。完成的 CLI JSON 还会在审计 Result 旁包含 `fail_on_triggered`：当 Fail Threshold 导致非零进程退出时为 `true`，否则为 `false`。Fail Threshold 不改变 Verdict（`pass` / `review` / `reject` 由 blocker 和 warning 决定；notice 不改变 Verdict）。SDK、HTTP 和 MCP 的 Result 不包含该字段。
 
 ```json
 {
@@ -267,6 +267,7 @@ CLI JSON 始终包含顶层 `context` 对象。离线模式下它说明方言来
       ]
     }
   ],
+  "fail_on_triggered": true,
   "context": {
     "mode": "offline",
     "dialect": "mysql",

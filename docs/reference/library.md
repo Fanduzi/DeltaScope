@@ -453,4 +453,4 @@ The library, CLI, and HTTP service all run the same audit engine. Given the same
 - `deltascope audit --format json ...` (CLI)
 - `POST /v1/audit` (HTTP)
 
-produce the same audit findings and core `Result` fields. The library's `Result` type serializes to the same JSON shape as the HTTP response body. The CLI `--format json` output uses the same `Result` payload and adds a top-level `context` object describing the CLI audit run.
+produce the same audit findings and core `Result` fields. The library's `Result` type serializes to the same JSON shape as the HTTP response body. The CLI `--format json` output uses the same `Result` payload and adds a top-level `context` object describing the CLI audit run plus `fail_on_triggered` for the CLI Fail Threshold overlay. SDK, HTTP, and MCP Result do not include `fail_on_triggered`. Fail Threshold does not change Verdict.

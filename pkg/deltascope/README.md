@@ -25,7 +25,7 @@ Stable public package surface for library consumers.
 | query_access_online_session_postgresql_integration_test.go | Real PG17 same-backend-session proof, COUNT(1)/excluded-shape/parse-failure/foreign-table evidence, and unified-versus-legacy equivalence for the unified online entry (postgresql + integration build tags) |
 | version.go | Publishes `ReportedVersion()`, the `DefaultVersion` fallback, and the canonical ASCII logo |
 | version_test.go | Verifies untagged, devel, and pseudo-version builds do not claim `DefaultVersion` as the sole version, and that tagged versions and the absent-build-info fallback stay intact |
-| audit_test.go | Verifies the public audit API with defaults, overrides, multi-statement and wholly-unparsable diagnostics, PostgreSQL routing, and metadata-aware request plumbing |
+| audit_test.go | Verifies the public audit API with defaults, overrides, multi-statement and wholly-unparsable diagnostics, PostgreSQL routing, metadata-aware request plumbing, and JSON that omits CLI-only `fail_on_triggered` |
 | audit_dml_table_existence_test.go | Verifies the public MySQL/TiDB DML missing-target blocker, existing-table behavior, and offline non-claim |
 | audit_ddl_lifecycle_mysql_test.go | Verifies MySQL/TiDB lifecycle findings, normalized notice identifiers, ALTER TABLE index-notice reuse/action metadata, and no-leak behavior |
 | audit_unsupported_diagnostics_evidence_test.go | Verifies parser-error calls return a non-nil error together with review-floored partial results, preserved valid statements/findings, and located safe diagnostics |

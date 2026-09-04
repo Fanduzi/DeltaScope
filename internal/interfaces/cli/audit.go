@@ -1,6 +1,6 @@
 // Package cli exposes the command-line adapter for DeltaScope.
 // input: audit command flags including -h/--help versus -H/--host, audit-local output format, skipped-rule detail, and fail threshold, whether --sql was explicitly provided, SQL text from flags/files/stdin, password source/prompt dependencies, typed standard-library network errors, and application audit services
-// output: rendered audit results and located diagnostics, audit-only output validation, command-named empty-SQL usage errors, advertised audit exit table, CLI JSON skipped-rule aggregation with optional stable per-rule details, dialect-aware connection-option normalization with MySQL/TiDB catalog aliases and PostgreSQL schema/database validation, password resolution, offline existence caveats, and user-vs-runtime exit-code mapping through shared bounded connection-refused, connection, authentication, identity, and TLS categories
+// output: rendered audit results and located diagnostics, audit-only output validation, command-named empty-SQL usage errors, advertised audit exit table, CLI JSON skipped-rule aggregation with optional stable per-rule details, CLI JSON fail_on_triggered beside unchanged Verdict, dialect-aware connection-option normalization with MySQL/TiDB catalog aliases and PostgreSQL schema/database validation, password resolution, offline existence caveats, and user-vs-runtime exit-code mapping through shared bounded connection-refused, connection, authentication, identity, and TLS categories
 // pos: CLI audit command implementation above the application service and output renderers
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -67,6 +67,7 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 		Long: "Audit SQL in offline mode or enrich the same audit engine with live metadata.\n" +
 			"When connection flags are present, DeltaScope uses metadata-aware mode, auto-detects the dialect, and infers schema when possible for mysql, tidb, and postgresql connections.\n" +
 			"SQL input comes from --sql, --file, or stdin. Explicit empty or whitespace-only --sql fails with \"audit: SQL input must not be empty\" and exit 2 without reading stdin.\n" +
+			"Fail Threshold (--fail-on) controls process exit only; it does not change Verdict.\n" +
 			"Exit codes:\n" +
 			"  0  completed; findings below --fail-on\n" +
 			"  1  findings met or exceeded --fail-on\n" +
@@ -141,7 +142,7 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 				return mapAuditError(exitCode, auditErr)
 			}
 
-			output, err := renderResult(options.Format, options.Quiet, result, runContext, filePath, includeSkippedRules)
+			output, err := renderResult(options.Format, options.Quiet, result, runContext, filePath, includeSkippedRules, options.FailOn)
 			if err != nil {
 				*exitCode = exitInternal
 				return err
@@ -171,7 +172,7 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 	cmd.Flags().StringVar(&filePath, "file", "", "path to a SQL file to audit")
 	cmd.Flags().StringVar(&options.Format, "format", options.Format, "output format: markdown, json, github-actions, github-summary, sarif, or gitlab-codequality")
 	cmd.Flags().BoolVar(&includeSkippedRules, "include-skipped-rules", false, "include full skipped-rule details in JSON output")
-	cmd.Flags().StringVar(&options.FailOn, "fail-on", options.FailOn, "non-zero threshold: blocker, warning, notice, or none")
+	cmd.Flags().StringVar(&options.FailOn, "fail-on", options.FailOn, "Fail Threshold for process exit: blocker, warning, notice, or none; does not change Verdict")
 	cmd.Flags().StringVarP(&options.Host, "host", "H", "", "database host for metadata-aware audit")
 	cmd.Flags().IntVarP(&options.Port, "port", "P", options.Port, "database port for metadata-aware audit (3306 for MySQL/TiDB/auto-detect; 5432 for explicit PostgreSQL)")
 	cmd.Flags().StringVarP(&options.User, "user", "u", "", "database user for metadata-aware audit")
@@ -394,10 +395,10 @@ func hasRenderableAuditResult(result report.Result) bool {
 	return len(result.Statements) > 0 || len(result.GlobalFindings) > 0 || len(result.Unsupported) > 0 || result.RuleSummary != nil || result.Explanation != nil || result.Verdict != "" || result.Summary != (report.Summary{}) || len(result.Diagnostics) > 0
 }
 
-func renderResult(format string, quiet bool, result report.Result, runContext *auditRunContext, sourcePath string, includeSkippedRules bool) ([]byte, error) {
+func renderResult(format string, quiet bool, result report.Result, runContext *auditRunContext, sourcePath string, includeSkippedRules bool, failOn string) ([]byte, error) {
 	switch format {
 	case "json":
-		return renderJSONResultWithSkippedRules(result, runContext, includeSkippedRules)
+		return renderJSONResultWithSkippedRules(result, runContext, includeSkippedRules, failOn)
 	case "github-actions":
 		return githubactions.Render(result, githubactions.Options{Path: sourcePath})
 	case "github-summary":
@@ -496,22 +497,25 @@ type cliSkippedReason struct {
 	Count  int    `json:"count"`
 }
 
-func renderJSONResult(result report.Result, runContext *auditRunContext) ([]byte, error) {
-	return renderJSONResultWithSkippedRules(result, runContext, false)
+func renderJSONResult(result report.Result, runContext *auditRunContext, failOn string) ([]byte, error) {
+	return renderJSONResultWithSkippedRules(result, runContext, false, failOn)
 }
 
-func renderJSONResultWithSkippedRules(result report.Result, runContext *auditRunContext, includeSkippedRules bool) ([]byte, error) {
+func renderJSONResultWithSkippedRules(result report.Result, runContext *auditRunContext, includeSkippedRules bool, failOn string) ([]byte, error) {
 	ruleSummary := result.RuleSummary
+	triggered := failOnTriggered(result, failOn)
 	result = resultWithoutAggregateExplanations(result)
 	result.RuleSummary = nil
 	payload := struct {
 		report.Result
-		RuleSummary *cliJSONRuleSummary `json:"rule_summary,omitempty"`
-		Context     *auditRunContext    `json:"context,omitempty"`
+		FailOnTriggered bool                `json:"fail_on_triggered"`
+		RuleSummary     *cliJSONRuleSummary `json:"rule_summary,omitempty"`
+		Context         *auditRunContext    `json:"context,omitempty"`
 	}{
-		Result:      result,
-		RuleSummary: cliJSONRuleSummaryFor(ruleSummary, includeSkippedRules),
-		Context:     runContext,
+		Result:          result,
+		FailOnTriggered: triggered,
+		RuleSummary:     cliJSONRuleSummaryFor(ruleSummary, includeSkippedRules),
+		Context:         runContext,
 	}
 	return json.Marshal(payload)
 }
@@ -622,25 +626,25 @@ func formatQuietFinding(finding rule.Finding) string {
 	return fmt.Sprintf("[%s] %s: %s", finding.Level, finding.RuleID, finding.Message)
 }
 
+func failOnTriggered(result report.Result, threshold string) bool {
+	switch threshold {
+	case "none":
+		return false
+	case "notice":
+		return result.Summary.Notices > 0 || result.Summary.Warnings > 0 || result.Summary.Blockers > 0
+	case "warning":
+		return result.Summary.Warnings > 0 || result.Summary.Blockers > 0
+	default:
+		return result.Summary.Blockers > 0
+	}
+}
+
 func exitCodeForResult(result report.Result, threshold string) int {
 	if len(result.Unsupported) > 0 {
 		return exitAudit
 	}
-	switch threshold {
-	case "none":
-		return exitOK
-	case "notice":
-		if result.Summary.Notices > 0 || result.Summary.Warnings > 0 || result.Summary.Blockers > 0 {
-			return exitAudit
-		}
-	case "warning":
-		if result.Summary.Warnings > 0 || result.Summary.Blockers > 0 {
-			return exitAudit
-		}
-	default:
-		if result.Summary.Blockers > 0 {
-			return exitAudit
-		}
+	if failOnTriggered(result, threshold) {
+		return exitAudit
 	}
 	return exitOK
 }

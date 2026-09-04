@@ -62,7 +62,7 @@ These flags belong to `audit` only. Their canonical placement is after `audit`; 
 |------|------|---------|-------------|
 | `--format` | string | `markdown` | Output format: `markdown` (human-readable local report), `json` (stable machine-readable contract), `github-actions` (inline GitHub Actions annotations), `github-summary` (Markdown for `$GITHUB_STEP_SUMMARY`), `sarif` (SARIF 2.1.0 for GitHub Code Scanning and SARIF consumers), or `gitlab-codequality` (GitLab Code Quality artifact). |
 | `--include-skipped-rules` | bool | false | JSON only: add the complete per-rule skipped list as `rule_summary.skipped_rules`; the aggregate `rule_summary.skipped` field remains unchanged. Other formats are unchanged. |
-| `--fail-on` | string | `blocker` | Exit 1 threshold: `blocker`, `warning`, `notice`, or `none`. |
+| `--fail-on` | string | `blocker` | Fail Threshold for process exit: `blocker`, `warning`, `notice`, or `none`. Controls exit code only; it does not change Verdict. |
 
 ### Connection Flags (Metadata-Aware Mode)
 
@@ -254,7 +254,7 @@ integrations.
 deltascope audit --format json --sql "DELETE FROM users"
 ```
 
-CLI JSON always includes a top-level `context` object. In offline mode it reports the configured dialect source plus `note` / `unproven` when existence was not checked; in metadata-aware mode it also reports resolved schema details.
+CLI JSON always includes a top-level `context` object. In offline mode it reports the configured dialect source plus `note` / `unproven` when existence was not checked; in metadata-aware mode it also reports resolved schema details. Completed CLI JSON also includes `fail_on_triggered` beside the audit Result: `true` when Fail Threshold caused a non-zero process exit, `false` otherwise. Fail Threshold does not change Verdict (`pass` / `review` / `reject` from blockers and warnings; notices do not change Verdict). SDK, HTTP, and MCP Result do not include this field.
 
 ```json
 {
@@ -300,6 +300,7 @@ CLI JSON always includes a top-level `context` object. In offline mode it report
       ]
     }
   ],
+  "fail_on_triggered": true,
   "context": {
     "mode": "offline",
     "dialect": "mysql",

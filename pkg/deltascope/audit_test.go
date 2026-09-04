@@ -1,12 +1,13 @@
 // Package deltascope verifies the public SQL audit API.
 // input: public audit requests across dialect, parser, metadata, and policy boundaries
-// output: stable public result, partial-result, error, finding, and metadata contract coverage
+// output: stable public result, partial-result, error, finding, and metadata contract coverage, including JSON that omits CLI-only fail_on_triggered
 // pos: primary public SDK audit regression suite
 // note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -30,6 +31,25 @@ type fakeMetadataProvider struct {
 	instance      *InstanceFacts
 	snapshot      *TableSnapshot
 	err           error
+}
+
+func TestPublicResultJSONOmitsFailOnTriggered(t *testing.T) {
+	t.Parallel()
+
+	result, err := Audit(context.Background(), Request{
+		SQL:     "delete from users",
+		Dialect: DialectMySQL,
+	})
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	payload, err := json.Marshal(result)
+	if err != nil {
+		t.Fatalf("marshal public result: %v", err)
+	}
+	if strings.Contains(string(payload), "fail_on_triggered") {
+		t.Fatalf("SDK Result JSON must not include fail_on_triggered: %s", payload)
+	}
 }
 
 func TestAuditLeadingUTF8BOMMatchesBOMFreeInput(t *testing.T) {
