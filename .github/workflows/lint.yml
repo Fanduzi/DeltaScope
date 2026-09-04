@@ -18,7 +18,7 @@ jobs:
         with:
           go-version-file: "go.mod"
 
-      - name: Verify pull-request corpus gate wiring
+      - name: Verify pull-request workflow contract
         run: python3 scripts/test_pr_workflow_contract.py
 
       - name: Run MySQL/TiDB SQL corpus gates
@@ -29,3 +29,31 @@ jobs:
         with:
           version: v2.12.2
           args: --timeout=5m
+
+  unit:
+    name: go test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+
+      - name: Run unit tests
+        run: go test ./...
+
+  postgresql-unit:
+    name: PostgreSQL unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+
+      - name: Run PostgreSQL-tagged unit gates
+        run: make pg-unit-test-gates
