@@ -94,10 +94,7 @@ func Inspect(ctx context.Context, req Request) (Result, error) {
 	}
 
 	defaults := policy.Default()
-	defaultRule, ok := shippedRulePolicy(defaults, entry)
-	if !ok {
-		return Result{}, fmt.Errorf("rule %q not found", req.RuleID)
-	}
+	defaultRule := shippedRulePolicy(defaults, entry)
 
 	currentRule := defaultRule
 	currentPolicy := defaults
@@ -419,10 +416,7 @@ func validateRawConfig(raw rawConfigFile) error {
 		if !ok {
 			return fmt.Errorf("unknown rule %q", ruleID)
 		}
-		defaultRule, ok := shippedRulePolicy(defaults, entry)
-		if !ok {
-			return fmt.Errorf("unknown rule %q", ruleID)
-		}
+		defaultRule := shippedRulePolicy(defaults, entry)
 		if rawRule.Level != nil && *rawRule.Level != "" {
 			level := *rawRule.Level
 			if level != string(rule.LevelBlocker) && level != string(rule.LevelWarning) && level != string(rule.LevelNotice) {
@@ -436,15 +430,15 @@ func validateRawConfig(raw rawConfigFile) error {
 	return nil
 }
 
-func shippedRulePolicy(defaults policy.Policy, entry catalog.Entry) (policy.RulePolicy, bool) {
+func shippedRulePolicy(defaults policy.Policy, entry catalog.Entry) policy.RulePolicy {
 	if ruleCfg, ok := defaults.Rules[entry.RuleID]; ok {
-		return ruleCfg, true
+		return ruleCfg
 	}
 	return policy.RulePolicy{
 		Enabled: entry.DefaultEnabled,
 		Level:   entry.DefaultLevel,
 		Params:  cloneParams(entry.DefaultParams),
-	}, true
+	}
 }
 
 func validateRuleParams(ruleID string, rawParams map[string]any, defaultParams map[string]any) error {
