@@ -21,7 +21,7 @@ This evidence file is committed on top of `7d0b202d602d827d04450bd621fe9023a1ef2
 
 Independent Grok `general-purpose` subagents reviewed `main...HEAD` at `1231b78d18c3c3b049f951d78156d72617e6a2eb` (before the two follow-up commits).
 
-- Standards subagent `01a06eb1-17ec-7f21-9b25-ac3e86a9543b`: 5 documented-standard findings, 2 judgement smells, unresolved P1 = 0. Documented findings: Loaded glossary over-collapsed Default Policy; `fk_forbid` wired through skip vocabulary; umbrella decision record left #69/#72 pending; two L3 headers stale; npm launcher README missed new exports.
+- Standards subagent `01a06eb1-17ec-7f21-9b25-ac3e86a9543b`: 5 documented-standard findings, 2 judgement smells, unresolved P1 = 0. Documented findings: Loaded glossary over-collapsed Default Policy; `fk_forbid` wired through skip vocabulary; umbrella decision record still listed #69/#72 as unimplemented in Verification Evidence; two L3 headers stale; npm launcher README missed new exports.
 - Spec subagent `01a06eb1-17ec-7f21-9b25-ac4a05ca9652`: actual verdict **Spec PASS**, unresolved P1 = 0, unresolved P2 = 0.
 
 Follow-up `7b236c09c1bdee92fce3a8265efc2efd6abe9527` closed the five documented Standards findings. Follow-up `7d0b202d602d827d04450bd621fe9023a1ef260e` closed the `unparam` finding on `shippedRulePolicy`. Remaining judgement smells (duplicated `shippedRulePolicy` helpers, repeated Version/ReportedVersion fallback) were not treated as merge blockers. Unresolved P1 = 0, unresolved P2 = 0 after those commits.
