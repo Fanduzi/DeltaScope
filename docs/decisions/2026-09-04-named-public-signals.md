@@ -4,6 +4,13 @@ Date: 2026-09-04
 Status: Accepted
 Related milestone/version: issues #65, #67, #68, #69, #72, #74
 Related commits:
+- `fe014c1` docs: record named public signals for issues 65-76
+- `a0e66d8` fix(catalog): expose default-disabled dml.impact rules
+- `fab315c` fix(mcp): fail closed below Node 24 in the launcher
+- `e5ad001` feat(mcp): declare Query Access unavailable on get_capabilities
+- `baa8315` fix(cli): distinguish empty --sql errors by command
+- `11f87a2` fix(cli): name Fail Threshold in JSON without changing Verdict
+- `1231b78` fix(config): name catalog vs loaded vs fk-forbid suppressions
 Related tests:
 - `TestLookupReturnsDefaultDisabledImpactRules`
 - `TestSearchFindsDefaultDisabledImpactRules`
@@ -31,7 +38,8 @@ Related tests:
 - `TestInspect_FKNamingLoadsWhenForbidDisabled`
 - `TestConfigStatus_FKForbidSuppressedNamingText`
 - `TestConfigStatus_FKForbidSuppressedNamingJSON`
-- `TestMarkdownRenderNamesFKForbidSkipReason``
+- `TestGetCapabilitiesDeclaresQueryAccessUnavailableOnMCP`
+- `TestNewServerExposesCoreTools`
 Related docs:
 - `CONTEXT.md`
 - `docs/reference/audit-capability-matrix.md`
@@ -161,9 +169,13 @@ exit classes, or Default Policy.
   `fail_on_triggered` beside Result without changing Verdict. SDK, HTTP,
   and MCP Result JSON omit the field. `audit --help` and the CLI
   reference state that Fail Threshold does not change Verdict.
-- #69, #72: pending implementation. Expected evidence includes launcher
-  failure below Node 24 and `get_capabilities` Query Access declaration
-  tests.
+- #69: npm launcher tests fail closed on Node major < 24
+  (`requireSupportedNodeVersion`, `bootstrapLauncher`) before download or
+  spawn. `engines.node` remains `>=24`.
+- #72: `get_capabilities` JSON includes
+  `query_access: { available: false, surfaces: ["cli", "http"] }`. The tool
+  list remains `audit_sql`, `describe_rule`, `list_rules`,
+  `get_capabilities`.
 - #67: `config status` on `ddl.constraint.foreign_key.name.*` keeps Default
   Policy `enabled`/`on` and reports `loaded: false` with
   `suppression.reason=fk_forbid` and `suppression.by=ddl.table.foreign_key.forbid`.

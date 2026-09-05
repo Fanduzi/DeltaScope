@@ -1,6 +1,6 @@
 // Package rule defines domain findings and rule-engine types.
 // input: rule evaluation details, source-location metadata, and statement/global rule implementations
-// output: normalized findings and registry-facing rule contracts
+// output: normalized findings, skip reasons for loaded-but-inapplicable rules, and registry-facing rule contracts
 // pos: domain rule vocabulary and execution contracts shared across audit evaluation
 // note: if this file changes, update this header and module README.md.
 package rule
@@ -50,16 +50,12 @@ type Location struct {
 	Column int `json:"column,omitempty"`
 }
 
-// SkipReason describes why a rule did not apply or was not Loaded.
+// SkipReason describes why a loaded rule did not apply to a statement.
 type SkipReason string
 
 const (
 	// SkipReasonDialectMismatch indicates the rule targets a different dialect.
 	SkipReasonDialectMismatch SkipReason = "dialect_mismatch"
-	// SkipReasonFKForbid indicates a foreign-key naming rule is not Loaded because
-	// ddl.table.foreign_key.forbid is enabled. The rule remains in the Rule Catalog
-	// and Default Policy; it is suppressed, not missing.
-	SkipReasonFKForbid SkipReason = "fk_forbid"
 )
 
 // SkippedRule records one loaded rule that did not apply to a specific statement.

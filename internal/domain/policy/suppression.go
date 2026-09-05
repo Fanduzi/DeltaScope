@@ -9,9 +9,13 @@ package policy
 // naming governance while foreign keys themselves are forbidden.
 const ForeignKeyForbidRuleID = "ddl.table.foreign_key.forbid"
 
+// ForeignKeyNamingSuppressionReason is the config-status reason for FK naming
+// rules that stay in Default Policy but are not Loaded.
+const ForeignKeyNamingSuppressionReason = "fk_forbid"
+
 // ForeignKeyNamingRuleIDs are Default Policy naming rules that registration
-// skips while ForeignKeyForbidRuleID is enabled. They stay in the Rule Catalog
-// and Default Policy; they are not Loaded.
+// does not Load while ForeignKeyForbidRuleID is enabled. They stay in the
+// Rule Catalog and Default Policy; they are suppressed, not skipped.
 var ForeignKeyNamingRuleIDs = []string{
 	"ddl.constraint.foreign_key.name.prefix.require",
 	"ddl.constraint.foreign_key.name.suffix.require",

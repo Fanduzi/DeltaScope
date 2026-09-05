@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 )
 
@@ -455,8 +456,8 @@ func TestInspect_DefaultPolicyFKNamingIsSuppressedNotMissing(t *testing.T) {
 		if res.Suppression == nil {
 			t.Fatalf("%s: expected fk_forbid suppression, not a missing rule", ruleID)
 		}
-		if res.Suppression.Reason != string(rule.SkipReasonFKForbid) {
-			t.Fatalf("%s: suppression.reason = %q, want %q", ruleID, res.Suppression.Reason, rule.SkipReasonFKForbid)
+		if res.Suppression.Reason != policy.ForeignKeyNamingSuppressionReason {
+			t.Fatalf("%s: suppression.reason = %q, want %q", ruleID, res.Suppression.Reason, policy.ForeignKeyNamingSuppressionReason)
 		}
 		if res.Suppression.By != "ddl.table.foreign_key.forbid" {
 			t.Fatalf("%s: suppression.by = %q", ruleID, res.Suppression.By)

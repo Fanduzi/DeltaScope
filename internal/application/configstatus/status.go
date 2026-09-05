@@ -183,7 +183,7 @@ func foreignKeyNamingSuppression(cfg policy.Policy, ruleID string) *Suppression 
 		return nil
 	}
 	return &Suppression{
-		Reason: string(rule.SkipReasonFKForbid),
+		Reason: policy.ForeignKeyNamingSuppressionReason,
 		By:     policy.ForeignKeyForbidRuleID,
 	}
 }

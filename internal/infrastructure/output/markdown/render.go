@@ -253,8 +253,6 @@ func formatSkipReason(reason rule.SkipReason) string {
 	switch reason {
 	case rule.SkipReasonDialectMismatch:
 		return "Not applicable to current dialect"
-	case rule.SkipReasonFKForbid:
-		return "Suppressed by ddl.table.foreign_key.forbid"
 	default:
 		return string(reason)
 	}

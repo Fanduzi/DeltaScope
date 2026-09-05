@@ -31,7 +31,8 @@ _Avoid_: catalog, loaded
 
 **Loaded**:
 The statement-rule set actually registered for one audit (`rule_summary.loaded`).
-It is a subset of Default Policy, not the Rule Catalog count.
+Caller config can Load Catalog rules that Default Policy does not enable.
+Suppression can omit Default Policy rules. Loaded is not the Catalog count.
 _Avoid_: catalog, default policy
 
 **Suppression**:

@@ -1,6 +1,6 @@
 // Package configlint verifies config lint replacement warning derivation.
-// input: temporary YAML config files and built-in default policy metadata
-// output: test coverage for the config lint warning core
+// input: temporary YAML config files, built-in default policy, and Rule Catalog opt-in metadata
+// output: test coverage for the config lint warning core and catalog-only opt-in rules
 // pos: application config lint adapter test coverage
 // note: if this file changes, update this header and module README.md.
 package configlint
