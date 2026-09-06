@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DeltaScope 架构评审 · 2026-09-06</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="module">
+      import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+      mermaid.initialize({ startOnLoad: true, theme: "neutral", securityLevel: "loose" });
+    </script>
+    <style>
+      .seam { stroke-dasharray: 4 4; }
+      .leak { stroke: #dc2626; }
+      .deep { background: linear-gradient(135deg, #0f172a, #1e293b); }
+      .mass-iface { background: repeating-linear-gradient(90deg, #fecaca 0 8px, #fca5a5 8px 16px); }
+      .mass-impl { background: repeating-linear-gradient(0deg, #e2e8f0 0 6px, #f8fafc 6px 12px); }
+    </style>
+  </head>
+  <body class="bg-stone-50 text-slate-900 font-sans">
+    <main class="max-w-5xl mx-auto px-6 py-12 space-y-12">
+      <header class="space-y-6">
+        <p class="text-xs uppercase tracking-[0.2em] text-stone-500">DeltaScope · 2026-09-06 · v0.510.4 之后</p>
+        <h1 class="font-serif text-4xl text-stone-900 leading-tight">架构评审</h1>
+        <p class="text-stone-600 max-w-3xl">
+          八月 Query Access 加深之后，真正还在变的是：CLI audit、Transport Connection Resolution、Rule Catalog / Loaded / Suppression、不完整审计的 completeness。
+          用语：<em>module、interface、depth、seam、adapter、leverage、locality</em>。
+        </p>
+
+        <div class="flex flex-wrap gap-4 text-xs uppercase tracking-wider text-stone-600">
+          <span class="inline-flex items-center gap-2"><span class="h-3 w-8 border-2 border-slate-800 bg-white"></span> module</span>
+          <span class="inline-flex items-center gap-2"><span class="h-px w-8 border-t-2 border-dashed border-slate-500"></span> seam</span>
+          <span class="inline-flex items-center gap-2"><span class="h-0.5 w-8 bg-red-600"></span> leakage</span>
+          <span class="inline-flex items-center gap-2"><span class="h-3 w-8 deep"></span> deep module</span>
+        </div>
+
+        <div class="rounded-lg border border-stone-200 bg-white p-4 text-sm text-stone-600">
+          <p class="text-xs uppercase tracking-wider text-stone-500 mb-2">八月已落地，本次不重开</p>
+          <ul class="grid md:grid-cols-2 gap-1 font-mono text-xs">
+            <li>统一的 Online Query Access Session 入口</li>
+            <li>SDK 拥有 Query Access 语义</li>
+            <li>私有 proof orchestration（不做 proof-engine seam）</li>
+            <li>已删除 DB-backed resolver</li>
+          </ul>
+        </div>
+      </header>
+
+      <section id="candidates" class="space-y-10">
+
+        <article id="c1" class="rounded-2xl border border-stone-200 bg-white p-6 space-y-5">
+          <div class="flex items-start justify-between gap-4">
+            <h2 class="font-serif text-2xl text-stone-900">把 Transport Connection Resolution 做深</h2>
+            <div class="flex flex-wrap gap-2 justify-end">
+              <span class="bg-emerald-100 text-emerald-800 text-xs font-semibold px-3 py-1 rounded-full">Strong</span>
+              <span class="bg-stone-100 text-stone-700 text-xs font-semibold px-3 py-1 rounded-full">ports &amp; adapters</span>
+            </div>
+          </div>
+
+          <div>
+            <p class="text-xs uppercase tracking-wider text-stone-500 mb-1">Files</p>
+            <ul class="font-mono text-sm text-stone-700 space-y-0.5">
+              <li>internal/interfaces/metadata/connection.go</li>
+              <li>internal/interfaces/cli/audit.go · resolveConnectionOptions, classifyConnectionError</li>
+              <li>internal/interfaces/cli/audit_metadata.go · openMetadataClient</li>
+              <li>internal/interfaces/cli/query_access.go · mapOnlineCLIBoundaryError</li>
+              <li>internal/interfaces/http/audit_metadata.go · executeRegistryAwareAudit</li>
+              <li>internal/interfaces/mcp/connection.go · ResolveAuditConnection</li>
+              <li>internal/application/online/errors.go · MapOnlineError</li>
+              <li>internal/application/auditmeta/prepare.go · normalizeDatabaseSchema</li>
+              <li>internal/application/queryaccess/contracts.go · ResolveMySQLTiDBOnlineSchema</li>
+            </ul>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="rounded-lg border border-rose-200 bg-rose-50 p-4">
+              <p class="text-xs uppercase tracking-wider text-rose-700 mb-3">现在 — 三个组装器，一个不完整的 helper</p>
+              <div class="space-y-2 text-xs">
+                <div class="border-2 border-rose-400 rounded overflow-hidden">
+                  <div class="bg-rose-300 px-2 py-1 uppercase tracking-wider">CLI flags</div>
+                  <div class="px-2 py-2 bg-white">TLS CA · PG 默认端口 5432 · timeout 0 · catalog 别名 · 自定义 OpenClient</div>
+                </div>
+                <div class="border-2 border-rose-400 rounded overflow-hidden">
+                  <div class="bg-rose-300 px-2 py-1 uppercase tracking-wider">HTTP registry</div>
+                  <div class="px-2 py-2 bg-white">tls_mode · purposes · connection_id · 默认 opener</div>
+                </div>
+                <div class="border-2 border-rose-400 rounded overflow-hidden">
+                  <div class="bg-rose-300 px-2 py-1 uppercase tracking-wider">MCP yaml / inline</div>
+                  <div class="px-2 py-2 bg-white">connection_ref · 没有 TLS · timeout 零值语义不同</div>
+                </div>
+                <div class="border border-dashed border-stone-400 rounded px-2 py-2 text-stone-500">
+                  metadata.ConnectionInput — 只管 password 和 host/socket。没有 TLS。
+                </div>
+              </div>
+            </div>
+            <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+              <p class="text-xs uppercase tracking-wider text-emerald-800 mb-3">之后 — 一个 deep module，薄 adapter</p>
+              <div class="space-y-2 text-xs">
+                <div class="grid grid-cols-3 gap-1">
+                  <div class="border border-emerald-300 bg-white px-1 py-2 text-center uppercase tracking-wider">CLI flags</div>
+                  <div class="border border-emerald-300 bg-white px-1 py-2 text-center uppercase tracking-wider">HTTP id</div>
+                  <div class="border border-emerald-300 bg-white px-1 py-2 text-center uppercase tracking-wider">MCP ref</div>
+                </div>
+                <div class="h-px border-t-2 border-dashed border-slate-500"></div>
+                <div class="deep text-stone-100 rounded px-3 py-4">
+                  <div class="uppercase tracking-wider text-[10px] text-stone-400 mb-1">Transport Connection Resolution</div>
+                  TLS · timeout · PG 端口 · MySQL/TiDB catalog 别名 · 有界错误分类
+                </div>
+                <p class="text-emerald-900">adapter 仍负责打开/关闭，以及各自的 exit/status 文案。audit 连接池 opener 和钉住的 Online Query Access Session opener 继续分开。</p>
+              </div>
+            </div>
+          </div>
+
+          <p><span class="text-xs uppercase tracking-wider text-stone-500">问题</span><br />
+            CONTEXT.md 已经命名了 Transport Connection Resolution，但现有 module 是 shallow 的：只做 password 和 host。TLS、timeout 零值语义、PostgreSQL 默认端口、MySQL/TiDB catalog 别名，从三个组装器里漏出去。CLI 还在注入自定义 metadata opener；HTTP 和 MCP 已经走 <span class="font-mono text-sm">auditmeta.Prepare</span>。</p>
+          <p><span class="text-xs uppercase tracking-wider text-stone-500">做法</span><br />
+            加深一个 module，让它拥有连接输入、TLS、timeout、catalog 别名和有界错误分类。CLI / HTTP / MCP 只做 flags、<span class="font-mono text-sm">connection_id</span>、<span class="font-mono text-sm">connection_ref</span> 的薄 adapter。不要把 audit 连接池 opener 和钉住的 Query Access opener 合成一个。</p>
+          <ul class="text-sm space-y-1">
+            <li><span class="text-xs uppercase tracking-wider text-stone-500">Wins</span></li>
+            <li>· locality：TLS 只分类一次</li>
+            <li>· leverage：catalog 别名只有一条路径</li>
+            <li>· CLI opener 收进 auditmeta</li>
+            <li>· MCP 不再缺 TLS</li>
+            <li>· 测试打在一个 resolution interface 上</li>
+          </ul>
+          <div class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+            只有在统一对外错误文案时，才会和 CLI 的 TLS / 端口 ADR 冲突。不要统一文案。那些 ADR 冻结的是 adapter 面向用户的句子，不是 TLS 加载写三份。<span class="font-mono text-xs">online.MapOnlineError</span> 已经自称共享 seam，但 CLI 和 MCP 并没有走它。
+          </div>
+        </article>
+
+        <article id="c2" class="rounded-2xl border border-stone-200 bg-white p-6 space-y-5">
+          <div class="flex items-start justify-between gap-4">
+            <h2 class="font-serif text-2xl text-stone-900">让一个 module 计算 Catalog、Loaded、Suppression</h2>
+            <div class="flex flex-wrap gap-2 justify-end">
+              <span class="bg-emerald-100 text-emerald-800 text-xs font-semibold px-3 py-1 rounded-full">Strong</span>
+              <span class="bg-stone-100 text-stone-700 text-xs font-semibold px-3 py-1 rounded-full">in-process</span>
+            </div>
+          </div>
+
+          <div>
+            <p class="text-xs uppercase tracking-wider text-stone-500 mb-1">Files</p>
+            <ul class="font-mono text-sm text-stone-700 space-y-0.5">
+              <li>internal/domain/rule/catalog/catalog.go · dialectsForRule, shippedCatalogPolicies</li>
+              <li>internal/domain/policy/suppression.go</li>
+              <li>internal/domain/rule/ddl/register.go · FK skip</li>
+              <li>internal/application/configstatus/status.go · Loaded = enabled &amp;&amp; suppression == nil</li>
+              <li>internal/application/audit/evaluate.go · RuleSummary.Loaded / Skipped</li>
+              <li>internal/interfaces/cli/rules.go · config_status.go</li>
+            </ul>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="rounded-lg border border-rose-200 bg-rose-50 p-4">
+              <p class="text-xs uppercase tracking-wider text-rose-700 mb-3">现在 — 四个事实，五处重算</p>
+              <div class="space-y-2 text-xs font-mono">
+                <div class="flex items-stretch h-10">
+                  <div class="w-28 bg-rose-300 px-2 flex items-center">Catalog</div>
+                  <div class="flex-1 bg-white border border-rose-200 px-2 flex items-center">靠 rule ID 字符串猜</div>
+                </div>
+                <div class="flex items-stretch h-10">
+                  <div class="w-28 bg-rose-300 px-2 flex items-center">Default Policy</div>
+                  <div class="flex-1 bg-white border border-rose-200 px-2 flex items-center">policy.Default</div>
+                </div>
+                <div class="flex items-stretch h-10">
+                  <div class="w-28 bg-rose-300 px-2 flex items-center">Loaded</div>
+                  <div class="flex-1 bg-white border border-rose-200 px-2 flex items-center">Register <span class="text-red-600">≠</span> configstatus 重放</div>
+                </div>
+                <div class="flex items-stretch h-10">
+                  <div class="w-28 bg-rose-300 px-2 flex items-center">Suppression</div>
+                  <div class="flex-1 bg-white border border-rose-200 px-2 flex items-center">fk_forbid helper + skip 列表</div>
+                </div>
+                <div class="flex items-stretch h-8">
+                  <div class="w-28 bg-stone-200 px-2 flex items-center">Skipped</div>
+                  <div class="flex-1 bg-white border border-stone-200 px-2 flex items-center text-stone-500">运行时 dialect_mismatch — 另一件事</div>
+                </div>
+              </div>
+            </div>
+            <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+              <p class="text-xs uppercase tracking-wider text-emerald-800 mb-3">之后 — 一个 interface，四个具名事实</p>
+              <div class="deep text-stone-100 rounded p-4 text-xs space-y-2">
+                <div class="uppercase tracking-wider text-[10px] text-stone-400">规则在场 module</div>
+                <p>给定一个 rule ID：在 Catalog 吗？在 Default Policy 吗？Loaded 了吗？被谁 Suppression？</p>
+                <div class="h-16 mass-impl rounded opacity-60"></div>
+              </div>
+              <div class="grid grid-cols-3 gap-1 mt-2 text-[10px] uppercase tracking-wider text-center">
+                <div class="border border-emerald-300 bg-white py-2">config status</div>
+                <div class="border border-emerald-300 bg-white py-2">rules list</div>
+                <div class="border border-emerald-300 bg-white py-2">audit summary</div>
+              </div>
+            </div>
+          </div>
+
+          <p><span class="text-xs uppercase tracking-wider text-stone-500">问题</span><br />
+            CONTEXT.md 已经拆开 Rule Catalog、Default Policy、Loaded、Suppression。运行时又各算一遍：catalog 方言靠 ID 字符串，configstatus 的 Loaded 不走 Register，skipped-rule 理由看起来像第五个同类事实。这周的 bug 是命名撞车，不是缺功能。</p>
+          <p><span class="text-xs uppercase tracking-wider text-stone-500">做法</span><br />
+            一个 module 通过一个 interface 回答这四个事实。展示用 adapter 只渲染，不算第二遍。Skipped 仍是运行时的另一件事。不要把四个名字并成一个。</p>
+          <ul class="text-sm space-y-1">
+            <li><span class="text-xs uppercase tracking-wider text-stone-500">Wins</span></li>
+            <li>· locality：Loaded 只有一个主人</li>
+            <li>· leverage：发现和 status 共用</li>
+            <li>· configstatus 不再重放 Register</li>
+            <li>· 方言启发式离开 catalog</li>
+          </ul>
+          <div class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+            和 2026-09-04 的「公开信号必须具名拆开」兼容：事实继续分开。加深的是计算的 locality，不是把 Catalog 并进 Loaded。2026-06-14 禁止从 explain/audit 反推 status —— 专门的 module 才是主人，不是第二套重算。
+          </div>
+        </article>
+
+        <article id="c3" class="rounded-2xl border border-stone-200 bg-white p-6 space-y-5">
+          <div class="flex items-start justify-between gap-4">
+            <h2 class="font-serif text-2xl text-stone-900">把不完整审计的 completeness 收拢</h2>
+            <div class="flex flex-wrap gap-2 justify-end">
+              <span class="bg-emerald-100 text-emerald-800 text-xs font-semibold px-3 py-1 rounded-full">Strong</span>
+              <span class="bg-stone-100 text-stone-700 text-xs font-semibold px-3 py-1 rounded-full">in-process</span>
+            </div>
+          </div>
+
+          <div>
+            <p class="text-xs uppercase tracking-wider text-stone-500 mb-1">Files</p>
+            <ul class="font-mono text-sm text-stone-700 space-y-0.5">
+              <li>internal/application/audit/service.go · Audit 的 review floor</li>
+              <li>internal/application/audit/statement_boundary.go · splitSQLStatements</li>
+              <li>internal/application/audit/mismatch.go · maskLiteralsAndComments</li>
+              <li>internal/application/audit/parse.go · diagnostics.go · parser_error_diagnostic.go</li>
+              <li>internal/interfaces/cli/audit.go · markdown diagnostics 外包一层</li>
+              <li>internal/infrastructure/output/{markdown,sarif,githubactions,gitlabcodequality,githubsummary}</li>
+              <li>internal/infrastructure/output/json/render.go — 生产路径没有调用者</li>
+            </ul>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="rounded-lg border border-rose-200 bg-rose-50 p-4">
+              <p class="text-xs uppercase tracking-wider text-rose-700 mb-3">现在 — 一件事，八条薄带</p>
+              <div class="space-y-1 text-[11px] uppercase tracking-wider">
+                <div class="h-8 border-l-4 border-rose-400 bg-white px-2 flex items-center">词法切分</div>
+                <div class="h-8 border-l-4 border-rose-400 bg-white px-2 flex items-center">第二套引号扫描</div>
+                <div class="h-8 border-l-4 border-rose-400 bg-white px-2 flex items-center">按 chunk parse</div>
+                <div class="h-8 border-l-4 border-rose-400 bg-white px-2 flex items-center">diagnostics + guidance</div>
+                <div class="h-8 border-l-4 border-rose-400 bg-white px-2 flex items-center">evaluate Unsupported</div>
+                <div class="h-8 border-l-4 border-rose-400 bg-white px-2 flex items-center">Verdict review floor</div>
+                <div class="h-8 border-l-4 border-rose-400 bg-white px-2 flex items-center">CLI markdown 外包</div>
+                <div class="h-8 border-l-4 border-red-600 bg-rose-100 px-2 flex items-center">CI 字符串匹配 parser_error</div>
+              </div>
+            </div>
+            <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+              <p class="text-xs uppercase tracking-wider text-emerald-800 mb-3">之后 — completeness 进 Audit</p>
+              <div class="space-y-1 text-[11px] uppercase tracking-wider">
+                <div class="h-10 border-l-4 border-slate-400 bg-white px-2 flex items-center text-stone-500">parse / extract / evaluate（内部）</div>
+                <div class="h-24 border-l-4 border-emerald-700 deep text-stone-100 px-3 flex flex-col justify-center">
+                  <span class="text-[10px] text-stone-400">incomplete-audit completeness</span>
+                  <span>一套扫描 · diagnostics · review floor · unaudited 视图</span>
+                </div>
+                <div class="h-10 border-l-4 border-emerald-400 bg-white px-2 flex items-center">output adapter 消费这个视图</div>
+              </div>
+            </div>
+          </div>
+
+          <p><span class="text-xs uppercase tracking-wider text-stone-500">问题</span><br />
+            「有界语句没走进 evaluation」是一件事：Verdict 不能是 pass，diagnostics 是 audited=false，调用仍然报错。它散在两套 SQL 扫描、导出的 Parse/Extract、markdown adapter 并不拥有的 CLI 外包、以及 CI adapter 去匹配字符串 <span class="font-mono text-sm">parser_error</span>。JSON output adapter 没人用；CLI JSON 是另一套视图。</p>
+          <p><span class="text-xs uppercase tracking-wider text-stone-500">做法</span><br />
+            把 Parse/Extract 藏起来。review floor 留在 Audit。completeness 只保留一套内部 implementation：扫描、diagnostics、unaudited 视图。output adapter 渲染这个视图。删掉没人用的 JSON adapter。</p>
+          <ul class="text-sm space-y-1">
+            <li><span class="text-xs uppercase tracking-wider text-stone-500">Wins</span></li>
+            <li>· locality：引号扫描只有一套</li>
+            <li>· interface 是 Audit，不是阶段</li>
+            <li>· Markdown 自己拥有 diagnostics</li>
+            <li>· CI 不再字符串匹配</li>
+            <li>· 删掉死掉的 JSON adapter</li>
+          </ul>
+          <div class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+            completeness ADR 已经规定 floor 只在 application 做一次。不要在 adapter 里再 floor。各 surface 的测试保留；它们应该打 Audit，而不是自己拼 pass + parser_error 夹具。
+          </div>
+        </article>
+
+        <article id="c4" class="rounded-2xl border border-stone-200 bg-white p-6 space-y-5">
+          <div class="flex items-start justify-between gap-4">
+            <h2 class="font-serif text-2xl text-stone-900">给 DML mutation target 起名</h2>
+            <div class="flex flex-wrap gap-2 justify-end">
+              <span class="bg-amber-100 text-amber-900 text-xs font-semibold px-3 py-1 rounded-full">Worth exploring</span>
+              <span class="bg-stone-100 text-stone-700 text-xs font-semibold px-3 py-1 rounded-full">in-process</span>
+            </div>
+          </div>
+
+          <div>
+            <p class="text-xs uppercase tracking-wider text-stone-500 mb-1">Files</p>
+            <ul class="font-mono text-sm text-stone-700 space-y-0.5">
+              <li>internal/infrastructure/parser/tidb/extractor.go · extractMutationTables</li>
+              <li>internal/infrastructure/parser/postgresql/extractor_dml.go</li>
+              <li>internal/application/audit/metadata.go · DML.Tables[0]</li>
+              <li>internal/application/auditmeta/targets.go · DML.Tables[0]</li>
+              <li>internal/domain/rule/dml/metadata_rules.go · len(Tables)==1</li>
+            </ul>
+          </div>
+
+          <div class="rounded-lg border border-slate-200 bg-white p-4">
+            <pre class="mermaid">
+flowchart LR
+  subgraph before [现在]
+    T[TiDB extractor] -->|Tables 表示 target| S[spec.DML.Tables]
+    P[PG extractor] -->|Tables 表示 relation| S
+    S -.leak.-> M[metadata Tables0]
+    S -.leak.-> A[auditmeta Tables0]
+    S -.leak.-> R["existence rule len==1"]
+  end
+  subgraph after [之后]
+    T2[TiDB extractor] --> MT[MutationTargets]
+    P2[PG extractor] --> MT
+    MT --> M2[metadata]
+    MT --> A2[auditmeta]
+    MT --> R2[existence rule]
+  end
+  classDef leak stroke:#dc2626,stroke-width:2px;
+            </pre>
+          </div>
+
+          <p><span class="text-xs uppercase tracking-wider text-stone-500">问题</span><br />
+            <span class="font-mono text-sm">spec.DML.Tables</span> 实际表示 mutation target，不是 FROM/JOIN 来源。这个约定在两个 parser adapter、metadata  enrichment、target 推断、existence rule 里各重述一遍。PostgreSQL 抽取从不选择 joined UPDATE/DELETE 的 target；rule 又按 MySQL/TiDB 门控，所以这条 leak 在 PostgreSQL 上是静默的。</p>
+          <p><span class="text-xs uppercase tracking-wider text-stone-500">做法</span><br />
+            把 mutation target 做成 statement spec 上的具名事实。parser adapter 填它。metadata、auditmeta、existence rule 读它。<span class="font-mono text-sm">Tables</span> 如果还有人要「提到过的 relation」，可以留着。</p>
+          <ul class="text-sm space-y-1">
+            <li><span class="text-xs uppercase tracking-wider text-stone-500">Wins</span></li>
+            <li>· locality：target 身份只活一处</li>
+            <li>· interface 就是测试面</li>
+            <li>· PG 缺口变得可见</li>
+          </ul>
+          <div class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+            2026-08-30 的 DML table existence 要求 SDK/CLI/HTTP/MCP 测试。这些测试留着。加深的是 spec 上的事实，不是删掉 surface 证据。
+          </div>
+        </article>
+
+        <article id="c5" class="rounded-2xl border border-stone-200 bg-white p-6 space-y-5">
+          <div class="flex items-start justify-between gap-4">
+            <h2 class="font-serif text-2xl text-stone-900">Observed Server Identity 只探测一次</h2>
+            <div class="flex flex-wrap gap-2 justify-end">
+              <span class="bg-amber-100 text-amber-900 text-xs font-semibold px-3 py-1 rounded-full">Worth exploring</span>
+              <span class="bg-stone-100 text-stone-700 text-xs font-semibold px-3 py-1 rounded-full">ports &amp; adapters</span>
+            </div>
+          </div>
+
+          <div>
+            <p class="text-xs uppercase tracking-wider text-stone-500 mb-1">Files</p>
+            <ul class="font-mono text-sm text-stone-700 space-y-0.5">
+              <li>internal/application/online/session.go · OpenSession, IdentifyFromConn</li>
+              <li>pkg/deltascope/query_access_online_session.go · NewOnlineQueryAccessSessionFromConn</li>
+              <li>internal/interfaces/cli/query_access.go · runQueryAccessOnline</li>
+              <li>internal/interfaces/http/query_access.go · handleQueryAccessOnline</li>
+            </ul>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="rounded-lg border border-rose-200 bg-rose-50 p-4">
+              <p class="text-xs uppercase tracking-wider text-rose-700 mb-3">现在 — 两套 identity 时钟</p>
+              <pre class="mermaid">
+sequenceDiagram
+  participant T as CLI/HTTP
+  participant O as online.OpenSession
+  participant S as SDK session
+  T->>O: open + ping + identify
+  Note over T: Identity 被丢掉
+  T->>S: New...FromConn
+  S->>S: 再次 ping + identify
+  T->>S: AnalyzeOnline...
+              </pre>
+            </div>
+            <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+              <p class="text-xs uppercase tracking-wider text-emerald-800 mb-3">之后 — transport 打开，SDK 复用 identity</p>
+              <pre class="mermaid">
+sequenceDiagram
+  participant T as CLI/HTTP
+  participant O as online.OpenSession
+  participant S as SDK session
+  T->>O: open + ping + identify
+  T->>S: 用 conn + identity 建 session
+  T->>S: AnalyzeOnline...
+              </pre>
+            </div>
+          </div>
+
+          <p><span class="text-xs uppercase tracking-wider text-stone-500">问题</span><br />
+            统一入口之后，transport 仍会打开 online session、丢掉 Observed Server Identity，然后 SDK 再 ping、再 identify。版本 sentinel 也有两个：<span class="font-mono text-sm">online.ErrPostgreSQLQueryAccessVersionUnsupported</span> 和 <span class="font-mono text-sm">deltascope.ErrOnlineQueryAccessPostgreSQLVersionUnsupported</span>。CLI 映射前者，HTTP 构造映射后者。</p>
+          <p><span class="text-xs uppercase tracking-wider text-stone-500">做法</span><br />
+            打开/关闭仍归 transport。Online Query Access Session 从已经 identify 过的 conn 构建，Observed Server Identity 只观察一次。</p>
+          <ul class="text-sm space-y-1">
+            <li><span class="text-xs uppercase tracking-wider text-stone-500">Wins</span></li>
+            <li>· locality：identity 探测一次</li>
+            <li>· 版本 sentinel 只有一个</li>
+            <li>· 钉住的连接不再第二次 ping</li>
+          </ul>
+          <div class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+            2026-08-12 要求 SDK 从调用方拥有的 *sql.Conn 构造，transport 拥有打开/关闭。第二次 Identify 是落地残留，不是合同要求。不要把 open 搬进 SDK。
+          </div>
+        </article>
+
+        <article id="c6" class="rounded-2xl border border-stone-200 bg-white p-6 space-y-5">
+          <div class="flex items-start justify-between gap-4">
+            <h2 class="font-serif text-2xl text-stone-900">缩小 identity-resolver 的 interface</h2>
+            <div class="flex flex-wrap gap-2 justify-end">
+              <span class="bg-amber-100 text-amber-900 text-xs font-semibold px-3 py-1 rounded-full">Worth exploring</span>
+              <span class="bg-stone-100 text-stone-700 text-xs font-semibold px-3 py-1 rounded-full">in-process</span>
+            </div>
+          </div>
+
+          <div>
+            <p class="text-xs uppercase tracking-wider text-stone-500 mb-1">Files</p>
+            <ul class="font-mono text-sm text-stone-700 space-y-0.5">
+              <li>internal/application/queryaccess/identity_resolver.go — 1,150 LOC，26 个导出函数</li>
+              <li>internal/infrastructure/metadata/postgresql/effect_identity_resolver.go — 1,222 LOC adapter</li>
+              <li>internal/application/queryaccess/service.go · resolveAndProveEffects</li>
+            </ul>
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-4">
+            <div class="rounded-lg border border-rose-200 bg-rose-50 p-4 text-center">
+              <p class="text-xs uppercase tracking-wider text-rose-700 mb-3">现在 — shallow 剖面</p>
+              <div class="mx-auto w-56 border-2 border-rose-400 rounded overflow-hidden">
+                <div class="mass-iface text-xs py-5 px-2">interface：26 个函数 · 4 种类型 · 断言梯子</div>
+                <div class="mass-impl text-xs py-8 border-t-2 border-rose-400">implementation 1,150 LOC</div>
+              </div>
+            </div>
+            <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-center">
+              <p class="text-xs uppercase tracking-wider text-emerald-800 mb-3">之后 — deep 剖面</p>
+              <div class="mx-auto w-56 border-2 border-emerald-600 rounded overflow-hidden">
+                <div class="bg-emerald-200 text-xs py-2">interface：adapter 真正要用的那一套</div>
+                <div class="deep text-stone-100 text-xs py-12">implementation 不变，藏起来</div>
+              </div>
+            </div>
+          </div>
+
+          <p><span class="text-xs uppercase tracking-wider text-stone-500">问题</span><br />
+            八月评审留下的候选。proof orchestration 把胶水藏起来了，这套工具箱没缩小。PostgreSQL adapter 仍然要学会 Validate / Stamp / Gate / Normalize / BuildUnavailable / MapCatalogError。若干导出在包外没有生产调用者。文件头还写着 “T8 proof engine”。</p>
+          <p><span class="text-xs uppercase tracking-wider text-stone-500">做法</span><br />
+            没有 adapter 调用者的 helper 取消导出。PostgreSQL adapter 真正调用的函数留下。不要加 proof-engine seam。</p>
+          <ul class="text-sm space-y-1">
+            <li><span class="text-xs uppercase tracking-wider text-stone-500">Wins</span></li>
+            <li>· depth：interface 变小，impl 不变</li>
+            <li>· adapter 要学的事实更少</li>
+            <li>· 八月遗留候选可以关掉</li>
+          </ul>
+          <div class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+            2026-08-16 禁止 proof-engine interface。取消导出兼容。再开一条 seam 不兼容。
+          </div>
+        </article>
+
+      </section>
+
+      <section id="top-recommendation" class="rounded-2xl deep text-stone-100 p-8 space-y-4">
+        <p class="text-xs uppercase tracking-[0.2em] text-stone-400">首选</p>
+        <h2 class="font-serif text-3xl"><a href="#c1" class="underline decoration-emerald-400/60 hover:decoration-emerald-300">把 Transport Connection Resolution 做深</a></h2>
+        <p class="text-stone-300 max-w-3xl">八月的工作把 Query Access 分析收进了 SDK 的一条 seam。之后还在变的，是 CONTEXT.md 已经起过名的那件事：调用方拥有的连接如何被选择、授权、配置、打开、分类。这个 module 现在仍是 shallow 的。CLI <span class="font-mono text-sm">audit.go</span> 之所以是最热文件，是因为它还在原地做 Transport Connection Resolution。先加深这一处；连接事实不再漏进每个 adapter 之后，Catalog/Loaded 和 completeness 都会便宜很多。</p>
+      </section>
+
+      <footer class="text-xs text-stone-400 text-center pt-4">
+        生成于 2026-09-06 · 用语来自 /codebase-design · 领域词来自 CONTEXT.md · 对照过 docs/decisions/
+      </footer>
+    </main>
+  </body>
+</html>

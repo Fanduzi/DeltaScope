@@ -1,5 +1,5 @@
 // Package mcpapi exposes the MCP adapter for DeltaScope.
-// input: adapter and audit errors plus partial audit results arising during MCP tool execution
+// input: adapter and audit errors plus partial audit results arising during MCP tool execution; connection-open errors classified by connresolve
 // output: stable MCP tool error payloads with machine-readable codes, messages, and partial results when available
 // pos: shared error-shaping helpers for MCP tool handlers
 // note: if this file changes, update this header and module README.md.
@@ -11,6 +11,7 @@ import (
 
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
+	"github.com/Fanduzi/DeltaScope/internal/application/connresolve"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -53,7 +54,14 @@ func mapAuditToolError(err error) string {
 			return "bad_request"
 		case auditmeta.ErrorSchemaHintRequired:
 			return "connection_invalid"
-		case auditmeta.ErrorSchemaLookupFailed, auditmeta.ErrorConnectionOpen, auditmeta.ErrorDialectDetect:
+		case auditmeta.ErrorConnectionOpen:
+			switch connresolve.Classify(prepErr) {
+			case connresolve.ClassValidation:
+				return "connection_invalid"
+			default:
+				return "connection_failed"
+			}
+		case auditmeta.ErrorSchemaLookupFailed, auditmeta.ErrorDialectDetect:
 			return "connection_failed"
 		}
 	}

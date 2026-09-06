@@ -1,6 +1,6 @@
 // Package cli exposes the command-line adapter for DeltaScope.
-// input: audit command flags including -h/--help versus -H/--host, audit-local output format, skipped-rule detail, and fail threshold, whether --sql was explicitly provided, SQL text from flags/files/stdin, password source/prompt dependencies, typed standard-library network errors, and application audit services
-// output: rendered audit results and located diagnostics, audit-only output validation, command-named empty-SQL usage errors, advertised audit exit table, CLI JSON skipped-rule aggregation with optional stable per-rule details, CLI JSON fail_on_triggered beside unchanged Verdict, dialect-aware connection-option normalization with MySQL/TiDB catalog aliases and PostgreSQL schema/database validation, password resolution, offline existence caveats, and user-vs-runtime exit-code mapping through shared bounded connection-refused, connection, authentication, identity, and TLS categories
+// input: audit command flags including -h/--help versus -H/--host, audit-local output format, skipped-rule detail, and fail threshold, whether --sql was explicitly provided, SQL text from flags/files/stdin, password prompt, connresolve Request fields, and application audit services
+// output: rendered audit results and located diagnostics, audit-only output validation, command-named empty-SQL usage errors, advertised audit exit table, CLI JSON skipped-rule aggregation with optional stable per-rule details, CLI JSON fail_on_triggered beside unchanged Verdict, dialect-aware connection-option normalization with MySQL/TiDB catalog aliases and PostgreSQL schema/database validation, password resolution, offline existence caveats, and user-vs-runtime exit-code mapping through connresolve Connection Failure Class mapped to CLI TLS/refusal/authentication phrases
 // pos: CLI audit command implementation above the application service and output renderers
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -16,11 +16,11 @@ import (
 	"os"
 	"sort"
 	"strings"
-	"syscall"
 	"time"
 
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
+	"github.com/Fanduzi/DeltaScope/internal/application/connresolve"
 	"github.com/Fanduzi/DeltaScope/internal/application/online"
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
@@ -30,7 +30,6 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/output/gitlabcodequality"
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/output/markdown"
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/output/sarif"
-	ifaceconn "github.com/Fanduzi/DeltaScope/internal/interfaces/metadata"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/term"
@@ -211,103 +210,104 @@ var passwordPrompt = promptPassword
 
 func resolveConnectionOptions(cmd *cobra.Command, options *cliOptions) (auditConnectionOptions, error) {
 	portSet := cmd.Flags().Changed("port")
-	port := options.Port
-	if !portSet && cmd.Flags().Changed("dialect") && parseDialect(options.Dialect) == spec.DialectPostgreSQL {
-		port = 5432
+	dialectExplicit := cmd.Flags().Changed("dialect")
+	req := connresolve.Request{
+		Host:            options.Host,
+		Port:            options.Port,
+		PortExplicit:    portSet,
+		User:            options.User,
+		Socket:          options.Socket,
+		Database:        options.Database,
+		Schema:          options.Schema,
+		ConnectTimeout:  options.MetadataConnectTimeout,
+		TLSMode:         options.TLSMode,
+		TLSCAFile:       options.TLSCAFile,
+		PasswordEnv:     options.PasswordEnv,
+		PasswordFile:    options.PasswordFile,
+		DialectExplicit: dialectExplicit,
 	}
-	resolved := auditConnectionOptions{
-		Host:         strings.TrimSpace(options.Host),
-		Port:         port,
-		PortSet:      portSet,
-		User:         strings.TrimSpace(options.User),
-		PasswordEnv:  strings.TrimSpace(options.PasswordEnv),
-		PasswordFile: strings.TrimSpace(options.PasswordFile),
-		Schema:       strings.TrimSpace(options.Schema),
-		Database:     strings.TrimSpace(options.Database),
-		Socket:       strings.TrimSpace(options.Socket),
-	}
-
-	if timeout := strings.TrimSpace(options.MetadataConnectTimeout); timeout != "" {
-		d, err := time.ParseDuration(timeout)
-		if err != nil {
-			return auditConnectionOptions{}, newUserError(fmt.Sprintf("invalid --metadata-connect-timeout: %v", err))
-		}
-		if d < 0 {
-			return auditConnectionOptions{}, newUserError("--metadata-connect-timeout must be a non-negative duration such as 5s")
-		}
-		resolved.ConnectTimeout = d
+	if dialectExplicit {
+		req.Dialect = options.Dialect
 	}
 
-	if options.AskPassword && hasConfiguredPasswordSource(resolved) {
+	if options.AskPassword && (strings.TrimSpace(options.PasswordEnv) != "" || strings.TrimSpace(options.PasswordFile) != "") {
 		return auditConnectionOptions{}, newUserError("--password-env, --password-file, and --ask-password are mutually exclusive")
 	}
-	if resolved.Socket != "" && (resolved.Host != "" || resolved.PortSet) {
-		return auditConnectionOptions{}, newUserError("--socket cannot be combined with host/port TCP options")
-	}
-
-	// TLS validation
-	tlsMode := strings.TrimSpace(options.TLSMode)
-	if tlsMode == "" {
-		tlsMode = "disabled"
-	}
-	if tlsMode != "disabled" && tlsMode != "enabled" {
-		return auditConnectionOptions{}, newUserError("invalid --tls-mode: must be disabled or enabled")
-	}
-	resolved.TLSMode = tlsMode
-
-	caFile := strings.TrimSpace(options.TLSCAFile)
-	if caFile != "" && tlsMode != "enabled" {
-		return auditConnectionOptions{}, newUserError("--tls-ca-file requires --tls-mode=enabled")
-	}
-	if tlsMode == "enabled" {
-		if resolved.Host == "" {
-			return auditConnectionOptions{}, newUserError("--tls-mode=enabled requires --host")
-		}
-		if resolved.User == "" {
-			return auditConnectionOptions{}, newUserError("--tls-mode=enabled requires --user")
-		}
-		if resolved.Socket != "" {
-			return auditConnectionOptions{}, newUserError("--tls-mode=enabled cannot be used with --socket")
-		}
-	}
-
-	if caFile != "" {
-		expanded, err := ifaceconn.ExpandHome(caFile)
-		if err != nil {
-			return auditConnectionOptions{}, newUserError("invalid TLS CA file path")
-		}
-		pemBytes, err := os.ReadFile(expanded)
-		if err != nil {
-			return auditConnectionOptions{}, newUserError("cannot read TLS CA file")
-		}
-		pool := x509.NewCertPool()
-		if !pool.AppendCertsFromPEM(pemBytes) {
-			return auditConnectionOptions{}, newUserError("invalid TLS CA certificate")
-		}
-		resolved.CACert = pool
-	}
-
 	if options.AskPassword {
 		password, err := passwordPrompt(cmd.ErrOrStderr())
 		if err != nil {
 			return auditConnectionOptions{}, newUserError(fmt.Sprintf("prompt password: %v", err))
 		}
-		resolved.Password = password
-		resolved.passwordSourceSet = true
-		return resolved, nil
+		req.Password = password
+		req.PasswordEnv = ""
+		req.PasswordFile = ""
 	}
 
-	password, err := ifaceconn.ResolvePassword(ifaceconn.ConnectionInput{
-		Password:     resolved.Password,
-		PasswordEnv:  resolved.PasswordEnv,
-		PasswordFile: resolved.PasswordFile,
-	}, ifaceconn.ResolveConnectionOptions{})
+	cfg, err := connresolve.Resolve(req, connresolve.Options{})
 	if err != nil {
-		return auditConnectionOptions{}, newUserError("invalid password source")
+		return auditConnectionOptions{}, mapConnresolveCLIError(err)
 	}
-	resolved.Password = password
-	resolved.passwordSourceSet = hasConfiguredPasswordSource(resolved) || resolved.Password != ""
+
+	resolved := auditConnectionOptions{
+		Host:              cfg.Host,
+		Port:              cfg.Port,
+		PortSet:           portSet,
+		User:              cfg.User,
+		Password:          cfg.Password,
+		PasswordEnv:       strings.TrimSpace(options.PasswordEnv),
+		PasswordFile:      strings.TrimSpace(options.PasswordFile),
+		Schema:            strings.TrimSpace(options.Schema),
+		Database:          strings.TrimSpace(options.Database),
+		Socket:            cfg.Socket,
+		Dialect:           cfg.Dialect,
+		ConnectTimeout:    cfg.ConnectTimeout,
+		TLSMode:           cfg.TLSMode,
+		TLSCAFile:         strings.TrimSpace(options.TLSCAFile),
+		CACert:            cfg.CACert,
+		passwordSourceSet: options.AskPassword || strings.TrimSpace(options.PasswordEnv) != "" || strings.TrimSpace(options.PasswordFile) != "" || cfg.Password != "",
+	}
+	if dialectExplicit && (cfg.Dialect == string(spec.DialectMySQL) || cfg.Dialect == string(spec.DialectTiDB)) {
+		resolved.Database = cfg.Database
+	}
 	return resolved, nil
+}
+
+func mapConnresolveCLIError(err error) error {
+	var resolved *connresolve.Error
+	if !errors.As(err, &resolved) {
+		return newUserError(err.Error())
+	}
+	switch resolved.Code {
+	case connresolve.CodeSocketTCPConflict:
+		return newUserError("--socket cannot be combined with host/port TCP options")
+	case connresolve.CodeTLSMode:
+		return newUserError("invalid --tls-mode: must be disabled or enabled")
+	case connresolve.CodeTLSCARequiresEnabled:
+		return newUserError("--tls-ca-file requires --tls-mode=enabled")
+	case connresolve.CodeTLSRequiresHost:
+		return newUserError("--tls-mode=enabled requires --host")
+	case connresolve.CodeTLSRequiresUser:
+		return newUserError("--tls-mode=enabled requires --user")
+	case connresolve.CodeTLSNoSocket:
+		return newUserError("--tls-mode=enabled cannot be used with --socket")
+	case connresolve.CodeTLSCAPath:
+		return newUserError("invalid TLS CA file path")
+	case connresolve.CodeTLSCARead:
+		return newUserError("cannot read TLS CA file")
+	case connresolve.CodeTLSCAPEM:
+		return newUserError("invalid TLS CA certificate")
+	case connresolve.CodeTimeout:
+		if unwrapped := resolved.Unwrap(); unwrapped != nil {
+			return newUserError(fmt.Sprintf("invalid --metadata-connect-timeout: %v", unwrapped))
+		}
+		return newUserError("--metadata-connect-timeout must be a non-negative duration such as 5s")
+	case connresolve.CodePasswordSource, connresolve.CodePasswordLookup:
+		return newUserError("invalid password source")
+	case connresolve.CodeCatalogConflict:
+		return newUserError("--database, --schema, and --default-schema must match; use one catalog value")
+	default:
+		return newUserError(resolved.Error())
+	}
 }
 
 func hasConfiguredPasswordSource(options auditConnectionOptions) bool {
@@ -754,56 +754,26 @@ func mapAuditMetaErrorToBounded(err *auditmeta.Error) error {
 }
 
 func classifyConnectionError(err error) error {
-	msg := connectionErrorText(err)
-	var hostnameErr x509.HostnameError
-	var hostnameErrPtr *x509.HostnameError
-	var unknownAuthorityErr x509.UnknownAuthorityError
-	var unknownAuthorityErrPtr *x509.UnknownAuthorityError
-	switch {
-	case online.IsAuthenticationFailure(err):
+	switch connresolve.Classify(err) {
+	case connresolve.ClassAuthentication:
 		return newRuntimeError("authentication failed")
-	case errors.Is(err, syscall.ECONNREFUSED):
+	case connresolve.ClassRefused:
 		return newRuntimeError("connection refused")
-	case errors.As(err, &hostnameErr), errors.As(err, &hostnameErrPtr),
-		strings.Contains(msg, "certificate is valid for"),
-		strings.Contains(msg, "cannot validate certificate"),
-		strings.Contains(msg, "certificate relies on legacy common name"),
-		strings.Contains(msg, "certificate is not valid for"):
+	case connresolve.ClassTLSHostname:
 		return newRuntimeError("TLS hostname mismatch")
-	case errors.As(err, &unknownAuthorityErr), errors.As(err, &unknownAuthorityErrPtr),
-		strings.Contains(msg, "unknown authority"),
-		strings.Contains(msg, "unknown ca"),
-		strings.Contains(msg, "untrusted root"):
+	case connresolve.ClassTLSUnknownCA:
 		return newRuntimeError("TLS unknown certificate authority")
-	case strings.Contains(msg, "server refused tls connection"),
-		strings.Contains(msg, "server refused ssl connection"),
-		strings.Contains(msg, "server does not support tls"),
-		strings.Contains(msg, "server does not support ssl"),
-		strings.Contains(msg, "server did not offer tls"),
-		strings.Contains(msg, "server does not offer tls"):
+	case connresolve.ClassTLSNotOffered:
 		return newRuntimeError("TLS server did not offer TLS")
-	case strings.Contains(msg, "certificate") || strings.Contains(msg, "x509"):
+	case connresolve.ClassTLSCertificate:
 		return newRuntimeError("TLS certificate verification failed")
-	case strings.Contains(msg, "tls"):
+	case connresolve.ClassTLSHandshake:
 		return newRuntimeError("TLS handshake failed")
-	case strings.Contains(msg, "timeout"):
+	case connresolve.ClassTimeout:
 		return newRuntimeError("connection timed out")
 	default:
 		return newRuntimeError("connection failed")
 	}
-}
-
-func connectionErrorText(err error) string {
-	if err == nil {
-		return ""
-	}
-	var b strings.Builder
-	b.WriteString(strings.ToLower(err.Error()))
-	if inner := errors.Unwrap(err); inner != nil {
-		b.WriteByte('\n')
-		b.WriteString(strings.ToLower(inner.Error()))
-	}
-	return b.String()
 }
 
 func applyPasswordSourceHint(err error, connection auditConnectionOptions) error {

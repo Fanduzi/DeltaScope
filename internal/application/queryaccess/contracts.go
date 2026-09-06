@@ -1,6 +1,6 @@
 // Package queryaccess defines application-level query access contracts.
 // input: query access requests, results, resolvers, and online catalog hints
-// output: domain-typed query access contracts and MySQL/TiDB catalog binding
+// output: domain-typed query access contracts and MySQL/TiDB catalog binding via connresolve
 // pos: application contract layer above parsing and transport adapters
 // note: if this file changes, update this header and module README.md.
 package queryaccess
@@ -8,8 +8,8 @@ package queryaccess
 import (
 	"context"
 	"errors"
-	"strings"
 
+	"github.com/Fanduzi/DeltaScope/internal/application/connresolve"
 	domain "github.com/Fanduzi/DeltaScope/internal/domain/queryaccess"
 )
 
@@ -20,28 +20,11 @@ var ErrMySQLTiDBSchemaConflict = errors.New("MySQL/TiDB database, schema, and de
 // ResolveMySQLTiDBOnlineSchema canonicalizes MySQL/TiDB database, connection
 // schema, and request default hints into one catalog and one qualifier.
 func ResolveMySQLTiDBOnlineSchema(dialect, database, connectionSchema, requestedSchema string) (string, string, error) {
-	dialect = strings.ToLower(strings.TrimSpace(dialect))
-	database = strings.TrimSpace(database)
-	connectionSchema = strings.TrimSpace(connectionSchema)
-	requestedSchema = strings.TrimSpace(requestedSchema)
-	if dialect != "mysql" && dialect != "tidb" {
-		return database, requestedSchema, nil
-	}
-
-	if database != "" && connectionSchema != "" && database != connectionSchema {
+	catalog, qualifier, err := connresolve.BindMySQLTiDBCatalog(dialect, database, connectionSchema, requestedSchema)
+	if err != nil {
 		return "", "", ErrMySQLTiDBSchemaConflict
 	}
-	catalog := database
-	if catalog == "" {
-		catalog = connectionSchema
-	}
-	if catalog != "" && requestedSchema != "" && catalog != requestedSchema {
-		return "", "", ErrMySQLTiDBSchemaConflict
-	}
-	if requestedSchema != "" {
-		return catalog, requestedSchema, nil
-	}
-	return catalog, catalog, nil
+	return catalog, qualifier, nil
 }
 
 // SchemaResolver resolves relation metadata for name resolution.

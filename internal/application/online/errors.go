@@ -1,5 +1,5 @@
 // Package online provides the shared online session factory for SDK, CLI, and HTTP.
-// input: errors from online operations (session open, identity, authorization)
+// input: errors from online operations (session open, identity, authorization) and connresolve Connection Failure Class
 // output: bounded error taxonomy and status mapping that never leaks secrets, endpoints, observed identity, authentication details, or driver text
 // pos: shared error boundary for all online surfaces (HTTP, MCP, CLI)
 // note: if this file changes, update this header and module README.md.
@@ -11,6 +11,7 @@ import (
 	"net/http"
 
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
+	"github.com/Fanduzi/DeltaScope/internal/application/connresolve"
 )
 
 // Sentinel errors for online operations.
@@ -121,7 +122,14 @@ func MapOnlineError(err error) (code string, message string, status int) {
 func mapAuditmetaError(prepErr *auditmeta.Error) (code string, message string, status int) {
 	switch prepErr.Kind {
 	case auditmeta.ErrorConnectionOpen:
-		return "connection_failed", "connection failed", http.StatusBadGateway
+		switch connresolve.Classify(prepErr) {
+		case connresolve.ClassTimeout:
+			return "timeout", "operation timed out", http.StatusGatewayTimeout
+		case connresolve.ClassAuthentication:
+			return "authentication_failed", "authentication failed", http.StatusBadGateway
+		default:
+			return "connection_failed", "connection failed", http.StatusBadGateway
+		}
 	case auditmeta.ErrorDialectDetect:
 		return "connection_failed", "connection failed", http.StatusBadGateway
 	case auditmeta.ErrorDialectMismatch:

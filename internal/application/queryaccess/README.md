@@ -7,7 +7,7 @@ Application-level contracts for query access analysis, defining the schema resol
 | File | Responsibility |
 |------|---------------|
 | doc.go | Declares the queryaccess application package boundary |
-| contracts.go | Defines SchemaResolver interface, RelationSchema, ColumnSchema, QueryAccessRequest, QueryAccessResult, and the shared MySQL/TiDB online catalog/default-schema binding contract |
+| contracts.go | Defines SchemaResolver interface, RelationSchema, ColumnSchema, QueryAccessRequest, QueryAccessResult, and delegates MySQL/TiDB online catalog binding to connresolve |
 | profile.go | Defines the closed analysis-profile values and dialect validation |
 | builtin_semantic_manifest.go | Owns immutable MySQL/TiDB builtin semantic entries and session-only capability assembly |
 | builtin_semantic_gateway.go | Proves exact candidate closure and strict physical requirement completeness |
@@ -115,7 +115,7 @@ Application-level contracts for query access analysis, defining the schema resol
 
 ## Dependencies
 - Upstream: `internal/interfaces/*`
-- Downstream: `internal/application`, `internal/domain/queryaccess`, `internal/infrastructure/parser/tidb`, `internal/infrastructure/parser/postgresql`, `internal/infrastructure/metadata/mysql`, `internal/infrastructure/metadata/postgresql`
+- Downstream: `internal/application`, `internal/application/connresolve`, `internal/domain/queryaccess`, `internal/infrastructure/parser/tidb`, `internal/infrastructure/parser/postgresql`, `internal/infrastructure/metadata/mysql`, `internal/infrastructure/metadata/postgresql`
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.

@@ -42,17 +42,27 @@ rule forbids the subject. Under the shipped baseline,
 `ddl.constraint.foreign_key.name.*` rules with reason `fk_forbid`.
 _Avoid_: missing, skipped, catalog gap
 
+## Connection
+
+**Transport Connection Resolution**:
+The shared path that turns caller connection input into a ready-to-open
+configuration for metadata-aware Audit and for an Online Query Access Session.
+CLI, HTTP, and MCP all use it. It does not open or close the connection.
+_Avoid_: Online analysis, Query Access proof, audit-only connection setup,
+Query-Access-only connection setup
+
+**Connection Failure Class**:
+A bounded category of why a connection could not be used, such as
+authentication, refused, timeout, or TLS hostname mismatch. It is not the
+sentence a surface prints, and not an HTTP status or process exit.
+_Avoid_: driver error text, exit code, HTTP status, stderr phrasing
+
 ## Query Access
 
 **Online Query Access Session**:
 An opaque wrapper over a caller-owned pinned database connection whose observed
 server identity determines the supported dialect and analysis capability.
 _Avoid_: Caller-selected online profile, transport connection
-
-**Transport Connection Resolution**:
-The CLI- or HTTP-owned process that selects, authorizes, configures, opens, and
-closes the database connection used by an Online Query Access Session.
-_Avoid_: Online analysis, Query Access proof
 
 **Observed Server Identity**:
 The product and capability facts derived by an Online Query Access Session from

@@ -1,6 +1,6 @@
 // Package auditmeta prepares metadata-aware audit requests for multiple adapters.
 // input: audit SQL text, requested dialect/schema preferences, metadata connection configs, and metadata clients
-// output: prepared metadata-aware audit context with opened client, resolved dialect/schema aliases, or bounded MySQL/TiDB and PostgreSQL connection validation errors
+// output: prepared metadata-aware audit context with opened client, connresolve MySQL/TiDB catalog aliases, or bounded MySQL/TiDB and PostgreSQL connection validation errors
 // pos: shared application helper between transport adapters and the core audit service
 // note: if this file changes, update this header and module README.md.
 package auditmeta
@@ -16,6 +16,7 @@ import (
 	"time"
 
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
+	"github.com/Fanduzi/DeltaScope/internal/application/connresolve"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	mysqlmeta "github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql"
 	postgresqlmeta "github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/postgresql"
@@ -75,9 +76,9 @@ func Prepare(ctx context.Context, request Request) (*PreparedAudit, error) {
 	var err error
 
 	if request.OpenClient != nil {
-		client, detectedDialect, err = prepareClientAndDialect(ctx, request.Connection, request.ExplicitDialect, request.OpenClient)
+		client, detectedDialect, err = prepareClientAndDialect(ctx, request.Connection, request.ExplicitDialect, request.ExplicitSchema, request.OpenClient)
 	} else {
-		client, detectedDialect, err = prepareClientAndDialectDefault(ctx, request.Connection, request.ExplicitDialect)
+		client, detectedDialect, err = prepareClientAndDialectDefault(ctx, request.Connection, request.ExplicitDialect, request.ExplicitSchema)
 	}
 
 	if err != nil {
@@ -154,21 +155,30 @@ func normalizeDatabaseSchema(dialect spec.Dialect, database, explicitSchema, sou
 	if !isMySQLCompatible(dialect) {
 		return explicitSchema, explicitSchemaSource(source), nil
 	}
-	if database != "" && explicitSchema != "" && database != explicitSchema {
+	catalog, qualifier, err := connresolve.BindMySQLTiDBCatalog(string(dialect), database, explicitSchema, "")
+	if err != nil {
 		return "", "", newMySQLDatabaseSchemaConflictError()
 	}
 	if explicitSchema == "" && database != "" {
-		return database, "database", nil
+		return catalog, "database", nil
 	}
-	return explicitSchema, explicitSchemaSource(source), nil
+	return qualifier, explicitSchemaSource(source), nil
 }
 
 func isMySQLCompatible(dialect spec.Dialect) bool {
 	return dialect == spec.DialectMySQL || dialect == spec.DialectTiDB
 }
 
-func prepareClientAndDialect(ctx context.Context, config ConnectionConfig, explicitDialect bool, openClient func(ConnectionConfig) (Client, error)) (Client, spec.Dialect, error) {
-	client, err := openPreparedClient(config, openClient)
+func unknownDialectCatalogHint(config ConnectionConfig, explicitSchema string) ConnectionConfig {
+	if config.Dialect != "" || strings.TrimSpace(config.Database) != "" {
+		return config
+	}
+	config.Database = strings.TrimSpace(explicitSchema)
+	return config
+}
+
+func prepareClientAndDialect(ctx context.Context, config ConnectionConfig, explicitDialect bool, explicitSchema string, openClient func(ConnectionConfig) (Client, error)) (Client, spec.Dialect, error) {
+	client, err := openPreparedClient(config, explicitSchema, openClient)
 	if err != nil {
 		return nil, "", err
 	}
@@ -271,8 +281,8 @@ func explicitSchemaSource(value string) string {
 
 // prepareClientAndDialectDefault is the context-aware default open path.
 // It respects the caller's context for cancellation during connection.
-func prepareClientAndDialectDefault(ctx context.Context, config ConnectionConfig, explicitDialect bool) (Client, spec.Dialect, error) {
-	client, err := openPreparedClientContext(ctx, config)
+func prepareClientAndDialectDefault(ctx context.Context, config ConnectionConfig, explicitDialect bool, explicitSchema string) (Client, spec.Dialect, error) {
+	client, err := openPreparedClientContext(ctx, config, explicitSchema)
 	if err != nil {
 		return nil, "", err
 	}
@@ -300,8 +310,8 @@ func prepareClientAndDialectDefault(ctx context.Context, config ConnectionConfig
 }
 
 // openPreparedClientContext tries the default dialect, then falls back to PostgreSQL.
-func openPreparedClientContext(ctx context.Context, config ConnectionConfig) (Client, error) {
-	client, err := openMySQLClientContext(ctx, config)
+func openPreparedClientContext(ctx context.Context, config ConnectionConfig, explicitSchema string) (Client, error) {
+	client, err := openMySQLClientContext(ctx, unknownDialectCatalogHint(config, explicitSchema))
 	if err == nil {
 		return client, nil
 	}
@@ -365,8 +375,8 @@ func openMySQLClientContext(ctx context.Context, config ConnectionConfig) (Clien
 	}, nil
 }
 
-func openPreparedClient(config ConnectionConfig, openClient func(ConnectionConfig) (Client, error)) (Client, error) {
-	client, err := openClient(config)
+func openPreparedClient(config ConnectionConfig, explicitSchema string, openClient func(ConnectionConfig) (Client, error)) (Client, error) {
+	client, err := openClient(unknownDialectCatalogHint(config, explicitSchema))
 	if err == nil {
 		return client, nil
 	}

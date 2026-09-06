@@ -24,7 +24,7 @@ Shared online connection identity and error boundaries for the CLI, HTTP, and pu
 ## Dependencies
 
 - Upstream: `pkg/deltascope`, `internal/interfaces/cli`, `internal/interfaces/http`
-- Downstream: `database/sql`, MySQL driver, pgx/stdlib, `internal/application/auditmeta`
+- Downstream: `database/sql`, MySQL driver, pgx/stdlib, `internal/application/auditmeta`, `internal/application/connresolve`
 
 ## Update Rule
 

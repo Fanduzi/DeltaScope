@@ -1,6 +1,6 @@
 // Package cli exposes the command-line adapter for DeltaScope.
 // input: query-access command flags including -h/--help versus -H/--host, dialect-aware connection and catalog/schema hints, flag-presence-aware SQL text from --sql/--file/stdin, and the unified public online query access API
-// output: rendered offline or alias-bound identity-routed online query access results in JSON format, command-named empty-SQL usage errors, advertised Query Access exit table, exit-code mapping, and shared bounded connection/authentication/timeout/TLS/version-boundary errors
+// output: rendered offline or alias-bound identity-routed online query access results in JSON format, command-named empty-SQL usage errors, advertised Query Access exit table, exit-code mapping, and connresolve.Classify mapped to Query Access TLS/authentication sentences
 // pos: CLI query-access command implementation above offline analysis and the opaque unified online session boundary
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -14,6 +14,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/Fanduzi/DeltaScope/internal/application/connresolve"
 	"github.com/Fanduzi/DeltaScope/internal/application/online"
 	appqa "github.com/Fanduzi/DeltaScope/internal/application/queryaccess"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -268,21 +269,18 @@ func mapOnlineCLIBoundaryError(err error) error {
 		return newRuntimeError("authentication failed")
 	}
 
-	msg := err.Error()
-	switch {
-	case online.IsAuthenticationFailure(err):
+	switch connresolve.Classify(err) {
+	case connresolve.ClassAuthentication:
 		return newRuntimeError("authentication failed")
-	case strings.Contains(msg, "certificate"):
-		return newRuntimeError("TLS handshake failed")
-	case strings.Contains(msg, "x509:"):
-		return newRuntimeError("TLS certificate verification failed")
-	case strings.Contains(msg, "tls:"):
-		return newRuntimeError("TLS handshake failed")
-	case strings.Contains(msg, "timeout"):
+	case connresolve.ClassTimeout:
 		return newRuntimeError("connection timed out")
-	case strings.Contains(msg, "context canceled"):
-		return newRuntimeError("request canceled")
+	case connresolve.ClassTLSHostname, connresolve.ClassTLSUnknownCA, connresolve.ClassTLSNotOffered,
+		connresolve.ClassTLSCertificate, connresolve.ClassTLSHandshake:
+		return newRuntimeError("TLS handshake failed")
 	default:
+		if strings.Contains(strings.ToLower(err.Error()), "context canceled") {
+			return newRuntimeError("request canceled")
+		}
 		return newRuntimeError("connection failed")
 	}
 }

@@ -18,6 +18,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/Fanduzi/DeltaScope/internal/application/connresolve"
 	gomysql "github.com/go-sql-driver/mysql"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -229,14 +230,7 @@ func wrapConnectionFailure(err error) error {
 // IsAuthenticationFailure reports whether an online driver error uses one of
 // the bounded authentication signals recognized by the transport adapters.
 func IsAuthenticationFailure(err error) bool {
-	if err == nil {
-		return false
-	}
-	message := strings.ToLower(err.Error())
-	return strings.Contains(message, "access denied") ||
-		strings.Contains(message, "authentication failed") ||
-		strings.Contains(message, "password authentication") ||
-		strings.Contains(message, "invalid authorization")
+	return connresolve.Classify(err) == connresolve.ClassAuthentication
 }
 
 // buildMySQLConfig constructs a MySQL driver config from the session config.
