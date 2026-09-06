@@ -32,7 +32,7 @@ func (r tableExistenceRule) AppliesTo(statement spec.Statement) bool {
 		(statement.DML.Operation == spec.DMLOperationInsert ||
 			statement.DML.Operation == spec.DMLOperationUpdate ||
 			statement.DML.Operation == spec.DMLOperationDelete) &&
-		len(statement.DML.Tables) == 1
+		len(statement.DML.MutationTargetTables()) == 1
 }
 
 func (r tableExistenceRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
@@ -43,7 +43,7 @@ func (r tableExistenceRule) Evaluate(ctx context.Context, statement spec.Stateme
 		return nil, nil
 	}
 
-	table := statement.DML.Tables[0]
+	table := statement.DML.MutationTargetTables()[0]
 	return []rule.Finding{{
 		Level:      r.level,
 		Message:    fmt.Sprintf("table %q does not exist in the target schema", table.Name),

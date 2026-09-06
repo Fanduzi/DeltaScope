@@ -11,7 +11,7 @@ Application-level contracts for query access analysis, defining the schema resol
 | profile.go | Defines the closed analysis-profile values and dialect validation |
 | builtin_semantic_manifest.go | Owns immutable MySQL/TiDB builtin semantic entries and session-only capability assembly |
 | builtin_semantic_gateway.go | Proves exact candidate closure and strict physical requirement completeness |
-| identity_resolver.go | EffectIdentityResolver facts-only contract, resolution context, identity batch helpers, bounded volatility/cast enums |
+| identity_resolver.go | EffectIdentityResolver facts-only contract, resolution context, adapter-facing identity batch helpers, bounded volatility/cast enums |
 | phase1_effect_eligibility.go | Fail-closed Phase-1 pure-effect candidate eligibility before identity promotion |
 | count_integer_one_proof.go | Narrow PostgreSQL COUNT(integer_one) single-table requirements proof predicate |
 | count_integer_one_proof_test.go | Verifies exact COUNT(integer_one) proof boundaries and fail-closed requirements |
@@ -59,16 +59,14 @@ Application-level contracts for query access analysis, defining the schema resol
 - `EffectIdentityRequest` / `EffectIdentityBatch` / `EffectIdentityItem` / `EffectIdentityFacts`
 - `EffectIdentityResolutionContext` / `EffectIdentityResolutionMode`
 - `EffectVolatility` / `EffectCastMethod`
-- `ValidateEffectIdentityRequest()` / `NormalizeEffectIdentityBatch()` / `CompleteEffectIdentityBatch()`
-- `ValidatePhase1PureEffectCandidates()`
+- `ValidateEffectIdentityRequest()` / `NormalizeEffectIdentityBatch()`
 - `IsExactCountIntegerOneCandidate()`
-- `ValidateCandidateFactBinding()` / `ValidateFactOperandTypeBinding()`
-- `CandidateExplicitlyQualified()` / `CandidateExplicitPgCatalog()` / `ClassifyCandidateResolutionMode()`
+- `CandidateExplicitlyQualified()`
 - `ResolutionContextSessionComplete()` / `ResolutionContextUsableForUnqualified()`
-- `ResolutionContextSessionCompatible()` / `ResolutionContextSearchPathCompatible()` / `ResolutionContextsCompatible()`
+- `ResolutionContextSessionCompatible()`
 - `StampFactsFromResolution()`
-- `GateIdentityBatchByResolutionContext()` / `GateIdentityBatchAgainstLiveContext()`
-- `BuildUnavailableBatch()` / `MapCatalogErrorToStatus()` / `FailClosedReasonCodes()` / `BatchIsFullyResolved()`
+- `GateIdentityBatchAgainstLiveContext()`
+- `BuildUnavailableBatch()` / `MapCatalogErrorToStatus()`
 - `Service`
 - `NewService()` / `NewTrustedService()` (T8)
 - `TrustPolicy` / `TrustDecision` / `TrustedEffectManifest` / `TrustedEffectEntry` (T8)
@@ -83,6 +81,7 @@ Application-level contracts for query access analysis, defining the schema resol
 
 - The Query Access corpus owns offline semantic fixtures; the unified SDK owns online semantic breadth, with complete replacement evidence recorded in the milestone ledger.
 - `ResolveMySQLTiDBOnlineSchema` canonicalizes MySQL/TiDB database/schema aliases and request defaults, accepts equal values, rejects conflicts, and leaves PostgreSQL behavior outside the alias branch.
+- Identity-resolver helpers without a PostgreSQL adapter caller stay unexported. Adapter-called functions remain the export surface. There is no proof-engine seam.
 - `QueryAccessResult` wraps the domain `Result` for application-layer consumption.
 - The shared application input boundary removes exactly one leading UTF-8 BOM before Query Access parsing; BOM-only and BOM-plus-whitespace input is rejected as empty, while BOM-free empty-input result semantics remain unchanged.
 - `QueryAccessRequest.Mode` is a string that the domain layer normalizes via `NormalizeMode`.

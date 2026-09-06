@@ -1,6 +1,6 @@
 // Package markdown renders audit results as human-readable Markdown.
 // input: internal report results from the audit application flow
-// output: deterministic Markdown bytes for CLI and agent consumption, with rule skip reasons aggregated by reason code
+// output: deterministic Markdown bytes for CLI and agent consumption, including skip reasons, unsupported statements, and diagnostics
 // pos: infrastructure output adapter for the default human-oriented renderer
 // note: if this file changes, update this header and module README.md.
 package markdown
@@ -95,6 +95,31 @@ func Render(result report.Result) ([]byte, error) {
 				builder.WriteString(strconv.Itoa(group.Count))
 			}
 			builder.WriteString("\n")
+		}
+	}
+
+	if len(result.Unsupported) > 0 {
+		builder.WriteString("## Unsupported Statements\n")
+		for _, item := range result.Unsupported {
+			fmt.Fprintf(builder, "- Statement %d: `%s` — %s\n", item.Index+1, item.Feature, item.Reason)
+		}
+	}
+	if len(result.Diagnostics) > 0 {
+		builder.WriteString("## Diagnostics\n")
+		for _, d := range result.Diagnostics {
+			fmt.Fprintf(builder, "- classification: %s\n  action_hint: %s\n  reason: %s\n  audited: %v\n  dialect: %s\n", d.Classification, d.ActionHint, d.Reason, d.Audited, d.Dialect)
+			if d.Line > 0 {
+				fmt.Fprintf(builder, "  line: %d\n", d.Line)
+			}
+			if d.Column > 0 {
+				fmt.Fprintf(builder, "  column: %d\n", d.Column)
+			}
+			if d.GuidanceCode != "" {
+				fmt.Fprintf(builder, "  guidance_code: %s\n", d.GuidanceCode)
+			}
+			if d.EvidenceRef != "" {
+				fmt.Fprintf(builder, "  evidence_ref: %s\n", d.EvidenceRef)
+			}
 		}
 	}
 

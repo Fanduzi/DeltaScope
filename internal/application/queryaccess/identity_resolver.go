@@ -1,7 +1,7 @@
 // Package queryaccess defines the effect-identity resolver contract (facts only).
 // input: internal EffectCandidate batch keyed by stable ordinal
 // output: per-ordinal IdentityStatus + optional catalog facts (never Trusted/admission)
-// pos: T6 internal application contract for T7 catalog adapters and T8 proof engine
+// pos: facts-only identity helpers; only PostgreSQL adapter-called functions stay exported
 // note: if this file changes, update this header and module README.md.
 package queryaccess
 
@@ -36,8 +36,8 @@ const (
 	EffectVolatilityVolatile EffectVolatility = "v"
 )
 
-// ValidEffectVolatility reports whether v is a known volatility fact.
-func ValidEffectVolatility(v EffectVolatility) bool {
+// validEffectVolatility reports whether v is a known volatility fact.
+func validEffectVolatility(v EffectVolatility) bool {
 	switch v {
 	case EffectVolatilityImmutable, EffectVolatilityStable, EffectVolatilityVolatile:
 		return true
@@ -59,8 +59,8 @@ const (
 	EffectCastMethodInOut EffectCastMethod = "i"
 )
 
-// ValidEffectCastMethod reports whether m is a known cast method fact.
-func ValidEffectCastMethod(m EffectCastMethod) bool {
+// validEffectCastMethod reports whether m is a known cast method fact.
+func validEffectCastMethod(m EffectCastMethod) bool {
 	switch m {
 	case EffectCastMethodFunction, EffectCastMethodBinary, EffectCastMethodInOut:
 		return true
@@ -302,7 +302,7 @@ type EffectIdentityFacts struct {
 
 	// Structured identity fields for candidate-to-fact binding validation.
 	// These fields are populated by the catalog adapter and used by
-	// ValidateCandidateFactBinding to prevent fact swaps between candidates.
+	// validateCandidateFactBinding to prevent fact swaps between candidates.
 	// They must never be copied into domain.Result, SDK/CLI/HTTP JSON, or reason codes.
 
 	// ResolvedSchemaName is the resolved schema name (e.g., "pg_catalog").
@@ -336,7 +336,7 @@ type EffectIdentityBatch struct {
 // ValidateEffectIdentityRequest checks ordinal uniqueness and structural bounds.
 // Empty candidate slices are valid (resolver returns an empty batch).
 // Resolution may be zero (unbound); that is valid and forces all candidates to
-// unavailable via GateIdentityBatchByResolutionContext (no promotion-ready facts).
+// unavailable via gateIdentityBatchByResolutionContext (no promotion-ready facts).
 // Bound=true requires a fully complete session context (binding, epoch, database,
 // role, server version); partial Bound contexts are invalid, not "optional fields".
 func ValidateEffectIdentityRequest(req EffectIdentityRequest) error {
@@ -382,9 +382,9 @@ func CandidateExplicitlyQualified(c EffectCandidate) bool {
 	return false
 }
 
-// CandidateExplicitSchemaName returns the leading schema segment when the
+// candidateExplicitSchemaName returns the leading schema segment when the
 // candidate is explicitly qualified; otherwise "".
-func CandidateExplicitSchemaName(c EffectCandidate) string {
+func candidateExplicitSchemaName(c EffectCandidate) string {
 	if !CandidateExplicitlyQualified(c) {
 		return ""
 	}
@@ -400,10 +400,10 @@ func CandidateExplicitSchemaName(c EffectCandidate) string {
 	return ""
 }
 
-// CandidateExplicitPgCatalog reports explicit schema qualification under pg_catalog.
+// candidateExplicitPgCatalog reports explicit schema qualification under pg_catalog.
 // This is a structural fact, not a trust claim and not a substitute for OID proof.
-func CandidateExplicitPgCatalog(c EffectCandidate) bool {
-	return CandidateExplicitSchemaName(c) == PgCatalogNamespaceName
+func candidateExplicitPgCatalog(c EffectCandidate) bool {
+	return candidateExplicitSchemaName(c) == PgCatalogNamespaceName
 }
 
 // ResolutionContextSessionComplete reports whether the context is fully bound
@@ -466,9 +466,9 @@ func ResolutionContextSessionCompatible(a, b EffectIdentityResolutionContext) bo
 	return true
 }
 
-// ResolutionContextSearchPathCompatible reports equal ordered NamespaceSearchOIDs.
+// resolutionContextSearchPathCompatible reports equal ordered NamespaceSearchOIDs.
 // Empty paths are compatible with each other only when both are empty (explicit-only).
-func ResolutionContextSearchPathCompatible(a, b EffectIdentityResolutionContext) bool {
+func resolutionContextSearchPathCompatible(a, b EffectIdentityResolutionContext) bool {
 	if len(a.NamespaceSearchOIDs) != len(b.NamespaceSearchOIDs) {
 		return false
 	}
@@ -480,19 +480,19 @@ func ResolutionContextSearchPathCompatible(a, b EffectIdentityResolutionContext)
 	return true
 }
 
-// ResolutionContextsCompatible reports full compatibility for unqualified
+// resolutionContextsCompatible reports full compatibility for unqualified
 // resolution: session binding + search_path order. Incomplete contexts never match.
-func ResolutionContextsCompatible(a, b EffectIdentityResolutionContext) bool {
+func resolutionContextsCompatible(a, b EffectIdentityResolutionContext) bool {
 	if !ResolutionContextUsableForUnqualified(a) || !ResolutionContextUsableForUnqualified(b) {
 		return false
 	}
 	if !ResolutionContextSessionCompatible(a, b) {
 		return false
 	}
-	return ResolutionContextSearchPathCompatible(a, b)
+	return resolutionContextSearchPathCompatible(a, b)
 }
 
-// ValidateResolutionContextForPromotion validates initial and final execution
+// validateResolutionContextForPromotion validates initial and final execution
 // contexts for the proof gateway. Encapsulates INV-3 and INV-7 checks.
 //
 // Returns nil if validation passes, or a bounded error if:
@@ -500,7 +500,7 @@ func ResolutionContextsCompatible(a, b EffectIdentityResolutionContext) bool {
 // - Final context is not session-complete
 // - Initial/final contexts are not session-compatible
 // - Unqualified candidates exist and search-path is not compatible
-func ValidateResolutionContextForPromotion(
+func validateResolutionContextForPromotion(
 	initialCtx, finalCtx EffectIdentityResolutionContext,
 	candidates []EffectCandidate,
 ) error {
@@ -518,7 +518,7 @@ func ValidateResolutionContextForPromotion(
 	}
 	// INV-7: If unqualified candidates exist, search-path must be compatible.
 	if hasUnqualifiedEffectCandidates(candidates) {
-		if !ResolutionContextSearchPathCompatible(initialCtx, finalCtx) {
+		if !resolutionContextSearchPathCompatible(initialCtx, finalCtx) {
 			return fmt.Errorf("%w: search-path drift with unqualified candidates", ErrIdentityRequestInvalid)
 		}
 	}
@@ -557,21 +557,21 @@ func factsMatchResolution(facts *EffectIdentityFacts, rc EffectIdentityResolutio
 	return true
 }
 
-// ValidateFactPinning validates that resolved facts are pinned to the final
+// validateFactPinning validates that resolved facts are pinned to the final
 // execution context. Encapsulates INV-4 and INV-5 checks.
 //
 // Returns true if facts are valid (pinned to final context), false otherwise.
 // Invalid facts should be converted to unavailable before IsTrusted.
-func ValidateFactPinning(facts *EffectIdentityFacts, finalCtx EffectIdentityResolutionContext) bool {
+func validateFactPinning(facts *EffectIdentityFacts, finalCtx EffectIdentityResolutionContext) bool {
 	return factsMatchResolution(facts, finalCtx)
 }
 
-// ClassifyCandidateResolutionMode returns the bounded resolution mode for a
+// classifyCandidateResolutionMode returns the bounded resolution mode for a
 // candidate under the given execution context.
 // Explicit schema still requires a session-complete context to keep resolved
 // facts (mode is still "explicit_schema" for path ranking, but gates enforce
 // session completeness separately).
-func ClassifyCandidateResolutionMode(c EffectCandidate, rc EffectIdentityResolutionContext) EffectIdentityResolutionMode {
+func classifyCandidateResolutionMode(c EffectCandidate, rc EffectIdentityResolutionContext) EffectIdentityResolutionMode {
 	if CandidateExplicitlyQualified(c) {
 		return ResolutionModeExplicitSchema
 	}
@@ -581,7 +581,7 @@ func ClassifyCandidateResolutionMode(c EffectCandidate, rc EffectIdentityResolut
 	return ResolutionModeUnqualifiedUnbound
 }
 
-// GateIdentityBatchByResolutionContext enforces Phase-1 resolution policy:
+// gateIdentityBatchByResolutionContext enforces Phase-1 resolution policy:
 //
 //   - Without a session-complete context, ALL candidates become unavailable
 //     (including explicit schema): OIDs are database-local and cannot be proven.
@@ -592,7 +592,7 @@ func ClassifyCandidateResolutionMode(c EffectCandidate, rc EffectIdentityResolut
 //
 // Output is completed against the request and normalized. Context is never
 // copied into items or public Result fields.
-func GateIdentityBatchByResolutionContext(req EffectIdentityRequest, batch EffectIdentityBatch) EffectIdentityBatch {
+func gateIdentityBatchByResolutionContext(req EffectIdentityRequest, batch EffectIdentityBatch) EffectIdentityBatch {
 	byOrd := make(map[int]EffectIdentityItem, len(batch.Items))
 	for _, it := range batch.Items {
 		if _, exists := byOrd[it.Ordinal]; exists {
@@ -653,10 +653,10 @@ type LiveResolutionContext func() (EffectIdentityResolutionContext, error)
 //   - search_path order mismatch only → unqualified unavailable; explicit schema
 //     may keep facts if session-compatible and facts still match request pins
 //
-// When live is nil, only GateIdentityBatchByResolutionContext runs (T7 must not
+// When live is nil, only gateIdentityBatchByResolutionContext runs (T7 must not
 // skip live re-check for promotion-ready paths).
 func GateIdentityBatchAgainstLiveContext(req EffectIdentityRequest, batch EffectIdentityBatch, live LiveResolutionContext) EffectIdentityBatch {
-	gated := GateIdentityBatchByResolutionContext(req, batch)
+	gated := gateIdentityBatchByResolutionContext(req, batch)
 	if live == nil {
 		return gated
 	}
@@ -671,7 +671,7 @@ func GateIdentityBatchAgainstLiveContext(req EffectIdentityRequest, batch Effect
 		// Role/database/server/epoch/session drift: strip everyone, including explicit.
 		return stripAllIdentityFacts(gated)
 	}
-	if ResolutionContextSearchPathCompatible(req.Resolution, liveRC) {
+	if resolutionContextSearchPathCompatible(req.Resolution, liveRC) {
 		return gated
 	}
 	// Path-only drift: unqualified cannot be trusted; explicit schema may remain
@@ -744,7 +744,7 @@ func MapCatalogErrorToStatus(err error) domain.IdentityStatus {
 // after a stable sort (callers should validate requests first).
 //
 // Partial failure: missing ordinals are not invented here; use
-// CompleteEffectIdentityBatch against the request to fill gaps.
+// completeEffectIdentityBatch against the request to fill gaps.
 func NormalizeEffectIdentityBatch(items []EffectIdentityItem) EffectIdentityBatch {
 	if len(items) == 0 {
 		return EffectIdentityBatch{}
@@ -781,7 +781,7 @@ func sanitizeIdentityItem(it EffectIdentityItem) EffectIdentityItem {
 	// Resolved: facts may be present but must not carry invalid bounded enums.
 	if it.Facts != nil {
 		facts := *it.Facts
-		if facts.Volatility != "" && !ValidEffectVolatility(facts.Volatility) {
+		if facts.Volatility != "" && !validEffectVolatility(facts.Volatility) {
 			// Invalid volatility fact → fail closed rather than promote bad data.
 			return EffectIdentityItem{
 				Ordinal: it.Ordinal,
@@ -789,7 +789,7 @@ func sanitizeIdentityItem(it EffectIdentityItem) EffectIdentityItem {
 				Facts:   nil,
 			}
 		}
-		if facts.CastMethod != "" && !ValidEffectCastMethod(facts.CastMethod) {
+		if facts.CastMethod != "" && !validEffectCastMethod(facts.CastMethod) {
 			return EffectIdentityItem{
 				Ordinal: it.Ordinal,
 				Status:  domain.IdentityStatusLookupFailed,
@@ -805,10 +805,10 @@ func sanitizeIdentityItem(it EffectIdentityItem) EffectIdentityItem {
 	return it
 }
 
-// CompleteEffectIdentityBatch ensures one item per request candidate ordinal.
+// completeEffectIdentityBatch ensures one item per request candidate ordinal.
 // Missing ordinals become unavailable (fail-closed). Extra ordinals not in the
 // request are dropped. Output is normalized (sorted, sanitized).
-func CompleteEffectIdentityBatch(req EffectIdentityRequest, batch EffectIdentityBatch) EffectIdentityBatch {
+func completeEffectIdentityBatch(req EffectIdentityRequest, batch EffectIdentityBatch) EffectIdentityBatch {
 	byOrd := make(map[int]EffectIdentityItem, len(batch.Items))
 	for _, it := range batch.Items {
 		if _, exists := byOrd[it.Ordinal]; exists {
@@ -831,14 +831,14 @@ func CompleteEffectIdentityBatch(req EffectIdentityRequest, batch EffectIdentity
 	return NormalizeEffectIdentityBatch(items)
 }
 
-// ValidateBatchOrdinals validates raw batch ordinals before completion/normalization.
+// validateBatchOrdinals validates raw batch ordinals before completion/normalization.
 // Encapsulates INV-6 checks.
 //
 // Returns nil if validation passes, or a bounded error if:
 // - Batch has duplicate ordinals
 // - Batch has ordinals not in the request
 // - Request has ordinals not in the batch (missing)
-func ValidateBatchOrdinals(batch EffectIdentityBatch, candidates []EffectCandidate) error {
+func validateBatchOrdinals(batch EffectIdentityBatch, candidates []EffectCandidate) error {
 	// Build set of request ordinals.
 	reqOrds := make(map[int]struct{}, len(candidates))
 	for _, c := range candidates {
@@ -864,7 +864,7 @@ func ValidateBatchOrdinals(batch EffectIdentityBatch, candidates []EffectCandida
 	return nil
 }
 
-// ValidateCandidateFactBinding validates that resolved facts correspond to the
+// validateCandidateFactBinding validates that resolved facts correspond to the
 // correct candidate shape. This prevents a resolver from returning manifest-valid
 // facts for the wrong same-kind candidate.
 //
@@ -876,7 +876,7 @@ func ValidateBatchOrdinals(batch EffectIdentityBatch, candidates []EffectCandida
 //   - For casts: OperandTypeOIDs has exactly 1 entry
 //
 // On mismatch: converts item status to lookup_failed and removes facts.
-func ValidateCandidateFactBinding(batch EffectIdentityBatch, candidates []EffectCandidate) EffectIdentityBatch {
+func validateCandidateFactBinding(batch EffectIdentityBatch, candidates []EffectCandidate) EffectIdentityBatch {
 	candByOrd := make(map[int]EffectCandidate, len(candidates))
 	for _, c := range candidates {
 		candByOrd[c.Ordinal] = c
@@ -926,7 +926,7 @@ func factMatchesCandidate(facts *EffectIdentityFacts, c EffectCandidate) bool {
 
 	// Validate explicit-schema intent matches.
 	if c.ExplicitSchema && facts.ResolvedSchemaName != "" {
-		candSchema := CandidateExplicitSchemaName(c)
+		candSchema := candidateExplicitSchemaName(c)
 		if candSchema != "" && facts.ResolvedSchemaName != candSchema {
 			return false
 		}
@@ -957,7 +957,7 @@ func factMatchesCandidate(facts *EffectIdentityFacts, c EffectCandidate) bool {
 	return true
 }
 
-// ValidateFactOperandTypeBinding cross-checks the atomic resolver's per-ordinal
+// validateFactOperandTypeBinding cross-checks the atomic resolver's per-ordinal
 // operand-type map against returned fact OperandTypeOIDs. This detects same-name
 // overload swaps where the resolver returns manifest-valid facts for the wrong
 // same-name operator (e.g., =(text,text) fact for an int4 candidate).
@@ -975,7 +975,7 @@ func factMatchesCandidate(facts *EffectIdentityFacts, c EffectCandidate) bool {
 //   - Map entry must exist, have exactly two nonzero OIDs, and equal facts.OperandTypeOIDs
 //   - Absent or unexpected entry, wrong length, zero OID, or mismatch → lookup_failed
 //   - Other functions, casts, arity-zero → untouched (no cross-check)
-func ValidateFactOperandTypeBinding(batch EffectIdentityBatch, resolvedTypeOIDs map[int][]uint32, candidates []EffectCandidate) EffectIdentityBatch {
+func validateFactOperandTypeBinding(batch EffectIdentityBatch, resolvedTypeOIDs map[int][]uint32, candidates []EffectCandidate) EffectIdentityBatch {
 	candByOrd := make(map[int]EffectCandidate, len(candidates))
 	for _, c := range candidates {
 		candByOrd[c.Ordinal] = c
@@ -1116,9 +1116,9 @@ func candidateCanonicalName(c EffectCandidate) string {
 	}
 }
 
-// BatchIsFullyResolved reports whether every item is resolved with facts.
+// batchIsFullyResolved reports whether every item is resolved with facts.
 // Does not imply trust or admission; T8 policy must still gate promotion.
-func BatchIsFullyResolved(batch EffectIdentityBatch) bool {
+func batchIsFullyResolved(batch EffectIdentityBatch) bool {
 	if len(batch.Items) == 0 {
 		return true
 	}
@@ -1130,10 +1130,10 @@ func BatchIsFullyResolved(batch EffectIdentityBatch) bool {
 	return true
 }
 
-// FailClosedReasonCodes collects bounded identity reason codes for non-resolved
+// failClosedReasonCodes collects bounded identity reason codes for non-resolved
 // items. Free-text statuses are mapped via Normalize first by callers.
 // Underlying errors must not be passed in; only IdentityStatus is accepted.
-func FailClosedReasonCodes(batch EffectIdentityBatch) []domain.ReasonCode {
+func failClosedReasonCodes(batch EffectIdentityBatch) []domain.ReasonCode {
 	var codes []domain.ReasonCode
 	for _, it := range batch.Items {
 		if !domain.IdentityStatusIsFailClosed(it.Status) {

@@ -9,7 +9,7 @@ First Tier-1 DML rule batch for offline update/delete/insert checks.
 | common.go | Shared DML rule IDs and operation predicates |
 | config.go | Parses policy params for DML rule constructors |
 | denylist_rules.go | Implements DML table denylist checks against protected schemas or tables |
-| metadata_rules.go | Implements the MySQL/TiDB metadata-backed DML target-table existence blocker |
+| metadata_rules.go | Implements the MySQL/TiDB metadata-backed DML Mutation Target existence blocker |
 | mutation_rules.go | Implements WHERE, LIMIT, ORDER BY, subquery, and JOIN ... ON rules |
 | impact_rules.go | Implements additive statement-level impact estimation plus row-count / ratio thresholds |
 | insert_rules.go | Implements insert row-count, replace, insert-select, and on-duplicate rules |
@@ -45,7 +45,7 @@ First Tier-1 DML rule batch for offline update/delete/insert checks.
 - `dml.table.denylist.forbid`
 - `dml.table.exists.require`
 
-`dml.table.exists.require` evaluates a single resolved mutation target. Ambiguous multi-target UPDATE/DELETE statements fail closed until the statement model carries per-target snapshots.
+`dml.table.exists.require` evaluates a single resolved Mutation Target via `MutationTargetTables()`. Ambiguous multi-target UPDATE/DELETE statements fail closed until the statement model carries per-target snapshots.
 
 `dml.impact.estimate`, `dml.impact.rows.max_count`, and `dml.impact.ratio.max_percent` are cataloged as default-disabled. Default Policy does not enable them; caller config must opt in before they emit findings.
 

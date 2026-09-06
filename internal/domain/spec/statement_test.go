@@ -1,6 +1,6 @@
 // Package spec defines normalized statement specifications for rule evaluation.
 // input: statement kind and dialect domain scenarios
-// output: coverage for typed statement metadata
+// output: coverage for typed statement metadata and Mutation Target lookup
 // pos: domain specification test coverage
 // note: if this file changes, update this header and module README.md.
 package spec
@@ -26,6 +26,30 @@ func TestKindAndDialectStringReturnUnderlyingValue(t *testing.T) {
 	}
 	if got := DialectPostgreSQL.String(); got != "postgresql" {
 		t.Fatalf("expected postgresql string, got %q", got)
+	}
+}
+
+func TestMutationTargetTablesPrefersNamedTargets(t *testing.T) {
+	t.Parallel()
+	mentioned := Table{Name: "src"}
+	written := Table{Name: "dst"}
+	dml := &DML{Tables: []Table{mentioned}, MutationTargets: []Table{written}}
+	got := dml.MutationTargetTables()
+	if len(got) != 1 || got[0].Name != "dst" {
+		t.Fatalf("expected named Mutation Target dst, got %#v", got)
+	}
+}
+
+func TestMutationTargetTablesFallsBackToTables(t *testing.T) {
+	t.Parallel()
+	dml := &DML{Tables: []Table{{Name: "users"}}}
+	got := dml.MutationTargetTables()
+	if len(got) != 1 || got[0].Name != "users" {
+		t.Fatalf("expected Tables fallback users, got %#v", got)
+	}
+	var nilDML *DML
+	if nilDML.MutationTargetTables() != nil {
+		t.Fatal("expected nil receiver to return nil")
 	}
 }
 

@@ -24,7 +24,7 @@ Finding annotations are self-contained so a reviewer can triage without opening 
 - **Location:** `file`/`line`/`col` are included when location and/or path are available; `file` is omitted when `Options.Path` is empty.
 
 Unsupported statements render as `::notice` and do **not** gain an explain command, because unsupported statements have no rule id.
-Parser-error diagnostics render as `::error` with the stable `Parser Error` title, safe reason/action text, and diagnostic line/column; raw failed SQL is never emitted.
+Parser-error diagnostics (`spec.DiagnosticParserError`) render as `::error` with the stable `Parser Error` title, safe reason/action text, and diagnostic line/column; raw failed SQL is never emitted.
 
 ## Notes
 

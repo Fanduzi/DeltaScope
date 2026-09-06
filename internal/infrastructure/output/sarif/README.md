@@ -6,7 +6,7 @@ Renders audit results as SARIF 2.1.0 JSON.
 
 | File | Responsibility |
 |------|----------------|
-| `render.go` | Converts findings and located parser-error diagnostics into SARIF rules, results, and physical locations |
+| `render.go` | Converts findings and located parser-error diagnostics (`spec.DiagnosticParserError`) into SARIF rules, results, and physical locations |
 | `render_test.go` | Verifies SARIF schema, finding levels, diagnostic locations, rule metadata, and no-leak behavior |
 
 ## Exports

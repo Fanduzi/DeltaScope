@@ -63,6 +63,11 @@ type UnsupportedDetail struct {
 	Metadata map[string]any `json:"metadata,omitempty"`
 }
 
+const (
+	// DiagnosticParserError classifies a statement the dialect parser could not parse.
+	DiagnosticParserError = "parser_error"
+)
+
 // Diagnostic carries safe, structured evidence about unaudited or unsupported outcomes.
 type Diagnostic struct {
 	Classification string `json:"classification"`

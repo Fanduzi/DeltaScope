@@ -4,6 +4,7 @@
 // input: PostgreSQL effect candidates and controlled resolver facts
 // output: fail-closed promotion decisions with no candidate leakage
 // pos: PostgreSQL Phase-1 proof completeness and eligibility coverage
+// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (
@@ -37,9 +38,9 @@ func TestValidatePhase1PureEffectCandidates(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			ok, reason := ValidatePhase1PureEffectCandidates([]EffectCandidate{tc.input})
+			ok, reason := validatePhase1PureEffectCandidates([]EffectCandidate{tc.input})
 			if ok != tc.ok || reason != tc.reason {
-				t.Fatalf("ValidatePhase1PureEffectCandidates() = (%t, %q), want (%t, %q)", ok, reason, tc.ok, tc.reason)
+				t.Fatalf("validatePhase1PureEffectCandidates() = (%t, %q), want (%t, %q)", ok, reason, tc.ok, tc.reason)
 			}
 		})
 	}

@@ -174,7 +174,7 @@ func validateEntry(e TrustedEffectEntry) error {
 	if e.CanonicalSignature == "" {
 		return fmt.Errorf("missing canonical signature")
 	}
-	if e.Volatility != "" && !ValidEffectVolatility(e.Volatility) {
+	if e.Volatility != "" && !validEffectVolatility(e.Volatility) {
 		return fmt.Errorf("invalid volatility: %s", e.Volatility)
 	}
 	if e.AggregateClass != "" && e.AggregateClass != "a" {

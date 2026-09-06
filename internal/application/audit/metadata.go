@@ -1,5 +1,5 @@
 // Package audit orchestrates audit use cases at the application layer.
-// input: optional metadata providers plus parsed statement targets for enrichment
+// input: optional metadata providers plus parsed statement MutationTargets for enrichment
 // output: metadata-enriched statements with resolved target schemas for rules that can use live instance or schema facts
 // pos: application-layer bridge between provider-backed metadata and domain statements
 // note: if this file changes, update this header and module README.md.
@@ -122,16 +122,20 @@ func targetTableName(statement spec.Statement) string {
 			return ""
 		}
 	}
-	if statement.DML != nil && len(statement.DML.Tables) > 0 {
-		return strings.TrimSpace(statement.DML.Tables[0].Name)
+	if statement.DML != nil {
+		if targets := statement.DML.MutationTargetTables(); len(targets) > 0 {
+			return strings.TrimSpace(targets[0].Name)
+		}
 	}
 	return ""
 }
 
 func metadataTargetSchema(request *MetadataRequest, statement spec.Statement) string {
-	if (statement.Dialect == spec.DialectMySQL || statement.Dialect == spec.DialectTiDB) && statement.DML != nil && len(statement.DML.Tables) > 0 {
-		if schema := strings.TrimSpace(statement.DML.Tables[0].Schema); schema != "" {
-			return schema
+	if (statement.Dialect == spec.DialectMySQL || statement.Dialect == spec.DialectTiDB) && statement.DML != nil {
+		if targets := statement.DML.MutationTargetTables(); len(targets) > 0 {
+			if schema := strings.TrimSpace(targets[0].Schema); schema != "" {
+				return schema
+			}
 		}
 	}
 	if request == nil {

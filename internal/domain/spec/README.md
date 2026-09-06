@@ -11,13 +11,14 @@ Normalized statement specifications used as the stable input for rule evaluation
 | metadata.go | Defines optional schema context, instance facts, target-table snapshots, object-level validation snapshots, and lookup helpers for metadata-aware auditing |
 | ddl.go | Defines DDL-oriented specification types, including explicit DDL operations, richer column facts, typed index metadata, and create-table/object-lifecycle shape flags for offline and metadata-aware DDL rules |
 | dml_impact.go | Defines shared DML impact estimation enums and payload types reused across audit layers |
-| dml.go | Defines DML-oriented specification types, including operation metadata and extracted target tables for rule applicability |
+| dml.go | Defines DML-oriented specification types, including operation metadata, mentioned tables, and MutationTargets for the tables a statement writes |
 
 ## Exports
 
 - `Statement`
 - `UnsupportedDetail`
 - `Diagnostic`
+- `DiagnosticParserError`
 - `StatementExtractor`
 - `Kind`
 - `Dialect`
@@ -45,6 +46,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `AlterIndex`
 - `Alter`
 - `DML`
+- `(*DML).MutationTargetTables()`
 - `DMLOperation`
 
 ## Notes
@@ -62,7 +64,8 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `MetadataStatus` identifies the outcome of a metadata object lookup: `confirmed` (object exists), `not_found` (object absent), `unavailable` (lookup not performed), `ambiguous` (identity not uniquely resolved).
 - `Metadata.FindObject` and `Metadata.FindObjectsByType` provide case-insensitive lookup across attached object snapshots.
 - `ObjectSnapshot.SafeAttributes` filters out sensitive attribute keys (password, secret, token, connection, body, definition, etc.) to prevent leaking secrets through metadata projection.
-- `DML.Tables` preserves the parser-neutral set of mutation target tables so denylist and future metadata-aware DML rules do not need to rediscover them from AST nodes.
+- `DML.Tables` preserves mentioned relations. `DML.MutationTargets` names the tables a statement writes. `MutationTargetTables()` returns MutationTargets when filled and otherwise falls back to Tables so denylist, metadata, and existence rules do not rediscover targets from AST nodes.
+- `DiagnosticParserError` is the named classification for a statement the dialect parser could not parse. Output adapters compare this constant instead of the string `"parser_error"`.
 - `DML.HasReturning` records whether a real DML `RETURNING` clause was parsed. It is a structural parser fact projected from the AST (`len(stmt.Returning) > 0`), not a raw token scan, so an identifier or table alias named `returning` does not set it. It captures clause presence only; it does not carry returned column names, expressions, aliases, or any parser subtree.
 
 - `Column` now carries offline-governance facts needed by column-focused DDL rules:

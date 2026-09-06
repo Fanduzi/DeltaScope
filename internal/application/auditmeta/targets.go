@@ -69,9 +69,13 @@ func statementTarget(statement spec.Statement) (string, string, bool) {
 		}
 		return schema, name, statement.DDL.Operation != spec.DDLOperationCreateTable
 	}
-	if statement.DML != nil && len(statement.DML.Tables) > 0 {
-		schema := strings.TrimSpace(statement.DML.Tables[0].Schema)
-		name := strings.TrimSpace(statement.DML.Tables[0].Name)
+	if statement.DML != nil {
+		targets := statement.DML.MutationTargetTables()
+		if len(targets) == 0 {
+			return "", "", false
+		}
+		schema := strings.TrimSpace(targets[0].Schema)
+		name := strings.TrimSpace(targets[0].Name)
 		if name == "" {
 			return "", "", false
 		}

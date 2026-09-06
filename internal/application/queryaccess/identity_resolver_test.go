@@ -167,7 +167,7 @@ func TestCompleteEffectIdentityBatch_PartialFailureDeterministic(t *testing.T) {
 		{Ordinal: 1, Status: domain.IdentityStatusAmbiguous},
 		{Ordinal: 99, Status: domain.IdentityStatusResolved, Facts: &EffectIdentityFacts{ObjectOID: 1}}, // extra dropped
 	}}
-	got := CompleteEffectIdentityBatch(req, partial)
+	got := completeEffectIdentityBatch(req, partial)
 	if len(got.Items) != 3 {
 		t.Fatalf("len=%d want 3", len(got.Items))
 	}
@@ -188,9 +188,9 @@ func TestCompleteEffectIdentityBatch_PartialFailureDeterministic(t *testing.T) {
 		}
 	}
 	// Determinism: two completes equal.
-	got2 := CompleteEffectIdentityBatch(req, partial)
+	got2 := completeEffectIdentityBatch(req, partial)
 	if !reflect.DeepEqual(got, got2) {
-		t.Error("CompleteEffectIdentityBatch must be deterministic")
+		t.Error("completeEffectIdentityBatch must be deterministic")
 	}
 }
 
@@ -205,7 +205,7 @@ func TestBuildUnavailableBatch_AndFailClosedReasons(t *testing.T) {
 			t.Errorf("item %d: %+v", i, it)
 		}
 	}
-	codes := FailClosedReasonCodes(batch)
+	codes := failClosedReasonCodes(batch)
 	if len(codes) != 1 || codes[0] != domain.ReasonIdentityResolverUnavailable {
 		t.Errorf("codes=%v want single identity_resolver_unavailable", codes)
 	}
@@ -288,11 +288,11 @@ func TestFakeResolver_CancellationAndFactsOnly(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve: %v", err)
 	}
-	batch = CompleteEffectIdentityBatch(EffectIdentityRequest{Candidates: sampleCandidates()}, batch)
-	if BatchIsFullyResolved(batch) {
+	batch = completeEffectIdentityBatch(EffectIdentityRequest{Candidates: sampleCandidates()}, batch)
+	if batchIsFullyResolved(batch) {
 		t.Error("mixed batch must not be fully resolved")
 	}
-	codes := FailClosedReasonCodes(batch)
+	codes := failClosedReasonCodes(batch)
 	// unknown + coercion_gap (resolved has no fail-closed reason)
 	wantCodes := []domain.ReasonCode{domain.ReasonIdentityCoercionGap, domain.ReasonIdentityUnknown}
 	if !reflect.DeepEqual(codes, wantCodes) {
@@ -380,7 +380,7 @@ func TestValidateFactOperandTypeBinding_NilTypeMap(t *testing.T) {
 	candidates := []EffectCandidate{
 		{Ordinal: 0, Kind: EffectCandidateOperator, Arity: 2},
 	}
-	result := ValidateFactOperandTypeBinding(batch, nil, candidates)
+	result := validateFactOperandTypeBinding(batch, nil, candidates)
 	if len(result.Items) != 1 {
 		t.Fatalf("expected 1 item, got %d", len(result.Items))
 	}
@@ -410,7 +410,7 @@ func TestValidateFactOperandTypeBinding_EmptyTypeMap(t *testing.T) {
 	candidates := []EffectCandidate{
 		{Ordinal: 0, Kind: EffectCandidateOperator, Arity: 2},
 	}
-	result := ValidateFactOperandTypeBinding(batch, map[int][]uint32{}, candidates)
+	result := validateFactOperandTypeBinding(batch, map[int][]uint32{}, candidates)
 	if len(result.Items) != 1 {
 		t.Fatalf("expected 1 item, got %d", len(result.Items))
 	}
@@ -441,7 +441,7 @@ func TestValidateFactOperandTypeBinding_Match(t *testing.T) {
 		{Ordinal: 0, Kind: EffectCandidateOperator, Arity: 2},
 	}
 	typeMap := map[int][]uint32{0: {23, 23}}
-	result := ValidateFactOperandTypeBinding(batch, typeMap, candidates)
+	result := validateFactOperandTypeBinding(batch, typeMap, candidates)
 	if len(result.Items) != 1 {
 		t.Fatalf("expected 1 item, got %d", len(result.Items))
 	}
@@ -469,7 +469,7 @@ func TestValidateFactOperandTypeBinding_Mismatch(t *testing.T) {
 		{Ordinal: 0, Kind: EffectCandidateOperator, Arity: 2},
 	}
 	typeMap := map[int][]uint32{0: {23, 23}} // int4 types
-	result := ValidateFactOperandTypeBinding(batch, typeMap, candidates)
+	result := validateFactOperandTypeBinding(batch, typeMap, candidates)
 	if len(result.Items) != 1 {
 		t.Fatalf("expected 1 item, got %d", len(result.Items))
 	}
@@ -500,7 +500,7 @@ func TestValidateFactOperandTypeBinding_MissingOrdinal(t *testing.T) {
 		{Ordinal: 0, Kind: EffectCandidateOperator, Arity: 2},
 	}
 	typeMap := map[int][]uint32{999: {23, 23}} // wrong ordinal
-	result := ValidateFactOperandTypeBinding(batch, typeMap, candidates)
+	result := validateFactOperandTypeBinding(batch, typeMap, candidates)
 	if len(result.Items) != 1 {
 		t.Fatalf("expected 1 item, got %d", len(result.Items))
 	}
@@ -534,7 +534,7 @@ func TestValidateFactOperandTypeBinding_UnexpectedOrdinal(t *testing.T) {
 		0:   {23, 23},
 		999: {23, 23},
 	}
-	result := ValidateFactOperandTypeBinding(batch, typeMap, candidates)
+	result := validateFactOperandTypeBinding(batch, typeMap, candidates)
 	if len(result.Items) != 1 {
 		t.Fatalf("expected 1 item, got %d", len(result.Items))
 	}
@@ -565,7 +565,7 @@ func TestValidateFactOperandTypeBinding_WrongLengthMap(t *testing.T) {
 		{Ordinal: 0, Kind: EffectCandidateOperator, Arity: 2},
 	}
 	typeMap := map[int][]uint32{0: {23}} // one element
-	result := ValidateFactOperandTypeBinding(batch, typeMap, candidates)
+	result := validateFactOperandTypeBinding(batch, typeMap, candidates)
 	if len(result.Items) != 1 {
 		t.Fatalf("expected 1 item, got %d", len(result.Items))
 	}
@@ -593,7 +593,7 @@ func TestValidateFactOperandTypeBinding_ZeroOID(t *testing.T) {
 		{Ordinal: 0, Kind: EffectCandidateOperator, Arity: 2},
 	}
 	typeMap := map[int][]uint32{0: {0, 23}} // zero OID
-	result := ValidateFactOperandTypeBinding(batch, typeMap, candidates)
+	result := validateFactOperandTypeBinding(batch, typeMap, candidates)
 	if len(result.Items) != 1 {
 		t.Fatalf("expected 1 item, got %d", len(result.Items))
 	}
@@ -621,7 +621,7 @@ func TestValidateFactOperandTypeBinding_WrongLengthFact(t *testing.T) {
 		{Ordinal: 0, Kind: EffectCandidateOperator, Arity: 2},
 	}
 	typeMap := map[int][]uint32{0: {23, 23}}
-	result := ValidateFactOperandTypeBinding(batch, typeMap, candidates)
+	result := validateFactOperandTypeBinding(batch, typeMap, candidates)
 	if len(result.Items) != 1 {
 		t.Fatalf("expected 1 item, got %d", len(result.Items))
 	}
@@ -648,7 +648,7 @@ func TestValidateFactOperandTypeBinding_CountStar(t *testing.T) {
 	candidates := []EffectCandidate{
 		{Ordinal: 0, Kind: EffectCandidateFunction, Arity: 0},
 	}
-	result := ValidateFactOperandTypeBinding(batch, nil, candidates)
+	result := validateFactOperandTypeBinding(batch, nil, candidates)
 	if len(result.Items) != 1 {
 		t.Fatalf("expected 1 item, got %d", len(result.Items))
 	}
@@ -678,7 +678,7 @@ func TestValidateFactOperandTypeBinding_DirectColumnScalarArguments(t *testing.T
 		OperandColumnRefs: []OperandColumnRef{{Column: "name"}, {Column: "email"}},
 	}}
 
-	result := ValidateFactOperandTypeBinding(batch, map[int][]uint32{0: {25, 25}}, candidates)
+	result := validateFactOperandTypeBinding(batch, map[int][]uint32{0: {25, 25}}, candidates)
 	if len(result.Items) != 1 || result.Items[0].Status != domain.IdentityStatusResolved {
 		t.Fatalf("direct-column scalar type binding = %+v, want resolved", result.Items)
 	}
@@ -703,7 +703,7 @@ func TestValidateFactOperandTypeBinding_UnexpectedNonOperatorOrdinal(t *testing.
 		{Ordinal: 0, Kind: EffectCandidateFunction, Arity: 0},
 	}
 	typeMap := map[int][]uint32{0: {999}} // wrong types
-	result := ValidateFactOperandTypeBinding(batch, typeMap, candidates)
+	result := validateFactOperandTypeBinding(batch, typeMap, candidates)
 	if len(result.Items) != 1 {
 		t.Fatalf("expected 1 item, got %d", len(result.Items))
 	}
@@ -731,7 +731,7 @@ func TestValidateFactOperandTypeBinding_UnexpectedUnaryOperatorOrdinal(t *testin
 		{Ordinal: 0, Kind: EffectCandidateOperator, Arity: 1}, // unary
 	}
 	typeMap := map[int][]uint32{0: {999}} // wrong types
-	result := ValidateFactOperandTypeBinding(batch, typeMap, candidates)
+	result := validateFactOperandTypeBinding(batch, typeMap, candidates)
 	if len(result.Items) != 1 {
 		t.Fatalf("expected 1 item, got %d", len(result.Items))
 	}

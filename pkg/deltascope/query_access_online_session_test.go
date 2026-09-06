@@ -1,6 +1,6 @@
 // Package deltascope verifies the unified online query access session contract.
 // input: caller-owned *sql.Conn backed by configurable stub and recording drivers
-// output: contract evidence for signatures, opacity, ownership, validation priority, generic and PostgreSQL-version sentinels, direct MySQL/TiDB semantics including parse-failure, compatibility equivalence, and recording-driver no-execution/no-leak
+// output: contract evidence for signatures including identified-conn construction, opacity, ownership, validation priority, generic and PostgreSQL-version sentinels, direct MySQL/TiDB semantics including parse-failure, compatibility equivalence, and recording-driver no-execution/no-leak
 // pos: public unified online session contract tests (default and PostgreSQL-tagged builds)
 // note: if this file changes, update this header and module README.md.
 package deltascope
@@ -30,7 +30,44 @@ import (
 // constructor or analysis entry drifts from the reviewed contract.
 func TestOnlineQueryAccessSession_Signatures(t *testing.T) {
 	var _ func(context.Context, *sql.Conn) (*OnlineQueryAccessSession, error) = NewOnlineQueryAccessSessionFromConn
+	var _ func(*sql.Conn, *online.ServerIdentity) (*OnlineQueryAccessSession, error) = NewOnlineQueryAccessSessionFromIdentifiedConn
 	var _ func(context.Context, *OnlineQueryAccessSession, QueryAccessRequest) (*QueryAccessResult, error) = AnalyzeOnlineQueryAccessWithSession
+}
+
+func TestOnlineQueryAccessSessionFromIdentifiedConnReusesIdentity(t *testing.T) {
+	t.Parallel()
+
+	session, err := NewOnlineQueryAccessSessionFromIdentifiedConn(&sql.Conn{}, &online.ServerIdentity{
+		Product: online.ProductMySQL,
+		Series:  online.SeriesMySQL84,
+	})
+	if err != nil {
+		t.Fatalf("identified mysql session: %v", err)
+	}
+	if session == nil {
+		t.Fatal("expected session")
+	}
+
+	_, err = NewOnlineQueryAccessSessionFromIdentifiedConn(&sql.Conn{}, &online.ServerIdentity{
+		Product: online.ProductPostgreSQL,
+		Series:  online.SeriesMySQL84,
+	})
+	if !errors.Is(err, ErrOnlineQueryAccessPostgreSQLVersionUnsupported) {
+		t.Fatalf("expected pg version sentinel, got %v", err)
+	}
+
+	_, err = NewOnlineQueryAccessSessionFromIdentifiedConn(nil, &online.ServerIdentity{
+		Product: online.ProductMySQL,
+		Series:  online.SeriesMySQL84,
+	})
+	if !errors.Is(err, ErrOnlineQueryAccessSessionUnavailable) {
+		t.Fatalf("expected unavailable for nil conn, got %v", err)
+	}
+
+	_, err = NewOnlineQueryAccessSessionFromIdentifiedConn(&sql.Conn{}, nil)
+	if !errors.Is(err, ErrOnlineQueryAccessSessionUnavailable) {
+		t.Fatalf("expected unavailable for nil identity, got %v", err)
+	}
 }
 
 // TestOnlineQueryAccessSession_GenericSentinels pins the five generic online

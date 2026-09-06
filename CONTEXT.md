@@ -42,6 +42,10 @@ rule forbids the subject. Under the shipped baseline,
 `ddl.constraint.foreign_key.name.*` rules with reason `fk_forbid`.
 _Avoid_: missing, skipped, catalog gap
 
+**Mutation Target**:
+The table a DML statement writes. It is not every table named in FROM or JOIN.
+_Avoid_: mentioned tables, FROM list
+
 ## Connection
 
 **Transport Connection Resolution**:
@@ -65,8 +69,10 @@ server identity determines the supported dialect and analysis capability.
 _Avoid_: Caller-selected online profile, transport connection
 
 **Observed Server Identity**:
-The product and capability facts derived by an Online Query Access Session from
-its pinned connection; callers may constrain these facts but never supply them.
+The product and capability facts derived from a pinned connection. Transports
+that already identified the connection pass that identity into the Online Query
+Access Session; they do not probe again. Callers may constrain these facts but
+never supply them.
 _Avoid_: Requested dialect, caller identity
 
 **Online Capability**:

@@ -36,7 +36,7 @@ func Render(result report.Result, options Options) ([]byte, error) {
 		lines = append(lines, fmt.Sprintf("::notice title=Unsupported Statement %d::%s: %s", item.Index+1, item.Feature, item.Reason))
 	}
 	for _, diagnostic := range result.Diagnostics {
-		if diagnostic.Classification == "parser_error" {
+		if diagnostic.Classification == spec.DiagnosticParserError {
 			lines = append(lines, formatParserDiagnostic(diagnostic, options))
 		}
 	}

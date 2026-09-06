@@ -2,7 +2,7 @@
 // default policy and an optional YAML config file.
 // input: a rule ID, an optional config path, built-in default policy, the rule catalog,
 //
-//	and the existing Viper-backed policy loader
+//	rulepresence.Of, and the existing Viper-backed policy loader
 //
 // output: a stable Result describing whether the rule is ON or OFF, whether it is Loaded,
 //
@@ -22,6 +22,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/Fanduzi/DeltaScope/internal/application/rulepresence"
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule/catalog"
@@ -157,7 +158,14 @@ func Inspect(ctx context.Context, req Request) (Result, error) {
 	if currentRule.Enabled {
 		state = "on"
 	}
-	suppression := foreignKeyNamingSuppression(currentPolicy, req.RuleID)
+	presence, err := rulepresence.Of(req.RuleID, currentPolicy)
+	if err != nil {
+		return Result{}, err
+	}
+	var suppression *Suppression
+	if presence.SuppressionReason != "" {
+		suppression = &Suppression{Reason: presence.SuppressionReason, By: presence.SuppressionBy}
+	}
 
 	return Result{
 		RuleID: req.RuleID,
@@ -165,7 +173,7 @@ func Inspect(ctx context.Context, req Request) (Result, error) {
 			Enabled: currentRule.Enabled,
 			Level:   currentRule.Level,
 			State:   state,
-			Loaded:  currentRule.Enabled && suppression == nil,
+			Loaded:  presence.Loaded,
 		},
 		Default:            snapshotRulePolicy(defaultRule),
 		Current:            snapshotRulePolicy(currentRule),
@@ -173,16 +181,6 @@ func Inspect(ctx context.Context, req Request) (Result, error) {
 		Suppression:        suppression,
 		RuleDetailsCommand: fmt.Sprintf("deltascope rules explain %s", req.RuleID),
 	}, nil
-}
-
-func foreignKeyNamingSuppression(cfg policy.Policy, ruleID string) *Suppression {
-	if !policy.SuppressesForeignKeyNaming(cfg, ruleID) {
-		return nil
-	}
-	return &Suppression{
-		Reason: policy.ForeignKeyNamingSuppressionReason,
-		By:     policy.ForeignKeyForbidRuleID,
-	}
 }
 
 // snapshotRulePolicy clones a RulePolicy into an immutable snapshot.

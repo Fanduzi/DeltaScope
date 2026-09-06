@@ -252,7 +252,7 @@ func (s *Service) resolveAndProveEffects(ctx context.Context, req QueryAccessReq
 		return nil
 	}
 
-	phase1Eligible, phase1Reason := ValidatePhase1PureEffectCandidates(extracted.EffectCandidates)
+	phase1Eligible, phase1Reason := validatePhase1PureEffectCandidates(extracted.EffectCandidates)
 	if !phase1Eligible {
 		return &trustProofResult{
 			decision:    TrustDecisionHasUnproven,
@@ -297,7 +297,7 @@ func (s *Service) resolveAndProveEffects(ctx context.Context, req QueryAccessReq
 	}
 
 	// INV-3, INV-7: Validate initial/final context compatibility.
-	if err := ValidateResolutionContextForPromotion(resolutionCtx, finalCtx, extracted.EffectCandidates); err != nil {
+	if err := validateResolutionContextForPromotion(resolutionCtx, finalCtx, extracted.EffectCandidates); err != nil {
 		return &trustProofResult{
 			decision:    TrustDecisionHasUnknown,
 			reasonCodes: []domain.ReasonCode{domain.ReasonIdentityLookupFailed},
@@ -305,7 +305,7 @@ func (s *Service) resolveAndProveEffects(ctx context.Context, req QueryAccessReq
 	}
 
 	// INV-6: Validate raw batch ordinals BEFORE completion/normalization.
-	if err := ValidateBatchOrdinals(batch, extracted.EffectCandidates); err != nil {
+	if err := validateBatchOrdinals(batch, extracted.EffectCandidates); err != nil {
 		return &trustProofResult{
 			decision:    TrustDecisionHasUnknown,
 			reasonCodes: []domain.ReasonCode{domain.ReasonIdentityLookupFailed},
@@ -315,7 +315,7 @@ func (s *Service) resolveAndProveEffects(ctx context.Context, req QueryAccessReq
 	// INV-4, INV-5: Validate every resolved fact against final context.
 	for i := range batch.Items {
 		if batch.Items[i].Status == domain.IdentityStatusResolved && batch.Items[i].Facts != nil {
-			if !ValidateFactPinning(batch.Items[i].Facts, finalCtx) {
+			if !validateFactPinning(batch.Items[i].Facts, finalCtx) {
 				batch.Items[i].Status = domain.IdentityStatusUnavailable
 				batch.Items[i].Facts = nil
 			}
@@ -323,20 +323,20 @@ func (s *Service) resolveAndProveEffects(ctx context.Context, req QueryAccessReq
 	}
 
 	// Validate candidate-to-fact binding: facts must match the expected candidate shape.
-	batch = ValidateCandidateFactBinding(batch, extracted.EffectCandidates)
+	batch = validateCandidateFactBinding(batch, extracted.EffectCandidates)
 
 	// Validate operand-type binding: cross-check atomic resolver's type map against
 	// returned fact OperandTypeOIDs. Detects same-name overload swaps.
-	batch = ValidateFactOperandTypeBinding(batch, resolvedTypeOIDs, extracted.EffectCandidates)
+	batch = validateFactOperandTypeBinding(batch, resolvedTypeOIDs, extracted.EffectCandidates)
 
 	// Complete batch to ensure one item per candidate ordinal.
-	batch = CompleteEffectIdentityBatch(identityReq, batch)
+	batch = completeEffectIdentityBatch(identityReq, batch)
 
 	// Apply trust policy.
 	serverVersionNum := extractServerVersionFromBatch(batch)
 	decision := s.trusted.trustPolicy.IsTrusted(batch, serverVersionNum)
 
-	reasonCodes := FailClosedReasonCodes(batch)
+	reasonCodes := failClosedReasonCodes(batch)
 
 	return &trustProofResult{
 		decision:    decision,

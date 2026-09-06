@@ -9,7 +9,7 @@ Stable public package surface for library consumers.
 | doc.go | Declares the public package placeholder |
 | audit.go | Exposes the stable public audit API, optional metadata-provider hooks, and public result/request types |
 | query_access.go | Exposes the stable public query access analysis API, schema resolver interface, and public result/request types |
-| query_access_online_session.go | Exposes the opaque unified online query access session, bounded sentinel errors including the PostgreSQL PG17 version boundary, and MySQL/TiDB/PG17 routing through shared private proof cores |
+| query_access_online_session.go | Exposes the opaque unified online query access session, identified-conn constructor that skips a second identity probe, bounded sentinel errors including the PostgreSQL PG17 version boundary, and MySQL/TiDB/PG17 routing through shared private proof cores |
 | query_access_online_capability.go | Holds the single private capability-target routing definition for the unified online entry (MySQL/TiDB always linked; PG17 delegated to the build-tag leaf) |
 | query_access_online_capability_postgresql.go | Reports PostgreSQL capability as linked when built with the postgresql tag (postgresql build tag) |
 | query_access_online_capability_notag.go | Reports PostgreSQL capability as not linked when built without the postgresql tag; unified PG17 fails closed with the capability sentinel |
@@ -89,7 +89,8 @@ Stable public package surface for library consumers.
   Column reference with `Unbound` field indicating the column could not be resolved to a qualified schema.table.column
 - `OnlineQueryAccessSession` (canonical)
   Opaque unified wrapper for a caller-owned `*sql.Conn`; construction pings and identifies the server and derives a private routing target. Exposes no identity, product, profile, capability, connection state, exported field, or getter, and marshals as `{}`
-- `NewOnlineQueryAccessSessionFromConn(ctx, conn)` (canonical)
+- `NewOnlineQueryAccessSessionFromConn(ctx, conn)`
+- `NewOnlineQueryAccessSessionFromIdentifiedConn(conn, identity)` (canonical)
   Creates a unified online session from a caller-owned `*sql.Conn`; never opens, pools, closes, or retries the connection. Nil context/connection, failed liveness, and untrustworthy identity map to `ErrOnlineQueryAccessSessionUnavailable`; a reachable PostgreSQL identity outside PG17 maps to `ErrOnlineQueryAccessPostgreSQLVersionUnsupported`; other recognized unsupported capabilities map to `ErrOnlineQueryAccessCapabilityUnsupported`. Official DeltaScope binaries are built with the postgresql tag and route PostgreSQL 17 through the same-connection trusted proof
 - `AnalyzeOnlineQueryAccessWithSession(ctx, session, req)` (canonical)
   Unified online analysis entry with a fixed validation priority (session/context; dialect mismatch; profile; resolver; linked capability; existing request validation). Empty request dialect uses observed identity; a non-empty dialect is a constraint that must match. Routes MySQL 5.7/8.0/8.4, TiDB 8.5, and PostgreSQL 17 (postgresql build tag) through their existing private proof cores; the no-tag source build keeps PostgreSQL fail-closed with the capability sentinel

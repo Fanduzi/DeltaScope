@@ -28,6 +28,16 @@ var (
 	analyzeOnlineQueryAccessWithSession = deltascope.AnalyzeOnlineQueryAccessWithSession
 )
 
+func attachOnlineQueryAccessSession(ctx context.Context, session *online.Session) (*deltascope.OnlineQueryAccessSession, error) {
+	if session == nil {
+		return newOnlineQueryAccessSessionFromConn(ctx, nil)
+	}
+	if session.Identity != nil {
+		return deltascope.NewOnlineQueryAccessSessionFromIdentifiedConn(session.Conn, session.Identity)
+	}
+	return newOnlineQueryAccessSessionFromConn(ctx, session.Conn)
+}
+
 const (
 	exitQueryAccessAdmissible    = 0
 	exitQueryAccessRejected      = 1
@@ -236,7 +246,7 @@ func runQueryAccessOnline(cmd *cobra.Command, sql string, dialect spec.Dialect, 
 	}
 	defer session.Close()
 
-	queryAccessSession, err := newOnlineQueryAccessSessionFromConn(cmd.Context(), session.Conn)
+	queryAccessSession, err := attachOnlineQueryAccessSession(cmd.Context(), session)
 	if err != nil {
 		*exitCode = exitQueryAccessUsageError
 		return mapOnlineCLIBoundaryError(err)

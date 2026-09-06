@@ -36,6 +36,16 @@ var (
 	analyzeOnlineQueryAccessWithSession = deltascope.AnalyzeOnlineQueryAccessWithSession
 )
 
+func attachOnlineQueryAccessSession(ctx context.Context, session *online.Session) (*deltascope.OnlineQueryAccessSession, error) {
+	if session == nil {
+		return newOnlineQueryAccessSessionFromConn(ctx, nil)
+	}
+	if session.Identity != nil {
+		return deltascope.NewOnlineQueryAccessSessionFromIdentifiedConn(session.Conn, session.Identity)
+	}
+	return newOnlineQueryAccessSessionFromConn(ctx, session.Conn)
+}
+
 func handleQueryAccess(w http.ResponseWriter, r *http.Request, registry *runtimeconfig.Registry) {
 	defer r.Body.Close()
 
@@ -167,7 +177,7 @@ func handleQueryAccessOnline(
 	}
 	defer session.Close()
 
-	queryAccessSession, err := newOnlineQueryAccessSessionFromConn(r.Context(), session.Conn)
+	queryAccessSession, err := attachOnlineQueryAccessSession(r.Context(), session)
 	if err != nil {
 		code, message := mapOnlineQueryAccessConstructorError(err)
 		writeError(w, http.StatusBadGateway, code, message)

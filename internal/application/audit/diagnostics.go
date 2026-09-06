@@ -1,3 +1,8 @@
+// Package audit orchestrates audit use cases at the application layer.
+// input: dialect and failed SQL text for parser-error and unsupported diagnostics
+// output: bounded Diagnostic values using spec.DiagnosticParserError
+// pos: application diagnostic construction for incomplete audits
+// note: if this file changes, update this header and module README.md.
 package audit
 
 import (
@@ -8,7 +13,7 @@ import (
 
 const (
 	// DiagnosticParserError classifies parser-error outcomes.
-	DiagnosticParserError = "parser_error"
+	DiagnosticParserError = spec.DiagnosticParserError
 	// DiagnosticUnsupportedStatement classifies structured unsupported outcomes.
 	DiagnosticUnsupportedStatement = "unsupported_statement"
 

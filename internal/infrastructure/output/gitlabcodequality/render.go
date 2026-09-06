@@ -37,7 +37,7 @@ func Render(result report.Result, options Options) ([]byte, error) {
 		issues = append(issues, buildIssue(finding, path))
 	}
 	for _, diagnostic := range result.Diagnostics {
-		if diagnostic.Classification == "parser_error" {
+		if diagnostic.Classification == spec.DiagnosticParserError {
 			issues = append(issues, buildDiagnosticIssue(diagnostic, path))
 		}
 	}

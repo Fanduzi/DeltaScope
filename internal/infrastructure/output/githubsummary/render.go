@@ -12,6 +12,7 @@ import (
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule/catalog"
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/output"
 )
 
@@ -123,7 +124,7 @@ func writeUnsupported(builder *strings.Builder, count int) {
 func writeUnaudited(builder *strings.Builder, result report.Result) {
 	count := 0
 	for _, diagnostic := range result.Diagnostics {
-		if diagnostic.Classification == "parser_error" && !diagnostic.Audited {
+		if diagnostic.Classification == spec.DiagnosticParserError && !diagnostic.Audited {
 			count++
 		}
 	}

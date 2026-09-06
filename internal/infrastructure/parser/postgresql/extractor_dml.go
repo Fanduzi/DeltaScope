@@ -2,7 +2,7 @@
 
 // Package postgresql extracts PostgreSQL DML into normalized statement facts.
 // input: PostgreSQL DML AST nodes from pg_query_go
-// output: parser-neutral DML operations, target tables, and bounded predicate facts
+// output: parser-neutral DML operations, mentioned tables, MutationTargets, and bounded predicate facts
 // pos: PostgreSQL parser adapter DML extraction beneath the application audit flow
 // note: if this file changes, update this header and module README.md.
 package postgresql
@@ -15,11 +15,13 @@ import (
 )
 
 func extractInsert(stmt *pg_query.InsertStmt) *spec.DML {
+	tables := singleTableSlice(tableFromRangeVar(stmt.GetRelation()))
 	return &spec.DML{
-		Operation:      spec.DMLOperationInsert,
-		Tables:         singleTableSlice(tableFromRangeVar(stmt.GetRelation())),
-		IsInsertSelect: isInsertSelect(stmt),
-		HasOnDuplicate: false,
+		Operation:       spec.DMLOperationInsert,
+		Tables:          tables,
+		MutationTargets: tables,
+		IsInsertSelect:  isInsertSelect(stmt),
+		HasOnDuplicate:  false,
 	}
 }
 
@@ -49,15 +51,16 @@ func extractMutationDML(operation spec.DMLOperation, relation *pg_query.RangeVar
 	isSingleTable := len(tables) == 1 && !hasJoin
 	shape, lookupColumns, matchedKeyName, matchedKeyKind := extractMutationPredicateShape(where, hasJoin, isSingleTable)
 	return &spec.DML{
-		Operation:      operation,
-		Tables:         tables,
-		HasWhere:       where != nil,
-		HasJoin:        hasJoin,
-		PredicateShape: shape,
-		LookupColumns:  lookupColumns,
-		MatchedKeyName: matchedKeyName,
-		MatchedKeyKind: matchedKeyKind,
-		IsSingleTable:  isSingleTable,
+		Operation:       operation,
+		Tables:          tables,
+		MutationTargets: tables,
+		HasWhere:        where != nil,
+		HasJoin:         hasJoin,
+		PredicateShape:  shape,
+		LookupColumns:   lookupColumns,
+		MatchedKeyName:  matchedKeyName,
+		MatchedKeyKind:  matchedKeyKind,
+		IsSingleTable:   isSingleTable,
 	}
 }
 

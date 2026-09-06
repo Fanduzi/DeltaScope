@@ -45,7 +45,7 @@ func Render(result report.Result, options Options) ([]byte, error) {
 		collectFinding(finding)
 	}
 	for _, diagnostic := range result.Diagnostics {
-		if diagnostic.Classification != "parser_error" {
+		if diagnostic.Classification != spec.DiagnosticParserError {
 			continue
 		}
 		if _, exists := ruleMeta[diagnostic.Classification]; !exists {

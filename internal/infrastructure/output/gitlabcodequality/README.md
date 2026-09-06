@@ -6,7 +6,7 @@ Renders audit results as GitLab Code Quality JSON.
 
 | File | Responsibility |
 |------|----------------|
-| `render.go` | Converts findings and located parser-error diagnostics into deterministic GitLab Code Quality issues |
+| `render.go` | Converts findings and located parser-error diagnostics (`spec.DiagnosticParserError`) into deterministic GitLab Code Quality issues |
 | `render_test.go` | Verifies finding mapping, fingerprints, locations, no-leak behavior, and parser-error issues |
 
 ## Exports

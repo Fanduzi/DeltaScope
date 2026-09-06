@@ -1,6 +1,6 @@
 // Package markdown verifies Markdown rendering behavior.
 // input: representative internal audit results with statement and global findings
-// output: regression coverage for deterministic Markdown rendering
+// output: regression coverage for deterministic Markdown rendering including unsupported statements and diagnostics
 // pos: infrastructure output test coverage for the Markdown renderer
 // note: if this file changes, update this header and module README.md.
 package markdown
@@ -11,6 +11,7 @@ import (
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
 func TestRenderIncludesSummaryAndStatementFindings(t *testing.T) {
@@ -47,6 +48,38 @@ func TestRenderIncludesSummaryAndStatementFindings(t *testing.T) {
 	assertContains(t, output, "## Statement 1")
 	assertContains(t, output, "`dml.where.require`")
 	assertContains(t, output, "Suggestion: add a WHERE clause")
+}
+
+func TestRenderIncludesUnsupportedAndDiagnostics(t *testing.T) {
+	t.Parallel()
+	rendered, err := Render(report.Result{
+		Verdict: report.VerdictReview,
+		Summary: report.Summary{Statements: 0},
+		Unsupported: []spec.UnsupportedDetail{{
+			Index:   0,
+			Feature: "select",
+			Reason:  "SELECT is not audited",
+		}},
+		Diagnostics: []spec.Diagnostic{{
+			Classification: spec.DiagnosticParserError,
+			Reason:         "statement could not be parsed",
+			ActionHint:     "fix the SQL syntax",
+			Audited:        false,
+			Dialect:        "mysql",
+			Line:           2,
+			Column:         1,
+		}},
+	})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+	output := string(rendered)
+	assertContains(t, output, "## Unsupported Statements")
+	assertContains(t, output, "- Statement 1: `select` — SELECT is not audited")
+	assertContains(t, output, "## Diagnostics")
+	assertContains(t, output, "classification: parser_error")
+	assertContains(t, output, "line: 2")
+	assertNotContains(t, output, "SELECT 1")
 }
 
 func TestRenderIncludesGlobalFindings(t *testing.T) {

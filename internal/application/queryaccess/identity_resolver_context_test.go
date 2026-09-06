@@ -43,7 +43,7 @@ func resolvedFacts(objectOID, ns uint32, rc EffectIdentityResolutionContext) *Ef
 func TestCandidateExplicitQualification(t *testing.T) {
 	t.Parallel()
 	unqual := EffectCandidate{Kind: EffectCandidateFunction, NamePath: []string{"count"}, Ordinal: 0}
-	if CandidateExplicitlyQualified(unqual) || CandidateExplicitPgCatalog(unqual) {
+	if CandidateExplicitlyQualified(unqual) || candidateExplicitPgCatalog(unqual) {
 		t.Fatalf("unqualified count must not be treated as explicit pg_catalog")
 	}
 	op := EffectCandidate{Kind: EffectCandidateOperator, NamePath: []string{"="}, Ordinal: 1}
@@ -54,24 +54,24 @@ func TestCandidateExplicitQualification(t *testing.T) {
 		Kind: EffectCandidateFunction, NamePath: []string{"pg_catalog", "count"},
 		ExplicitSchema: true, Ordinal: 2,
 	}
-	if !CandidateExplicitlyQualified(explicit) || !CandidateExplicitPgCatalog(explicit) {
+	if !CandidateExplicitlyQualified(explicit) || !candidateExplicitPgCatalog(explicit) {
 		t.Fatal("pg_catalog.count must be explicit pg_catalog")
 	}
-	if CandidateExplicitSchemaName(explicit) != PgCatalogNamespaceName {
-		t.Fatalf("schema=%q", CandidateExplicitSchemaName(explicit))
+	if candidateExplicitSchemaName(explicit) != PgCatalogNamespaceName {
+		t.Fatalf("schema=%q", candidateExplicitSchemaName(explicit))
 	}
 	publicUDF := EffectCandidate{
 		Kind: EffectCandidateFunction, NamePath: []string{"public", "count"},
 		ExplicitSchema: true, Ordinal: 3,
 	}
-	if !CandidateExplicitlyQualified(publicUDF) || CandidateExplicitPgCatalog(publicUDF) {
+	if !CandidateExplicitlyQualified(publicUDF) || candidateExplicitPgCatalog(publicUDF) {
 		t.Fatal("public.count is explicit but not pg_catalog")
 	}
 	cast := EffectCandidate{
 		Kind: EffectCandidateCast, TargetTypePath: []string{"pg_catalog", "text"},
 		ExplicitSchema: true, Ordinal: 4,
 	}
-	if !CandidateExplicitPgCatalog(cast) {
+	if !candidateExplicitPgCatalog(cast) {
 		t.Fatal("pg_catalog.text cast must be explicit pg_catalog")
 	}
 }
@@ -128,7 +128,7 @@ func TestResolutionContext_CompatibilityStrict(t *testing.T) {
 	t.Parallel()
 	a := completeBoundContext()
 	b := completeBoundContext()
-	if !ResolutionContextSessionCompatible(a, b) || !ResolutionContextsCompatible(a, b) {
+	if !ResolutionContextSessionCompatible(a, b) || !resolutionContextsCompatible(a, b) {
 		t.Fatal("identical complete contexts must be compatible")
 	}
 
@@ -167,7 +167,7 @@ func TestResolutionContext_CompatibilityStrict(t *testing.T) {
 		if ResolutionContextSessionCompatible(a, b) {
 			t.Fatalf("mismatch still compatible: %+v", b)
 		}
-		if ResolutionContextsCompatible(a, b) {
+		if resolutionContextsCompatible(a, b) {
 			t.Fatalf("full compat must fail on session mismatch: %+v", b)
 		}
 	}
@@ -178,10 +178,10 @@ func TestResolutionContext_CompatibilityStrict(t *testing.T) {
 	if !ResolutionContextSessionCompatible(a, b) {
 		t.Fatal("path reorder must not break session compatibility")
 	}
-	if ResolutionContextsCompatible(a, b) {
+	if resolutionContextsCompatible(a, b) {
 		t.Fatal("path reorder must break full compatibility")
 	}
-	if ResolutionContextSearchPathCompatible(a, b) {
+	if resolutionContextSearchPathCompatible(a, b) {
 		t.Fatal("reordered path must not be path-compatible")
 	}
 }
@@ -236,7 +236,7 @@ func TestGate_UnqualifiedWithoutContextUnavailable_NotPgCatalogGuess(t *testing.
 			Facts: &EffectIdentityFacts{ObjectOID: 96, NamespaceOID: 11, DatabaseOID: 1, ServerVersionNum: 160004},
 		},
 	}}
-	gated := GateIdentityBatchByResolutionContext(req, guessed)
+	gated := gateIdentityBatchByResolutionContext(req, guessed)
 	for _, it := range gated.Items {
 		if it.Status != domain.IdentityStatusUnavailable || it.Facts != nil {
 			t.Errorf("unbound must discard all facts: %+v", it)
@@ -257,7 +257,7 @@ func TestGate_ExplicitSchemaRequiresSessionComplete(t *testing.T) {
 		Ordinal: 0, Status: domain.IdentityStatusResolved,
 		Facts: &EffectIdentityFacts{ObjectOID: 2803, NamespaceOID: 11, DatabaseOID: 1, ServerVersionNum: 160004},
 	}}}
-	gated := GateIdentityBatchByResolutionContext(req, batch)
+	gated := gateIdentityBatchByResolutionContext(req, batch)
 	if gated.Items[0].Status != domain.IdentityStatusUnavailable || gated.Items[0].Facts != nil {
 		t.Fatalf("explicit schema without session-complete context must drop facts: %+v", gated.Items[0])
 	}
@@ -270,7 +270,7 @@ func TestGate_ExplicitSchemaRequiresSessionComplete(t *testing.T) {
 	batch = EffectIdentityBatch{Items: []EffectIdentityItem{{
 		Ordinal: 0, Status: domain.IdentityStatusResolved, Facts: facts,
 	}}}
-	gated = GateIdentityBatchByResolutionContext(req, batch)
+	gated = gateIdentityBatchByResolutionContext(req, batch)
 	if gated.Items[0].Status != domain.IdentityStatusResolved || gated.Items[0].Facts == nil {
 		t.Fatalf("explicit with session-complete may keep facts: %+v", gated.Items[0])
 	}
@@ -291,7 +291,7 @@ func TestGate_ZeroFieldAndUnpinnedFactsUnavailable(t *testing.T) {
 		{Ordinal: 0, Status: domain.IdentityStatusResolved, Facts: &EffectIdentityFacts{ObjectOID: 1, NamespaceOID: 11}},
 		{Ordinal: 1, Status: domain.IdentityStatusResolved, Facts: &EffectIdentityFacts{ObjectOID: 2, NamespaceOID: 11}},
 	}}
-	gated := GateIdentityBatchByResolutionContext(req, batch)
+	gated := gateIdentityBatchByResolutionContext(req, batch)
 	for _, it := range gated.Items {
 		if it.Status != domain.IdentityStatusUnavailable || it.Facts != nil {
 			t.Errorf("unpinned facts must be unavailable: %+v", it)
@@ -305,7 +305,7 @@ func TestGate_ZeroFieldAndUnpinnedFactsUnavailable(t *testing.T) {
 		{Ordinal: 0, Status: domain.IdentityStatusResolved, Facts: bad},
 		{Ordinal: 1, Status: domain.IdentityStatusResolved, Facts: resolvedFacts(2, 11, rc)},
 	}}
-	gated = GateIdentityBatchByResolutionContext(req, batch)
+	gated = gateIdentityBatchByResolutionContext(req, batch)
 	if gated.Items[0].Status != domain.IdentityStatusUnavailable {
 		t.Errorf("wrong DatabaseOID on facts: %+v", gated.Items[0])
 	}
@@ -320,7 +320,7 @@ func TestGate_ZeroFieldAndUnpinnedFactsUnavailable(t *testing.T) {
 		{Ordinal: 0, Status: domain.IdentityStatusResolved, Facts: resolvedFacts(1, 11, rc)},
 		{Ordinal: 1, Status: domain.IdentityStatusResolved, Facts: badVer},
 	}}
-	gated = GateIdentityBatchByResolutionContext(req, batch)
+	gated = gateIdentityBatchByResolutionContext(req, batch)
 	if gated.Items[1].Status != domain.IdentityStatusUnavailable {
 		t.Errorf("wrong ServerVersionNum on facts: %+v", gated.Items[1])
 	}
@@ -342,7 +342,7 @@ func TestGate_SearchPathShadowing_UnqualifiedUsesBoundContextNotNameAllowlist(t 
 	batch := EffectIdentityBatch{Items: []EffectIdentityItem{{
 		Ordinal: 0, Status: domain.IdentityStatusResolved, Facts: facts,
 	}}}
-	gated := GateIdentityBatchByResolutionContext(req, batch)
+	gated := gateIdentityBatchByResolutionContext(req, batch)
 	if gated.Items[0].Status != domain.IdentityStatusResolved {
 		t.Fatalf("bound unqualified may resolve under path: %+v", gated.Items[0])
 	}
@@ -365,7 +365,7 @@ func TestGate_OverloadAmbiguousFailClosed(t *testing.T) {
 		domain.IdentityStatusUnknown,
 	} {
 		batch := EffectIdentityBatch{Items: []EffectIdentityItem{{Ordinal: 0, Status: st}}}
-		gated := GateIdentityBatchByResolutionContext(req, batch)
+		gated := gateIdentityBatchByResolutionContext(req, batch)
 		if gated.Items[0].Status != st || gated.Items[0].Facts != nil {
 			t.Errorf("status %s: got %+v", st, gated.Items[0])
 		}
@@ -391,7 +391,7 @@ func TestGate_SameNameCustomOperator_NotTrustedByContract(t *testing.T) {
 	batch := EffectIdentityBatch{Items: []EffectIdentityItem{{
 		Ordinal: 0, Status: domain.IdentityStatusResolved, Facts: facts,
 	}}}
-	gated := GateIdentityBatchByResolutionContext(req, batch)
+	gated := gateIdentityBatchByResolutionContext(req, batch)
 	if gated.Items[0].Status != domain.IdentityStatusResolved {
 		t.Fatalf("explicit public operator may resolve as facts: %+v", gated.Items[0])
 	}
@@ -585,7 +585,7 @@ func TestFakeResolver_UnqualifiedRequiresCompleteContext(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	batch = GateIdentityBatchByResolutionContext(req, batch)
+	batch = gateIdentityBatchByResolutionContext(req, batch)
 	if batch.Items[0].Status != domain.IdentityStatusUnavailable {
 		t.Errorf("unqualified unbound: %+v", batch.Items[0])
 	}
@@ -639,7 +639,7 @@ func (f *contextAwareFakeResolver) ResolveEffectIdentities(ctx context.Context, 
 			continue
 		}
 		ns := uint32(11)
-		if CandidateExplicitSchemaName(c) == "public" {
+		if candidateExplicitSchemaName(c) == "public" {
 			ns = 2200
 		}
 		if !CandidateExplicitlyQualified(c) && len(req.Resolution.NamespaceSearchOIDs) > 0 &&

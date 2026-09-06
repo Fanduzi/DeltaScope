@@ -6,7 +6,7 @@ Renders concise GitHub-flavored Markdown for GitHub Actions job summaries (`$GIT
 
 | File | Responsibility |
 |------|----------------|
-| render.go | Formats `report.Result` into a short SQL review summary with verdict/counts, Action Summary, unsupported count, and parser-failed statement count |
+| render.go | Formats `report.Result` into a short SQL review summary with verdict/counts, Action Summary, unsupported count, and unaudited parser-error count via `spec.DiagnosticParserError` |
 | render_test.go | Verifies clean/finding summaries, no-leak behavior, unsupported counts, and parser diagnostics are counted without miscounting aggregate unsupported diagnostics |
 
 ## Exports
@@ -98,7 +98,7 @@ No findings.
 
 ## Dependencies
 - Upstream: CLI audit adapter (formats dispatch)
-- Downstream: `internal/domain/report`, `internal/domain/rule/catalog`, `internal/infrastructure/output`
+- Downstream: `internal/domain/report`, `internal/domain/rule/catalog`, `internal/domain/spec`, `internal/infrastructure/output`
 
 ## Update Rule
 - If members/interfaces/dependencies change, update this file in same change.

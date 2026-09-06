@@ -6,8 +6,8 @@ Default human-readable renderer for internal audit results.
 
 | File | Responsibility |
 |------|---------------|
-| render.go | Formats audit results into deterministic Markdown, including the derived Action Summary and aggregated skip reasons for loaded-but-inapplicable rules (`dialect_mismatch`) |
-| render_test.go | Verifies summary, statement findings, global finding rendering, the Action Summary section, and the rule summary aggregation |
+| render.go | Formats audit results into deterministic Markdown, including Action Summary, skip reasons, unsupported statements, and diagnostics |
+| render_test.go | Verifies summary, statement findings, global finding rendering, the Action Summary section, the rule summary aggregation, unsupported statements, and diagnostics |
 
 ## Exports
 

@@ -1,5 +1,10 @@
 //go:build postgresql
 
+// Package queryaccess verifies adversarial candidate-to-fact binding.
+// input: mismatched operator names, schemas, and operand facts
+// output: fail-closed identity batches when resolved facts do not match candidates
+// pos: PostgreSQL-tagged binding safety tests for identity helpers
+// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (
@@ -105,7 +110,7 @@ func TestAdversarial_CandidateFactBinding_Swap(t *testing.T) {
 	}
 
 	// DEFECT: On 374fb95, this incorrectly promotes because:
-	// - ValidateCandidateFactBinding passes (kind=operator, arity=2)
+	// - validateCandidateFactBinding passes (kind=operator, arity=2)
 	// - TrustPolicy.IsTrusted passes (both signatures in manifest)
 	// - But the facts are SWAPPED between candidates!
 	//
@@ -162,7 +167,7 @@ func TestAdversarial_CandidateFactBinding_NonManifestOperator(t *testing.T) {
 		},
 	}
 
-	// Directly test ValidateCandidateFactBinding with mismatched names
+	// Directly test validateCandidateFactBinding with mismatched names
 	batch := EffectIdentityBatch{
 		Items: []EffectIdentityItem{
 			{
@@ -195,9 +200,9 @@ func TestAdversarial_CandidateFactBinding_NonManifestOperator(t *testing.T) {
 		},
 	}
 
-	// ValidateCandidateFactBinding should reject this because the resolved
+	// validateCandidateFactBinding should reject this because the resolved
 	// object name "=" doesn't match the candidate name "my_custom_op"
-	result := ValidateCandidateFactBinding(batch, candidates)
+	result := validateCandidateFactBinding(batch, candidates)
 	if len(result.Items) != 1 {
 		t.Fatalf("expected 1 item, got %d", len(result.Items))
 	}
@@ -211,7 +216,7 @@ func TestAdversarial_CandidateFactBinding_NonManifestOperator(t *testing.T) {
 // TestAdversarial_CandidateFactBinding_ExplicitSchemaMismatch proves that
 // explicit-schema intent must match.
 func TestAdversarial_CandidateFactBinding_ExplicitSchemaMismatch(t *testing.T) {
-	// Test ValidateCandidateFactBinding directly with explicit schema mismatch
+	// Test validateCandidateFactBinding directly with explicit schema mismatch
 	batch := EffectIdentityBatch{
 		Items: []EffectIdentityItem{
 			{
@@ -245,9 +250,9 @@ func TestAdversarial_CandidateFactBinding_ExplicitSchemaMismatch(t *testing.T) {
 		},
 	}
 
-	// ValidateCandidateFactBinding should reject this because the candidate
+	// validateCandidateFactBinding should reject this because the candidate
 	// explicitly expects "public" schema but fact is from "pg_catalog"
-	result := ValidateCandidateFactBinding(batch, candidates)
+	result := validateCandidateFactBinding(batch, candidates)
 	if len(result.Items) != 1 {
 		t.Fatalf("expected 1 item, got %d", len(result.Items))
 	}

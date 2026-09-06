@@ -1,6 +1,6 @@
 // Package httpapi verifies the HTTP query access adapter structure.
 // input: HTTP query access source and online routing implementation
-// output: structural evidence that online Query Access uses the unified SDK entry
+// output: structural evidence that online Query Access uses the unified SDK entry and reuses Observed Server Identity
 // pos: HTTP migration contract tests
 // note: if this file changes, update this header and module README.md.
 package httpapi
@@ -61,11 +61,25 @@ func TestHandleQueryAccessOnlineUsesUnifiedQueryAccessEntry(t *testing.T) {
 		}
 	}
 	for _, required := range []string{
-		"newOnlineQueryAccessSessionFromConn",
+		"attachOnlineQueryAccessSession",
 		"analyzeOnlineQueryAccessWithSession",
 	} {
 		if !strings.Contains(bodyText, required) {
 			t.Errorf("handleQueryAccessOnline must use unified entry seam: %s", required)
 		}
+	}
+}
+
+func TestAttachOnlineQueryAccessSessionReusesObservedIdentity(t *testing.T) {
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("runtime.Caller failed")
+	}
+	source, err := os.ReadFile(filepath.Join(filepath.Dir(filename), "query_access.go"))
+	if err != nil {
+		t.Fatalf("read query_access.go: %v", err)
+	}
+	if !strings.Contains(string(source), "NewOnlineQueryAccessSessionFromIdentifiedConn") {
+		t.Fatal("attachOnlineQueryAccessSession must reuse Observed Server Identity")
 	}
 }

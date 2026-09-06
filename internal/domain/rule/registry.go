@@ -120,6 +120,16 @@ func (r *Registry) LoadedStatementRuleCount() int {
 	return len(r.statementRules)
 }
 
+// Contains reports whether a statement or global rule ID is Loaded.
+func (r *Registry) Contains(id string) bool {
+	if r == nil {
+		return false
+	}
+	_, statement := r.statementIDs[id]
+	_, global := r.globalIDs[id]
+	return statement || global
+}
+
 // EvaluateStatementDetailed applies all statement rules and returns findings alongside
 // skipped-rule metadata for rules that did not apply with an inferable reason.
 func (r *Registry) EvaluateStatementDetailed(ctx context.Context, statement spec.Statement) (StatementEvaluation, error) {

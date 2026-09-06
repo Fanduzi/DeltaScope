@@ -71,7 +71,7 @@ func TestPhase1Eligibility_ScalarDirectColumnsEligible(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			ok, reason := ValidatePhase1PureEffectCandidates([]EffectCandidate{tc.cand})
+			ok, reason := validatePhase1PureEffectCandidates([]EffectCandidate{tc.cand})
 			if !ok {
 				t.Errorf("expected eligible, got reason: %s", reason)
 			}
@@ -94,7 +94,7 @@ func TestPhase1Eligibility_ScalarSingleLiteralOnlyNotEligible(t *testing.T) {
 		OperandKinds:         []string{"const"},
 		OperandColumnRefs:    nil,
 	}
-	ok, _ := ValidatePhase1PureEffectCandidates([]EffectCandidate{cand})
+	ok, _ := validatePhase1PureEffectCandidates([]EffectCandidate{cand})
 	if ok {
 		t.Error("expected NOT eligible for literal-only operand")
 	}
@@ -114,7 +114,7 @@ func TestPhase1Eligibility_ScalarWithMixedConstEligible(t *testing.T) {
 		OperandKinds:         []string{"column", "const"},
 		OperandColumnRefs:    []OperandColumnRef{{Schema: "app", Table: "users", Column: "name"}},
 	}
-	ok, reason := ValidatePhase1PureEffectCandidates([]EffectCandidate{cand})
+	ok, reason := validatePhase1PureEffectCandidates([]EffectCandidate{cand})
 	if !ok {
 		t.Errorf("expected eligible, got reason: %s", reason)
 	}
@@ -133,7 +133,7 @@ func TestPhase1Eligibility_ScalarLiteralOnlyNotEligible(t *testing.T) {
 		Arity:                2,
 		OperandKinds:         []string{"const", "const"},
 	}
-	ok, _ := ValidatePhase1PureEffectCandidates([]EffectCandidate{cand})
+	ok, _ := validatePhase1PureEffectCandidates([]EffectCandidate{cand})
 	if ok {
 		t.Error("expected NOT eligible for literal-only function")
 	}
@@ -153,7 +153,7 @@ func TestPhase1Eligibility_ScalarWithNestedCallNotEligible(t *testing.T) {
 		OperandKinds:         []string{"expr"},
 		OperandColumnRefs:    nil,
 	}
-	ok, _ := ValidatePhase1PureEffectCandidates([]EffectCandidate{cand})
+	ok, _ := validatePhase1PureEffectCandidates([]EffectCandidate{cand})
 	if ok {
 		t.Error("expected NOT eligible for nested call operand")
 	}
@@ -172,7 +172,7 @@ func TestPhase1Eligibility_ScalarWithParameterNotEligible(t *testing.T) {
 		Arity:                1,
 		OperandKinds:         []string{"param"},
 	}
-	ok, _ := ValidatePhase1PureEffectCandidates([]EffectCandidate{cand})
+	ok, _ := validatePhase1PureEffectCandidates([]EffectCandidate{cand})
 	if ok {
 		t.Error("expected NOT eligible for parameter operand")
 	}
@@ -187,7 +187,7 @@ func TestPhase1Eligibility_CastNotEligible(t *testing.T) {
 		Arity:        1,
 		OperandKinds: []string{"const"},
 	}
-	ok, reason := ValidatePhase1PureEffectCandidates([]EffectCandidate{cand})
+	ok, reason := validatePhase1PureEffectCandidates([]EffectCandidate{cand})
 	if ok {
 		t.Error("expected NOT eligible for cast")
 	}
@@ -224,7 +224,7 @@ func TestPhase1Eligibility_ScalarWithModifiersNotEligible(t *testing.T) {
 				OperandColumnRefs:    []OperandColumnRef{{Schema: "app", Table: "users", Column: "name"}},
 			}
 			tc.mut(&cand)
-			ok, _ := ValidatePhase1PureEffectCandidates([]EffectCandidate{cand})
+			ok, _ := validatePhase1PureEffectCandidates([]EffectCandidate{cand})
 			if ok {
 				t.Errorf("expected NOT eligible with %s modifier", tc.name)
 			}
@@ -459,7 +459,7 @@ func TestPhase1Eligibility_CountIntegerOneEligible(t *testing.T) {
 		Arity:                1,
 		OperandKinds:         []string{"integer_one"},
 	}
-	ok, reason := ValidatePhase1PureEffectCandidates([]EffectCandidate{cand})
+	ok, reason := validatePhase1PureEffectCandidates([]EffectCandidate{cand})
 	if !ok {
 		t.Errorf("expected eligible for COUNT(integer_one), got reason: %s", reason)
 	}
@@ -491,7 +491,7 @@ func TestPhase1Eligibility_CountIntegerOneWithModifiersNotEligible(t *testing.T)
 				OperandKinds:         []string{"integer_one"},
 			}
 			tc.mut(&cand)
-			ok, _ := ValidatePhase1PureEffectCandidates([]EffectCandidate{cand})
+			ok, _ := validatePhase1PureEffectCandidates([]EffectCandidate{cand})
 			if ok {
 				t.Errorf("expected NOT eligible for COUNT(integer_one) with %s modifier", tc.name)
 			}
@@ -513,7 +513,7 @@ func TestPhase1Eligibility_CountIntegerOneExplicitSchemaNotEligible(t *testing.T
 		Arity:                1,
 		OperandKinds:         []string{"integer_one"},
 	}
-	ok, _ := ValidatePhase1PureEffectCandidates([]EffectCandidate{cand})
+	ok, _ := validatePhase1PureEffectCandidates([]EffectCandidate{cand})
 	if ok {
 		t.Error("expected NOT eligible for schema-qualified COUNT(integer_one)")
 	}
@@ -568,7 +568,7 @@ func TestPhase1Eligibility_GeneralConstStillRejected(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			ok, _ := ValidatePhase1PureEffectCandidates([]EffectCandidate{tc.cand})
+			ok, _ := validatePhase1PureEffectCandidates([]EffectCandidate{tc.cand})
 			if ok {
 				t.Errorf("expected NOT eligible for general const operand (%s)", tc.name)
 			}

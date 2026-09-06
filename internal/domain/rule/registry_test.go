@@ -1,6 +1,6 @@
 // Package rule_test verifies rule registration and evaluation behavior.
 // input: synthetic statements and test rule implementations
-// output: test coverage for deterministic rule execution, ID enforcement, and finding collection
+// output: test coverage for deterministic rule execution, ID enforcement, Loaded Contains, and finding collection
 // pos: domain rule engine test coverage
 // note: if this file changes, update this header and module README.md.
 package rule_test
@@ -346,4 +346,30 @@ func (r badMismatchedRule) Evaluate(ctx context.Context, statement spec.Statemen
 		Level:   r.inner.level,
 		Message: r.inner.message,
 	}}, nil
+}
+
+func TestRegistryContainsLoadedRuleIDs(t *testing.T) {
+	t.Parallel()
+	registry := rule.NewRegistry()
+	if registry.Contains("dml.where.require") {
+		t.Fatal("empty registry must not contain a rule")
+	}
+	if err := registry.RegisterStatement(testStatementRule{
+		id:      "dml.where.require",
+		kind:    spec.KindDML,
+		level:   rule.LevelBlocker,
+		message: "where required",
+	}); err != nil {
+		t.Fatalf("register: %v", err)
+	}
+	if !registry.Contains("dml.where.require") {
+		t.Fatal("expected registered statement rule")
+	}
+	if registry.Contains("ddl.table.comment.require") {
+		t.Fatal("unregistered rule must not be Loaded")
+	}
+	var nilRegistry *rule.Registry
+	if nilRegistry.Contains("dml.where.require") {
+		t.Fatal("nil registry must not contain a rule")
+	}
 }

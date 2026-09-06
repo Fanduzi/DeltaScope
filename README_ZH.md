@@ -504,6 +504,7 @@ result, err := deltascope.Audit(ctx, deltascope.Request{
 | `internal/application/audit` | 审核用例 | [README](internal/application/audit/README.md) |
 | `internal/application/auditmeta` | 元数据感知审核用例 | [README](internal/application/auditmeta/README.md) |
 | `internal/application/connresolve` | 打开连接之前的共享连库路径 | [README](internal/application/connresolve/README.md) |
+| `internal/application/rulepresence` | Catalog / Default Policy / Loaded / Suppression | [README](internal/application/rulepresence/README.md) |
 | `internal/domain/rule` | rule/finding/level 模型 | [README](internal/domain/rule/README.md) |
 | `internal/domain/rule/catalog` | 面向解释和发现的内置规则目录 | [README](internal/domain/rule/catalog/README.md) |
 | `internal/domain/rule/ddl` | DDL 规则目录 | [README](internal/domain/rule/ddl/README.md) |

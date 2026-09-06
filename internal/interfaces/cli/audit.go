@@ -444,30 +444,6 @@ func renderMarkdownResult(result report.Result, runContext *auditRunContext) ([]
 	}
 	body = insertActionSummaryNote(body, runContext)
 	b.Write(body)
-	if len(result.Unsupported) > 0 {
-		b.WriteString("\n\n## Unsupported Statements\n")
-		for _, item := range result.Unsupported {
-			fmt.Fprintf(&b, "- Statement %d: `%s` — %s\n", item.Index+1, item.Feature, item.Reason)
-		}
-	}
-	if len(result.Diagnostics) > 0 {
-		b.WriteString("\n\n## Diagnostics\n")
-		for _, d := range result.Diagnostics {
-			fmt.Fprintf(&b, "- classification: %s\n  action_hint: %s\n  reason: %s\n  audited: %v\n  dialect: %s\n", d.Classification, d.ActionHint, d.Reason, d.Audited, d.Dialect)
-			if d.Line > 0 {
-				fmt.Fprintf(&b, "  line: %d\n", d.Line)
-			}
-			if d.Column > 0 {
-				fmt.Fprintf(&b, "  column: %d\n", d.Column)
-			}
-			if d.GuidanceCode != "" {
-				fmt.Fprintf(&b, "  guidance_code: %s\n", d.GuidanceCode)
-			}
-			if d.EvidenceRef != "" {
-				fmt.Fprintf(&b, "  evidence_ref: %s\n", d.EvidenceRef)
-			}
-		}
-	}
 	return []byte(b.String()), nil
 }
 

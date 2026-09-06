@@ -11,10 +11,10 @@ import (
 	domain "github.com/Fanduzi/DeltaScope/internal/domain/queryaccess"
 )
 
-// ValidatePhase1PureEffectCandidates checks whether every candidate is inside
+// validatePhase1PureEffectCandidates checks whether every candidate is inside
 // the Phase-1 proof boundary. It preserves candidates and returns only a
 // bounded reason for the first ineligible candidate.
-func ValidatePhase1PureEffectCandidates(candidates []EffectCandidate) (bool, domain.ReasonCode) {
+func validatePhase1PureEffectCandidates(candidates []EffectCandidate) (bool, domain.ReasonCode) {
 	for _, candidate := range candidates {
 		switch candidate.Kind {
 		case EffectCandidateOperator:

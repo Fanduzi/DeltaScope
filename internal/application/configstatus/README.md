@@ -8,7 +8,7 @@ optional YAML config file. This is the core data layer for the future
 
 | File | Responsibility |
 |------|---------------|
-| `status.go` | `Inspect` derives ON/OFF, Loaded, effective level, default vs current snapshots, config effect, and FK-forbid suppression for one rule |
+| `status.go` | `Inspect` derives ON/OFF, Loaded, effective level, default vs current snapshots, config effect, and FK-forbid suppression for one rule via rulepresence |
 | `status_test.go` | Verifies default-only, override, replacement-danger, validation, cloning, JSON, default-disabled catalog-only rules, and FK-forbid suppression |
 
 ## Exports
@@ -61,7 +61,7 @@ and is intentionally out of scope here. See
 ## Dependencies
 
 - Upstream: (none yet; the CLI `config status` command in Task 3 will call `Inspect`)
-- Downstream: `internal/domain/policy`, `internal/domain/rule`,
+- Downstream: `internal/application/rulepresence`, `internal/domain/policy`, `internal/domain/rule`,
   `internal/domain/rule/catalog`, `internal/infrastructure/config/viper`
 
 ## Update Rule
