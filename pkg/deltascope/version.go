@@ -10,7 +10,7 @@ import "runtime/debug"
 const (
 	// DefaultVersion is the repository's current default semantic version.
 	// It is used only when Go build information is absent.
-	DefaultVersion = "v0.510.3"
+	DefaultVersion = "v0.510.4"
 
 	// Logo is the canonical ASCII DeltaScope banner used by human-facing commands.
 	Logo = "    ____       ____        _____                     \n" +

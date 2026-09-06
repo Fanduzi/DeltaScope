@@ -6,6 +6,16 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.510.4] - 2026-09-06
+
+### Fixed
+
+- [#65](https://github.com/Fanduzi/DeltaScope/issues/65)–[#76](https://github.com/Fanduzi/DeltaScope/issues/76) name split public signals: CLI `fail_on_triggered`, installer `v` prefix, Catalog vs Loaded vs `fk_forbid`, distinct empty-SQL errors, Node 24 fail-closed launcher, source-build version stamps, PR unit gates, MCP Query Access unavailability, Action pin, default-disabled `dml.impact.*` catalog rows, `audit -h` help, and HTTP `connection_ref` as `invalid_request`.
+
+### Non-Goals
+
+- Not raising Verdict on Fail Threshold, not unifying empty-SQL exits, not an MCP Query Access tool, not enabling `dml.impact.*` in Default Policy.
+
 ## [v0.510.3] - 2026-08-31
 
 ### Fixed

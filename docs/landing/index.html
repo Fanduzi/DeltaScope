@@ -22,7 +22,7 @@
     "operatingSystem": "macOS, Linux",
     "description": "Offline-first SQL audit engine for MySQL, TiDB, and PostgreSQL. Catches risky DDL and DML before they reach a database.",
     "url": "https://github.com/Fanduzi/DeltaScope",
-    "softwareVersion": "v0.510.3",
+    "softwareVersion": "v0.510.4",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "license": "https://opensource.org/licenses/Apache-2.0"
   }
@@ -660,7 +660,7 @@
     <section class="hero">
       <div class="container" style="position:relative;">
         <div class="hero-badge animate-fade-up" style="animation-delay:0.05s;">
-          <span class="tag tag-new" data-i18n="hero.badge">v0.510.3 — MCP Connect Timeout Capability Discovery</span>
+          <span class="tag tag-new" data-i18n="hero.badge">v0.510.4 — Named Public Signals</span>
         </div>
         <h1 class="animate-fade-up" style="animation-delay:0.12s;" data-i18n="hero.title">DeltaScope reviews SQL changes before they reach production</h1>
         <p class="hero-sub animate-fade-up" style="animation-delay:0.2s;" data-i18n="hero.sub">Run it in CI, locally, or through MCP to catch unsafe DDL and DML patterns across MySQL, TiDB, and PostgreSQL. DeltaScope turns migrations into actionable findings with rule IDs, severity, and CI-friendly output formats.</p>
@@ -1081,15 +1081,24 @@ Statement 1: CREATE TABLE
           <article class="release-spotlight">
             <div class="release-kicker" data-i18n="releases.currentLabel">Current release</div>
             <div class="release-version-row">
-            <div class="release-version">v0.510.3</div>
+            <div class="release-version">v0.510.4</div>
             <span class="tag tag-new" style="font-size:0.65rem;" data-i18n="releases.currentFocus">release focus</span>
           </div>
-            <div class="release-title" data-i18n="releases.currentTitle">MCP Connect Timeout Capability Discovery</div>
-            <div class="release-copy" data-i18n="releases.items.v05103">v0.510.3 adds connection.connect_timeout to MCP capability discovery and guards it with an in-memory tools/list versus tool-call parity test. Additive discovery-output correction only; no timeout parsing, defaults, connection behavior, errors, credentials, tools, or input-schema change.</div>
-            <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.510.3.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.510.3.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.510.3.zh-CN.md">Read release notes →</a>
+            <div class="release-title" data-i18n="releases.currentTitle">Named Public Signals</div>
+            <div class="release-copy" data-i18n="releases.items.v05104">v0.510.4 names split public signals so operators and agents do not confuse Verdict with Fail Threshold, Catalog with Loaded, or silent MCP/CLI/HTTP gaps. Issues #65-#76 land in the published Official Distribution. Static analysis only; not SQL execution or authorization.</div>
+            <a class="release-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.510.4.md" target="_blank" rel="noopener" data-i18n="releases.currentLink" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.510.4.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.510.4.zh-CN.md">Read release notes →</a>
           </article>
 
           <div class="release-grid">
+            <article class="release-card">
+              <div class="release-card-head">
+                <div class="release-card-version">v0.510.3</div>
+                <div class="release-card-label" data-i18n="releases.labels.v05103">MCP Connect Timeout Capability Discovery</div>
+              </div>
+              <div class="release-card-copy" data-i18n="releases.items.v05103">v0.510.3 adds connection.connect_timeout to MCP capability discovery and guards it with an in-memory tools/list versus tool-call parity test. Additive discovery-output correction only; no timeout parsing, defaults, connection behavior, errors, credentials, tools, or input-schema change.</div>
+              <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.510.3.md" target="_blank" rel="noopener" data-i18n="releases.links.v05103" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.510.3.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.510.3.zh-CN.md">Open v0.510.3 notes →</a>
+            </article>
+
             <article class="release-card">
               <div class="release-card-head">
                 <div class="release-card-version">v0.510.2</div>
@@ -1106,15 +1115,6 @@ Statement 1: CREATE TABLE
               </div>
               <div class="release-card-copy" data-i18n="releases.items.v05101">v0.510.1 republishes already-reviewed #54-#57 work plus a Linux TLS CA test correction. Official v0.510.0 run passed provenance then failed before assets.</div>
               <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.510.1.md" target="_blank" rel="noopener" data-i18n="releases.links.v05101" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.510.1.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.510.1.zh-CN.md">Open v0.510.1 notes →</a>
-            </article>
-
-            <article class="release-card">
-              <div class="release-card-head">
-                <div class="release-card-version">v0.500.0</div>
-                <div class="release-card-label" data-i18n="releases.labels.v05000">Parser Recovery, Query Access Contracts, and Metadata Closure</div>
-              </div>
-              <div class="release-card-copy" data-i18n="releases.items.v05000">v0.500.0 ships partial parser-error recovery and leading UTF-8 BOM stripping; Query Access empty-SQL, flag-ownership, schema-binding, and PG17 version-boundary contracts; PostgreSQL catalog/port/MCP selection and bounded offline DML impact; MySQL/TiDB metadata rules; corpus/CI fixture coverage; and a source-readiness 85 dogfood that is not a published-package SLA.</div>
-              <a class="release-card-link" href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.500.0.md" target="_blank" rel="noopener" data-i18n="releases.links.v05000" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.500.0.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.500.0.zh-CN.md">Open v0.500.0 notes →</a>
             </article>
 
             <article class="release-card archive">
@@ -1199,7 +1199,7 @@ Statement 1: CREATE TABLE
               <div class="nav-logo-icon">DS</div>
               <span class="nav-logo-text">DeltaScope</span>
             </a>
-            <p data-i18n="footer.brand">Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. v0.510.3 corrects MCP discovery to advertise connection.connect_timeout and guards it with in-memory parity. Static analysis only; not authorization or SQL execution.</p>
+            <p data-i18n="footer.brand">Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. v0.510.4 names split public signals so operators and agents do not confuse Verdict with Fail Threshold or Catalog with Loaded. Static analysis only; not authorization or SQL execution.</p>
             <div class="badge-row">
               <span class="tag tag-go">Go</span>
               <span class="tag tag-cli">Apache 2.0</span>
@@ -1211,7 +1211,7 @@ Statement 1: CREATE TABLE
               <li><a href="https://github.com/Fanduzi/DeltaScope#install" target="_blank" rel="noopener" data-i18n="footer.links.install">Install</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope#quick-start" target="_blank" rel="noopener" data-i18n="footer.links.quickstart">Quick Start</a></li>
               <li><a href="https://github.com/Fanduzi/DeltaScope/releases" target="_blank" rel="noopener" data-i18n="footer.links.releases">Releases</a></li>
-              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.510.3.md" target="_blank" rel="noopener" data-i18n="footer.links.latest" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.510.3.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.510.3.zh-CN.md">Release Notes v0.510.3</a></li>
+              <li><a href="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.510.4.md" target="_blank" rel="noopener" data-i18n="footer.links.latest" data-i18n-href-en="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.510.4.md" data-i18n-href-zh="https://github.com/Fanduzi/DeltaScope/blob/main/docs/releases/release-notes-v0.510.4.zh-CN.md">Release Notes v0.510.4</a></li>
             </ul>
           </div>
           <div class="footer-col">
@@ -1255,7 +1255,7 @@ Statement 1: CREATE TABLE
           install: 'Install'
         },
         hero: {
-          badge: 'v0.510.3 — MCP Connect Timeout Capability Discovery',
+          badge: 'v0.510.4 — Named Public Signals',
           title: 'DeltaScope reviews SQL changes before they reach production',
           sub: 'Run it in CI, locally, or through MCP to catch unsafe DDL and DML patterns across MySQL, TiDB, and PostgreSQL. DeltaScope turns migrations into actionable findings with rule IDs, severity, and CI-friendly output formats.',
           ctaPrimary: 'Install DeltaScope',
@@ -1381,9 +1381,10 @@ Statement 1: CREATE TABLE
           sub: 'The landing page highlights the current release and a short set of recent milestones. Older versions stay in the release archive so this page does not become a changelog.',
           currentLabel: 'Current release',
           currentFocus: 'release focus',
-          currentTitle: 'MCP Connect Timeout Capability Discovery',
+          currentTitle: 'Named Public Signals',
           currentLink: 'Read release notes →',
           labels: {
+            v05104: 'Named Public Signals',
             v05103: 'MCP Connect Timeout Capability Discovery',
             v05102: 'Audit Review Floor and MCP Invocation Fixes',
             v05101: 'Release Channel Parity, Compact CLI JSON, Parser Review Floor, Connection Refusal, and Linux Test Contract',
@@ -1430,6 +1431,7 @@ Statement 1: CREATE TABLE
             v01200: 'PostgreSQL Migration Safety Metadata'
           },
           links: {
+            v05104: 'Open v0.510.4 notes →',
             v05103: 'Open v0.510.3 notes →',
             v05102: 'Open v0.510.2 notes →',
             v05101: 'Open v0.510.1 notes →',
@@ -1479,6 +1481,7 @@ Statement 1: CREATE TABLE
           archiveDesc: 'Browse the full release history when you want older milestones, detailed changelogs, or download artifacts beyond the latest focus items.',
           archiveLink: 'View all release notes →',
           items: {
+            v05104: 'v0.510.4 names split public signals so operators and agents do not confuse Verdict with Fail Threshold, Catalog with Loaded, or silent MCP/CLI/HTTP gaps. Issues #65-#76 land in the published Official Distribution. Static analysis only; not SQL execution or authorization.',
             v05103: 'v0.510.3 adds connection.connect_timeout to MCP capability discovery and guards it with an in-memory tools/list versus tool-call parity test. Additive discovery-output correction only; no timeout parsing, defaults, connection behavior, errors, credentials, tools, or input-schema change.',
             v05102: 'v0.510.2 floors otherwise-passing unaudited unsupported statements to review, makes MCP launcher examples upgrade-safe, and aliases sole MCP positional version and help invocations to their established dashed forms. Static analysis only; not SQL execution or authorization.',
             v05101: 'v0.510.1 republishes already-reviewed #54-#57 work plus a Linux TLS CA test correction. Official v0.510.0 run 33302045413 passed provenance then failed in TestAuditCommandLoadsTLSCAFile before any assets; v0.510.0 is not a successful published GitHub Release. Product behavior is npm publication independent of Homebrew; compact CLI JSON skipped-rule aggregates with an opt-in per-rule list; a review floor for otherwise-passing mixed parser results across SDK, CLI, HTTP, and MCP; and a bounded CLI connection refused category. Not an MCP Query Access tool; not SQL execution or authorization; not a registered-rule catalog change; 100% is rule-and-dialect fixture coverage, not grammar coverage.',
@@ -1535,14 +1538,14 @@ Statement 1: CREATE TABLE
           secondary: 'Read Quick Start'
         },
         footer: {
-          brand: 'Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. v0.510.3 corrects MCP discovery to advertise connection.connect_timeout and guards it with in-memory parity. Static analysis only; not authorization or SQL execution.',
+          brand: 'Offline-first DDL and DML audit engine for MySQL, TiDB, and PostgreSQL. v0.510.4 names split public signals so operators and agents do not confuse Verdict with Fail Threshold or Catalog with Loaded. Static analysis only; not authorization or SQL execution.',
           start: 'Start',
           docs: 'Workflow Docs',
           community: 'Community',
           copyright: '© 2026 Fanduzi. DeltaScope is Apache 2.0 licensed.',
           version: '',
           links: {
-            install: 'Install', quickstart: 'Quick Start', releases: 'Releases', latest: 'Release Notes v0.510.3',
+            install: 'Install', quickstart: 'Quick Start', releases: 'Releases', latest: 'Release Notes v0.510.4',
             migration: 'Migration Review', ci: 'CI Gate', ai: 'AI Agents', reference: 'Reference Docs', author: 'Author'
           }
         }
@@ -1560,7 +1563,7 @@ Statement 1: CREATE TABLE
           install: '安装'
         },
         hero: {
-          badge: 'v0.510.3 —— MCP connect timeout 能力发现',
+          badge: 'v0.510.4 —— 公开信号命名',
           title: 'DeltaScope 在 SQL 变更进入生产前完成审查',
           sub: '你可以在 CI、本地命令行或 MCP 中运行它，提前发现 MySQL、TiDB 和 PostgreSQL 的高风险 DDL/DML 模式，并输出带规则 ID、级别和修复建议的审查结果。',
           ctaPrimary: '安装 DeltaScope',
@@ -1686,9 +1689,10 @@ Statement 1: CREATE TABLE
           sub: '首页只突出当前版本和少量近期里程碑；更早版本放到发布归档，避免首页变成 changelog。',
           currentLabel: '当前版本',
           currentFocus: 'release focus',
-          currentTitle: 'MCP connect timeout 能力发现',
+          currentTitle: '公开信号命名',
           currentLink: '查看发布说明 →',
           labels: {
+            v05104: '公开信号命名',
             v05103: 'MCP connect timeout 能力发现',
             v05102: '审计 review 下限与 MCP 调用修复',
             v05101: '发布通道解耦、CLI JSON 压缩、解析 review 下限、连接拒绝分类与 Linux 测试契约',
@@ -1735,6 +1739,7 @@ Statement 1: CREATE TABLE
             v01200: 'PostgreSQL 迁移安全语义元数据'
           },
           links: {
+            v05104: '查看 v0.510.4 发布说明 →',
             v05103: '查看 v0.510.3 发布说明 →',
             v05102: '查看 v0.510.2 发布说明 →',
             v05101: '查看 v0.510.1 发布说明 →',
@@ -1785,6 +1790,7 @@ Statement 1: CREATE TABLE
           archiveDesc: '如果你想查看更早的里程碑、完整 changelog 或下载历史产物，可以从这里进入完整发布历史。',
           archiveLink: '查看全部发布说明 →',
           items: {
+            v05104: 'v0.510.4 把拆开的公开信号命名清楚，避免把 Verdict 当成 Fail Threshold、把 Catalog 当成 Loaded，或在 MCP/CLI/HTTP 上对缺失能力保持沉默。#65-#76 进入官方发布包。仅静态分析；不执行 SQL，也不是鉴权。',
             v05103: 'v0.510.3 在 MCP capability discovery 中加入 connection.connect_timeout，并用内存内 tools/list 与 tool-call parity 测试防止漂移。这仅是增量发现输出修正；不改变 timeout 解析、默认值、连接行为、错误、凭据、工具或输入 schema。',
             v05102: 'v0.510.2 把含未审计 unsupported statement 的原本 pass 审查结果降到 review，令 MCP launcher 示例可安全升级，并把单独 positional version 和 help 别名到既有 dashed 形式。仅静态分析；不执行 SQL，也不是鉴权。',
             v05101: 'v0.510.1 再发布已经过审查的 #54-#57 工作，并修正 Linux TLS CA 测试契约。官方 v0.510.0 运行 33302045413 通过 provenance 后在 TestAuditCommandLoadsTLSCAFile 失败，尚未产出资产；v0.510.0 不是一次成功的已发布 GitHub Release。产品行为是 npm 与 Homebrew 解耦、CLI JSON skipped-rule 聚合与可选完整列表、跨 SDK/CLI/HTTP/MCP 的混合解析 pass 到 review 下限，以及有界 CLI connection refused 分类。不是 MCP Query Access 工具；不执行 SQL，也不是鉴权；不改变已注册规则目录；100% 是 rule-and-dialect fixture coverage，不是 grammar coverage。',
@@ -1838,14 +1844,14 @@ Statement 1: CREATE TABLE
           secondary: '查看 Quick Start'
         },
         footer: {
-          brand: '面向 MySQL、TiDB 和 PostgreSQL 的离线优先 DDL / DML 审计引擎。v0.510.3 修正 MCP discovery 以声明 connection.connect_timeout，并由内存内 parity 防止漂移。仅静态分析；不是鉴权，也不执行 SQL。',
+          brand: '面向 MySQL、TiDB 和 PostgreSQL 的离线优先 DDL / DML 审计引擎。v0.510.4 把公开信号拆开命名，避免把 Verdict 当成 Fail Threshold 或把 Catalog 当成 Loaded。仅静态分析；不是鉴权，也不执行 SQL。',
           start: '开始',
           docs: '工作流文档',
           community: '社区',
           copyright: '© 2026 Fanduzi. DeltaScope 采用 Apache 2.0 许可。',
           version: '',
           links: {
-            install: '安装', quickstart: 'Quick Start', releases: '发布版本', latest: 'v0.510.3 发布说明',
+            install: '安装', quickstart: 'Quick Start', releases: '发布版本', latest: 'v0.510.4 发布说明',
             migration: '迁移审查', ci: 'CI 门禁', ai: 'AI Agent', reference: '参考文档', author: '作者'
           }
         }

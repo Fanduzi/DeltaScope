@@ -55,8 +55,8 @@ brew install --cask deltascope
 固定版本安装：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.510.3/install.sh | \
-  DELTASCOPE_VERSION=v0.510.3 sh
+curl -fsSL https://raw.githubusercontent.com/Fanduzi/DeltaScope/v0.510.4/install.sh | \
+  DELTASCOPE_VERSION=v0.510.4 sh
 ```
 
 ## MCP

@@ -4,7 +4,22 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.510.3 MCP Connect Timeout Capability Discovery
+## Latest Completed Milestone: v0.510.4 Named Public Signals
+
+**Goal:** name split public signals so operators and agents do not confuse Verdict with Fail Threshold, Rule Catalog with Loaded, or silent MCP/CLI/HTTP gaps. See `docs/releases/release-notes-v0.510.4.md` and `docs/decisions/2026-09-04-named-public-signals.md`.
+
+### Completed Scope
+
+- [#65](https://github.com/Fanduzi/DeltaScope/issues/65)–[#76](https://github.com/Fanduzi/DeltaScope/issues/76) land in the Official Distribution: CLI `fail_on_triggered`, installer `v` prefix, Catalog vs Loaded vs `fk_forbid`, distinct empty-SQL errors, Node 24 fail-closed launcher, source-build version stamps, PR unit gates, MCP Query Access unavailability, Action pin, default-disabled `dml.impact.*` catalog rows, `audit -h` help, and HTTP `connection_ref` as `invalid_request`.
+- Supported rule-and-dialect fixture coverage remains 586/586 (100.0%) across 286 YAML fixtures; this is fixture coverage, not SQL syntax or grammar coverage. Rule Catalog is 376 rules, including three default-disabled `dml.impact.*` rows.
+- [2026-09-04 named public signals](docs/decisions/2026-09-04-named-public-signals.md) is the accepted boundary record.
+
+### Non-Goals
+
+- Not raising Verdict on Fail Threshold, not unifying empty-SQL exits, not lowering Node engines to 20, not an MCP Query Access tool, not enabling `dml.impact.*` in Default Policy.
+- Not SQL execution, authorization, or a SQL syntax or grammar coverage claim.
+
+## Previous Completed Milestone: v0.510.3 MCP Connect Timeout Capability Discovery
 
 **Goal:** correct MCP discovery output so clients see the existing `connection.connect_timeout` input, with an in-memory `tools/list` versus `get_capabilities` tool-call parity test. See `docs/releases/release-notes-v0.510.3.md` and `docs/decisions/2026-08-31-mcp-connect-timeout-capability.md`.
 

@@ -155,7 +155,7 @@ The unified online-session suite owns exhaustive semantic and detailed-probe evi
 - `Result` now also exposes `Unsupported` (`[]spec.UnsupportedDetail`) and `Diagnostics` (`[]spec.Diagnostic`) arrays so library consumers can inspect structured partial-support and parser-error/unsupported-statement outcomes. A partial result with an unaudited parser-error diagnostic is floored from `pass` to `review`; existing `review`/`reject` verdicts and wholly unparseable behavior remain unchanged.
 - `ErrUnsupportedStatement` is returned when unsupported statements are present, while still returning a populated `Result` for supported statements.
 - `Finding` now exposes an optional `Explanation` field so library consumers can read structured per-finding `why`, `risk`, `suggestion`, and metadata-status notes directly.
-- `DefaultVersion` is `v0.510.3`, the fallback when Go build information is absent.
+- `DefaultVersion` is `v0.510.4`, the fallback when Go build information is absent.
 - `ReportedVersion()` prefers the Go module version (tag or pseudo-version) or VCS revision (`devel-<rev>` / `devel-<rev>-dirty`) so untagged, devel, and `go install @main` builds do not claim the last release tag as the sole version.
 - Release ldflags still override CLI, server, and MCP `Version` to the release tag. Release surface gates keep `DefaultVersion` aligned with that tag as the absent-build-info fallback.
 

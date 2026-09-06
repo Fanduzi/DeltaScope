@@ -2,10 +2,12 @@
 
 Versioned release notes for published DeltaScope tags.
 
-v0.510.3 is the current line. Official v0.510.0 GitHub Actions run 33302045413 passed provenance then failed in TestAuditCommandLoadsTLSCAFile before any assets; candidate notes remain as release-notes-v0.510.0.md and release-notes-v0.510.0.zh-CN.md. v0.510.0 is not a successful published GitHub Release.
+v0.510.4 is the current line. Official v0.510.0 GitHub Actions run 33302045413 passed provenance then failed in TestAuditCommandLoadsTLSCAFile before any assets; candidate notes remain as release-notes-v0.510.0.md and release-notes-v0.510.0.zh-CN.md. v0.510.0 is not a successful published GitHub Release.
 
 ## Contents
 
+- [v0.510.4](release-notes-v0.510.4.md)
+- [v0.510.4 中文版](release-notes-v0.510.4.zh-CN.md)
 - [v0.510.3](release-notes-v0.510.3.md)
 - [v0.510.3 中文版](release-notes-v0.510.3.zh-CN.md)
 - [v0.510.2](release-notes-v0.510.2.md)
