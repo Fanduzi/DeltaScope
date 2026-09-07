@@ -11,7 +11,7 @@ Computes Catalog, Default Policy, Loaded, and Suppression for one rule ID.
 
 ## Exports
 
-- `Presence`
+- `Presence` — `{ InCatalog, InDefaultPolicy, Loaded, SuppressionReason, SuppressionBy }`
 - `Of(ruleID, policy) (Presence, error)`
 
 ## Dependencies

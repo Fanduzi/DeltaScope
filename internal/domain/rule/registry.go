@@ -1,6 +1,6 @@
 // Package rule defines rule registration and evaluation infrastructure.
 // input: domain statements and registered statement/global rule implementations
-// output: deterministic finding collection for the audit engine
+// output: deterministic finding collection and Loaded rule-ID membership for the audit engine
 // pos: domain rule registry and execution coordination
 // note: if this file changes, update this header and module README.md.
 package rule

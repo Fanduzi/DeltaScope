@@ -1,6 +1,6 @@
 // Package dml defines Tier-1 DML rules.
 // input: metadata-enriched MySQL/TiDB DML Statement specs and policy values
-// output: blocker findings for definitively absent DML target tables
+// output: blocker findings for definitively absent DML Mutation Targets
 // pos: metadata-backed DML table-existence guardrail
 // note: if this file changes, update this header and module README.md.
 package dml

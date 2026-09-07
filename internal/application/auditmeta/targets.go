@@ -1,6 +1,6 @@
 // Package auditmeta prepares metadata-aware audit requests for multiple adapters.
 // input: parsed and partially parsed SQL statements plus normalized statement specs from the audit application layer
-// output: target-table facts from valid statements used for schema inference before metadata-aware audit execution
+// output: Mutation Target facts from valid statements used for schema inference before metadata-aware audit execution
 // pos: shared SQL target inference helper for metadata-aware adapters
 // note: if this file changes, update this header and module README.md.
 package auditmeta

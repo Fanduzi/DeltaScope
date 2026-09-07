@@ -11,7 +11,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 | metadata.go | Defines optional schema context, instance facts, target-table snapshots, object-level validation snapshots, and lookup helpers for metadata-aware auditing |
 | ddl.go | Defines DDL-oriented specification types, including explicit DDL operations, richer column facts, typed index metadata, and create-table/object-lifecycle shape flags for offline and metadata-aware DDL rules |
 | dml_impact.go | Defines shared DML impact estimation enums and payload types reused across audit layers |
-| dml.go | Defines DML-oriented specification types, including operation metadata, mentioned tables, and MutationTargets for the tables a statement writes |
+| dml.go | Defines DML-oriented specification types, including operation metadata, mentioned tables, MutationTargets, and MutationTargetTables() fallback to Tables |
 
 ## Exports
 

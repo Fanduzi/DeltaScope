@@ -18,7 +18,7 @@ First Tier-1 DML rule batch for offline update/delete/insert checks.
 | impact_rules_test.go | Verifies impact estimate threshold and registration behavior |
 | insert_rules_test.go | Verifies insert-family rule behavior |
 | register_test.go | Verifies policy-backed DML rule registration and deterministic ordering |
-| metadata_rules_test.go | Verifies metadata-backed target-table existence and dialect boundaries |
+| metadata_rules_test.go | Verifies metadata-backed Mutation Target existence and dialect boundaries |
 
 ## Exports
 
