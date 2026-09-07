@@ -6,6 +6,16 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.511.0] - 2026-09-07
+
+### Added
+
+- Shared Transport Connection Resolution before open for metadata-aware Audit and Online Query Access; named Catalog/Loaded/Suppression, Mutation Target, Markdown incomplete-audit completeness, and a single Observed Server Identity probe.
+
+### Non-Goals
+
+- Not MCP TLS fields, not unifying surface failure sentences, not merging pool and pin openers, not an MCP Query Access tool, not hiding Parse/Extract.
+
 ## [v0.510.4] - 2026-09-06
 
 ### Fixed

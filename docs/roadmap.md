@@ -4,7 +4,23 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.510.4 Named Public Signals
+## Latest Completed Milestone: v0.511.0 Shared Connection Resolution
+
+**Goal:** share Transport Connection Resolution before open, then name Catalog vs Loaded vs Suppression, Mutation Target, incomplete-audit Markdown completeness, and a single Observed Server Identity probe. See `docs/releases/release-notes-v0.511.0.md`, `docs/decisions/2026-09-06-transport-connection-resolution.md`, and `docs/decisions/2026-09-07-architecture-review-follow-through.md`.
+
+### Completed Scope
+
+- One shared connection-resolution path for metadata-aware Audit and Online Query Access on CLI, HTTP, and MCP. The path stops before open. Audit still uses the pool opener; Query Access still pins a session.
+- `rulepresence.Of`, `spec.DML.MutationTargets`, markdown-owned Unsupported/Diagnostics, `NewOnlineQueryAccessSessionFromIdentifiedConn`, and unexported unused identity-resolver helpers.
+- Supported rule-and-dialect fixture coverage remains 586/586 (100.0%) across 286 YAML fixtures; this is fixture coverage, not SQL syntax or grammar coverage. Rule Catalog is 376 rules, including three default-disabled `dml.impact.*` rows.
+- [2026-09-06 transport connection resolution](docs/decisions/2026-09-06-transport-connection-resolution.md) and [2026-09-07 architecture-review follow-through](docs/decisions/2026-09-07-architecture-review-follow-through.md) are the accepted boundary records.
+
+### Non-Goals
+
+- Not MCP TLS fields, not unifying CLI/HTTP/MCP failure sentences, not merging pool and pin openers, not an MCP Query Access tool, not hiding Parse/Extract.
+- Not SQL execution, authorization, or a SQL syntax or grammar coverage claim.
+
+## Previous Completed Milestone: v0.510.4 Named Public Signals
 
 **Goal:** name split public signals so operators and agents do not confuse Verdict with Fail Threshold, Rule Catalog with Loaded, or silent MCP/CLI/HTTP gaps. See `docs/releases/release-notes-v0.510.4.md` and `docs/decisions/2026-09-04-named-public-signals.md`.
 
