@@ -6,6 +6,16 @@ The format follows Keep a Changelog and the project uses semantic versioning for
 
 ## [Unreleased]
 
+## [v0.511.1] - 2026-09-16
+
+### Changed
+
+- Shared catalog YAML scalar rendering, CLI SQL loading, and CLI/HTTP Query Access session attach. Public Audit, Query Access, and MCP contracts unchanged.
+
+### Non-Goals
+
+- Not a public SDK attach helper, not Default Policy or registry caching, not unifying surface failure sentences, not an MCP Query Access tool.
+
 ## [v0.511.0] - 2026-09-07
 
 ### Added

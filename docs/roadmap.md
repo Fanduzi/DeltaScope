@@ -4,7 +4,21 @@ This roadmap tracks near-term engineering milestones and explicit follow-up work
 
 It is not a promise of exhaustive SQL grammar support. DeltaScope continues to prioritize tested, auditable, offline-first coverage over broad syntax claims.
 
-## Latest Completed Milestone: v0.511.0 Shared Connection Resolution
+## Latest Completed Milestone: v0.511.1 Shared Transport Glue
+
+**Goal:** share the catalog YAML scalar, CLI SQL loader, and CLI/HTTP Query Access session attach that transports already owned twice. See `docs/releases/release-notes-v0.511.1.md`.
+
+### Completed Scope
+
+- `catalog.FormatYAMLScalar`, CLI `resolveCLISQL`, and `metadata.AttachOnlineQueryAccessSession` are the shared helpers. Public Audit, Query Access, and MCP contracts stay the same.
+- Supported rule-and-dialect fixture coverage remains 586/586 (100.0%) across 286 YAML fixtures; this is fixture coverage, not SQL syntax or grammar coverage. Rule Catalog is 376 rules, including three default-disabled `dml.impact.*` rows.
+
+### Non-Goals
+
+- Not a public SDK attach helper, not Default Policy or registry caching, not unifying CLI/HTTP/MCP failure sentences, not an MCP Query Access tool.
+- Not SQL execution, authorization, or a SQL syntax or grammar coverage claim.
+
+## Previous Completed Milestone: v0.511.0 Shared Connection Resolution
 
 **Goal:** share Transport Connection Resolution before open, then name Catalog vs Loaded vs Suppression, Mutation Target, incomplete-audit Markdown completeness, and a single Observed Server Identity probe. See `docs/releases/release-notes-v0.511.0.md`, `docs/decisions/2026-09-06-transport-connection-resolution.md`, and `docs/decisions/2026-09-07-architecture-review-follow-through.md`.
 
