@@ -11,13 +11,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/application/connresolve"
 	"github.com/Fanduzi/DeltaScope/internal/application/online"
 	appqa "github.com/Fanduzi/DeltaScope/internal/application/queryaccess"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+	ifacemeta "github.com/Fanduzi/DeltaScope/internal/interfaces/metadata"
 	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
 	"github.com/spf13/cobra"
 )
@@ -29,13 +29,7 @@ var (
 )
 
 func attachOnlineQueryAccessSession(ctx context.Context, session *online.Session) (*deltascope.OnlineQueryAccessSession, error) {
-	if session == nil {
-		return newOnlineQueryAccessSessionFromConn(ctx, nil)
-	}
-	if session.Identity != nil {
-		return deltascope.NewOnlineQueryAccessSessionFromIdentifiedConn(session.Conn, session.Identity)
-	}
-	return newOnlineQueryAccessSessionFromConn(ctx, session.Conn)
+	return ifacemeta.AttachOnlineQueryAccessSession(ctx, session, newOnlineQueryAccessSessionFromConn)
 }
 
 const (
@@ -141,46 +135,9 @@ func newQueryAccessAnalyzeCmd(options *cliOptions, exitCode *int) *cobra.Command
 const emptyQueryAccessSQLMessage = "query-access: SQL input must not be empty"
 
 func resolveQueryAccessSQL(ctx context.Context, stdin io.Reader, inlineSQL string, filePath string, stderr io.Writer, interactive bool, sqlProvided bool) (string, error) {
-	if sqlProvided && strings.TrimSpace(filePath) != "" {
-		return "", newUserError("use either --sql or --file, not both")
-	}
-	if sqlProvided {
-		if strings.TrimSpace(inlineSQL) == "" {
-			return "", newUserError(emptyQueryAccessSQLMessage)
-		}
-		return inlineSQL, nil
-	}
-	if strings.TrimSpace(filePath) != "" {
-		content, err := os.ReadFile(filePath)
-		if err != nil {
-			return "", newUserError("cannot read SQL file")
-		}
-		if err := ctx.Err(); err != nil {
-			return "", err
-		}
-		if strings.TrimSpace(string(content)) == "" {
-			return "", newUserError(emptyQueryAccessSQLMessage)
-		}
-		return string(content), nil
-	}
-
-	if interactive {
-		if _, err := io.WriteString(stderr, "Waiting for SQL from stdin. Press Ctrl+D to finish.\n"); err != nil {
-			return "", newUserError(fmt.Sprintf("write stdin hint: %v", err))
-		}
-	}
-
-	content, err := io.ReadAll(stdin)
-	if err != nil {
-		return "", newUserError(fmt.Sprintf("read stdin: %v", err))
-	}
-	if err := ctx.Err(); err != nil {
-		return "", err
-	}
-	if strings.TrimSpace(string(content)) == "" {
-		return "", newUserError(emptyQueryAccessSQLMessage)
-	}
-	return string(content), nil
+	return resolveCLISQL(ctx, stdin, inlineSQL, filePath, stderr, interactive, sqlProvided, emptyQueryAccessSQLMessage, func(error) error {
+		return newUserError("cannot read SQL file")
+	})
 }
 
 func exitCodeForQueryAccess(result *deltascope.QueryAccessResult) int {

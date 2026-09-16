@@ -186,7 +186,7 @@ func TestLookupDeepCopiesSliceDefaultParams(t *testing.T) {
 
 func TestFormatYAMLScalarQuotesStringLists(t *testing.T) {
 	t.Parallel()
-	got := formatYAMLScalar([]string{"utf8mb4", "needs:quote", "two words"})
+	got := FormatYAMLScalar([]string{"utf8mb4", "needs:quote", "two words"})
 	want := `["utf8mb4", "needs:quote", "two words"]`
 	if got != want {
 		t.Fatalf("expected %q, got %q", want, got)

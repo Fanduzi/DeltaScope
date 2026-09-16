@@ -9,6 +9,8 @@ Shared helpers for metadata-aware and offline interface adapters.
 | `connection.go` | Validates direct connection inputs, resolves passwords, and expands `~` paths for transport adapters |
 | `connection_test.go` | Verifies shared validation and password-resolution behavior |
 | `existence.go` | Shared offline existence caveat (`ExistenceNotCheckedNote`, `OfflineExistenceUnproven`) for CLI, HTTP, and MCP `context` |
+| `query_access_session.go` | Shared CLI/HTTP attach seam that reuses Observed Server Identity when wrapping an opened `online.Session` |
+| `query_access_session_test.go` | Verifies nil-session, no-identity, and identified-conn attach routing |
 
 ## Exports
 
@@ -23,6 +25,8 @@ Shared helpers for metadata-aware and offline interface adapters.
 - `ExpandHome(path)`
 - `ExistenceNotCheckedNote`
 - `OfflineExistenceUnproven()`
+- `OnlineSessionFromConn`
+- `AttachOnlineQueryAccessSession(ctx, session, fromConn)`
 
 ## Notes
 
@@ -34,7 +38,7 @@ Shared helpers for metadata-aware and offline interface adapters.
 ## Dependencies
 
 - Upstream: transport adapters under `internal/interfaces`
-- Downstream: MCP direct-connection resolution and future metadata-aware adapters
+- Downstream: `pkg/deltascope`, `internal/application/online`, MCP direct-connection resolution and future metadata-aware adapters
 
 ## Update Rule
 

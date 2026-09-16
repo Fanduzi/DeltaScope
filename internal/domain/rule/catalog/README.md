@@ -24,6 +24,7 @@ Explanation-oriented metadata for shipped DeltaScope rules, with discoverability
 - `Result` — filtered entries with Total count
 - `Query.Validate() error` — validates enum filters and limit
 - `QueryEntries(entries []Entry, q Query) (Result, error)` — filters entries by query
+- `FormatYAMLScalar(value any) string` — renders one policy param as a YAML scalar for catalog and CLI explain output
 
 ## Entry Fields
 

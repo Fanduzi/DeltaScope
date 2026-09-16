@@ -75,9 +75,9 @@ func TestAttachOnlineQueryAccessSessionReusesObservedIdentity(t *testing.T) {
 	if !ok {
 		t.Fatal("runtime.Caller failed")
 	}
-	source, err := os.ReadFile(filepath.Join(filepath.Dir(filename), "query_access.go"))
+	source, err := os.ReadFile(filepath.Join(filepath.Dir(filename), "..", "metadata", "query_access_session.go"))
 	if err != nil {
-		t.Fatalf("read query_access.go: %v", err)
+		t.Fatalf("read query_access_session.go: %v", err)
 	}
 	if !strings.Contains(string(source), "NewOnlineQueryAccessSessionFromIdentifiedConn") {
 		t.Fatal("attachOnlineQueryAccessSession must reuse Observed Server Identity")

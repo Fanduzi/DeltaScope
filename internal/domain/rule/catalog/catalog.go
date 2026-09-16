@@ -306,7 +306,7 @@ func configExampleForRule(ruleID string, policy domainpolicy.RulePolicy) string 
 	}
 	sort.Strings(keys)
 	for _, key := range keys {
-		lines = append(lines, fmt.Sprintf("      %s: %s", key, formatYAMLScalar(policy.Params[key])))
+		lines = append(lines, fmt.Sprintf("      %s: %s", key, FormatYAMLScalar(policy.Params[key])))
 	}
 	return strings.Join(lines, "\n")
 }
@@ -414,7 +414,8 @@ func humanize(ruleID string, verb string) string {
 	return strings.TrimSpace(fmt.Sprintf("%s %s", verb, text))
 }
 
-func formatYAMLScalar(value any) string {
+// FormatYAMLScalar renders one policy param value as a YAML scalar.
+func FormatYAMLScalar(value any) string {
 	switch typed := value.(type) {
 	case string:
 		return typed

@@ -17,6 +17,7 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/application/online"
 	appqa "github.com/Fanduzi/DeltaScope/internal/application/queryaccess"
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig"
+	ifacemeta "github.com/Fanduzi/DeltaScope/internal/interfaces/metadata"
 	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
 )
 
@@ -37,13 +38,7 @@ var (
 )
 
 func attachOnlineQueryAccessSession(ctx context.Context, session *online.Session) (*deltascope.OnlineQueryAccessSession, error) {
-	if session == nil {
-		return newOnlineQueryAccessSessionFromConn(ctx, nil)
-	}
-	if session.Identity != nil {
-		return deltascope.NewOnlineQueryAccessSessionFromIdentifiedConn(session.Conn, session.Identity)
-	}
-	return newOnlineQueryAccessSessionFromConn(ctx, session.Conn)
+	return ifacemeta.AttachOnlineQueryAccessSession(ctx, session, newOnlineQueryAccessSessionFromConn)
 }
 
 func handleQueryAccess(w http.ResponseWriter, r *http.Request, registry *runtimeconfig.Registry) {

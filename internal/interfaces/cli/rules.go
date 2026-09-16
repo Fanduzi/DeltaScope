@@ -466,25 +466,7 @@ func renderRulePolicyYAML(ruleID string, rp policy.RulePolicy) string {
 	}
 	sort.Strings(keys)
 	for _, key := range keys {
-		fmt.Fprintf(&b, "        %s: %s\n", key, formatYAMLScalar(rp.Params[key]))
+		fmt.Fprintf(&b, "        %s: %s\n", key, rulecatalog.FormatYAMLScalar(rp.Params[key]))
 	}
 	return b.String()
-}
-
-// formatYAMLScalar renders one policy param value as a YAML scalar. It is a
-// local mirror of the catalog helper; per the v0.360.0 decision record a shared
-// helper is deferred until duplication is shown.
-func formatYAMLScalar(value any) string {
-	switch typed := value.(type) {
-	case string:
-		return typed
-	case []string:
-		quoted := make([]string, 0, len(typed))
-		for _, item := range typed {
-			quoted = append(quoted, fmt.Sprintf("%q", item))
-		}
-		return fmt.Sprintf("[%s]", strings.Join(quoted, ", "))
-	default:
-		return fmt.Sprintf("%v", typed)
-	}
 }

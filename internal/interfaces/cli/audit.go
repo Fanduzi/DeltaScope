@@ -321,46 +321,9 @@ func (o auditConnectionOptions) Enabled() bool {
 const emptyAuditSQLMessage = "audit: SQL input must not be empty"
 
 func resolveAuditSQL(ctx context.Context, stdin io.Reader, inlineSQL string, filePath string, stderr io.Writer, interactive bool, sqlProvided bool) (string, error) {
-	if sqlProvided && strings.TrimSpace(filePath) != "" {
-		return "", newUserError("use either --sql or --file, not both")
-	}
-	if sqlProvided {
-		if strings.TrimSpace(inlineSQL) == "" {
-			return "", newUserError(emptyAuditSQLMessage)
-		}
-		return inlineSQL, nil
-	}
-	if strings.TrimSpace(filePath) != "" {
-		content, err := os.ReadFile(filePath)
-		if err != nil {
-			return "", newUserError(fmt.Sprintf("read SQL file: %v", err))
-		}
-		if err := ctx.Err(); err != nil {
-			return "", err
-		}
-		if strings.TrimSpace(string(content)) == "" {
-			return "", newUserError(emptyAuditSQLMessage)
-		}
-		return string(content), nil
-	}
-
-	if interactive {
-		if _, err := io.WriteString(stderr, "Waiting for SQL from stdin. Press Ctrl+D to finish.\n"); err != nil {
-			return "", newUserError(fmt.Sprintf("write stdin hint: %v", err))
-		}
-	}
-
-	content, err := io.ReadAll(stdin)
-	if err != nil {
-		return "", newUserError(fmt.Sprintf("read stdin: %v", err))
-	}
-	if err := ctx.Err(); err != nil {
-		return "", err
-	}
-	if strings.TrimSpace(string(content)) == "" {
-		return "", newUserError(emptyAuditSQLMessage)
-	}
-	return string(content), nil
+	return resolveCLISQL(ctx, stdin, inlineSQL, filePath, stderr, interactive, sqlProvided, emptyAuditSQLMessage, func(err error) error {
+		return newUserError(fmt.Sprintf("read SQL file: %v", err))
+	})
 }
 
 func stdinIsTerminal(cmd *cobra.Command) bool {
