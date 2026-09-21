@@ -3,6 +3,15 @@
 Date: 2026-09-21
 Status: Accepted design — implementation pending
 
+Implementation specification: [GitHub issue #79](https://github.com/Fanduzi/DeltaScope/issues/79).
+Its native sub-issues and blocking relationships are the implementation tracker.
+The user delegated test-seam and task-granularity decisions; no additional
+interview is required to execute the specified dependency frontier.
+Initial unblocked slices are [multi-target policy correctness (#80)](https://github.com/Fanduzi/DeltaScope/issues/80)
+and [official inventory/four-version baseline (#81)](https://github.com/Fanduzi/DeltaScope/issues/81).
+Implement the known policy bug first in the shared milestone branch; independent
+dependency edges do not override the repository's sequential commit discipline.
+
 ## Confirmed Scope
 
 The user selected an official-DDL-inventory completion effort, including uncommon
@@ -56,6 +65,20 @@ and apply a review floor. This evidence gap alone is not a parser/unsupported
 error; normal caller fail thresholds apply. Disabled or inapplicable checks do
 not create gaps. Existing connection/provider failures retain their error
 contracts rather than becoming successful evidence-gap responses.
+
+For explicit CI behavior, unresolved evidence has warning-equivalent fail-threshold
+weight without becoming a fabricated rule violation or incrementing finding
+counts. CLI warning/notice thresholds fail with exit 1; blocker/none thresholds
+do not fail solely for a gap. SDK has no new error for a gap alone; HTTP remains
+successful and MCP isError remains false. Their callers inspect coverage and
+Verdict. Real blocker findings or parser/unsupported/provider failures keep
+precedence. This threshold extension is an intentional compatibility change.
+
+The implementation specification names additive result/statement `coverage.status`
+values `complete`, `unverified`, and `incomplete`, with statement `evidence_gaps`
+for missing facts. Aggregation precedence is incomplete, then unverified, then
+complete. Coverage is independent of Verdict: complete means the applicable
+analysis finished, not that the operation is permitted or safe to execute.
 
 Keep three outcomes distinct: verified policy violation, insufficient evidence,
 and unsupported semantic analysis. Preserve reject over review. Report-level

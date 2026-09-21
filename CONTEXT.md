@@ -16,7 +16,8 @@ Verdict.
 _Avoid_: severity, priority, exit threshold
 
 **Fail Threshold**:
-A caller-chosen finding-count bar for process exit. It is not Verdict.
+A caller-chosen finding-level bar for process exit. Unresolved Audit Evidence
+Gaps have warning-equivalent weight without becoming findings. It is not Verdict.
 _Avoid_: verdict, CI verdict
 
 **Rule Catalog**:
