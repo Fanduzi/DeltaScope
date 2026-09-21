@@ -1,5 +1,10 @@
 //go:build postgresql
 
+// Package postgresql extracts parser-neutral statements from PostgreSQL AST nodes.
+// input: pg_query DropStmt and TruncateStmt nodes carrying one or more relation targets
+// output: normalized DROP/TRUNCATE DDL facts preserving every named relation in Targets
+// pos: infrastructure extraction adapter between PostgreSQL AST and domain spec
+// note: if this file changes, update this header and module README.md.
 package postgresql
 
 import (
@@ -16,7 +21,11 @@ func extractDropStmt(statement spec.Statement, stmt *pg_query.DropStmt) spec.Sta
 	}
 	switch stmt.GetRemoveType() {
 	case pg_query.ObjectType_OBJECT_TABLE:
-		statement.DDL = &spec.DDL{Operation: spec.DDLOperationDropTable, Table: tableFromObjectName(stmt.GetObjects())}
+		statement.DDL = &spec.DDL{
+			Operation: spec.DDLOperationDropTable,
+			Table:     tableFromObjectName(stmt.GetObjects()),
+			Targets:   tablesFromObjectNames(stmt.GetObjects()),
+		}
 	case pg_query.ObjectType_OBJECT_VIEW:
 		if len(stmt.GetObjects()) != 1 {
 			return unsupportedStatement(statement, "drop", "postgresql multi-target drop view is unsupported in v1")
@@ -365,7 +374,11 @@ func extractTruncateStmt(statement spec.Statement, stmt *pg_query.TruncateStmt) 
 	if stmt == nil {
 		return unsupportedStatement(statement, "truncate", "postgresql truncate statement payload is missing")
 	}
-	statement.DDL = &spec.DDL{Operation: spec.DDLOperationTruncateTable, Table: tableFromRelationNodeList(stmt.GetRelations())}
+	statement.DDL = &spec.DDL{
+		Operation: spec.DDLOperationTruncateTable,
+		Table:     tableFromRelationNodeList(stmt.GetRelations()),
+		Targets:   tablesFromRelationNodeList(stmt.GetRelations()),
+	}
 	return statement
 }
 

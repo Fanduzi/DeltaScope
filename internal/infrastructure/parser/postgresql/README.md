@@ -8,6 +8,9 @@ Build-tagged PostgreSQL parser adapter for parser wiring and parser-neutral extr
 |------|---------------|
 | parser.go | Parses PostgreSQL SQL text and classifies statements when built with the `postgresql` tag |
 | extractor.go | Defines the PostgreSQL extracted-statement wrapper and extractor that populates normalized spec fields (column `NotNull`, `Default`, constraints) for ALTER TABLE ADD COLUMN statements |
+| extractor_ddl_drop.go | Extracts PostgreSQL DROP/TRUNCATE DDL preserving every named relation in `DDL.Targets` |
+| extractor_helpers.go | Shared AST-to-spec conversion helpers, including multi-relation target lists |
+| extractor_multi_target_postgresql_tag_test.go | Verifies PostgreSQL DROP TABLE and TRUNCATE extraction retains every named relation target |
 | extractor_dml.go | Extracts PostgreSQL DML mentioned tables, MutationTargets, and bounded predicate facts used by the shared offline impact estimator |
 | extractor_dml_postgresql_tag_test.go | Verifies literal/placeholder primary-key equality and conservative unknown predicate shapes |
 | query_access.go | Extracts query access facts (read classification, relations, column references, output lineage, unproven effect reasons) from PostgreSQL AST |
@@ -54,6 +57,7 @@ Build-tagged PostgreSQL parser adapter for parser wiring and parser-neutral extr
 - The extractor normalizes PostgreSQL annotation DDL (`COMMENT ON`, `SECURITY LABEL`) into `spec.DDL` with operations `comment_on` and `security_label`. Options include `target_type` (table, view, etc.), `target_name`, `is_null` (true/false), and `provider` (for security labels). Comment text and security label text are never stored in normalized specs. DeltaScope does not inspect live comment or label state.
 - The extractor normalizes PostgreSQL event trigger DDL (`CREATE/ALTER/DROP EVENT TRIGGER`) into `spec.DDL` with operations `create_event_trigger`, `alter_event_trigger`, and `drop_event_trigger`. Options include `event` (ddl_command_end, etc.), `function` (name only, no body), `action` (enable/disable/rename/enable_replica/enable_always), `new_name`, and `if_exists`. Function bodies are never stored. DeltaScope does not inspect live event trigger state.
 - The extractor normalizes PostgreSQL rewrite rule DDL (`CREATE/ALTER/DROP RULE`) into `spec.DDL` with operations `create_rule`, `alter_rule`, and `drop_rule`. Options include `table` (target relation), `event` (insert/update/delete/select), `action` (rename), `new_name`, and `if_exists`. Rule action/query bodies are never stored. DeltaScope does not inspect live rule state.
+- The extractor preserves every relation named by PostgreSQL `DROP TABLE` and `TRUNCATE` in `DDL.Targets` (with `DDL.Table` kept as the first target) so the shared table denylist rule checks each target regardless of position.
 - This adapter only establishes the parser seam and normalized statement extraction.
 - Rich PostgreSQL statement extraction continues to expand across phases.
 

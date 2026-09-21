@@ -283,6 +283,144 @@ func TestExtractorCapturesCreateViewDropAndTruncateFacts(t *testing.T) {
 	}
 }
 
+func TestExtractorDropTablePreservesEveryTarget(t *testing.T) {
+	t.Parallel()
+
+	stmt := extractSingleStatement(t, "drop table if exists app.users, `Sensitive Data`, audit.log_archive")
+	if stmt.DDL == nil || stmt.DDL.Operation != spec.DDLOperationDropTable {
+		t.Fatalf("expected drop table facts, got %#v", stmt.DDL)
+	}
+	if stmt.DDL.Options["multiple_targets"] != "3" {
+		t.Fatalf("expected multiple_targets=3, got %#v", stmt.DDL.Options)
+	}
+	if stmt.DDL.Table == nil || stmt.DDL.Table.Schema != "app" || stmt.DDL.Table.Name != "users" {
+		t.Fatalf("expected primary table to stay the first target, got %#v", stmt.DDL.Table)
+	}
+	want := []spec.Table{
+		{Schema: "app", Name: "users"},
+		{Name: "sensitive data"},
+		{Schema: "audit", Name: "log_archive"},
+	}
+	targets := stmt.DDL.TableTargets()
+	if len(targets) != len(want) {
+		t.Fatalf("expected %d drop targets, got %#v", len(want), targets)
+	}
+	for i := range want {
+		if targets[i].Schema != want[i].Schema || targets[i].Name != want[i].Name {
+			t.Fatalf("target %d = %#v, want %#v", i, targets[i], want[i])
+		}
+	}
+}
+
+func TestExtractorRenameTablePreservesEverySourceAndDestination(t *testing.T) {
+	t.Parallel()
+
+	stmt := extractSingleStatement(t, "rename table app.users to `Users Backup`, staging.orders to prod.orders")
+	if stmt.DDL == nil || stmt.DDL.Operation != spec.DDLOperationRenameTable {
+		t.Fatalf("expected rename table facts, got %#v", stmt.DDL)
+	}
+	if stmt.DDL.Table == nil || stmt.DDL.Table.Schema != "app" || stmt.DDL.Table.Name != "users" {
+		t.Fatalf("expected primary table to stay the first source, got %#v", stmt.DDL.Table)
+	}
+	// The unquoted-looking `Users Backup` destination is written unqualified, so
+	// it inherits the source schema `app`; the second pair stays explicit.
+	want := []spec.Table{
+		{Schema: "app", Name: "users"},
+		{Schema: "app", Name: "users backup"},
+		{Schema: "staging", Name: "orders"},
+		{Schema: "prod", Name: "orders"},
+	}
+	targets := stmt.DDL.TableTargets()
+	if len(targets) != len(want) {
+		t.Fatalf("expected %d rename targets, got %#v", len(want), targets)
+	}
+	for i := range want {
+		if targets[i].Schema != want[i].Schema || targets[i].Name != want[i].Name {
+			t.Fatalf("target %d = %#v, want %#v", i, targets[i], want[i])
+		}
+	}
+	if len(stmt.DDL.Alter) != 2 {
+		t.Fatalf("expected 2 rename alter actions, got %#v", stmt.DDL.Alter)
+	}
+	second := stmt.DDL.Alter[1]
+	if second.Options["old_table"] != "orders" || second.Options["old_schema"] != "staging" ||
+		second.Options["new_table"] != "orders" || second.Options["new_schema"] != "prod" {
+		t.Fatalf("expected second pair in alter options, got %#v", second.Options)
+	}
+}
+
+func TestExtractorAlterRenameTableKeepsSourceAndDestinationTargets(t *testing.T) {
+	t.Parallel()
+
+	stmt := extractSingleStatement(t, "alter table app.users rename to prod.users_archive")
+	if stmt.DDL == nil || stmt.DDL.Operation != spec.DDLOperationAlterTable {
+		t.Fatalf("expected alter table facts, got %#v", stmt.DDL)
+	}
+	if stmt.DDL.Table == nil || stmt.DDL.Table.Schema != "app" || stmt.DDL.Table.Name != "users" {
+		t.Fatalf("expected primary table to stay the alter subject, got %#v", stmt.DDL.Table)
+	}
+	want := []spec.Table{
+		{Schema: "app", Name: "users"},
+		{Schema: "prod", Name: "users_archive"},
+	}
+	targets := stmt.DDL.TableTargets()
+	if len(targets) != len(want) {
+		t.Fatalf("expected %d alter targets, got %#v", len(want), targets)
+	}
+	for i := range want {
+		if targets[i].Schema != want[i].Schema || targets[i].Name != want[i].Name {
+			t.Fatalf("target %d = %#v, want %#v", i, targets[i], want[i])
+		}
+	}
+	if len(stmt.DDL.Alter) != 1 || stmt.DDL.Alter[0].Action != "rename_table" {
+		t.Fatalf("expected rename_table alter action, got %#v", stmt.DDL.Alter)
+	}
+
+	plain := extractSingleStatement(t, "alter table app.users add column note varchar(8)")
+	if plain.DDL == nil || len(plain.DDL.Targets) != 0 {
+		t.Fatalf("expected non-rename alter to leave Targets empty, got %#v", plain.DDL)
+	}
+	if targets := plain.DDL.TableTargets(); len(targets) != 1 || targets[0].Name != "users" {
+		t.Fatalf("expected Table fallback target, got %#v", targets)
+	}
+}
+
+func TestExtractorRenameDestinationInheritsSourceSchema(t *testing.T) {
+	t.Parallel()
+
+	alter := extractSingleStatement(t, "alter table app.users rename to users_archive")
+	want := []spec.Table{
+		{Schema: "app", Name: "users"},
+		{Schema: "app", Name: "users_archive"},
+	}
+	targets := alter.DDL.TableTargets()
+	if len(targets) != len(want) {
+		t.Fatalf("expected %d alter targets, got %#v", len(want), targets)
+	}
+	for i := range want {
+		if targets[i].Schema != want[i].Schema || targets[i].Name != want[i].Name {
+			t.Fatalf("target %d = %#v, want %#v (unqualified destination must inherit source schema)", i, targets[i], want[i])
+		}
+	}
+
+	rename := extractSingleStatement(t, "rename table app.users to users_archive, prod.orders to archive")
+	want = []spec.Table{
+		{Schema: "app", Name: "users"},
+		{Schema: "app", Name: "users_archive"},
+		{Schema: "prod", Name: "orders"},
+		{Schema: "prod", Name: "archive"},
+	}
+	targets = rename.DDL.TableTargets()
+	if len(targets) != len(want) {
+		t.Fatalf("expected %d rename targets, got %#v", len(want), targets)
+	}
+	for i := range want {
+		if targets[i].Schema != want[i].Schema || targets[i].Name != want[i].Name {
+			t.Fatalf("target %d = %#v, want %#v", i, targets[i], want[i])
+		}
+	}
+}
+
 func TestExtractorHelperMappingsCoverSwitchVariants(t *testing.T) {
 	t.Parallel()
 	rowFormats := map[uint64]string{

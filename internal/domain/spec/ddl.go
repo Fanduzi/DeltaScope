@@ -7,8 +7,15 @@ package spec
 
 // DDL contains the structural metadata extracted from a DDL statement.
 type DDL struct {
-	Operation   DDLOperation `json:"operation,omitempty"`
-	Table       *Table       `json:"table,omitempty"`
+	Operation DDLOperation `json:"operation,omitempty"`
+	Table     *Table       `json:"table,omitempty"`
+	// Targets lists every table-level object identity the statement names, in
+	// source order: each DROP TABLE/VIEW name, each TRUNCATE relation, each
+	// RENAME TABLE source and destination pair-wise, and ALTER TABLE
+	// RENAME TO destinations after the altered subject. Table stays the
+	// primary (first) target for single-target consumers; use TableTargets
+	// to read the complete list.
+	Targets     []Table      `json:"targets,omitempty"`
 	Columns     []Column     `json:"columns,omitempty"`
 	PrimaryKey  *Index       `json:"primary_key,omitempty"`
 	Indexes     []Index      `json:"indexes,omitempty"`
@@ -21,6 +28,23 @@ type DDL struct {
 	HasPartition  bool              `json:"has_partition,omitempty"`
 	ObjectName    string            `json:"object_name,omitempty"`
 	ObjectType    string            `json:"object_type,omitempty"`
+}
+
+// TableTargets returns every table-level object identity the statement names,
+// in source order. Extractors that populate Targets report them all;
+// otherwise the primary Table is the single target so consumers do not
+// rediscover targets dropped during extraction.
+func (d *DDL) TableTargets() []Table {
+	if d == nil {
+		return nil
+	}
+	if len(d.Targets) > 0 {
+		return d.Targets
+	}
+	if d.Table != nil {
+		return []Table{*d.Table}
+	}
+	return nil
 }
 
 // DDLOperation identifies the normalized DDL operation represented by a statement.

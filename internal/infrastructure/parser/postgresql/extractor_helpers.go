@@ -1,5 +1,10 @@
 //go:build postgresql
 
+// Package postgresql provides shared AST-to-spec conversion helpers.
+// input: pg_query nodes for names, relations, and typed values
+// output: parser-neutral spec values including multi-relation target lists
+// pos: infrastructure extraction helpers shared by PostgreSQL extractors
+// note: if this file changes, update this header and module README.md.
 package postgresql
 
 import (
@@ -143,8 +148,24 @@ func tableFromRelationNodeList(nodes []*pg_query.Node) *spec.Table {
 	return nil
 }
 
+func tablesFromRelationNodeList(nodes []*pg_query.Node) []spec.Table {
+	tables := make([]spec.Table, 0, len(nodes))
+	for _, node := range nodes {
+		if node == nil {
+			continue
+		}
+		if table := tableFromRangeVar(node.GetRangeVar()); table != nil {
+			tables = append(tables, *table)
+		}
+	}
+	return tables
+}
+
 func tableFromObjectName(nodes []*pg_query.Node) *spec.Table {
-	parts := objectNameParts(nodes)
+	return tableFromNameParts(objectNameParts(nodes))
+}
+
+func tableFromNameParts(parts []string) *spec.Table {
 	if len(parts) == 0 {
 		return nil
 	}
@@ -152,6 +173,19 @@ func tableFromObjectName(nodes []*pg_query.Node) *spec.Table {
 		return &spec.Table{Name: parts[0]}
 	}
 	return &spec.Table{Schema: parts[len(parts)-2], Name: parts[len(parts)-1]}
+}
+
+func tablesFromObjectNames(nodes []*pg_query.Node) []spec.Table {
+	tables := make([]spec.Table, 0, len(nodes))
+	for _, node := range nodes {
+		if node == nil {
+			continue
+		}
+		if table := tableFromNameParts(objectNameParts([]*pg_query.Node{node})); table != nil {
+			tables = append(tables, *table)
+		}
+	}
+	return tables
 }
 
 func objectNameFromObjectName(nodes []*pg_query.Node) string {

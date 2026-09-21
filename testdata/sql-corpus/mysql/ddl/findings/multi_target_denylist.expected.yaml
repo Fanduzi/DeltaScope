@@ -1,0 +1,25 @@
+name: multi_target_denylist
+dialect: mysql
+category: ddl
+expect:
+  parse_ok: true
+  statements:
+    count: 7
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.table.denylist.forbid
+config:
+  rules:
+    ddl.table.drop.forbid:
+      enabled: false
+    ddl.alter.rename_table.forbid:
+      enabled: false
+    ddl.rename_table.notice:
+      enabled: false
+    ddl.table.denylist.forbid:
+      enabled: true
+      level: blocker
+      params:
+        tables: [sensitive, c, b.c]

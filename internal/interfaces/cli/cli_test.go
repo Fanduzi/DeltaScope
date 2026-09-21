@@ -16,10 +16,12 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"io"
 	"math/big"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"testing"
@@ -27,6 +29,7 @@ import (
 
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
+	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -525,6 +528,216 @@ func TestAuditCommandSupportsConfigOverride(t *testing.T) {
 	if stderr.Len() != 0 {
 		t.Fatalf("expected no stderr output, got %q", stderr.String())
 	}
+}
+
+func TestAuditCommandDenylistChecksEveryMultiTargetDropAndRename(t *testing.T) {
+	t.Parallel()
+	configPath := writeDenylistOnlyPolicy(t)
+
+	cases := []struct {
+		name    string
+		sql     string
+		blocked bool
+	}{
+		{name: "single", sql: "DROP TABLE sensitive", blocked: true},
+		{name: "second", sql: "DROP TABLE harmless, sensitive", blocked: true},
+		{name: "first", sql: "DROP TABLE sensitive, harmless", blocked: true},
+		{name: "middle", sql: "DROP TABLE harmless, sensitive, other", blocked: true},
+		{name: "all_allowed", sql: "DROP TABLE harmless, other", blocked: false},
+		{name: "rename_source", sql: "RENAME TABLE harmless TO harmless_old, sensitive TO sensitive_old", blocked: true},
+		{name: "rename_destination", sql: "RENAME TABLE harmless TO harmless_old, other TO sensitive", blocked: true},
+		{name: "rename_allowed", sql: "RENAME TABLE harmless TO harmless_old, other TO other_old", blocked: false},
+		{name: "quoted", sql: "DROP TABLE harmless, `Sensitive`", blocked: true},
+		{name: "qualified", sql: "DROP TABLE harmless, prod.sensitive", blocked: true},
+	}
+
+	for _, dialect := range []string{"mysql", "tidb"} {
+		for _, tc := range cases {
+			tc := tc
+			t.Run(dialect+"/"+tc.name, func(t *testing.T) {
+				t.Parallel()
+				stdout := &strings.Builder{}
+				stderr := &strings.Builder{}
+				code := Execute(
+					context.Background(),
+					[]string{"audit", "--dialect", dialect, "--sql", tc.sql,
+						"--config", configPath, "--format", "json", "--fail-on", "blocker"},
+					strings.NewReader(""),
+					stdout,
+					stderr,
+				)
+				decoded := decodeAuditJSON(t, stdout.String())
+				statements, ok := decoded["statements"].([]any)
+				if !ok || len(statements) != 1 {
+					t.Fatalf("expected exactly 1 statement, got %#v", decoded["statements"])
+				}
+				if diagnostics, ok := decoded["diagnostics"]; ok && len(diagnostics.([]any)) != 0 {
+					t.Fatalf("expected no diagnostics, got %#v", diagnostics)
+				}
+				if unsupported, ok := decoded["unsupported"]; ok && len(unsupported.([]any)) != 0 {
+					t.Fatalf("expected no unsupported entries, got %#v", unsupported)
+				}
+				var denylist []any
+				statement := statements[0].(map[string]any)
+				rawFindings, _ := statement["findings"].([]any)
+				for _, raw := range rawFindings {
+					finding := raw.(map[string]any)
+					if finding["rule_id"] == "ddl.table.denylist.forbid" {
+						denylist = append(denylist, finding)
+					}
+				}
+				wantCount := 0
+				wantCode := exitOK
+				wantVerdict := "pass"
+				if tc.blocked {
+					wantCount = 1
+					wantCode = exitAudit
+					wantVerdict = "reject"
+				}
+				if len(denylist) != wantCount {
+					t.Fatalf("expected %d denylist findings, got %#v", wantCount, statement["findings"])
+				}
+				if code != wantCode || decoded["verdict"] != wantVerdict {
+					t.Fatalf("expected exit %d verdict %q, got exit %d verdict %#v", wantCode, wantVerdict, code, decoded["verdict"])
+				}
+				if !tc.blocked {
+					return
+				}
+				finding := denylist[0].(map[string]any)
+				if finding["level"] != "blocker" {
+					t.Fatalf("expected blocker level, got %#v", finding["level"])
+				}
+				metadata, ok := finding["metadata"].(map[string]any)
+				if !ok || metadata["table"] != "sensitive" {
+					t.Fatalf("expected metadata.table sensitive, got %#v", finding["metadata"])
+				}
+				location, ok := finding["location"].(map[string]any)
+				if !ok || location["line"] != float64(1) {
+					t.Fatalf("expected line 1 location, got %#v", finding["location"])
+				}
+				if decoded["fail_on_triggered"] != true {
+					t.Fatalf("expected fail_on_triggered true, got %#v", decoded["fail_on_triggered"])
+				}
+			})
+		}
+	}
+}
+
+func TestAuditCommandDenylistResolvesInheritedAndDottedTargets(t *testing.T) {
+	t.Parallel()
+
+	runAudit := func(t *testing.T, dialect, sql, configPath string) (int, map[string]any) {
+		t.Helper()
+		stdout := &strings.Builder{}
+		stderr := &strings.Builder{}
+		code := Execute(
+			context.Background(),
+			[]string{"audit", "--dialect", dialect, "--sql", sql,
+				"--config", configPath, "--format", "json", "--fail-on", "blocker"},
+			strings.NewReader(""),
+			stdout,
+			stderr,
+		)
+		return code, decodeAuditJSON(t, stdout.String())
+	}
+	denylistFindings := func(decoded map[string]any) []any {
+		statements, ok := decoded["statements"].([]any)
+		if !ok || len(statements) != 1 {
+			t.Fatalf("expected exactly 1 statement, got %#v", decoded["statements"])
+		}
+		var denylist []any
+		statement := statements[0].(map[string]any)
+		rawFindings, _ := statement["findings"].([]any)
+		for _, raw := range rawFindings {
+			finding := raw.(map[string]any)
+			if finding["rule_id"] == "ddl.table.denylist.forbid" {
+				denylist = append(denylist, finding)
+			}
+		}
+		return denylist
+	}
+
+	// Regression: an unqualified rename destination inherits the source
+	// schema, so it must match qualified_tables selectors.
+	qualifiedPolicy := writeDenylistPolicy(t, "      qualified_tables: [app.sensitive]\n")
+	for _, dialect := range []string{"mysql", "tidb"} {
+		for _, tc := range []struct {
+			name    string
+			sql     string
+			blocked bool
+		}{
+			{name: "alter_rename_inherits", sql: "ALTER TABLE app.harmless RENAME TO sensitive", blocked: true},
+			{name: "rename_inherits", sql: "RENAME TABLE app.harmless TO sensitive", blocked: true},
+			{name: "unqualified_boundary", sql: "RENAME TABLE harmless TO sensitive", blocked: false},
+		} {
+			tc := tc
+			t.Run(dialect+"/"+tc.name, func(t *testing.T) {
+				t.Parallel()
+				code, decoded := runAudit(t, dialect, tc.sql, qualifiedPolicy)
+				denylist := denylistFindings(decoded)
+				if tc.blocked {
+					if code != exitAudit || decoded["verdict"] != "reject" {
+						t.Fatalf("expected exit 1 verdict reject, got exit %d verdict %#v", code, decoded["verdict"])
+					}
+					if len(denylist) != 1 {
+						t.Fatalf("expected 1 denylist finding, got %#v", denylist)
+					}
+					metadata, _ := denylist[0].(map[string]any)["metadata"].(map[string]any)
+					if metadata["schema"] != "app" || metadata["table"] != "sensitive" {
+						t.Fatalf("expected app.sensitive finding metadata, got %#v", metadata)
+					}
+					return
+				}
+				if code != exitOK || decoded["verdict"] != "pass" || len(denylist) != 0 {
+					t.Fatalf("expected exit 0 verdict pass with no findings, got exit %d verdict %#v findings %#v", code, decoded["verdict"], denylist)
+				}
+			})
+		}
+	}
+
+	// Regression: `a.b`.`c` and `a`.`b.c` are distinct objects and must not
+	// deduplicate into one finding.
+	dottedPolicy := writeDenylistPolicy(t, "      tables: [c, b.c]\n")
+	t.Run("mysql/dotted_identities", func(t *testing.T) {
+		t.Parallel()
+		code, decoded := runAudit(t, "mysql", "DROP TABLE `a.b`.`c`, `a`.`b.c`", dottedPolicy)
+		if code != exitAudit || decoded["verdict"] != "reject" {
+			t.Fatalf("expected exit 1 verdict reject, got exit %d verdict %#v", code, decoded["verdict"])
+		}
+		denylist := denylistFindings(decoded)
+		if len(denylist) != 2 {
+			t.Fatalf("expected 2 denylist findings for distinct dotted identities, got %#v", denylist)
+		}
+	})
+}
+
+func writeDenylistOnlyPolicy(t *testing.T) string {
+	t.Helper()
+	return writeDenylistPolicy(t, "      tables: [sensitive]\n")
+}
+
+func writeDenylistPolicy(t *testing.T, params string) string {
+	t.Helper()
+	configPath := filepath.Join(t.TempDir(), "denylist-only.yaml")
+	var builder strings.Builder
+	builder.WriteString("rules:\n")
+	ruleIDs := make([]string, 0, len(policy.Default().Rules))
+	for id := range policy.Default().Rules {
+		ruleIDs = append(ruleIDs, id)
+	}
+	sort.Strings(ruleIDs)
+	for _, id := range ruleIDs {
+		if id == "ddl.table.denylist.forbid" {
+			continue
+		}
+		fmt.Fprintf(&builder, "  %s:\n    enabled: false\n", strconv.Quote(id))
+	}
+	builder.WriteString("  \"ddl.table.denylist.forbid\":\n    enabled: true\n    level: blocker\n    params:\n")
+	builder.WriteString(params)
+	if err := os.WriteFile(configPath, []byte(builder.String()), 0o600); err != nil {
+		t.Fatalf("write denylist policy: %v", err)
+	}
+	return configPath
 }
 
 func TestAuditCommandRendersNamingGovernanceFinding(t *testing.T) {

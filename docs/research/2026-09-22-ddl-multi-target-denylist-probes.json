@@ -1,0 +1,1985 @@
+{
+ "head": "milestone/mysql-tidb-ddl-completion working tree on base 7a11ac94a372f9aefed52c8d43c70a377c230085",
+ "mode": "offline; isolated denylist policy (all other rules disabled where the fixture writes one, or drop.forbid disabled); --fail-on none; no submitted SQL executed",
+ "command": "go build -o /tmp/deltascope-ddl-probes ./cmd/deltascope && CGO_ENABLED=1 go build -tags postgresql -o /tmp/deltascope-ddl-probes-pg ./cmd/deltascope",
+ "probes": [
+  {
+   "id": "mysql.denylist_single",
+   "dialect": "mysql",
+   "sql": "DROP TABLE sensitive",
+   "config_yaml": "rules:\n  ddl.table.drop.forbid:\n    enabled: false\n  ddl.table.denylist.forbid:\n    enabled: true\n    level: blocker\n    params:\n      tables: [sensitive]\n",
+   "exit_code": 0,
+   "stderr": "",
+   "result": {
+    "verdict": "reject",
+    "summary": {
+     "statements": 1,
+     "blockers": 1,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "DROP TABLE sensitive",
+      "normalized_sql": "DROP TABLE sensitive",
+      "findings": [
+       {
+        "rule_id": "ddl.table.denylist.forbid",
+        "level": "blocker",
+        "message": "DDL target \"sensitive\" is blocked by the table denylist policy",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+        "metadata": {
+         "schema": "",
+         "table": "sensitive"
+        },
+        "explanation": {
+         "summary": "Forbid DDL table denylist forbid",
+         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+         "metadata": {
+          "status": "limited",
+          "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
+         }
+        }
+       }
+      ]
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 366,
+     "applicable": 4,
+     "skipped": [
+      {
+       "reason": "dialect_mismatch",
+       "count": 190
+      }
+     ]
+    },
+    "context": {
+     "mode": "offline",
+     "dialect": "mysql",
+     "dialect_source": "flag",
+     "note": "existence not checked (no database connection)",
+     "unproven": [
+      "column_exists",
+      "table_exists"
+     ]
+    }
+   }
+  },
+  {
+   "id": "mysql.denylist_second",
+   "dialect": "mysql",
+   "sql": "DROP TABLE harmless, sensitive",
+   "config_yaml": "rules:\n  ddl.table.drop.forbid:\n    enabled: false\n  ddl.table.denylist.forbid:\n    enabled: true\n    level: blocker\n    params:\n      tables: [sensitive]\n",
+   "exit_code": 0,
+   "stderr": "",
+   "result": {
+    "verdict": "reject",
+    "summary": {
+     "statements": 1,
+     "blockers": 1,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "DROP TABLE harmless, sensitive",
+      "normalized_sql": "DROP TABLE harmless, sensitive",
+      "findings": [
+       {
+        "rule_id": "ddl.table.denylist.forbid",
+        "level": "blocker",
+        "message": "DDL target \"sensitive\" is blocked by the table denylist policy",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+        "metadata": {
+         "schema": "",
+         "table": "sensitive"
+        },
+        "explanation": {
+         "summary": "Forbid DDL table denylist forbid",
+         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+         "metadata": {
+          "status": "limited",
+          "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
+         }
+        }
+       }
+      ]
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 366,
+     "applicable": 4,
+     "skipped": [
+      {
+       "reason": "dialect_mismatch",
+       "count": 190
+      }
+     ]
+    },
+    "context": {
+     "mode": "offline",
+     "dialect": "mysql",
+     "dialect_source": "flag",
+     "note": "existence not checked (no database connection)",
+     "unproven": [
+      "column_exists",
+      "table_exists"
+     ]
+    }
+   }
+  },
+  {
+   "id": "mysql.denylist_first",
+   "dialect": "mysql",
+   "sql": "DROP TABLE sensitive, harmless",
+   "config_yaml": "rules:\n  ddl.table.drop.forbid:\n    enabled: false\n  ddl.table.denylist.forbid:\n    enabled: true\n    level: blocker\n    params:\n      tables: [sensitive]\n",
+   "exit_code": 0,
+   "stderr": "",
+   "result": {
+    "verdict": "reject",
+    "summary": {
+     "statements": 1,
+     "blockers": 1,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "DROP TABLE sensitive, harmless",
+      "normalized_sql": "DROP TABLE sensitive, harmless",
+      "findings": [
+       {
+        "rule_id": "ddl.table.denylist.forbid",
+        "level": "blocker",
+        "message": "DDL target \"sensitive\" is blocked by the table denylist policy",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+        "metadata": {
+         "schema": "",
+         "table": "sensitive"
+        },
+        "explanation": {
+         "summary": "Forbid DDL table denylist forbid",
+         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+         "metadata": {
+          "status": "limited",
+          "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
+         }
+        }
+       }
+      ]
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 366,
+     "applicable": 4,
+     "skipped": [
+      {
+       "reason": "dialect_mismatch",
+       "count": 190
+      }
+     ]
+    },
+    "context": {
+     "mode": "offline",
+     "dialect": "mysql",
+     "dialect_source": "flag",
+     "note": "existence not checked (no database connection)",
+     "unproven": [
+      "column_exists",
+      "table_exists"
+     ]
+    }
+   }
+  },
+  {
+   "id": "mysql.denylist_rename_second",
+   "dialect": "mysql",
+   "sql": "RENAME TABLE harmless TO harmless_old, sensitive TO sensitive_old",
+   "config_yaml": "rules:\n  ddl.table.drop.forbid:\n    enabled: false\n  ddl.table.denylist.forbid:\n    enabled: true\n    level: blocker\n    params:\n      tables: [sensitive]\n",
+   "exit_code": 0,
+   "stderr": "",
+   "result": {
+    "verdict": "reject",
+    "summary": {
+     "statements": 1,
+     "blockers": 1,
+     "warnings": 0,
+     "notices": 1
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "RENAME TABLE harmless TO harmless_old, sensitive TO sensitive_old",
+      "normalized_sql": "RENAME TABLE harmless TO harmless_old, sensitive TO sensitive_old",
+      "findings": [
+       {
+        "rule_id": "ddl.table.denylist.forbid",
+        "level": "blocker",
+        "message": "DDL target \"sensitive\" is blocked by the table denylist policy",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+        "metadata": {
+         "schema": "",
+         "table": "sensitive"
+        },
+        "explanation": {
+         "summary": "Forbid DDL table denylist forbid",
+         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+         "metadata": {
+          "status": "limited",
+          "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
+         }
+        }
+       },
+       {
+        "rule_id": "ddl.rename_table.notice",
+        "level": "notice",
+        "message": "RENAME TABLE \"harmless\" changes table identifiers",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "verify all references to the old table name are updated before applying",
+        "metadata": {
+         "operation": "rename_table",
+         "table": "harmless"
+        },
+        "explanation": {
+         "summary": "Check DDL rename table notice",
+         "why": "The statement matched the shipped governance rule for this pattern.",
+         "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+         "suggestion": "verify all references to the old table name are updated before applying"
+        }
+       }
+      ]
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 366,
+     "applicable": 2,
+     "skipped": [
+      {
+       "reason": "dialect_mismatch",
+       "count": 190
+      }
+     ]
+    },
+    "context": {
+     "mode": "offline",
+     "dialect": "mysql",
+     "dialect_source": "flag",
+     "note": "existence not checked (no database connection)",
+     "unproven": [
+      "column_exists",
+      "table_exists"
+     ]
+    }
+   }
+  },
+  {
+   "id": "tidb.denylist_single",
+   "dialect": "tidb",
+   "sql": "DROP TABLE sensitive",
+   "config_yaml": "rules:\n  ddl.table.drop.forbid:\n    enabled: false\n  ddl.table.denylist.forbid:\n    enabled: true\n    level: blocker\n    params:\n      tables: [sensitive]\n",
+   "exit_code": 0,
+   "stderr": "",
+   "result": {
+    "verdict": "reject",
+    "summary": {
+     "statements": 1,
+     "blockers": 1,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "DROP TABLE sensitive",
+      "normalized_sql": "DROP TABLE sensitive",
+      "findings": [
+       {
+        "rule_id": "ddl.table.denylist.forbid",
+        "level": "blocker",
+        "message": "DDL target \"sensitive\" is blocked by the table denylist policy",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+        "metadata": {
+         "schema": "",
+         "table": "sensitive"
+        },
+        "explanation": {
+         "summary": "Forbid DDL table denylist forbid",
+         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+         "metadata": {
+          "status": "limited",
+          "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
+         }
+        }
+       }
+      ]
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 366,
+     "applicable": 4,
+     "skipped": [
+      {
+       "reason": "dialect_mismatch",
+       "count": 190
+      }
+     ]
+    },
+    "context": {
+     "mode": "offline",
+     "dialect": "tidb",
+     "dialect_source": "flag",
+     "note": "existence not checked (no database connection)",
+     "unproven": [
+      "column_exists",
+      "table_exists"
+     ]
+    }
+   }
+  },
+  {
+   "id": "tidb.denylist_second",
+   "dialect": "tidb",
+   "sql": "DROP TABLE harmless, sensitive",
+   "config_yaml": "rules:\n  ddl.table.drop.forbid:\n    enabled: false\n  ddl.table.denylist.forbid:\n    enabled: true\n    level: blocker\n    params:\n      tables: [sensitive]\n",
+   "exit_code": 0,
+   "stderr": "",
+   "result": {
+    "verdict": "reject",
+    "summary": {
+     "statements": 1,
+     "blockers": 1,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "DROP TABLE harmless, sensitive",
+      "normalized_sql": "DROP TABLE harmless, sensitive",
+      "findings": [
+       {
+        "rule_id": "ddl.table.denylist.forbid",
+        "level": "blocker",
+        "message": "DDL target \"sensitive\" is blocked by the table denylist policy",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+        "metadata": {
+         "schema": "",
+         "table": "sensitive"
+        },
+        "explanation": {
+         "summary": "Forbid DDL table denylist forbid",
+         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+         "metadata": {
+          "status": "limited",
+          "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
+         }
+        }
+       }
+      ]
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 366,
+     "applicable": 4,
+     "skipped": [
+      {
+       "reason": "dialect_mismatch",
+       "count": 190
+      }
+     ]
+    },
+    "context": {
+     "mode": "offline",
+     "dialect": "tidb",
+     "dialect_source": "flag",
+     "note": "existence not checked (no database connection)",
+     "unproven": [
+      "column_exists",
+      "table_exists"
+     ]
+    }
+   }
+  },
+  {
+   "id": "tidb.denylist_first",
+   "dialect": "tidb",
+   "sql": "DROP TABLE sensitive, harmless",
+   "config_yaml": "rules:\n  ddl.table.drop.forbid:\n    enabled: false\n  ddl.table.denylist.forbid:\n    enabled: true\n    level: blocker\n    params:\n      tables: [sensitive]\n",
+   "exit_code": 0,
+   "stderr": "",
+   "result": {
+    "verdict": "reject",
+    "summary": {
+     "statements": 1,
+     "blockers": 1,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "DROP TABLE sensitive, harmless",
+      "normalized_sql": "DROP TABLE sensitive, harmless",
+      "findings": [
+       {
+        "rule_id": "ddl.table.denylist.forbid",
+        "level": "blocker",
+        "message": "DDL target \"sensitive\" is blocked by the table denylist policy",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+        "metadata": {
+         "schema": "",
+         "table": "sensitive"
+        },
+        "explanation": {
+         "summary": "Forbid DDL table denylist forbid",
+         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+         "metadata": {
+          "status": "limited",
+          "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
+         }
+        }
+       }
+      ]
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 366,
+     "applicable": 4,
+     "skipped": [
+      {
+       "reason": "dialect_mismatch",
+       "count": 190
+      }
+     ]
+    },
+    "context": {
+     "mode": "offline",
+     "dialect": "tidb",
+     "dialect_source": "flag",
+     "note": "existence not checked (no database connection)",
+     "unproven": [
+      "column_exists",
+      "table_exists"
+     ]
+    }
+   }
+  },
+  {
+   "id": "tidb.denylist_rename_second",
+   "dialect": "tidb",
+   "sql": "RENAME TABLE harmless TO harmless_old, sensitive TO sensitive_old",
+   "config_yaml": "rules:\n  ddl.table.drop.forbid:\n    enabled: false\n  ddl.table.denylist.forbid:\n    enabled: true\n    level: blocker\n    params:\n      tables: [sensitive]\n",
+   "exit_code": 0,
+   "stderr": "",
+   "result": {
+    "verdict": "reject",
+    "summary": {
+     "statements": 1,
+     "blockers": 1,
+     "warnings": 0,
+     "notices": 1
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "RENAME TABLE harmless TO harmless_old, sensitive TO sensitive_old",
+      "normalized_sql": "RENAME TABLE harmless TO harmless_old, sensitive TO sensitive_old",
+      "findings": [
+       {
+        "rule_id": "ddl.table.denylist.forbid",
+        "level": "blocker",
+        "message": "DDL target \"sensitive\" is blocked by the table denylist policy",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+        "metadata": {
+         "schema": "",
+         "table": "sensitive"
+        },
+        "explanation": {
+         "summary": "Forbid DDL table denylist forbid",
+         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+         "metadata": {
+          "status": "limited",
+          "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
+         }
+        }
+       },
+       {
+        "rule_id": "ddl.rename_table.notice",
+        "level": "notice",
+        "message": "RENAME TABLE \"harmless\" changes table identifiers",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "verify all references to the old table name are updated before applying",
+        "metadata": {
+         "operation": "rename_table",
+         "table": "harmless"
+        },
+        "explanation": {
+         "summary": "Check DDL rename table notice",
+         "why": "The statement matched the shipped governance rule for this pattern.",
+         "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+         "suggestion": "verify all references to the old table name are updated before applying"
+        }
+       }
+      ]
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 366,
+     "applicable": 2,
+     "skipped": [
+      {
+       "reason": "dialect_mismatch",
+       "count": 190
+      }
+     ]
+    },
+    "context": {
+     "mode": "offline",
+     "dialect": "tidb",
+     "dialect_source": "flag",
+     "note": "existence not checked (no database connection)",
+     "unproven": [
+      "column_exists",
+      "table_exists"
+     ]
+    }
+   }
+  },
+  {
+   "id": "mysql.denylist_rename_dest",
+   "dialect": "mysql",
+   "sql": "RENAME TABLE harmless TO harmless_old, other TO sensitive",
+   "config_yaml": "rules:\n  ddl.table.drop.forbid:\n    enabled: false\n  ddl.table.denylist.forbid:\n    enabled: true\n    level: blocker\n    params:\n      tables: [sensitive]\n",
+   "exit_code": 0,
+   "stderr": "",
+   "result": {
+    "verdict": "reject",
+    "summary": {
+     "statements": 1,
+     "blockers": 1,
+     "warnings": 0,
+     "notices": 1
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "RENAME TABLE harmless TO harmless_old, other TO sensitive",
+      "normalized_sql": "RENAME TABLE harmless TO harmless_old, other TO sensitive",
+      "findings": [
+       {
+        "rule_id": "ddl.table.denylist.forbid",
+        "level": "blocker",
+        "message": "DDL target \"sensitive\" is blocked by the table denylist policy",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+        "metadata": {
+         "schema": "",
+         "table": "sensitive"
+        },
+        "explanation": {
+         "summary": "Forbid DDL table denylist forbid",
+         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+         "metadata": {
+          "status": "limited",
+          "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
+         }
+        }
+       },
+       {
+        "rule_id": "ddl.rename_table.notice",
+        "level": "notice",
+        "message": "RENAME TABLE \"harmless\" changes table identifiers",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "verify all references to the old table name are updated before applying",
+        "metadata": {
+         "operation": "rename_table",
+         "table": "harmless"
+        },
+        "explanation": {
+         "summary": "Check DDL rename table notice",
+         "why": "The statement matched the shipped governance rule for this pattern.",
+         "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+         "suggestion": "verify all references to the old table name are updated before applying"
+        }
+       }
+      ]
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 366,
+     "applicable": 2,
+     "skipped": [
+      {
+       "reason": "dialect_mismatch",
+       "count": 190
+      }
+     ]
+    },
+    "context": {
+     "mode": "offline",
+     "dialect": "mysql",
+     "dialect_source": "flag",
+     "note": "existence not checked (no database connection)",
+     "unproven": [
+      "column_exists",
+      "table_exists"
+     ]
+    }
+   }
+  },
+  {
+   "id": "mysql.denylist_alter_rename_dest",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE harmless RENAME TO sensitive",
+   "config_yaml": "rules:\n  ddl.table.drop.forbid:\n    enabled: false\n  ddl.table.denylist.forbid:\n    enabled: true\n    level: blocker\n    params:\n      tables: [sensitive]\n",
+   "exit_code": 0,
+   "stderr": "",
+   "result": {
+    "verdict": "reject",
+    "summary": {
+     "statements": 1,
+     "blockers": 2,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "ALTER TABLE harmless RENAME TO sensitive",
+      "normalized_sql": "ALTER TABLE harmless RENAME TO sensitive",
+      "findings": [
+       {
+        "rule_id": "ddl.alter.rename_table.forbid",
+        "level": "blocker",
+        "message": "ALTER TABLE rename table is forbidden",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "avoid rename table in this change or relax the policy intentionally",
+        "metadata": {
+         "action": "rename_table",
+         "name": "",
+         "table": "harmless"
+        },
+        "explanation": {
+         "summary": "Forbid DDL alter rename table forbid",
+         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+         "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+         "suggestion": "avoid rename table in this change or relax the policy intentionally"
+        }
+       },
+       {
+        "rule_id": "ddl.table.denylist.forbid",
+        "level": "blocker",
+        "message": "DDL target \"sensitive\" is blocked by the table denylist policy",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+        "metadata": {
+         "schema": "",
+         "table": "sensitive"
+        },
+        "explanation": {
+         "summary": "Forbid DDL table denylist forbid",
+         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+         "metadata": {
+          "status": "limited",
+          "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
+         }
+        }
+       }
+      ]
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 366,
+     "applicable": 6,
+     "skipped": [
+      {
+       "reason": "dialect_mismatch",
+       "count": 190
+      }
+     ]
+    },
+    "context": {
+     "mode": "offline",
+     "dialect": "mysql",
+     "dialect_source": "flag",
+     "note": "existence not checked (no database connection)",
+     "unproven": [
+      "column_exists",
+      "table_exists"
+     ]
+    }
+   }
+  },
+  {
+   "id": "mysql.denylist_alter_rename_qualified",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE app.harmless RENAME TO sensitive",
+   "config_yaml": "rules:\n  ddl.table.drop.forbid:\n    enabled: false\n  ddl.alter.rename_table.forbid:\n    enabled: false\n  ddl.rename_table.notice:\n    enabled: false\n  ddl.table.denylist.forbid:\n    enabled: true\n    level: blocker\n    params:\n      qualified_tables: [app.sensitive]\n",
+   "exit_code": 0,
+   "stderr": "",
+   "result": {
+    "verdict": "reject",
+    "summary": {
+     "statements": 1,
+     "blockers": 1,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "ALTER TABLE app.harmless RENAME TO sensitive",
+      "normalized_sql": "ALTER TABLE app.harmless RENAME TO sensitive",
+      "findings": [
+       {
+        "rule_id": "ddl.table.denylist.forbid",
+        "level": "blocker",
+        "message": "DDL target \"app.sensitive\" is blocked by the table denylist policy",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+        "metadata": {
+         "schema": "app",
+         "table": "sensitive"
+        },
+        "explanation": {
+         "summary": "Forbid DDL table denylist forbid",
+         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+         "metadata": {
+          "status": "limited",
+          "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
+         }
+        }
+       }
+      ]
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 364,
+     "applicable": 5,
+     "skipped": [
+      {
+       "reason": "dialect_mismatch",
+       "count": 190
+      }
+     ]
+    },
+    "context": {
+     "mode": "offline",
+     "dialect": "mysql",
+     "dialect_source": "flag",
+     "note": "existence not checked (no database connection)",
+     "unproven": [
+      "column_exists",
+      "table_exists"
+     ]
+    }
+   }
+  },
+  {
+   "id": "mysql.denylist_rename_dest_inherits",
+   "dialect": "mysql",
+   "sql": "RENAME TABLE app.harmless TO sensitive",
+   "config_yaml": "rules:\n  ddl.table.drop.forbid:\n    enabled: false\n  ddl.alter.rename_table.forbid:\n    enabled: false\n  ddl.rename_table.notice:\n    enabled: false\n  ddl.table.denylist.forbid:\n    enabled: true\n    level: blocker\n    params:\n      qualified_tables: [app.sensitive]\n",
+   "exit_code": 0,
+   "stderr": "",
+   "result": {
+    "verdict": "reject",
+    "summary": {
+     "statements": 1,
+     "blockers": 1,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "RENAME TABLE app.harmless TO sensitive",
+      "normalized_sql": "RENAME TABLE app.harmless TO sensitive",
+      "findings": [
+       {
+        "rule_id": "ddl.table.denylist.forbid",
+        "level": "blocker",
+        "message": "DDL target \"app.sensitive\" is blocked by the table denylist policy",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+        "metadata": {
+         "schema": "app",
+         "table": "sensitive"
+        },
+        "explanation": {
+         "summary": "Forbid DDL table denylist forbid",
+         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+         "metadata": {
+          "status": "limited",
+          "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
+         }
+        }
+       }
+      ]
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 364,
+     "applicable": 1,
+     "skipped": [
+      {
+       "reason": "dialect_mismatch",
+       "count": 190
+      }
+     ]
+    },
+    "context": {
+     "mode": "offline",
+     "dialect": "mysql",
+     "dialect_source": "flag",
+     "note": "existence not checked (no database connection)",
+     "unproven": [
+      "column_exists",
+      "table_exists"
+     ]
+    }
+   }
+  },
+  {
+   "id": "mysql.denylist_qualified",
+   "dialect": "mysql",
+   "sql": "DROP TABLE harmless, prod.sensitive",
+   "config_yaml": "rules:\n  ddl.table.drop.forbid:\n    enabled: false\n  ddl.table.denylist.forbid:\n    enabled: true\n    level: blocker\n    params:\n      tables: [sensitive]\n",
+   "exit_code": 0,
+   "stderr": "",
+   "result": {
+    "verdict": "reject",
+    "summary": {
+     "statements": 1,
+     "blockers": 1,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "DROP TABLE harmless, prod.sensitive",
+      "normalized_sql": "DROP TABLE harmless, prod.sensitive",
+      "findings": [
+       {
+        "rule_id": "ddl.table.denylist.forbid",
+        "level": "blocker",
+        "message": "DDL target \"prod.sensitive\" is blocked by the table denylist policy",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+        "metadata": {
+         "schema": "prod",
+         "table": "sensitive"
+        },
+        "explanation": {
+         "summary": "Forbid DDL table denylist forbid",
+         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+         "metadata": {
+          "status": "limited",
+          "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
+         }
+        }
+       }
+      ]
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 366,
+     "applicable": 4,
+     "skipped": [
+      {
+       "reason": "dialect_mismatch",
+       "count": 190
+      }
+     ]
+    },
+    "context": {
+     "mode": "offline",
+     "dialect": "mysql",
+     "dialect_source": "flag",
+     "note": "existence not checked (no database connection)",
+     "unproven": [
+      "column_exists",
+      "table_exists"
+     ]
+    }
+   }
+  },
+  {
+   "id": "mysql.denylist_quoted",
+   "dialect": "mysql",
+   "sql": "DROP TABLE harmless, `Sensitive`",
+   "config_yaml": "rules:\n  ddl.table.drop.forbid:\n    enabled: false\n  ddl.table.denylist.forbid:\n    enabled: true\n    level: blocker\n    params:\n      tables: [sensitive]\n",
+   "exit_code": 0,
+   "stderr": "",
+   "result": {
+    "verdict": "reject",
+    "summary": {
+     "statements": 1,
+     "blockers": 1,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "DROP TABLE harmless, `Sensitive`",
+      "normalized_sql": "DROP TABLE harmless, `Sensitive`",
+      "findings": [
+       {
+        "rule_id": "ddl.table.denylist.forbid",
+        "level": "blocker",
+        "message": "DDL target \"sensitive\" is blocked by the table denylist policy",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+        "metadata": {
+         "schema": "",
+         "table": "sensitive"
+        },
+        "explanation": {
+         "summary": "Forbid DDL table denylist forbid",
+         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+         "metadata": {
+          "status": "limited",
+          "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
+         }
+        }
+       }
+      ]
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 366,
+     "applicable": 4,
+     "skipped": [
+      {
+       "reason": "dialect_mismatch",
+       "count": 190
+      }
+     ]
+    },
+    "context": {
+     "mode": "offline",
+     "dialect": "mysql",
+     "dialect_source": "flag",
+     "note": "existence not checked (no database connection)",
+     "unproven": [
+      "column_exists",
+      "table_exists"
+     ]
+    }
+   }
+  },
+  {
+   "id": "mysql.denylist_dotted_identities",
+   "dialect": "mysql",
+   "sql": "DROP TABLE `a.b`.`c`, `a`.`b.c`",
+   "config_yaml": "rules:\n  ddl.table.drop.forbid:\n    enabled: false\n  ddl.table.denylist.forbid:\n    enabled: true\n    level: blocker\n    params:\n      tables: [c, b.c]\n",
+   "exit_code": 0,
+   "stderr": "",
+   "result": {
+    "verdict": "reject",
+    "summary": {
+     "statements": 1,
+     "blockers": 2,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "DROP TABLE `a.b`.`c`, `a`.`b.c`",
+      "normalized_sql": "DROP TABLE `a.b`.`c`, `a`.`b.c`",
+      "findings": [
+       {
+        "rule_id": "ddl.table.denylist.forbid",
+        "level": "blocker",
+        "message": "DDL target \"a.b.c\" is blocked by the table denylist policy",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+        "metadata": {
+         "schema": "a.b",
+         "table": "c"
+        },
+        "explanation": {
+         "summary": "Forbid DDL table denylist forbid",
+         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+         "metadata": {
+          "status": "limited",
+          "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
+         }
+        }
+       },
+       {
+        "rule_id": "ddl.table.denylist.forbid",
+        "level": "blocker",
+        "message": "DDL target \"a.b.c\" is blocked by the table denylist policy",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+        "metadata": {
+         "schema": "a",
+         "table": "b.c"
+        },
+        "explanation": {
+         "summary": "Forbid DDL table denylist forbid",
+         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+         "metadata": {
+          "status": "limited",
+          "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
+         }
+        }
+       }
+      ]
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 366,
+     "applicable": 4,
+     "skipped": [
+      {
+       "reason": "dialect_mismatch",
+       "count": 190
+      }
+     ]
+    },
+    "context": {
+     "mode": "offline",
+     "dialect": "mysql",
+     "dialect_source": "flag",
+     "note": "existence not checked (no database connection)",
+     "unproven": [
+      "column_exists",
+      "table_exists"
+     ]
+    }
+   }
+  },
+  {
+   "id": "mysql.denylist_all_allowed",
+   "dialect": "mysql",
+   "sql": "DROP TABLE harmless, other",
+   "config_yaml": "rules:\n  ddl.table.drop.forbid:\n    enabled: false\n  ddl.table.denylist.forbid:\n    enabled: true\n    level: blocker\n    params:\n      tables: [sensitive]\n",
+   "exit_code": 0,
+   "stderr": "",
+   "result": {
+    "verdict": "pass",
+    "summary": {
+     "statements": 1,
+     "blockers": 0,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "DROP TABLE harmless, other",
+      "normalized_sql": "DROP TABLE harmless, other"
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 366,
+     "applicable": 4,
+     "skipped": [
+      {
+       "reason": "dialect_mismatch",
+       "count": 190
+      }
+     ]
+    },
+    "context": {
+     "mode": "offline",
+     "dialect": "mysql",
+     "dialect_source": "flag",
+     "note": "existence not checked (no database connection)",
+     "unproven": [
+      "column_exists",
+      "table_exists"
+     ]
+    }
+   }
+  },
+  {
+   "id": "tidb.denylist_rename_dest",
+   "dialect": "tidb",
+   "sql": "RENAME TABLE harmless TO harmless_old, other TO sensitive",
+   "config_yaml": "rules:\n  ddl.table.drop.forbid:\n    enabled: false\n  ddl.table.denylist.forbid:\n    enabled: true\n    level: blocker\n    params:\n      tables: [sensitive]\n",
+   "exit_code": 0,
+   "stderr": "",
+   "result": {
+    "verdict": "reject",
+    "summary": {
+     "statements": 1,
+     "blockers": 1,
+     "warnings": 0,
+     "notices": 1
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "RENAME TABLE harmless TO harmless_old, other TO sensitive",
+      "normalized_sql": "RENAME TABLE harmless TO harmless_old, other TO sensitive",
+      "findings": [
+       {
+        "rule_id": "ddl.table.denylist.forbid",
+        "level": "blocker",
+        "message": "DDL target \"sensitive\" is blocked by the table denylist policy",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+        "metadata": {
+         "schema": "",
+         "table": "sensitive"
+        },
+        "explanation": {
+         "summary": "Forbid DDL table denylist forbid",
+         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+         "metadata": {
+          "status": "limited",
+          "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
+         }
+        }
+       },
+       {
+        "rule_id": "ddl.rename_table.notice",
+        "level": "notice",
+        "message": "RENAME TABLE \"harmless\" changes table identifiers",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "verify all references to the old table name are updated before applying",
+        "metadata": {
+         "operation": "rename_table",
+         "table": "harmless"
+        },
+        "explanation": {
+         "summary": "Check DDL rename table notice",
+         "why": "The statement matched the shipped governance rule for this pattern.",
+         "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+         "suggestion": "verify all references to the old table name are updated before applying"
+        }
+       }
+      ]
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 366,
+     "applicable": 2,
+     "skipped": [
+      {
+       "reason": "dialect_mismatch",
+       "count": 190
+      }
+     ]
+    },
+    "context": {
+     "mode": "offline",
+     "dialect": "tidb",
+     "dialect_source": "flag",
+     "note": "existence not checked (no database connection)",
+     "unproven": [
+      "column_exists",
+      "table_exists"
+     ]
+    }
+   }
+  },
+  {
+   "id": "tidb.denylist_alter_rename_dest",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE harmless RENAME TO sensitive",
+   "config_yaml": "rules:\n  ddl.table.drop.forbid:\n    enabled: false\n  ddl.table.denylist.forbid:\n    enabled: true\n    level: blocker\n    params:\n      tables: [sensitive]\n",
+   "exit_code": 0,
+   "stderr": "",
+   "result": {
+    "verdict": "reject",
+    "summary": {
+     "statements": 1,
+     "blockers": 2,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "ALTER TABLE harmless RENAME TO sensitive",
+      "normalized_sql": "ALTER TABLE harmless RENAME TO sensitive",
+      "findings": [
+       {
+        "rule_id": "ddl.alter.rename_table.forbid",
+        "level": "blocker",
+        "message": "ALTER TABLE rename table is forbidden",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "avoid rename table in this change or relax the policy intentionally",
+        "metadata": {
+         "action": "rename_table",
+         "name": "",
+         "table": "harmless"
+        },
+        "explanation": {
+         "summary": "Forbid DDL alter rename table forbid",
+         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+         "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+         "suggestion": "avoid rename table in this change or relax the policy intentionally"
+        }
+       },
+       {
+        "rule_id": "ddl.table.denylist.forbid",
+        "level": "blocker",
+        "message": "DDL target \"sensitive\" is blocked by the table denylist policy",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+        "metadata": {
+         "schema": "",
+         "table": "sensitive"
+        },
+        "explanation": {
+         "summary": "Forbid DDL table denylist forbid",
+         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+         "metadata": {
+          "status": "limited",
+          "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
+         }
+        }
+       }
+      ]
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 366,
+     "applicable": 6,
+     "skipped": [
+      {
+       "reason": "dialect_mismatch",
+       "count": 190
+      }
+     ]
+    },
+    "context": {
+     "mode": "offline",
+     "dialect": "tidb",
+     "dialect_source": "flag",
+     "note": "existence not checked (no database connection)",
+     "unproven": [
+      "column_exists",
+      "table_exists"
+     ]
+    }
+   }
+  },
+  {
+   "id": "tidb.denylist_alter_rename_qualified",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE app.harmless RENAME TO sensitive",
+   "config_yaml": "rules:\n  ddl.table.drop.forbid:\n    enabled: false\n  ddl.alter.rename_table.forbid:\n    enabled: false\n  ddl.rename_table.notice:\n    enabled: false\n  ddl.table.denylist.forbid:\n    enabled: true\n    level: blocker\n    params:\n      qualified_tables: [app.sensitive]\n",
+   "exit_code": 0,
+   "stderr": "",
+   "result": {
+    "verdict": "reject",
+    "summary": {
+     "statements": 1,
+     "blockers": 1,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "ALTER TABLE app.harmless RENAME TO sensitive",
+      "normalized_sql": "ALTER TABLE app.harmless RENAME TO sensitive",
+      "findings": [
+       {
+        "rule_id": "ddl.table.denylist.forbid",
+        "level": "blocker",
+        "message": "DDL target \"app.sensitive\" is blocked by the table denylist policy",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+        "metadata": {
+         "schema": "app",
+         "table": "sensitive"
+        },
+        "explanation": {
+         "summary": "Forbid DDL table denylist forbid",
+         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+         "metadata": {
+          "status": "limited",
+          "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
+         }
+        }
+       }
+      ]
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 364,
+     "applicable": 5,
+     "skipped": [
+      {
+       "reason": "dialect_mismatch",
+       "count": 190
+      }
+     ]
+    },
+    "context": {
+     "mode": "offline",
+     "dialect": "tidb",
+     "dialect_source": "flag",
+     "note": "existence not checked (no database connection)",
+     "unproven": [
+      "column_exists",
+      "table_exists"
+     ]
+    }
+   }
+  },
+  {
+   "id": "tidb.denylist_rename_dest_inherits",
+   "dialect": "tidb",
+   "sql": "RENAME TABLE app.harmless TO sensitive",
+   "config_yaml": "rules:\n  ddl.table.drop.forbid:\n    enabled: false\n  ddl.alter.rename_table.forbid:\n    enabled: false\n  ddl.rename_table.notice:\n    enabled: false\n  ddl.table.denylist.forbid:\n    enabled: true\n    level: blocker\n    params:\n      qualified_tables: [app.sensitive]\n",
+   "exit_code": 0,
+   "stderr": "",
+   "result": {
+    "verdict": "reject",
+    "summary": {
+     "statements": 1,
+     "blockers": 1,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "RENAME TABLE app.harmless TO sensitive",
+      "normalized_sql": "RENAME TABLE app.harmless TO sensitive",
+      "findings": [
+       {
+        "rule_id": "ddl.table.denylist.forbid",
+        "level": "blocker",
+        "message": "DDL target \"app.sensitive\" is blocked by the table denylist policy",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+        "metadata": {
+         "schema": "app",
+         "table": "sensitive"
+        },
+        "explanation": {
+         "summary": "Forbid DDL table denylist forbid",
+         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+         "metadata": {
+          "status": "limited",
+          "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
+         }
+        }
+       }
+      ]
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 364,
+     "applicable": 1,
+     "skipped": [
+      {
+       "reason": "dialect_mismatch",
+       "count": 190
+      }
+     ]
+    },
+    "context": {
+     "mode": "offline",
+     "dialect": "tidb",
+     "dialect_source": "flag",
+     "note": "existence not checked (no database connection)",
+     "unproven": [
+      "column_exists",
+      "table_exists"
+     ]
+    }
+   }
+  },
+  {
+   "id": "tidb.denylist_qualified",
+   "dialect": "tidb",
+   "sql": "DROP TABLE harmless, prod.sensitive",
+   "config_yaml": "rules:\n  ddl.table.drop.forbid:\n    enabled: false\n  ddl.table.denylist.forbid:\n    enabled: true\n    level: blocker\n    params:\n      tables: [sensitive]\n",
+   "exit_code": 0,
+   "stderr": "",
+   "result": {
+    "verdict": "reject",
+    "summary": {
+     "statements": 1,
+     "blockers": 1,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "DROP TABLE harmless, prod.sensitive",
+      "normalized_sql": "DROP TABLE harmless, prod.sensitive",
+      "findings": [
+       {
+        "rule_id": "ddl.table.denylist.forbid",
+        "level": "blocker",
+        "message": "DDL target \"prod.sensitive\" is blocked by the table denylist policy",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+        "metadata": {
+         "schema": "prod",
+         "table": "sensitive"
+        },
+        "explanation": {
+         "summary": "Forbid DDL table denylist forbid",
+         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+         "metadata": {
+          "status": "limited",
+          "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
+         }
+        }
+       }
+      ]
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 366,
+     "applicable": 4,
+     "skipped": [
+      {
+       "reason": "dialect_mismatch",
+       "count": 190
+      }
+     ]
+    },
+    "context": {
+     "mode": "offline",
+     "dialect": "tidb",
+     "dialect_source": "flag",
+     "note": "existence not checked (no database connection)",
+     "unproven": [
+      "column_exists",
+      "table_exists"
+     ]
+    }
+   }
+  },
+  {
+   "id": "tidb.denylist_quoted",
+   "dialect": "tidb",
+   "sql": "DROP TABLE harmless, `Sensitive`",
+   "config_yaml": "rules:\n  ddl.table.drop.forbid:\n    enabled: false\n  ddl.table.denylist.forbid:\n    enabled: true\n    level: blocker\n    params:\n      tables: [sensitive]\n",
+   "exit_code": 0,
+   "stderr": "",
+   "result": {
+    "verdict": "reject",
+    "summary": {
+     "statements": 1,
+     "blockers": 1,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "DROP TABLE harmless, `Sensitive`",
+      "normalized_sql": "DROP TABLE harmless, `Sensitive`",
+      "findings": [
+       {
+        "rule_id": "ddl.table.denylist.forbid",
+        "level": "blocker",
+        "message": "DDL target \"sensitive\" is blocked by the table denylist policy",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+        "metadata": {
+         "schema": "",
+         "table": "sensitive"
+        },
+        "explanation": {
+         "summary": "Forbid DDL table denylist forbid",
+         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+         "metadata": {
+          "status": "limited",
+          "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
+         }
+        }
+       }
+      ]
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 366,
+     "applicable": 4,
+     "skipped": [
+      {
+       "reason": "dialect_mismatch",
+       "count": 190
+      }
+     ]
+    },
+    "context": {
+     "mode": "offline",
+     "dialect": "tidb",
+     "dialect_source": "flag",
+     "note": "existence not checked (no database connection)",
+     "unproven": [
+      "column_exists",
+      "table_exists"
+     ]
+    }
+   }
+  },
+  {
+   "id": "tidb.denylist_dotted_identities",
+   "dialect": "tidb",
+   "sql": "DROP TABLE `a.b`.`c`, `a`.`b.c`",
+   "config_yaml": "rules:\n  ddl.table.drop.forbid:\n    enabled: false\n  ddl.table.denylist.forbid:\n    enabled: true\n    level: blocker\n    params:\n      tables: [c, b.c]\n",
+   "exit_code": 0,
+   "stderr": "",
+   "result": {
+    "verdict": "reject",
+    "summary": {
+     "statements": 1,
+     "blockers": 2,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "DROP TABLE `a.b`.`c`, `a`.`b.c`",
+      "normalized_sql": "DROP TABLE `a.b`.`c`, `a`.`b.c`",
+      "findings": [
+       {
+        "rule_id": "ddl.table.denylist.forbid",
+        "level": "blocker",
+        "message": "DDL target \"a.b.c\" is blocked by the table denylist policy",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+        "metadata": {
+         "schema": "a.b",
+         "table": "c"
+        },
+        "explanation": {
+         "summary": "Forbid DDL table denylist forbid",
+         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+         "metadata": {
+          "status": "limited",
+          "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
+         }
+        }
+       },
+       {
+        "rule_id": "ddl.table.denylist.forbid",
+        "level": "blocker",
+        "message": "DDL target \"a.b.c\" is blocked by the table denylist policy",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+        "metadata": {
+         "schema": "a",
+         "table": "b.c"
+        },
+        "explanation": {
+         "summary": "Forbid DDL table denylist forbid",
+         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+         "metadata": {
+          "status": "limited",
+          "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
+         }
+        }
+       }
+      ]
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 366,
+     "applicable": 4,
+     "skipped": [
+      {
+       "reason": "dialect_mismatch",
+       "count": 190
+      }
+     ]
+    },
+    "context": {
+     "mode": "offline",
+     "dialect": "tidb",
+     "dialect_source": "flag",
+     "note": "existence not checked (no database connection)",
+     "unproven": [
+      "column_exists",
+      "table_exists"
+     ]
+    }
+   }
+  },
+  {
+   "id": "tidb.denylist_all_allowed",
+   "dialect": "tidb",
+   "sql": "DROP TABLE harmless, other",
+   "config_yaml": "rules:\n  ddl.table.drop.forbid:\n    enabled: false\n  ddl.table.denylist.forbid:\n    enabled: true\n    level: blocker\n    params:\n      tables: [sensitive]\n",
+   "exit_code": 0,
+   "stderr": "",
+   "result": {
+    "verdict": "pass",
+    "summary": {
+     "statements": 1,
+     "blockers": 0,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "DROP TABLE harmless, other",
+      "normalized_sql": "DROP TABLE harmless, other"
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 366,
+     "applicable": 4,
+     "skipped": [
+      {
+       "reason": "dialect_mismatch",
+       "count": 190
+      }
+     ]
+    },
+    "context": {
+     "mode": "offline",
+     "dialect": "tidb",
+     "dialect_source": "flag",
+     "note": "existence not checked (no database connection)",
+     "unproven": [
+      "column_exists",
+      "table_exists"
+     ]
+    }
+   }
+  },
+  {
+   "id": "postgresql.denylist_dotted_identities",
+   "dialect": "postgresql",
+   "sql": "DROP TABLE \"a.b\".\"c\", \"a\".\"b.c\"",
+   "config_yaml": "rules:\n  ddl.table.drop.forbid:\n    enabled: false\n  ddl.table.denylist.forbid:\n    enabled: true\n    level: blocker\n    params:\n      tables: [c, b.c]\n",
+   "exit_code": 0,
+   "stderr": "",
+   "result": {
+    "verdict": "reject",
+    "summary": {
+     "statements": 1,
+     "blockers": 2,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "DROP TABLE \"a.b\".\"c\", \"a\".\"b.c\"",
+      "normalized_sql": "DROP TABLE \"a.b\".\"c\", \"a\".\"b.c\"",
+      "findings": [
+       {
+        "rule_id": "ddl.table.denylist.forbid",
+        "level": "blocker",
+        "message": "DDL target \"a.b.c\" is blocked by the table denylist policy",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+        "metadata": {
+         "schema": "a.b",
+         "table": "c"
+        },
+        "explanation": {
+         "summary": "Forbid DDL table denylist forbid",
+         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+         "metadata": {
+          "status": "limited",
+          "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
+         }
+        }
+       },
+       {
+        "rule_id": "ddl.table.denylist.forbid",
+        "level": "blocker",
+        "message": "DDL target \"a.b.c\" is blocked by the table denylist policy",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+        "metadata": {
+         "schema": "a",
+         "table": "b.c"
+        },
+        "explanation": {
+         "summary": "Forbid DDL table denylist forbid",
+         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
+         "metadata": {
+          "status": "limited",
+          "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
+         }
+        }
+       }
+      ]
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 366,
+     "applicable": 4,
+     "skipped": []
+    },
+    "context": {
+     "mode": "offline",
+     "dialect": "postgresql",
+     "dialect_source": "flag",
+     "note": "existence not checked (no database connection)",
+     "unproven": [
+      "column_exists",
+      "table_exists"
+     ]
+    }
+   }
+  }
+ ],
+ "verified_date": "2026-09-22",
+ "notes": [
+  "Post-fix evidence for issue #80: every named table target now reaches ddl.table.denylist.forbid regardless of position.",
+  "Probes ran against the uncommitted task working tree; its content is identical to the issue #80 task commit on this branch.",
+  "IDs mysql.denylist_*/tidb.denylist_* re-run the same inputs as the pre-fix 2026-09-21 probe file for direct comparison.",
+  "Extended ids cover RENAME destinations, ALTER TABLE ... RENAME TO destinations, unqualified destinations inheriting the source schema (qualified_tables), schema-qualified and quoted identifiers, dotted qualified identities that must not deduplicate, and all-allowed controls.",
+  "Synthetic offline audit probes only; submitted SQL was never executed against a database.",
+  "--fail-on none avoids conflating finding thresholds with verdict; inspect diagnostics and exit_code separately."
+ ]
+}

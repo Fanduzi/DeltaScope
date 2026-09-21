@@ -1,6 +1,6 @@
 // Package tidbparser extracts parser-neutral statements from TiDB AST nodes.
 // input: TiDB parser statement nodes and parser-neutral dialect metadata
-// output: extractor-backed parsed statements for the application layer, including MutationTargets and mutation-target-only DML tables, normalized ALTER index/constraint actions, and primary-key metadata
+// output: extractor-backed parsed statements for the application layer, including MutationTargets and mutation-target-only DML tables, normalized ALTER index/constraint actions, multi-target DDL Targets for DROP/RENAME/ALTER-rename, and primary-key metadata
 // pos: infrastructure extraction adapter between TiDB AST and domain spec
 // note: if this file changes, update this header and module README.md.
 package tidbparser
@@ -251,6 +251,18 @@ func extractAlterTable(stmt *ast.AlterTableStmt, rawSQL string) *spec.DDL {
 			clause = clauses[index]
 		}
 		ddl.Alter = append(ddl.Alter, extractAlterSpecs(s, clause)...)
+		if s.Tp == ast.AlterTableRenameTable && s.NewTable != nil {
+			// An unqualified RENAME TO destination inherits the altered
+			// table's schema.
+			destination := spec.Table{Schema: s.NewTable.Schema.L, Name: s.NewTable.Name.L}
+			if destination.Schema == "" {
+				destination.Schema = ddl.Table.Schema
+			}
+			ddl.Targets = append(ddl.Targets, destination)
+		}
+	}
+	if len(ddl.Targets) > 0 {
+		ddl.Targets = append([]spec.Table{*ddl.Table}, ddl.Targets...)
 	}
 	return ddl
 }
@@ -264,8 +276,15 @@ func extractDropTable(stmt *ast.DropTableStmt) *spec.DDL {
 	if stmt.IfExists {
 		ddl.Options["if_exists"] = "true"
 	}
-	if len(stmt.Tables) > 0 && stmt.Tables[0] != nil {
-		ddl.Table = &spec.Table{Schema: stmt.Tables[0].Schema.L, Name: stmt.Tables[0].Name.L}
+	for _, tableName := range stmt.Tables {
+		if tableName == nil {
+			continue
+		}
+		ddl.Targets = append(ddl.Targets, spec.Table{Schema: tableName.Schema.L, Name: tableName.Name.L})
+	}
+	if len(ddl.Targets) > 0 {
+		table := ddl.Targets[0]
+		ddl.Table = &table
 	}
 	if len(stmt.Tables) > 1 {
 		ddl.Options["multiple_targets"] = strconv.Itoa(len(stmt.Tables))
@@ -545,6 +564,7 @@ func extractRenameTable(stmt *ast.RenameTableStmt) *spec.DDL {
 	}
 	first := stmt.TableToTables[0]
 	alters := make([]spec.Alter, 0, len(stmt.TableToTables))
+	targets := make([]spec.Table, 0, len(stmt.TableToTables)*2)
 	for _, tt := range stmt.TableToTables {
 		a := spec.Alter{Action: "rename_table", Options: map[string]string{}}
 		if tt.OldTable != nil {
@@ -552,12 +572,20 @@ func extractRenameTable(stmt *ast.RenameTableStmt) *spec.DDL {
 			if tt.OldTable.Schema.L != "" {
 				a.Options["old_schema"] = tt.OldTable.Schema.L
 			}
+			targets = append(targets, spec.Table{Schema: tt.OldTable.Schema.L, Name: tt.OldTable.Name.L})
 		}
 		if tt.NewTable != nil {
 			a.Options["new_table"] = tt.NewTable.Name.L
 			if tt.NewTable.Schema.L != "" {
 				a.Options["new_schema"] = tt.NewTable.Schema.L
 			}
+			// An unqualified destination inherits the source schema per
+			// RENAME TABLE semantics.
+			schema := tt.NewTable.Schema.L
+			if schema == "" && tt.OldTable != nil {
+				schema = tt.OldTable.Schema.L
+			}
+			targets = append(targets, spec.Table{Schema: schema, Name: tt.NewTable.Name.L})
 		}
 		alters = append(alters, a)
 	}
@@ -568,6 +596,7 @@ func extractRenameTable(stmt *ast.RenameTableStmt) *spec.DDL {
 	return &spec.DDL{
 		Operation: spec.DDLOperationRenameTable,
 		Table:     table,
+		Targets:   targets,
 		Alter:     alters,
 	}
 }

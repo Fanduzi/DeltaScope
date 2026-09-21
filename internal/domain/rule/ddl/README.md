@@ -34,7 +34,8 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | metadata_rules.go | Implements metadata-backed table, column, index, and primary-key existence rules |
 | object_lifecycle_rules.go | Implements create-view, drop-table, truncate-table, metadata-backed lifecycle existence, and adaptive-hash caution rules |
 | merge_alter_rules.go | Implements global merge-alter governance across statement batches |
-| denylist_rules.go | Implements DDL table denylist checks against protected schemas or tables |
+| denylist_rules.go | Implements DDL table denylist checks that evaluate every normalized `TableTargets()` entry (multi-target DROP, RENAME source/destination pairs, ALTER rename destinations) against protected schemas or tables, resolving explicit target schema before metadata schema and deduplicating findings per resolved `(schema, table)` identity so dotted qualified names do not merge |
+| denylist_rules_test.go | Verifies per-target denylist evaluation, qualified-name resolution, tuple-identity deduplication across dotted names, and deterministic source ordering |
 | size_rules.go | Implements metadata-backed rough row-size and index-key-length checks for create-table statements |
 | alter_compatibility_rules.go | Implements source-aware compatibility checks for metadata-backed change/modify column operations |
 | alter_semantic_rules.go | Implements rename-index forbids, metadata-gated MODIFY nullability transitions, unknown-prior-state advisories, explicit alter-column change forbids, normalized add-index naming/lifecycle rules, and conservative alter target-type-family rules |

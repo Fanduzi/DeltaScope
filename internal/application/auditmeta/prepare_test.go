@@ -350,6 +350,105 @@ func TestPrepareRejectsPostgreSQLSchemaWithoutDatabase(t *testing.T) {
 	}
 }
 
+func TestPrepareInfersSchemaAcrossEveryDropTarget(t *testing.T) {
+	t.Parallel()
+
+	client := &fakeClient{
+		detectDialect:  spec.DialectMySQL,
+		schemasByTable: map[string][]string{"harmless": {"app"}, "sensitive": {"app"}},
+	}
+	prepared, err := Prepare(context.Background(), Request{
+		SQL: "drop table harmless, sensitive",
+		OpenClient: func(ConnectionConfig) (Client, error) {
+			return client, nil
+		},
+	})
+	if err != nil {
+		t.Fatalf("prepare multi-target drop: %v", err)
+	}
+	t.Cleanup(func() { _ = prepared.Client.Close() })
+
+	if prepared.Schema != "app" || prepared.SchemaSource != "inferred" {
+		t.Fatalf("expected inferred app schema, got %#v", prepared)
+	}
+	if len(client.findSchemaCalls) != 2 || client.findSchemaCalls[0] != "harmless" || client.findSchemaCalls[1] != "sensitive" {
+		t.Fatalf("expected schema lookup for every drop target, got %#v", client.findSchemaCalls)
+	}
+}
+
+func TestPrepareDetectsAmbiguousSchemaAcrossEveryDropTarget(t *testing.T) {
+	t.Parallel()
+
+	client := &fakeClient{
+		detectDialect:  spec.DialectMySQL,
+		schemasByTable: map[string][]string{"harmless": {"app"}, "sensitive": {"audit"}},
+	}
+	_, err := Prepare(context.Background(), Request{
+		SQL: "drop table harmless, sensitive",
+		OpenClient: func(ConnectionConfig) (Client, error) {
+			return client, nil
+		},
+	})
+	if err == nil {
+		t.Fatal("expected multi-schema inference error for cross-schema drop")
+	}
+	if !strings.Contains(err.Error(), "multiple schemas") {
+		t.Fatalf("expected multiple-schema error, got %v", err)
+	}
+	if !client.closed {
+		t.Fatal("expected client to close on schema inference failure")
+	}
+}
+
+func TestPrepareDetectsDistinctDottedQualifiedTargets(t *testing.T) {
+	t.Parallel()
+
+	// `a.b`.`c` and `a`.`b.c` are different objects in different schemas;
+	// a flat "a.b.c" target key would merge them and wrongly infer a.b.
+	client := &fakeClient{detectDialect: spec.DialectMySQL}
+	_, err := Prepare(context.Background(), Request{
+		SQL: "drop table `a.b`.`c`, `a`.`b.c`",
+		OpenClient: func(ConnectionConfig) (Client, error) {
+			return client, nil
+		},
+	})
+	if err == nil {
+		t.Fatal("expected multi-schema inference error for distinct dotted targets")
+	}
+	if !strings.Contains(err.Error(), "multiple schemas") {
+		t.Fatalf("expected multiple-schema error, got %v", err)
+	}
+}
+
+func TestPrepareInfersSchemaFromAlterSubjectOnly(t *testing.T) {
+	t.Parallel()
+
+	// The rename destination inherits the source schema when unqualified and is
+	// explicit when qualified, so it must not join session-schema inference even
+	// when a same-named table exists elsewhere.
+	client := &fakeClient{
+		detectDialect:  spec.DialectMySQL,
+		schemasByTable: map[string][]string{"users": {"app"}, "users_archive": {"archive"}},
+	}
+	prepared, err := Prepare(context.Background(), Request{
+		SQL: "alter table users rename to users_archive",
+		OpenClient: func(ConnectionConfig) (Client, error) {
+			return client, nil
+		},
+	})
+	if err != nil {
+		t.Fatalf("prepare alter rename: %v", err)
+	}
+	t.Cleanup(func() { _ = prepared.Client.Close() })
+
+	if prepared.Schema != "app" || prepared.SchemaSource != "inferred" {
+		t.Fatalf("expected inferred app schema, got %#v", prepared)
+	}
+	if len(client.findSchemaCalls) != 1 || client.findSchemaCalls[0] != "users" {
+		t.Fatalf("expected schema lookup only for alter subject, got %#v", client.findSchemaCalls)
+	}
+}
+
 func TestPrepareFailsWhenSchemaInferenceIsAmbiguous(t *testing.T) {
 	t.Parallel()
 

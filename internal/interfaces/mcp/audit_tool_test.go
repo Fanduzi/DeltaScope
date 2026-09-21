@@ -8,9 +8,15 @@ package mcpapi
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"sort"
+	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
@@ -152,6 +158,95 @@ func TestAuditSQLOfflineDropColumnStatesExistenceNotChecked(t *testing.T) {
 	}
 	if strings.Contains(text, "existing column") {
 		t.Fatalf("MCP notice must not claim the column exists, got %q", text)
+	}
+}
+
+func TestAuditSQLDenylistChecksEveryMultiTargetDropAndRename(t *testing.T) {
+	t.Parallel()
+
+	configPath := filepath.Join(t.TempDir(), "denylist-only.yaml")
+	var builder strings.Builder
+	builder.WriteString("rules:\n")
+	ruleIDs := make([]string, 0, len(policy.Default().Rules))
+	for id := range policy.Default().Rules {
+		ruleIDs = append(ruleIDs, id)
+	}
+	sort.Strings(ruleIDs)
+	for _, id := range ruleIDs {
+		if id == "ddl.table.denylist.forbid" {
+			continue
+		}
+		fmt.Fprintf(&builder, "  %s:\n    enabled: false\n", strconv.Quote(id))
+	}
+	builder.WriteString("  \"ddl.table.denylist.forbid\":\n    enabled: true\n    level: blocker\n    params:\n      tables: [sensitive]\n")
+	if err := os.WriteFile(configPath, []byte(builder.String()), 0o600); err != nil {
+		t.Fatalf("write denylist policy: %v", err)
+	}
+
+	cases := []struct {
+		name    string
+		sql     string
+		blocked bool
+	}{
+		{name: "single", sql: "DROP TABLE sensitive", blocked: true},
+		{name: "second", sql: "DROP TABLE harmless, sensitive", blocked: true},
+		{name: "all_allowed", sql: "DROP TABLE harmless, other", blocked: false},
+		{name: "rename_source", sql: "RENAME TABLE harmless TO harmless_old, sensitive TO sensitive_old", blocked: true},
+		{name: "rename_destination", sql: "RENAME TABLE harmless TO harmless_old, other TO sensitive", blocked: true},
+	}
+	for _, dialect := range []string{"mysql", "tidb"} {
+		for _, tc := range cases {
+			tc := tc
+			t.Run(dialect+"/"+tc.name, func(t *testing.T) {
+				t.Parallel()
+				result := callAuditSQL(t, map[string]any{
+					"sql":         tc.sql,
+					"dialect":     dialect,
+					"config_path": configPath,
+				})
+				if result.IsError {
+					t.Fatalf("expected success from audit_sql, got tool error: %#v", result)
+				}
+				body := requireAuditStructuredMap(t, result)
+				statements, ok := body["statements"].([]any)
+				if !ok || len(statements) != 1 {
+					t.Fatalf("expected exactly 1 structured statement, got %#v", body["statements"])
+				}
+				var denylist []any
+				statement := statements[0].(map[string]any)
+				rawFindings, _ := statement["findings"].([]any)
+				for _, raw := range rawFindings {
+					finding := raw.(map[string]any)
+					if finding["rule_id"] == "ddl.table.denylist.forbid" {
+						denylist = append(denylist, finding)
+					}
+				}
+				wantCount := 0
+				wantVerdict := "pass"
+				if tc.blocked {
+					wantCount = 1
+					wantVerdict = "reject"
+				}
+				if len(denylist) != wantCount {
+					t.Fatalf("expected %d denylist findings, got %#v", wantCount, statement["findings"])
+				}
+				if body["verdict"] != wantVerdict {
+					t.Fatalf("expected structured verdict %q, got %#v", wantVerdict, body["verdict"])
+				}
+				text := requireAuditToolText(t, result)
+				if !strings.Contains(text, "Audit verdict: "+wantVerdict) {
+					t.Fatalf("text missing verdict %q: %q", wantVerdict, text)
+				}
+				if !tc.blocked {
+					return
+				}
+				finding := denylist[0].(map[string]any)
+				metadata, ok := finding["metadata"].(map[string]any)
+				if !ok || metadata["table"] != "sensitive" {
+					t.Fatalf("expected metadata.table sensitive, got %#v", finding["metadata"])
+				}
+			})
+		}
 	}
 }
 

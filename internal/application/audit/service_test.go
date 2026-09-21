@@ -13,9 +13,11 @@ import (
 	"path/filepath"
 	"slices"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -1139,6 +1141,205 @@ rules:
 	if !found {
 		t.Fatalf("expected naming rule finding, got %#v", result.Statements[0].Findings)
 	}
+}
+
+func TestAuditSQLDenylistChecksEveryMultiTargetDropAndRename(t *testing.T) {
+	t.Parallel()
+
+	configPath := writeDenylistOnlyPolicy(t)
+	cases := []struct {
+		name    string
+		sql     string
+		blocked bool
+	}{
+		{name: "single", sql: "DROP TABLE sensitive", blocked: true},
+		{name: "second", sql: "DROP TABLE harmless, sensitive", blocked: true},
+		{name: "first", sql: "DROP TABLE sensitive, harmless", blocked: true},
+		{name: "middle", sql: "DROP TABLE harmless, sensitive, other", blocked: true},
+		{name: "all_allowed", sql: "DROP TABLE harmless, other", blocked: false},
+		{name: "rename_source", sql: "RENAME TABLE harmless TO harmless_old, sensitive TO sensitive_old", blocked: true},
+		{name: "rename_destination", sql: "RENAME TABLE harmless TO harmless_old, other TO sensitive", blocked: true},
+		{name: "rename_allowed", sql: "RENAME TABLE harmless TO harmless_old, other TO other_old", blocked: false},
+		{name: "alter_rename_destination", sql: "ALTER TABLE harmless RENAME TO sensitive", blocked: true},
+		{name: "alter_rename_allowed", sql: "ALTER TABLE harmless RENAME TO harmless_new", blocked: false},
+	}
+
+	for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
+		for _, tc := range cases {
+			tc := tc
+			t.Run(string(dialect)+"/"+tc.name, func(t *testing.T) {
+				t.Parallel()
+				result, err := AuditSQL(context.Background(), Request{
+					SQL:        tc.sql,
+					Dialect:    dialect,
+					ConfigPath: configPath,
+				})
+				if err != nil {
+					t.Fatalf("audit sql: %v", err)
+				}
+				if len(result.Statements) != 1 {
+					t.Fatalf("expected 1 top-level statement, got %d", len(result.Statements))
+				}
+				if len(result.Unsupported) != 0 || len(result.Diagnostics) != 0 {
+					t.Fatalf("expected supported audit without diagnostics, got unsupported=%#v diagnostics=%#v", result.Unsupported, result.Diagnostics)
+				}
+				var denylist []rule.Finding
+				for _, finding := range result.Statements[0].Findings {
+					if finding.RuleID == "ddl.table.denylist.forbid" {
+						denylist = append(denylist, finding)
+					}
+				}
+				wantCount := 0
+				if tc.blocked {
+					wantCount = 1
+				}
+				if len(denylist) != wantCount {
+					t.Fatalf("expected %d denylist findings, got %#v", wantCount, result.Statements[0].Findings)
+				}
+				if !tc.blocked {
+					if result.Verdict != report.VerdictPass {
+						t.Fatalf("expected pass verdict, got %q", result.Verdict)
+					}
+					return
+				}
+				if result.Verdict != report.VerdictReject {
+					t.Fatalf("expected reject verdict, got %q", result.Verdict)
+				}
+				finding := denylist[0]
+				if finding.Level != rule.LevelBlocker {
+					t.Fatalf("expected blocker level, got %q", finding.Level)
+				}
+				if finding.Metadata["table"] != "sensitive" {
+					t.Fatalf("expected metadata.table sensitive, got %#v", finding.Metadata)
+				}
+				if finding.Location == nil || finding.Location.Line != 1 {
+					t.Fatalf("expected line 1 location, got %#v", finding.Location)
+				}
+				if finding.StatementIndex != 0 || finding.StatementKind != "ddl" {
+					t.Fatalf("expected statement index 0 kind ddl, got index=%d kind=%q", finding.StatementIndex, finding.StatementKind)
+				}
+			})
+		}
+	}
+}
+
+func TestAuditSQLDenylistResolvesRenameDestinationSchema(t *testing.T) {
+	t.Parallel()
+
+	configPath := writeDenylistPolicy(t, "      qualified_tables: [app.sensitive]\n")
+	cases := []struct {
+		name    string
+		sql     string
+		blocked bool
+	}{
+		// Unqualified destinations inherit the source schema.
+		{name: "alter_rename_inherits", sql: "ALTER TABLE app.harmless RENAME TO sensitive", blocked: true},
+		{name: "rename_inherits", sql: "RENAME TABLE app.harmless TO sensitive", blocked: true},
+		{name: "rename_pair_inherits", sql: "RENAME TABLE app.harmless TO harmless_old, staging.live TO sensitive", blocked: false},
+		{name: "explicit_safe_destination", sql: "ALTER TABLE app.harmless RENAME TO app.safe", blocked: false},
+		// Unqualified everywhere with no request schema stays an
+		// unknown-schema boundary: qualified selectors cannot match.
+		{name: "unqualified_boundary", sql: "RENAME TABLE harmless TO sensitive", blocked: false},
+	}
+
+	for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
+		for _, tc := range cases {
+			tc := tc
+			t.Run(string(dialect)+"/"+tc.name, func(t *testing.T) {
+				t.Parallel()
+				result, err := AuditSQL(context.Background(), Request{
+					SQL:        tc.sql,
+					Dialect:    dialect,
+					ConfigPath: configPath,
+				})
+				if err != nil {
+					t.Fatalf("audit sql: %v", err)
+				}
+				if len(result.Statements) != 1 {
+					t.Fatalf("expected 1 top-level statement, got %d", len(result.Statements))
+				}
+				var denylist []rule.Finding
+				for _, finding := range result.Statements[0].Findings {
+					if finding.RuleID == "ddl.table.denylist.forbid" {
+						denylist = append(denylist, finding)
+					}
+				}
+				if tc.blocked {
+					if len(denylist) != 1 || denylist[0].Metadata["schema"] != "app" || denylist[0].Metadata["table"] != "sensitive" {
+						t.Fatalf("expected 1 denylist finding for app.sensitive, got %#v", result.Statements[0].Findings)
+					}
+					if result.Verdict != report.VerdictReject {
+						t.Fatalf("expected reject verdict, got %q", result.Verdict)
+					}
+					return
+				}
+				if len(denylist) != 0 || result.Verdict != report.VerdictPass {
+					t.Fatalf("expected pass with no denylist findings, got verdict=%q findings=%#v", result.Verdict, result.Statements[0].Findings)
+				}
+			})
+		}
+	}
+}
+
+func TestAuditSQLDenylistDoesNotMergeDottedQualifiedIdentities(t *testing.T) {
+	t.Parallel()
+
+	configPath := writeDenylistPolicy(t, "      tables: [c, b.c]\n")
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:        "DROP TABLE `a.b`.`c`, `a`.`b.c`",
+		Dialect:    spec.DialectMySQL,
+		ConfigPath: configPath,
+	})
+	if err != nil {
+		t.Fatalf("audit sql: %v", err)
+	}
+	if len(result.Statements) != 1 {
+		t.Fatalf("expected 1 top-level statement, got %d", len(result.Statements))
+	}
+	var denylist []rule.Finding
+	for _, finding := range result.Statements[0].Findings {
+		if finding.RuleID == "ddl.table.denylist.forbid" {
+			denylist = append(denylist, finding)
+		}
+	}
+	if len(denylist) != 2 {
+		t.Fatalf("expected 2 findings for distinct dotted identities, got %#v", result.Statements[0].Findings)
+	}
+	if denylist[0].Metadata["schema"] != "a.b" || denylist[0].Metadata["table"] != "c" {
+		t.Fatalf("expected first finding a.b/c, got %#v", denylist[0].Metadata)
+	}
+	if denylist[1].Metadata["schema"] != "a" || denylist[1].Metadata["table"] != "b.c" {
+		t.Fatalf("expected second finding a/b.c, got %#v", denylist[1].Metadata)
+	}
+}
+
+func writeDenylistOnlyPolicy(t *testing.T) string {
+	t.Helper()
+	return writeDenylistPolicy(t, "      tables: [sensitive]\n")
+}
+
+func writeDenylistPolicy(t *testing.T, params string) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "denylist-only.yaml")
+	var builder strings.Builder
+	builder.WriteString("rules:\n")
+	ids := make([]string, 0, len(policy.Default().Rules))
+	for id := range policy.Default().Rules {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	for _, id := range ids {
+		if id == "ddl.table.denylist.forbid" {
+			continue
+		}
+		fmt.Fprintf(&builder, "  %s:\n    enabled: false\n", strconv.Quote(id))
+	}
+	builder.WriteString("  \"ddl.table.denylist.forbid\":\n    enabled: true\n    level: blocker\n    params:\n")
+	builder.WriteString(params)
+	if err := os.WriteFile(path, []byte(builder.String()), 0o600); err != nil {
+		t.Fatalf("write denylist policy: %v", err)
+	}
+	return path
 }
 
 func TestAuditSQLReturnsGroupedStatementResults(t *testing.T) {

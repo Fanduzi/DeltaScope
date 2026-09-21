@@ -48,29 +48,46 @@ func newTableDenylistRule(ruleID string, fallbackLevel rule.Level, cfg policy.Ru
 func (r tableDenylistRule) ID() string { return r.ruleID }
 
 func (r tableDenylistRule) AppliesTo(statement spec.Statement) bool {
-	return statement.Kind == spec.KindDDL && statement.DDL != nil && statement.DDL.Table != nil
+	return statement.Kind == spec.KindDDL && statement.DDL != nil && len(statement.DDL.TableTargets()) > 0
 }
 
 func (r tableDenylistRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
-	tableName := strings.ToLower(strings.TrimSpace(statement.DDL.Table.Name))
-	schemaName := normalizedMetadataSchema(statement)
-	if !r.matches(schemaName, tableName) {
-		return nil, nil
-	}
 
-	target := qualifiedTableName(schemaName, tableName)
-	return []rule.Finding{{
-		Level:      r.level,
-		Message:    fmt.Sprintf("DDL target %q is blocked by the table denylist policy", target),
-		Suggestion: "run the change against an allowed table or relax the denylist policy intentionally",
-		Metadata: map[string]any{
-			"schema": schemaName,
-			"table":  tableName,
-		},
-	}}, nil
+	metadataSchema := normalizedMetadataSchema(statement)
+	seen := make(map[spec.Table]struct{})
+	findings := make([]rule.Finding, 0)
+	for _, table := range statement.DDL.TableTargets() {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		tableName := strings.ToLower(strings.TrimSpace(table.Name))
+		schemaName := strings.ToLower(strings.TrimSpace(table.Schema))
+		if schemaName == "" {
+			schemaName = metadataSchema
+		}
+		if !r.matches(schemaName, tableName) {
+			continue
+		}
+		identity := spec.Table{Schema: schemaName, Name: tableName}
+		if _, duplicate := seen[identity]; duplicate {
+			continue
+		}
+		seen[identity] = struct{}{}
+		target := qualifiedTableName(schemaName, tableName)
+		findings = append(findings, rule.Finding{
+			Level:      r.level,
+			Message:    fmt.Sprintf("DDL target %q is blocked by the table denylist policy", target),
+			Suggestion: "run the change against an allowed table or relax the denylist policy intentionally",
+			Metadata: map[string]any{
+				"schema": schemaName,
+				"table":  tableName,
+			},
+		})
+	}
+	return findings, nil
 }
 
 func (r tableDenylistRule) matches(schemaName, tableName string) bool {

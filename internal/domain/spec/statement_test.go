@@ -53,6 +53,35 @@ func TestMutationTargetTablesFallsBackToTables(t *testing.T) {
 	}
 }
 
+func TestDDLTableTargetsPrefersPopulatedTargets(t *testing.T) {
+	t.Parallel()
+	ddl := &DDL{
+		Table:   &Table{Name: "first"},
+		Targets: []Table{{Name: "first"}, {Schema: "app", Name: "second"}},
+	}
+	got := ddl.TableTargets()
+	if len(got) != 2 || got[0].Name != "first" || got[1].Schema != "app" || got[1].Name != "second" {
+		t.Fatalf("expected populated targets in source order, got %#v", got)
+	}
+}
+
+func TestDDLTableTargetsFallsBackToPrimaryTable(t *testing.T) {
+	t.Parallel()
+	ddl := &DDL{Table: &Table{Schema: "app", Name: "users"}}
+	got := ddl.TableTargets()
+	if len(got) != 1 || got[0].Schema != "app" || got[0].Name != "users" {
+		t.Fatalf("expected primary Table fallback, got %#v", got)
+	}
+	var nilDDL *DDL
+	if nilDDL.TableTargets() != nil {
+		t.Fatal("expected nil receiver to return nil")
+	}
+	empty := &DDL{}
+	if empty.TableTargets() != nil {
+		t.Fatal("expected tableless DDL to return nil")
+	}
+}
+
 func TestStatementKindAndDialectTypes(t *testing.T) {
 	t.Parallel()
 	stmt := Statement{

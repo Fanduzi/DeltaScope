@@ -9,13 +9,17 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
+	"sort"
+	"strconv"
 	"strings"
 	"testing"
 
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
+	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -189,6 +193,101 @@ func TestAuditSupportsConfigOverridePath(t *testing.T) {
 	}
 	if result.Summary.Blockers != 0 || result.Summary.Warnings != 0 || result.Summary.Notices != 0 {
 		t.Fatalf("expected empty findings after disabling rule, got %#v", result.Summary)
+	}
+}
+
+func TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget(t *testing.T) {
+	t.Parallel()
+
+	configPath := filepath.Join(t.TempDir(), "denylist-only.yaml")
+	var builder strings.Builder
+	builder.WriteString("rules:\n")
+	ruleIDs := make([]string, 0, len(policy.Default().Rules))
+	for id := range policy.Default().Rules {
+		ruleIDs = append(ruleIDs, id)
+	}
+	sort.Strings(ruleIDs)
+	for _, id := range ruleIDs {
+		if id == "ddl.table.denylist.forbid" {
+			continue
+		}
+		fmt.Fprintf(&builder, "  %s:\n    enabled: false\n", strconv.Quote(id))
+	}
+	builder.WriteString("  \"ddl.table.denylist.forbid\":\n    enabled: true\n    level: blocker\n    params:\n      tables: [sensitive]\n")
+	if err := os.WriteFile(configPath, []byte(builder.String()), 0o600); err != nil {
+		t.Fatalf("write denylist policy: %v", err)
+	}
+
+	cases := []struct {
+		name    string
+		sql     string
+		blocked bool
+	}{
+		{name: "single", sql: "DROP TABLE sensitive", blocked: true},
+		{name: "second", sql: "DROP TABLE harmless, sensitive", blocked: true},
+		{name: "first", sql: "DROP TABLE sensitive, harmless", blocked: true},
+		{name: "middle", sql: "DROP TABLE harmless, sensitive, other", blocked: true},
+		{name: "all_allowed", sql: "DROP TABLE harmless, other", blocked: false},
+		{name: "rename_source", sql: "RENAME TABLE harmless TO harmless_old, sensitive TO sensitive_old", blocked: true},
+		{name: "rename_destination", sql: "RENAME TABLE harmless TO harmless_old, other TO sensitive", blocked: true},
+		{name: "rename_allowed", sql: "RENAME TABLE harmless TO harmless_old, other TO other_old", blocked: false},
+		{name: "quoted", sql: "DROP TABLE harmless, `Sensitive`", blocked: true},
+		{name: "qualified", sql: "DROP TABLE harmless, prod.sensitive", blocked: true},
+	}
+
+	for _, dialect := range []Dialect{DialectMySQL, DialectTiDB} {
+		for _, tc := range cases {
+			tc := tc
+			t.Run(string(dialect)+"/"+tc.name, func(t *testing.T) {
+				t.Parallel()
+				result, err := Audit(context.Background(), Request{
+					SQL:        tc.sql,
+					Dialect:    dialect,
+					ConfigPath: configPath,
+				})
+				if err != nil {
+					t.Fatalf("audit: %v", err)
+				}
+				if len(result.Statements) != 1 {
+					t.Fatalf("expected 1 top-level statement, got %d", len(result.Statements))
+				}
+				if len(result.Unsupported) != 0 || len(result.Diagnostics) != 0 {
+					t.Fatalf("expected supported audit, got unsupported=%#v diagnostics=%#v", result.Unsupported, result.Diagnostics)
+				}
+				var denylist []Finding
+				for _, finding := range result.Statements[0].Findings {
+					if finding.RuleID == "ddl.table.denylist.forbid" {
+						denylist = append(denylist, finding)
+					}
+				}
+				wantCount := 0
+				if tc.blocked {
+					wantCount = 1
+				}
+				if len(denylist) != wantCount {
+					t.Fatalf("expected %d denylist findings, got %#v", wantCount, result.Statements[0].Findings)
+				}
+				if !tc.blocked {
+					if result.Verdict != VerdictPass {
+						t.Fatalf("expected pass verdict, got %q", result.Verdict)
+					}
+					return
+				}
+				if result.Verdict != VerdictReject {
+					t.Fatalf("expected reject verdict, got %q", result.Verdict)
+				}
+				finding := denylist[0]
+				if finding.Level != LevelBlocker {
+					t.Fatalf("expected blocker level, got %q", finding.Level)
+				}
+				if finding.Metadata["table"] != "sensitive" {
+					t.Fatalf("expected metadata.table sensitive, got %#v", finding.Metadata)
+				}
+				if finding.Location == nil || finding.Location.Line != 1 {
+					t.Fatalf("expected line 1 location, got %#v", finding.Location)
+				}
+			})
+		}
 	}
 }
 

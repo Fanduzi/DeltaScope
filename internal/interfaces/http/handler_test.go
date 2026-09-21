@@ -15,7 +15,11 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"regexp"
+	"sort"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -23,6 +27,7 @@ import (
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
 	"github.com/Fanduzi/DeltaScope/internal/application/online"
+	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	"github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig"
 	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
@@ -333,6 +338,107 @@ func TestHandlerAuditReturnsJSONResult(t *testing.T) {
 	reasonCodes, ok := impact["reason_codes"].([]any)
 	if !ok || len(reasonCodes) != 1 || reasonCodes[0] != "missing_where" {
 		t.Fatalf("expected missing_where reason code, got %#v", impact["reason_codes"])
+	}
+}
+
+func TestHandlerAuditDenylistChecksEveryMultiTargetDrop(t *testing.T) {
+	t.Parallel()
+
+	configPath := filepath.Join(t.TempDir(), "denylist-only.yaml")
+	var builder strings.Builder
+	builder.WriteString("rules:\n")
+	ruleIDs := make([]string, 0, len(policy.Default().Rules))
+	for id := range policy.Default().Rules {
+		ruleIDs = append(ruleIDs, id)
+	}
+	sort.Strings(ruleIDs)
+	for _, id := range ruleIDs {
+		if id == "ddl.table.denylist.forbid" {
+			continue
+		}
+		fmt.Fprintf(&builder, "  %s:\n    enabled: false\n", strconv.Quote(id))
+	}
+	builder.WriteString("  \"ddl.table.denylist.forbid\":\n    enabled: true\n    level: blocker\n    params:\n      tables: [sensitive]\n")
+	if err := os.WriteFile(configPath, []byte(builder.String()), 0o600); err != nil {
+		t.Fatalf("write denylist policy: %v", err)
+	}
+
+	handler, err := NewHandler(configPath, "test-build")
+	if err != nil {
+		t.Fatalf("new handler: %v", err)
+	}
+
+	cases := []struct {
+		name    string
+		sql     string
+		blocked bool
+	}{
+		{name: "single", sql: "DROP TABLE sensitive", blocked: true},
+		{name: "second", sql: "DROP TABLE harmless, sensitive", blocked: true},
+		{name: "all_allowed", sql: "DROP TABLE harmless, other", blocked: false},
+		{name: "rename_source", sql: "RENAME TABLE harmless TO harmless_old, sensitive TO sensitive_old", blocked: true},
+		{name: "rename_destination", sql: "RENAME TABLE harmless TO harmless_old, other TO sensitive", blocked: true},
+	}
+	for _, dialect := range []string{"mysql", "tidb"} {
+		for _, tc := range cases {
+			tc := tc
+			t.Run(dialect+"/"+tc.name, func(t *testing.T) {
+				t.Parallel()
+				body, err := json.Marshal(map[string]any{"sql": tc.sql, "dialect": dialect})
+				if err != nil {
+					t.Fatalf("marshal request: %v", err)
+				}
+				req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewBuffer(body))
+				req.Header.Set("Content-Type", "application/json")
+				rec := httptest.NewRecorder()
+				handler.ServeHTTP(rec, req)
+
+				if rec.Code != http.StatusOK {
+					t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+				}
+				var payload map[string]any
+				if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
+					t.Fatalf("decode response: %v", err)
+				}
+				statements, ok := payload["statements"].([]any)
+				if !ok || len(statements) != 1 {
+					t.Fatalf("expected exactly 1 statement, got %#v", payload["statements"])
+				}
+				var denylist []any
+				statement := statements[0].(map[string]any)
+				rawFindings, _ := statement["findings"].([]any)
+				for _, raw := range rawFindings {
+					finding := raw.(map[string]any)
+					if finding["rule_id"] == "ddl.table.denylist.forbid" {
+						denylist = append(denylist, finding)
+					}
+				}
+				wantCount := 0
+				wantVerdict := "pass"
+				if tc.blocked {
+					wantCount = 1
+					wantVerdict = "reject"
+				}
+				if len(denylist) != wantCount {
+					t.Fatalf("expected %d denylist findings, got %#v", wantCount, statement["findings"])
+				}
+				if payload["verdict"] != wantVerdict {
+					t.Fatalf("expected verdict %q, got %#v", wantVerdict, payload["verdict"])
+				}
+				if !tc.blocked {
+					return
+				}
+				finding := denylist[0].(map[string]any)
+				metadata, ok := finding["metadata"].(map[string]any)
+				if !ok || metadata["table"] != "sensitive" {
+					t.Fatalf("expected metadata.table sensitive, got %#v", finding["metadata"])
+				}
+				location, ok := finding["location"].(map[string]any)
+				if !ok || location["line"] != float64(1) {
+					t.Fatalf("expected line 1 location, got %#v", finding["location"])
+				}
+			})
+		}
 	}
 }
 
