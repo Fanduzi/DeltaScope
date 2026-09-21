@@ -46,6 +46,29 @@ _Avoid_: missing, skipped, catalog gap
 The table a DML statement writes. It is not every table named in FROM or JOIN.
 _Avoid_: mentioned tables, FROM list
 
+## DDL Coverage
+
+**DDL Semantic Coverage**:
+The extent to which a DDL form's relevant objects and options are understood and
+its applicable checks have evidence. Parsing success or a generic notice alone
+does not establish semantic coverage.
+_Avoid_: parser coverage, finding count, fixture count
+
+**Target Database Version**:
+The database version against which an audit's version-dependent conclusions are
+assessed. An unspecified target leaves those conclusions undetermined.
+_Avoid_: parser version, latest version, DeltaScope version
+
+**Audit Evidence Gap**:
+Missing facts needed to resolve an enabled, applicable audit check. It leaves
+that conclusion unverified even when the operation's semantics are understood.
+_Avoid_: policy violation, parser error, unsupported syntax
+
+**Prospective Schema State**:
+The schema facts implied by preceding operations in an audited batch, conditional
+on their successful execution. Unknown effects leave affected facts unknown.
+_Avoid_: live database state, executed migration, guaranteed final schema
+
 ## Connection
 
 **Transport Connection Resolution**:
