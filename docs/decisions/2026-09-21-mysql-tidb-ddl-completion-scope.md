@@ -7,6 +7,12 @@ Implementation specification: [GitHub issue #79](https://github.com/Fanduzi/Delt
 Its native sub-issues and blocking relationships are the implementation tracker.
 The user delegated test-seam and task-granularity decisions; no additional
 interview is required to execute the specified dependency frontier.
+Execution is assigned to Devin. The [execution contract](../dev/ddl-devin-execution.md)
+and corresponding issue addenda require one real Golden Path before expansion,
+per-statement oracles, bounded changes, and stopping after two unsuccessful fixes
+of the same blocker. Remote issue bodies are self-contained because local design
+commits have not been pushed. The planned shared proof target is delivered by
+the baseline ticket; its absence must never be reported as a passing check.
 Initial unblocked slices are [multi-target policy correctness (#80)](https://github.com/Fanduzi/DeltaScope/issues/80)
 and [official inventory/four-version baseline (#81)](https://github.com/Fanduzi/DeltaScope/issues/81).
 Implement the known policy bug first in the shared milestone branch; independent
