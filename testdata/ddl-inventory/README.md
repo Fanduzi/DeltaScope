@@ -10,6 +10,7 @@ honestly — not a count of implemented rules.
 | File | Responsibility |
 |------|----------------|
 | inventory.yaml | The inventory: verified official sources, status vocabulary, owner tasks (real issues), the `required_row_ids` denominator, and one row per statement family/subaction scoped to the versions where it exists |
+| required_rows.txt | Locked denominator baseline — one row ID per line, checked in independently of `inventory.yaml`. The gate requires `rows` == `required_row_ids` == this file, so shrinking both YAML fields together still fails |
 
 ## Row contract
 
@@ -19,8 +20,10 @@ Every row carries: `id` (stable, unique), `product` (`mysql`/`tidb`),
 `owner`.
 
 `required_row_ids` lists every row ID and must equal the row set exactly —
-deleting a row without updating the denominator fails the gate; updating the
-denominator is a visible review diff, never a silent shrink.
+deleting a row without updating the denominator fails the gate. The checked-in
+`required_rows.txt` baseline holds the same set outside the editable YAML, and
+the gate additionally locks per-product minimums (mysql ≥ 63, tidb ≥ 50) in the
+test itself — shrinking any pair of files leaves the third behind and fails.
 
 `owner` must be a declared milestone task with a real GitHub issue number
 (`owners` map). A gap with no owning task means a new child issue under #79
@@ -43,7 +46,8 @@ incomplete implementation — they are assigned, not counted as coverage.
 
 ## Gate
 
-`make ddl-inventory-gate` runs `TestDDLInventoryContract`
+`make ddl-inventory-gate` runs `TestDDLInventoryContract` plus the
+denominator-lock negative `TestDDLInventoryDenominatorLocked`
 (`internal/application/audit/ddl_inventory_contract_test.go`).
 
 Verified sources: MySQL 5.7 (frozen Oracle mirror — the dev.mysql.com 5.7

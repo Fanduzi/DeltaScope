@@ -105,13 +105,16 @@ make ddl-golden-validator-test
 ```
 
 `make ddl-golden` is the milestone proof entrypoint. It reads a task manifest
-from `testdata/ddl-golden/<TASK>.json`, builds the current checkout's CLI into
-`<ARTIFACT_DIR>/<TASK>/bin`, starts the pinned four-anchor stack in
-`docker/ddl-golden-compose.yaml` (MySQL 5.7.44 / 8.0.46 / 8.4.10 / TiDB
-v8.5.0 — amd64 emulation for 5.7.44), executes each task case against the real
-anchors with stepwise live-metadata assertions, and writes + validates
-`<ARTIFACT_DIR>/<TASK>/artifact.json`. It is a thin runner over the existing
-build/compose/test machinery, not a general execution platform.
+from `testdata/ddl-golden/<TASK>.json` and first checks it against the locked
+baseline `testdata/ddl-golden/anchors-baseline.json` — a manifest that drops
+or rewrites a baseline anchor fails before any container starts. It then
+builds the current checkout's CLI into `<ARTIFACT_DIR>/<TASK>/bin`, starts the
+pinned four-anchor stack in `docker/ddl-golden-compose.yaml` (MySQL 5.7.44 /
+8.0.46 / 8.4.10 / TiDB v8.5.0 — amd64 emulation for 5.7.44), executes each
+task case against the real anchors with stepwise live-metadata assertions,
+and writes + validates `<ARTIFACT_DIR>/<TASK>/artifact.json`. It is a thin
+runner over the existing build/compose/test machinery, not a general
+execution platform.
 
 - Database cases prove fixture legality and real server state: every statement
   runs separately and its metadata assertions are verified against the live
@@ -131,8 +134,12 @@ build/compose/test machinery, not a general execution platform.
   fails rather than skips when a required anchor is missing, unreachable,
   unhealthy, or version-mismatched, when a required case did not execute,
   when the binary checksum/head is stale, when expected fields are absent,
-  or when no cases ran. External blockers are recorded as `external_blocker`
-  violations in a real artifact.
+  or when no cases ran. The locked `anchors-baseline.json` is independent of
+  the editable manifest: it pins the four anchor identities and both CLI
+  dialects, so shrinking a manifest and its artifact together still fails —
+  the baseline requires each anchor's `db_ddl`/`syntax_negative` cases and
+  each dialect's `cli_audit` case to have executed. External blockers are
+  recorded as `external_blocker` violations in a real artifact.
 - Cleanup is deterministic (`compose down -v --remove-orphans` plus a residual
   container check) on success and failure; only compose-owned resources are
   touched. The stack publishes no host ports.
@@ -159,9 +166,12 @@ task. Statuses are mutually exclusive and never substitutable:
 incomplete implementation — those rows do not count as completed coverage.
 The gate (`TestDDLInventoryContract`) enforces unique IDs, required fields,
 per-version official sources, status vocabulary, owner assignment to
-declared milestone tasks with real issue numbers, `required_row_ids`
-denominator integrity (the row set must equal it exactly), and concrete
-evidence refs for `semantically_checked` rows.
+declared milestone tasks with real issue numbers, denominator integrity
+(`rows` == `required_row_ids` == the independently checked-in
+`required_rows.txt` baseline, plus per-product minimums locked in the test —
+shrinking the YAML alone or in pairs still fails), and concrete evidence refs
+for `semantically_checked` rows. `TestDDLInventoryDenominatorLocked` is the
+permanent negative proving a simultaneous shrink is rejected.
 
 ## Notes
 

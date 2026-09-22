@@ -39,7 +39,18 @@ classified and owned.
    version-mismatched databases, unexecuted required cases, stale binaries,
    absent expected fields, zero cases, or hand-written PASS records; external
    blockers are recorded as `external_blocker` violations in a real artifact.
-3. **`testdata/ddl-inventory/inventory.yaml` as the machine-checkable
+3. **Denominators are locked by baselines independent of the editable files.**
+   `testdata/ddl-golden/anchors-baseline.json` pins the four anchor identities
+   (`product`/`version_contains`/`image`) and both CLI dialects outside any
+   task manifest: the runner refuses a manifest that drops/rewrites a baseline
+   anchor, and the validator requires every baseline anchor's
+   `db_ddl`/`syntax_negative` cases and every baseline dialect's `cli_audit`
+   case to have executed — shrinking manifest and artifact together fails.
+   `testdata/ddl-inventory/required_rows.txt` pins the full row-ID set outside
+   `inventory.yaml`: the gate requires `rows` == `required_row_ids` ==
+   baseline, plus per-product minimums (mysql ≥ 63, tidb ≥ 50) locked in the
+   gate test itself — shrinking the YAML alone or in pairs fails.
+4. **`testdata/ddl-inventory/inventory.yaml` as the machine-checkable
    denominator.** Each row binds a statement family/subaction to product
    versions where it exists, verified official sources, observed current
    status, preserved objects/semantics, acceptance dimensions, and an owner.
@@ -50,14 +61,15 @@ classified and owned.
    boundary). `TestDDLInventoryContract` enforces ID uniqueness, required
    fields, per-version sources, status vocabulary, owner assignment, and
    concrete evidence refs for `semantically_checked`.
-4. **Owners are real milestone tasks; genuine gaps get a real issue.**
-   Rows map to T01–T31 where they fit. One real gap — TiDB
-   instance-management DDL (e.g. `ALTER INSTANCE RELOAD TLS`) — fit no
-   existing task, so issue #111 (task T32) was created under #79, blocked by
-   #82 and required by #110 closure, instead of silently expanding an
-   unrelated owner. Owners must resolve to a declared task with a real issue
-   number; a proposal without an issue is not an owner.
-5. **MySQL 5.7 official source is the frozen Oracle mirror.**
+5. **Owners are real milestone tasks; genuine gaps get a real issue with
+   native relationships.** Rows map to T01–T31 where they fit. One real gap —
+   TiDB instance-management DDL (e.g. `ALTER INSTANCE RELOAD TLS`) — fit no
+   existing task, so issue #111 (task T32) was created as a native sub-issue
+   of #79, natively blocked by #82, natively blocking #110, and labeled
+   `ready-for-agent` — body prose alone cannot guarantee closure ordering.
+   Owners must resolve to a declared task with a real issue number; a
+   proposal without an issue is not an owner.
+6. **MySQL 5.7 official source is the frozen Oracle mirror.**
    `https://dev.mysql.com/doc/refman/5.7/en/sql-data-definition-statements.html`
    silently redirects to the MySQL 9.7 manual; the inventory's verified 5.7
    source is `docs.oracle.com/cd/E17952_01/mysql-5.7-en/...`.
@@ -77,8 +89,12 @@ classified and owned.
   return codes, non-JSON CLI stdout, and artifact-internal expected/actual
   tampering.
 - The inventory counts rows honestly: 113 rows, most incomplete — the
-  milestone denominator now exists without claiming unimplemented coverage,
-  and `required_row_ids` makes row deletion a gate failure.
+  milestone denominator now exists without claiming unimplemented coverage.
+  A denominator declared only inside the file it measures is self-referential:
+  `required_row_ids` inside `inventory.yaml` can be truncated together with
+  `rows`, so the locked `required_rows.txt` baseline and the in-test product
+  minimums are the tamper-evident anchor; the golden side mirrors this with
+  `anchors-baseline.json` versus the per-task manifests.
 
 ## Public Contract
 
@@ -101,6 +117,9 @@ classified and owned.
   `stderr`/`stdout`, reparsed CLI stdout) — artifact-recorded `expected`,
   `parsed`, and `assertions` are corroborative only and any disagreement with
   the manifest-derived expectation or raw evidence is a tamper failure.
+- `anchors-baseline.json` and `required_rows.txt` are the locked milestone
+  denominators: editing either is a visible review diff, and no combination
+  of manifest/inventory edits can shrink coverage below them.
 - `make ddl-golden-validator-test` and `make ddl-inventory-gate` run offline.
 - The inventory YAML schema (statuses enum, `file:`/`gate:`/`missing:` ref
   kinds, `owners` bound to real milestone issues, `required_row_ids`
@@ -121,13 +140,19 @@ classified and owned.
   assertions, PASS — 4 anchors × (CREATE+metadata, ALTER+metadata,
   DROP+metadata), 4 syntax-negative cases (errno 1064), 2 CLI audits
   (verdict pass, exit 0, 3 statements).
-- `make ddl-golden-validator-test`: 18/18 cases — every rejection path fails,
+- `make ddl-golden-validator-test`: 21/21 cases — every rejection path fails,
   including deleted metadata-query records, failed verify return codes,
-  non-JSON CLI stdout, recorded-parsed vs raw-stdout disagreement, and
-  artifact-internal expected tampering.
+  non-JSON CLI stdout, recorded-parsed vs raw-stdout disagreement,
+  artifact-internal expected tampering, and three simultaneous-shrink
+  negatives (manifest anchors + artifact, required_case_ids + artifact cases,
+  CLI dialects on both sides).
 - `make ddl-inventory-gate`: 113 rows, all classified and assigned; the
-  row set equals `required_row_ids` exactly (verified by truncating rows to
-  one and observing gate failure).
+  row set equals `required_row_ids` and `required_rows.txt` exactly, and
+  `TestDDLInventoryDenominatorLocked` proves shrinking rows + required ids
+  together is rejected by the baseline and the locked product minimums.
+- Real-file replays: T02.json + artifact shrunk to one anchor/three cases →
+  10 baseline violations; inventory.yaml shrunk to one row in both fields →
+  gate failure; both restore green.
 - Server-reported versions: 5.7.44, 8.0.46, 8.4.10, 8.0.11-TiDB-v8.5.0.
 
 ## Consequences

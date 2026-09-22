@@ -50,6 +50,17 @@ MANIFEST = {
     "required_case_ids": ["TX.db.mysqlX.ddl", "TX.db.mysqlX.syntax_negative", "TX.cli.mysql"],
 }
 
+# Locked milestone baseline, independent of the editable task manifest. Mirrors
+# testdata/ddl-golden/anchors-baseline.json for this synthetic task: the anchor
+# set and CLI dialect coverage may not shrink even if a manifest is edited to
+# match a reduced artifact.
+BASELINE = {
+    "required_anchors": {
+        "mysqlX": {"product": "mysql", "version_contains": "9.9.9", "image": "mysql:9.9.9"}
+    },
+    "required_cli_dialects": ["mysql"],
+}
+
 
 def make_artifact(tmp: pathlib.Path) -> dict:
     binary = tmp / "deltascope"
@@ -104,8 +115,8 @@ def make_artifact(tmp: pathlib.Path) -> dict:
     }
 
 
-def check(name, artifact, expect_failures):
-    failures = ddl_golden.validate_artifact(artifact, MANIFEST)
+def check(name, artifact, expect_failures, manifest=None):
+    failures = ddl_golden.validate_artifact(artifact, manifest or MANIFEST, baseline=BASELINE)
     has_failure = len(failures) > 0
     if expect_failures and not has_failure:
         print(f"FAIL {name}: validator accepted artifact that must be rejected")
@@ -204,6 +215,35 @@ def main():
         a = copy.deepcopy(base)
         a["cases"][2]["actual"]["parsed"] = {"verdict": "pass"}
         results.append(check("parsed disagreeing with stdout rejected", a, "parsed"))
+
+        # Shrinking the manifest AND the artifact together must still fail: the
+        # locked anchors-baseline requires the anchor's cases regardless of what
+        # the edited manifest now declares.
+        m = copy.deepcopy(MANIFEST)
+        del m["anchors"]["mysqlX"]
+        m["required_case_ids"] = ["TX.cli.mysql"]
+        a = copy.deepcopy(base)
+        a["cases"] = [a["cases"][2]]
+        a["required_case_ids"] = ["TX.cli.mysql"]
+        a["executed_count"] = 1
+        results.append(check("manifest anchors + artifact shrunk together rejected", a, "baseline anchor", manifest=m))
+
+        m = copy.deepcopy(MANIFEST)
+        m["required_case_ids"] = ["TX.cli.mysql"]
+        a = copy.deepcopy(base)
+        a["cases"] = [a["cases"][2]]
+        a["required_case_ids"] = ["TX.cli.mysql"]
+        a["executed_count"] = 1
+        results.append(check("required_case_ids + artifact cases shrunk together rejected", a, "baseline case", manifest=m))
+
+        m = copy.deepcopy(MANIFEST)
+        m["cli_audit"]["dialects"] = []
+        m["required_case_ids"] = ["TX.db.mysqlX.ddl", "TX.db.mysqlX.syntax_negative"]
+        a = copy.deepcopy(base)
+        a["cases"] = a["cases"][:2]
+        a["required_case_ids"] = ["TX.db.mysqlX.ddl", "TX.db.mysqlX.syntax_negative"]
+        a["executed_count"] = 2
+        results.append(check("cli dialect removed from manifest+artifact rejected", a, "baseline cli dialect", manifest=m))
 
     failures = results.count(False)
     print(f"contract cases={len(results)} failures={failures}")

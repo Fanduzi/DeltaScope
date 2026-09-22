@@ -30,12 +30,23 @@ Per-task manifests for the milestone DDL golden-path runner
 - `required_case_ids`: exact case IDs that must appear as executed in the
   artifact; any missing required case is a violation.
 
+## Locked baseline
+
+`anchors-baseline.json` is checked in **independently of any task manifest**
+and pins the milestone denominator: the four anchors (`mysql:5.7.44`,
+`mysql:8.0.46`, `mysql:8.4.10`, `pingcap/tidb:v8.5.0`) and the required CLI
+dialects (`mysql`, `tidb`). The runner refuses a manifest that drops or
+rewrites a baseline anchor, and the validator requires every baseline anchor's
+`db_ddl`/`syntax_negative` cases and every baseline dialect's `cli_audit` case
+to have executed — so shrinking a manifest and artifact together still fails.
+Editing the baseline is a visible review diff, never a silent shrink.
+
 Database steps and CLI audit are deliberately separate evidence: real
 execution proves fixture legality and live metadata; CLI audit proves parser
 and audit behavior. Neither substitutes for the other. The artifact validator
 recomputes expectations from the manifest and results from raw evidence —
 it rejects zero/missing/unexecuted cases, stale binaries, version mismatches,
 external blockers, deleted or failed metadata-query records, non-JSON CLI
-stdout, parsed/stdout disagreement, and artifact-internal expected tampering
-— proven offline by `make ddl-golden-validator-test`
-(`scripts/test_ddl_golden.py`).
+stdout, parsed/stdout disagreement, artifact-internal expected tampering, and
+manifests/artifacts shrunk below the locked baseline — proven offline by
+`make ddl-golden-validator-test` (`scripts/test_ddl_golden.py`).

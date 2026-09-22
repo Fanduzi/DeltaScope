@@ -68,6 +68,51 @@ def load_manifest(task):
     return manifest
 
 
+BASELINE_FILE = MANIFEST_DIR / "anchors-baseline.json"
+
+
+def load_baseline():
+    if not BASELINE_FILE.is_file():
+        fail_run(f"missing locked anchor baseline: {BASELINE_FILE}")
+    with BASELINE_FILE.open("r", encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def baseline_manifest_failures(manifest, baseline):
+    """Anchors/dialects a manifest may not drop. The baseline file is checked in
+    independently of any task manifest, so shrinking a manifest cannot shrink
+    the milestone denominator."""
+    failures = []
+    anchors = manifest.get("anchors") or {}
+    for key, spec in (baseline.get("required_anchors") or {}).items():
+        anchor = anchors.get(key)
+        if anchor is None:
+            failures.append(f"baseline anchor {key} missing from manifest")
+            continue
+        for field in ("product", "version_contains", "image"):
+            if anchor.get(field) != spec.get(field):
+                failures.append(f"baseline anchor {key}: manifest {field}={anchor.get(field)!r} != baseline {spec.get(field)!r}")
+    return failures
+
+
+def baseline_executed_failures(artifact, executed, cases, baseline):
+    """The baseline also fixes what must be executed: every required anchor
+    needs its db_ddl + syntax_negative cases, and every required CLI dialect a
+    cli_audit case — regardless of what the manifest's required_case_ids say."""
+    task = artifact.get("task_id") or ""
+    failures = []
+    for key in (baseline.get("required_anchors") or {}):
+        for suffix in ("ddl", "syntax_negative"):
+            cid = f"{task}.db.{key}.{suffix}"
+            if cid not in executed:
+                failures.append(f"baseline case {cid} not executed")
+    dialects_executed = {c.get("dialect") for c in cases if c.get("kind") == "cli_audit"}
+    for dialect in baseline.get("required_cli_dialects") or []:
+        if dialect not in dialects_executed:
+            failures.append(f"baseline cli dialect {dialect} not executed")
+    return failures
+
+
 def compose(*args, timeout=180):
     rc, out, err = run_cmd(
         ["docker", "compose", "-p", COMPOSE_PROJECT, "-f", str(COMPOSE_FILE), *args],
@@ -344,7 +389,7 @@ def manifest_expected(manifest, case):
     return None
 
 
-def validate_artifact(artifact, manifest, verify_binary=True):
+def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
     """Re-check an emitted artifact. Returns a list of failure strings."""
     failures = []
     required_top = ["task_id", "head_sha", "generated_at", "cli", "cases", "required_case_ids", "executed_count", "cleanup"]
@@ -353,6 +398,9 @@ def validate_artifact(artifact, manifest, verify_binary=True):
             failures.append(f"missing artifact field: {field}")
     if failures:
         return failures
+
+    if baseline:
+        failures.extend(baseline_manifest_failures(manifest, baseline))
 
     if artifact.get("external_blocker"):
         failures.append(f"external blocker recorded: {artifact['external_blocker']}")
@@ -372,6 +420,8 @@ def validate_artifact(artifact, manifest, verify_binary=True):
     extra = [c for c in executed if c not in manifest["required_case_ids"]]
     if extra:
         failures.append(f"executed cases outside required set: {extra}")
+    if baseline:
+        failures.extend(baseline_executed_failures(artifact, executed, cases, baseline))
 
     cli = artifact["cli"]
     for field in ("path", "sha256", "build"):
@@ -532,6 +582,10 @@ def validate_artifact(artifact, manifest, verify_binary=True):
 
 def cmd_run(args):
     manifest = load_manifest(args.task)
+    baseline = load_baseline()
+    baseline_errors = baseline_manifest_failures(manifest, baseline)
+    if baseline_errors:
+        fail_run(f"manifest violates locked baseline: {baseline_errors}")
     artifact_root = pathlib.Path(args.artifact_dir).resolve() / args.task
     artifact_root.mkdir(parents=True, exist_ok=True)
     cases_dir = artifact_root / "cases"
@@ -603,7 +657,7 @@ def cmd_run(args):
             json.dump(case, handle, indent=2, ensure_ascii=False)
             handle.write("\n")
 
-    failures = validate_artifact(artifact, manifest)
+    failures = validate_artifact(artifact, manifest, baseline=baseline)
     executed = artifact["executed_count"]
     assertions = sum(len(c.get("assertions") or []) for c in artifact["cases"])
     passed = sum(1 for c in artifact["cases"] if c.get("status") == "pass")
@@ -625,7 +679,8 @@ def cmd_validate(args):
         artifact = json.load(handle)
     task = artifact.get("task_id") or args.task
     manifest = load_manifest(task)
-    failures = validate_artifact(artifact, manifest, verify_binary=not args.no_binary_check)
+    baseline = load_baseline()
+    failures = validate_artifact(artifact, manifest, baseline=baseline, verify_binary=not args.no_binary_check)
     if failures:
         for item in failures:
             print(f"[ddl-golden][FAIL] {item}", file=sys.stderr)

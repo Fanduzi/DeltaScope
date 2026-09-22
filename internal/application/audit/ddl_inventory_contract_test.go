@@ -6,6 +6,7 @@
 package audit
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,6 +16,13 @@ import (
 )
 
 var ddlInventoryPath = filepath.Join("..", "..", "..", "testdata", "ddl-inventory", "inventory.yaml")
+
+var ddlRequiredRowsPath = filepath.Join("..", "..", "..", "testdata", "ddl-inventory", "required_rows.txt")
+
+// Locked denominator minimums: required_rows.txt pins the exact row set, and
+// these per-product minimums pin the count. Shrinking the denominator below
+// them requires editing this test file (the gate itself), not just the YAML.
+var minProductRows = map[string]int{"mysql": 63, "tidb": 50}
 
 type ddlInventoryAcceptance struct {
 	Dimensions string   `yaml:"dimensions"`
@@ -72,6 +80,78 @@ func loadDDLInventory(t *testing.T) ddlInventory {
 	return inv
 }
 
+func loadRequiredRowIDs(t *testing.T) map[string]bool {
+	t.Helper()
+	data, err := os.ReadFile(ddlRequiredRowsPath)
+	if err != nil {
+		t.Fatalf("read required_rows baseline: %v", err)
+	}
+	ids := map[string]bool{}
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		if ids[line] {
+			t.Fatalf("required_rows baseline has duplicate id %q", line)
+		}
+		ids[line] = true
+	}
+	if len(ids) == 0 {
+		t.Fatalf("required_rows baseline is empty")
+	}
+	return ids
+}
+
+// denominatorViolations is the locked denominator check. The required row set
+// must be identical in three independent places: inventory rows, the YAML's
+// required_row_ids, and the checked-in required_rows.txt baseline — plus the
+// per-product minimums locked above. Shrinking any pair leaves the third
+// (or the code constants) behind and fails.
+func denominatorViolations(inv ddlInventory, baselineIDs map[string]bool) []string {
+	var out []string
+	if len(inv.RequiredRowIDs) == 0 {
+		out = append(out, "required_row_ids missing or empty (denominator unprotected)")
+	}
+	requiredSet := map[string]bool{}
+	for _, id := range inv.RequiredRowIDs {
+		if requiredSet[id] {
+			out = append(out, fmt.Sprintf("required_row_ids contains duplicate id %q", id))
+		}
+		requiredSet[id] = true
+	}
+	seen := map[string]bool{}
+	productCounts := map[string]int{}
+	for _, row := range inv.Rows {
+		seen[row.ID] = true
+		productCounts[row.Product]++
+	}
+	for id := range seen {
+		if !requiredSet[id] {
+			out = append(out, fmt.Sprintf("row %q exists but is absent from required_row_ids", id))
+		}
+		if !baselineIDs[id] {
+			out = append(out, fmt.Sprintf("row %q absent from required_rows.txt baseline", id))
+		}
+	}
+	for id := range requiredSet {
+		if !seen[id] {
+			out = append(out, fmt.Sprintf("required row %q missing from inventory rows (denominator shrunk)", id))
+		}
+	}
+	for id := range baselineIDs {
+		if !seen[id] {
+			out = append(out, fmt.Sprintf("baseline row %q missing from inventory rows (denominator shrunk)", id))
+		}
+	}
+	for product, min := range minProductRows {
+		if productCounts[product] < min {
+			out = append(out, fmt.Sprintf("product %s has %d rows, below locked minimum %d", product, productCounts[product], min))
+		}
+	}
+	return out
+}
+
 func repoRootFromInventory(t *testing.T) string {
 	t.Helper()
 	abs, err := filepath.Abs(filepath.Join(filepath.Dir(ddlInventoryPath), "..", ".."))
@@ -84,6 +164,7 @@ func repoRootFromInventory(t *testing.T) string {
 func TestDDLInventoryContract(t *testing.T) {
 	t.Parallel()
 	inv := loadDDLInventory(t)
+	baselineIDs := loadRequiredRowIDs(t)
 	root := repoRootFromInventory(t)
 
 	if inv.Version < 1 {
@@ -118,17 +199,6 @@ func TestDDLInventoryContract(t *testing.T) {
 			t.Fatalf("owner %q missing issue number or title", id)
 		}
 	}
-	if len(inv.RequiredRowIDs) == 0 {
-		t.Fatalf("required_row_ids missing or empty (denominator unprotected)")
-	}
-	requiredSet := map[string]bool{}
-	for _, id := range inv.RequiredRowIDs {
-		if requiredSet[id] {
-			t.Fatalf("required_row_ids contains duplicate id %q", id)
-		}
-		requiredSet[id] = true
-	}
-
 	mysqlVersions := map[string]string{"5.7": "mysql57", "8.0": "mysql80", "8.4": "mysql84"}
 	seen := map[string]bool{}
 	ownerCounts := map[string]int{}
@@ -235,15 +305,32 @@ func TestDDLInventoryContract(t *testing.T) {
 			t.Fatalf("rows use undeclared status %q", status)
 		}
 	}
-	for id := range seen {
-		if !requiredSet[id] {
-			t.Fatalf("row %q exists but is absent from required_row_ids", id)
-		}
+	for _, v := range denominatorViolations(inv, baselineIDs) {
+		t.Fatalf("denominator violation: %s", v)
 	}
-	for id := range requiredSet {
-		if !seen[id] {
-			t.Fatalf("required row %q missing from inventory rows (denominator shrunk)", id)
-		}
+	t.Logf("inventory rows=%d baseline=%d statuses=%v owners=%v", len(inv.Rows), len(baselineIDs), statusCounts, ownerCounts)
+}
+
+func TestDDLInventoryDenominatorLocked(t *testing.T) {
+	t.Parallel()
+	inv := loadDDLInventory(t)
+	baselineIDs := loadRequiredRowIDs(t)
+
+	if got := denominatorViolations(inv, baselineIDs); len(got) != 0 {
+		t.Fatalf("real inventory should satisfy the locked denominator, got: %v", got)
 	}
-	t.Logf("inventory rows=%d required=%d statuses=%v owners=%v", len(inv.Rows), len(requiredSet), statusCounts, ownerCounts)
+
+	// Shrinking rows and required_row_ids together inside the same YAML file
+	// must still fail: the required_rows.txt baseline and the per-product
+	// minimums are independent of the editable inventory.
+	shrunk := inv
+	shrunk.Rows = inv.Rows[:1]
+	shrunk.RequiredRowIDs = []string{inv.Rows[0].ID}
+	got := denominatorViolations(shrunk, baselineIDs)
+	if len(got) == 0 {
+		t.Fatalf("shrinking rows+required_row_ids to one entry must violate the denominator")
+	}
+	for _, v := range got {
+		t.Logf("expected violation: %s", v)
+	}
 }
