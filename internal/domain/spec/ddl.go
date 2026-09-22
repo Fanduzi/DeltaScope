@@ -12,7 +12,10 @@ type DDL struct {
 	// Targets lists every table-level object identity the statement names, in
 	// source order: each DROP TABLE/VIEW name, each TRUNCATE relation, each
 	// RENAME TABLE source and destination pair-wise, and ALTER TABLE
-	// RENAME TO destinations after the altered subject. Table stays the
+	// RENAME TO destinations after the altered subject. Entries keep their
+	// as-written qualifiers: an unqualified rename destination stays
+	// unqualified here because it resolves to the current schema, not the
+	// source table's schema, under MySQL/TiDB semantics. Table stays the
 	// primary (first) target for single-target consumers; use TableTargets
 	// to read the complete list.
 	Targets     []Table      `json:"targets,omitempty"`

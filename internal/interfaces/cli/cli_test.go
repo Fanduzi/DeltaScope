@@ -623,7 +623,7 @@ func TestAuditCommandDenylistChecksEveryMultiTargetDropAndRename(t *testing.T) {
 	}
 }
 
-func TestAuditCommandDenylistResolvesInheritedAndDottedTargets(t *testing.T) {
+func TestAuditCommandDenylistResolvesQualifiedAndDottedTargets(t *testing.T) {
 	t.Parallel()
 
 	runAudit := func(t *testing.T, dialect, sql, configPath string) (int, map[string]any) {
@@ -657,8 +657,10 @@ func TestAuditCommandDenylistResolvesInheritedAndDottedTargets(t *testing.T) {
 		return denylist
 	}
 
-	// Regression: an unqualified rename destination inherits the source
-	// schema, so it must match qualified_tables selectors.
+	// Regression: an unqualified rename destination resolves to the current
+	// schema, not the source table's schema. Offline audit has no current
+	// schema, so qualified_tables selectors cannot match it; an explicit
+	// destination qualifier still resolves directly.
 	qualifiedPolicy := writeDenylistPolicy(t, "      qualified_tables: [app.sensitive]\n")
 	for _, dialect := range []string{"mysql", "tidb"} {
 		for _, tc := range []struct {
@@ -666,9 +668,11 @@ func TestAuditCommandDenylistResolvesInheritedAndDottedTargets(t *testing.T) {
 			sql     string
 			blocked bool
 		}{
-			{name: "alter_rename_inherits", sql: "ALTER TABLE app.harmless RENAME TO sensitive", blocked: true},
-			{name: "rename_inherits", sql: "RENAME TABLE app.harmless TO sensitive", blocked: true},
+			{name: "alter_rename_unqualified_unknown", sql: "ALTER TABLE app.harmless RENAME TO sensitive", blocked: false},
+			{name: "rename_unqualified_unknown", sql: "RENAME TABLE app.harmless TO sensitive", blocked: false},
 			{name: "unqualified_boundary", sql: "RENAME TABLE harmless TO sensitive", blocked: false},
+			{name: "alter_rename_explicit", sql: "ALTER TABLE harmless RENAME TO app.sensitive", blocked: true},
+			{name: "rename_explicit", sql: "RENAME TABLE harmless TO app.sensitive", blocked: true},
 		} {
 			tc := tc
 			t.Run(dialect+"/"+tc.name, func(t *testing.T) {

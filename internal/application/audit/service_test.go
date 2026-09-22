@@ -1226,20 +1226,36 @@ func TestAuditSQLDenylistChecksEveryMultiTargetDropAndRename(t *testing.T) {
 func TestAuditSQLDenylistResolvesRenameDestinationSchema(t *testing.T) {
 	t.Parallel()
 
-	configPath := writeDenylistPolicy(t, "      qualified_tables: [app.sensitive]\n")
+	// An unqualified rename destination resolves to the current (request)
+	// schema, not the source table's schema; an explicit qualifier always wins.
 	cases := []struct {
-		name    string
-		sql     string
-		blocked bool
+		name       string
+		sql        string
+		params     string
+		schema     string
+		blocked    bool
+		wantSchema string
 	}{
-		// Unqualified destinations inherit the source schema.
-		{name: "alter_rename_inherits", sql: "ALTER TABLE app.harmless RENAME TO sensitive", blocked: true},
-		{name: "rename_inherits", sql: "RENAME TABLE app.harmless TO sensitive", blocked: true},
-		{name: "rename_pair_inherits", sql: "RENAME TABLE app.harmless TO harmless_old, staging.live TO sensitive", blocked: false},
-		{name: "explicit_safe_destination", sql: "ALTER TABLE app.harmless RENAME TO app.safe", blocked: false},
-		// Unqualified everywhere with no request schema stays an
-		// unknown-schema boundary: qualified selectors cannot match.
-		{name: "unqualified_boundary", sql: "RENAME TABLE harmless TO sensitive", blocked: false},
+		{name: "alter_unqualified_uses_request_schema", sql: "ALTER TABLE app.harmless RENAME TO sensitive",
+			params: "      qualified_tables: [other.sensitive]\n", schema: "other", blocked: true, wantSchema: "other"},
+		{name: "rename_unqualified_uses_request_schema", sql: "RENAME TABLE app.harmless TO sensitive",
+			params: "      qualified_tables: [other.sensitive]\n", schema: "other", blocked: true, wantSchema: "other"},
+		{name: "rename_later_pair_uses_request_schema", sql: "RENAME TABLE app.harmless TO harmless_old, staging.live TO sensitive",
+			params: "      qualified_tables: [other.sensitive]\n", schema: "other", blocked: true, wantSchema: "other"},
+		{name: "explicit_destination_wins_over_request", sql: "RENAME TABLE app.harmless TO third.sensitive",
+			params: "      qualified_tables: [third.sensitive]\n", schema: "other", blocked: true, wantSchema: "third"},
+		{name: "alter_source_schema_does_not_leak", sql: "ALTER TABLE app.harmless RENAME TO sensitive",
+			params: "      qualified_tables: [app.sensitive]\n", schema: "other", blocked: false},
+		{name: "rename_source_schema_does_not_leak", sql: "RENAME TABLE app.harmless TO sensitive",
+			params: "      qualified_tables: [app.sensitive]\n", schema: "other", blocked: false},
+		{name: "explicit_destination_not_overridden", sql: "RENAME TABLE app.harmless TO third.sensitive",
+			params: "      qualified_tables: [other.sensitive]\n", schema: "other", blocked: false},
+		{name: "explicit_safe_destination", sql: "ALTER TABLE app.harmless RENAME TO app.safe",
+			params: "      qualified_tables: [other.sensitive]\n", schema: "other", blocked: false},
+		// With no request schema an unqualified destination stays unknown:
+		// qualified selectors cannot match and no schema is fabricated.
+		{name: "unqualified_boundary", sql: "RENAME TABLE app.harmless TO sensitive",
+			params: "      qualified_tables: [app.sensitive]\n", schema: "", blocked: false},
 	}
 
 	for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
@@ -1250,7 +1266,8 @@ func TestAuditSQLDenylistResolvesRenameDestinationSchema(t *testing.T) {
 				result, err := AuditSQL(context.Background(), Request{
 					SQL:        tc.sql,
 					Dialect:    dialect,
-					ConfigPath: configPath,
+					ConfigPath: writeDenylistPolicy(t, tc.params),
+					Schema:     tc.schema,
 				})
 				if err != nil {
 					t.Fatalf("audit sql: %v", err)
@@ -1265,8 +1282,8 @@ func TestAuditSQLDenylistResolvesRenameDestinationSchema(t *testing.T) {
 					}
 				}
 				if tc.blocked {
-					if len(denylist) != 1 || denylist[0].Metadata["schema"] != "app" || denylist[0].Metadata["table"] != "sensitive" {
-						t.Fatalf("expected 1 denylist finding for app.sensitive, got %#v", result.Statements[0].Findings)
+					if len(denylist) != 1 || denylist[0].Metadata["schema"] != tc.wantSchema || denylist[0].Metadata["table"] != "sensitive" {
+						t.Fatalf("expected 1 denylist finding for %s.sensitive, got %#v", tc.wantSchema, result.Statements[0].Findings)
 					}
 					if result.Verdict != report.VerdictReject {
 						t.Fatalf("expected reject verdict, got %q", result.Verdict)

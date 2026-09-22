@@ -322,11 +322,12 @@ func TestExtractorRenameTablePreservesEverySourceAndDestination(t *testing.T) {
 	if stmt.DDL.Table == nil || stmt.DDL.Table.Schema != "app" || stmt.DDL.Table.Name != "users" {
 		t.Fatalf("expected primary table to stay the first source, got %#v", stmt.DDL.Table)
 	}
-	// The unquoted-looking `Users Backup` destination is written unqualified, so
-	// it inherits the source schema `app`; the second pair stays explicit.
+	// The `Users Backup` destination is written unqualified, so its target
+	// stays unqualified (it resolves to the current schema downstream); the
+	// second pair stays explicit.
 	want := []spec.Table{
 		{Schema: "app", Name: "users"},
-		{Schema: "app", Name: "users backup"},
+		{Name: "users backup"},
 		{Schema: "staging", Name: "orders"},
 		{Schema: "prod", Name: "orders"},
 	}
@@ -385,13 +386,16 @@ func TestExtractorAlterRenameTableKeepsSourceAndDestinationTargets(t *testing.T)
 	}
 }
 
-func TestExtractorRenameDestinationInheritsSourceSchema(t *testing.T) {
+func TestExtractorRenameDestinationKeepsAsWrittenQualifier(t *testing.T) {
 	t.Parallel()
 
+	// MySQL/TiDB resolve an unqualified rename destination to the current
+	// schema, not the source table's schema, so extraction must not fabricate
+	// the source qualifier onto the destination target.
 	alter := extractSingleStatement(t, "alter table app.users rename to users_archive")
 	want := []spec.Table{
 		{Schema: "app", Name: "users"},
-		{Schema: "app", Name: "users_archive"},
+		{Name: "users_archive"},
 	}
 	targets := alter.DDL.TableTargets()
 	if len(targets) != len(want) {
@@ -399,16 +403,16 @@ func TestExtractorRenameDestinationInheritsSourceSchema(t *testing.T) {
 	}
 	for i := range want {
 		if targets[i].Schema != want[i].Schema || targets[i].Name != want[i].Name {
-			t.Fatalf("target %d = %#v, want %#v (unqualified destination must inherit source schema)", i, targets[i], want[i])
+			t.Fatalf("target %d = %#v, want %#v (unqualified destination must stay unqualified)", i, targets[i], want[i])
 		}
 	}
 
 	rename := extractSingleStatement(t, "rename table app.users to users_archive, prod.orders to archive")
 	want = []spec.Table{
 		{Schema: "app", Name: "users"},
-		{Schema: "app", Name: "users_archive"},
+		{Name: "users_archive"},
 		{Schema: "prod", Name: "orders"},
-		{Schema: "prod", Name: "archive"},
+		{Name: "archive"},
 	}
 	targets = rename.DDL.TableTargets()
 	if len(targets) != len(want) {

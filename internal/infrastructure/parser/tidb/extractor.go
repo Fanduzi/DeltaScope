@@ -252,13 +252,10 @@ func extractAlterTable(stmt *ast.AlterTableStmt, rawSQL string) *spec.DDL {
 		}
 		ddl.Alter = append(ddl.Alter, extractAlterSpecs(s, clause)...)
 		if s.Tp == ast.AlterTableRenameTable && s.NewTable != nil {
-			// An unqualified RENAME TO destination inherits the altered
-			// table's schema.
-			destination := spec.Table{Schema: s.NewTable.Schema.L, Name: s.NewTable.Name.L}
-			if destination.Schema == "" {
-				destination.Schema = ddl.Table.Schema
-			}
-			ddl.Targets = append(ddl.Targets, destination)
+			// The destination keeps its as-written qualifier: an unqualified
+			// RENAME TO target resolves to the current schema downstream, not
+			// the altered table's schema.
+			ddl.Targets = append(ddl.Targets, spec.Table{Schema: s.NewTable.Schema.L, Name: s.NewTable.Name.L})
 		}
 	}
 	if len(ddl.Targets) > 0 {
@@ -579,13 +576,10 @@ func extractRenameTable(stmt *ast.RenameTableStmt) *spec.DDL {
 			if tt.NewTable.Schema.L != "" {
 				a.Options["new_schema"] = tt.NewTable.Schema.L
 			}
-			// An unqualified destination inherits the source schema per
-			// RENAME TABLE semantics.
-			schema := tt.NewTable.Schema.L
-			if schema == "" && tt.OldTable != nil {
-				schema = tt.OldTable.Schema.L
-			}
-			targets = append(targets, spec.Table{Schema: schema, Name: tt.NewTable.Name.L})
+			// The destination keeps its as-written qualifier: an unqualified
+			// destination resolves to the current schema downstream, not the
+			// source table's schema.
+			targets = append(targets, spec.Table{Schema: tt.NewTable.Schema.L, Name: tt.NewTable.Name.L})
 		}
 		alters = append(alters, a)
 	}

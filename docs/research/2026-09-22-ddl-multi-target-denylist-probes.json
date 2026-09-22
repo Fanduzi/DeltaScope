@@ -1,5 +1,5 @@
 {
- "head": "milestone/mysql-tidb-ddl-completion working tree on base 7a11ac94a372f9aefed52c8d43c70a377c230085",
+ "head": "milestone/mysql-tidb-ddl-completion working tree on top of 0035c40 rework (unqualified rename destination resolves to the current/request schema, not the source schema)",
  "mode": "offline; isolated denylist policy (all other rules disabled where the fixture writes one, or drop.forbid disabled); --fail-on none; no submitted SQL executed",
  "command": "go build -o /tmp/deltascope-ddl-probes ./cmd/deltascope && CGO_ENABLED=1 go build -tags postgresql -o /tmp/deltascope-ddl-probes-pg ./cmd/deltascope",
  "probes": [
@@ -819,17 +819,17 @@
    }
   },
   {
-   "id": "mysql.denylist_alter_rename_qualified",
+   "id": "mysql.denylist_alter_rename_dest_unqualified",
    "dialect": "mysql",
    "sql": "ALTER TABLE app.harmless RENAME TO sensitive",
    "config_yaml": "rules:\n  ddl.table.drop.forbid:\n    enabled: false\n  ddl.alter.rename_table.forbid:\n    enabled: false\n  ddl.rename_table.notice:\n    enabled: false\n  ddl.table.denylist.forbid:\n    enabled: true\n    level: blocker\n    params:\n      qualified_tables: [app.sensitive]\n",
    "exit_code": 0,
    "stderr": "",
    "result": {
-    "verdict": "reject",
+    "verdict": "pass",
     "summary": {
      "statements": 1,
-     "blockers": 1,
+     "blockers": 0,
      "warnings": 0,
      "notices": 0
     },
@@ -838,34 +838,7 @@
       "index": 0,
       "kind": "ddl",
       "raw_sql": "ALTER TABLE app.harmless RENAME TO sensitive",
-      "normalized_sql": "ALTER TABLE app.harmless RENAME TO sensitive",
-      "findings": [
-       {
-        "rule_id": "ddl.table.denylist.forbid",
-        "level": "blocker",
-        "message": "DDL target \"app.sensitive\" is blocked by the table denylist policy",
-        "statement_kind": "ddl",
-        "location": {
-         "line": 1,
-         "column": 1
-        },
-        "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
-        "metadata": {
-         "schema": "app",
-         "table": "sensitive"
-        },
-        "explanation": {
-         "summary": "Forbid DDL table denylist forbid",
-         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
-         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
-         "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
-         "metadata": {
-          "status": "limited",
-          "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
-         }
-        }
-       }
-      ]
+      "normalized_sql": "ALTER TABLE app.harmless RENAME TO sensitive"
      }
     ],
     "fail_on_triggered": false,
@@ -892,17 +865,17 @@
    }
   },
   {
-   "id": "mysql.denylist_rename_dest_inherits",
+   "id": "mysql.denylist_rename_dest_unqualified",
    "dialect": "mysql",
    "sql": "RENAME TABLE app.harmless TO sensitive",
    "config_yaml": "rules:\n  ddl.table.drop.forbid:\n    enabled: false\n  ddl.alter.rename_table.forbid:\n    enabled: false\n  ddl.rename_table.notice:\n    enabled: false\n  ddl.table.denylist.forbid:\n    enabled: true\n    level: blocker\n    params:\n      qualified_tables: [app.sensitive]\n",
    "exit_code": 0,
    "stderr": "",
    "result": {
-    "verdict": "reject",
+    "verdict": "pass",
     "summary": {
      "statements": 1,
-     "blockers": 1,
+     "blockers": 0,
      "warnings": 0,
      "notices": 0
     },
@@ -911,34 +884,7 @@
       "index": 0,
       "kind": "ddl",
       "raw_sql": "RENAME TABLE app.harmless TO sensitive",
-      "normalized_sql": "RENAME TABLE app.harmless TO sensitive",
-      "findings": [
-       {
-        "rule_id": "ddl.table.denylist.forbid",
-        "level": "blocker",
-        "message": "DDL target \"app.sensitive\" is blocked by the table denylist policy",
-        "statement_kind": "ddl",
-        "location": {
-         "line": 1,
-         "column": 1
-        },
-        "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
-        "metadata": {
-         "schema": "app",
-         "table": "sensitive"
-        },
-        "explanation": {
-         "summary": "Forbid DDL table denylist forbid",
-         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
-         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
-         "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
-         "metadata": {
-          "status": "limited",
-          "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
-         }
-        }
-       }
-      ]
+      "normalized_sql": "RENAME TABLE app.harmless TO sensitive"
      }
     ],
     "fail_on_triggered": false,
@@ -1444,17 +1390,17 @@
    }
   },
   {
-   "id": "tidb.denylist_alter_rename_qualified",
+   "id": "tidb.denylist_alter_rename_dest_unqualified",
    "dialect": "tidb",
    "sql": "ALTER TABLE app.harmless RENAME TO sensitive",
    "config_yaml": "rules:\n  ddl.table.drop.forbid:\n    enabled: false\n  ddl.alter.rename_table.forbid:\n    enabled: false\n  ddl.rename_table.notice:\n    enabled: false\n  ddl.table.denylist.forbid:\n    enabled: true\n    level: blocker\n    params:\n      qualified_tables: [app.sensitive]\n",
    "exit_code": 0,
    "stderr": "",
    "result": {
-    "verdict": "reject",
+    "verdict": "pass",
     "summary": {
      "statements": 1,
-     "blockers": 1,
+     "blockers": 0,
      "warnings": 0,
      "notices": 0
     },
@@ -1463,34 +1409,7 @@
       "index": 0,
       "kind": "ddl",
       "raw_sql": "ALTER TABLE app.harmless RENAME TO sensitive",
-      "normalized_sql": "ALTER TABLE app.harmless RENAME TO sensitive",
-      "findings": [
-       {
-        "rule_id": "ddl.table.denylist.forbid",
-        "level": "blocker",
-        "message": "DDL target \"app.sensitive\" is blocked by the table denylist policy",
-        "statement_kind": "ddl",
-        "location": {
-         "line": 1,
-         "column": 1
-        },
-        "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
-        "metadata": {
-         "schema": "app",
-         "table": "sensitive"
-        },
-        "explanation": {
-         "summary": "Forbid DDL table denylist forbid",
-         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
-         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
-         "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
-         "metadata": {
-          "status": "limited",
-          "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
-         }
-        }
-       }
-      ]
+      "normalized_sql": "ALTER TABLE app.harmless RENAME TO sensitive"
      }
     ],
     "fail_on_triggered": false,
@@ -1517,17 +1436,17 @@
    }
   },
   {
-   "id": "tidb.denylist_rename_dest_inherits",
+   "id": "tidb.denylist_rename_dest_unqualified",
    "dialect": "tidb",
    "sql": "RENAME TABLE app.harmless TO sensitive",
    "config_yaml": "rules:\n  ddl.table.drop.forbid:\n    enabled: false\n  ddl.alter.rename_table.forbid:\n    enabled: false\n  ddl.rename_table.notice:\n    enabled: false\n  ddl.table.denylist.forbid:\n    enabled: true\n    level: blocker\n    params:\n      qualified_tables: [app.sensitive]\n",
    "exit_code": 0,
    "stderr": "",
    "result": {
-    "verdict": "reject",
+    "verdict": "pass",
     "summary": {
      "statements": 1,
-     "blockers": 1,
+     "blockers": 0,
      "warnings": 0,
      "notices": 0
     },
@@ -1536,34 +1455,7 @@
       "index": 0,
       "kind": "ddl",
       "raw_sql": "RENAME TABLE app.harmless TO sensitive",
-      "normalized_sql": "RENAME TABLE app.harmless TO sensitive",
-      "findings": [
-       {
-        "rule_id": "ddl.table.denylist.forbid",
-        "level": "blocker",
-        "message": "DDL target \"app.sensitive\" is blocked by the table denylist policy",
-        "statement_kind": "ddl",
-        "location": {
-         "line": 1,
-         "column": 1
-        },
-        "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
-        "metadata": {
-         "schema": "app",
-         "table": "sensitive"
-        },
-        "explanation": {
-         "summary": "Forbid DDL table denylist forbid",
-         "why": "The statement uses a construct that the shipped policy explicitly forbids.",
-         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
-         "suggestion": "run the change against an allowed table or relax the denylist policy intentionally",
-         "metadata": {
-          "status": "limited",
-          "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
-         }
-        }
-       }
-      ]
+      "normalized_sql": "RENAME TABLE app.harmless TO sensitive"
      }
     ],
     "fail_on_triggered": false,
@@ -1976,9 +1868,10 @@
  "verified_date": "2026-09-22",
  "notes": [
   "Post-fix evidence for issue #80: every named table target now reaches ddl.table.denylist.forbid regardless of position.",
-  "Probes ran against the uncommitted task working tree; its content is identical to the issue #80 task commit on this branch.",
+  "Rework evidence: the earlier 'unqualified destination inherits the source schema' claim was wrong. Per MySQL PT_alter_table_rename (parse_tree_nodes.cc) + LEX::copy_db_to (sql_lex.cc), TiDB handleTableName (preprocess.go), and MySQL bug #11493, an unqualified destination resolves to the current database. Offline CLI audit has no current schema, so qualified_tables selectors cannot match unqualified destinations; the SDK Request.Schema path covers the resolved case.",
+  "Probes re-ran against the reworked working tree; ids renamed where the old id encoded the wrong claim (see *_dest_unqualified).",
   "IDs mysql.denylist_*/tidb.denylist_* re-run the same inputs as the pre-fix 2026-09-21 probe file for direct comparison.",
-  "Extended ids cover RENAME destinations, ALTER TABLE ... RENAME TO destinations, unqualified destinations inheriting the source schema (qualified_tables), schema-qualified and quoted identifiers, dotted qualified identities that must not deduplicate, and all-allowed controls.",
+  "Extended ids cover RENAME destinations, ALTER TABLE ... RENAME TO destinations, unqualified destinations under qualified_tables (unknown-schema boundary offline), schema-qualified and quoted identifiers, dotted qualified identities that must not deduplicate, and all-allowed controls.",
   "Synthetic offline audit probes only; submitted SQL was never executed against a database.",
   "--fail-on none avoids conflating finding thresholds with verdict; inspect diagnostics and exit_code separately."
  ]

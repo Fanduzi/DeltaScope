@@ -70,10 +70,11 @@ func statementTargets(statement spec.Statement) []schemaTarget {
 		requiresExisting := statement.DDL.Operation != spec.DDLOperationCreateTable
 		tables := statement.DDL.TableTargets()
 		if statement.DDL.Operation == spec.DDLOperationAlterTable && len(tables) > 1 {
-			// ALTER targets after the first are rename destinations. An
-			// unqualified destination inherits the source schema and a
-			// qualified one is already explicit, so only the altered table
-			// participates in session-schema inference.
+			// ALTER targets after the first are rename destinations. They are
+			// new names, not existing objects: an unqualified destination
+			// resolves to the session schema being inferred (no independent
+			// signal) and a qualified one points at the future location, so
+			// only the altered table participates in session-schema inference.
 			tables = tables[:1]
 		}
 		targets := make([]schemaTarget, 0, len(tables))

@@ -423,8 +423,9 @@ func TestPrepareDetectsDistinctDottedQualifiedTargets(t *testing.T) {
 func TestPrepareInfersSchemaFromAlterSubjectOnly(t *testing.T) {
 	t.Parallel()
 
-	// The rename destination inherits the source schema when unqualified and is
-	// explicit when qualified, so it must not join session-schema inference even
+	// The rename destination is a new name, not an existing object: unqualified
+	// it resolves to the session schema being inferred, and qualified it points
+	// at the future location, so it must not join session-schema inference even
 	// when a same-named table exists elsewhere.
 	client := &fakeClient{
 		detectDialect:  spec.DialectMySQL,

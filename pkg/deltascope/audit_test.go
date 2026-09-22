@@ -196,9 +196,8 @@ func TestAuditSupportsConfigOverridePath(t *testing.T) {
 	}
 }
 
-func TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget(t *testing.T) {
-	t.Parallel()
-
+func writeDenylistOnlyPolicy(t *testing.T, params string) string {
+	t.Helper()
 	configPath := filepath.Join(t.TempDir(), "denylist-only.yaml")
 	var builder strings.Builder
 	builder.WriteString("rules:\n")
@@ -213,10 +212,18 @@ func TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget(t *testing.T) {
 		}
 		fmt.Fprintf(&builder, "  %s:\n    enabled: false\n", strconv.Quote(id))
 	}
-	builder.WriteString("  \"ddl.table.denylist.forbid\":\n    enabled: true\n    level: blocker\n    params:\n      tables: [sensitive]\n")
+	builder.WriteString("  \"ddl.table.denylist.forbid\":\n    enabled: true\n    level: blocker\n    params:\n")
+	builder.WriteString(params)
 	if err := os.WriteFile(configPath, []byte(builder.String()), 0o600); err != nil {
 		t.Fatalf("write denylist policy: %v", err)
 	}
+	return configPath
+}
+
+func TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget(t *testing.T) {
+	t.Parallel()
+
+	configPath := writeDenylistOnlyPolicy(t, "      tables: [sensitive]\n")
 
 	cases := []struct {
 		name    string
@@ -285,6 +292,115 @@ func TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget(t *testing.T) {
 				}
 				if finding.Location == nil || finding.Location.Line != 1 {
 					t.Fatalf("expected line 1 location, got %#v", finding.Location)
+				}
+			})
+		}
+	}
+}
+
+func TestAuditRenameDestinationResolvesRequestSchema(t *testing.T) {
+	t.Parallel()
+
+	// MySQL/TiDB semantics: an unqualified RENAME destination resolves to the
+	// current (request) schema, never to the source table's schema. An explicit
+	// destination qualifier always wins over both.
+	cases := []struct {
+		name       string
+		sql        string
+		params     string
+		schema     string
+		blocked    bool
+		wantSchema string
+		wantTable  string
+	}{
+		{name: "alter_unqualified_uses_request_schema", sql: "ALTER TABLE app.harmless RENAME TO sensitive",
+			params: "      qualified_tables: [other.sensitive]\n", schema: "other",
+			blocked: true, wantSchema: "other", wantTable: "sensitive"},
+		{name: "rename_unqualified_uses_request_schema", sql: "RENAME TABLE app.harmless TO sensitive",
+			params: "      qualified_tables: [other.sensitive]\n", schema: "other",
+			blocked: true, wantSchema: "other", wantTable: "sensitive"},
+		{name: "rename_first_pair_uses_request_schema", sql: "RENAME TABLE app.live TO sensitive, app.harmless TO harmless_old",
+			params: "      qualified_tables: [other.sensitive]\n", schema: "other",
+			blocked: true, wantSchema: "other", wantTable: "sensitive"},
+		{name: "rename_middle_pair_uses_request_schema", sql: "RENAME TABLE app.a TO a2, app.live TO sensitive, app.b TO b2",
+			params: "      qualified_tables: [other.sensitive]\n", schema: "other",
+			blocked: true, wantSchema: "other", wantTable: "sensitive"},
+		{name: "rename_later_pair_uses_request_schema", sql: "RENAME TABLE app.harmless TO harmless_old, app.live TO sensitive",
+			params: "      qualified_tables: [other.sensitive]\n", schema: "other",
+			blocked: true, wantSchema: "other", wantTable: "sensitive"},
+		{name: "alter_explicit_destination_wins", sql: "ALTER TABLE app.harmless RENAME TO third.sensitive",
+			params: "      qualified_tables: [third.sensitive]\n", schema: "other",
+			blocked: true, wantSchema: "third", wantTable: "sensitive"},
+		{name: "rename_explicit_destination_wins", sql: "RENAME TABLE app.harmless TO third.sensitive",
+			params: "      qualified_tables: [third.sensitive]\n", schema: "other",
+			blocked: true, wantSchema: "third", wantTable: "sensitive"},
+		{name: "tables_selector_matches_without_schema", sql: "RENAME TABLE app.harmless TO sensitive",
+			params: "      tables: [sensitive]\n", schema: "",
+			blocked: true, wantSchema: "", wantTable: "sensitive"},
+		{name: "alter_request_schema_not_source_schema", sql: "ALTER TABLE app.harmless RENAME TO sensitive",
+			params: "      qualified_tables: [app.sensitive]\n", schema: "other",
+			blocked: false},
+		{name: "rename_request_schema_not_source_schema", sql: "RENAME TABLE app.harmless TO sensitive",
+			params: "      qualified_tables: [app.sensitive]\n", schema: "other",
+			blocked: false},
+		{name: "explicit_destination_not_overridden", sql: "RENAME TABLE app.harmless TO third.sensitive",
+			params: "      qualified_tables: [other.sensitive]\n", schema: "other",
+			blocked: false},
+		{name: "alter_unqualified_unknown_without_request_schema", sql: "ALTER TABLE app.harmless RENAME TO sensitive",
+			params: "      qualified_tables: [app.sensitive]\n", schema: "",
+			blocked: false},
+		{name: "rename_unqualified_unknown_without_request_schema", sql: "RENAME TABLE app.harmless TO sensitive",
+			params: "      qualified_tables: [app.sensitive]\n", schema: "",
+			blocked: false},
+		{name: "all_allowed", sql: "RENAME TABLE app.harmless TO harmless_old",
+			params: "      qualified_tables: [other.sensitive]\n", schema: "other",
+			blocked: false},
+	}
+
+	for _, dialect := range []Dialect{DialectMySQL, DialectTiDB} {
+		for _, tc := range cases {
+			tc := tc
+			t.Run(string(dialect)+"/"+tc.name, func(t *testing.T) {
+				t.Parallel()
+				result, err := Audit(context.Background(), Request{
+					SQL:        tc.sql,
+					Dialect:    dialect,
+					ConfigPath: writeDenylistOnlyPolicy(t, tc.params),
+					Schema:     tc.schema,
+				})
+				if err != nil {
+					t.Fatalf("audit: %v", err)
+				}
+				if len(result.Statements) != 1 {
+					t.Fatalf("expected 1 top-level statement, got %d", len(result.Statements))
+				}
+				if len(result.Unsupported) != 0 || len(result.Diagnostics) != 0 {
+					t.Fatalf("expected supported audit, got unsupported=%#v diagnostics=%#v", result.Unsupported, result.Diagnostics)
+				}
+				var denylist []Finding
+				for _, finding := range result.Statements[0].Findings {
+					if finding.RuleID == "ddl.table.denylist.forbid" {
+						denylist = append(denylist, finding)
+					}
+				}
+				if !tc.blocked {
+					if len(denylist) != 0 || result.Verdict != VerdictPass {
+						t.Fatalf("expected pass with no denylist findings, got verdict=%q findings=%#v", result.Verdict, denylist)
+					}
+					return
+				}
+				if result.Verdict != VerdictReject {
+					t.Fatalf("expected reject verdict, got %q", result.Verdict)
+				}
+				if len(denylist) != 1 {
+					t.Fatalf("expected 1 denylist finding, got %#v", result.Statements[0].Findings)
+				}
+				finding := denylist[0]
+				if finding.Level != LevelBlocker {
+					t.Fatalf("expected blocker level, got %q", finding.Level)
+				}
+				if finding.Metadata["schema"] != tc.wantSchema || finding.Metadata["table"] != tc.wantTable {
+					t.Fatalf("expected metadata %s.%s, got %#v", tc.wantSchema, tc.wantTable, finding.Metadata)
 				}
 			})
 		}
