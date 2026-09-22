@@ -9,7 +9,7 @@ honestly — not a count of implemented rules.
 
 | File | Responsibility |
 |------|----------------|
-| inventory.yaml | The inventory: verified official sources, status vocabulary, owner tasks, proposed tasks, and one row per statement family/subaction scoped to the versions where it exists |
+| inventory.yaml | The inventory: verified official sources, status vocabulary, owner tasks (real issues), the `required_row_ids` denominator, and one row per statement family/subaction scoped to the versions where it exists |
 
 ## Row contract
 
@@ -17,6 +17,14 @@ Every row carries: `id` (stable, unique), `product` (`mysql`/`tidb`),
 `versions`, `sources`, `family`, `subactions`, `sql_shape`, `prerequisites`,
 `status`, `status_evidence`, `targets`, `acceptance` (`dimensions`, `refs`),
 `owner`.
+
+`required_row_ids` lists every row ID and must equal the row set exactly —
+deleting a row without updating the denominator fails the gate; updating the
+denominator is a visible review diff, never a silent shrink.
+
+`owner` must be a declared milestone task with a real GitHub issue number
+(`owners` map). A gap with no owning task means a new child issue under #79
+must be created first — a proposal without an issue is not an owner.
 
 Statuses (mutually exclusive, never substitutable):
 
@@ -30,8 +38,7 @@ Statuses (mutually exclusive, never substitutable):
 `acceptance.refs` entries are `file:<repo-path>` (must exist),
 `gate:<make-target>`, or `missing:<description>` for honest gaps.
 
-`owner` is a declared milestone task (`owners`) or a justified
-`proposed_tasks` entry under #79. Rows owned by future tasks may record
+Rows owned by future tasks may record
 incomplete implementation — they are assigned, not counted as coverage.
 
 ## Gate

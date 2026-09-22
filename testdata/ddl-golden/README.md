@@ -33,6 +33,9 @@ Per-task manifests for the milestone DDL golden-path runner
 Database steps and CLI audit are deliberately separate evidence: real
 execution proves fixture legality and live metadata; CLI audit proves parser
 and audit behavior. Neither substitutes for the other. The artifact validator
-rejects zero/missing/unexecuted cases, stale binaries, version mismatches,
-external blockers, and hand-written PASS records — proven offline by
-`make ddl-golden-validator-test` (`scripts/test_ddl_golden.py`).
+recomputes expectations from the manifest and results from raw evidence —
+it rejects zero/missing/unexecuted cases, stale binaries, version mismatches,
+external blockers, deleted or failed metadata-query records, non-JSON CLI
+stdout, parsed/stdout disagreement, and artifact-internal expected tampering
+— proven offline by `make ddl-golden-validator-test`
+(`scripts/test_ddl_golden.py`).

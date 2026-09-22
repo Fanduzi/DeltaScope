@@ -50,11 +50,13 @@ classified and owned.
    boundary). `TestDDLInventoryContract` enforces ID uniqueness, required
    fields, per-version sources, status vocabulary, owner assignment, and
    concrete evidence refs for `semantically_checked`.
-4. **Owners are milestone tasks; genuine gaps get `proposed_tasks`.**
-   Rows map to T01–T30 where they fit. One real gap — TiDB
-   instance-management DDL (e.g. `ALTER INSTANCE RELOAD TLS`) — fits no
-   existing task, so proposed task T32 hangs off #79 with justification
-   instead of silently expanding an unrelated owner.
+4. **Owners are real milestone tasks; genuine gaps get a real issue.**
+   Rows map to T01–T31 where they fit. One real gap — TiDB
+   instance-management DDL (e.g. `ALTER INSTANCE RELOAD TLS`) — fit no
+   existing task, so issue #111 (task T32) was created under #79, blocked by
+   #82 and required by #110 closure, instead of silently expanding an
+   unrelated owner. Owners must resolve to a declared task with a real issue
+   number; a proposal without an issue is not an owner.
 5. **MySQL 5.7 official source is the frozen Oracle mirror.**
    `https://dev.mysql.com/doc/refman/5.7/en/sql-data-definition-statements.html`
    silently redirects to the MySQL 9.7 manual; the inventory's verified 5.7
@@ -70,21 +72,39 @@ classified and owned.
   a to-do item. Probe evidence (2026-09-22 CLI runs) distinguishes these
   empirically per row.
 - A validator that can be tricked is worse than none: the contract suite
-  proves every rejection path fails, including required-DB-unreachable and
-  required-case-missing.
-- The inventory counts rows honestly: 111 rows, most incomplete — the
-  milestone denominator now exists without claiming unimplemented coverage.
+  proves every rejection path fails, including required-DB-unreachable,
+  required-case-missing, deleted metadata-query records, failed metadata
+  return codes, non-JSON CLI stdout, and artifact-internal expected/actual
+  tampering.
+- The inventory counts rows honestly: 113 rows, most incomplete — the
+  milestone denominator now exists without claiming unimplemented coverage,
+  and `required_row_ids` makes row deletion a gate failure.
 
 ## Public Contract
 
 - `make ddl-golden TASK=T02 ARTIFACT_DIR=<dir>` produces a validated
-  `artifact.json` with `task_id`, `head_sha`, per-case `case_id`/
-  `policy_profile`/`expected`/`actual_result`/`exit_code`/`assertions`,
-  `database_product`/`database_version`/`image_digest`, `required_case_ids`,
-  `executed_count`, and `cleanup` evidence.
+  `artifact.json` with top-level `task_id`, `head_sha`, `generated_at`,
+  `cli` (`path`, `sha256`, `build` incl. `cgo_enabled`/`go_version`/
+  `head_sha`), `policy_profile`, `required_case_ids`, `cases`,
+  `executed_count`, and `cleanup`. Per-case fields are `case_id`, `kind`,
+  `expected`, `actual`, `assertions`, `status`; raw evidence differs by kind:
+  - `db_ddl`: `anchor`, `input_sql`, `actual.database`
+    (`product`/`image`/`image_digest`/`container`/`reachable`/`version`),
+    `actual.steps[]` (`name`/`sql`/`rc`/`stdout`/`stderr`/`verify[]` with
+    per-query `assert`/`sql`/`rc`/`output`/`stderr`)
+  - `db_syntax_negative`: `anchor`, `input_sql`, `actual.rc`/`stdout`/
+    `stderr`/`error_class`
+  - `cli_audit`: `dialect`, `input_sql`, `policy_profile`, `command`,
+    `actual.exit`/`stdout`/`stderr`/`parsed`
+- The validator recomputes expectations from the task **manifest** and
+  results from **raw evidence** (`actual.steps[].verify[]` rc/output, raw
+  `stderr`/`stdout`, reparsed CLI stdout) — artifact-recorded `expected`,
+  `parsed`, and `assertions` are corroborative only and any disagreement with
+  the manifest-derived expectation or raw evidence is a tamper failure.
 - `make ddl-golden-validator-test` and `make ddl-inventory-gate` run offline.
 - The inventory YAML schema (statuses enum, `file:`/`gate:`/`missing:` ref
-  kinds, `owners`/`proposed_tasks`) is the contract later tasks extend.
+  kinds, `owners` bound to real milestone issues, `required_row_ids`
+  tamper-evident denominator) is the contract later tasks extend.
 
 ## Deferred / Out Of Scope
 
@@ -92,8 +112,7 @@ classified and owned.
   establishes the denominator and baseline only.
 - No `target_version`, `coverage.status`, Prospective Schema State, or
   stored-body analysis (later tasks T03–T05, T27–T30).
-- Proposed task T32 is an owner of record, not an implementation; an issue is
-  created under #79 when the milestone opens it.
+- Task T32 (issue #111) is an owner of record, not an implementation.
 - PostgreSQL rows are out of scope (separate milestone coverage model).
 
 ## Verification Evidence
@@ -102,8 +121,13 @@ classified and owned.
   assertions, PASS — 4 anchors × (CREATE+metadata, ALTER+metadata,
   DROP+metadata), 4 syntax-negative cases (errno 1064), 2 CLI audits
   (verdict pass, exit 0, 3 statements).
-- `make ddl-golden-validator-test`: 13/13 rejection cases proven.
-- `make ddl-inventory-gate`: 111 rows, all classified and assigned.
+- `make ddl-golden-validator-test`: 18/18 cases — every rejection path fails,
+  including deleted metadata-query records, failed verify return codes,
+  non-JSON CLI stdout, recorded-parsed vs raw-stdout disagreement, and
+  artifact-internal expected tampering.
+- `make ddl-inventory-gate`: 113 rows, all classified and assigned; the
+  row set equals `required_row_ids` exactly (verified by truncating rows to
+  one and observing gate failure).
 - Server-reported versions: 5.7.44, 8.0.46, 8.4.10, 8.0.11-TiDB-v8.5.0.
 
 ## Consequences

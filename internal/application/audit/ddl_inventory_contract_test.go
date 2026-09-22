@@ -48,22 +48,15 @@ type ddlInventoryOwner struct {
 	Title string `yaml:"title"`
 }
 
-type ddlInventoryProposed struct {
-	Title         string   `yaml:"title"`
-	Justification string   `yaml:"justification"`
-	Parent        int      `yaml:"parent"`
-	BlockedBy     []string `yaml:"blocked_by"`
-}
-
 type ddlInventory struct {
-	Version       int                             `yaml:"version"`
-	Verified      string                          `yaml:"verified"`
-	Purpose       string                          `yaml:"purpose"`
-	Sources       map[string]ddlInventorySource   `yaml:"sources"`
-	Statuses      map[string]string               `yaml:"statuses"`
-	Owners        map[string]ddlInventoryOwner    `yaml:"owners"`
-	ProposedTasks map[string]ddlInventoryProposed `yaml:"proposed_tasks"`
-	Rows          []ddlInventoryRow               `yaml:"rows"`
+	Version        int                           `yaml:"version"`
+	Verified       string                        `yaml:"verified"`
+	Purpose        string                        `yaml:"purpose"`
+	Sources        map[string]ddlInventorySource `yaml:"sources"`
+	Statuses       map[string]string             `yaml:"statuses"`
+	Owners         map[string]ddlInventoryOwner  `yaml:"owners"`
+	RequiredRowIDs []string                      `yaml:"required_row_ids"`
+	Rows           []ddlInventoryRow             `yaml:"rows"`
 }
 
 func loadDDLInventory(t *testing.T) ddlInventory {
@@ -125,10 +118,15 @@ func TestDDLInventoryContract(t *testing.T) {
 			t.Fatalf("owner %q missing issue number or title", id)
 		}
 	}
-	for id, p := range inv.ProposedTasks {
-		if p.Title == "" || p.Justification == "" || p.Parent != 79 {
-			t.Fatalf("proposed task %q must carry title, justification, and parent issue 79", id)
+	if len(inv.RequiredRowIDs) == 0 {
+		t.Fatalf("required_row_ids missing or empty (denominator unprotected)")
+	}
+	requiredSet := map[string]bool{}
+	for _, id := range inv.RequiredRowIDs {
+		if requiredSet[id] {
+			t.Fatalf("required_row_ids contains duplicate id %q", id)
 		}
+		requiredSet[id] = true
 	}
 
 	mysqlVersions := map[string]string{"5.7": "mysql57", "8.0": "mysql80", "8.4": "mysql84"}
@@ -226,10 +224,8 @@ func TestDDLInventoryContract(t *testing.T) {
 		if row.Owner == "" {
 			t.Fatalf("row %q unassigned", row.ID)
 		}
-		_, isOwner := inv.Owners[row.Owner]
-		_, isProposed := inv.ProposedTasks[row.Owner]
-		if !isOwner && !isProposed {
-			t.Fatalf("row %q owner %q is not a declared task or proposed task", row.ID, row.Owner)
+		if _, isOwner := inv.Owners[row.Owner]; !isOwner {
+			t.Fatalf("row %q owner %q is not a declared milestone task", row.ID, row.Owner)
 		}
 		ownerCounts[row.Owner]++
 	}
@@ -239,5 +235,15 @@ func TestDDLInventoryContract(t *testing.T) {
 			t.Fatalf("rows use undeclared status %q", status)
 		}
 	}
-	t.Logf("inventory rows=%d statuses=%v owners=%v", len(inv.Rows), statusCounts, ownerCounts)
+	for id := range seen {
+		if !requiredSet[id] {
+			t.Fatalf("row %q exists but is absent from required_row_ids", id)
+		}
+	}
+	for id := range requiredSet {
+		if !seen[id] {
+			t.Fatalf("required row %q missing from inventory rows (denominator shrunk)", id)
+		}
+	}
+	t.Logf("inventory rows=%d required=%d statuses=%v owners=%v", len(inv.Rows), len(requiredSet), statusCounts, ownerCounts)
 }

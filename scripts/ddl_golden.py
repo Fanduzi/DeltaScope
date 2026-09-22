@@ -332,6 +332,18 @@ def compose_cleanup():
     }
 
 
+def manifest_expected(manifest, case):
+    """Rebuild a case's expected record from the manifest, never the artifact."""
+    kind = case.get("kind")
+    if kind == "db_ddl":
+        return {"steps": [{"name": s["name"], "rc": s["expect_rc"], "verify": s["verify"]} for s in manifest["ddl_steps"]]}
+    if kind == "db_syntax_negative":
+        return manifest["syntax_negative"]["expect"]
+    if kind == "cli_audit":
+        return manifest["cli_audit"]["expect"]
+    return None
+
+
 def validate_artifact(artifact, manifest, verify_binary=True):
     """Re-check an emitted artifact. Returns a list of failure strings."""
     failures = []
@@ -398,59 +410,113 @@ def validate_artifact(artifact, manifest, verify_binary=True):
 
         kind = case.get("kind")
         actual = case.get("actual") or {}
-        expected = case.get("expected") or {}
+        case_id = case.get("case_id")
+        expected = manifest_expected(manifest, case)
+        if expected is None:
+            failures.append(f"case {case_id}: cannot derive expected result from manifest for kind {kind!r}")
+        elif case.get("expected") != expected:
+            failures.append(f"case {case_id}: recorded expected differs from manifest-derived expectation")
+
         if kind == "db_ddl":
             db = actual.get("database") or {}
             anchor_key = case.get("anchor")
             covered_anchors.add(anchor_key)
             anchor = anchors.get(anchor_key)
+            if anchor is None:
+                failures.append(f"case {case_id}: unknown anchor {anchor_key!r}")
+                continue
+            want_sql = [s["sql"] for s in manifest["ddl_steps"]]
+            if case.get("input_sql") != want_sql:
+                failures.append(f"case {case_id}: recorded input_sql differs from manifest ddl_steps")
+            if db.get("product") != anchor["product"]:
+                failures.append(f"case {case_id}: product {db.get('product')!r} != {anchor['product']!r}")
             if not db.get("reachable"):
-                failures.append(f"case {case.get('case_id')}: database not reachable")
-            if anchor:
-                if anchor["version_contains"] not in (db.get("version") or ""):
-                    failures.append(f"case {case.get('case_id')}: version mismatch {db.get('version')!r} expected contains {anchor['version_contains']!r}")
-                if not (db.get("image_digest") or "").startswith(anchor["image"].split(":")[0] + "@"):
-                    failures.append(f"case {case.get('case_id')}: missing/mismatched image digest {db.get('image_digest')!r}")
-            for step, step_expected in zip(actual.get("steps") or [], expected.get("steps") or []):
-                if step.get("rc") != step_expected.get("rc"):
-                    failures.append(f"case {case.get('case_id')}: step {step.get('name')} rc {step.get('rc')} != {step_expected.get('rc')}")
-                for verify, verify_expected in zip(step.get("verify") or [], step_expected.get("verify") or []):
-                    if verify.get("output") != verify_expected.get("expect"):
-                        failures.append(f"case {case.get('case_id')}: verify {verify_expected.get('assert')} output {verify.get('output')!r} != {verify_expected.get('expect')!r}")
-            if len(actual.get("steps") or []) != len(expected.get("steps") or []):
-                failures.append(f"case {case.get('case_id')}: step count mismatch")
+                failures.append(f"case {case_id}: database not reachable")
+            if anchor["version_contains"] not in (db.get("version") or ""):
+                failures.append(f"case {case_id}: version mismatch {db.get('version')!r} expected contains {anchor['version_contains']!r}")
+            if not (db.get("image_digest") or "").startswith(anchor["image"].split(":")[0] + "@"):
+                failures.append(f"case {case_id}: missing/mismatched image digest {db.get('image_digest')!r}")
+            steps = actual.get("steps") or []
+            if len(steps) != len(manifest["ddl_steps"]):
+                failures.append(f"case {case_id}: step count {len(steps)} != manifest steps {len(manifest['ddl_steps'])}")
+            for i, mstep in enumerate(manifest["ddl_steps"]):
+                if i >= len(steps):
+                    break
+                step = steps[i]
+                if step.get("name") != mstep["name"] or step.get("sql") != mstep["sql"]:
+                    failures.append(f"case {case_id}: step {i} identity mismatch (name/sql differ from manifest)")
+                if step.get("rc") != mstep["expect_rc"]:
+                    failures.append(f"case {case_id}: step {mstep['name']} rc {step.get('rc')} != {mstep['expect_rc']}")
+                verifies = step.get("verify") or []
+                if len(verifies) != len(mstep["verify"]):
+                    failures.append(f"case {case_id}: step {mstep['name']} verify count {len(verifies)} != manifest {len(mstep['verify'])}")
+                for j, mverify in enumerate(mstep["verify"]):
+                    if j >= len(verifies):
+                        break
+                    verify = verifies[j]
+                    if verify.get("assert") != mverify["assert"] or verify.get("sql") != mverify["sql"]:
+                        failures.append(f"case {case_id}: verify {j} identity mismatch (assert/sql differ from manifest)")
+                    if verify.get("rc") != 0:
+                        failures.append(f"case {case_id}: verify {mverify['assert']} rc {verify.get('rc')} != 0")
+                    if verify.get("output") != mverify["expect"]:
+                        failures.append(f"case {case_id}: verify {mverify['assert']} output {verify.get('output')!r} != {mverify['expect']!r}")
         elif kind == "db_syntax_negative":
+            negative = manifest["syntax_negative"]
+            if case.get("input_sql") != negative["sql"]:
+                failures.append(f"case {case_id}: recorded input_sql differs from manifest syntax_negative")
             stderr = actual.get("stderr") or ""
             stdout = actual.get("stdout") or ""
             combined = stdout + stderr
             if actual.get("rc") == 0:
-                failures.append(f"case {case.get('case_id')}: negative returned success")
-            if (expected.get("error_class") or "") not in combined:
-                failures.append(f"case {case.get('case_id')}: expected error class {expected.get('error_class')!r} absent from server output")
-            for marker in expected.get("forbidden_markers") or []:
+                failures.append(f"case {case_id}: negative returned success")
+            match = re.search(r"ERROR\s+(\d+)", combined)
+            observed_class = match.group(1) if match else ""
+            if observed_class != negative["expect"]["error_class"]:
+                failures.append(f"case {case_id}: error class {observed_class!r} != expected {negative['expect']['error_class']!r}")
+            if "error_class" in actual and actual["error_class"] != observed_class:
+                failures.append(f"case {case_id}: recorded error_class {actual['error_class']!r} disagrees with server output {observed_class!r}")
+            for marker in negative["expect"].get("forbidden_markers") or []:
                 if marker in combined:
-                    failures.append(f"case {case.get('case_id')}: forbidden marker present: {marker!r}")
+                    failures.append(f"case {case_id}: forbidden marker present: {marker!r}")
         elif kind == "cli_audit":
-            parsed = actual.get("parsed")
-            if parsed is None:
-                failures.append(f"case {case.get('case_id')}: CLI stdout is not JSON")
+            spec = manifest["cli_audit"]
+            if case.get("dialect") not in spec["dialects"]:
+                failures.append(f"case {case_id}: dialect {case.get('dialect')!r} not in manifest dialects {spec['dialects']}")
+            if case.get("input_sql") != spec["sql"]:
+                failures.append(f"case {case_id}: recorded input_sql differs from manifest cli_audit")
+            if case.get("policy_profile") not in (None, manifest.get("policy_profile", "all-rules-disabled")):
+                failures.append(f"case {case_id}: policy_profile {case.get('policy_profile')!r} differs from manifest")
+            command = case.get("command") or []
+            if "--dialect" not in command or case.get("dialect") not in command or "--config" not in command:
+                failures.append(f"case {case_id}: recorded command lacks --dialect/--config evidence")
+            raw = actual.get("stdout")
+            try:
+                reparsed = json.loads(raw) if isinstance(raw, str) else None
+            except json.JSONDecodeError:
+                reparsed = None
+            if reparsed is None:
+                failures.append(f"case {case_id}: CLI stdout is not JSON")
             else:
-                statements = parsed.get("statements") or []
-                if actual.get("exit") != expected.get("exit"):
-                    failures.append(f"case {case.get('case_id')}: exit {actual.get('exit')} != {expected.get('exit')}")
-                if parsed.get("verdict") != expected.get("verdict"):
-                    failures.append(f"case {case.get('case_id')}: verdict {parsed.get('verdict')!r} != {expected.get('verdict')!r}")
-                if len(statements) != expected.get("statements"):
-                    failures.append(f"case {case.get('case_id')}: statements {len(statements)} != {expected.get('statements')}")
-                findings = sum(len(s.get("findings", [])) for s in statements) + len(parsed.get("global_findings") or [])
-                if findings != expected.get("findings"):
-                    failures.append(f"case {case.get('case_id')}: findings {findings} != {expected.get('findings')}")
-                if len(parsed.get("diagnostics") or []) != expected.get("diagnostics"):
-                    failures.append(f"case {case.get('case_id')}: unexpected diagnostics")
-                if len(parsed.get("unsupported") or []) != expected.get("unsupported"):
-                    failures.append(f"case {case.get('case_id')}: unexpected unsupported")
+                recorded_parsed = actual.get("parsed")
+                if recorded_parsed is not None and recorded_parsed != reparsed:
+                    failures.append(f"case {case_id}: recorded parsed disagrees with raw stdout")
+                expect = spec["expect"]
+                statements = reparsed.get("statements") or []
+                if actual.get("exit") != expect["exit"]:
+                    failures.append(f"case {case_id}: exit {actual.get('exit')} != {expect['exit']}")
+                if reparsed.get("verdict") != expect["verdict"]:
+                    failures.append(f"case {case_id}: verdict {reparsed.get('verdict')!r} != {expect['verdict']!r}")
+                if len(statements) != expect["statements"]:
+                    failures.append(f"case {case_id}: statements {len(statements)} != {expect['statements']}")
+                findings = sum(len(s.get("findings", [])) for s in statements) + len(reparsed.get("global_findings") or [])
+                if findings != expect["findings"]:
+                    failures.append(f"case {case_id}: findings {findings} != {expect['findings']}")
+                if len(reparsed.get("diagnostics") or []) != expect["diagnostics"]:
+                    failures.append(f"case {case_id}: unexpected diagnostics")
+                if len(reparsed.get("unsupported") or []) != expect["unsupported"]:
+                    failures.append(f"case {case_id}: unexpected unsupported")
         else:
-            failures.append(f"case {case.get('case_id')}: unknown kind {kind!r}")
+            failures.append(f"case {case_id}: unknown kind {kind!r}")
 
     for anchor_key in anchors:
         if anchor_key not in covered_anchors:

@@ -38,6 +38,9 @@ sources:
   tidb85-ttl:
     url: "https://raw.githubusercontent.com/pingcap/docs/release-8.5/time-to-live.md"
     verified: "2026-09-22"
+  tidb85-temp:
+    url: "https://raw.githubusercontent.com/pingcap/docs/release-8.5/temporary-tables.md"
+    verified: "2026-09-22"
 
 statuses:
   semantically_checked: "feature-specific semantic/policy check exists AND cited acceptance evidence exists"
@@ -77,16 +80,125 @@ owners:
   T29: {issue: 108, title: "MySQL trigger definitions and OLD/NEW semantics"}
   T30: {issue: 109, title: "MySQL event definitions, scheduling, static bodies"}
   T31: {issue: 110, title: "inventory completion, four-version matrix, release closure"}
+  T32: {issue: 111, title: "TiDB instance-management and remaining low-frequency DDL boundaries"}
 
-# Rows whose real in-scope gap fits no existing task. Proposed tasks hang off
-# parent #79 exactly like T01-T31; they are owners of record until an issue is
-# created for them. Counted as assigned-but-incomplete, never as coverage.
-proposed_tasks:
-  T32:
-    title: "TiDB instance-management and remaining low-frequency DDL boundaries"
-    justification: "ALTER INSTANCE (RELOAD TLS etc.) is a real TiDB statement family with no existing owner; T26 is scoped to MySQL low-frequency objects."
-    parent: 79
-    blocked_by: ["T03"]
+# required_row_ids is the tamper-evident denominator: the gate requires the
+# row set to equal this list exactly, so deleting a row without updating the
+# denominator fails and updating it is a visible review diff.
+required_row_ids:
+  - mysql.create-database
+  - mysql.alter-database
+  - mysql.drop-database
+  - mysql.create-table
+  - mysql.create-table-temporary
+  - mysql.create-table-like
+  - mysql.create-table-select
+  - mysql.create-table-generated-column
+  - mysql.create-table-constraints
+  - mysql.create-table-partitioning
+  - mysql.create-table-options
+  - mysql.drop-table
+  - mysql.rename-table
+  - mysql.truncate-table
+  - mysql.alter-table.add-column
+  - mysql.alter-table.drop-column
+  - mysql.alter-table.modify-column
+  - mysql.alter-table.change-column
+  - mysql.alter-table.rename-column
+  - mysql.alter-table.alter-column-default
+  - mysql.alter-table.rename-table
+  - mysql.alter-table.multi-action
+  - mysql.alter-table.add-primary-key
+  - mysql.alter-table.drop-primary-key
+  - mysql.alter-table.add-foreign-key
+  - mysql.alter-table.drop-foreign-key
+  - mysql.alter-table.check-constraints
+  - mysql.alter-table.partition-destructive
+  - mysql.alter-table.partition-topology
+  - mysql.alter-table.partition-maintenance
+  - mysql.alter-table.tablespace-ops
+  - mysql.alter-table.online-ddl
+  - mysql.alter-table.options
+  - mysql.create-index
+  - mysql.create-index-advanced
+  - mysql.alter-table.index-ops
+  - mysql.drop-index
+  - mysql.create-view
+  - mysql.create-view-check-option
+  - mysql.alter-view
+  - mysql.drop-view
+  - mysql.create-procedure
+  - mysql.create-function
+  - mysql.alter-procedure-function
+  - mysql.drop-procedure-function
+  - mysql.stored-body-analysis
+  - mysql.create-trigger
+  - mysql.drop-trigger
+  - mysql.create-event
+  - mysql.alter-event
+  - mysql.drop-event
+  - mysql.create-tablespace
+  - mysql.alter-tablespace
+  - mysql.drop-tablespace
+  - mysql.logfile-group
+  - mysql.create-server
+  - mysql.alter-server
+  - mysql.drop-server
+  - mysql.spatial-reference-system
+  - mysql.alter-instance
+  - mysql.create-resource-group
+  - mysql.alter-resource-group
+  - mysql.drop-resource-group
+  - tidb.create-database
+  - tidb.alter-database
+  - tidb.drop-database
+  - tidb.create-table
+  - tidb.create-table-like
+  - tidb.create-table-select
+  - tidb.create-table-partitioning
+  - tidb.create-table-auto-random
+  - tidb.create-temporary-table
+  - tidb.create-global-temporary-table
+  - tidb.create-table-ttl
+  - tidb.create-table-cache
+  - tidb.create-table-placement-hint
+  - tidb.drop-table
+  - tidb.rename-table
+  - tidb.truncate-table
+  - tidb.flashback-recover
+  - tidb.alter-table.columns
+  - tidb.alter-table.index-ops
+  - tidb.alter-table.fk-check
+  - tidb.alter-table.partition-ops
+  - tidb.alter-table.ttl
+  - tidb.alter-table.placement-binding
+  - tidb.alter-table.layout-id
+  - tidb.alter-table.online-options
+  - tidb.create-index
+  - tidb.drop-index
+  - tidb.create-view
+  - tidb.alter-view
+  - tidb.drop-view
+  - tidb.create-sequence
+  - tidb.alter-sequence
+  - tidb.drop-sequence
+  - tidb.create-placement-policy
+  - tidb.alter-placement-policy
+  - tidb.drop-placement-policy
+  - tidb.alter-range-placement
+  - tidb.create-resource-group
+  - tidb.alter-resource-group
+  - tidb.drop-resource-group
+  - tidb.create-procedure
+  - tidb.create-function
+  - tidb.create-trigger
+  - tidb.create-event
+  - tidb.create-tablespace
+  - tidb.create-server
+  - tidb.spatial-reference-system
+  - tidb.logfile-group
+  - tidb.fulltext-spatial-index
+  - tidb.alter-instance
 
 rows:
   # ================= MySQL: database/schema lifecycle =================
@@ -163,12 +275,12 @@ rows:
     subactions: ["CREATE TEMPORARY TABLE"]
     sql_shape: "CREATE TEMPORARY TABLE tt (id INT)"
     prerequisites: "none"
-    status: semantically_checked
-    status_evidence: "2026-09-22 CLI probe: standard table rules fire; temporary identity preserved by parser"
-    targets: "temporary vs persistent identity, same-name shadowing"
+    status: generic_notice
+    status_evidence: "2026-09-22 evidence: parses and generic table hygiene rules fire, but spec/extractor carry no temporary identity (grep 'temporary' in internal/domain/spec and parser/tidb extractor is empty) — session scope and same-name shadowing are not audited"
+    targets: "temporary vs persistent identity, same-name shadowing, session scope"
     acceptance:
-      dimensions: "temporary identity, shadowing, drop counterpoint"
-      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go", "missing: temporary-identity fixture assertions"]
+      dimensions: "temporary identity extraction, shadowing, drop counterpoint"
+      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go", "missing: temporary-identity extraction and fixtures"]
     owner: T16
 
   - id: mysql.create-table-like
@@ -1236,6 +1348,38 @@ rows:
       refs: ["missing: owner adds fixtures and DB metadata evidence"]
     owner: T23
 
+  - id: tidb.create-temporary-table
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85, tidb85-temp]
+    family: table
+    subactions: ["CREATE TEMPORARY TABLE (local, session-scoped, may shadow an ordinary table)"]
+    sql_shape: "CREATE TEMPORARY TABLE tt (id INT PRIMARY KEY)"
+    prerequisites: "TiDB >= v5.3.0 for real temporary semantics; local temp tables do not support ALTER TABLE"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: parses; generic table hygiene rules fire but TEMPORARY identity/scope is not extracted (no 'temporary' handling in spec/extractor); session-scope shadowing unaudited"
+    targets: "temporary vs persistent identity, session scope, same-name shadowing of ordinary tables"
+    acceptance:
+      dimensions: "temporary identity extraction, shadowing rules, ALTER-on-temp boundary, drop counterpoint (DROP [TEMPORARY] TABLE)"
+      refs: ["missing: owner adds temporary-identity extraction and fixtures"]
+    owner: T16
+
+  - id: tidb.create-global-temporary-table
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85, tidb85-temp]
+    family: table
+    subactions: ["CREATE GLOBAL TEMPORARY TABLE ... ON COMMIT DELETE ROWS"]
+    sql_shape: "CREATE GLOBAL TEMPORARY TABLE gt (id INT) ON COMMIT DELETE ROWS"
+    prerequisites: "TiDB >= v5.3.0; persistent definition, transaction-scoped data; cannot shadow an ordinary table"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: parses; generic table hygiene rules fire but GLOBAL/ON COMMIT DELETE ROWS scope is not extracted or checked"
+    targets: "global temporary identity, transaction-scope semantics, distinctness from local temporary and ordinary tables"
+    acceptance:
+      dimensions: "global-vs-local identity capture, transaction-scope boundary, drop counterpoint (DROP [GLOBAL] TEMPORARY TABLE)"
+      refs: ["missing: owner adds global temporary fixtures"]
+    owner: T16
+
   - id: tidb.create-table-ttl
     product: tidb
     versions: ["8.5"]
@@ -1287,9 +1431,9 @@ rows:
   - id: tidb.drop-table
     product: tidb
     versions: ["8.5"]
-    sources: [tidb85]
+    sources: [tidb85, tidb85-temp]
     family: table
-    subactions: ["DROP TABLE", "multi-table", "IF EXISTS"]
+    subactions: ["DROP TABLE", "multi-table", "IF EXISTS", "DROP TEMPORARY TABLE", "DROP GLOBAL TEMPORARY TABLE"]
     sql_shape: "DROP TABLE t1, t2"
     prerequisites: "none"
     status: semantically_checked
@@ -1876,9 +2020,9 @@ rows:
     sql_shape: "ALTER INSTANCE RELOAD TLS"
     prerequisites: "instance-level capability"
     status: parse_only
-    status_evidence: "2026-09-22 CLI probe: parses silently with zero findings; no existing milestone task owns TiDB instance-management DDL"
+    status_evidence: "2026-09-22 CLI probe: parses silently with zero findings; T32 (#111) owns TiDB instance-management and remaining low-frequency DDL"
     targets: "instance action kind"
     acceptance:
       dimensions: "classification and boundary evidence"
-      refs: ["missing: proposed T32 owns instance-management boundary"]
+      refs: ["missing: T32 (#111) owns instance-management boundary evidence"]
     owner: T32

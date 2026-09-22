@@ -123,11 +123,16 @@ build/compose/test machinery, not a general execution platform.
   count, diagnostics, unsupported entries, verdict, and exit code.
 - Syntax-negative cases require a concrete syntax error (`errno`/message class
   `syntax`) — a generic nonzero return code does not satisfy the contract.
-- The artifact validator fails rather than skips when a required anchor is
-  missing, unreachable, unhealthy, or version-mismatched, when a required case
-  did not execute, when the binary checksum/head is stale, when expected
-  fields are absent, or when no cases ran. External blockers are recorded as
-  `external_blocker` violations in a real artifact.
+- The artifact validator recomputes expectations from the task manifest and
+  results from raw evidence (per-step/verify return codes and outputs, raw
+  negative stderr, reparsed CLI stdout). Artifact-recorded `expected`,
+  `parsed`, and `assertions` are corroborative only; disagreement with the
+  manifest-derived expectation or raw evidence is a tamper failure. It also
+  fails rather than skips when a required anchor is missing, unreachable,
+  unhealthy, or version-mismatched, when a required case did not execute,
+  when the binary checksum/head is stale, when expected fields are absent,
+  or when no cases ran. External blockers are recorded as `external_blocker`
+  violations in a real artifact.
 - Cleanup is deterministic (`compose down -v --remove-orphans` plus a residual
   container check) on success and failure; only compose-owned resources are
   touched. The stack publishes no host ports.
@@ -153,8 +158,9 @@ task. Statuses are mutually exclusive and never substitutable:
 `vendor_not_supported`. Rows owned by future tasks may honestly record
 incomplete implementation — those rows do not count as completed coverage.
 The gate (`TestDDLInventoryContract`) enforces unique IDs, required fields,
-per-version official sources, status vocabulary, owner assignment (declared
-milestone tasks or justified `proposed_tasks` under #79), and concrete
+per-version official sources, status vocabulary, owner assignment to
+declared milestone tasks with real issue numbers, `required_row_ids`
+denominator integrity (the row set must equal it exactly), and concrete
 evidence refs for `semantically_checked` rows.
 
 ## Notes

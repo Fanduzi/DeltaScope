@@ -69,6 +69,7 @@ def make_artifact(tmp: pathlib.Path) -> dict:
                 "case_id": "TX.db.mysqlX.ddl",
                 "kind": "db_ddl",
                 "anchor": "mysqlX",
+                "input_sql": [s["sql"] for s in MANIFEST["ddl_steps"]],
                 "expected": {"steps": [{"name": "create", "rc": 0, "verify": [{"assert": "table exists", "sql": "SELECT COUNT(*)", "expect": "1"}]}]},
                 "actual": {
                     "database": {"product": "mysql", "image": "mysql:9.9.9", "image_digest": "mysql@sha256:deadbeef", "container": "golden-test-mysqlX", "reachable": True, "version": "9.9.9"},
@@ -81,6 +82,7 @@ def make_artifact(tmp: pathlib.Path) -> dict:
                 "case_id": "TX.db.mysqlX.syntax_negative",
                 "kind": "db_syntax_negative",
                 "anchor": "mysqlX",
+                "input_sql": MANIFEST["syntax_negative"]["sql"],
                 "expected": MANIFEST["syntax_negative"]["expect"],
                 "actual": {"rc": 1, "stdout": "", "stderr": "ERROR 1064 (42000): syntax error near ''", "error_class": "1064"},
                 "assertions": [{"name": "a", "ok": True, "detail": "d"}],
@@ -90,8 +92,11 @@ def make_artifact(tmp: pathlib.Path) -> dict:
                 "case_id": "TX.cli.mysql",
                 "kind": "cli_audit",
                 "dialect": "mysql",
+                "input_sql": MANIFEST["cli_audit"]["sql"],
+                "policy_profile": "all-rules-disabled",
+                "command": ["deltascope", "audit", "--dialect", "mysql", "--sql", MANIFEST["cli_audit"]["sql"], "--config", "policy.yaml", "--format", "json"],
                 "expected": MANIFEST["cli_audit"]["expect"],
-                "actual": {"exit": 0, "stdout": "{}", "stderr": "", "parsed": {"verdict": "pass", "statements": [{"findings": []}], "global_findings": []}},
+                "actual": {"exit": 0, "stdout": json.dumps({"verdict": "pass", "statements": [{"findings": []}], "global_findings": [], "diagnostics": [], "unsupported": []}), "stderr": "", "parsed": {"verdict": "pass", "statements": [{"findings": []}], "global_findings": [], "diagnostics": [], "unsupported": []}},
                 "assertions": [{"name": "a", "ok": True, "detail": "d"}],
                 "status": "pass",
             },
@@ -175,6 +180,30 @@ def main():
         a = copy.deepcopy(base)
         del a["cases"][0]["expected"]
         results.append(check("missing expected field rejected", a, "missing field expected"))
+
+        a = copy.deepcopy(base)
+        a["cases"][0]["actual"]["steps"][0]["verify"] = []
+        results.append(check("deleted metadata query records rejected", a, "verify"))
+
+        a = copy.deepcopy(base)
+        for v in a["cases"][0]["actual"]["steps"][0]["verify"]:
+            v["rc"] = 1
+        results.append(check("failed metadata query rc rejected", a, "rc"))
+
+        a = copy.deepcopy(base)
+        a["cases"][2]["actual"]["stdout"] = "NOT JSON"
+        results.append(check("non-JSON CLI stdout rejected", a, "not JSON"))
+
+        a = copy.deepcopy(base)
+        a["cases"][2]["expected"]["verdict"] = "reject"
+        tampered = {"verdict": "reject", "statements": [{"findings": [{"rule_id": "x"}]}], "global_findings": []}
+        a["cases"][2]["actual"]["stdout"] = json.dumps(tampered)
+        a["cases"][2]["actual"]["parsed"] = tampered
+        results.append(check("tampered expected+actual rejected", a, "manifest"))
+
+        a = copy.deepcopy(base)
+        a["cases"][2]["actual"]["parsed"] = {"verdict": "pass"}
+        results.append(check("parsed disagreeing with stdout rejected", a, "parsed"))
 
     failures = results.count(False)
     print(f"contract cases={len(results)} failures={failures}")
