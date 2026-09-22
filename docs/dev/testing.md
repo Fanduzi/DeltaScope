@@ -97,6 +97,66 @@ For local development when Docker is not available:
 
 This skips the suite only when Docker is unavailable and `CI` is not set and `DELTASCOPE_CLI_TLS_E2E_REQUIRED` is not `1`. The optional mode is rejected in CI or when the required-mode marker is set.
 
+## DDL Golden Path (milestone)
+
+```bash
+make ddl-golden TASK=T02 ARTIFACT_DIR=/tmp/ddl-golden
+make ddl-golden-validator-test
+```
+
+`make ddl-golden` is the milestone proof entrypoint. It reads a task manifest
+from `testdata/ddl-golden/<TASK>.json`, builds the current checkout's CLI into
+`<ARTIFACT_DIR>/<TASK>/bin`, starts the pinned four-anchor stack in
+`docker/ddl-golden-compose.yaml` (MySQL 5.7.44 / 8.0.46 / 8.4.10 / TiDB
+v8.5.0 — amd64 emulation for 5.7.44), executes each task case against the real
+anchors with stepwise live-metadata assertions, and writes + validates
+`<ARTIFACT_DIR>/<TASK>/artifact.json`. It is a thin runner over the existing
+build/compose/test machinery, not a general execution platform.
+
+- Database cases prove fixture legality and real server state: every statement
+  runs separately and its metadata assertions are verified against the live
+  database (return code, `information_schema` checks, server-reported version,
+  image digest).
+- CLI cases prove static audit behavior independently: the same SQL goes to the
+  built `deltascope` with a temporary all-rules-off policy profile (repository
+  default policy is never modified) and the result is asserted on statement
+  count, diagnostics, unsupported entries, verdict, and exit code.
+- Syntax-negative cases require a concrete syntax error (`errno`/message class
+  `syntax`) — a generic nonzero return code does not satisfy the contract.
+- The artifact validator fails rather than skips when a required anchor is
+  missing, unreachable, unhealthy, or version-mismatched, when a required case
+  did not execute, when the binary checksum/head is stale, when expected
+  fields are absent, or when no cases ran. External blockers are recorded as
+  `external_blocker` violations in a real artifact.
+- Cleanup is deterministic (`compose down -v --remove-orphans` plus a residual
+  container check) on success and failure; only compose-owned resources are
+  touched. The stack publishes no host ports.
+
+`make ddl-golden-validator-test` runs the offline validator contract suite
+(`scripts/test_ddl_golden.py`), proving the rejection paths above actually
+fail — including required-database-unreachable and required-case-missing
+negatives — without Docker.
+
+## DDL Acceptance Inventory Gate
+
+```bash
+make ddl-inventory-gate
+```
+
+`testdata/ddl-inventory/inventory.yaml` is the versioned official DDL
+acceptance denominator for the MySQL/TiDB milestone (issue #79). Each row
+binds one official statement family/subaction to the product versions where it
+exists, the verified official source, the tool's currently observed status,
+the semantics that must be preserved, acceptance dimensions, and an owner
+task. Statuses are mutually exclusive and never substitutable:
+`semantically_checked`, `generic_notice`, `parse_only`, `parser_unsupported`,
+`vendor_not_supported`. Rows owned by future tasks may honestly record
+incomplete implementation — those rows do not count as completed coverage.
+The gate (`TestDDLInventoryContract`) enforces unique IDs, required fields,
+per-version official sources, status vocabulary, owner assignment (declared
+milestone tasks or justified `proposed_tasks` under #79), and concrete
+evidence refs for `semantically_checked` rows.
+
 ## Notes
 
 - `go test ./...` is the default fast verification path.

@@ -1,0 +1,139 @@
+{
+  "task_id": "T02",
+  "issue": "https://github.com/Fanduzi/DeltaScope/issues/81",
+  "policy_profile": "all-rules-disabled",
+  "description": "Four-version official DDL baseline: isolated disposable databases execute CREATE/ALTER/DROP with per-step metadata assertions, one real syntax negative per anchor, plus the same SQL audited by the freshly built CLI under an isolated all-rules-disabled policy.",
+  "anchors": {
+    "mysql57": {
+      "service": "mysql57",
+      "container": "deltascope-ddl-golden-mysql57",
+      "image": "mysql:5.7.44",
+      "product": "mysql",
+      "version_contains": "5.7.44",
+      "database": "golden",
+      "exec_client": ["mysql", "-uroot", "-proot"],
+      "needs_database_create": false
+    },
+    "mysql80": {
+      "service": "mysql80",
+      "container": "deltascope-ddl-golden-mysql80",
+      "image": "mysql:8.0.46",
+      "product": "mysql",
+      "version_contains": "8.0.46",
+      "database": "golden",
+      "exec_client": ["mysql", "-uroot", "-proot"],
+      "needs_database_create": false
+    },
+    "mysql84": {
+      "service": "mysql84",
+      "container": "deltascope-ddl-golden-mysql84",
+      "image": "mysql:8.4.10",
+      "product": "mysql",
+      "version_contains": "8.4.10",
+      "database": "golden",
+      "exec_client": ["mysql", "-uroot", "-proot"],
+      "needs_database_create": false
+    },
+    "tidb85": {
+      "service": "tidb85",
+      "container": "deltascope-ddl-golden-tidb85",
+      "client_container": "deltascope-ddl-golden-tidb85-client",
+      "client_service": "tidb85-client",
+      "image": "pingcap/tidb:v8.5.0",
+      "product": "tidb",
+      "version_contains": "v8.5.0",
+      "database": "golden",
+      "exec_client": ["mysql", "--protocol=tcp", "-h", "tidb85", "-P", "4000", "-uroot"],
+      "needs_database_create": true
+    }
+  },
+  "ddl_steps": [
+    {
+      "name": "create",
+      "sql": "CREATE TABLE golden_t (id INT PRIMARY KEY)",
+      "expect_rc": 0,
+      "verify": [
+        {
+          "assert": "table exists",
+          "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+          "expect": "1"
+        },
+        {
+          "assert": "primary key exists",
+          "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+          "expect": "1"
+        }
+      ]
+    },
+    {
+      "name": "alter",
+      "sql": "ALTER TABLE golden_t ADD COLUMN c INT",
+      "expect_rc": 0,
+      "verify": [
+        {
+          "assert": "column c exists",
+          "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND COLUMN_NAME='c'",
+          "expect": "1"
+        }
+      ]
+    },
+    {
+      "name": "drop",
+      "sql": "DROP TABLE golden_t",
+      "expect_rc": 0,
+      "verify": [
+        {
+          "assert": "table absent",
+          "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+          "expect": "0"
+        }
+      ]
+    }
+  ],
+  "syntax_negative": {
+    "sql": "CREATE TABLE golden_broken (",
+    "expect": {
+      "rc_nonzero": true,
+      "error_class": "1064",
+      "forbidden_markers": [
+        "ERROR 1045",
+        "ERROR 1044",
+        "ERROR 1049",
+        "ERROR 1142",
+        "ERROR 1143",
+        "ERROR 2002",
+        "ERROR 2003",
+        "ERROR 2005",
+        "Access denied",
+        "Unknown database",
+        "Can't connect",
+        "Connection refused",
+        "already exists"
+      ]
+    }
+  },
+  "cli_audit": {
+    "dialects": ["mysql", "tidb"],
+    "sql": "CREATE TABLE golden_t (id INT PRIMARY KEY); ALTER TABLE golden_t ADD COLUMN c INT; DROP TABLE golden_t;",
+    "expect": {
+      "exit": 0,
+      "verdict": "pass",
+      "statements": 3,
+      "findings": 0,
+      "diagnostics": 0,
+      "unsupported": 0
+    }
+  },
+  "required_case_ids": [
+    "T02.db.mysql57.ddl",
+    "T02.db.mysql57.syntax_negative",
+    "T02.db.mysql80.ddl",
+    "T02.db.mysql80.syntax_negative",
+    "T02.db.mysql84.ddl",
+    "T02.db.mysql84.syntax_negative",
+    "T02.db.tidb85.ddl",
+    "T02.db.tidb85.syntax_negative",
+    "T02.cli.mysql",
+    "T02.cli.tidb"
+  ]
+}

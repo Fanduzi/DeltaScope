@@ -1,0 +1,76 @@
+# input: pinned MySQL 5.7.44/8.0.46/8.4.10 and TiDB 8.5.0 images for isolated DDL golden fixtures
+# output: disposable per-anchor database services reachable only inside the compose network
+# pos: Docker fixtures consumed by scripts/ddl_golden.py via `make ddl-golden`
+# note: if this file changes, update this header and module README.md.
+# Version pins are normative anchors from milestone issue #79/#81. Do not move to
+# floating tags or other patch versions; observed versions and image digests are
+# recorded into the golden artifact and verified against these pins.
+services:
+  mysql57:
+    image: mysql:5.7.44
+    platform: linux/amd64
+    container_name: deltascope-ddl-golden-mysql57
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: golden
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 20s
+
+  mysql80:
+    image: mysql:8.0.46
+    container_name: deltascope-ddl-golden-mysql80
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: golden
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 20s
+
+  mysql84:
+    image: mysql:8.4.10
+    container_name: deltascope-ddl-golden-mysql84
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: golden
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 20s
+
+  tidb85:
+    image: pingcap/tidb:v8.5.0
+    container_name: deltascope-ddl-golden-tidb85
+    command:
+      - --store=unistore
+      - --path=
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:10080/status >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 15s
+
+  tidb85-client:
+    image: mysql:8.4.10
+    container_name: deltascope-ddl-golden-tidb85-client
+    depends_on:
+      tidb85:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - exec sleep infinity
+    healthcheck:
+      test: ["CMD-SHELL", "mysql --protocol=tcp -h tidb85 -P 4000 -uroot -Nse 'SELECT 1' | grep -qx '1'"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 5s

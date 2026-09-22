@@ -1,0 +1,1884 @@
+# input: versioned official MySQL 5.7/8.0/8.4 and TiDB 8.5 DDL statement lists plus current-tool probe evidence
+# output: machine-checkable acceptance inventory rows consumed by the ddl inventory contract gate
+# pos: official DDL denominator for the mysql-tidb-ddl-completion milestone (issue #79 task T02/#81)
+# note: if this file changes, update this header and testdata README / docs/dev/testing.md.
+
+version: 1
+verified: "2026-09-22"
+purpose: >
+  Versioned official DDL acceptance inventory. Each row is one official
+  statement family/subaction scoped to the product versions where it exists,
+  with the tool's current observed status, the objects/semantics that must be
+  preserved, acceptance dimensions, and the milestone task that owns
+  completion. This is the denominator, not a claim that every row is
+  supported; rule-fixture coverage percentages are a different metric.
+
+# The dev.mysql.com 5.7 URL silently redirects to the MySQL 9.7 manual, so the
+# frozen Oracle-hosted 5.7 mirror is the verified 5.7 source. TiDB release-8.5
+# docs are a maintained branch: patch additions after 8.5.0 need explicit
+# version evidence before a row may claim them.
+sources:
+  mysql57:
+    url: "https://docs.oracle.com/cd/E17952_01/mysql-5.7-en/sql-data-definition-statements.html"
+    verified: "2026-09-22"
+    note: "frozen MySQL 5.7 manual mirror (dev.mysql.com 5.7 URL redirects to 9.7)"
+  mysql80:
+    url: "https://dev.mysql.com/doc/refman/8.0/en/sql-data-definition-statements.html"
+    verified: "2026-09-22"
+  mysql84:
+    url: "https://dev.mysql.com/doc/refman/8.4/en/sql-data-definition-statements.html"
+    verified: "2026-09-22"
+  mysql-admin:
+    url: "https://dev.mysql.com/doc/refman/8.4/en/resource-groups.html"
+    verified: "2026-09-22"
+    note: "resource-group statements live under Database Administration in the official manual; in scope per issue #79 T24"
+  tidb85:
+    url: "https://raw.githubusercontent.com/pingcap/docs/release-8.5/sql-statements/sql-statement-overview.md"
+    verified: "2026-09-22"
+  tidb85-ttl:
+    url: "https://raw.githubusercontent.com/pingcap/docs/release-8.5/time-to-live.md"
+    verified: "2026-09-22"
+
+statuses:
+  semantically_checked: "feature-specific semantic/policy check exists AND cited acceptance evidence exists"
+  generic_notice: "parses and only generic findings (e.g. *.notice or unrelated hygiene rules) fire; no feature-specific governance"
+  parse_only: "parses into a statement but produces zero findings; silent pass"
+  parser_unsupported: "the dialect parser cannot parse a vendor-valid form (parser_error diagnostic)"
+  vendor_not_supported: "the database product itself does not support the form (explicit boundary, not a to-do feature)"
+
+owners:
+  T01: {issue: 80, title: "multi-target DROP/RENAME denylist coverage"}
+  T03: {issue: 82, title: "explicit incomplete audit results for uncovered DDL"}
+  T04: {issue: 83, title: "target version and missing-evidence audit conclusions"}
+  T05: {issue: 84, title: "ordered prospective schema state for migration batches"}
+  T06: {issue: 85, title: "four-version CREATE TABLE base semantics"}
+  T07: {issue: 86, title: "generated columns, expression defaults, invisible columns"}
+  T08: {issue: 87, title: "unified column modify/default/nullability governance"}
+  T09: {issue: 88, title: "standalone and nested index base governance"}
+  T10: {issue: 89, title: "advanced index forms and visibility changes"}
+  T11: {issue: 90, title: "PK/UNIQUE/FK across CREATE and ALTER"}
+  T12: {issue: 91, title: "CHECK constraints and enforcement state"}
+  T13: {issue: 92, title: "partition drop/truncate/exchange risk audit"}
+  T14: {issue: 93, title: "partition definition, reorganization, maintenance semantics"}
+  T15: {issue: 94, title: "table options, charset conversion, online-DDL clauses"}
+  T16: {issue: 95, title: "table lifecycle, temporary tables, conditional operations"}
+  T17: {issue: 96, title: "database/schema lifecycle"}
+  T18: {issue: 97, title: "view lifecycle and security attributes"}
+  T19: {issue: 98, title: "TiDB TTL valid syntax and deletion risk audit"}
+  T20: {issue: 99, title: "TiDB placement policies and bindings"}
+  T21: {issue: 100, title: "TiDB sequence lifecycle and restart semantics"}
+  T22: {issue: 101, title: "TiDB resource group CREATE/ALTER/DROP"}
+  T23: {issue: 102, title: "TiDB physical layout, ID, cache table operations"}
+  T24: {issue: 103, title: "MySQL resource group version and CPU semantics"}
+  T25: {issue: 104, title: "InnoDB tablespaces and other-engine explicit boundaries"}
+  T26: {issue: 105, title: "MySQL SERVER, spatial reference systems, low-frequency DDL"}
+  T27: {issue: 106, title: "static SQL inside MySQL procedures and functions"}
+  T28: {issue: 107, title: "stored-body control flow, variables, dynamic analysis boundary"}
+  T29: {issue: 108, title: "MySQL trigger definitions and OLD/NEW semantics"}
+  T30: {issue: 109, title: "MySQL event definitions, scheduling, static bodies"}
+  T31: {issue: 110, title: "inventory completion, four-version matrix, release closure"}
+
+# Rows whose real in-scope gap fits no existing task. Proposed tasks hang off
+# parent #79 exactly like T01-T31; they are owners of record until an issue is
+# created for them. Counted as assigned-but-incomplete, never as coverage.
+proposed_tasks:
+  T32:
+    title: "TiDB instance-management and remaining low-frequency DDL boundaries"
+    justification: "ALTER INSTANCE (RELOAD TLS etc.) is a real TiDB statement family with no existing owner; T26 is scoped to MySQL low-frequency objects."
+    parent: 79
+    blocked_by: ["T03"]
+
+rows:
+  # ================= MySQL: database/schema lifecycle =================
+  - id: mysql.create-database
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: database
+    subactions: ["CREATE DATABASE/SCHEMA", "IF NOT EXISTS", "CHARACTER SET", "COLLATE", "DEFAULT ENCRYPTION (8.0.16+)"]
+    sql_shape: "CREATE DATABASE app CHARACTER SET utf8mb4"
+    prerequisites: "none"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: parses; only ddl.database.create.notice fires; charset/collation options unchecked"
+    targets: "database identity, default charset/collation, encryption attribute"
+    acceptance:
+      dimensions: "charset/collation capture, existence conditional, drop counterpoint"
+      refs: ["missing: owner adds fixture and policy evidence"]
+    owner: T17
+
+  - id: mysql.alter-database
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: database
+    subactions: ["ALTER DATABASE/SCHEMA", "CHARACTER SET", "COLLATE", "READ ONLY (8.0.22+)"]
+    sql_shape: "ALTER DATABASE app CHARACTER SET utf8mb4"
+    prerequisites: "none"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: parses; only ddl.alter_database.notice fires; attribute changes unchecked"
+    targets: "database identity, default attribute transitions"
+    acceptance:
+      dimensions: "attribute transition capture, IF EXISTS known/unknown handling"
+      refs: ["missing: owner adds fixture and policy evidence"]
+    owner: T17
+
+  - id: mysql.drop-database
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: database
+    subactions: ["DROP DATABASE/SCHEMA", "IF EXISTS"]
+    sql_shape: "DROP DATABASE app"
+    prerequisites: "none"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: ddl.database.drop.warn fires (specific deletion-scope risk rule)"
+    targets: "database identity, contained-object deletion scope, IF EXISTS"
+    acceptance:
+      dimensions: "deletion-scope finding, conditional forms"
+      refs: ["file:testdata/sql-corpus/mysql/ddl/supported", "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+    owner: T17
+
+  # ================= MySQL: table lifecycle =================
+  - id: mysql.create-table
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: table
+    subactions: ["CREATE TABLE", "IF NOT EXISTS", "column definitions", "inline/table PRIMARY KEY", "UNIQUE", "INDEX", "COMMENT"]
+    sql_shape: "CREATE TABLE t (id INT PRIMARY KEY)"
+    prerequisites: "InnoDB for engine-dependent checks"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: primary-key/comment/audit-column/charset/engine rules fire; golden path executes real CREATE on 4 anchors"
+    targets: "table identity, columns, PK, indexes, options"
+    acceptance:
+      dimensions: "per-statement findings, version-legal column forms, metadata presence/absence"
+      refs: ["file:testdata/ddl-golden/T02.json", "file:testdata/sql-corpus/mysql/ddl/findings", "file:testdata/sql-corpus/mysql/ddl/metadata"]
+    owner: T06
+
+  - id: mysql.create-table-temporary
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: table
+    subactions: ["CREATE TEMPORARY TABLE"]
+    sql_shape: "CREATE TEMPORARY TABLE tt (id INT)"
+    prerequisites: "none"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: standard table rules fire; temporary identity preserved by parser"
+    targets: "temporary vs persistent identity, same-name shadowing"
+    acceptance:
+      dimensions: "temporary identity, shadowing, drop counterpoint"
+      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go", "missing: temporary-identity fixture assertions"]
+    owner: T16
+
+  - id: mysql.create-table-like
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: table
+    subactions: ["CREATE TABLE ... LIKE"]
+    sql_shape: "CREATE TABLE t2 LIKE t1"
+    prerequisites: "source table identity known for completeness"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: ddl.table.create_like.forbid plus hygiene rules fire"
+    targets: "new table identity, source table reference, copied definition scope"
+    acceptance:
+      dimensions: "source/target identity, policy on LIKE copies"
+      refs: ["file:testdata/sql-corpus/mysql/ddl/findings", "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+    owner: T16
+
+  - id: mysql.create-table-select
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: table
+    subactions: ["CREATE TABLE ... SELECT", "CREATE TABLE ... AS SELECT"]
+    sql_shape: "CREATE TABLE t3 AS SELECT * FROM t1"
+    prerequisites: "none"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: ddl.table.create_as.forbid plus hygiene rules fire"
+    targets: "new table identity, SELECT source scope (not executed)"
+    acceptance:
+      dimensions: "CTAS policy, source scope boundary"
+      refs: ["file:testdata/sql-corpus/mysql/ddl/findings"]
+    owner: T16
+
+  - id: mysql.create-table-generated-column
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: table
+    subactions: ["GENERATED ALWAYS AS (expr)", "VIRTUAL", "STORED", "expression DEFAULT (8.0.13+)", "INVISIBLE column (8.0.23+)"]
+    sql_shape: "CREATE TABLE tg (a INT, b INT GENERATED ALWAYS AS (a+1) STORED)"
+    prerequisites: "InnoDB"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: parses; generic column hygiene rules fire but no generated-dependency/expression-default check; CREATE TABLE with INVISIBLE column is parser_error"
+    targets: "generated column identity, expression dependency edges (b depends on a), storage kind, invisibility"
+    acceptance:
+      dimensions: "dependency tracking, drop-source protection, version applicability (expr default 8.0.13+, invisible 8.0.23+)"
+      refs: ["missing: owner adds dependency and version-boundary fixtures"]
+    owner: T07
+
+  - id: mysql.create-table-constraints
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: table
+    subactions: ["FOREIGN KEY + REFERENCES + ON DELETE/UPDATE", "CHECK (parsed-but-not-enforced before 8.0.16)", "UNIQUE"]
+    sql_shape: "CREATE TABLE tf (id INT, pid INT, CONSTRAINT fk FOREIGN KEY (pid) REFERENCES tp(id))"
+    prerequisites: "InnoDB for FK; CHECK enforcement needs 8.0.16+"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: ddl.table.foreign_key.forbid fires on CREATE; CHECK parses but no constraint-policy check fires"
+    targets: "constraint identity, referenced parent, referential actions, CHECK enforcement state by version"
+    acceptance:
+      dimensions: "CREATE vs ALTER FK parity (T11), CHECK version semantics (T12), UNIQUE consistency"
+      refs: ["file:testdata/sql-corpus/mysql/ddl/findings", "missing: CREATE-vs-ALTER parity fixtures"]
+    owner: T11
+
+  - id: mysql.create-table-partitioning
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: partition
+    subactions: ["PARTITION BY RANGE/LIST/HASH/KEY", "COLUMNS", "SUBPARTITION (not on TiDB)", "partition options"]
+    sql_shape: "CREATE TABLE tp (id INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100))"
+    prerequisites: "InnoDB native partitioning; ndbcluster has own rules"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: ddl.table.partition.forbid fires; range/list corpus fixtures exist; partition topology facts not yet tracked"
+    targets: "partitioning scheme, partition identities, boundary values, subpartition boundary"
+    acceptance:
+      dimensions: "scheme capture, boundary fidelity, state visibility for later statements"
+      refs: ["file:testdata/sql-corpus/mysql/ddl/boundary/create_table_range_partition.sql", "file:testdata/sql-corpus/mysql/ddl/boundary/create_table_list_partition.sql"]
+    owner: T14
+
+  - id: mysql.create-table-options
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: table
+    subactions: ["ENGINE", "ROW_FORMAT", "KEY_BLOCK_SIZE", "CHARSET/COLLATE", "COMPRESSION", "ENCRYPTION", "COMMENT", "AUTO_INCREMENT", "STATS_*", "TABLESPACE"]
+    sql_shape: "CREATE TABLE t4 (id INT) ENGINE=InnoDB ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8 COMMENT='x'"
+    prerequisites: "engine facts required for engine-specific claims"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: charset.allowlist and row_format.allowlist fire; other option semantics (compression, encryption, stats) unchecked"
+    targets: "engine, row format, charset, per-option semantics"
+    acceptance:
+      dimensions: "option-by-option capture, engine-boundary behavior"
+      refs: ["file:testdata/sql-corpus/mysql/ddl/boundary/create_table_options.sql", "missing: per-option semantic fixtures"]
+    owner: T15
+
+  - id: mysql.drop-table
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: table
+    subactions: ["DROP TABLE", "multi-table list", "IF EXISTS", "TEMPORARY", "RESTRICT/CASCADE"]
+    sql_shape: "DROP TABLE t1, t2"
+    prerequisites: "none"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: ddl.table.drop.forbid fires; T01 proved every list target reaches the denylist (16/16 oracle); golden DROP verified on 4 anchors"
+    targets: "every target identity in source order, existence conditionals, temporary identity"
+    acceptance:
+      dimensions: "all-target policy evaluation, tuple dedup, deterministic order"
+      refs: ["file:docs/research/2026-09-22-ddl-multi-target-denylist-probes.json", "file:testdata/ddl-golden/T02.json", "file:pkg/deltascope/audit_test.go"]
+    owner: T16
+
+  - id: mysql.rename-table
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: table
+    subactions: ["RENAME TABLE a TO b, c TO d", "ALTER TABLE ... RENAME TO"]
+    sql_shape: "RENAME TABLE t1 TO t2, t3 TO t4"
+    prerequisites: "unqualified destination resolves to current database (MySQL bug #11493 evidence)"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: ddl.rename_table.notice fires; T01/T02 correction proved every source/destination pair reaches denylist with explicit-then-request schema resolution"
+    targets: "every old/new pair in order, destination schema resolution, source vs destination identity"
+    acceptance:
+      dimensions: "all-pair policy evaluation, schema resolution matrix, pair ordering"
+      refs: ["file:docs/decisions/2026-09-22-ddl-multi-target-denylist.md", "file:pkg/deltascope/audit_test.go"]
+    owner: T01
+
+  - id: mysql.truncate-table
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: table
+    subactions: ["TRUNCATE [TABLE]"]
+    sql_shape: "TRUNCATE TABLE t1"
+    prerequisites: "none"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: ddl.table.truncate.forbid fires (data-deletion risk)"
+    targets: "table identity, data deletion semantics"
+    acceptance:
+      dimensions: "deletion-risk finding, denylist application"
+      refs: ["file:testdata/sql-corpus/mysql/ddl/findings"]
+    owner: T16
+
+  # ================= MySQL: ALTER TABLE subactions =================
+  - id: mysql.alter-table.add-column
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: alter-table
+    subactions: ["ADD COLUMN", "ADD COLUMN FIRST/AFTER", "ADD (col, col, ...)"]
+    sql_shape: "ALTER TABLE t ADD COLUMN c INT"
+    prerequisites: "prior column state for position/duplicate checks"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: only ddl.alter.add_column.notice fires offline; exists/duplicate rules need metadata facts"
+    targets: "table, new column, position, type/attributes"
+    acceptance:
+      dimensions: "existence/position evidence, metadata-aware parity"
+      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go", "missing: position and existence assertions"]
+    owner: T08
+
+  - id: mysql.alter-table.drop-column
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: alter-table
+    subactions: ["DROP COLUMN"]
+    sql_shape: "ALTER TABLE t DROP COLUMN c"
+    prerequisites: "column existence and dependents"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: only ddl.alter.drop_column.notice fires; dependent-object risk unchecked"
+    targets: "table, dropped column, dependent index/constraint/generated edges"
+    acceptance:
+      dimensions: "dependent evidence, generated-column dependency (T07 boundary)"
+      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go", "missing: dependency-risk assertions"]
+    owner: T08
+
+  - id: mysql.alter-table.modify-column
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: alter-table
+    subactions: ["MODIFY COLUMN", "type change", "NULL/NOT NULL transitions", "FIRST/AFTER"]
+    sql_shape: "ALTER TABLE t MODIFY COLUMN c VARCHAR(20)"
+    prerequisites: "old column definition for compatibility/narrowing"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe (offline): only ddl.alter.modify_column.notice; modify_column.compatibility.require and nullability-transition rules exist but need metadata facts (verified in metadata e2e)"
+    targets: "table, column, old vs new definition, nullability transition"
+    acceptance:
+      dimensions: "narrowing/compatibility evidence, unverified-without-metadata path"
+      refs: ["file:scripts/test_cli_metadata_e2e.sh", "missing: offline unverified evidence-gap assertions (T04)"]
+    owner: T08
+
+  - id: mysql.alter-table.change-column
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: alter-table
+    subactions: ["CHANGE COLUMN old new definition"]
+    sql_shape: "ALTER TABLE t CHANGE COLUMN c c2 INT"
+    prerequisites: "old column definition"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: ddl.alter.change_column.forbid fires"
+    targets: "table, old name, new name+definition"
+    acceptance:
+      dimensions: "rename-with-redefinition governance, parity with MODIFY semantics"
+      refs: ["file:testdata/sql-corpus/mysql/ddl/findings"]
+    owner: T08
+
+  - id: mysql.alter-table.rename-column
+    product: mysql
+    versions: ["8.0", "8.4"]
+    sources: [mysql80, mysql84]
+    family: alter-table
+    subactions: ["RENAME COLUMN old TO new"]
+    sql_shape: "ALTER TABLE t RENAME COLUMN c TO c2"
+    prerequisites: "8.0+ only (5.7 vendor boundary: use CHANGE)"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: ddl.alter.rename_column.forbid fires; 5.7 lacks the form (vendor boundary, CHANGE is the 5.7 path)"
+    targets: "table, old/new column names"
+    acceptance:
+      dimensions: "rename governance, 5.7 vendor boundary"
+      refs: ["file:testdata/sql-corpus/mysql/ddl/findings"]
+    owner: T08
+
+  - id: mysql.alter-table.alter-column-default
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: alter-table
+    subactions: ["ALTER COLUMN c SET DEFAULT", "ALTER COLUMN c DROP DEFAULT"]
+    sql_shape: "ALTER TABLE t ALTER COLUMN c SET DEFAULT 1"
+    prerequisites: "known prior default for change detection"
+    status: parse_only
+    status_evidence: "2026-09-22 CLI probe: both forms parse and produce zero findings (silent pass, matching the issue #79 silent-pass example)"
+    targets: "table, column, default presence and value transition"
+    acceptance:
+      dimensions: "default-change policy equivalence with MODIFY ... DEFAULT, unknown-prior-state gap"
+      refs: ["missing: owner adds SET/DROP DEFAULT policy and fixtures"]
+    owner: T08
+
+  - id: mysql.alter-table.rename-table
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: alter-table
+    subactions: ["ALTER TABLE ... RENAME TO", "RENAME AS"]
+    sql_shape: "ALTER TABLE t RENAME TO t2"
+    prerequisites: "unqualified destination resolves to current database"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: ddl.alter.rename_table.forbid fires; destination schema resolution corrected at HEAD 1768f05"
+    targets: "table, new identity, destination schema resolution"
+    acceptance:
+      dimensions: "rename policy, schema-resolution matrix, multi-action preservation"
+      refs: ["file:pkg/deltascope/audit_test.go", "file:internal/application/audit/service_test.go"]
+    owner: T16
+
+  - id: mysql.alter-table.multi-action
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: alter-table
+    subactions: ["comma-separated action lists"]
+    sql_shape: "ALTER TABLE t ADD COLUMN a INT, DROP COLUMN b, RENAME TO t9"
+    prerequisites: "every action normalized, not only the first"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: parser accepts action lists; per-action findings fire individually (add_column.notice + rename_table.forbid); completeness contract for omitted/unhandled actions is T03 scope"
+    targets: "every action in order with original positions"
+    acceptance:
+      dimensions: "per-action findings on correct statement, no action swallowed"
+      refs: ["file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
+    owner: T03
+
+  - id: mysql.alter-table.add-primary-key
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: alter-table
+    subactions: ["ADD PRIMARY KEY", "ADD CONSTRAINT ... PRIMARY KEY"]
+    sql_shape: "ALTER TABLE t ADD PRIMARY KEY (id)"
+    prerequisites: "column legality for PK"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: only ddl.alter.add_constraint.notice fires; no PK-specific policy on ALTER path"
+    targets: "table, PK columns, clustered-index implications"
+    acceptance:
+      dimensions: "CREATE-vs-ALTER PK governance parity"
+      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go", "missing: PK parity fixtures"]
+    owner: T11
+
+  - id: mysql.alter-table.drop-primary-key
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: alter-table
+    subactions: ["DROP PRIMARY KEY"]
+    sql_shape: "ALTER TABLE t DROP PRIMARY KEY"
+    prerequisites: "none"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: ddl.alter.drop_primary_key.forbid fires"
+    targets: "table, PK removal risk"
+    acceptance:
+      dimensions: "PK-drop policy, interaction with auto_increment/FK dependents"
+      refs: ["file:testdata/sql-corpus/mysql/ddl/findings"]
+    owner: T11
+
+  - id: mysql.alter-table.add-foreign-key
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: alter-table
+    subactions: ["ADD CONSTRAINT fk FOREIGN KEY ... REFERENCES ... ON DELETE/UPDATE", "ADD FOREIGN KEY"]
+    sql_shape: "ALTER TABLE t ADD CONSTRAINT fk FOREIGN KEY (c) REFERENCES p (id)"
+    prerequisites: "parent identity and key legality"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: only ddl.alter.add_constraint.notice; CREATE-path ddl.table.foreign_key.forbid has no ALTER-path parity (spec calls this a governance gap)"
+    targets: "table, constraint name, referencing/parent columns, referential actions"
+    acceptance:
+      dimensions: "CREATE/ALTER FK parity (exactly the spec's parity oracle)"
+      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go", "missing: FK parity oracle"]
+    owner: T11
+
+  - id: mysql.alter-table.drop-foreign-key
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: alter-table
+    subactions: ["DROP FOREIGN KEY name"]
+    sql_shape: "ALTER TABLE t DROP FOREIGN KEY fk"
+    prerequisites: "none"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: only ddl.alter.drop_foreign_key.notice fires"
+    targets: "table, constraint identity, referential-protection removal"
+    acceptance:
+      dimensions: "drop-constraint risk policy"
+      refs: ["missing: owner adds drop-FK policy fixtures"]
+    owner: T11
+
+  - id: mysql.alter-table.check-constraints
+    product: mysql
+    versions: ["8.0", "8.4"]
+    sources: [mysql80, mysql84]
+    family: alter-table
+    subactions: ["ADD CONSTRAINT CHECK", "DROP CONSTRAINT", "ALTER CHECK ... ENFORCED/NOT ENFORCED"]
+    sql_shape: "ALTER TABLE t ALTER CHECK c1 NOT ENFORCED"
+    prerequisites: "8.0.16+ for enforced CHECK; 5.7 parses-and-ignores (vendor boundary row below covers 5.7)"
+    status: parse_only
+    status_evidence: "2026-09-22 CLI probe: ADD CONSTRAINT CHECK emits only add_constraint.notice; DROP CONSTRAINT and ALTER CHECK ENFORCED/NOT ENFORCED parse silently with zero findings"
+    targets: "table, constraint identity, enforcement state transitions"
+    acceptance:
+      dimensions: "enforcement-state risk, 5.7 accept-and-ignore disclosure (vendor fact, not silent pass)"
+      refs: ["missing: owner adds CHECK lifecycle fixtures"]
+    owner: T12
+
+  - id: mysql.alter-table.partition-destructive
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: partition
+    subactions: ["DROP PARTITION", "TRUNCATE PARTITION", "EXCHANGE PARTITION p WITH TABLE s"]
+    sql_shape: "ALTER TABLE t DROP PARTITION p0"
+    prerequisites: "InnoDB partitioned table with named partitions"
+    status: parse_only
+    status_evidence: "2026-09-22 CLI probe: all three forms parse and return zero findings (the spec's named silent-pass defect)"
+    targets: "table, partition identities, data deletion/exchange scope, both EXCHANGE objects"
+    acceptance:
+      dimensions: "drop/truncate blocker, EXCHANGE two-object visibility"
+      refs: ["missing: owner adds destructive-partition policy and DB fixture evidence"]
+    owner: T13
+
+  - id: mysql.alter-table.partition-topology
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: partition
+    subactions: ["ADD PARTITION", "REORGANIZE PARTITION ... INTO", "REMOVE PARTITIONING", "COALESCE PARTITION", "PARTITION BY (redefine)"]
+    sql_shape: "ALTER TABLE t REORGANIZE PARTITION p0 INTO (PARTITION pa VALUES LESS THAN (50), PARTITION pb VALUES LESS THAN (100))"
+    prerequisites: "existing scheme and boundary values"
+    status: parse_only
+    status_evidence: "2026-09-22 CLI probe: all forms parse silently with zero findings; boundary/redistribution semantics unchecked"
+    targets: "source/target partitions, boundary values, rebuild-vs-metadata distinction"
+    acceptance:
+      dimensions: "boundary fidelity, data-preservation evidence, engine applicability"
+      refs: ["missing: owner adds topology fixtures and DB verification"]
+    owner: T14
+
+  - id: mysql.alter-table.partition-maintenance
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: partition
+    subactions: ["REBUILD/OPTIMIZE/ANALYZE/CHECK/REPAIR PARTITION"]
+    sql_shape: "ALTER TABLE t OPTIMIZE PARTITION p0"
+    prerequisites: "engine applicability varies by operation"
+    status: parse_only
+    status_evidence: "2026-09-22 CLI probe: all maintenance forms parse silently with zero findings"
+    targets: "table, partition list, operation kind, engine applicability"
+    acceptance:
+      dimensions: "per-operation classification, engine-boundary rows (not silent)"
+      refs: ["missing: owner adds per-operation fixtures"]
+    owner: T14
+
+  - id: mysql.alter-table.tablespace-ops
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: alter-table
+    subactions: ["DISCARD TABLESPACE", "IMPORT TABLESPACE"]
+    sql_shape: "ALTER TABLE t DISCARD TABLESPACE"
+    prerequisites: "InnoDB file-per-table"
+    status: parse_only
+    status_evidence: "2026-09-22 CLI probe: DISCARD/IMPORT parse silently with zero findings (spec names DISCARD a required blocker)"
+    targets: "table, discard-vs-import distinction, data-file loss risk"
+    acceptance:
+      dimensions: "DISCARD blocker, IMPORT separate handling, isolated DB fixture"
+      refs: ["missing: owner adds tablespace-op policy and fixture evidence"]
+    owner: T25
+
+  - id: mysql.alter-table.online-ddl
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: alter-table
+    subactions: ["ALGORITHM=INSTANT/INPLACE/COPY/DEFAULT", "LOCK=NONE/SHARED/EXCLUSIVE/DEFAULT"]
+    sql_shape: "ALTER TABLE t ADD COLUMN c INT, ALGORITHM=COPY, LOCK=EXCLUSIVE"
+    prerequisites: "operation+engine+version decide actual support; ALGORITHM=INPLACE is not itself a safety claim"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: clause parses; only action-level notices fire — COPY/EXCLUSIVE claims carry no clause-aware check"
+    targets: "action list plus declared algorithm/lock, versioned applicability"
+    acceptance:
+      dimensions: "clause-aware risk, availability-by-version evidence, gap when prerequisites missing"
+      refs: ["file:testdata/sql-corpus/mysql/ddl/boundary/alter_table_add_column_algorithm_lock.sql"]
+    owner: T15
+
+  - id: mysql.alter-table.options
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: alter-table
+    subactions: ["ORDER BY", "CONVERT TO CHARACTER SET", "DEFAULT CHARACTER SET", "ROW_FORMAT", "AUTO_INCREMENT=", "FORCE", "ENABLE/DISABLE KEYS", "COMMENT", "ENGINE"]
+    sql_shape: "ALTER TABLE t CONVERT TO CHARACTER SET utf8mb4"
+    prerequisites: "engine facts for engine-scoped options"
+    status: parse_only
+    status_evidence: "2026-09-22 CLI probe: ORDER BY/CONVERT/ROW_FORMAT/AUTO_INCREMENT/FORCE/ENABLE KEYS/DISABLE KEYS all parse silently with zero findings"
+    targets: "table, per-option semantics, charset conversion scope, rebuild implications"
+    acceptance:
+      dimensions: "per-option checks, charset-conversion risk, engine boundaries"
+      refs: ["missing: owner adds option fixtures"]
+    owner: T15
+
+  # ================= MySQL: index lifecycle =================
+  - id: mysql.create-index
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: index
+    subactions: ["CREATE INDEX", "CREATE UNIQUE INDEX", "key parts", "prefix lengths"]
+    sql_shape: "CREATE INDEX idx ON t (a, b, c)"
+    prerequisites: "table and column identity"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: only ddl.create_index.notice; ALTER-path add_index rules (columns.max_count, prefix, duplicate, redundant) have no CREATE-path parity (spec's parity gap)"
+    targets: "index identity, target table, key parts, uniqueness, prefix"
+    acceptance:
+      dimensions: "standalone/nested index parity per the spec's equivalence oracle"
+      refs: ["file:testdata/sql-corpus/mysql/ddl/findings", "missing: CREATE-vs-ALTER index parity fixtures"]
+    owner: T09
+
+  - id: mysql.create-index-advanced
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: index
+    subactions: ["FULLTEXT", "SPATIAL", "functional/expression (8.0.13+)", "descending key parts (8.0+)", "INVISIBLE (8.0+)", "multi-value (8.0.17+)"]
+    sql_shape: "CREATE INDEX idx_f ON t ((LOWER(c)))"
+    prerequisites: "version/engine gates per variant; TiDB FULLTEXT/SPATIAL are vendor boundaries"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: FULLTEXT/SPATIAL/functional/descending/INVISIBLE/prefix all parse to the same create_index.notice; variant semantics unchecked"
+    targets: "index kind, expression/prefix/descending/visibility facts, version applicability"
+    acceptance:
+      dimensions: "per-variant checks, version boundaries, not parse-acceptance-as-support"
+      refs: ["missing: owner adds per-variant fixtures and version evidence"]
+    owner: T10
+
+  - id: mysql.alter-table.index-ops
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: alter-table
+    subactions: ["ADD INDEX/UNIQUE/FULLTEXT/SPATIAL", "DROP INDEX", "RENAME INDEX", "ALTER INDEX VISIBLE/INVISIBLE (8.0+)"]
+    sql_shape: "ALTER TABLE t ALTER INDEX i INVISIBLE"
+    prerequisites: "index identity and current visibility"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: ADD INDEX gets prefix.require + notices (semantic partial), DROP INDEX notice only, RENAME INDEX gets forbid, ALTER INDEX INVISIBLE parses silently (T10 seed)"
+    targets: "index identity, visibility state, rename pairs"
+    acceptance:
+      dimensions: "visibility-change risk, VISIBLE restore and missing-index controls"
+      refs: ["file:testdata/sql-corpus/mysql/ddl/findings", "missing: visibility fixtures"]
+    owner: T10
+
+  - id: mysql.drop-index
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: index
+    subactions: ["DROP INDEX name ON table"]
+    sql_shape: "DROP INDEX idx ON t"
+    prerequisites: "none"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: only ddl.drop_index.notice fires"
+    targets: "index identity, host table, dependent-constraint effects"
+    acceptance:
+      dimensions: "drop-index policy parity with ALTER DROP INDEX"
+      refs: ["missing: owner adds parity fixtures"]
+    owner: T09
+
+  # ================= MySQL: views =================
+  - id: mysql.create-view
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: view
+    subactions: ["CREATE VIEW", "OR REPLACE", "ALGORITHM", "DEFINER/CURRENT_USER", "SQL SECURITY DEFINER/INVOKER"]
+    sql_shape: "CREATE SQL SECURITY DEFINER VIEW v AS SELECT id FROM t"
+    prerequisites: "referenced tables known for dependency facts"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: ddl.view.create.forbid fires on plain/OR REPLACE/SQL SECURITY forms"
+    targets: "view identity, source tables, security attributes"
+    acceptance:
+      dimensions: "lifecycle policy, security-attribute capture, source dependency"
+      refs: ["file:testdata/sql-corpus/mysql/ddl/findings"]
+    owner: T18
+
+  - id: mysql.create-view-check-option
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: view
+    subactions: ["WITH [CASCADED|LOCAL] CHECK OPTION"]
+    sql_shape: "CREATE VIEW v AS SELECT id FROM t WITH CHECK OPTION"
+    prerequisites: "none"
+    status: parser_unsupported
+    status_evidence: "2026-09-22 CLI probe: parser_error on a vendor-valid CHECK OPTION form"
+    targets: "check-option semantics on the view"
+    acceptance:
+      dimensions: "valid-form parser evidence, upgrade decision"
+      refs: ["missing: owner records parser-upgrade evidence"]
+    owner: T18
+
+  - id: mysql.alter-view
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: view
+    subactions: ["ALTER VIEW v AS SELECT ..."]
+    sql_shape: "ALTER VIEW v AS SELECT id FROM t"
+    prerequisites: "existing view"
+    status: parser_unsupported
+    status_evidence: "2026-09-22 CLI probe + census: parser_error on vendor-valid ALTER VIEW (T18 first-path oracle)"
+    targets: "view identity, new definition, security attributes"
+    acceptance:
+      dimensions: "parser support or explicit boundary, source dependency"
+      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+    owner: T18
+
+  - id: mysql.drop-view
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: view
+    subactions: ["DROP VIEW", "multi-view list", "IF EXISTS"]
+    sql_shape: "DROP VIEW v1, v2"
+    prerequisites: "none"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: ddl.view.drop.forbid fires; multi-view list targets share T01 all-target contract"
+    targets: "every view identity, IF EXISTS"
+    acceptance:
+      dimensions: "all-target evaluation, existence conditionals"
+      refs: ["file:testdata/sql-corpus/mysql/ddl/findings"]
+    owner: T18
+
+  # ================= MySQL: stored programs =================
+  - id: mysql.create-procedure
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: stored-program
+    subactions: ["CREATE PROCEDURE ... BEGIN..END", "parameters", "SQL SECURITY", "DETERMINISTIC", "body statements"]
+    sql_shape: "CREATE PROCEDURE p() BEGIN DELETE FROM t; END;"
+    prerequisites: "DELIMITER wrapping handled at batch level"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: CREATE PROCEDURE parses; only ddl.create_procedure.notice — body SQL unaudited (T27 first path is the dml.where.require body oracle)"
+    targets: "routine identity, static body statements with original locations, security attributes"
+    acceptance:
+      dimensions: "body finding on containing definition, bounded body identity, no raw-body leak"
+      refs: ["missing: owner adds body-audit fixtures"]
+    owner: T27
+
+  - id: mysql.create-function
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: stored-program
+    subactions: ["CREATE FUNCTION ... RETURNS ... BEGIN..END", "DETERMINISTIC"]
+    sql_shape: "CREATE FUNCTION f() RETURNS INT RETURN 1"
+    prerequisites: "same as procedure"
+    status: parser_unsupported
+    status_evidence: "2026-09-22 CLI probe: parser_error on vendor-valid CREATE FUNCTION (probe used RETURN form; body-bearing forms need parser evidence)"
+    targets: "routine identity, return type, body statements"
+    acceptance:
+      dimensions: "body audit parity with procedures"
+      refs: ["missing: owner adds function fixtures"]
+    owner: T27
+
+  - id: mysql.alter-procedure-function
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: stored-program
+    subactions: ["ALTER PROCEDURE", "ALTER FUNCTION", "SQL SECURITY", "COMMENT"]
+    sql_shape: "ALTER PROCEDURE p SQL SECURITY INVOKER"
+    prerequisites: "none"
+    status: parser_unsupported
+    status_evidence: "2026-09-22 CLI probe: parser_error on both ALTER forms"
+    targets: "routine identity, attribute changes"
+    acceptance:
+      dimensions: "attribute-change classification"
+      refs: ["missing: owner adds attribute fixtures"]
+    owner: T27
+
+  - id: mysql.drop-procedure-function
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: stored-program
+    subactions: ["DROP PROCEDURE", "DROP FUNCTION", "IF EXISTS"]
+    sql_shape: "DROP PROCEDURE p"
+    prerequisites: "none"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: DROP PROCEDURE yields drop_procedure.notice; DROP FUNCTION is parser_error — asymmetric lifecycle coverage"
+    targets: "routine identity, IF EXISTS, drop parity"
+    acceptance:
+      dimensions: "drop lifecycle parity, dependent-object notes"
+      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+    owner: T27
+
+  - id: mysql.stored-body-analysis
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: stored-program
+    subactions: ["static body SQL", "DECLARE/local binding", "control flow", "PREPARE/EXECUTE dynamic SQL"]
+    sql_shape: "CREATE PROCEDURE p(IN s TEXT) BEGIN SET @q=s; PREPARE stmt FROM @q; EXECUTE stmt; END;"
+    prerequisites: "routine definition parsed; dynamic effects never executed or guessed"
+    status: generic_notice
+    status_evidence: "definition-level notice only; static body SQL, control flow, and dynamic-SQL boundaries are unaudited today (T27/T28 scope)"
+    targets: "static effects vs explicit dynamic/incomplete boundary, no execution simulation"
+    acceptance:
+      dimensions: "static sibling findings preserved, dynamic body incomplete-not-passed, depth caps"
+      refs: ["missing: owner adds static/dynamic body boundary fixtures"]
+    owner: T28
+
+  # ================= MySQL: triggers and events =================
+  - id: mysql.create-trigger
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: trigger
+    subactions: ["BEFORE/AFTER INSERT/UPDATE/DELETE", "FOR EACH ROW", "FOLLOWS/PRECEDES", "OLD/NEW bindings"]
+    sql_shape: "CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW DELETE FROM audit_log"
+    prerequisites: "target table exists; OLD/NEW resolution inside body"
+    status: parser_unsupported
+    status_evidence: "2026-09-22 CLI probe: parser_error on vendor-valid CREATE TRIGGER (T29 first path is the body-where blocker oracle)"
+    targets: "trigger identity, event context, body targets distinct from trigger target"
+    acceptance:
+      dimensions: "body findings vs trigger target separation, OLD/NEW not misread as tables"
+      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+    owner: T29
+
+  - id: mysql.drop-trigger
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: trigger
+    subactions: ["DROP TRIGGER", "IF EXISTS"]
+    sql_shape: "DROP TRIGGER tr"
+    prerequisites: "none"
+    status: parser_unsupported
+    status_evidence: "2026-09-22 CLI probe: parser_error"
+    targets: "trigger identity"
+    acceptance:
+      dimensions: "lifecycle classification"
+      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+    owner: T29
+
+  - id: mysql.create-event
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: event
+    subactions: ["ON SCHEDULE AT/EVERY", "ON COMPLETION", "ENABLE/DISABLE", "DO body"]
+    sql_shape: "CREATE EVENT ev ON SCHEDULE EVERY 1 DAY DISABLE DO DELETE FROM t"
+    prerequisites: "scheduler not required for static audit; DISABLE fixture prevents execution"
+    status: parser_unsupported
+    status_evidence: "2026-09-22 CLI probe: parser_error on vendor-valid CREATE EVENT (T30 oracle requires schedule+DISABLE preserved plus body audit)"
+    targets: "event identity, schedule, enabled state, static body"
+    acceptance:
+      dimensions: "body audit even when DISABLED, scheduler facts explicit"
+      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+    owner: T30
+
+  - id: mysql.alter-event
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: event
+    subactions: ["ALTER EVENT ... ON SCHEDULE/RENAME/ENABLE/DISABLE/DO"]
+    sql_shape: "ALTER EVENT ev ON SCHEDULE EVERY 2 DAY"
+    prerequisites: "none"
+    status: parser_unsupported
+    status_evidence: "2026-09-22 CLI probe: parser_error"
+    targets: "event identity, schedule/state transitions, new body if present"
+    acceptance:
+      dimensions: "attribute vs body-change classification"
+      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+    owner: T30
+
+  - id: mysql.drop-event
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: event
+    subactions: ["DROP EVENT", "IF EXISTS"]
+    sql_shape: "DROP EVENT ev"
+    prerequisites: "none"
+    status: parser_unsupported
+    status_evidence: "2026-09-22 CLI probe: parser_error"
+    targets: "event identity"
+    acceptance:
+      dimensions: "lifecycle classification"
+      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+    owner: T30
+
+  # ================= MySQL: tablespaces, servers, low-frequency =================
+  - id: mysql.create-tablespace
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: tablespace
+    subactions: ["CREATE TABLESPACE ... ADD DATAFILE", "ENGINE=InnoDB", "NDB variants", "UNDO tablespace (8.0.14+)"]
+    sql_shape: "CREATE TABLESPACE ts1 ADD DATAFILE 'ts1.ibd' ENGINE = innodb"
+    prerequisites: "InnoDB general tablespace 5.7.6+; NDB forms are engine-boundary"
+    status: parser_unsupported
+    status_evidence: "2026-09-22 CLI probe: parser_error on vendor-valid InnoDB tablespace"
+    targets: "tablespace identity, file references (never surfaced into diagnostics)"
+    acceptance:
+      dimensions: "object classification, no file-path leak, NDB engine boundary"
+      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+    owner: T25
+
+  - id: mysql.alter-tablespace
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: tablespace
+    subactions: ["ALTER TABLESPACE ... ADD/DROP DATAFILE (NDB)", "RENAME TO", "ENGINE=...", "AUTOEXTEND_SIZE", "UNDO ... ACTIVE/INACTIVE (8.0.14+)"]
+    sql_shape: "ALTER TABLESPACE ts1 RENAME TO ts2"
+    prerequisites: "engine determines valid subactions"
+    status: parser_unsupported
+    status_evidence: "2026-09-22 CLI probe: parser_error on both NDB and InnoDB rename forms"
+    targets: "tablespace identity, action kind, engine boundary"
+    acceptance:
+      dimensions: "engine-scoped action classification"
+      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+    owner: T25
+
+  - id: mysql.drop-tablespace
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: tablespace
+    subactions: ["DROP TABLESPACE", "ENGINE=", "DROP UNDO TABLESPACE (8.0.14+)"]
+    sql_shape: "DROP TABLESPACE ts1"
+    prerequisites: "none"
+    status: parser_unsupported
+    status_evidence: "2026-09-22 CLI probe: parser_error"
+    targets: "tablespace identity, member-object protection"
+    acceptance:
+      dimensions: "drop lifecycle, member-table safety"
+      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+    owner: T25
+
+  - id: mysql.logfile-group
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: tablespace
+    subactions: ["CREATE/ALTER/DROP LOGFILE GROUP", "ADD UNDOFILE", "ENGINE=NDB"]
+    sql_shape: "CREATE LOGFILE GROUP lg ADD UNDOFILE 'u.dat' ENGINE = ndb"
+    prerequisites: "NDB-only — explicit engine boundary under the InnoDB target profile"
+    status: parser_unsupported
+    status_evidence: "2026-09-22 CLI probe: parser_error on all three forms; NDB applicability is an engine boundary, not silently-mapped InnoDB behavior"
+    targets: "logfile-group identity, NDB engine boundary (never simulated as InnoDB)"
+    acceptance:
+      dimensions: "explicit engine-boundary classification (supported boundary, not support)"
+      refs: ["missing: owner adds engine-boundary classification evidence"]
+    owner: T25
+
+  - id: mysql.create-server
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: server
+    subactions: ["CREATE SERVER ... FOREIGN DATA WRAPPER mysql OPTIONS (HOST, DATABASE, USER, PASSWORD, PORT, SOCKET, OWNER)"]
+    sql_shape: "CREATE SERVER s FOREIGN DATA WRAPPER mysql OPTIONS (HOST '192.0.2.1', DATABASE 'app', USER 'u', PASSWORD 'x')"
+    prerequisites: "FEDERATED engine linkage; never any outbound connection"
+    status: parser_unsupported
+    status_evidence: "2026-09-22 CLI probe: parser_error; OPTIONS credentials must never reach diagnostics (T26 no-leak oracle)"
+    targets: "server identity, options as data (secrets redacted), engine boundary"
+    acceptance:
+      dimensions: "explicit boundary result, no credential leak, no network access"
+      refs: ["missing: owner adds boundary+no-leak fixtures"]
+    owner: T26
+
+  - id: mysql.alter-server
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: server
+    subactions: ["ALTER SERVER ... OPTIONS"]
+    sql_shape: "ALTER SERVER s OPTIONS (HOST 'db2.example.com')"
+    prerequisites: "none"
+    status: parser_unsupported
+    status_evidence: "2026-09-22 CLI probe: parser_error"
+    targets: "server identity, option changes"
+    acceptance:
+      dimensions: "attribute-change classification"
+      refs: ["missing: owner adds fixtures"]
+    owner: T26
+
+  - id: mysql.drop-server
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: server
+    subactions: ["DROP SERVER", "IF EXISTS"]
+    sql_shape: "DROP SERVER s"
+    prerequisites: "none"
+    status: parser_unsupported
+    status_evidence: "2026-09-22 CLI probe: parser_error"
+    targets: "server identity"
+    acceptance:
+      dimensions: "lifecycle classification"
+      refs: ["missing: owner adds fixtures"]
+    owner: T26
+
+  - id: mysql.spatial-reference-system
+    product: mysql
+    versions: ["8.0", "8.4"]
+    sources: [mysql80, mysql84]
+    family: spatial
+    subactions: ["CREATE/DROP SPATIAL REFERENCE SYSTEM", "CREATE OR REPLACE", "IF NOT EXISTS", "SRID + attributes"]
+    sql_shape: "CREATE SPATIAL REFERENCE SYSTEM 4120 DEFINITION 'GEOGCS[...]'"
+    prerequisites: "8.0+ only — 5.7 vendor boundary (statement family absent from the 5.7 list)"
+    status: parser_unsupported
+    status_evidence: "2026-09-22 CLI probe: parser_error on both CREATE and DROP forms"
+    targets: "SRID identity, definition as opaque text (no expansion into diagnostics)"
+    acceptance:
+      dimensions: "object classification, 5.7 vendor-boundary row"
+      refs: ["missing: owner adds SRS fixtures and 5.7 boundary evidence"]
+    owner: T26
+
+  - id: mysql.alter-instance
+    product: mysql
+    versions: ["5.7", "8.0", "8.4"]
+    sources: [mysql57, mysql80, mysql84]
+    family: instance
+    subactions: ["ROTATE INNODB MASTER KEY (5.7.11+/8.0)", "RELOAD TLS (8.0+)"]
+    sql_shape: "ALTER INSTANCE ROTATE INNODB MASTER KEY"
+    prerequisites: "subaction availability differs by version"
+    status: parser_unsupported
+    status_evidence: "2026-09-22 CLI probe: ROTATE INNODB MASTER KEY is parser_error; RELOAD TLS parses but yields zero findings"
+    targets: "instance action kind, version applicability"
+    acceptance:
+      dimensions: "per-subaction classification, no false coverage"
+      refs: ["missing: owner adds subaction fixtures"]
+    owner: T26
+
+  # ================= MySQL: resource groups (8.0+, admin section) =================
+  - id: mysql.create-resource-group
+    product: mysql
+    versions: ["8.0", "8.4"]
+    sources: [mysql80, mysql84, mysql-admin]
+    family: resource-group
+    subactions: ["CREATE RESOURCE GROUP name TYPE=USER|SYSTEM", "VCPU", "THREAD_PRIORITY", "ENABLED/DISABLED"]
+    sql_shape: "CREATE RESOURCE GROUP rg1 TYPE = USER VCPU = 0-3"
+    prerequisites: "8.0+; host CPU facts needed for VCPU semantics; 5.7 vendor boundary"
+    status: parser_unsupported
+    status_evidence: "2026-09-22 CLI probe: parser_error on vendor-valid CPU resource group form"
+    targets: "group identity, type, VCPU range, thread priority, enable state"
+    acceptance:
+      dimensions: "CPU semantics vs TiDB RU distinction, 5.7 boundary, missing-CPU-facts gap"
+      refs: ["missing: owner adds fixtures and host-capability evidence"]
+    owner: T24
+
+  - id: mysql.alter-resource-group
+    product: mysql
+    versions: ["8.0", "8.4"]
+    sources: [mysql80, mysql84, mysql-admin]
+    family: resource-group
+    subactions: ["ALTER RESOURCE GROUP name VCPU/THREAD_PRIORITY/ENABLE/DISABLE"]
+    sql_shape: "ALTER RESOURCE GROUP rg1 VCPU = 0-7"
+    prerequisites: "same as create"
+    status: parser_unsupported
+    status_evidence: "2026-09-22 CLI probe: parser_error"
+    targets: "group identity, attribute transitions"
+    acceptance:
+      dimensions: "attribute-change classification"
+      refs: ["missing: owner adds fixtures"]
+    owner: T24
+
+  - id: mysql.drop-resource-group
+    product: mysql
+    versions: ["8.0", "8.4"]
+    sources: [mysql80, mysql84, mysql-admin]
+    family: resource-group
+    subactions: ["DROP RESOURCE GROUP name", "FORCE"]
+    sql_shape: "DROP RESOURCE GROUP rg1"
+    prerequisites: "none"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: parses; only ddl.drop_resource_group.notice fires"
+    targets: "group identity, FORCE semantics"
+    acceptance:
+      dimensions: "drop lifecycle classification, FORCE handling"
+      refs: ["missing: owner adds fixtures"]
+    owner: T24
+
+  # ================= TiDB: database/schema lifecycle =================
+  - id: tidb.create-database
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: database
+    subactions: ["CREATE DATABASE/SCHEMA", "IF NOT EXISTS", "CHARACTER SET/COLLATE"]
+    sql_shape: "CREATE DATABASE app"
+    prerequisites: "none"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: only ddl.database.create.notice fires"
+    targets: "database identity, default charset/collation"
+    acceptance:
+      dimensions: "attribute capture, conditionals"
+      refs: ["missing: owner adds fixtures"]
+    owner: T17
+
+  - id: tidb.alter-database
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: database
+    subactions: ["ALTER DATABASE ... CHARACTER SET/COLLATE", "PLACEMENT POLICY binding is a placement row"]
+    sql_shape: "ALTER DATABASE app CHARACTER SET utf8mb4"
+    prerequisites: "none"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: only ddl.alter_database.notice fires"
+    targets: "database identity, attribute transitions"
+    acceptance:
+      dimensions: "attribute transitions, placement binding handled in T20 rows"
+      refs: ["missing: owner adds fixtures"]
+    owner: T17
+
+  - id: tidb.drop-database
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: database
+    subactions: ["DROP DATABASE/SCHEMA", "IF EXISTS"]
+    sql_shape: "DROP DATABASE app"
+    prerequisites: "none"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: ddl.database.drop.warn fires"
+    targets: "database identity, deletion scope"
+    acceptance:
+      dimensions: "deletion-scope finding"
+      refs: ["file:testdata/sql-corpus/tidb/ddl/supported"]
+    owner: T17
+
+  # ================= TiDB: table lifecycle =================
+  - id: tidb.create-table
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: table
+    subactions: ["CREATE TABLE", "IF NOT EXISTS", "columns/constraints", "CLUSTERED/NONCLUSTERED PK", "TiDB options (TTL, CACHE, ATTRIBUTES, placement via CREATE TABLE)"]
+    sql_shape: "CREATE TABLE t (id BIGINT PRIMARY KEY AUTO_RANDOM)"
+    prerequisites: "TiDB option semantics differ from MySQL"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: pk/comment/audit-column/charset/engine rules fire incl. AUTO_RANDOM form; TiDB-specific option semantics unchecked (covered by dedicated rows)"
+    targets: "table identity, columns, PK kind, TiDB options as facts"
+    acceptance:
+      dimensions: "base table checks plus TiDB option capture"
+      refs: ["file:testdata/ddl-golden/T02.json", "file:testdata/sql-corpus/tidb/ddl/findings"]
+    owner: T06
+
+  - id: tidb.create-table-like
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: table
+    subactions: ["CREATE TABLE ... LIKE"]
+    sql_shape: "CREATE TABLE t2 LIKE t1"
+    prerequisites: "none"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: ddl.table.create_like.forbid plus hygiene rules fire"
+    targets: "new/source identity"
+    acceptance:
+      dimensions: "source/target identity"
+      refs: ["file:testdata/sql-corpus/tidb/ddl/findings"]
+    owner: T16
+
+  - id: tidb.create-table-select
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: table
+    subactions: ["CREATE TABLE ... AS SELECT"]
+    sql_shape: "CREATE TABLE t3 AS SELECT * FROM t1"
+    prerequisites: "vendor boundary: TiDB does not document CTAS as supported"
+    status: vendor_not_supported
+    status_evidence: "2026-09-22 CLI probe: TiDB parser accepts the form and generic rules fire, but research baseline marks CTAS a TiDB vendor boundary — parse acceptance is not support evidence"
+    targets: "explicit vendor boundary, never a positive support claim"
+    acceptance:
+      dimensions: "boundary classification vs silent acceptance"
+      refs: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"]
+    owner: T16
+
+  - id: tidb.create-table-partitioning
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: partition
+    subactions: ["PARTITION BY RANGE/LIST/HASH/KEY", "COLUMNS", "no SUBPARTITION support", "placement per partition"]
+    sql_shape: "CREATE TABLE tp (id INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100))"
+    prerequisites: "TiDB partitioning limits differ (no subpartition)"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: ddl.table.partition.forbid fires; subpartition/vendor limits not yet checked"
+    targets: "scheme, partition identities, TiDB-specific limits"
+    acceptance:
+      dimensions: "scheme fidelity, unsupported-variant boundary"
+      refs: ["file:testdata/sql-corpus/tidb/ddl/findings"]
+    owner: T14
+
+  - id: tidb.create-table-auto-random
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: table
+    subactions: ["AUTO_RANDOM primary key", "AUTO_ID_CACHE", "SHARD_ROW_ID_BITS"]
+    sql_shape: "CREATE TABLE t (id BIGINT PRIMARY KEY AUTO_RANDOM)"
+    prerequisites: "TiDB-specific ID allocation"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: parses; generic table hygiene rules fire but AUTO_RANDOM/clustered identity itself unchecked (T23 oracle requires fidelity, not misjudged capability)"
+    targets: "AUTO_RANDOM identity, clustered key semantics, ID-allocation facts"
+    acceptance:
+      dimensions: "capability fidelity, policy finding named as policy (not parse failure)"
+      refs: ["missing: owner adds fixtures and DB metadata evidence"]
+    owner: T23
+
+  - id: tidb.create-table-ttl
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85, tidb85-ttl]
+    family: table
+    subactions: ["TTL = col + INTERVAL n UNIT in CREATE TABLE"]
+    sql_shape: "CREATE TABLE t (d DATETIME) TTL = d + INTERVAL 30 DAY"
+    prerequisites: "TTL prerequisites per TTL doc (supported column type, no partition in some cases)"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: parses; generic table rules fire but TTL definition and its automatic-deletion risk unchecked"
+    targets: "TTL column, interval, automatic deletion risk"
+    acceptance:
+      dimensions: "TTL definition capture plus deletion-risk finding"
+      refs: ["missing: owner adds TTL fixtures"]
+    owner: T19
+
+  - id: tidb.create-table-cache
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: table
+    subactions: ["CREATE TABLE ... CACHED", "/* CACHED */"]
+    sql_shape: "CREATE TABLE t (id INT) /* CACHED */"
+    prerequisites: "cached-table feature limits (size, DDL restrictions)"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: parses; generic rules fire; CACHED attribute itself not captured or checked"
+    targets: "cache attribute, DDL restrictions on cached tables"
+    acceptance:
+      dimensions: "attribute capture, cached-state prerequisites"
+      refs: ["missing: owner adds fixtures"]
+    owner: T23
+
+  - id: tidb.create-table-placement-hint
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: placement
+    subactions: ["/*T![placement] PRIMARY_REGION=... */ direct placement options in CREATE TABLE"]
+    sql_shape: "CREATE TABLE t (id INT) /*T![placement] PRIMARY_REGION='x' REGIONS='x' */"
+    prerequisites: "direct placement options deprecated in favor of policies but still documented"
+    status: parser_unsupported
+    status_evidence: "2026-09-22 CLI probe: parser_error on the placement-comment form"
+    targets: "direct placement attributes (legacy form)"
+    acceptance:
+      dimensions: "legacy placement form classification"
+      refs: ["missing: owner records parser evidence"]
+    owner: T20
+
+  - id: tidb.drop-table
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: table
+    subactions: ["DROP TABLE", "multi-table", "IF EXISTS"]
+    sql_shape: "DROP TABLE t1, t2"
+    prerequisites: "none"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: ddl.table.drop.forbid fires; T01 multi-target contract holds on TiDB"
+    targets: "every target identity in order"
+    acceptance:
+      dimensions: "all-target evaluation"
+      refs: ["file:docs/research/2026-09-22-ddl-multi-target-denylist-probes.json", "file:testdata/ddl-golden/T02.json"]
+    owner: T16
+
+  - id: tidb.rename-table
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: table
+    subactions: ["RENAME TABLE a TO b, ...", "ALTER TABLE ... RENAME TO"]
+    sql_shape: "RENAME TABLE t1 TO t2"
+    prerequisites: "unqualified destination resolves to current database (TiDB handleTableName/CurrentDB)"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: notice fires; T01 denylist + T02 schema correction verified on TiDB"
+    targets: "all pairs, destination schema resolution"
+    acceptance:
+      dimensions: "all-pair evaluation, schema matrix"
+      refs: ["file:docs/decisions/2026-09-22-ddl-multi-target-denylist.md", "file:pkg/deltascope/audit_test.go"]
+    owner: T01
+
+  - id: tidb.truncate-table
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: table
+    subactions: ["TRUNCATE [TABLE]"]
+    sql_shape: "TRUNCATE TABLE t1"
+    prerequisites: "none"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: ddl.table.truncate.forbid fires"
+    targets: "table identity, deletion semantics"
+    acceptance:
+      dimensions: "deletion-risk finding"
+      refs: ["file:testdata/sql-corpus/tidb/ddl/findings"]
+    owner: T16
+
+  - id: tidb.flashback-recover
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: table
+    subactions: ["FLASHBACK TABLE", "FLASHBACK DATABASE", "FLASHBACK CLUSTER", "RECOVER TABLE"]
+    sql_shape: "FLASHBACK TABLE t1 TO t2"
+    prerequisites: "GC window and snapshot availability — dynamic, never simulated"
+    status: parse_only
+    status_evidence: "2026-09-22 CLI probe: FLASHBACK TABLE/DATABASE/CLUSTER and RECOVER TABLE parse silently with zero findings"
+    targets: "restored object identity, source-of-restore semantics, recoverability limits"
+    acceptance:
+      dimensions: "object identity and boundary facts, no success guarantee claims"
+      refs: ["missing: owner adds lifecycle-restore fixtures"]
+    owner: T16
+
+  # ================= TiDB: ALTER TABLE subactions =================
+  - id: tidb.alter-table.columns
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: alter-table
+    subactions: ["ADD/DROP/MODIFY/CHANGE/RENAME COLUMN", "FIRST/AFTER", "TiDB same-object modification limits"]
+    sql_shape: "ALTER TABLE t MODIFY COLUMN c VARCHAR(20)"
+    prerequisites: "TiDB type-change rules differ (limited widening)"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: ADD/DROP/MODIFY emit only notices; CHANGE/RENAME COLUMN emit forbids — same asymmetry as MySQL"
+    targets: "column transitions under TiDB semantics"
+    acceptance:
+      dimensions: "TiDB-specific type-change governance"
+      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+    owner: T08
+
+  - id: tidb.alter-table.index-ops
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: alter-table
+    subactions: ["ADD INDEX", "DROP INDEX", "RENAME INDEX", "ALTER INDEX VISIBLE/INVISIBLE"]
+    sql_shape: "ALTER TABLE t ALTER INDEX i INVISIBLE"
+    prerequisites: "index identity"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: ADD INDEX gets prefix.require + notice; RENAME INDEX gets forbid; ALTER INDEX INVISIBLE parses silently"
+    targets: "index identity, visibility, rename pairs"
+    acceptance:
+      dimensions: "visibility-change evidence on TiDB catalog"
+      refs: ["missing: owner adds visibility fixtures"]
+    owner: T10
+
+  - id: tidb.alter-table.fk-check
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: alter-table
+    subactions: ["ADD/DROP FOREIGN KEY", "ADD/DROP CHECK"]
+    sql_shape: "ALTER TABLE t ADD CONSTRAINT fk FOREIGN KEY (c) REFERENCES p (id)"
+    prerequisites: "TiDB FK enforcement exists (6.6+) unlike older compat"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: only add_constraint.notice on FK and CHECK adds"
+    targets: "constraint identity, TiDB enforcement facts"
+    acceptance:
+      dimensions: "FK/CHECK parity under TiDB enforcement semantics"
+      refs: ["missing: owner adds fixtures"]
+    owner: T11
+
+  - id: tidb.alter-table.partition-ops
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: partition
+    subactions: ["DROP/TRUNCATE PARTITION", "EXCHANGE PARTITION", "REORGANIZE", "COALESCE", "REMOVE PARTITIONING (copies data, rebuilds indexes)"]
+    sql_shape: "ALTER TABLE t DROP PARTITION p0"
+    prerequisites: "TiDB partition semantics differ (REMOVE copies data)"
+    status: parse_only
+    status_evidence: "2026-09-22 CLI probe: DROP/TRUNCATE/EXCHANGE/REORGANIZE/COALESCE all parse silently with zero findings"
+    targets: "partition identities, deletion/exchange/rebuild scope, TiDB-specific effects"
+    acceptance:
+      dimensions: "deletion-risk findings, exchange two-object evidence, TiDB rebuild facts"
+      refs: ["missing: owner adds TiDB partition fixtures"]
+    owner: T13
+
+  - id: tidb.alter-table.ttl
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85, tidb85-ttl]
+    family: alter-table
+    subactions: ["TTL = col + INTERVAL n UNIT", "TTL_ENABLE = 'ON'/'OFF'", "REMOVE TTL", "TTL_JOB_INTERVAL", "/*T![ttl] ... */ comment form"]
+    sql_shape: "ALTER TABLE t TTL = created_at + INTERVAL 30 DAY"
+    prerequisites: "TTL column prerequisites; quoted-expression form is the known parser_error negative"
+    status: parse_only
+    status_evidence: "2026-09-22 CLI probe: valid TTL, TTL_ENABLE='OFF', and REMOVE TTL all parse silently (the spec's named silent-pass defect); quoted-expression form stays parser_error"
+    targets: "TTL column, interval, enable state, remove vs disable distinction, automatic-deletion risk"
+    acceptance:
+      dimensions: "specific TTL finding on enable/set, no false 'enable' on disable/remove, quoted negative preserved"
+      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go", "missing: TTL risk fixtures"]
+    owner: T19
+
+  - id: tidb.alter-table.placement-binding
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: placement
+    subactions: ["PLACEMENT POLICY = p", "PLACEMENT POLICY = DEFAULT", "partition-level placement"]
+    sql_shape: "ALTER TABLE t PLACEMENT POLICY = p1"
+    prerequisites: "policy existence/topology evidence"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: only ddl.tidb.alter_table.placement_policy.notice on both bind and DEFAULT forms"
+    targets: "table/partition target, policy identity, bind vs unbind"
+    acceptance:
+      dimensions: "binding risk, missing/unknown policy handling"
+      refs: ["missing: owner adds binding fixtures"]
+    owner: T20
+
+  - id: tidb.alter-table.layout-id
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: alter-table
+    subactions: ["SHARD_ROW_ID_BITS", "AUTO_RANDOM_BASE", "ATTRIBUTES='merge_option=...'", "SET TIFLASH REPLICA n", "CACHE/NOCACHE", "COMPACT", "COMMENT=", "SPLIT PARTITION/INDEX"]
+    sql_shape: "ALTER TABLE t SHARD_ROW_ID_BITS = 4"
+    prerequisites: "per-option TiDB capability facts (e.g. TiFlash presence)"
+    status: parse_only
+    status_evidence: "2026-09-22 CLI probe: SHARD/AUTO_RANDOM_BASE/ATTRIBUTES/TIFLASH REPLICA/CACHE/NOCACHE/COMPACT/COMMENT all parse silently; SPLIT PARTITION is parser_error"
+    targets: "physical layout attributes, replica/cache state, compact/split actions"
+    acceptance:
+      dimensions: "per-option classification with real prerequisites (no skip-as-pass for missing TiFlash)"
+      refs: ["missing: owner adds per-option fixtures"]
+    owner: T23
+
+  - id: tidb.alter-table.online-options
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: alter-table
+    subactions: ["ALGORITHM= (capability assertion, not selection)", "LOCK=", "multiple actions per ALTER"]
+    sql_shape: "ALTER TABLE t ADD COLUMN c INT, ALGORITHM=INSTANT"
+    prerequisites: "TiDB ALGORITHM asserts capability rather than choosing algorithm"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: clause accepted; only action-level notices fire"
+    targets: "declared clauses, multi-action integrity, TiDB algorithm semantics"
+    acceptance:
+      dimensions: "clause classification distinct from MySQL"
+      refs: ["missing: owner adds fixtures"]
+    owner: T15
+
+  # ================= TiDB: index lifecycle =================
+  - id: tidb.create-index
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: index
+    subactions: ["CREATE INDEX", "UNIQUE", "expression indexes", "INVISIBLE", "GLOBAL index on partitioned tables"]
+    sql_shape: "CREATE INDEX idx ON t ((LOWER(c)))"
+    prerequisites: "expression/visibility support per version"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: basic/expression/INVISIBLE all emit only create_index.notice; FULLTEXT/SPATIAL are vendor boundaries (Self-Managed unsupported)"
+    targets: "index identity, expression/visibility/global facts"
+    acceptance:
+      dimensions: "variant checks, vendor-boundary rows explicit"
+      refs: ["missing: owner adds variant fixtures"]
+    owner: T10
+
+  - id: tidb.drop-index
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: index
+    subactions: ["DROP INDEX name ON table"]
+    sql_shape: "DROP INDEX idx ON t"
+    prerequisites: "none"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: only ddl.drop_index.notice fires"
+    targets: "index identity, host table"
+    acceptance:
+      dimensions: "drop policy parity"
+      refs: ["missing: owner adds fixtures"]
+    owner: T09
+
+  # ================= TiDB: views =================
+  - id: tidb.create-view
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: view
+    subactions: ["CREATE VIEW", "OR REPLACE", "security attributes (TiDB-supported subset)"]
+    sql_shape: "CREATE VIEW v AS SELECT id FROM t"
+    prerequisites: "none"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: ddl.view.create.forbid fires"
+    targets: "view identity, source tables, security attributes"
+    acceptance:
+      dimensions: "lifecycle policy, attribute capture"
+      refs: ["file:testdata/sql-corpus/tidb/ddl/findings"]
+    owner: T18
+
+  - id: tidb.alter-view
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: view
+    subactions: ["ALTER VIEW is not a documented TiDB form"]
+    sql_shape: "ALTER VIEW v AS SELECT ..."
+    prerequisites: "vendor boundary: TiDB overview lists CREATE/DROP VIEW only"
+    status: vendor_not_supported
+    status_evidence: "TiDB DDL list contains no ALTER VIEW; parser_error observed incidentally — vendor boundary is the governing fact"
+    targets: "explicit vendor boundary (CREATE OR REPLACE is the path)"
+    acceptance:
+      dimensions: "boundary classification"
+      refs: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"]
+    owner: T18
+
+  - id: tidb.drop-view
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: view
+    subactions: ["DROP VIEW", "IF EXISTS"]
+    sql_shape: "DROP VIEW v1"
+    prerequisites: "none"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: ddl.view.drop.forbid fires"
+    targets: "view identity"
+    acceptance:
+      dimensions: "lifecycle finding"
+      refs: ["file:testdata/sql-corpus/tidb/ddl/findings"]
+    owner: T18
+
+  # ================= TiDB: sequences =================
+  - id: tidb.create-sequence
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: sequence
+    subactions: ["CREATE SEQUENCE", "START WITH", "INCREMENT BY", "MINVALUE/MAXVALUE", "CYCLE", "CACHE/NOCACHE", "SHOW"]
+    sql_shape: "CREATE SEQUENCE seq1 START WITH 1 INCREMENT BY 1"
+    prerequisites: "TiDB-only object (MySQL vendor boundary covered by T03 oracle)"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: only ddl.create_sequence.notice fires; option facts unchecked"
+    targets: "sequence identity, start/increment/bounds/cycle/cache"
+    acceptance:
+      dimensions: "option capture, MySQL boundary stays explicit (not TiDB support on mysql)"
+      refs: ["missing: owner adds option fixtures"]
+    owner: T21
+
+  - id: tidb.alter-sequence
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: sequence
+    subactions: ["ALTER SEQUENCE ... RESTART [WITH]", "option changes"]
+    sql_shape: "ALTER SEQUENCE seq1 RESTART WITH 1"
+    prerequisites: "current sequence position known for collision risk"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: only ddl.alter_sequence.notice on both option-change and RESTART forms"
+    targets: "sequence identity, restart vs option-change distinction, collision risk"
+    acceptance:
+      dimensions: "restart-specific warning, no invented collision claims"
+      refs: ["missing: owner adds restart fixtures"]
+    owner: T21
+
+  - id: tidb.drop-sequence
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: sequence
+    subactions: ["DROP SEQUENCE", "IF EXISTS"]
+    sql_shape: "DROP SEQUENCE seq1"
+    prerequisites: "none"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: only ddl.drop_sequence.notice fires"
+    targets: "sequence identity"
+    acceptance:
+      dimensions: "lifecycle classification"
+      refs: ["missing: owner adds fixtures"]
+    owner: T21
+
+  # ================= TiDB: placement policies =================
+  - id: tidb.create-placement-policy
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: placement
+    subactions: ["CREATE PLACEMENT POLICY", "PRIMARY_REGION", "REGIONS", "FOLLOWERS/VOTERS/LEARNERS", "SCHEDULE", "CONSTRAINTS", "FOLLOWER_CONSTRAINTS"]
+    sql_shape: "CREATE PLACEMENT POLICY p1 PRIMARY_REGION='us-east-1' REGIONS='us-east-1'"
+    prerequisites: "PD topology evidence for validity claims"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: only ddl.create_placement_policy.notice fires; option/constraint semantics unchecked"
+    targets: "policy identity, region/role/constraint attributes"
+    acceptance:
+      dimensions: "option capture, topology-dependent checks explicit"
+      refs: ["missing: owner adds fixtures"]
+    owner: T20
+
+  - id: tidb.alter-placement-policy
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: placement
+    subactions: ["ALTER PLACEMENT POLICY ... option changes"]
+    sql_shape: "ALTER PLACEMENT POLICY p1 PRIMARY_REGION='us-west-1' REGIONS='us-west-1'"
+    prerequisites: "bound-object effects"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: only ddl.alter_placement_policy.notice fires"
+    targets: "policy identity, attribute transitions, bound-object effects"
+    acceptance:
+      dimensions: "attribute transitions, bound-object visibility"
+      refs: ["missing: owner adds fixtures"]
+    owner: T20
+
+  - id: tidb.drop-placement-policy
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: placement
+    subactions: ["DROP PLACEMENT POLICY", "IF EXISTS"]
+    sql_shape: "DROP PLACEMENT POLICY p1"
+    prerequisites: "bound objects prevent drop at runtime"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: only ddl.drop_placement_policy.notice fires"
+    targets: "policy identity, bound-object protection"
+    acceptance:
+      dimensions: "drop lifecycle, bound-object evidence"
+      refs: ["missing: owner adds fixtures"]
+    owner: T20
+
+  - id: tidb.alter-range-placement
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: placement
+    subactions: ["ALTER RANGE global/meta/dist PLACEMENT POLICY = p | DEFAULT"]
+    sql_shape: "ALTER RANGE global PLACEMENT POLICY p1"
+    prerequisites: "range scope identity"
+    status: parse_only
+    status_evidence: "2026-09-22 CLI probe: parses silently with zero findings"
+    targets: "range scope, bound policy"
+    acceptance:
+      dimensions: "scope-level binding classification"
+      refs: ["missing: owner adds fixtures"]
+    owner: T20
+
+  # ================= TiDB: resource groups =================
+  - id: tidb.create-resource-group
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: resource-group
+    subactions: ["CREATE RESOURCE GROUP", "RU_PER_SEC", "PRIORITY", "BURSTABLE", "QUERY_LIMIT"]
+    sql_shape: "CREATE RESOURCE GROUP rg1 RU_PER_SEC = 100"
+    prerequisites: "resource-control feature availability"
+    status: parse_only
+    status_evidence: "2026-09-22 CLI probe: parses silently with zero findings; RU semantics unchecked"
+    targets: "group identity, RU/burst/priority/runaway attributes (distinct from MySQL CPU fields)"
+    acceptance:
+      dimensions: "RU attribute checks, no MySQL-CPU-field reuse"
+      refs: ["missing: owner adds fixtures"]
+    owner: T22
+
+  - id: tidb.alter-resource-group
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: resource-group
+    subactions: ["ALTER RESOURCE GROUP ... RU_PER_SEC/PRIORITY/BURSTABLE/QUERY_LIMIT"]
+    sql_shape: "ALTER RESOURCE GROUP rg1 RU_PER_SEC = 200"
+    prerequisites: "none"
+    status: parse_only
+    status_evidence: "2026-09-22 CLI probe: parses silently with zero findings"
+    targets: "group identity, attribute transitions"
+    acceptance:
+      dimensions: "attribute-change checks"
+      refs: ["missing: owner adds fixtures"]
+    owner: T22
+
+  - id: tidb.drop-resource-group
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: resource-group
+    subactions: ["DROP RESOURCE GROUP"]
+    sql_shape: "DROP RESOURCE GROUP rg1"
+    prerequisites: "none"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: only ddl.drop_resource_group.notice fires"
+    targets: "group identity"
+    acceptance:
+      dimensions: "lifecycle classification"
+      refs: ["missing: owner adds fixtures"]
+    owner: T22
+
+  # ================= TiDB: vendor boundaries =================
+  - id: tidb.create-procedure
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: stored-program
+    subactions: ["CREATE PROCEDURE — TiDB does not support stored procedures"]
+    sql_shape: "CREATE PROCEDURE p() SELECT 1"
+    prerequisites: "none — vendor boundary"
+    status: vendor_not_supported
+    status_evidence: "TiDB docs mark procedures unsupported; TiDB parser accepts the statement for compat and emits create_procedure.notice — parser acceptance is not product support"
+    targets: "explicit vendor boundary; never a positive support claim"
+    acceptance:
+      dimensions: "boundary classification distinct from MySQL body-audit path"
+      refs: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"]
+    owner: T27
+
+  - id: tidb.create-function
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: stored-program
+    subactions: ["CREATE FUNCTION — TiDB does not support stored functions"]
+    sql_shape: "CREATE FUNCTION f() RETURNS INT RETURN 1"
+    prerequisites: "none — vendor boundary"
+    status: vendor_not_supported
+    status_evidence: "vendor boundary; parser_error is also observed but product non-support governs"
+    targets: "explicit vendor boundary"
+    acceptance:
+      dimensions: "boundary classification"
+      refs: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"]
+    owner: T27
+
+  - id: tidb.create-trigger
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: trigger
+    subactions: ["CREATE TRIGGER — TiDB does not support triggers"]
+    sql_shape: "CREATE TRIGGER tr BEFORE INSERT ON t FOR EACH ROW SET @x = 1"
+    prerequisites: "none — vendor boundary"
+    status: vendor_not_supported
+    status_evidence: "vendor boundary; parser_error observed"
+    targets: "explicit vendor boundary"
+    acceptance:
+      dimensions: "boundary classification"
+      refs: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"]
+    owner: T29
+
+  - id: tidb.create-event
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: event
+    subactions: ["CREATE EVENT — TiDB does not support events"]
+    sql_shape: "CREATE EVENT e ON SCHEDULE EVERY 1 DAY DO SELECT 1"
+    prerequisites: "none — vendor boundary"
+    status: vendor_not_supported
+    status_evidence: "vendor boundary; parser_error observed"
+    targets: "explicit vendor boundary"
+    acceptance:
+      dimensions: "boundary classification"
+      refs: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"]
+    owner: T30
+
+  - id: tidb.create-tablespace
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: tablespace
+    subactions: ["CREATE TABLESPACE — TiDB does not support tablespaces"]
+    sql_shape: "CREATE TABLESPACE ts1 ADD DATAFILE 'ts1.ibd'"
+    prerequisites: "none — vendor boundary"
+    status: vendor_not_supported
+    status_evidence: "vendor boundary; parser_error observed"
+    targets: "explicit vendor boundary"
+    acceptance:
+      dimensions: "boundary classification"
+      refs: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"]
+    owner: T25
+
+  - id: tidb.create-server
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: server
+    subactions: ["CREATE SERVER — TiDB does not support CREATE SERVER"]
+    sql_shape: "CREATE SERVER s FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'x')"
+    prerequisites: "none — vendor boundary"
+    status: vendor_not_supported
+    status_evidence: "vendor boundary; parser_error observed"
+    targets: "explicit vendor boundary"
+    acceptance:
+      dimensions: "boundary classification"
+      refs: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"]
+    owner: T26
+
+  - id: tidb.spatial-reference-system
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: spatial
+    subactions: ["CREATE/DROP SPATIAL REFERENCE SYSTEM — not a TiDB feature"]
+    sql_shape: "CREATE SPATIAL REFERENCE SYSTEM 4120 DEFINITION 'GEOGCS[]'"
+    prerequisites: "none — vendor boundary"
+    status: vendor_not_supported
+    status_evidence: "vendor boundary; parser_error observed"
+    targets: "explicit vendor boundary"
+    acceptance:
+      dimensions: "boundary classification"
+      refs: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"]
+    owner: T26
+
+  - id: tidb.logfile-group
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: tablespace
+    subactions: ["LOGFILE GROUP — NDB-specific, absent from TiDB"]
+    sql_shape: "CREATE LOGFILE GROUP lg ADD UNDOFILE 'u.dat' ENGINE = ndb"
+    prerequisites: "none — vendor boundary (NDB-specific MySQL feature)"
+    status: vendor_not_supported
+    status_evidence: "vendor boundary"
+    targets: "explicit vendor boundary"
+    acceptance:
+      dimensions: "boundary classification"
+      refs: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"]
+    owner: T25
+
+  - id: tidb.fulltext-spatial-index
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: index
+    subactions: ["FULLTEXT/SPATIAL index — Self-Managed TiDB does not support them"]
+    sql_shape: "CREATE FULLTEXT INDEX idx ON posts (content)"
+    prerequisites: "none — vendor boundary per research baseline (parse acceptance ≠ support)"
+    status: vendor_not_supported
+    status_evidence: "research baseline records Self-Managed FULLTEXT/SPATIAL as unsupported; parser acceptance must not count as support"
+    targets: "explicit vendor boundary"
+    acceptance:
+      dimensions: "boundary classification"
+      refs: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"]
+    owner: T10
+
+  - id: tidb.alter-instance
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: instance
+    subactions: ["ALTER INSTANCE ... RELOAD TLS etc. (instance-management section)"]
+    sql_shape: "ALTER INSTANCE RELOAD TLS"
+    prerequisites: "instance-level capability"
+    status: parse_only
+    status_evidence: "2026-09-22 CLI probe: parses silently with zero findings; no existing milestone task owns TiDB instance-management DDL"
+    targets: "instance action kind"
+    acceptance:
+      dimensions: "classification and boundary evidence"
+      refs: ["missing: proposed T32 owns instance-management boundary"]
+    owner: T32

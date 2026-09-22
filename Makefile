@@ -1,4 +1,4 @@
-.PHONY: test sql-corpus-gates release-from-candidate release-from-candidate-dry-run release-provenance-contract-test release-from-candidate-test query-access-corpus-gates sql-corpus-report ddl-census-report ddl-parser-error-feasibility-report parser-upgrade-candidate-evidence-report ddl-coverage-catalog-test parser-error-unsupported-contract-test unsupported-diagnostics-evidence-test release-test-gates build build-cli build-server build-mcp build-linux smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline smoke-pg-cli-manylinux-baseline-arm64 package-host-release-archive verify-pg-host-release-archive verify-pg-linux-release-archive verify-pg-linux-release-archive-cn verify-pg-linux-release-archive-arm64 package-pg-linux-release-archive-amd64 package-pg-linux-release-archive-arm64 test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb test-e2e-cli-postgresql test-e2e-cli-postgresql-metadata-objects test-e2e-http-postgresql test-e2e-mcp-postgresql test-e2e-cli-tls test-e2e-cli-tls-regression pg-unit-test-gates pg-e2e-gates pg-confidence-gates docs-example-gates release-surface-gates release-version-surface-gates release-version-contract-gates release-local-version-smoke release-dialect-hygiene-gates release-gitlab-codequality-smoke release-source-location-smoke release-workflow-hygiene-gates release-contract-gates release-consistency-test release-recovery-preflight release-recovery-contract-test release-recovery-provenance-negative-test release-tag-annotation-test release-tag-annotation-gate lint lint-fix lint-landing decision-record-gate pretag-candidate-gate pretag-candidate-test posttag-candidate-gate posttag-candidate-test
+.PHONY: test sql-corpus-gates ddl-golden ddl-golden-validator-test ddl-inventory-gate release-from-candidate release-from-candidate-dry-run release-provenance-contract-test release-from-candidate-test query-access-corpus-gates sql-corpus-report ddl-census-report ddl-parser-error-feasibility-report parser-upgrade-candidate-evidence-report ddl-coverage-catalog-test parser-error-unsupported-contract-test unsupported-diagnostics-evidence-test release-test-gates build build-cli build-server build-mcp build-linux smoke-pg-cli smoke-pg-host-surfaces smoke-pg-cli-linux smoke-pg-cli-manylinux-baseline smoke-pg-cli-manylinux-baseline-arm64 package-host-release-archive verify-pg-host-release-archive verify-pg-linux-release-archive verify-pg-linux-release-archive-cn verify-pg-linux-release-archive-arm64 package-pg-linux-release-archive-amd64 package-pg-linux-release-archive-arm64 test-e2e-cli test-e2e-cli-mysql test-e2e-cli-tidb test-e2e-mcp-mysql test-e2e-mcp-tidb test-e2e-http-mysql test-e2e-http-tidb test-e2e-cli-postgresql test-e2e-cli-postgresql-metadata-objects test-e2e-http-postgresql test-e2e-mcp-postgresql test-e2e-cli-tls test-e2e-cli-tls-regression pg-unit-test-gates pg-e2e-gates pg-confidence-gates docs-example-gates release-surface-gates release-version-surface-gates release-version-contract-gates release-local-version-smoke release-dialect-hygiene-gates release-gitlab-codequality-smoke release-source-location-smoke release-workflow-hygiene-gates release-contract-gates release-consistency-test release-recovery-preflight release-recovery-contract-test release-recovery-provenance-negative-test release-tag-annotation-test release-tag-annotation-gate lint lint-fix lint-landing decision-record-gate pretag-candidate-gate pretag-candidate-test posttag-candidate-gate posttag-candidate-test
 
 BUILD_DIR ?= bin
 CGO_ENABLED ?= 0
@@ -15,6 +15,30 @@ test:
 
 sql-corpus-gates:
 	go test ./internal/application/audit -run 'TestSQLCorpusMySQLAndTiDB|TestSQLCorpusExpectedFilesAreWellFormed|TestSQLCorpusCoversSupportedRuleDialects' -count=1
+
+# ddl-golden: milestone DDL golden-path proof entrypoint (issue #79/#81).
+# Builds the current checkout's CLI, runs the task manifest's real database
+# and CLI cases against the pinned disposable anchors in
+# docker/ddl-golden-compose.yaml, emits an inspectable artifact, and validates
+# it. Fails on missing TASK/ARTIFACT_DIR, zero cases, unexecuted required
+# cases, unreachable/version-mismatched databases, or stale binary evidence.
+ddl-golden:
+	@test -n "$(TASK)" || (echo "TASK is required (e.g. make ddl-golden TASK=T02 ARTIFACT_DIR=/tmp/ddl-golden)" >&2; exit 1)
+	@test -n "$(ARTIFACT_DIR)" || (echo "ARTIFACT_DIR is required (e.g. ARTIFACT_DIR=/tmp/ddl-golden)" >&2; exit 1)
+	python3 ./scripts/ddl_golden.py run --task "$(TASK)" --artifact-dir "$(ARTIFACT_DIR)"
+
+# ddl-golden-validator-test: offline contract tests proving the artifact
+# validator rejects missing cases, unreachable databases, stale binaries, and
+# hand-written PASS records. No Docker required.
+ddl-golden-validator-test:
+	python3 ./scripts/test_ddl_golden.py
+
+# ddl-inventory-gate: contract gate for the official DDL acceptance inventory
+# (testdata/ddl-inventory/inventory.yaml). Enforces unique row IDs, required
+# fields, version/source applicability, status classification, owner
+# assignment, and concrete evidence refs for semantically_checked rows.
+ddl-inventory-gate:
+	go test ./internal/application/audit -run TestDDLInventoryContract -count=1
 
 query-access-corpus-gates:
 	go test ./internal/application/queryaccess/ -run TestQueryAccessCorpus -count=1
