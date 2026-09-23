@@ -1,5 +1,11 @@
 //go:build postgresql
 
+// Package deltascope verifies the public SDK unsupported-statement contract for
+// PostgreSQL audits.
+// input: public Audit requests containing unsupported PostgreSQL statements
+// output: unsupported sentinel errors plus partial results with retained statements
+// pos: public SDK regression coverage for the unsupported-statement contract
+// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (
@@ -17,11 +23,14 @@ func TestAuditReturnsUnsupportedSentinelAndPartialResultForPostgreSQL(t *testing
 	if !errors.Is(err, ErrUnsupportedStatement) {
 		t.Fatalf("expected unsupported statement sentinel, got %v", err)
 	}
-	if len(result.Statements) != 1 {
-		t.Fatalf("expected 1 supported statement result, got %#v", result.Statements)
+	if len(result.Statements) != 2 {
+		t.Fatalf("expected the supported result plus the retained unsupported statement, got %#v", result.Statements)
 	}
 	if result.Statements[0].Kind != "ddl" {
 		t.Fatalf("expected supported statement kind ddl, got %#v", result.Statements[0])
+	}
+	if result.Statements[1].Coverage.Status != CoverageIncomplete {
+		t.Fatalf("expected retained unsupported statement coverage incomplete, got %#v", result.Statements[1])
 	}
 	if len(result.Unsupported) != 1 {
 		t.Fatalf("expected 1 unsupported detail, got %#v", result.Unsupported)

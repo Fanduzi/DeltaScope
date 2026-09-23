@@ -245,6 +245,54 @@ def main():
         a["executed_count"] = 2
         results.append(check("cli dialect removed from manifest+artifact rejected", a, "baseline cli dialect", manifest=m))
 
+        # cli_cases manifests: named cases with per-case dialect/SQL/args and
+        # coverage + unsupported evidence expectations (issue #82).
+        m = copy.deepcopy(MANIFEST)
+        del m["cli_audit"]
+        m["cli_cases"] = [{
+            "id": "mysql",
+            "dialect": "mysql",
+            "sql": "CREATE SEQUENCE s START WITH 1",
+            "args": ["--fail-on", "none"],
+            "expect": {
+                "exit": 1, "verdict": "review", "statements": 1, "findings": 0,
+                "diagnostics": 1, "unsupported": 1,
+                "coverage": "incomplete", "statement_coverage": ["incomplete"],
+                "unsupported_features": ["create_sequence"],
+            },
+        }]
+
+        def cli_cases_artifact():
+            a = copy.deepcopy(base)
+            cli = a["cases"][2]
+            cli["cli_case"] = "mysql"
+            cli["input_sql"] = "CREATE SEQUENCE s START WITH 1"
+            cli["expected"] = copy.deepcopy(m["cli_cases"][0]["expect"])
+            parsed = {
+                "verdict": "review",
+                "coverage": {"status": "incomplete"},
+                "statements": [{"findings": [], "coverage": {"status": "incomplete"}}],
+                "global_findings": [],
+                "diagnostics": [{"classification": "unsupported_statement"}],
+                "unsupported": [{"feature": "create_sequence"}],
+            }
+            cli["actual"]["stdout"] = json.dumps(parsed)
+            cli["actual"]["parsed"] = copy.deepcopy(parsed)
+            cli["actual"]["exit"] = 1
+            return a
+
+        results.append(check("cli_cases coverage+unsupported artifact passes", cli_cases_artifact(), "", manifest=m))
+
+        a = cli_cases_artifact()
+        a["cases"][2]["actual"]["stdout"] = a["cases"][2]["actual"]["stdout"].replace("incomplete", "complete")
+        results.append(check("cli_cases coverage downgrade rejected", a, "coverage", manifest=m))
+
+        a = cli_cases_artifact()
+        a["cases"][2]["actual"]["parsed"] = copy.deepcopy(a["cases"][2]["actual"]["parsed"])
+        a["cases"][2]["actual"]["parsed"]["unsupported"] = [{"feature": "other_feature"}]
+        a["cases"][2]["actual"]["stdout"] = json.dumps(a["cases"][2]["actual"]["parsed"])
+        results.append(check("cli_cases wrong unsupported feature rejected", a, "unsupported features", manifest=m))
+
     failures = results.count(False)
     print(f"contract cases={len(results)} failures={failures}")
     return 1 if failures else 0

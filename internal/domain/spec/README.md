@@ -9,7 +9,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 | statement.go | Defines the top-level normalized statement model and parser-neutral extraction interface |
 | statement_test.go | Verifies typed statement metadata behavior |
 | metadata.go | Defines optional schema context, instance facts, target-table snapshots, object-level validation snapshots, and lookup helpers for metadata-aware auditing |
-| ddl.go | Defines DDL-oriented specification types, including explicit DDL operations, richer column facts, typed index metadata, multi-target `Targets` plus `TableTargets()` fallback, and create-table/object-lifecycle shape flags for offline and metadata-aware DDL rules |
+| ddl.go | Defines DDL-oriented specification types, including explicit DDL operations, richer column facts, typed index metadata, multi-target `Targets` plus `TableTargets()` fallback, create-table/object-lifecycle shape flags, declared-constraint alter payloads, and parsed-but-unmodeled option name evidence (`UnextractedOptions`) for offline and metadata-aware DDL rules |
 | dml_impact.go | Defines shared DML impact estimation enums and payload types reused across audit layers |
 | dml.go | Defines DML-oriented specification types, including operation metadata, mentioned tables, MutationTargets, and MutationTargetTables() fallback to Tables |
 
@@ -54,6 +54,9 @@ Normalized statement specifications used as the stable input for rule evaluation
 
 - `Statement` may now carry optional metadata-aware context through `Metadata` and an additive `Unsupported` payload for recognized-but-unsupported statements so mixed PostgreSQL results can preserve supported statements while surfacing structured unsupported details.
 - `UnsupportedDetail` carries the unsupported statement index, feature name, original SQL, and reason so CLI/API surfaces can render machine-readable partial-support outcomes.
+- `DDL.UnextractedOptions` and `Alter.UnextractedOptions` name parsed statement/table-option clauses the extractor recognized but did not model, so coverage classification can mark the statement an evidence gap instead of silently passing.
+- `Alter.Constraint` carries the declared constraint payload for constraint-bearing alter specs (e.g. `ADD CONSTRAINT CHECK`) even when no index definition is produced, letting coverage classification see the constraint type.
+- `IndexKind` gains `IndexKindSpatial`, `IndexKindVector`, and `IndexKindColumnar` so index forms outside audited semantics are modeled explicitly rather than dropped.
 - `Diagnostic` carries structured evidence about unaudited or unsupported outcomes with stable `classification`, safe `reason`, generic `action_hint`, `audited=false`, and selected `dialect`. Optional `line` and `column` identify the 1-based start of a bounded parser-failed statement; optional `guidance_code` and `evidence_ref` classify documented parser boundaries. The no-leak contract prohibits raw SQL text, parser `near ...` fragments, routine bodies, and inferred object names.
 - `Statement` may now carry optional metadata-aware context through `Metadata`:
   - `Schema` for request-level schema context even when no provider is attached

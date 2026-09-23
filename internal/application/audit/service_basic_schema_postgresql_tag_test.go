@@ -1,5 +1,11 @@
 //go:build postgresql
 
+// Package audit characterizes PostgreSQL schema-aware FK facts and mixed
+// supported/unsupported statement results.
+// input: PostgreSQL audit requests over schema-qualified FK and mixed-statement SQL
+// output: observable extractor/rule facts plus retained unsupported statement contracts
+// pos: application-layer PostgreSQL regression coverage for schema and unsupported behavior
+// note: if this file changes, update this header and module README.md.
 package audit
 
 import (
@@ -7,6 +13,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
@@ -272,11 +279,14 @@ func TestAuditSQLReturnsMixedSupportedAndUnsupportedPostgreSQLResults(t *testing
 	if !errors.Is(err, ErrUnsupportedStatement) {
 		t.Fatalf("expected unsupported statement sentinel, got %v", err)
 	}
-	if len(result.Statements) != 1 {
-		t.Fatalf("expected 1 supported statement result, got %#v", result.Statements)
+	if len(result.Statements) != 2 {
+		t.Fatalf("expected the supported result plus the retained unsupported statement, got %#v", result.Statements)
 	}
 	if result.Statements[0].Kind != spec.KindDDL.String() {
 		t.Fatalf("expected supported statement kind ddl, got %#v", result.Statements[0])
+	}
+	if result.Statements[1].Coverage.Status != report.CoverageIncomplete {
+		t.Fatalf("expected retained unsupported statement coverage incomplete, got %#v", result.Statements[1])
 	}
 	if len(result.Unsupported) != 1 {
 		t.Fatalf("expected 1 unsupported detail, got %#v", result.Unsupported)

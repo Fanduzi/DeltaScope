@@ -27,8 +27,11 @@ func TestAuditUnsupportedStatementFloorsPassVerdictToReview(t *testing.T) {
 	if result.Verdict != VerdictReview {
 		t.Fatalf("expected unsupported completeness floor to review, got %q", result.Verdict)
 	}
-	if len(result.Statements) != 0 || result.Summary.Statements != 0 {
-		t.Fatalf("expected zero audited statements, got statements=%#v summary=%+v", result.Statements, result.Summary)
+	if len(result.Statements) != 1 || result.Summary.Statements != 1 {
+		t.Fatalf("expected the retained unsupported statement counted once, got statements=%#v summary=%+v", result.Statements, result.Summary)
+	}
+	if result.Statements[0].Coverage.Status != CoverageIncomplete {
+		t.Fatalf("expected retained unsupported statement coverage incomplete, got %#v", result.Statements[0])
 	}
 	if len(result.Unsupported) != 1 || result.Unsupported[0].Feature != "select" {
 		t.Fatalf("expected one select unsupported detail, got %#v", result.Unsupported)

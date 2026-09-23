@@ -4,7 +4,11 @@ category: ddl
 expect:
   parse_ok: true
   unsupported:
-    count: 0
+    count: 3
+    include:
+      - create_table_select
+      - create_table.index.fulltext
+      - alter_table.add_index.fulltext
   findings:
     include:
       - ddl.alter.add_index.columns.max_count
@@ -88,7 +92,6 @@ expect:
       - ddl.table.columns.min_count
       - ddl.table.comment.max_length
       - ddl.table.comment.require
-      - ddl.table.create_as.forbid
       - ddl.table.create_like.forbid
       - ddl.table.drop.forbid
       - ddl.table.engine.allowlist
@@ -109,6 +112,7 @@ expect:
       - ddl.view.drop.forbid
     exclude:
       - ddl.alter.modify_column.explicit_nullability_change.forbid
+      - ddl.table.create_as.forbid
 config:
   rules:
     ddl.table.name.prefix.require:

@@ -24,13 +24,17 @@ type DDL struct {
 	Indexes     []Index      `json:"indexes,omitempty"`
 	Constraints []Constraint `json:"constraints,omitempty"`
 	// Alter also carries standalone DDL action payloads when no table object exists.
-	Alter         []Alter           `json:"alter,omitempty"`
-	Options       map[string]string `json:"options,omitempty"`
-	HasReferTable bool              `json:"has_refer_table,omitempty"`
-	HasSelect     bool              `json:"has_select,omitempty"`
-	HasPartition  bool              `json:"has_partition,omitempty"`
-	ObjectName    string            `json:"object_name,omitempty"`
-	ObjectType    string            `json:"object_type,omitempty"`
+	Alter   []Alter           `json:"alter,omitempty"`
+	Options map[string]string `json:"options,omitempty"`
+	// UnextractedOptions names parsed table/statement options the extractor
+	// recognized but did not model into Options. Presence marks an evidence
+	// gap: the fact was parsed but is not auditable.
+	UnextractedOptions []string `json:"unextracted_options,omitempty"`
+	HasReferTable      bool     `json:"has_refer_table,omitempty"`
+	HasSelect          bool     `json:"has_select,omitempty"`
+	HasPartition       bool     `json:"has_partition,omitempty"`
+	ObjectName         string   `json:"object_name,omitempty"`
+	ObjectType         string   `json:"object_type,omitempty"`
 }
 
 // TableTargets returns every table-level object identity the statement names,
@@ -240,6 +244,9 @@ const (
 	IndexKindSecondary IndexKind = "secondary"
 	IndexKindUnique    IndexKind = "unique"
 	IndexKindFulltext  IndexKind = "fulltext"
+	IndexKindSpatial   IndexKind = "spatial"
+	IndexKindVector    IndexKind = "vector"
+	IndexKindColumnar  IndexKind = "columnar"
 )
 
 // Index describes an index declaration.
@@ -298,9 +305,16 @@ type AlterIndex struct {
 // existing-object actions use the pre-change name, pure additions use the
 // created object's name, and table-option actions leave it empty.
 type Alter struct {
-	Action  string            `json:"action"`
-	Name    string            `json:"name,omitempty"`
-	Column  *AlterColumn      `json:"column,omitempty"`
-	Index   *AlterIndex       `json:"index,omitempty"`
-	Options map[string]string `json:"options,omitempty"`
+	Action string       `json:"action"`
+	Name   string       `json:"name,omitempty"`
+	Column *AlterColumn `json:"column,omitempty"`
+	Index  *AlterIndex  `json:"index,omitempty"`
+	// Constraint carries the declared constraint payload for constraint-bearing
+	// alter specs (ADD CONSTRAINT ...) so coverage and rules can see the
+	// constraint type even when no index definition is produced.
+	Constraint *Constraint       `json:"constraint,omitempty"`
+	Options    map[string]string `json:"options,omitempty"`
+	// UnextractedOptions names parsed table-option clauses that were dropped
+	// during extraction; see DDL.UnextractedOptions.
+	UnextractedOptions []string `json:"unextracted_options,omitempty"`
 }

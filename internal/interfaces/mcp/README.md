@@ -20,7 +20,8 @@ Thin MCP adapter for exposing DeltaScope audit and rule-discovery capabilities t
 | `server.go` | Builds the MCP server and registers the official DeltaScope tools |
 | `server_test.go` | Verifies MCP bootstrap, registration, metadata-aware context, and parser-error partial-result preservation |
 | `server_unsupported_diagnostics_evidence_test.go` | Verifies MCP parser errors preserve review-floored partial results, audited siblings/findings, context, structured error signaling, locations, and no-leak boundaries |
-| `server_unsupported_verdict_floor_postgresql_tag_test.go` | Verifies MCP PostgreSQL `SELECT 1` keeps tool-error signaling and serializes the review-floored unsupported result |
+| `server_unsupported_verdict_floor_postgresql_tag_test.go` | Verifies MCP PostgreSQL `SELECT 1` keeps tool-error signaling and serializes the review-floored unsupported result with the retained incomplete-coverage statement |
+| `audit_coverage_t03_test.go` | Verifies issue #82/T03 transport contract: MySQL `CREATE SEQUENCE` + supported `ALTER TABLE` returns `isError=true` with the partial result, retained incomplete coverage, and bounded unsupported evidence |
 | `tool_errors.go` | Shapes stable structured MCP tool errors; connection-open failures go through connresolve.Classify then MCP codes |
 
 ## Exports

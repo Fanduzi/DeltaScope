@@ -7,6 +7,7 @@ package deltascope
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 )
@@ -111,15 +112,19 @@ func TestAuditAlterIndexUsesCreateIndexNoticeAndActionMetadata(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
-		name    string
-		dialect Dialect
-		sql     string
-		index   string
+		name        string
+		dialect     Dialect
+		sql         string
+		index       string
+		unsupported bool
 	}{
 		{name: "mysql_add_index", dialect: DialectMySQL, sql: "ALTER TABLE users ADD INDEX idx_email (email)", index: "idx_email"},
 		{name: "tidb_add_key", dialect: DialectTiDB, sql: "ALTER TABLE users ADD KEY idx_email (email)", index: "idx_email"},
 		{name: "mysql_unique_index", dialect: DialectMySQL, sql: "ALTER TABLE users ADD UNIQUE INDEX uniq_email (email)", index: "uniq_email"},
-		{name: "tidb_fulltext_index", dialect: DialectTiDB, sql: "ALTER TABLE posts ADD FULLTEXT INDEX ft_body (body)", index: "ft_body"},
+		// TiDB fulltext indexes are a vendor boundary: the statement is
+		// recognized but coverage is incomplete, while the audited index
+		// notice still fires on the retained statement.
+		{name: "tidb_fulltext_index", dialect: DialectTiDB, sql: "ALTER TABLE posts ADD FULLTEXT INDEX ft_body (body)", index: "ft_body", unsupported: true},
 	}
 
 	for _, tc := range cases {
@@ -128,7 +133,14 @@ func TestAuditAlterIndexUsesCreateIndexNoticeAndActionMetadata(t *testing.T) {
 			t.Parallel()
 
 			result, err := Audit(context.Background(), Request{SQL: tc.sql, Dialect: tc.dialect})
-			if err != nil {
+			if tc.unsupported {
+				if !errors.Is(err, ErrUnsupportedStatement) {
+					t.Fatalf("expected ErrUnsupportedStatement, got %v", err)
+				}
+				if result.Coverage.Status != CoverageIncomplete {
+					t.Fatalf("expected incomplete coverage, got %q", result.Coverage.Status)
+				}
+			} else if err != nil {
 				t.Fatalf("audit: %v", err)
 			}
 			if len(result.Statements) != 1 {

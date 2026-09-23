@@ -124,6 +124,10 @@ execution platform.
   built `deltascope` with a temporary all-rules-off policy profile (repository
   default policy is never modified) and the result is asserted on statement
   count, diagnostics, unsupported entries, verdict, and exit code.
+- Manifest `cli_cases` extend that with task-defined CLI invocations asserting
+  expected exit codes plus recomputed `coverage` and `unsupported` evidence
+  from real CLI JSON (e.g. T03's retained incomplete-statement contract);
+  the validator recomputes both from raw stdout.
 - Syntax-negative cases require a concrete syntax error (`errno`/message class
   `syntax`) — a generic nonzero return code does not satisfy the contract.
 - The artifact validator recomputes expectations from the task manifest and

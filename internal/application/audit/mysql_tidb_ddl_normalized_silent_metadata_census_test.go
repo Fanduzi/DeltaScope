@@ -1,7 +1,14 @@
+// Package audit censuses MySQL/TiDB normalized statements whose rule-relevant
+// metadata is silently absent after extraction.
+// input: representative MySQL and TiDB DDL/DML statements per census case
+// output: per-case expectations for extracted metadata presence and unsupported status
+// pos: application-layer census guarding against silent metadata loss
+// note: if this file changes, update this header and module README.md.
 package audit
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 
@@ -18,6 +25,10 @@ type metadataCensusCase struct {
 	ForbiddenSubstrings []string
 	// ExpectFindings true means the form should produce at least one finding.
 	ExpectFindings bool
+	// ExpectUnsupported marks forms the parser recognizes but the dialect does
+	// not support: every extracted statement must carry an Unsupported marker,
+	// the audit must return the unsupported sentinel, and no findings fire.
+	ExpectUnsupported bool
 }
 
 var mysqlPromotedMetadataCases = []metadataCensusCase{
@@ -78,7 +89,7 @@ var tidbPromotedMetadataCases = []metadataCensusCase{
 		ForbiddenSubstrings: []string{"START WITH 100"}, ExpectFindings: true},
 	{Name: "DROP SEQUENCE", SQL: "DROP SEQUENCE seq1", ExpectFindings: true},
 	{Name: "CREATE PROCEDURE", SQL: "CREATE PROCEDURE p_cleanup() SELECT 1", Sensitive: true,
-		ForbiddenSubstrings: []string{"SELECT 1"}, ExpectFindings: true},
+		ForbiddenSubstrings: []string{"SELECT 1"}, ExpectUnsupported: true},
 	{Name: "DROP PROCEDURE", SQL: "DROP PROCEDURE p_cleanup", ExpectFindings: true},
 	{Name: "CREATE USER", SQL: "CREATE USER 'admin'@'%' IDENTIFIED BY 'secret'", Sensitive: true,
 		ForbiddenSubstrings: []string{"secret", "IDENTIFIED BY"}, ExpectFindings: true},
@@ -131,14 +142,33 @@ func runMetadataCensus(t *testing.T, dialectName string, dialect spec.Dialect, c
 					break
 				}
 			}
-			if supported == nil {
-				t.Fatalf("%s %s: no supported statement (expected at least one)", dialectName, tc.Name)
-			}
 
 			result, auditErr := AuditSQL(context.Background(), Request{
 				SQL:     tc.SQL,
 				Dialect: dialect,
 			})
+
+			if tc.ExpectUnsupported {
+				if supported != nil {
+					t.Fatalf("%s %s: expected all statements unsupported, found supported one", dialectName, tc.Name)
+				}
+				if !errors.Is(auditErr, ErrUnsupportedStatement) {
+					t.Fatalf("%s %s: expected ErrUnsupportedStatement, got %v", dialectName, tc.Name, auditErr)
+				}
+				for i := range statements {
+					if tc.Sensitive {
+						assertNoForbiddenPayload(t, dialectName, tc.Name, &statements[i], tc.ForbiddenSubstrings)
+					}
+				}
+				if len(result.Unsupported) == 0 {
+					t.Errorf("%s %s: expected unsupported details in result", dialectName, tc.Name)
+				}
+				return
+			}
+
+			if supported == nil {
+				t.Fatalf("%s %s: no supported statement (expected at least one)", dialectName, tc.Name)
+			}
 			if auditErr != nil {
 				t.Fatalf("%s %s: audit error: %v", dialectName, tc.Name, auditErr)
 			}

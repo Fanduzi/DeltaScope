@@ -80,6 +80,7 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 			if token, ok := possiblePostgreSQLMismatch(sql); ok {
 				result := report.Aggregate(nil, []rule.Finding{buildPossiblePostgreSQLMismatchFinding(string(request.Dialect), token)})
 				result.Verdict = report.VerdictReview
+				result.Coverage = report.Coverage{Status: report.CoverageIncomplete}
 				return result, parseErr
 			}
 		}
@@ -88,11 +89,12 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 			return report.Result{}, parseErr
 		}
 		return report.Result{
+			Coverage:    report.Coverage{Status: report.CoverageIncomplete},
 			Diagnostics: []spec.Diagnostic{newParserErrorDiagnosticWithGuidance(request.Dialect, sql)},
 		}, errParserUnsupported
 	}
 	if len(parsed.Statements) == 0 && len(parsed.failures) > 0 {
-		result := report.Result{}
+		result := report.Result{Coverage: report.Coverage{Status: report.CoverageIncomplete}}
 		if request.Dialect == spec.DialectMySQL || request.Dialect == spec.DialectTiDB {
 			for _, failure := range parsed.failures {
 				if token, ok := possiblePostgreSQLMismatch(failure.RawSQL); ok {
@@ -155,6 +157,7 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 	}
 	if len(parsed.failures) > 0 {
 		result.Diagnostics = append(result.Diagnostics, parserFailureDiagnostics(parsed.failures, request.Dialect)...)
+		result.Coverage = report.Coverage{Status: report.CoverageIncomplete}
 		if result.Verdict == report.VerdictPass {
 			result.Verdict = report.VerdictReview
 		}

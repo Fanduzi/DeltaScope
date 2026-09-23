@@ -1,9 +1,16 @@
 //go:build postgresql
 
+// Package audit verifies PostgreSQL object-lifecycle rules and their dialect
+// hygiene across audit requests.
+// input: PostgreSQL and cross-dialect lifecycle statements (sequence, schema, view)
+// output: expected lifecycle findings or their absence per dialect
+// pos: application-layer PostgreSQL lifecycle rule regression coverage
+// note: if this file changes, update this header and module README.md.
 package audit
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 
@@ -169,7 +176,10 @@ func TestAuditSQLPostgreSQLObjectLifecycleNegativeCases(t *testing.T) {
 					}
 					return
 				}
-				if err != nil {
+				// DROP SEQUENCE is a vendor boundary under MySQL: it returns the
+				// unsupported sentinel with a retained statement, and the PG
+				// lifecycle check below still applies to its findings.
+				if err != nil && !errors.Is(err, ErrUnsupportedStatement) {
 					t.Fatalf("audit sql: %v", err)
 				}
 				assertNoPGLifecycleFindings(t, &result)

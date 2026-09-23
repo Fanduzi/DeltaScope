@@ -122,8 +122,8 @@ func TestAuditParserRecoveryReportsParserAndUnsupportedDiagnosticsTogether(t *te
 	if err == nil {
 		t.Fatal("expected fail-closed parser error")
 	}
-	if len(result.Statements) != 2 || len(result.Unsupported) != 1 {
-		t.Fatalf("expected supported and unsupported results to survive, got %#v", result)
+	if len(result.Statements) != 3 || len(result.Unsupported) != 1 {
+		t.Fatalf("expected supported results plus the retained unsupported statement to survive, got %#v", result)
 	}
 	classifications := classificationsOf(result.Diagnostics)
 	if !slices.Contains(classifications, "parser_error") || !slices.Contains(classifications, "unsupported_statement") {

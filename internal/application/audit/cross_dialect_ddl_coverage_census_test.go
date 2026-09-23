@@ -174,7 +174,7 @@ var tidbDDLCensusCases = []struct {
 	// --- 1. Table lifecycle ---
 	{Name: "CREATE TABLE", SQL: "CREATE TABLE users (id bigint primary key)", Expected: ddlCoverageFindingCovered},
 	{Name: "CREATE TABLE LIKE", SQL: "CREATE TABLE users_copy LIKE users", Expected: ddlCoverageFindingCovered},
-	{Name: "CREATE TABLE AS SELECT", SQL: "CREATE TABLE users_backup AS SELECT * FROM users", Expected: ddlCoverageFindingCovered},
+	{Name: "CREATE TABLE AS SELECT", SQL: "CREATE TABLE users_backup AS SELECT * FROM users", Expected: ddlCoverageUnsupportedBoundary},
 	{Name: "RENAME TABLE", SQL: "RENAME TABLE users TO users_old", Expected: ddlCoverageFindingCovered},
 	{Name: "DROP TABLE", SQL: "DROP TABLE users", Expected: ddlCoverageFindingCovered},
 	{Name: "TRUNCATE TABLE", SQL: "TRUNCATE TABLE users", Expected: ddlCoverageFindingCovered},
@@ -232,7 +232,7 @@ var tidbDDLCensusCases = []struct {
 	// --- 9. Unsupported product areas / parser gaps ---
 	{Name: "CREATE TRIGGER", SQL: "CREATE TRIGGER trg_users_bi BEFORE INSERT ON users FOR EACH ROW SET NEW.created_at = NOW()", Expected: ddlCoverageParserError},
 	{Name: "DROP TRIGGER", SQL: "DROP TRIGGER trg_users_bi", Expected: ddlCoverageParserError},
-	{Name: "CREATE PROCEDURE", SQL: "CREATE PROCEDURE p_cleanup() SELECT 1", Expected: ddlCoverageFindingCovered},
+	{Name: "CREATE PROCEDURE", SQL: "CREATE PROCEDURE p_cleanup() SELECT 1", Expected: ddlCoverageUnsupportedBoundary},
 	{Name: "DROP PROCEDURE", SQL: "DROP PROCEDURE p_cleanup", Expected: ddlCoverageFindingCovered},
 	{Name: "CREATE FUNCTION", SQL: "CREATE FUNCTION hello() RETURNS VARCHAR(20) RETURN 'hello'", Expected: ddlCoverageParserError},
 	{Name: "DROP FUNCTION", SQL: "DROP FUNCTION hello", Expected: ddlCoverageParserError},

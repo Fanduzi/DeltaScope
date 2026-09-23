@@ -133,6 +133,7 @@ func (e tidbExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statem
 	default:
 		statement.Warnings = append(statement.Warnings, fmt.Sprintf("unsupported parsed statement kind %q", e.kind))
 	}
+	applyCoverageBoundary(dialect, &statement, e.node)
 	return statement, nil
 }
 
@@ -228,12 +229,14 @@ func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
 		}
 	}
 
-	for key, value := range extractTableOptions(stmt.Options) {
+	extracted, unextracted := extractTableOptions(stmt.Options)
+	for key, value := range extracted {
 		ddl.Options[key] = value
 		if key == "comment" {
 			ddl.Table.Comment = value
 		}
 	}
+	ddl.UnextractedOptions = unextracted
 
 	return ddl
 }
@@ -356,10 +359,21 @@ func extractAlterSpec(specification *ast.AlterTableSpec, clause string) spec.Alt
 	if index := extractAlterIndex(specification); index != nil {
 		alter.Index = index
 	}
-	if options := extractTableOptions(specification.Options); len(options) > 0 {
+	options, unextracted := extractTableOptions(specification.Options)
+	if len(options) > 0 {
 		alter.Options = options
 		if _, ok := options["placement_policy"]; ok && alter.Action == "table_option" {
 			alter.Action = "placement_policy"
+		}
+	}
+	if len(unextracted) > 0 {
+		alter.UnextractedOptions = unextracted
+	}
+	if specification.Constraint != nil {
+		alter.Constraint = &spec.Constraint{
+			Type:    constraintTypeName(specification.Constraint.Tp),
+			Name:    normalizeConstraintName(specification.Constraint),
+			Columns: extractIndexColumns(specification.Constraint.Keys),
 		}
 	}
 	return alter
@@ -526,11 +540,17 @@ func extractAlterColumn(specification *ast.AlterTableSpec) *spec.AlterColumn {
 
 func extractCreateIndex(stmt *ast.CreateIndexStmt) *spec.DDL {
 	kind := spec.IndexKindSecondary
-	if stmt.KeyType == ast.IndexKeyTypeUnique {
+	switch stmt.KeyType {
+	case ast.IndexKeyTypeUnique:
 		kind = spec.IndexKindUnique
-	}
-	if stmt.KeyType == ast.IndexKeyTypeFulltext {
+	case ast.IndexKeyTypeFulltext:
 		kind = spec.IndexKindFulltext
+	case ast.IndexKeyTypeSpatial:
+		kind = spec.IndexKindSpatial
+	case ast.IndexKeyTypeVector:
+		kind = spec.IndexKindVector
+	case ast.IndexKeyTypeColumnar:
+		kind = spec.IndexKindColumnar
 	}
 	indexName := stmt.IndexName
 	columns := extractIndexColumns(stmt.IndexPartSpecifications)
@@ -904,11 +924,15 @@ func constraintProducesIndex(tp ast.ConstraintType) bool {
 	}
 }
 
-func extractTableOptions(options []*ast.TableOption) map[string]string {
+// extractTableOptions splits parsed table options into modeled key/value facts
+// and bounded names of recognized-but-unmodeled options. Unextracted names let
+// the coverage layer mark the statement incomplete instead of silently passing.
+func extractTableOptions(options []*ast.TableOption) (map[string]string, []string) {
 	if len(options) == 0 {
-		return nil
+		return nil, nil
 	}
 	extracted := make(map[string]string)
+	var unextracted []string
 	for _, option := range options {
 		if option == nil {
 			continue
@@ -920,22 +944,145 @@ func extractTableOptions(options []*ast.TableOption) map[string]string {
 			extracted["engine"] = option.StrValue
 		case ast.TableOptionCharset:
 			extracted["charset"] = option.StrValue
+		case ast.TableOptionCollate:
+			extracted["collate"] = option.StrValue
 		case ast.TableOptionRowFormat:
 			if value := rowFormatName(option.UintValue); value != "" {
 				extracted["row_format"] = value
+			} else {
+				unextracted = append(unextracted, tableOptionName(option.Tp))
 			}
 		case ast.TableOptionAutoIncrement:
 			extracted["auto_increment"] = strconv.FormatUint(option.UintValue, 10)
 		case ast.TableOptionPlacementPolicy:
 			if option.StrValue != "" {
 				extracted["placement_policy"] = option.StrValue
+			} else {
+				unextracted = append(unextracted, tableOptionName(option.Tp))
 			}
+		default:
+			unextracted = append(unextracted, tableOptionName(option.Tp))
 		}
 	}
 	if len(extracted) == 0 {
-		return nil
+		extracted = nil
 	}
-	return extracted
+	return extracted, unextracted
+}
+
+// tableOptionName maps a parsed TableOption type to a stable bounded feature
+// name used in unextracted-option evidence.
+func tableOptionName(tp ast.TableOptionType) string {
+	switch tp {
+	case ast.TableOptionEngine:
+		return "engine"
+	case ast.TableOptionCharset:
+		return "charset"
+	case ast.TableOptionCollate:
+		return "collate"
+	case ast.TableOptionAutoIdCache:
+		return "auto_id_cache"
+	case ast.TableOptionAutoIncrement:
+		return "auto_increment"
+	case ast.TableOptionAutoRandomBase:
+		return "auto_random_base"
+	case ast.TableOptionComment:
+		return "comment"
+	case ast.TableOptionAvgRowLength:
+		return "avg_row_length"
+	case ast.TableOptionCheckSum:
+		return "checksum"
+	case ast.TableOptionCompression:
+		return "compression"
+	case ast.TableOptionConnection:
+		return "connection"
+	case ast.TableOptionPassword:
+		return "password"
+	case ast.TableOptionKeyBlockSize:
+		return "key_block_size"
+	case ast.TableOptionMaxRows:
+		return "max_rows"
+	case ast.TableOptionMinRows:
+		return "min_rows"
+	case ast.TableOptionDelayKeyWrite:
+		return "delay_key_write"
+	case ast.TableOptionRowFormat:
+		return "row_format"
+	case ast.TableOptionStatsPersistent:
+		return "stats_persistent"
+	case ast.TableOptionStatsAutoRecalc:
+		return "stats_auto_recalc"
+	case ast.TableOptionShardRowID:
+		return "shard_row_id_bits"
+	case ast.TableOptionPreSplitRegion:
+		return "pre_split_regions"
+	case ast.TableOptionPackKeys:
+		return "pack_keys"
+	case ast.TableOptionTablespace:
+		return "tablespace"
+	case ast.TableOptionNodegroup:
+		return "nodegroup"
+	case ast.TableOptionDataDirectory:
+		return "data_directory"
+	case ast.TableOptionIndexDirectory:
+		return "index_directory"
+	case ast.TableOptionStorageMedia:
+		return "storage_media"
+	case ast.TableOptionStatsSamplePages:
+		return "stats_sample_pages"
+	case ast.TableOptionSecondaryEngine:
+		return "secondary_engine"
+	case ast.TableOptionSecondaryEngineNull:
+		return "secondary_engine_null"
+	case ast.TableOptionInsertMethod:
+		return "insert_method"
+	case ast.TableOptionTableCheckSum:
+		return "table_checksum"
+	case ast.TableOptionUnion:
+		return "union"
+	case ast.TableOptionEncryption:
+		return "encryption"
+	case ast.TableOptionTTL:
+		return "ttl"
+	case ast.TableOptionTTLEnable:
+		return "ttl_enable"
+	case ast.TableOptionTTLJobInterval:
+		return "ttl_job_interval"
+	case ast.TableOptionEngineAttribute:
+		return "engine_attribute"
+	case ast.TableOptionSecondaryEngineAttribute:
+		return "secondary_engine_attribute"
+	case ast.TableOptionAutoextendSize:
+		return "autoextend_size"
+	case ast.TableOptionPageChecksum:
+		return "page_checksum"
+	case ast.TableOptionPageCompressed:
+		return "page_compressed"
+	case ast.TableOptionPageCompressionLevel:
+		return "page_compression_level"
+	case ast.TableOptionTransactional:
+		return "transactional"
+	case ast.TableOptionIetfQuotes:
+		return "ietf_quotes"
+	case ast.TableOptionSequence:
+		return "sequence"
+	case ast.TableOptionAffinity:
+		return "affinity"
+	case ast.TableOptionPlacementPolicy:
+		return "placement_policy"
+	case ast.TableOptionStatsBuckets:
+		return "stats_buckets"
+	case ast.TableOptionStatsTopN:
+		return "stats_top_n"
+	case ast.TableOptionStatsColsChoice:
+		return "stats_cols_choice"
+	case ast.TableOptionStatsColList:
+		return "stats_col_list"
+	case ast.TableOptionStatsSampleRate:
+		return "stats_sample_rate"
+	default:
+		return fmt.Sprintf("table_option_%d", int(tp))
+	}
 }
 
 func rowFormatName(value uint64) string {
@@ -1320,10 +1467,20 @@ func (v subqueryVisitor) Leave(in ast.Node) (ast.Node, bool) {
 
 func alterActionName(tp ast.AlterTableType) string {
 	switch tp {
+	case ast.AlterTableOption:
+		return "table_option"
 	case ast.AlterTableAddColumns:
 		return "add_columns"
+	case ast.AlterTableAddConstraint:
+		return "add_constraint"
 	case ast.AlterTableDropColumn:
 		return "drop_column"
+	case ast.AlterTableDropPrimaryKey:
+		return "drop_primary_key"
+	case ast.AlterTableDropIndex:
+		return "drop_index"
+	case ast.AlterTableDropForeignKey:
+		return "drop_foreign_key"
 	case ast.AlterTableModifyColumn:
 		return "modify_column"
 	case ast.AlterTableChangeColumn:
@@ -1332,18 +1489,112 @@ func alterActionName(tp ast.AlterTableType) string {
 		return "rename_column"
 	case ast.AlterTableRenameTable:
 		return "rename_table"
-	case ast.AlterTableDropPrimaryKey:
-		return "drop_primary_key"
-	case ast.AlterTableDropIndex:
-		return "drop_index"
-	case ast.AlterTableAddConstraint:
-		return "add_constraint"
+	case ast.AlterTableAlterColumn:
+		return "alter_column"
+	case ast.AlterTableLock:
+		return "lock"
+	case ast.AlterTableWriteable:
+		return "writeable"
+	case ast.AlterTableAlgorithm:
+		return "algorithm"
 	case ast.AlterTableRenameIndex:
 		return "rename_index"
-	case ast.AlterTableOption:
-		return "table_option"
-	case ast.AlterTableDropForeignKey:
-		return "drop_foreign_key"
+	case ast.AlterTableForce:
+		return "force"
+	case ast.AlterTableAddPartitions:
+		return "add_partitions"
+	case ast.AlterTablePartitionAttributes:
+		return "partition_attributes"
+	case ast.AlterTablePartitionOptions:
+		return "partition_options"
+	case ast.AlterTableCoalescePartitions:
+		return "coalesce_partitions"
+	case ast.AlterTableDropPartition:
+		return "drop_partition"
+	case ast.AlterTableTruncatePartition:
+		return "truncate_partition"
+	case ast.AlterTablePartition:
+		return "partition"
+	case ast.AlterTableEnableKeys:
+		return "enable_keys"
+	case ast.AlterTableDisableKeys:
+		return "disable_keys"
+	case ast.AlterTableRemovePartitioning:
+		return "remove_partitioning"
+	case ast.AlterTableWithValidation:
+		return "with_validation"
+	case ast.AlterTableWithoutValidation:
+		return "without_validation"
+	case ast.AlterTableSecondaryLoad:
+		return "secondary_load"
+	case ast.AlterTableSecondaryUnload:
+		return "secondary_unload"
+	case ast.AlterTableRebuildPartition:
+		return "rebuild_partition"
+	case ast.AlterTableReorganizePartition:
+		return "reorganize_partition"
+	case ast.AlterTableCheckPartitions:
+		return "check_partitions"
+	case ast.AlterTableExchangePartition:
+		return "exchange_partition"
+	case ast.AlterTableOptimizePartition:
+		return "optimize_partition"
+	case ast.AlterTableRepairPartition:
+		return "repair_partition"
+	case ast.AlterTableImportPartitionTablespace:
+		return "import_partition_tablespace"
+	case ast.AlterTableDiscardPartitionTablespace:
+		return "discard_partition_tablespace"
+	case ast.AlterTableAlterCheck:
+		return "alter_check"
+	case ast.AlterTableDropCheck:
+		return "drop_check"
+	case ast.AlterTableImportTablespace:
+		return "import_tablespace"
+	case ast.AlterTableDiscardTablespace:
+		return "discard_tablespace"
+	case ast.AlterTableIndexInvisible:
+		return "index_invisible"
+	case ast.AlterTableOrderByColumns:
+		return "order_by_columns"
+	case ast.AlterTableSetTiFlashReplica:
+		return "set_tiflash_replica"
+	case ast.AlterTableAddStatistics:
+		return "add_statistics"
+	case ast.AlterTableDropStatistics:
+		return "drop_statistics"
+	case ast.AlterTableAttributes:
+		return "attributes"
+	case ast.AlterTableCache:
+		return "cache"
+	case ast.AlterTableNoCache:
+		return "nocache"
+	case ast.AlterTableStatsOptions:
+		return "stats_options"
+	case ast.AlterTableDropFirstPartition:
+		return "drop_first_partition"
+	case ast.AlterTableAddLastPartition:
+		return "add_last_partition"
+	case ast.AlterTableReorganizeLastPartition:
+		return "reorganize_last_partition"
+	case ast.AlterTableReorganizeFirstPartition:
+		return "reorganize_first_partition"
+	case ast.AlterTableRemoveTTL:
+		return "remove_ttl"
+	case ast.AlterTableSplitIndex:
+		return "split_index"
+	case ast.AlterTableAddMaskingPolicy:
+		return "add_masking_policy"
+	case ast.AlterTableEnableMaskingPolicy:
+		return "enable_masking_policy"
+	case ast.AlterTableDisableMaskingPolicy:
+		return "disable_masking_policy"
+	case ast.AlterTableDropMaskingPolicy:
+		return "drop_masking_policy"
+	case ast.AlterTableModifyMaskingPolicyExpression:
+		return "modify_masking_policy_expression"
+	case ast.AlterTableModifyMaskingPolicyRestrictOn:
+		return "modify_masking_policy_restrict_on"
 	default:
 		return fmt.Sprintf("alter_%d", tp)
 	}
@@ -1363,6 +1614,10 @@ func constraintTypeName(tp ast.ConstraintType) string {
 		return "foreign_key"
 	case ast.ConstraintCheck:
 		return "check"
+	case ast.ConstraintVector:
+		return "vector"
+	case ast.ConstraintColumnar:
+		return "columnar"
 	default:
 		return fmt.Sprintf("constraint_%d", tp)
 	}

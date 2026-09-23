@@ -24,6 +24,7 @@ func EvaluateStatements(ctx context.Context, registry *rule.Registry, statements
 	skippedDedup := make(map[string]rule.SkippedRule)
 
 	for idx, statement := range statements {
+		coverage, gaps := statementCoverage(statement.Dialect, statement)
 		if statement.Unsupported != nil {
 			item := *statement.Unsupported
 			item.Index = idx
@@ -31,6 +32,13 @@ func EvaluateStatements(ctx context.Context, registry *rule.Registry, statements
 				item.SQL = statement.RawSQL
 			}
 			unsupported = append(unsupported, item)
+			statementResults = append(statementResults, report.StatementResult{
+				Index:         idx,
+				Kind:          statement.Kind.String(),
+				RawSQL:        statement.RawSQL,
+				NormalizedSQL: statement.NormalizedSQL,
+				Coverage:      coverage,
+			})
 			continue
 		}
 
@@ -40,9 +48,8 @@ func EvaluateStatements(ctx context.Context, registry *rule.Registry, statements
 		}
 
 		findings := eval.Findings
-		resultIndex := len(statementResults)
 		for i := range findings {
-			findings[i].StatementIndex = resultIndex
+			findings[i].StatementIndex = idx
 			findings[i].StatementKind = statement.Kind.String()
 		}
 		findings = enrichFindings(findings, &statement)
@@ -55,6 +62,14 @@ func EvaluateStatements(ctx context.Context, registry *rule.Registry, statements
 			}
 		}
 
+		for i := range gaps {
+			gaps[i].Index = idx
+			if gaps[i].SQL == "" {
+				gaps[i].SQL = statement.RawSQL
+			}
+		}
+		unsupported = append(unsupported, gaps...)
+
 		for _, id := range eval.AppliedRuleIDs {
 			appliedIDs[id] = struct{}{}
 		}
@@ -66,12 +81,13 @@ func EvaluateStatements(ctx context.Context, registry *rule.Registry, statements
 		}
 
 		statementResults = append(statementResults, report.StatementResult{
-			Index:         resultIndex,
+			Index:         idx,
 			Kind:          statement.Kind.String(),
 			RawSQL:        statement.RawSQL,
 			NormalizedSQL: statement.NormalizedSQL,
 			Findings:      findings,
 			Impact:        reportImpact(statement),
+			Coverage:      coverage,
 		})
 		supportedStatements = append(supportedStatements, statement)
 	}

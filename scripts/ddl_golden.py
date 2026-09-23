@@ -313,21 +313,63 @@ def execute_negative_case(manifest, anchor_key):
     return case
 
 
-def execute_cli_case(manifest, binary, policy, dialect):
+def cli_case_specs(manifest):
+    """Normalize the CLI audit cases a manifest declares. `cli_audit` keeps the
+    original one-spec-many-dialects shape; `cli_cases` declares named cases with
+    per-case dialect, SQL, extra CLI args, and expectations (issue #82)."""
+    if "cli_cases" in manifest:
+        return manifest["cli_cases"]
     spec = manifest["cli_audit"]
-    case_id = f"{manifest['task_id']}.cli.{dialect}"
+    return [
+        {"id": dialect, "dialect": dialect, "sql": spec["sql"], "expect": spec["expect"]}
+        for dialect in spec["dialects"]
+    ]
+
+
+def cli_case_expect_checks(parsed, rc, expect):
+    """Assertion rows for one executed CLI case. Required keys are always
+    checked; optional keys are checked only when the manifest declares them."""
+    statements = (parsed or {}).get("statements") or []
+    findings = sum(len(s.get("findings", [])) for s in statements) + len((parsed or {}).get("global_findings") or [])
+    diagnostics = (parsed or {}).get("diagnostics") or []
+    unsupported = (parsed or {}).get("unsupported") or []
+    checks = [
+        ("exit code", parsed is not None and rc == expect["exit"], f"rc={rc} expected={expect['exit']}"),
+        ("verdict", parsed is not None and parsed.get("verdict") == expect["verdict"], f"verdict={parsed.get('verdict') if parsed else None!r}"),
+        ("top-level statements", parsed is not None and len(statements) == expect["statements"], f"statements={len(statements)} expected={expect['statements']}"),
+        ("zero findings", parsed is not None and findings == expect["findings"], f"findings={findings}"),
+        ("no diagnostics", parsed is not None and len(diagnostics) == expect["diagnostics"], f"diagnostics={diagnostics!r}"),
+        ("no unsupported", parsed is not None and len(unsupported) == expect["unsupported"], f"unsupported={unsupported!r}"),
+    ]
+    if "coverage" in expect:
+        got = (parsed or {}).get("coverage", {}).get("status")
+        checks.append(("aggregate coverage", parsed is not None and got == expect["coverage"], f"coverage={got!r}"))
+    if "statement_coverage" in expect:
+        got = [s.get("coverage", {}).get("status") for s in statements]
+        checks.append(("per-statement coverage", parsed is not None and got == expect["statement_coverage"], f"statement_coverage={got!r}"))
+    if "unsupported_features" in expect:
+        got = sorted(u.get("feature") for u in unsupported)
+        want = sorted(expect["unsupported_features"])
+        checks.append(("unsupported features", parsed is not None and got == want, f"features={got!r} expected={want!r}"))
+    return checks
+
+
+def execute_cli_case(manifest, binary, policy, spec):
+    case_id = f"{manifest['task_id']}.cli.{spec['id']}"
     args = [
         binary, "audit",
-        "--dialect", dialect,
+        "--dialect", spec["dialect"],
         "--sql", spec["sql"],
         "--config", policy["path"],
         "--format", "json",
     ]
+    args.extend(spec.get("args") or [])
     rc, out, err = run_cmd(args, cwd=ROOT_DIR, timeout=120)
     case = {
         "case_id": case_id,
         "kind": "cli_audit",
-        "dialect": dialect,
+        "cli_case": spec["id"],
+        "dialect": spec["dialect"],
         "input_sql": spec["sql"],
         "policy_profile": policy["profile"],
         "policy_path": policy["path"],
@@ -343,20 +385,7 @@ def execute_cli_case(manifest, binary, policy, dialect):
     except json.JSONDecodeError:
         parsed = None
     case["actual"]["parsed"] = parsed
-    expect = spec["expect"]
-    statements = (parsed or {}).get("statements", [])
-    findings = sum(len(s.get("findings", [])) for s in statements) + len((parsed or {}).get("global_findings", []))
-    diagnostics = (parsed or {}).get("diagnostics") or []
-    unsupported = (parsed or {}).get("unsupported") or []
-    checks = [
-        ("exit code", parsed is not None and rc == expect["exit"], f"rc={rc} expected={expect['exit']}"),
-        ("verdict", parsed is not None and parsed.get("verdict") == expect["verdict"], f"verdict={parsed.get('verdict') if parsed else None!r}"),
-        ("top-level statements", parsed is not None and len(statements) == expect["statements"], f"statements={len(statements)} expected={expect['statements']}"),
-        ("zero findings", parsed is not None and findings == expect["findings"], f"findings={findings}"),
-        ("no diagnostics", parsed is not None and len(diagnostics) == expect["diagnostics"], f"diagnostics={diagnostics!r}"),
-        ("no unsupported", parsed is not None and len(unsupported) == expect["unsupported"], f"unsupported={unsupported!r}"),
-    ]
-    for name, ok, detail in checks:
+    for name, ok, detail in cli_case_expect_checks(parsed, rc, spec["expect"]):
         case["assertions"].append({"name": name, "ok": bool(ok), "detail": detail})
     if not all(a["ok"] for a in case["assertions"]):
         case["status"] = "fail"
@@ -385,7 +414,19 @@ def manifest_expected(manifest, case):
     if kind == "db_syntax_negative":
         return manifest["syntax_negative"]["expect"]
     if kind == "cli_audit":
-        return manifest["cli_audit"]["expect"]
+        spec = cli_case_spec_for(manifest, case)
+        if spec is None:
+            return None
+        return spec["expect"]
+    return None
+
+
+def cli_case_spec_for(manifest, case):
+    """Find the manifest CLI spec a recorded case claims to satisfy."""
+    case_name = case.get("cli_case") or case.get("dialect")
+    for spec in cli_case_specs(manifest):
+        if spec.get("id") == case_name:
+            return spec
     return None
 
 
@@ -529,11 +570,14 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
                 if marker in combined:
                     failures.append(f"case {case_id}: forbidden marker present: {marker!r}")
         elif kind == "cli_audit":
-            spec = manifest["cli_audit"]
-            if case.get("dialect") not in spec["dialects"]:
-                failures.append(f"case {case_id}: dialect {case.get('dialect')!r} not in manifest dialects {spec['dialects']}")
-            if case.get("input_sql") != spec["sql"]:
-                failures.append(f"case {case_id}: recorded input_sql differs from manifest cli_audit")
+            spec = cli_case_spec_for(manifest, case)
+            if spec is None:
+                failures.append(f"case {case_id}: no manifest cli case matches {case.get('cli_case') or case.get('dialect')!r}")
+            else:
+                if case.get("dialect") != spec.get("dialect"):
+                    failures.append(f"case {case_id}: dialect {case.get('dialect')!r} != manifest spec {spec.get('dialect')!r}")
+                if case.get("input_sql") != spec["sql"]:
+                    failures.append(f"case {case_id}: recorded input_sql differs from manifest cli case")
             if case.get("policy_profile") not in (None, manifest.get("policy_profile", "all-rules-disabled")):
                 failures.append(f"case {case_id}: policy_profile {case.get('policy_profile')!r} differs from manifest")
             command = case.get("command") or []
@@ -546,25 +590,14 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
                 reparsed = None
             if reparsed is None:
                 failures.append(f"case {case_id}: CLI stdout is not JSON")
-            else:
+            elif spec is not None:
                 recorded_parsed = actual.get("parsed")
                 if recorded_parsed is not None and recorded_parsed != reparsed:
                     failures.append(f"case {case_id}: recorded parsed disagrees with raw stdout")
                 expect = spec["expect"]
-                statements = reparsed.get("statements") or []
-                if actual.get("exit") != expect["exit"]:
-                    failures.append(f"case {case_id}: exit {actual.get('exit')} != {expect['exit']}")
-                if reparsed.get("verdict") != expect["verdict"]:
-                    failures.append(f"case {case_id}: verdict {reparsed.get('verdict')!r} != {expect['verdict']!r}")
-                if len(statements) != expect["statements"]:
-                    failures.append(f"case {case_id}: statements {len(statements)} != {expect['statements']}")
-                findings = sum(len(s.get("findings", [])) for s in statements) + len(reparsed.get("global_findings") or [])
-                if findings != expect["findings"]:
-                    failures.append(f"case {case_id}: findings {findings} != {expect['findings']}")
-                if len(reparsed.get("diagnostics") or []) != expect["diagnostics"]:
-                    failures.append(f"case {case_id}: unexpected diagnostics")
-                if len(reparsed.get("unsupported") or []) != expect["unsupported"]:
-                    failures.append(f"case {case_id}: unexpected unsupported")
+                for name, ok, detail in cli_case_expect_checks(reparsed, actual.get("exit"), expect):
+                    if not ok:
+                        failures.append(f"case {case_id}: {name}: {detail}")
         else:
             failures.append(f"case {case_id}: unknown kind {kind!r}")
 
@@ -640,8 +673,8 @@ def cmd_run(args):
                 for anchor_key in manifest["anchors"]:
                     artifact["cases"].append(execute_ddl_case(manifest, anchor_key))
                     artifact["cases"].append(execute_negative_case(manifest, anchor_key))
-                for dialect in manifest["cli_audit"]["dialects"]:
-                    artifact["cases"].append(execute_cli_case(manifest, cli["path"], policy, dialect))
+                for spec in cli_case_specs(manifest):
+                    artifact["cases"].append(execute_cli_case(manifest, cli["path"], policy, spec))
     finally:
         artifact["cleanup"] = compose_cleanup()
         artifact["executed_count"] = len(artifact["cases"])

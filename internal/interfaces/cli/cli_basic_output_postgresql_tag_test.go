@@ -1,5 +1,11 @@
 //go:build postgresql
 
+// Package cli verifies CLI output rendering for PostgreSQL audits including
+// partial results with retained unsupported statements.
+// input: audit commands over PostgreSQL SQL with supported and unsupported statements
+// output: rendered JSON/Markdown payloads and exit codes
+// pos: CLI adapter output-contract regression coverage
+// note: if this file changes, update this header and module README.md.
 package cli
 
 import (
@@ -33,8 +39,8 @@ func TestAuditCommandRendersPartialJSONForMixedUnsupportedPostgreSQL(t *testing.
 		t.Fatalf("unmarshal json output: %v\noutput=%s", err, stdout.String())
 	}
 	statements, ok := decoded["statements"].([]any)
-	if !ok || len(statements) != 1 {
-		t.Fatalf("expected one rendered supported statement, got %#v", decoded["statements"])
+	if !ok || len(statements) != 2 {
+		t.Fatalf("expected supported result plus the retained unsupported statement, got %#v", decoded["statements"])
 	}
 	unsupported, ok := decoded["unsupported"].([]any)
 	if !ok || len(unsupported) != 1 {

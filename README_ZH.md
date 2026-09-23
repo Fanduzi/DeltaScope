@@ -147,6 +147,9 @@ deltascope audit \
 ```json
 {
   "verdict": "review",
+  "coverage": {
+    "status": "complete"
+  },
   "summary": {
     "statements": 1,
     "blockers": 0,
@@ -161,6 +164,8 @@ deltascope audit \
   }
 }
 ```
+
+`coverage.status` 表示被识别语句的每个方面是否都有已审计语义（`complete`、`unverified`、`incomplete`）。已识别但未支持的语句保留在 `statements` 中并标记 `coverage.status=incomplete`，携带有界的 `unsupported` 证据，verdict 至少降为 `review`，并通过 `ErrUnsupportedStatement`（SDK）、退出码 1（CLI）、HTTP 400、MCP `isError=true` 暴露。
 
 审核 TiDB 语句：
 

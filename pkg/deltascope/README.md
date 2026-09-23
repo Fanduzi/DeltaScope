@@ -49,6 +49,9 @@ Stable public package surface for library consumers.
 - `Result`
   Retains audited statement results when another bounded statement fails parsing; `Audit` still returns a non-nil error for the unaudited statement.
 - `StatementResult`
+- `Coverage`
+- `CoverageStatus`
+  Public completeness states `CoverageComplete`, `CoverageUnverified`, and `CoverageIncomplete`; `Result.Coverage` and `StatementResult.Coverage` report them
 - `Explanation`
 - `Finding`
 - `FindingExplanation`
@@ -156,6 +159,7 @@ The unified online-session suite owns exhaustive semantic and detailed-probe evi
 - `Result` and `StatementResult` expose an optional `Explanation` field for additive shared result context without changing verdict semantics. The built-in audit flow populates these aggregate fields whenever findings are present.
 - `Result` now also exposes `Unsupported` (`[]spec.UnsupportedDetail`) and `Diagnostics` (`[]spec.Diagnostic`) arrays so library consumers can inspect structured partial-support and parser-error/unsupported-statement outcomes. A partial result with an unaudited parser-error diagnostic is floored from `pass` to `review`; existing `review`/`reject` verdicts and wholly unparseable behavior remain unchanged.
 - `ErrUnsupportedStatement` is returned when unsupported statements are present, while still returning a populated `Result` for supported statements.
+- Unsupported statements are retained as top-level `StatementResult` entries with `coverage.status=incomplete`, preserving index, raw/normalized SQL, and source locations; `Result.Coverage` reports `incomplete` whenever any statement is incomplete. Coverage is a capability fact and is unaffected by policy rule configuration; an incomplete result floors `pass` to `review` but never downgrades `reject`.
 - `Finding` now exposes an optional `Explanation` field so library consumers can read structured per-finding `why`, `risk`, `suggestion`, and metadata-status notes directly.
 - `DefaultVersion` is `v0.511.1`, the fallback when Go build information is absent.
 - `ReportedVersion()` prefers the Go module version (tag or pseudo-version) or VCS revision (`devel-<rev>` / `devel-<rev>-dirty`) so untagged, devel, and `go install @main` builds do not claim the last release tag as the sole version.

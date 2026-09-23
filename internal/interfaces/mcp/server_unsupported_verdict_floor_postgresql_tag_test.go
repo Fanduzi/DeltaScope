@@ -45,8 +45,17 @@ func TestMCPUnsupportedStatementAppliesReviewFloor(t *testing.T) {
 		t.Fatalf("expected unsupported review floor, got %s", bodyJSON)
 	}
 	summary, _ := body["summary"].(map[string]any)
-	if summary["statements"] != float64(0) {
-		t.Fatalf("expected zero audited statements, got %s", bodyJSON)
+	if summary["statements"] != float64(1) {
+		t.Fatalf("expected the retained unsupported statement counted once, got %s", bodyJSON)
+	}
+	statements, _ := body["statements"].([]any)
+	if len(statements) != 1 {
+		t.Fatalf("expected the unsupported statement retained as one result, got %s", bodyJSON)
+	}
+	statement, _ := statements[0].(map[string]any)
+	coverage, _ := statement["coverage"].(map[string]any)
+	if coverage["status"] != "incomplete" {
+		t.Fatalf("expected retained unsupported statement coverage incomplete, got %#v", statement)
 	}
 	unsupported, _ := body["unsupported"].([]any)
 	if len(unsupported) != 1 {

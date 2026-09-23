@@ -94,6 +94,20 @@ type Summary struct {
 	Notices    int `json:"notices"`
 }
 
+// CoverageStatus identifies the public audit-completeness state.
+type CoverageStatus string
+
+const (
+	CoverageComplete   CoverageStatus = "complete"
+	CoverageUnverified CoverageStatus = "unverified"
+	CoverageIncomplete CoverageStatus = "incomplete"
+)
+
+// Coverage is the stable public coverage record for one result scope.
+type Coverage struct {
+	Status CoverageStatus `json:"status"`
+}
+
 // Location identifies a public source span when available.
 type Location struct {
 	Line   int `json:"line,omitempty"`
@@ -177,12 +191,14 @@ type StatementResult struct {
 	NormalizedSQL string       `json:"normalized_sql,omitempty"`
 	Findings      []Finding    `json:"findings,omitempty"`
 	Impact        *Impact      `json:"impact,omitempty"`
+	Coverage      Coverage     `json:"coverage"`
 	Explanation   *Explanation `json:"explanation,omitempty"`
 }
 
 // Result is the stable public audit output.
 type Result struct {
 	Verdict        Verdict                  `json:"verdict"`
+	Coverage       Coverage                 `json:"coverage"`
 	Summary        Summary                  `json:"summary"`
 	Statements     []StatementResult        `json:"statements,omitempty"`
 	GlobalFindings []Finding                `json:"global_findings,omitempty"`
@@ -234,6 +250,7 @@ func toDomainDialect(dialect Dialect) spec.Dialect {
 func fromDomainResult(result report.Result) Result {
 	public := Result{
 		Verdict:        Verdict(result.Verdict),
+		Coverage:       Coverage{Status: CoverageStatus(result.Coverage.Status)},
 		Summary:        Summary(result.Summary),
 		Statements:     make([]StatementResult, 0, len(result.Statements)),
 		GlobalFindings: make([]Finding, 0, len(result.GlobalFindings)),
@@ -250,6 +267,7 @@ func fromDomainResult(result report.Result) Result {
 			NormalizedSQL: stmt.NormalizedSQL,
 			Findings:      fromDomainFindings(stmt.Findings),
 			Impact:        fromDomainImpact(stmt.Impact),
+			Coverage:      Coverage{Status: CoverageStatus(stmt.Coverage.Status)},
 			Explanation:   fromDomainExplanation(stmt.Explanation),
 		})
 	}

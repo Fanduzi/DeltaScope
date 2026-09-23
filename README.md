@@ -147,6 +147,9 @@ Example JSON shape:
 ```json
 {
   "verdict": "review",
+  "coverage": {
+    "status": "complete"
+  },
   "summary": {
     "statements": 1,
     "blockers": 0,
@@ -161,6 +164,8 @@ Example JSON shape:
   }
 }
 ```
+
+`coverage.status` reports whether every recognized statement aspect had audited semantics (`complete`, `unverified`, `incomplete`). Recognized-but-unsupported statements stay in `statements` with `coverage.status=incomplete` and bounded `unsupported` evidence, floor the verdict to at least `review`, and surface as `ErrUnsupportedStatement` (SDK), exit 1 (CLI), HTTP 400, or MCP `isError=true`.
 
 Audit a TiDB statement:
 

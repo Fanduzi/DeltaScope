@@ -372,7 +372,7 @@ rows:
     sql_shape: "CREATE TABLE t4 (id INT) ENGINE=InnoDB ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8 COMMENT='x'"
     prerequisites: "engine facts required for engine-specific claims"
     status: semantically_checked
-    status_evidence: "2026-09-22 CLI probe: charset.allowlist and row_format.allowlist fire; other option semantics (compression, encryption, stats) unchecked"
+    status_evidence: "2026-09-22 CLI probe: option coverage rules fire for modeled options. 2026-09-23 T03 (#82): unextracted create-table options (e.g. compression, engine_attribute, tablespace) now record bounded unsupported evidence (create_table.option.<name>) and coverage=incomplete"
     targets: "engine, row format, charset, per-option semantics"
     acceptance:
       dimensions: "option-by-option capture, engine-boundary behavior"
@@ -629,7 +629,7 @@ rows:
     sql_shape: "ALTER TABLE t ALTER CHECK c1 NOT ENFORCED"
     prerequisites: "8.0.16+ for enforced CHECK; 5.7 parses-and-ignores (vendor boundary row below covers 5.7)"
     status: parse_only
-    status_evidence: "2026-09-22 CLI probe: ADD CONSTRAINT CHECK emits only add_constraint.notice; DROP CONSTRAINT and ALTER CHECK ENFORCED/NOT ENFORCED parse silently with zero findings"
+    status_evidence: "2026-09-22 CLI probe: ADD CONSTRAINT CHECK emits only add_constraint.notice; DROP CONSTRAINT and ALTER CHECK ENFORCED/NOT ENFORCED parse without constraint semantics. 2026-09-23 T03 (#82): check-bearing alter actions now carry bounded unsupported evidence (alter_table.add_constraint.check / alter_table.drop_check) and coverage=incomplete instead of silently passing"
     targets: "table, constraint identity, enforcement state transitions"
     acceptance:
       dimensions: "enforcement-state risk, 5.7 accept-and-ignore disclosure (vendor fact, not silent pass)"
@@ -709,7 +709,7 @@ rows:
     sql_shape: "ALTER TABLE t ADD COLUMN c INT, ALGORITHM=COPY, LOCK=EXCLUSIVE"
     prerequisites: "operation+engine+version decide actual support; ALGORITHM=INPLACE is not itself a safety claim"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: clause parses; only action-level notices fire — COPY/EXCLUSIVE claims carry no clause-aware check"
+    status_evidence: "2026-09-22 CLI probe: clause accepted; only action-level notices fire. 2026-09-23 T03 (#82): ALGORITHM/LOCK actions remain audited (complete); unrelated unaudited actions in the same alter now record per-aspect unsupported evidence"
     targets: "action list plus declared algorithm/lock, versioned applicability"
     acceptance:
       dimensions: "clause-aware risk, availability-by-version evidence, gap when prerequisites missing"
@@ -725,7 +725,7 @@ rows:
     sql_shape: "ALTER TABLE t CONVERT TO CHARACTER SET utf8mb4"
     prerequisites: "engine facts for engine-scoped options"
     status: parse_only
-    status_evidence: "2026-09-22 CLI probe: ORDER BY/CONVERT/ROW_FORMAT/AUTO_INCREMENT/FORCE/ENABLE KEYS/DISABLE KEYS all parse silently with zero findings"
+    status_evidence: "2026-09-22 CLI probe: ORDER BY/CONVERT/ROW_FORMAT/AUTO_INCREMENT/FORCE/ENABLE KEYS/DISABLE KEYS all parse silently with zero findings. 2026-09-23 T03 (#82): unaudited options now surface bounded unsupported evidence (e.g. alter_table.order_by_columns, alter_table.disable_keys, alter_table.force) and coverage=incomplete"
     targets: "table, per-option semantics, charset conversion scope, rebuild implications"
     acceptance:
       dimensions: "per-option checks, charset-conversion risk, engine boundaries"
@@ -1309,7 +1309,7 @@ rows:
     sql_shape: "CREATE TABLE t3 AS SELECT * FROM t1"
     prerequisites: "vendor boundary: TiDB does not document CTAS as supported"
     status: vendor_not_supported
-    status_evidence: "2026-09-22 CLI probe: TiDB parser accepts the form and generic rules fire, but research baseline marks CTAS a TiDB vendor boundary — parse acceptance is not support evidence"
+    status_evidence: "2026-09-22 CLI probe: TiDB parser accepts the form and generic rules fire, but research baseline marks CTAS a TiDB vendor boundary. 2026-09-23 T03 (#82): boundary now enforced — statement retained with unsupported feature create_table_select and coverage=incomplete"
     targets: "explicit vendor boundary, never a positive support claim"
     acceptance:
       dimensions: "boundary classification vs silent acceptance"
@@ -1389,7 +1389,7 @@ rows:
     sql_shape: "CREATE TABLE t (d DATETIME) TTL = d + INTERVAL 30 DAY"
     prerequisites: "TTL prerequisites per TTL doc (supported column type, no partition in some cases)"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: parses; generic table rules fire but TTL definition and its automatic-deletion risk unchecked"
+    status_evidence: "2026-09-22 CLI probe: parses; generic table rules fire but TTL definition and its automatic-deletion risk unchecked. 2026-09-23 T03 (#82): the unextracted TTL table option now records unsupported evidence (create_table.option.ttl) and coverage=incomplete while generic rules still run"
     targets: "TTL column, interval, automatic deletion risk"
     acceptance:
       dimensions: "TTL definition capture plus deletion-risk finding"
@@ -1405,7 +1405,7 @@ rows:
     sql_shape: "CREATE TABLE t (id INT) /* CACHED */"
     prerequisites: "cached-table feature limits (size, DDL restrictions)"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: parses; generic rules fire; CACHED attribute itself not captured or checked"
+    status_evidence: "2026-09-22 CLI probe: parses; generic rules fire; CACHED attribute itself not captured or checked. 2026-09-23 T03 (#82): unextracted cache attributes now record unsupported evidence and coverage=incomplete while generic rules still run"
     targets: "cache attribute, DDL restrictions on cached tables"
     acceptance:
       dimensions: "attribute capture, cached-state prerequisites"
@@ -1485,7 +1485,7 @@ rows:
     sql_shape: "FLASHBACK TABLE t1 TO t2"
     prerequisites: "GC window and snapshot availability — dynamic, never simulated"
     status: parse_only
-    status_evidence: "2026-09-22 CLI probe: FLASHBACK TABLE/DATABASE/CLUSTER and RECOVER TABLE parse silently with zero findings"
+    status_evidence: "2026-09-22 CLI probe: FLASHBACK TABLE/DATABASE/CLUSTER and RECOVER TABLE parse silently with zero findings. 2026-09-23 T03 (#82): parsed-but-unmodeled flashback/recover statements now carry unsupported evidence (flashback_table/flashback_database/flashback_cluster/recover_table) and coverage=incomplete"
     targets: "restored object identity, source-of-restore semantics, recoverability limits"
     acceptance:
       dimensions: "object identity and boundary facts, no success guarantee claims"
@@ -1550,7 +1550,7 @@ rows:
     sql_shape: "ALTER TABLE t DROP PARTITION p0"
     prerequisites: "TiDB partition semantics differ (REMOVE copies data)"
     status: parse_only
-    status_evidence: "2026-09-22 CLI probe: DROP/TRUNCATE/EXCHANGE/REORGANIZE/COALESCE all parse silently with zero findings"
+    status_evidence: "2026-09-22 CLI probe: DROP/TRUNCATE/EXCHANGE/REORGANIZE/COALESCE all parse silently with zero findings. 2026-09-23 T03 (#82): unaudited partition sub-actions now surface per-action unsupported evidence (alter_table.drop_partition et al.) and coverage=incomplete until T13/T14 model them"
     targets: "partition identities, deletion/exchange/rebuild scope, TiDB-specific effects"
     acceptance:
       dimensions: "deletion-risk findings, exchange two-object evidence, TiDB rebuild facts"
@@ -1566,7 +1566,7 @@ rows:
     sql_shape: "ALTER TABLE t TTL = created_at + INTERVAL 30 DAY"
     prerequisites: "TTL column prerequisites; quoted-expression form is the known parser_error negative"
     status: parse_only
-    status_evidence: "2026-09-22 CLI probe: valid TTL, TTL_ENABLE='OFF', and REMOVE TTL all parse silently (the spec's named silent-pass defect); quoted-expression form stays parser_error"
+    status_evidence: "2026-09-22 CLI probe: valid TTL, TTL_ENABLE='OFF', and REMOVE TTL all parse silently (the spec's named silent-pass defect); quoted-expression form stays parser_error. 2026-09-23 T03 (#82): these now surface unsupported evidence (alter_table.option.ttl / ttl_enable / alter_table.remove_ttl) and coverage=incomplete until T19 models them; quoted form remains parser_error"
     targets: "TTL column, interval, enable state, remove vs disable distinction, automatic-deletion risk"
     acceptance:
       dimensions: "specific TTL finding on enable/set, no false 'enable' on disable/remove, quoted negative preserved"
@@ -1598,7 +1598,7 @@ rows:
     sql_shape: "ALTER TABLE t SHARD_ROW_ID_BITS = 4"
     prerequisites: "per-option TiDB capability facts (e.g. TiFlash presence)"
     status: parse_only
-    status_evidence: "2026-09-22 CLI probe: SHARD/AUTO_RANDOM_BASE/ATTRIBUTES/TIFLASH REPLICA/CACHE/NOCACHE/COMPACT/COMMENT all parse silently; SPLIT PARTITION is parser_error"
+    status_evidence: "2026-09-22 CLI probe: SHARD/AUTO_RANDOM_BASE/ATTRIBUTES/TIFLASH REPLICA/CACHE/NOCACHE/COMPACT/COMMENT all parse silently; SPLIT PARTITION is parser_error. 2026-09-23 T03 (#82): these now surface unsupported evidence (alter_table.<action> / alter_table.option.<name>) and coverage=incomplete until T23 models them"
     targets: "physical layout attributes, replica/cache state, compact/split actions"
     acceptance:
       dimensions: "per-option classification with real prerequisites (no skip-as-pass for missing TiFlash)"
@@ -1614,7 +1614,7 @@ rows:
     sql_shape: "ALTER TABLE t ADD COLUMN c INT, ALGORITHM=INSTANT"
     prerequisites: "TiDB ALGORITHM asserts capability rather than choosing algorithm"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: clause accepted; only action-level notices fire"
+    status_evidence: "2026-09-22 CLI probe: clause accepted; only action-level notices fire. 2026-09-23 T03 (#82): audited actions stay complete; unaudited companion actions now record per-aspect unsupported evidence and coverage=incomplete"
     targets: "declared clauses, multi-action integrity, TiDB algorithm semantics"
     acceptance:
       dimensions: "clause classification distinct from MySQL"
@@ -1810,7 +1810,7 @@ rows:
     sql_shape: "ALTER RANGE global PLACEMENT POLICY p1"
     prerequisites: "range scope identity"
     status: parse_only
-    status_evidence: "2026-09-22 CLI probe: parses silently with zero findings"
+    status_evidence: "2026-09-22 CLI probe: parses silently with zero findings. 2026-09-23 T03 (#82): valid ALTER RANGE forms now carry unsupported evidence (alter_range_placement) and coverage=incomplete until T20 models range placements"
     targets: "range scope, bound policy"
     acceptance:
       dimensions: "scope-level binding classification"
@@ -1827,7 +1827,7 @@ rows:
     sql_shape: "CREATE RESOURCE GROUP rg1 RU_PER_SEC = 100"
     prerequisites: "resource-control feature availability"
     status: parse_only
-    status_evidence: "2026-09-22 CLI probe: parses silently with zero findings; RU semantics unchecked"
+    status_evidence: "2026-09-22 CLI probe: parses silently with zero findings; RU semantics unchecked. 2026-09-23 T03 (#82): valid CREATE RESOURCE GROUP forms now carry unsupported evidence (create_resource_group) and coverage=incomplete until T22 models them"
     targets: "group identity, RU/burst/priority/runaway attributes (distinct from MySQL CPU fields)"
     acceptance:
       dimensions: "RU attribute checks, no MySQL-CPU-field reuse"
@@ -1843,7 +1843,7 @@ rows:
     sql_shape: "ALTER RESOURCE GROUP rg1 RU_PER_SEC = 200"
     prerequisites: "none"
     status: parse_only
-    status_evidence: "2026-09-22 CLI probe: parses silently with zero findings"
+    status_evidence: "2026-09-22 CLI probe: parses silently with zero findings. 2026-09-23 T03 (#82): valid ALTER RESOURCE GROUP forms now carry unsupported evidence (alter_resource_group) and coverage=incomplete until T22 models them"
     targets: "group identity, attribute transitions"
     acceptance:
       dimensions: "attribute-change checks"
@@ -1876,7 +1876,7 @@ rows:
     sql_shape: "CREATE PROCEDURE p() SELECT 1"
     prerequisites: "none — vendor boundary"
     status: vendor_not_supported
-    status_evidence: "TiDB docs mark procedures unsupported; TiDB parser accepts the statement for compat and emits create_procedure.notice — parser acceptance is not product support"
+    status_evidence: "TiDB docs mark procedures unsupported; TiDB parser accepts the statement for compat and emits create_procedure.notice — parser acceptance must not count as support. 2026-09-23 T03 (#82): boundary now enforced — statement retained with unsupported feature create_procedure and coverage=incomplete; ddl.create_procedure.notice no longer fires for tidb"
     targets: "explicit vendor boundary; never a positive support claim"
     acceptance:
       dimensions: "boundary classification distinct from MySQL body-audit path"
@@ -2004,7 +2004,7 @@ rows:
     sql_shape: "CREATE FULLTEXT INDEX idx ON posts (content)"
     prerequisites: "none — vendor boundary per research baseline (parse acceptance ≠ support)"
     status: vendor_not_supported
-    status_evidence: "research baseline records Self-Managed FULLTEXT/SPATIAL as unsupported; parser acceptance must not count as support"
+    status_evidence: "research baseline records Self-Managed FULLTEXT/SPATIAL as unsupported; parser acceptance must not count as support. 2026-09-23 T03 (#82): boundary now enforced across CREATE INDEX, ALTER ADD FULLTEXT/SPATIAL, and embedded index forms (unsupported evidence + coverage=incomplete)"
     targets: "explicit vendor boundary"
     acceptance:
       dimensions: "boundary classification"
@@ -2020,7 +2020,7 @@ rows:
     sql_shape: "ALTER INSTANCE RELOAD TLS"
     prerequisites: "instance-level capability"
     status: parse_only
-    status_evidence: "2026-09-22 CLI probe: parses silently with zero findings; T32 (#111) owns TiDB instance-management and remaining low-frequency DDL"
+    status_evidence: "2026-09-22 CLI probe: parses silently with zero findings; T32 (#111) owns TiDB instance-management and remaining low-frequency DDL boundaries. 2026-09-23 T03 (#82): ALTER INSTANCE now carries unsupported evidence (alter_instance) and coverage=incomplete until T32 models it"
     targets: "instance action kind"
     acceptance:
       dimensions: "classification and boundary evidence"

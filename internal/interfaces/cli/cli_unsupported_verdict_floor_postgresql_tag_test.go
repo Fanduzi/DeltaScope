@@ -37,11 +37,17 @@ func TestCLIUnsupportedStatementJSONAppliesReviewFloor(t *testing.T) {
 		t.Fatalf("expected unsupported review floor, got %#v", payload["verdict"])
 	}
 	summary, _ := payload["summary"].(map[string]any)
-	if summary["statements"] != float64(0) {
-		t.Fatalf("expected zero audited statements, got %s", stdout.String())
+	if summary["statements"] != float64(1) {
+		t.Fatalf("expected the retained unsupported statement counted once, got %s", stdout.String())
 	}
-	if _, ok := payload["statements"]; ok {
-		t.Fatalf("expected omitted audited statements, got %s", stdout.String())
+	statements, _ := payload["statements"].([]any)
+	if len(statements) != 1 {
+		t.Fatalf("expected the unsupported statement retained as one result, got %s", stdout.String())
+	}
+	statement, _ := statements[0].(map[string]any)
+	coverage, _ := statement["coverage"].(map[string]any)
+	if coverage["status"] != "incomplete" {
+		t.Fatalf("expected retained unsupported statement coverage incomplete, got %#v", statement)
 	}
 	unsupported, _ := payload["unsupported"].([]any)
 	if len(unsupported) != 1 {

@@ -37,9 +37,9 @@
     },
     "tidb": {
       "total": 55,
-      "finding_covered": 46,
+      "finding_covered": 44,
       "normalized_silent": 0,
-      "unsupported_boundary": 0,
+      "unsupported_boundary": 2,
       "parser_error": 9,
       "unclassified": 0
     }
@@ -3956,11 +3956,9 @@
       "dialect": "tidb",
       "family": "routine_lifecycle",
       "form": "CREATE PROCEDURE",
-      "classification": "finding_covered",
-      "finding_rule_ids": [
-        "ddl.create_procedure.notice"
-      ],
-      "notes": ""
+      "classification": "unsupported_boundary",
+      "finding_rule_ids": [],
+      "notes": "recognized product boundary"
     },
     {
       "dialect": "tidb",
@@ -4103,17 +4101,9 @@
       "dialect": "tidb",
       "family": "table_lifecycle",
       "form": "CREATE TABLE AS SELECT",
-      "classification": "finding_covered",
-      "finding_rule_ids": [
-        "ddl.table.audit_columns.require",
-        "ddl.table.charset.allowlist",
-        "ddl.table.columns.min_count",
-        "ddl.table.comment.require",
-        "ddl.table.create_as.forbid",
-        "ddl.table.engine.allowlist",
-        "ddl.table.primary_key.require"
-      ],
-      "notes": ""
+      "classification": "unsupported_boundary",
+      "finding_rule_ids": [],
+      "notes": "recognized product boundary"
     },
     {
       "dialect": "tidb",

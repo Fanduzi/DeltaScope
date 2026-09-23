@@ -510,3 +510,12 @@ func corpusAssertPostgreSQLAlterFacts(t *testing.T, stmt spec.Statement, rawYAML
 		}
 	}
 }
+
+// unsupportedFeatures returns a summary of unsupported detail features for error messages.
+func unsupportedFeatures(details []spec.UnsupportedDetail) []string {
+	features := make([]string, 0, len(details))
+	for _, d := range details {
+		features = append(features, d.Feature)
+	}
+	return features
+}

@@ -28,6 +28,28 @@ type Explanation struct {
 	Reasons []string `json:"reasons,omitempty"`
 }
 
+// CoverageStatus classifies how completely an audit covered a statement or the
+// aggregate result. Coverage is a capability fact: it is independent of whether
+// policy rules produced findings.
+type CoverageStatus string
+
+const (
+	// CoverageComplete means every parsed aspect of the statement/result had
+	// audited semantics available.
+	CoverageComplete CoverageStatus = "complete"
+	// CoverageUnverified means coverage could not be verified because required
+	// evidence (metadata, version) was missing. Reserved for issue #83.
+	CoverageUnverified CoverageStatus = "unverified"
+	// CoverageIncomplete means at least one parsed aspect was recognized but
+	// not covered by audited semantics, or the input could not be fully parsed.
+	CoverageIncomplete CoverageStatus = "incomplete"
+)
+
+// Coverage records the audit-completeness state for one result scope.
+type Coverage struct {
+	Status CoverageStatus `json:"status"`
+}
+
 // ImpactSource mirrors the shared DML impact source contract on report outputs.
 type ImpactSource = spec.ImpactSource
 
@@ -71,6 +93,7 @@ type StatementResult struct {
 	NormalizedSQL string         `json:"normalized_sql,omitempty"`
 	Findings      []rule.Finding `json:"findings,omitempty"`
 	Impact        *Impact        `json:"impact,omitempty"`
+	Coverage      Coverage       `json:"coverage"`
 	Explanation   *Explanation   `json:"explanation,omitempty"`
 }
 
@@ -92,6 +115,7 @@ type Summary struct {
 // Result is the aggregated audit output.
 type Result struct {
 	Verdict        Verdict                  `json:"verdict"`
+	Coverage       Coverage                 `json:"coverage"`
 	Summary        Summary                  `json:"summary"`
 	Statements     []StatementResult        `json:"statements,omitempty"`
 	GlobalFindings []rule.Finding           `json:"global_findings,omitempty"`
@@ -104,11 +128,23 @@ type Result struct {
 // Aggregate builds a final Result from statement and global findings.
 func Aggregate(statements []StatementResult, findings []rule.Finding) Result {
 	result := Result{
+		Coverage:       Coverage{Status: CoverageComplete},
 		Statements:     append([]StatementResult(nil), statements...),
 		GlobalFindings: findings,
 		Summary: Summary{
 			Statements: len(statements),
 		},
+	}
+
+	for i := range result.Statements {
+		switch result.Statements[i].Coverage.Status {
+		case CoverageIncomplete:
+			result.Coverage.Status = CoverageIncomplete
+		case CoverageUnverified:
+			if result.Coverage.Status != CoverageIncomplete {
+				result.Coverage.Status = CoverageUnverified
+			}
+		}
 	}
 
 	allFindings := make([]rule.Finding, 0, len(findings))

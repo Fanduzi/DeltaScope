@@ -6,7 +6,9 @@ expect:
   statement_kind: ddl
   operation: alter_table
   unsupported:
-    count: 0
+    count: 1
+    include:
+      - alter_table.add_index.fulltext
   findings:
     include:
       - ddl.create_index.notice

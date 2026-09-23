@@ -31,8 +31,14 @@ func TestAuditUnsupportedStatementFloorsPassVerdictToReview(t *testing.T) {
 	if result.Verdict != report.VerdictReview {
 		t.Fatalf("expected unsupported completeness floor to review, got %q", result.Verdict)
 	}
-	if len(result.Statements) != 0 || result.Summary.Statements != 0 {
-		t.Fatalf("expected zero audited statements, got statements=%#v summary=%+v", result.Statements, result.Summary)
+	if len(result.Statements) != 1 || result.Summary.Statements != 1 {
+		t.Fatalf("expected the unsupported statement retained as one result, got statements=%#v summary=%+v", result.Statements, result.Summary)
+	}
+	if result.Statements[0].Coverage.Status != report.CoverageIncomplete {
+		t.Fatalf("expected unsupported statement coverage incomplete, got %#v", result.Statements[0].Coverage)
+	}
+	if result.Coverage.Status != report.CoverageIncomplete {
+		t.Fatalf("expected aggregate coverage incomplete, got %#v", result.Coverage)
 	}
 	if len(result.Unsupported) != 1 || result.Unsupported[0].Feature != "select" {
 		t.Fatalf("expected one select unsupported detail, got %#v", result.Unsupported)
@@ -73,14 +79,17 @@ func TestAuditUnsupportedStatementPreservesSupportedSiblingsAndFloorsPass(t *tes
 	if result.Summary.Notices == 0 {
 		t.Fatalf("expected preserved CREATE SCHEMA notice, got summary=%+v statements=%#v", result.Summary, result.Statements)
 	}
-	if len(result.Statements) != 1 || result.Summary.Statements != 1 {
-		t.Fatalf("expected one audited statement, got statements=%#v summary=%+v", result.Statements, result.Summary)
+	if len(result.Statements) != 2 || result.Summary.Statements != 2 {
+		t.Fatalf("expected audited statement plus retained unsupported statement, got statements=%#v summary=%+v", result.Statements, result.Summary)
 	}
 	if result.Statements[0].Kind != spec.KindDDL.String() {
 		t.Fatalf("expected supported statement kind ddl, got %#v", result.Statements[0])
 	}
-	if result.Statements[0].Index != 0 {
-		t.Fatalf("expected audited statement to keep source order index 0, got %#v", result.Statements[0])
+	if result.Statements[0].Index != 0 || result.Statements[0].Coverage.Status != report.CoverageComplete {
+		t.Fatalf("expected audited statement to keep source order index 0 and complete coverage, got %#v", result.Statements[0])
+	}
+	if result.Statements[1].Index != 1 || result.Statements[1].Coverage.Status != report.CoverageIncomplete {
+		t.Fatalf("expected unsupported statement retained at index 1 with incomplete coverage, got %#v", result.Statements[1])
 	}
 	if len(result.Unsupported) != 1 || result.Unsupported[0].Feature != "select" || result.Unsupported[0].Index != 1 {
 		t.Fatalf("expected trailing select unsupported detail, got %#v", result.Unsupported)
@@ -106,8 +115,8 @@ func TestAuditUnsupportedStatementKeepsReviewVerdict(t *testing.T) {
 	if result.Summary.Warnings == 0 {
 		t.Fatalf("expected warning-level sibling findings to remain, got summary=%+v", result.Summary)
 	}
-	if len(result.Statements) != 1 || result.Summary.Statements != 1 {
-		t.Fatalf("expected one audited statement, got statements=%#v summary=%+v", result.Statements, result.Summary)
+	if len(result.Statements) != 2 || result.Summary.Statements != 2 {
+		t.Fatalf("expected audited statement plus retained unsupported statement, got statements=%#v summary=%+v", result.Statements, result.Summary)
 	}
 	if len(result.Unsupported) != 1 || result.Unsupported[0].Feature != "select" {
 		t.Fatalf("expected one select unsupported detail, got %#v", result.Unsupported)
@@ -130,8 +139,8 @@ func TestAuditUnsupportedStatementKeepsRejectVerdict(t *testing.T) {
 	if result.Summary.Blockers == 0 {
 		t.Fatalf("expected blocker-level sibling findings to remain, got summary=%+v", result.Summary)
 	}
-	if len(result.Statements) != 1 || result.Summary.Statements != 1 {
-		t.Fatalf("expected one audited statement, got statements=%#v summary=%+v", result.Statements, result.Summary)
+	if len(result.Statements) != 2 || result.Summary.Statements != 2 {
+		t.Fatalf("expected audited statement plus retained unsupported statement, got statements=%#v summary=%+v", result.Statements, result.Summary)
 	}
 	if result.Statements[0].Impact == nil {
 		t.Fatalf("expected audited DELETE impact to be preserved, got %#v", result.Statements[0])
@@ -156,8 +165,8 @@ func TestAuditUnsupportedStatementMetadataAwareRouteMatchesOfflineFloor(t *testi
 	if result.Verdict != report.VerdictReview {
 		t.Fatalf("expected metadata-aware unsupported completeness floor to review, got %q", result.Verdict)
 	}
-	if len(result.Statements) != 0 || result.Summary.Statements != 0 {
-		t.Fatalf("expected zero audited statements, got statements=%#v summary=%+v", result.Statements, result.Summary)
+	if len(result.Statements) != 1 || result.Summary.Statements != 1 {
+		t.Fatalf("expected the unsupported statement retained as one result, got statements=%#v summary=%+v", result.Statements, result.Summary)
 	}
 	if len(result.Unsupported) != 1 || result.Unsupported[0].Feature != "select" {
 		t.Fatalf("expected one select unsupported detail, got %#v", result.Unsupported)

@@ -4,14 +4,15 @@ category: ddl
 expect:
   parse_ok: true
   unsupported:
-    count: 0
+    count: 1
+    include:
+      - create_procedure
   findings:
     include:
       - ddl.rename_table.notice
       - ddl.create_index.notice
       - ddl.drop_index.notice
       - ddl.alter_database.notice
-      - ddl.create_procedure.notice
       - ddl.drop_procedure.notice
       - ddl.create_user.notice
       - ddl.alter_user.notice
@@ -34,3 +35,5 @@ expect:
       - ddl.alter.drop_index.notice
       - ddl.alter.drop_foreign_key.notice
       - ddl.tidb.alter_table.placement_policy.notice
+    exclude:
+      - ddl.create_procedure.notice

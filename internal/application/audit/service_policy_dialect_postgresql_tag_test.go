@@ -1,9 +1,16 @@
 //go:build postgresql
 
+// Package audit verifies PostgreSQL policy dialect hygiene: PG-only rules must
+// not fire on other dialects.
+// input: MySQL/TiDB/PostgreSQL audit requests exercising PG-scoped rule surfaces
+// output: assertions that ddl.pg.* findings stay absent outside PostgreSQL
+// pos: application-layer dialect-isolation regression coverage
+// note: if this file changes, update this header and module README.md.
 package audit
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -420,7 +427,10 @@ func TestAuditSQLPostgreSQLPGOnlyRulesDoNotFireOnMySQL(t *testing.T) {
 				SQL:     tt.sql,
 				Dialect: spec.DialectMySQL,
 			})
-			if err != nil {
+			// DROP CONSTRAINT is an unaudited aspect under MySQL: it returns the
+			// unsupported sentinel with a retained statement, and the PG-only
+			// rule check below still applies to any findings it carries.
+			if err != nil && !errors.Is(err, ErrUnsupportedStatement) {
 				t.Fatalf("audit sql: %v", err)
 			}
 

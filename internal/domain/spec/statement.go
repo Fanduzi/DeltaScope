@@ -66,6 +66,14 @@ type UnsupportedDetail struct {
 const (
 	// DiagnosticParserError classifies a statement the dialect parser could not parse.
 	DiagnosticParserError = "parser_error"
+
+	// UnsupportedVendorBoundaryReason describes a statement or aspect the shared
+	// parser accepts but the selected dialect does not support as a product
+	// feature. Bounded fixed text; never carries raw SQL or parser internals.
+	UnsupportedVendorBoundaryReason = "parsed by the shared parser but outside the supported statement surface for this dialect"
+	// UnsupportedUnauditedReason describes a statement or aspect that parses
+	// but has no audited semantics yet. Bounded fixed text.
+	UnsupportedUnauditedReason = "parsed by the shared parser but not covered by audited semantics"
 )
 
 // Diagnostic carries safe, structured evidence about unaudited or unsupported outcomes.

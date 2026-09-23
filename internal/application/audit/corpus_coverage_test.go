@@ -47,6 +47,10 @@ func corpusRuleDialectTargets(ruleID string) []string {
 		return []string{"mysql"}
 	case "ddl.alter.merge.tidb.require":
 		return []string{"tidb"}
+	case "ddl.create_procedure.notice", "ddl.table.create_as.forbid":
+		// TiDB marks CREATE PROCEDURE and CREATE TABLE AS SELECT as vendor
+		// boundaries, so these rules can only fire under MySQL.
+		return []string{"mysql"}
 	}
 	if strings.HasPrefix(ruleID, "ddl.pg.") || isPostgreSQLOnlyRule(ruleID) {
 		return []string{"postgresql"}

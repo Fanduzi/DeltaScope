@@ -6,6 +6,7 @@
 package audit
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -51,6 +52,16 @@ type corpusExpected struct {
 
 func corpusHasPartialAssertions(tc corpusExpected) bool {
 	return tc.Expect.Statements != nil || tc.Expect.Diagnostics != nil
+}
+
+// corpusExpectsUnsupported reports whether the fixture declares unsupported
+// items and the audit returned the structured unsupported sentinel rather than
+// a genuine parse failure.
+func corpusExpectsUnsupported(tc corpusExpected, err error) bool {
+	return tc.Expect.Unsupported != nil &&
+		tc.Expect.Unsupported.Count != nil &&
+		*tc.Expect.Unsupported.Count > 0 &&
+		errors.Is(err, ErrUnsupportedStatement)
 }
 
 func corpusAssertPartialResult(t *testing.T, result report.Result, tc corpusExpected) {

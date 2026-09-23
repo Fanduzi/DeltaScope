@@ -1,0 +1,192 @@
+{
+  "task_id": "T03",
+  "issue": "https://github.com/Fanduzi/DeltaScope/issues/82",
+  "policy_profile": "all-rules-disabled",
+  "description": "Incomplete-coverage golden path: the shared parser accepts CREATE SEQUENCE but MySQL does not support it, so the statement stays in the result as incomplete coverage with bounded unsupported evidence while a supported ALTER stays complete. DB steps prove uniform CREATE/ALTER/DROP legality on all four anchors; CLI cases prove the incomplete audit contract under an all-rules-disabled policy, including --fail-on none still exiting 1.",
+  "anchors": {
+    "mysql57": {
+      "service": "mysql57",
+      "container": "deltascope-ddl-golden-mysql57",
+      "image": "mysql:5.7.44",
+      "product": "mysql",
+      "version_contains": "5.7.44",
+      "database": "golden",
+      "exec_client": [
+        "mysql",
+        "-uroot",
+        "-proot"
+      ],
+      "needs_database_create": false
+    },
+    "mysql80": {
+      "service": "mysql80",
+      "container": "deltascope-ddl-golden-mysql80",
+      "image": "mysql:8.0.46",
+      "product": "mysql",
+      "version_contains": "8.0.46",
+      "database": "golden",
+      "exec_client": [
+        "mysql",
+        "-uroot",
+        "-proot"
+      ],
+      "needs_database_create": false
+    },
+    "mysql84": {
+      "service": "mysql84",
+      "container": "deltascope-ddl-golden-mysql84",
+      "image": "mysql:8.4.10",
+      "product": "mysql",
+      "version_contains": "8.4.10",
+      "database": "golden",
+      "exec_client": [
+        "mysql",
+        "-uroot",
+        "-proot"
+      ],
+      "needs_database_create": false
+    },
+    "tidb85": {
+      "service": "tidb85",
+      "container": "deltascope-ddl-golden-tidb85",
+      "client_container": "deltascope-ddl-golden-tidb85-client",
+      "client_service": "tidb85-client",
+      "image": "pingcap/tidb:v8.5.0",
+      "product": "tidb",
+      "version_contains": "v8.5.0",
+      "database": "golden",
+      "exec_client": [
+        "mysql",
+        "--protocol=tcp",
+        "-h",
+        "tidb85",
+        "-P",
+        "4000",
+        "-uroot"
+      ],
+      "needs_database_create": true
+    }
+  },
+  "ddl_steps": [
+    {
+      "name": "create",
+      "sql": "CREATE TABLE golden_t (id INT PRIMARY KEY)",
+      "expect_rc": 0,
+      "verify": [
+        {
+          "assert": "table exists",
+          "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+          "expect": "1"
+        },
+        {
+          "assert": "primary key exists",
+          "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+          "expect": "1"
+        }
+      ]
+    },
+    {
+      "name": "alter",
+      "sql": "ALTER TABLE golden_t ADD COLUMN c INT",
+      "expect_rc": 0,
+      "verify": [
+        {
+          "assert": "column c exists",
+          "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND COLUMN_NAME='c'",
+          "expect": "1"
+        }
+      ]
+    },
+    {
+      "name": "drop",
+      "sql": "DROP TABLE golden_t",
+      "expect_rc": 0,
+      "verify": [
+        {
+          "assert": "table absent",
+          "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+          "expect": "0"
+        }
+      ]
+    }
+  ],
+  "syntax_negative": {
+    "sql": "CREATE TABLE golden_broken (",
+    "expect": {
+      "rc_nonzero": true,
+      "error_class": "1064",
+      "forbidden_markers": [
+        "ERROR 1045",
+        "ERROR 1044",
+        "ERROR 1049",
+        "ERROR 1142",
+        "ERROR 1143",
+        "ERROR 2002",
+        "ERROR 2003",
+        "ERROR 2005",
+        "Access denied",
+        "Unknown database",
+        "Can't connect",
+        "Connection refused",
+        "already exists"
+      ]
+    }
+  },
+  "cli_cases": [
+    {
+      "id": "mysql",
+      "dialect": "mysql",
+      "sql": "CREATE SEQUENCE golden_seq START WITH 1; ALTER TABLE golden_t ADD COLUMN c INT;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 2,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete",
+          "complete"
+        ],
+        "unsupported_features": [
+          "create_sequence"
+        ]
+      }
+    },
+    {
+      "id": "tidb",
+      "dialect": "tidb",
+      "sql": "CREATE SEQUENCE golden_seq START WITH 1; ALTER TABLE golden_t ADD COLUMN c INT;",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 2,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete",
+          "complete"
+        ]
+      }
+    }
+  ],
+  "required_case_ids": [
+    "T03.db.mysql57.ddl",
+    "T03.db.mysql57.syntax_negative",
+    "T03.db.mysql80.ddl",
+    "T03.db.mysql80.syntax_negative",
+    "T03.db.mysql84.ddl",
+    "T03.db.mysql84.syntax_negative",
+    "T03.db.tidb85.ddl",
+    "T03.db.tidb85.syntax_negative",
+    "T03.cli.mysql",
+    "T03.cli.tidb"
+  ]
+}

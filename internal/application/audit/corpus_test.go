@@ -100,10 +100,12 @@ func TestSQLCorpusMySQLAndTiDB(t *testing.T) {
 				MetadataProvider: metadataProvider,
 			})
 
-			// Assert parse_ok.
+			// Assert parse_ok. Structured unsupported outcomes are parse-ok
+			// audits: the statement parsed but carries incomplete coverage, so
+			// the unsupported sentinel is accepted when the fixture declares it.
 			if tc.Expect.ParseOK != nil {
 				if *tc.Expect.ParseOK {
-					if err != nil {
+					if err != nil && !corpusExpectsUnsupported(tc, err) {
 						t.Fatalf("expected parse_ok=true, got error: %v", err)
 					}
 				} else {
@@ -123,7 +125,26 @@ func TestSQLCorpusMySQLAndTiDB(t *testing.T) {
 			if tc.Expect.Unsupported != nil && tc.Expect.Unsupported.Count != nil {
 				got := len(result.Unsupported)
 				if got != *tc.Expect.Unsupported.Count {
-					t.Errorf("unsupported.count: expected %d, got %d", *tc.Expect.Unsupported.Count, got)
+					t.Errorf("unsupported.count: expected %d, got %d (details: %+v)", *tc.Expect.Unsupported.Count, got, result.Unsupported)
+				}
+			}
+
+			// Assert unsupported.include and unsupported.metadata.
+			if tc.Expect.Unsupported != nil {
+				for _, feat := range tc.Expect.Unsupported.Include {
+					found := false
+					for _, u := range result.Unsupported {
+						if u.Feature == feat {
+							found = true
+							break
+						}
+					}
+					if !found {
+						t.Errorf("unsupported.include: expected feature %q not found (actual: %+v)", feat, unsupportedFeatures(result.Unsupported))
+					}
+				}
+				if len(tc.Expect.Unsupported.Metadata) > 0 {
+					corpusAssertUnsupportedMetadata(t, result.Unsupported, tc.Expect.Unsupported.Metadata)
 				}
 			}
 
