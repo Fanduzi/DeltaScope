@@ -1,3 +1,8 @@
+// Package mcpapi verifies MCP audit lifecycle findings for MySQL/TiDB DDL.
+// input: audit_sql tool calls for lifecycle-covered DDL forms
+// output: isError and per-finding rule_id assertions, including incomplete-coverage tool errors
+// pos: MCP transport tests for DDL lifecycle coverage (issue #82)
+// note: if this file changes, update this header and module README.md.
 package mcpapi
 
 import (
@@ -79,12 +84,13 @@ func TestAuditSQLToolMySQLDDLLifecycleFindings(t *testing.T) {
 
 func TestAuditSQLToolTiDBDDLLifecycleFindings(t *testing.T) {
 	tests := []struct {
-		name       string
-		sql        string
-		wantRuleID string
+		name           string
+		sql            string
+		wantRuleID     string
+		wantIncomplete bool
 	}{
-		{name: "create_placement_policy", sql: "CREATE PLACEMENT POLICY p1 PRIMARY_REGION='us-east-1' REGIONS='us-east-1'", wantRuleID: "ddl.create_placement_policy.notice"},
-		{name: "create_sequence", sql: "CREATE SEQUENCE seq1 START WITH 1 INCREMENT BY 1", wantRuleID: "ddl.create_sequence.notice"},
+		{name: "create_placement_policy", sql: "CREATE PLACEMENT POLICY p1 PRIMARY_REGION='us-east-1' REGIONS='us-east-1'", wantRuleID: "ddl.create_placement_policy.notice", wantIncomplete: true},
+		{name: "create_sequence", sql: "CREATE SEQUENCE seq1 START WITH 1 INCREMENT BY 1", wantRuleID: "ddl.create_sequence.notice", wantIncomplete: true},
 		{name: "alter_table_placement_policy", sql: "ALTER TABLE users PLACEMENT POLICY p1", wantRuleID: "ddl.tidb.alter_table.placement_policy.notice"},
 	}
 
@@ -107,13 +113,23 @@ func TestAuditSQLToolTiDBDDLLifecycleFindings(t *testing.T) {
 			if err != nil {
 				t.Fatalf("call audit_sql: %v", err)
 			}
-			if result.IsError {
+			if tt.wantIncomplete {
+				if !result.IsError {
+					t.Fatalf("expected isError=true for incomplete coverage, got %#v", result)
+				}
+			} else if result.IsError {
 				t.Fatalf("expected success result, got tool error: %#v", result)
 			}
 
-			body, ok := result.StructuredContent.(map[string]any)
-			if !ok {
-				t.Fatalf("expected structured content, got %T", result.StructuredContent)
+			var body map[string]any
+			if result.IsError {
+				body = requireAuditStructuredMap(t, result)
+			} else {
+				var ok bool
+				body, ok = result.StructuredContent.(map[string]any)
+				if !ok {
+					t.Fatalf("expected structured content, got %T", result.StructuredContent)
+				}
 			}
 			stmts, ok := body["statements"].([]any)
 			if !ok || len(stmts) == 0 {

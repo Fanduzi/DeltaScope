@@ -1,3 +1,8 @@
+// Package httpapi verifies HTTP audit lifecycle findings for MySQL/TiDB DDL.
+// input: offline HTTP audit requests for lifecycle-covered DDL forms
+// output: status-code and per-finding rule_id assertions, including incomplete-coverage 400 envelopes
+// pos: HTTP transport tests for DDL lifecycle coverage (issue #82)
+// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (
@@ -74,12 +79,13 @@ func TestHandlerAuditMySQLDDLLifecycleFindings(t *testing.T) {
 
 func TestHandlerAuditTiDBDDLLifecycleFindings(t *testing.T) {
 	tests := []struct {
-		name       string
-		sql        string
-		wantRuleID string
+		name           string
+		sql            string
+		wantRuleID     string
+		wantIncomplete bool
 	}{
-		{name: "create_placement_policy", sql: "CREATE PLACEMENT POLICY p1 PRIMARY_REGION='us-east-1' REGIONS='us-east-1'", wantRuleID: "ddl.create_placement_policy.notice"},
-		{name: "create_sequence", sql: "CREATE SEQUENCE seq1 START WITH 1 INCREMENT BY 1", wantRuleID: "ddl.create_sequence.notice"},
+		{name: "create_placement_policy", sql: "CREATE PLACEMENT POLICY p1 PRIMARY_REGION='us-east-1' REGIONS='us-east-1'", wantRuleID: "ddl.create_placement_policy.notice", wantIncomplete: true},
+		{name: "create_sequence", sql: "CREATE SEQUENCE seq1 START WITH 1 INCREMENT BY 1", wantRuleID: "ddl.create_sequence.notice", wantIncomplete: true},
 		{name: "alter_table_placement_policy", sql: "ALTER TABLE users PLACEMENT POLICY p1", wantRuleID: "ddl.tidb.alter_table.placement_policy.notice"},
 	}
 
@@ -96,7 +102,11 @@ func TestHandlerAuditTiDBDDLLifecycleFindings(t *testing.T) {
 			rec := httptest.NewRecorder()
 			handler.ServeHTTP(rec, req)
 
-			if rec.Code != http.StatusOK {
+			if tt.wantIncomplete {
+				if rec.Code != http.StatusBadRequest {
+					t.Fatalf("expected 400 for incomplete coverage, got %d: %s", rec.Code, rec.Body.String())
+				}
+			} else if rec.Code != http.StatusOK {
 				t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
 			}
 

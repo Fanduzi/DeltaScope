@@ -4,16 +4,21 @@ category: ddl
 expect:
   parse_ok: true
   unsupported:
-    count: 1
+    count: 7
     include:
+      - alter_schema.option.charset
       - create_procedure
+      - drop_procedure
+      - create_placement_policy.options
+      - alter_placement_policy.options
+      - create_sequence.options
+      - alter_sequence.options
   findings:
     include:
       - ddl.rename_table.notice
       - ddl.create_index.notice
       - ddl.drop_index.notice
       - ddl.alter_database.notice
-      - ddl.drop_procedure.notice
       - ddl.create_user.notice
       - ddl.alter_user.notice
       - ddl.drop_user.notice
@@ -37,3 +42,4 @@ expect:
       - ddl.tidb.alter_table.placement_policy.notice
     exclude:
       - ddl.create_procedure.notice
+      - ddl.drop_procedure.notice

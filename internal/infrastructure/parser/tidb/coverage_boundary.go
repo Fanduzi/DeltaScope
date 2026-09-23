@@ -67,9 +67,9 @@ func dialectBoundaryFeature(dialect spec.Dialect, ddl *spec.DDL) (feature string
 		}
 	case spec.DialectTiDB:
 		switch ddl.Operation {
-		case spec.DDLOperationCreateProcedure:
-			// TiDB's parser accepts CREATE PROCEDURE for compatibility, but the
-			// product does not support stored procedures.
+		case spec.DDLOperationCreateProcedure, spec.DDLOperationDropProcedure:
+			// TiDB's parser accepts procedure statements for compatibility, but
+			// the product does not support stored procedures.
 			return string(ddl.Operation), true, true
 		case spec.DDLOperationCreateTable:
 			if ddl.HasSelect {
@@ -101,9 +101,27 @@ func ddlIndexKind(ddl *spec.DDL) spec.IndexKind {
 
 // unhandledStatementFeature names parser-recognized mutating or administrative
 // statements that the extractor does not model. Read-only query, session, and
-// transaction statements return "" and stay out of the audit surface.
+// transaction statements return "" and stay out of the audit surface. Named
+// out-of-surface exclusions include SELECT/UNION, SHOW/DESCRIBE, plain EXPLAIN
+// and EXPLAIN FOR CONNECTION (read-only plan inspection), transaction control,
+// USE/SET session forms, and session-scope PREPARE/DEALLOCATE. Execution-capable
+// forms — EXPLAIN ANALYZE/EXPLORE, TRACE, and EXECUTE — are never excluded: they
+// run the wrapped statement or dynamic SQL, so their effects cannot be audited.
 func unhandledStatementFeature(node ast.StmtNode) string {
-	switch node.(type) {
+	switch n := node.(type) {
+	case *ast.ExplainStmt:
+		switch {
+		case n.Analyze:
+			return "explain_analyze"
+		case n.Explore:
+			return "explain_explore"
+		default:
+			return ""
+		}
+	case *ast.TraceStmt:
+		return "trace"
+	case *ast.ExecuteStmt:
+		return "execute_prepared"
 	case *ast.CreateResourceGroupStmt:
 		return "create_resource_group"
 	case *ast.AlterResourceGroupStmt:

@@ -29,6 +29,11 @@ type metadataCensusCase struct {
 	// not support: every extracted statement must carry an Unsupported marker,
 	// the audit must return the unsupported sentinel, and no findings fire.
 	ExpectUnsupported bool
+	// ExpectIncomplete marks supported statements that carry an extracted-but-
+	// unaudited aspect (for example schema charset/collate or sequence and
+	// placement-policy option lists): findings still fire, but the audit
+	// returns the unsupported sentinel with bounded aspect evidence.
+	ExpectIncomplete bool
 }
 
 var mysqlPromotedMetadataCases = []metadataCensusCase{
@@ -46,7 +51,7 @@ var mysqlPromotedMetadataCases = []metadataCensusCase{
 	{Name: "CREATE FULLTEXT INDEX", SQL: "CREATE FULLTEXT INDEX idx_content ON posts (content)", ExpectFindings: true},
 	{Name: "CREATE SPATIAL INDEX", SQL: "CREATE SPATIAL INDEX idx_location ON places (location)", ExpectFindings: true},
 	{Name: "DROP INDEX", SQL: "DROP INDEX idx_email ON users", ExpectFindings: true},
-	{Name: "ALTER DATABASE", SQL: "ALTER DATABASE app CHARACTER SET utf8mb4", ExpectFindings: true},
+	{Name: "ALTER DATABASE", SQL: "ALTER DATABASE app CHARACTER SET utf8mb4", ExpectFindings: true, ExpectIncomplete: true},
 	{Name: "CREATE PROCEDURE", SQL: "CREATE PROCEDURE p_cleanup() SELECT 1", Sensitive: true,
 		ForbiddenSubstrings: []string{"SELECT 1"}, ExpectFindings: true},
 	{Name: "DROP PROCEDURE", SQL: "DROP PROCEDURE p_cleanup", ExpectFindings: true},
@@ -77,20 +82,20 @@ var tidbPromotedMetadataCases = []metadataCensusCase{
 	{Name: "CREATE INDEX", SQL: "CREATE INDEX idx_email ON users (email)", ExpectFindings: true},
 	{Name: "CREATE UNIQUE INDEX", SQL: "CREATE UNIQUE INDEX idx_email ON users (email)", ExpectFindings: true},
 	{Name: "DROP INDEX", SQL: "DROP INDEX idx_email ON users", ExpectFindings: true},
-	{Name: "ALTER DATABASE", SQL: "ALTER DATABASE app CHARACTER SET utf8mb4", ExpectFindings: true},
+	{Name: "ALTER DATABASE", SQL: "ALTER DATABASE app CHARACTER SET utf8mb4", ExpectFindings: true, ExpectIncomplete: true},
 	{Name: "CREATE PLACEMENT POLICY", SQL: "CREATE PLACEMENT POLICY p1 PRIMARY_REGION='us-east-1' REGIONS='us-east-1'", Sensitive: true,
-		ForbiddenSubstrings: []string{"us-east-1"}, ExpectFindings: true},
+		ForbiddenSubstrings: []string{"us-east-1"}, ExpectFindings: true, ExpectIncomplete: true},
 	{Name: "ALTER PLACEMENT POLICY", SQL: "ALTER PLACEMENT POLICY p1 PRIMARY_REGION='us-west-1' REGIONS='us-west-1'", Sensitive: true,
-		ForbiddenSubstrings: []string{"us-west-1"}, ExpectFindings: true},
+		ForbiddenSubstrings: []string{"us-west-1"}, ExpectFindings: true, ExpectIncomplete: true},
 	{Name: "DROP PLACEMENT POLICY", SQL: "DROP PLACEMENT POLICY p1", ExpectFindings: true},
 	{Name: "CREATE SEQUENCE", SQL: "CREATE SEQUENCE seq1 START WITH 1 INCREMENT BY 1", Sensitive: true,
-		ForbiddenSubstrings: []string{"START WITH 1", "INCREMENT BY 1"}, ExpectFindings: true},
+		ForbiddenSubstrings: []string{"START WITH 1", "INCREMENT BY 1"}, ExpectFindings: true, ExpectIncomplete: true},
 	{Name: "ALTER SEQUENCE", SQL: "ALTER SEQUENCE seq1 START WITH 100", Sensitive: true,
-		ForbiddenSubstrings: []string{"START WITH 100"}, ExpectFindings: true},
+		ForbiddenSubstrings: []string{"START WITH 100"}, ExpectFindings: true, ExpectIncomplete: true},
 	{Name: "DROP SEQUENCE", SQL: "DROP SEQUENCE seq1", ExpectFindings: true},
 	{Name: "CREATE PROCEDURE", SQL: "CREATE PROCEDURE p_cleanup() SELECT 1", Sensitive: true,
 		ForbiddenSubstrings: []string{"SELECT 1"}, ExpectUnsupported: true},
-	{Name: "DROP PROCEDURE", SQL: "DROP PROCEDURE p_cleanup", ExpectFindings: true},
+	{Name: "DROP PROCEDURE", SQL: "DROP PROCEDURE p_cleanup", ExpectUnsupported: true},
 	{Name: "CREATE USER", SQL: "CREATE USER 'admin'@'%' IDENTIFIED BY 'secret'", Sensitive: true,
 		ForbiddenSubstrings: []string{"secret", "IDENTIFIED BY"}, ExpectFindings: true},
 	{Name: "ALTER USER", SQL: "ALTER USER 'admin'@'%' IDENTIFIED BY 'new_secret'", Sensitive: true,
@@ -169,7 +174,14 @@ func runMetadataCensus(t *testing.T, dialectName string, dialect spec.Dialect, c
 			if supported == nil {
 				t.Fatalf("%s %s: no supported statement (expected at least one)", dialectName, tc.Name)
 			}
-			if auditErr != nil {
+			if tc.ExpectIncomplete {
+				if !errors.Is(auditErr, ErrUnsupportedStatement) {
+					t.Fatalf("%s %s: expected ErrUnsupportedStatement, got %v", dialectName, tc.Name, auditErr)
+				}
+				if len(result.Unsupported) == 0 {
+					t.Errorf("%s %s: expected unsupported aspect evidence in result", dialectName, tc.Name)
+				}
+			} else if auditErr != nil {
 				t.Fatalf("%s %s: audit error: %v", dialectName, tc.Name, auditErr)
 			}
 

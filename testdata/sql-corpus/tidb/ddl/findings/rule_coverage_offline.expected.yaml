@@ -4,10 +4,11 @@ category: ddl
 expect:
   parse_ok: true
   unsupported:
-    count: 3
+    count: 4
     include:
       - create_table_select
       - create_table.index.fulltext
+      - create_table.option.collate
       - alter_table.add_index.fulltext
   findings:
     include:

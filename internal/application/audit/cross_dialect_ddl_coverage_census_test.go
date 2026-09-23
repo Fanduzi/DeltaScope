@@ -233,7 +233,7 @@ var tidbDDLCensusCases = []struct {
 	{Name: "CREATE TRIGGER", SQL: "CREATE TRIGGER trg_users_bi BEFORE INSERT ON users FOR EACH ROW SET NEW.created_at = NOW()", Expected: ddlCoverageParserError},
 	{Name: "DROP TRIGGER", SQL: "DROP TRIGGER trg_users_bi", Expected: ddlCoverageParserError},
 	{Name: "CREATE PROCEDURE", SQL: "CREATE PROCEDURE p_cleanup() SELECT 1", Expected: ddlCoverageUnsupportedBoundary},
-	{Name: "DROP PROCEDURE", SQL: "DROP PROCEDURE p_cleanup", Expected: ddlCoverageFindingCovered},
+	{Name: "DROP PROCEDURE", SQL: "DROP PROCEDURE p_cleanup", Expected: ddlCoverageUnsupportedBoundary},
 	{Name: "CREATE FUNCTION", SQL: "CREATE FUNCTION hello() RETURNS VARCHAR(20) RETURN 'hello'", Expected: ddlCoverageParserError},
 	{Name: "DROP FUNCTION", SQL: "DROP FUNCTION hello", Expected: ddlCoverageParserError},
 	{Name: "CREATE EVENT", SQL: "CREATE EVENT e_cleanup ON SCHEDULE EVERY 1 DAY DO CALL p_cleanup()", Expected: ddlCoverageParserError},

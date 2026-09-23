@@ -302,6 +302,7 @@ func extractTruncateTable(stmt *ast.TruncateTableStmt) *spec.DDL {
 
 func extractCreateDatabase(stmt *ast.CreateDatabaseStmt) *spec.DDL {
 	options := map[string]string{}
+	var unextracted []string
 	if stmt.IfNotExists {
 		options["if_not_exists"] = "true"
 	}
@@ -314,13 +315,16 @@ func extractCreateDatabase(stmt *ast.CreateDatabaseStmt) *spec.DDL {
 			options["charset"] = opt.Value
 		case ast.DatabaseOptionCollate:
 			options["collate"] = opt.Value
+		default:
+			unextracted = append(unextracted, databaseOptionName(opt.Tp))
 		}
 	}
 	return &spec.DDL{
-		Operation:  spec.DDLOperationCreateSchema,
-		ObjectName: stmt.Name.L,
-		ObjectType: "database",
-		Options:    options,
+		Operation:          spec.DDLOperationCreateSchema,
+		ObjectName:         stmt.Name.L,
+		ObjectType:         "database",
+		Options:            options,
+		UnextractedOptions: unextracted,
 	}
 }
 
@@ -617,6 +621,7 @@ func extractRenameTable(stmt *ast.RenameTableStmt) *spec.DDL {
 
 func extractAlterDatabase(stmt *ast.AlterDatabaseStmt) *spec.DDL {
 	options := map[string]string{}
+	var unextracted []string
 	for _, opt := range stmt.Options {
 		if opt == nil {
 			continue
@@ -626,13 +631,33 @@ func extractAlterDatabase(stmt *ast.AlterDatabaseStmt) *spec.DDL {
 			options["charset"] = opt.Value
 		case ast.DatabaseOptionCollate:
 			options["collate"] = opt.Value
+		default:
+			unextracted = append(unextracted, databaseOptionName(opt.Tp))
 		}
 	}
 	return &spec.DDL{
-		Operation:  spec.DDLOperationAlterSchema,
-		ObjectName: stmt.Name.L,
-		ObjectType: "database",
-		Options:    options,
+		Operation:          spec.DDLOperationAlterSchema,
+		ObjectName:         stmt.Name.L,
+		ObjectType:         "database",
+		Options:            options,
+		UnextractedOptions: unextracted,
+	}
+}
+
+// databaseOptionName maps a parsed DatabaseOption type to a stable bounded
+// feature name used in unextracted-option evidence.
+func databaseOptionName(tp ast.DatabaseOptionType) string {
+	switch tp {
+	case ast.DatabaseOptionCharset:
+		return "charset"
+	case ast.DatabaseOptionCollate:
+		return "collate"
+	case ast.DatabaseOptionEncryption:
+		return "encryption"
+	case ast.DatabaseOptionPlacementPolicy:
+		return "placement_policy"
+	default:
+		return "unknown"
 	}
 }
 
@@ -800,19 +825,27 @@ func extractDropResourceGroup(stmt *ast.DropResourceGroupStmt) *spec.DDL {
 }
 
 func extractCreatePlacementPolicy(stmt *ast.CreatePlacementPolicyStmt) *spec.DDL {
-	return &spec.DDL{
+	ddl := &spec.DDL{
 		Operation:  spec.DDLOperationCreatePlacementPolicy,
 		ObjectName: stmt.PolicyName.L,
 		ObjectType: "placement_policy",
 	}
+	if len(stmt.PlacementOptions) > 0 {
+		ddl.Options = map[string]string{"has_options": "true"}
+	}
+	return ddl
 }
 
 func extractAlterPlacementPolicy(stmt *ast.AlterPlacementPolicyStmt) *spec.DDL {
-	return &spec.DDL{
+	ddl := &spec.DDL{
 		Operation:  spec.DDLOperationAlterPlacementPolicy,
 		ObjectName: stmt.PolicyName.L,
 		ObjectType: "placement_policy",
 	}
+	if len(stmt.PlacementOptions) > 0 {
+		ddl.Options = map[string]string{"has_options": "true"}
+	}
+	return ddl
 }
 
 func extractDropPlacementPolicy(stmt *ast.DropPlacementPolicyStmt) *spec.DDL {
@@ -828,12 +861,15 @@ func extractCreateSequence(stmt *ast.CreateSequenceStmt) *spec.DDL {
 	if stmt.Name != nil {
 		name = stmt.Name.Name.L
 	}
-	return &spec.DDL{
+	ddl := &spec.DDL{
 		Operation:  spec.DDLOperationCreateSequence,
 		ObjectName: name,
 		ObjectType: "sequence",
-		Options:    map[string]string{"has_options": "true"},
 	}
+	if len(stmt.SeqOptions) > 0 {
+		ddl.Options = map[string]string{"has_options": "true"}
+	}
+	return ddl
 }
 
 func extractAlterSequence(stmt *ast.AlterSequenceStmt) *spec.DDL {
@@ -841,12 +877,15 @@ func extractAlterSequence(stmt *ast.AlterSequenceStmt) *spec.DDL {
 	if stmt.Name != nil {
 		name = stmt.Name.Name.L
 	}
-	return &spec.DDL{
+	ddl := &spec.DDL{
 		Operation:  spec.DDLOperationAlterSequence,
 		ObjectName: name,
 		ObjectType: "sequence",
-		Options:    map[string]string{"has_options": "true"},
 	}
+	if len(stmt.SeqOptions) > 0 {
+		ddl.Options = map[string]string{"has_options": "true"}
+	}
+	return ddl
 }
 
 func extractDropSequence(stmt *ast.DropSequenceStmt) *spec.DDL {
@@ -1554,7 +1593,7 @@ func alterActionName(tp ast.AlterTableType) string {
 	case ast.AlterTableDiscardTablespace:
 		return "discard_tablespace"
 	case ast.AlterTableIndexInvisible:
-		return "index_invisible"
+		return "alter_index"
 	case ast.AlterTableOrderByColumns:
 		return "order_by_columns"
 	case ast.AlterTableSetTiFlashReplica:

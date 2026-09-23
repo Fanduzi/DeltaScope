@@ -208,14 +208,16 @@ func TestAuditSQLT03TiDBUnauditedBoundaries(t *testing.T) {
 }
 
 // TestAuditSQLT03TiDBAuditedBoundariesStayComplete guards the audited side of
-// the TiDB boundary: sequences, placement policies, and DROP RESOURCE GROUP keep
-// complete coverage because generic-notice rules model them.
+// the TiDB boundary: bare sequences and DROP RESOURCE GROUP keep complete
+// coverage because generic-notice rules model them. Option-bearing sequences
+// carry create_sequence.options evidence instead — the option list itself is
+// extracted but unaudited (see the incomplete-aspects table).
 func TestAuditSQLT03TiDBAuditedBoundariesStayComplete(t *testing.T) {
 	t.Parallel()
 	configPath := writeAllRulesDisabledPolicy(t)
 
 	result, err := AuditSQL(context.Background(), Request{
-		SQL:        "CREATE SEQUENCE seq1 START WITH 1; DROP RESOURCE GROUP rg1;",
+		SQL:        "CREATE SEQUENCE seq1; DROP RESOURCE GROUP rg1;",
 		Dialect:    spec.DialectTiDB,
 		ConfigPath: configPath,
 	})
@@ -279,6 +281,162 @@ func TestAuditSQLT03MixedValidInvalidKeepsValidResults(t *testing.T) {
 	}
 	if result.Coverage.Status != report.CoverageIncomplete {
 		t.Fatalf("expected incomplete aggregate coverage, got %q", result.Coverage.Status)
+	}
+}
+
+// TestAuditSQLT03RecognizedUnauditedAspectsIncomplete locks the reworked defect
+// class: parser-recognized ALTER sub-actions and nested options that no rule
+// audits must surface incomplete coverage with stable bounded unsupported
+// evidence instead of silently passing. Feature names are derived from
+// normalized facts (operation + action/option), never from raw SQL.
+func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
+	t.Parallel()
+	configPath := writeAllRulesDisabledPolicy(t)
+
+	cases := []struct {
+		name        string
+		sql         string
+		dialect     spec.Dialect
+		wantFeature string
+		wantReason  string
+		wantKind    string
+	}{
+		{name: "mysql alter index invisible", sql: "ALTER TABLE t ALTER INDEX idx INVISIBLE;", dialect: spec.DialectMySQL, wantFeature: "alter_table.alter_index", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql alter algorithm", sql: "ALTER TABLE t ALGORITHM=INPLACE;", dialect: spec.DialectMySQL, wantFeature: "alter_table.algorithm", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql alter lock", sql: "ALTER TABLE t LOCK=NONE;", dialect: spec.DialectMySQL, wantFeature: "alter_table.lock", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "tidb drop check", sql: "ALTER TABLE t DROP CHECK chk;", dialect: spec.DialectTiDB, wantFeature: "alter_table.drop_check", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql nested placement policy", sql: "CREATE TABLE t (id INT) PLACEMENT POLICY=p;", dialect: spec.DialectMySQL, wantFeature: "create_table.option.placement_policy", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
+		{name: "tidb nested placement policy", sql: "CREATE TABLE t (id INT) PLACEMENT POLICY=p;", dialect: spec.DialectTiDB, wantFeature: "create_table.option.placement_policy", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "tidb drop procedure", sql: "DROP PROCEDURE IF EXISTS p;", dialect: spec.DialectTiDB, wantFeature: "drop_procedure", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
+		{name: "tidb explain analyze", sql: "EXPLAIN ANALYZE DELETE FROM t;", dialect: spec.DialectTiDB, wantFeature: "explain_analyze", wantReason: spec.UnsupportedUnauditedReason, wantKind: "unknown"},
+		{name: "mysql explain analyze", sql: "EXPLAIN ANALYZE DELETE FROM t;", dialect: spec.DialectMySQL, wantFeature: "explain_analyze", wantReason: spec.UnsupportedUnauditedReason, wantKind: "unknown"},
+		{name: "tidb execute prepared", sql: "EXECUTE stmt;", dialect: spec.DialectTiDB, wantFeature: "execute_prepared", wantReason: spec.UnsupportedUnauditedReason, wantKind: "unknown"},
+		{name: "mysql execute prepared", sql: "EXECUTE stmt;", dialect: spec.DialectMySQL, wantFeature: "execute_prepared", wantReason: spec.UnsupportedUnauditedReason, wantKind: "unknown"},
+		{name: "tidb trace", sql: "TRACE DELETE FROM t;", dialect: spec.DialectTiDB, wantFeature: "trace", wantReason: spec.UnsupportedUnauditedReason, wantKind: "unknown"},
+		{name: "tidb explain explore", sql: "EXPLAIN EXPLORE SELECT * FROM t;", dialect: spec.DialectTiDB, wantFeature: "explain_explore", wantReason: spec.UnsupportedUnauditedReason, wantKind: "unknown"},
+		{name: "tidb sequence options", sql: "CREATE SEQUENCE seq1 START WITH 1;", dialect: spec.DialectTiDB, wantFeature: "create_sequence.options", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "tidb alter sequence options", sql: "ALTER SEQUENCE seq1 START WITH 100;", dialect: spec.DialectTiDB, wantFeature: "alter_sequence.options", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "tidb placement policy options", sql: "CREATE PLACEMENT POLICY p1 PRIMARY_REGION='us-east-1';", dialect: spec.DialectTiDB, wantFeature: "create_placement_policy.options", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "tidb alter placement options", sql: "ALTER PLACEMENT POLICY p1 REGIONS='us-west-1';", dialect: spec.DialectTiDB, wantFeature: "alter_placement_policy.options", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql create schema charset", sql: "CREATE DATABASE d1 CHARACTER SET utf8mb4;", dialect: spec.DialectMySQL, wantFeature: "create_schema.option.charset", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "tidb create schema collate", sql: "CREATE DATABASE d1 COLLATE utf8mb4_bin;", dialect: spec.DialectTiDB, wantFeature: "create_schema.option.collate", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql alter schema charset", sql: "ALTER DATABASE d1 CHARACTER SET utf8mb4;", dialect: spec.DialectMySQL, wantFeature: "alter_schema.option.charset", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "tidb alter schema placement", sql: "ALTER DATABASE d1 PLACEMENT POLICY=p1;", dialect: spec.DialectTiDB, wantFeature: "alter_schema.option.placement_policy", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql alter schema placement vendor", sql: "ALTER DATABASE d1 PLACEMENT POLICY=p1;", dialect: spec.DialectMySQL, wantFeature: "alter_schema.option.placement_policy", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
+		{name: "tidb create table collate", sql: "CREATE TABLE t (id INT) COLLATE utf8mb4_bin;", dialect: spec.DialectTiDB, wantFeature: "create_table.option.collate", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := AuditSQL(context.Background(), Request{
+				SQL:        tc.sql,
+				Dialect:    tc.dialect,
+				ConfigPath: configPath,
+			})
+			if !errors.Is(err, ErrUnsupportedStatement) {
+				t.Fatalf("expected ErrUnsupportedStatement, got %v", err)
+			}
+			if len(result.Statements) != 1 {
+				t.Fatalf("expected the recognized statement retained, got %#v", result.Statements)
+			}
+			stmt := result.Statements[0]
+			if stmt.Index != 0 || stmt.Kind != tc.wantKind {
+				t.Fatalf("expected retained statement kind=%s index=0, got %#v", tc.wantKind, stmt)
+			}
+			if stmt.RawSQL == "" || stmt.NormalizedSQL == "" {
+				t.Fatalf("expected statement identity preserved, got %#v", stmt)
+			}
+			if stmt.Coverage.Status != report.CoverageIncomplete {
+				t.Fatalf("expected statement coverage incomplete, got %#v", stmt.Coverage)
+			}
+			if len(stmt.Findings) != 0 {
+				t.Fatalf("expected no fabricated findings, got %#v", stmt.Findings)
+			}
+			if result.Coverage.Status != report.CoverageIncomplete {
+				t.Fatalf("expected aggregate coverage incomplete, got %q", result.Coverage.Status)
+			}
+			if result.Verdict != report.VerdictReview {
+				t.Fatalf("expected review verdict floor, got %q", result.Verdict)
+			}
+			var found *spec.UnsupportedDetail
+			for i := range result.Unsupported {
+				if result.Unsupported[i].Feature == tc.wantFeature {
+					found = &result.Unsupported[i]
+				}
+			}
+			if found == nil {
+				t.Fatalf("expected unsupported feature %q, got %#v", tc.wantFeature, result.Unsupported)
+			}
+			if found.Reason != tc.wantReason {
+				t.Fatalf("expected reason %q, got %q", tc.wantReason, found.Reason)
+			}
+			for _, d := range result.Diagnostics {
+				if strings.Contains(d.Reason, "INVISIBLE") || strings.Contains(d.Reason, "chk") ||
+					strings.Contains(d.Reason, "POLICY") || strings.Contains(d.Reason, "stmt") {
+					t.Fatalf("diagnostic leaks statement text: %#v", d)
+				}
+			}
+		})
+	}
+}
+
+// TestAuditSQLT03RecognizedOutOfSurfaceStaysComplete locks the counter-examples:
+// ordinary read-only EXPLAIN, session-scope PREPARE/DEALLOCATE, and the
+// TiDB-audited placement-policy alter stay complete — only execution-capable or
+// unaudited forms flip coverage.
+func TestAuditSQLT03RecognizedOutOfSurfaceStaysComplete(t *testing.T) {
+	t.Parallel()
+	configPath := writeAllRulesDisabledPolicy(t)
+
+	cases := []struct {
+		name    string
+		sql     string
+		dialect spec.Dialect
+	}{
+		{name: "tidb plain explain", sql: "EXPLAIN DELETE FROM t;", dialect: spec.DialectTiDB},
+		{name: "mysql plain explain", sql: "EXPLAIN SELECT id FROM t;", dialect: spec.DialectMySQL},
+		{name: "tidb prepare deallocate", sql: "PREPARE s FROM 'SELECT 1'; DEALLOCATE PREPARE s;", dialect: spec.DialectTiDB},
+		{name: "tidb alter placement policy", sql: "ALTER TABLE t PLACEMENT POLICY=p;", dialect: spec.DialectTiDB},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := AuditSQL(context.Background(), Request{
+				SQL:        tc.sql,
+				Dialect:    tc.dialect,
+				ConfigPath: configPath,
+			})
+			if err != nil {
+				t.Fatalf("expected clean audit, got %v", err)
+			}
+			if result.Coverage.Status != report.CoverageComplete {
+				t.Fatalf("expected complete aggregate coverage, got %q", result.Coverage.Status)
+			}
+			if len(result.Unsupported) != 0 {
+				t.Fatalf("expected no unsupported details, got %#v", result.Unsupported)
+			}
+		})
+	}
+}
+
+// TestAuditSQLT03MySQLPlacementAlterIsVendorBoundary proves the TiDB-only
+// placement-policy alter action is a vendor boundary under MySQL even though
+// TiDB audits the same action at notice level.
+func TestAuditSQLT03MySQLPlacementAlterIsVendorBoundary(t *testing.T) {
+	t.Parallel()
+	configPath := writeAllRulesDisabledPolicy(t)
+
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:        "ALTER TABLE t PLACEMENT POLICY=p;",
+		Dialect:    spec.DialectMySQL,
+		ConfigPath: configPath,
+	})
+	if !errors.Is(err, ErrUnsupportedStatement) {
+		t.Fatalf("expected ErrUnsupportedStatement, got %v", err)
+	}
+	if len(result.Unsupported) != 1 || result.Unsupported[0].Feature != "alter_table.placement_policy" {
+		t.Fatalf("expected alter_table.placement_policy unsupported detail, got %#v", result.Unsupported)
+	}
+	if result.Unsupported[0].Reason != spec.UnsupportedVendorBoundaryReason {
+		t.Fatalf("expected vendor-boundary reason, got %q", result.Unsupported[0].Reason)
 	}
 }
 

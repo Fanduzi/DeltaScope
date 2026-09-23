@@ -211,7 +211,7 @@ rows:
     sql_shape: "CREATE DATABASE app CHARACTER SET utf8mb4"
     prerequisites: "none"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: parses; only ddl.database.create.notice fires; charset/collation options unchecked"
+    status_evidence: "2026-09-24 T03 rework (#82): extracted-but-unchecked option facts now carry bounded unsupported evidence (create_schema.option.charset/collate) and coverage=incomplete; option semantics still owned by T17. 2026-09-22 CLI probe: parses; only ddl.database.create.notice fires; charset/collation options unchecked"
     targets: "database identity, default charset/collation, encryption attribute"
     acceptance:
       dimensions: "charset/collation capture, existence conditional, drop counterpoint"
@@ -227,7 +227,7 @@ rows:
     sql_shape: "ALTER DATABASE app CHARACTER SET utf8mb4"
     prerequisites: "none"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: parses; only ddl.alter_database.notice fires; attribute changes unchecked"
+    status_evidence: "2026-09-24 T03 rework (#82): extracted-but-unchecked option facts now carry bounded unsupported evidence (alter_schema.option.charset/collate (unextracted attrs such as placement_policy also surface as alter_schema.option.<name>)) and coverage=incomplete; option semantics still owned by T17. 2026-09-22 CLI probe: parses; only ddl.alter_database.notice fires; attribute changes unchecked"
     targets: "database identity, default attribute transitions"
     acceptance:
       dimensions: "attribute transition capture, IF EXISTS known/unknown handling"
@@ -372,7 +372,7 @@ rows:
     sql_shape: "CREATE TABLE t4 (id INT) ENGINE=InnoDB ROW_FORMAT=COMPRESSED KEY_BLOCK_SIZE=8 COMMENT='x'"
     prerequisites: "engine facts required for engine-specific claims"
     status: semantically_checked
-    status_evidence: "2026-09-22 CLI probe: option coverage rules fire for modeled options. 2026-09-23 T03 (#82): unextracted create-table options (e.g. compression, engine_attribute, tablespace) now record bounded unsupported evidence (create_table.option.<name>) and coverage=incomplete"
+    status_evidence: "2026-09-24 T03 rework (#82): extracted-but-unconsumed COLLATE=<name> now carries bounded unsupported evidence (create_table.option.collate) and coverage=incomplete; engine/charset/row_format/auto_increment/comment remain rule-consumed. 2026-09-22 CLI probe: option coverage rules fire for modeled options. 2026-09-23 T03 (#82): unextracted create-table options (e.g. compression, engine_attribute, tablespace) now record bounded unsupported evidence (create_table.option.<name>) and coverage=incomplete. 2026-09-24 T03 rework (#82): the extracted-but-TiDB-only PLACEMENT POLICY=<name> option is a vendor boundary under MySQL (create_table.option.placement_policy)"
     targets: "engine, row format, charset, per-option semantics"
     acceptance:
       dimensions: "option-by-option capture, engine-boundary behavior"
@@ -709,7 +709,7 @@ rows:
     sql_shape: "ALTER TABLE t ADD COLUMN c INT, ALGORITHM=COPY, LOCK=EXCLUSIVE"
     prerequisites: "operation+engine+version decide actual support; ALGORITHM=INPLACE is not itself a safety claim"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: clause accepted; only action-level notices fire. 2026-09-23 T03 (#82): ALGORITHM/LOCK actions remain audited (complete); unrelated unaudited actions in the same alter now record per-aspect unsupported evidence"
+    status_evidence: "2026-09-22 CLI probe: clause accepted; only action-level notices fire. 2026-09-23 T03 (#82): unaudited companion actions record per-aspect unsupported evidence. 2026-09-24 T03 rework (#82): ALGORITHM/LOCK have no rule consumer, so they now record alter_table.algorithm/alter_table.lock unsupported evidence and coverage=incomplete"
     targets: "action list plus declared algorithm/lock, versioned applicability"
     acceptance:
       dimensions: "clause-aware risk, availability-by-version evidence, gap when prerequisites missing"
@@ -774,7 +774,7 @@ rows:
     sql_shape: "ALTER TABLE t ALTER INDEX i INVISIBLE"
     prerequisites: "index identity and current visibility"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: ADD INDEX gets prefix.require + notices (semantic partial), DROP INDEX notice only, RENAME INDEX gets forbid, ALTER INDEX INVISIBLE parses silently (T10 seed)"
+    status_evidence: "2026-09-22 CLI probe: ADD INDEX gets prefix.require + notices (semantic partial), DROP INDEX notice only, RENAME INDEX gets forbid, ALTER INDEX INVISIBLE parses silently (T10 seed). 2026-09-24 T03 rework (#82): ALTER INDEX INVISIBLE now carries bounded unsupported evidence (alter_table.alter_index) and coverage=incomplete — extraction never implied audited semantics"
     targets: "index identity, visibility state, rename pairs"
     acceptance:
       dimensions: "visibility-change risk, VISIBLE restore and missing-index controls"
@@ -1228,7 +1228,7 @@ rows:
     sql_shape: "CREATE DATABASE app"
     prerequisites: "none"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: only ddl.database.create.notice fires"
+    status_evidence: "2026-09-24 T03 rework (#82): extracted-but-unchecked option facts now carry bounded unsupported evidence (create_schema.option.charset/collate) and coverage=incomplete; option semantics still owned by T17. 2026-09-22 CLI probe: only ddl.database.create.notice fires"
     targets: "database identity, default charset/collation"
     acceptance:
       dimensions: "attribute capture, conditionals"
@@ -1244,7 +1244,7 @@ rows:
     sql_shape: "ALTER DATABASE app CHARACTER SET utf8mb4"
     prerequisites: "none"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: only ddl.alter_database.notice fires"
+    status_evidence: "2026-09-24 T03 rework (#82): extracted-but-unchecked option facts now carry bounded unsupported evidence (alter_schema.option.charset/collate and unextracted alter_schema.option.<name> (e.g. placement_policy)) and coverage=incomplete; option semantics still owned by T17. 2026-09-22 CLI probe: only ddl.alter_database.notice fires"
     targets: "database identity, attribute transitions"
     acceptance:
       dimensions: "attribute transitions, placement binding handled in T20 rows"
@@ -1277,7 +1277,7 @@ rows:
     sql_shape: "CREATE TABLE t (id BIGINT PRIMARY KEY AUTO_RANDOM)"
     prerequisites: "TiDB option semantics differ from MySQL"
     status: semantically_checked
-    status_evidence: "2026-09-22 CLI probe: pk/comment/audit-column/charset/engine rules fire incl. AUTO_RANDOM form; TiDB-specific option semantics unchecked (covered by dedicated rows)"
+    status_evidence: "2026-09-22 CLI probe: pk/comment/audit-column/charset/engine rules fire incl. AUTO_RANDOM form; TiDB-specific option semantics unchecked (covered by dedicated rows). 2026-09-24 T03 rework (#82): extracted PLACEMENT POLICY=<name> binding has no rule consumer and now records bounded unsupported evidence (create_table.option.placement_policy) with coverage=incomplete until T20 models it"
     targets: "table identity, columns, PK kind, TiDB options as facts"
     acceptance:
       dimensions: "base table checks plus TiDB option capture"
@@ -1518,7 +1518,7 @@ rows:
     sql_shape: "ALTER TABLE t ALTER INDEX i INVISIBLE"
     prerequisites: "index identity"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: ADD INDEX gets prefix.require + notice; RENAME INDEX gets forbid; ALTER INDEX INVISIBLE parses silently"
+    status_evidence: "2026-09-22 CLI probe: ADD INDEX gets prefix.require + notice; RENAME INDEX gets forbid; ALTER INDEX INVISIBLE parses silently. 2026-09-24 T03 rework (#82): now carries bounded unsupported evidence (alter_table.alter_index) and coverage=incomplete"
     targets: "index identity, visibility, rename pairs"
     acceptance:
       dimensions: "visibility-change evidence on TiDB catalog"
@@ -1534,7 +1534,7 @@ rows:
     sql_shape: "ALTER TABLE t ADD CONSTRAINT fk FOREIGN KEY (c) REFERENCES p (id)"
     prerequisites: "TiDB FK enforcement exists (6.6+) unlike older compat"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: only add_constraint.notice on FK and CHECK adds"
+    status_evidence: "2026-09-22 CLI probe: only add_constraint.notice on FK and CHECK adds. 2026-09-24 T03 rework (#82): DROP CHECK has no rule consumer and now carries bounded unsupported evidence (alter_table.drop_check) with coverage=incomplete"
     targets: "constraint identity, TiDB enforcement facts"
     acceptance:
       dimensions: "FK/CHECK parity under TiDB enforcement semantics"
@@ -1614,7 +1614,7 @@ rows:
     sql_shape: "ALTER TABLE t ADD COLUMN c INT, ALGORITHM=INSTANT"
     prerequisites: "TiDB ALGORITHM asserts capability rather than choosing algorithm"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: clause accepted; only action-level notices fire. 2026-09-23 T03 (#82): audited actions stay complete; unaudited companion actions now record per-aspect unsupported evidence and coverage=incomplete"
+    status_evidence: "2026-09-22 CLI probe: clause accepted; only action-level notices fire. 2026-09-23 T03 (#82): audited actions stay complete; unaudited companion actions now record per-aspect unsupported evidence and coverage=incomplete. 2026-09-24 T03 rework (#82): ALGORITHM/LOCK have no rule consumer, so they now record alter_table.algorithm/alter_table.lock unsupported evidence"
     targets: "declared clauses, multi-action integrity, TiDB algorithm semantics"
     acceptance:
       dimensions: "clause classification distinct from MySQL"
@@ -1713,7 +1713,7 @@ rows:
     sql_shape: "CREATE SEQUENCE seq1 START WITH 1 INCREMENT BY 1"
     prerequisites: "TiDB-only object (MySQL vendor boundary covered by T03 oracle)"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: only ddl.create_sequence.notice fires; option facts unchecked"
+    status_evidence: "2026-09-24 T03 rework (#82): extracted-but-unchecked option facts now carry bounded unsupported evidence (create_sequence.options when an option list is present) and coverage=incomplete; option semantics still owned by T21. 2026-09-22 CLI probe: only ddl.create_sequence.notice fires; option facts unchecked"
     targets: "sequence identity, start/increment/bounds/cycle/cache"
     acceptance:
       dimensions: "option capture, MySQL boundary stays explicit (not TiDB support on mysql)"
@@ -1729,7 +1729,7 @@ rows:
     sql_shape: "ALTER SEQUENCE seq1 RESTART WITH 1"
     prerequisites: "current sequence position known for collision risk"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: only ddl.alter_sequence.notice on both option-change and RESTART forms"
+    status_evidence: "2026-09-24 T03 rework (#82): extracted-but-unchecked option facts now carry bounded unsupported evidence (alter_sequence.options when an option list is present) and coverage=incomplete; option semantics still owned by T21. 2026-09-22 CLI probe: only ddl.alter_sequence.notice on both option-change and RESTART forms"
     targets: "sequence identity, restart vs option-change distinction, collision risk"
     acceptance:
       dimensions: "restart-specific warning, no invented collision claims"
@@ -1762,7 +1762,7 @@ rows:
     sql_shape: "CREATE PLACEMENT POLICY p1 PRIMARY_REGION='us-east-1' REGIONS='us-east-1'"
     prerequisites: "PD topology evidence for validity claims"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: only ddl.create_placement_policy.notice fires; option/constraint semantics unchecked"
+    status_evidence: "2026-09-24 T03 rework (#82): extracted-but-unchecked option facts now carry bounded unsupported evidence (create_placement_policy.options when an option list is present) and coverage=incomplete; option semantics still owned by T20. 2026-09-22 CLI probe: only ddl.create_placement_policy.notice fires; option/constraint semantics unchecked"
     targets: "policy identity, region/role/constraint attributes"
     acceptance:
       dimensions: "option capture, topology-dependent checks explicit"
@@ -1778,7 +1778,7 @@ rows:
     sql_shape: "ALTER PLACEMENT POLICY p1 PRIMARY_REGION='us-west-1' REGIONS='us-west-1'"
     prerequisites: "bound-object effects"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: only ddl.alter_placement_policy.notice fires"
+    status_evidence: "2026-09-24 T03 rework (#82): extracted-but-unchecked option facts now carry bounded unsupported evidence (alter_placement_policy.options when an option list is present) and coverage=incomplete; option semantics still owned by T20. 2026-09-22 CLI probe: only ddl.alter_placement_policy.notice fires"
     targets: "policy identity, attribute transitions, bound-object effects"
     acceptance:
       dimensions: "attribute transitions, bound-object visibility"
@@ -1876,7 +1876,7 @@ rows:
     sql_shape: "CREATE PROCEDURE p() SELECT 1"
     prerequisites: "none — vendor boundary"
     status: vendor_not_supported
-    status_evidence: "TiDB docs mark procedures unsupported; TiDB parser accepts the statement for compat and emits create_procedure.notice — parser acceptance must not count as support. 2026-09-23 T03 (#82): boundary now enforced — statement retained with unsupported feature create_procedure and coverage=incomplete; ddl.create_procedure.notice no longer fires for tidb"
+    status_evidence: "TiDB docs mark procedures unsupported; TiDB parser accepts the statement for compat and emits create_procedure.notice — parser acceptance must not count as support. 2026-09-23 T03 (#82): boundary now enforced — statement retained with unsupported feature create_procedure and coverage=incomplete; ddl.create_procedure.notice no longer fires for tidb. 2026-09-24 T03 rework (#82): boundary extended to DROP PROCEDURE (unsupported feature drop_procedure); ddl.drop_procedure.notice no longer fires for tidb"
     targets: "explicit vendor boundary; never a positive support claim"
     acceptance:
       dimensions: "boundary classification distinct from MySQL body-audit path"

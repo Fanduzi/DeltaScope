@@ -37,9 +37,9 @@
     },
     "tidb": {
       "total": 55,
-      "finding_covered": 44,
+      "finding_covered": 43,
       "normalized_silent": 0,
-      "unsupported_boundary": 2,
+      "unsupported_boundary": 3,
       "parser_error": 9,
       "unclassified": 0
     }
@@ -3974,11 +3974,9 @@
       "dialect": "tidb",
       "family": "routine_lifecycle",
       "form": "DROP PROCEDURE",
-      "classification": "finding_covered",
-      "finding_rule_ids": [
-        "ddl.drop_procedure.notice"
-      ],
-      "notes": ""
+      "classification": "unsupported_boundary",
+      "finding_rule_ids": [],
+      "notes": "recognized product boundary"
     },
     {
       "dialect": "tidb",

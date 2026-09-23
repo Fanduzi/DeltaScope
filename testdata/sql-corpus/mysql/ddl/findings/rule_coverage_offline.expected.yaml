@@ -4,7 +4,9 @@ category: ddl
 expect:
   parse_ok: true
   unsupported:
-    count: 0
+    count: 1
+    include:
+      - create_table.option.collate
   findings:
     include:
       - ddl.alter.add_index.columns.max_count

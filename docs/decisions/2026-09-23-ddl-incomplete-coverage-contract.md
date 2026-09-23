@@ -112,13 +112,71 @@ return an explicit incomplete audit result instead of silently passing.
 - PostgreSQL boundary semantics beyond the retained-statement contract
   are unchanged.
 
+## Amendment 2026-09-24 — rework of recognized-but-unaudited classification
+
+Post-merge probing showed several parser-recognized statements still
+reported `coverage=complete`/`pass`/exit 0. Root cause: the audited ALTER
+whitelist treated *extracted* action names as *audited* even when no rule
+consumed them (`algorithm`, `lock`, `alter_index`, `drop_check`), the
+nested `PLACEMENT POLICY=<name>` create-table option was extracted but
+never classified, `DROP PROCEDURE` was missing from the TiDB vendor
+boundary, and execution-capable unknown statements (`EXPLAIN ANALYZE`,
+`EXPLAIN EXPLORE`, `TRACE`, `EXECUTE`) fell through to the default-complete
+unknown path. Corrections:
+
+- The audited-action whitelist now means "at least one rule consumes this
+  action name" — extraction alone never implies audited semantics.
+  `ALTER TABLE ... ALGORITHM/LOCK/ALTER INDEX INVISIBLE` (both dialects)
+  and TiDB `DROP CHECK` now produce `alter_table.<action>` unsupported
+  evidence and `coverage=incomplete`.
+- `CREATE TABLE ... PLACEMENT POLICY=<name>` records
+  `create_table.option.placement_policy`: a vendor boundary under MySQL
+  (no placement feature) and unaudited analysis under TiDB (binding
+  extracted, no rule consumer). The same `alter_table.placement_policy`
+  action is a vendor boundary under MySQL and stays audited under TiDB
+  (notice-level coverage).
+- TiDB `DROP PROCEDURE` joins `CREATE PROCEDURE` as a vendor boundary;
+  `ddl.drop_procedure.notice` no longer fires under TiDB.
+- `ExplainStmt.Analyze`, `TraceStmt`, and `ExecuteStmt` are
+  parser-attached boundaries (`explain_analyze`, `trace`,
+  `execute_prepared`) because they execute the wrapped or dynamic
+  statement — they can never be treated as read-only inspection.
+  `ExplainStmt.Explore` (`explain_explore`) submits the statement to the
+  TiDB explore/plan-search path whose internal candidate evaluation the
+  audit cannot reason about, so it is marked unaudited rather than assumed
+  read-only. Plain `EXPLAIN`, `EXPLAIN FOR CONNECTION`, `PREPARE`, and
+  `DEALLOCATE` remain named out-of-surface exclusions (read-only or
+  session scope).
+- Extracted-but-unconsumed option facts are unaudited aspects too:
+  schema `charset`/`collate` on `CREATE/ALTER DATABASE`, create-table
+  `collate`, and sequence/placement-policy option lists now surface
+  `<op>.option.<name>` or `<op>.options` evidence. `ALTER DATABASE`
+  additionally records every unparsed attribute as an unextracted option,
+  so TiDB placement bindings and MySQL encryption attributes cannot fall
+  through silently. The `has_options` marker is emitted only when an
+  option list is actually present — bare `CREATE SEQUENCE seq1` stays
+  complete.
+- Terminology: `incomplete` now means two distinct sub-classes with the
+  same contract — vendor boundary and unaudited analysis. "Audit evidence
+  gap" (`unverified`) remains reserved for #83: an understood operation
+  whose required metadata facts are missing. Unmodeled actions/options are
+  unaudited analysis, not evidence gaps; generic notices do not imply
+  semantic coverage.
+- `cli_cases` in `testdata/ddl-golden/T03.json` now lock each rework input
+  (14 cases total) into the required denominator.
+
 ## Verification Evidence
 
-- `make ddl-golden TASK=T03 ARTIFACT_DIR=/tmp/ddl-golden`: 10 cases, 62
-  assertions, PASS on all four anchors — `cli_cases` prove MySQL
-  `CREATE SEQUENCE` + `ALTER TABLE ... ADD COLUMN` exits 1 with
-  `coverage.status=incomplete`, bounded `create_sequence` evidence, and a
-  `review` verdict under the all-rules-off policy.
+- `make ddl-golden TASK=T03 ARTIFACT_DIR=/tmp/ddl-golden`: 22 cases, 169
+  assertions, PASS on all four anchors — `cli_cases` prove MySQL `CREATE SEQUENCE` + `ALTER TABLE
+  ... ADD COLUMN` exits 1 with `coverage.status=incomplete`, bounded
+  `create_sequence` evidence, and a `review` verdict under the
+  all-rules-off policy; rework cases lock `alter_table.alter_index`,
+  `alter_table.drop_check`, `create_table.option.placement_policy`,
+  `drop_procedure`, `explain_analyze` (both dialects), `execute_prepared`,
+  `trace`, `create_sequence.options`, `alter_table.algorithm`/
+  `alter_table.lock`, `alter_table.placement_policy`, and the read-only
+  `EXPLAIN` counter-example.
 - `make ddl-golden TASK=T02 ARTIFACT_DIR=/tmp/ddl-golden`: 10 cases, 57
   assertions, PASS — baseline behavior unregressed.
 - `make ddl-golden-validator-test`: 24 contract cases — `cli_cases`
