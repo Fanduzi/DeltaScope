@@ -260,7 +260,7 @@ rows:
     sql_shape: "CREATE TABLE t (id INT PRIMARY KEY)"
     prerequisites: "InnoDB for engine-dependent checks"
     status: semantically_checked
-    status_evidence: "2026-09-22 CLI probe: primary-key/comment/audit-column/charset/engine rules fire; golden path executes real CREATE on 4 anchors"
+    status_evidence: "2026-09-22 CLI probe: primary-key/comment/audit-column/charset/engine rules fire; golden path executes real CREATE on 4 anchors 2026-09-24 T03 rework (#82): TiDB-only parsed options (auto_random_base, auto_id_cache, shard_row_id_bits, pre_split_regions, TTL family, stats_*, affinity) now record create_table.option.<name> vendor-boundary evidence under MySQL; column-level generated/inline REFERENCES/CHECK/UNIQUE record create_table.column.<name> unaudited evidence"
     targets: "table identity, columns, PK, indexes, options"
     acceptance:
       dimensions: "per-statement findings, version-legal column forms, metadata presence/absence"
@@ -276,7 +276,7 @@ rows:
     sql_shape: "CREATE TEMPORARY TABLE tt (id INT)"
     prerequisites: "none"
     status: generic_notice
-    status_evidence: "2026-09-22 evidence: parses and generic table hygiene rules fire, but spec/extractor carry no temporary identity (grep 'temporary' in internal/domain/spec and parser/tidb extractor is empty) — session scope and same-name shadowing are not audited"
+    status_evidence: "2026-09-22 evidence: parses and generic table hygiene rules fire, but spec/extractor carry no temporary identity (grep 'temporary' in internal/domain/spec and parser/tidb extractor is empty) — session scope and same-name shadowing are not audited 2026-09-24 T03 rework (#82): extractor now projects TemporaryScope; CREATE TEMPORARY TABLE records unsupported feature create_table.temporary with coverage=incomplete (owner T16 still owns real semantics)"
     targets: "temporary vs persistent identity, same-name shadowing, session scope"
     acceptance:
       dimensions: "temporary identity extraction, shadowing, drop counterpoint"
@@ -324,7 +324,7 @@ rows:
     sql_shape: "CREATE TABLE tg (a INT, b INT GENERATED ALWAYS AS (a+1) STORED)"
     prerequisites: "InnoDB"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: parses; generic column hygiene rules fire but no generated-dependency/expression-default check; CREATE TABLE with INVISIBLE column is parser_error"
+    status_evidence: "2026-09-22 CLI probe: parses; generic column hygiene rules fire but no generated-dependency/expression-default check; CREATE TABLE with INVISIBLE column is parser_error 2026-09-24 T03 rework (#82): parsed generated column options now surface as create_table.column.generated incomplete evidence until T07 implements dependency semantics"
     targets: "generated column identity, expression dependency edges (b depends on a), storage kind, invisibility"
     acceptance:
       dimensions: "dependency tracking, drop-source protection, version applicability (expr default 8.0.13+, invisible 8.0.23+)"
@@ -388,7 +388,7 @@ rows:
     sql_shape: "DROP TABLE t1, t2"
     prerequisites: "none"
     status: semantically_checked
-    status_evidence: "2026-09-22 CLI probe: ddl.table.drop.forbid fires; T01 proved every list target reaches the denylist (16/16 oracle); golden DROP verified on 4 anchors"
+    status_evidence: "2026-09-22 CLI probe: ddl.table.drop.forbid fires; T01 proved every list target reaches the denylist (16/16 oracle); golden DROP verified on 4 anchors 2026-09-24 T03 rework (#82): DROP TEMPORARY TABLE records drop_table.temporary incomplete evidence; plain DROP TABLE stays complete (owner T16)"
     targets: "every target identity in source order, existence conditionals, temporary identity"
     acceptance:
       dimensions: "all-target policy evaluation, tuple dedup, deterministic order"
@@ -437,7 +437,7 @@ rows:
     sql_shape: "ALTER TABLE t ADD COLUMN c INT"
     prerequisites: "prior column state for position/duplicate checks"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: only ddl.alter.add_column.notice fires offline; exists/duplicate rules need metadata facts"
+    status_evidence: "2026-09-22 CLI probe: only ddl.alter.add_column.notice fires offline; exists/duplicate rules need metadata facts 2026-09-24 T03 rework (#82): parsed FIRST/AFTER position clause records alter_table.add_columns.column_position evidence; column options (AUTO_RANDOM vendor boundary, inline UNIQUE/CHECK/REFERENCES unaudited) record alter_table.add_columns.column.<name>"
     targets: "table, new column, position, type/attributes"
     acceptance:
       dimensions: "existence/position evidence, metadata-aware parity"
@@ -872,7 +872,7 @@ rows:
     sql_shape: "CREATE PROCEDURE p() BEGIN DELETE FROM t; END;"
     prerequisites: "DELIMITER wrapping handled at batch level"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: CREATE PROCEDURE parses; only ddl.create_procedure.notice — body SQL unaudited (T27 first path is the dml.where.require body oracle)"
+    status_evidence: "2026-09-22 CLI probe: CREATE PROCEDURE parses; only ddl.create_procedure.notice — body SQL unaudited (T27 first path is the dml.where.require body oracle) 2026-09-24 T03 rework (#82): has_body is now gated on ProcedureBody and records create_procedure.body incomplete evidence; unparseable bodies keep the parser-error contract (owner T27)"
     targets: "routine identity, static body statements with original locations, security attributes"
     acceptance:
       dimensions: "body finding on containing definition, bounded body identity, no raw-body leak"
@@ -1341,7 +1341,7 @@ rows:
     sql_shape: "CREATE TABLE t (id BIGINT PRIMARY KEY AUTO_RANDOM)"
     prerequisites: "TiDB-specific ID allocation"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: parses; generic table hygiene rules fire but AUTO_RANDOM/clustered identity itself unchecked (T23 oracle requires fidelity, not misjudged capability)"
+    status_evidence: "2026-09-22 CLI probe: parses; generic table hygiene rules fire but AUTO_RANDOM/clustered identity itself unchecked (T23 oracle requires fidelity, not misjudged capability) 2026-09-24 T03 rework (#82): ColumnOptionAutoRandom extracted into spec.Column.AutoRandom and records create_table.column.auto_random (also alter_table.add_columns.column.auto_random); under MySQL it is a vendor boundary (owner T23)"
     targets: "AUTO_RANDOM identity, clustered key semantics, ID-allocation facts"
     acceptance:
       dimensions: "capability fidelity, policy finding named as policy (not parse failure)"
@@ -1357,7 +1357,7 @@ rows:
     sql_shape: "CREATE TEMPORARY TABLE tt (id INT PRIMARY KEY)"
     prerequisites: "TiDB >= v5.3.0 for real temporary semantics; local temp tables do not support ALTER TABLE"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: parses; generic table hygiene rules fire but TEMPORARY identity/scope is not extracted (no 'temporary' handling in spec/extractor); session-scope shadowing unaudited"
+    status_evidence: "2026-09-22 CLI probe: parses; generic table hygiene rules fire but TEMPORARY identity/scope is not extracted (no 'temporary' handling in spec/extractor); session-scope shadowing unaudited 2026-09-24 T03 rework (#82): TemporaryScope now extracted; records create_table.temporary incomplete evidence; DROP TEMPORARY TABLE records drop_table.temporary (owner T16)"
     targets: "temporary vs persistent identity, session scope, same-name shadowing of ordinary tables"
     acceptance:
       dimensions: "temporary identity extraction, shadowing rules, ALTER-on-temp boundary, drop counterpoint (DROP [TEMPORARY] TABLE)"
@@ -1373,7 +1373,7 @@ rows:
     sql_shape: "CREATE GLOBAL TEMPORARY TABLE gt (id INT) ON COMMIT DELETE ROWS"
     prerequisites: "TiDB >= v5.3.0; persistent definition, transaction-scoped data; cannot shadow an ordinary table"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: parses; generic table hygiene rules fire but GLOBAL/ON COMMIT DELETE ROWS scope is not extracted or checked"
+    status_evidence: "2026-09-22 CLI probe: parses; generic table hygiene rules fire but GLOBAL/ON COMMIT DELETE ROWS scope is not extracted or checked 2026-09-24 T03 rework (#82): global scope plus OnCommitDelete extracted; records create_table.temporary.global incomplete evidence; under MySQL the same form is classified as a vendor boundary (owner T16)"
     targets: "global temporary identity, transaction-scope semantics, distinctness from local temporary and ordinary tables"
     acceptance:
       dimensions: "global-vs-local identity capture, transaction-scope boundary, drop counterpoint (DROP [GLOBAL] TEMPORARY TABLE)"
@@ -1437,7 +1437,7 @@ rows:
     sql_shape: "DROP TABLE t1, t2"
     prerequisites: "none"
     status: semantically_checked
-    status_evidence: "2026-09-22 CLI probe: ddl.table.drop.forbid fires; T01 multi-target contract holds on TiDB"
+    status_evidence: "2026-09-22 CLI probe: ddl.table.drop.forbid fires; T01 multi-target contract holds on TiDB 2026-09-24 T03 rework (#82): DROP [GLOBAL] TEMPORARY TABLE records drop_table.temporary[.global] incomplete evidence; plain DROP TABLE stays complete (owner T16)"
     targets: "every target identity in order"
     acceptance:
       dimensions: "all-target evaluation"

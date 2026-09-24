@@ -8,7 +8,9 @@ expect:
   statements:
     count: 1
   unsupported:
-    count: 0
+    count: 2
+    include:
+      - create_table.column.generated
   findings:
     include:
       - ddl.column.comment.require

@@ -33,9 +33,31 @@ type DDL struct {
 	HasReferTable      bool     `json:"has_refer_table,omitempty"`
 	HasSelect          bool     `json:"has_select,omitempty"`
 	HasPartition       bool     `json:"has_partition,omitempty"`
-	ObjectName         string   `json:"object_name,omitempty"`
-	ObjectType         string   `json:"object_type,omitempty"`
+	// TemporaryScope records a parsed temporary-table keyword on
+	// CREATE/DROP TABLE. The scope changes object identity and lifetime, so a
+	// non-empty value is a recognized-but-unaudited fact until temporary-table
+	// semantics land (inventory owner T16).
+	TemporaryScope TemporaryScope `json:"temporary_scope,omitempty"`
+	// OnCommitDelete marks the transaction-scoped data attribute parsed on
+	// GLOBAL TEMPORARY TABLE declarations.
+	OnCommitDelete bool   `json:"on_commit_delete,omitempty"`
+	ObjectName     string `json:"object_name,omitempty"`
+	ObjectType     string `json:"object_type,omitempty"`
 }
+
+// TemporaryScope identifies the parsed temporary-table scope on CREATE and
+// DROP TABLE statements.
+type TemporaryScope string
+
+const (
+	// TemporaryScopeLocal marks the session-scoped local temporary form
+	// (CREATE TEMPORARY TABLE / DROP TEMPORARY TABLE), supported by both
+	// MySQL and TiDB.
+	TemporaryScopeLocal TemporaryScope = "local"
+	// TemporaryScopeGlobal marks the TiDB-only global temporary form whose
+	// definition persists while data is transaction-scoped.
+	TemporaryScopeGlobal TemporaryScope = "global"
+)
 
 // TableTargets returns every table-level object identity the statement names,
 // in source order. Extractors that populate Targets report them all;
@@ -232,6 +254,12 @@ type Column struct {
 	GeneratedWhen             string         `json:"generated_when,omitempty"`
 	IsIdentity                bool           `json:"is_identity,omitempty"`
 	IdentityOptions           map[string]any `json:"identity_options,omitempty"`
+	// AutoRandom marks a parsed TiDB AUTO_RANDOM column attribute. MySQL has
+	// no such feature, so it is a vendor boundary there (owner T23).
+	AutoRandom bool `json:"auto_random,omitempty"`
+	// UnextractedOptions names parsed column options the extractor recognized
+	// but did not model; see DDL.UnextractedOptions.
+	UnextractedOptions []string `json:"unextracted_options,omitempty"`
 }
 
 // IndexKind identifies the semantic class of an index declaration.
@@ -314,6 +342,10 @@ type Alter struct {
 	// constraint type even when no index definition is produced.
 	Constraint *Constraint       `json:"constraint,omitempty"`
 	Options    map[string]string `json:"options,omitempty"`
+	// HasColumnPosition records a parsed FIRST|AFTER column-position clause.
+	// Positional column ordering is parsed but not audited, so the fact exists
+	// to drive incomplete-coverage evidence.
+	HasColumnPosition bool `json:"has_column_position,omitempty"`
 	// UnextractedOptions names parsed table-option clauses that were dropped
 	// during extraction; see DDL.UnextractedOptions.
 	UnextractedOptions []string `json:"unextracted_options,omitempty"`

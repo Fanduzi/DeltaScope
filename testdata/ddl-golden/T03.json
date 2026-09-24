@@ -2,7 +2,7 @@
   "task_id": "T03",
   "issue": "https://github.com/Fanduzi/DeltaScope/issues/82",
   "policy_profile": "all-rules-disabled",
-  "description": "Incomplete-coverage golden path: the shared parser accepts CREATE SEQUENCE but MySQL does not support it, so the statement stays in the result as incomplete coverage with bounded unsupported evidence while a supported ALTER stays complete. DB steps prove uniform CREATE/ALTER/DROP legality on all four anchors; CLI cases prove the incomplete audit contract under an all-rules-disabled policy, including --fail-on none still exiting 1, recognized-but-unaudited ALTER sub-actions and nested options, vendor boundaries, execution-capable EXPLAIN ANALYZE/TRACE/EXECUTE, and the read-only EXPLAIN counter-example.",
+  "description": "Incomplete-coverage golden path: the shared parser accepts CREATE SEQUENCE but MySQL does not support it, so the statement stays in the result as incomplete coverage with bounded unsupported evidence while a supported ALTER stays complete. DB steps prove uniform CREATE/ALTER/DROP legality on all four anchors; CLI cases prove the incomplete audit contract under an all-rules-disabled policy, including --fail-on none still exiting 1, recognized-but-unaudited ALTER sub-actions and nested options, vendor boundaries, execution-capable EXPLAIN ANALYZE/TRACE/EXECUTE, and the read-only EXPLAIN counter-example, and the remaining recognized-but-unaudited boundary families: temporary-table scope (local/global, create/drop), AUTO_RANDOM column attributes, MySQL procedure bodies, dropped column options (generated/inline REFERENCES/CHECK/UNIQUE), plus ordinary-table contrasts and the procedure parser-error contract (exit 2).",
   "anchors": {
     "mysql57": {
       "service": "mysql57",
@@ -457,6 +457,488 @@
           "complete"
         ]
       }
+    },
+    {
+      "id": "tidb-create-temporary-table",
+      "dialect": "tidb",
+      "sql": "CREATE TEMPORARY TABLE t (id INT PRIMARY KEY);",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "unsupported_features": [
+          "create_table.temporary"
+        ]
+      }
+    },
+    {
+      "id": "mysql-create-temporary-table",
+      "dialect": "mysql",
+      "sql": "CREATE TEMPORARY TABLE t (id INT);",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "unsupported_features": [
+          "create_table.temporary"
+        ]
+      }
+    },
+    {
+      "id": "tidb-create-global-temporary-table",
+      "dialect": "tidb",
+      "sql": "CREATE GLOBAL TEMPORARY TABLE t (id INT PRIMARY KEY) ON COMMIT DELETE ROWS;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "unsupported_features": [
+          "create_table.temporary.global"
+        ]
+      }
+    },
+    {
+      "id": "mysql-create-global-temporary-table",
+      "dialect": "mysql",
+      "sql": "CREATE GLOBAL TEMPORARY TABLE t (id INT) ON COMMIT DELETE ROWS;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "unsupported_features": [
+          "create_table.temporary.global"
+        ]
+      }
+    },
+    {
+      "id": "tidb-drop-temporary-table",
+      "dialect": "tidb",
+      "sql": "DROP TEMPORARY TABLE t;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "unsupported_features": [
+          "drop_table.temporary"
+        ]
+      }
+    },
+    {
+      "id": "tidb-create-table-auto-random",
+      "dialect": "tidb",
+      "sql": "CREATE TABLE t (id BIGINT PRIMARY KEY AUTO_RANDOM);",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "unsupported_features": [
+          "create_table.column.auto_random"
+        ]
+      }
+    },
+    {
+      "id": "mysql-create-table-auto-random",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t (id BIGINT PRIMARY KEY AUTO_RANDOM);",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "unsupported_features": [
+          "create_table.column.auto_random"
+        ]
+      }
+    },
+    {
+      "id": "tidb-alter-add-column-auto-random",
+      "dialect": "tidb",
+      "sql": "ALTER TABLE t ADD COLUMN id BIGINT AUTO_RANDOM;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "unsupported_features": [
+          "alter_table.add_columns.column.auto_random"
+        ]
+      }
+    },
+    {
+      "id": "mysql-create-procedure-body",
+      "dialect": "mysql",
+      "sql": "CREATE PROCEDURE p() SELECT 1;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "unsupported_features": [
+          "create_procedure.body"
+        ]
+      }
+    },
+    {
+      "id": "mysql-create-table-generated-column",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t (a INT, b INT GENERATED ALWAYS AS (a+1) STORED);",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "unsupported_features": [
+          "create_table.column.generated"
+        ]
+      }
+    },
+    {
+      "id": "mysql-create-table-inline-reference",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t (id INT, pid INT REFERENCES parent(id));",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "unsupported_features": [
+          "create_table.column.reference"
+        ]
+      }
+    },
+    {
+      "id": "tidb-create-table-inline-check",
+      "dialect": "tidb",
+      "sql": "CREATE TABLE t (id INT CHECK (id > 0));",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "unsupported_features": [
+          "create_table.column.check"
+        ]
+      }
+    },
+    {
+      "id": "mysql-create-table-inline-unique",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t (id INT UNIQUE);",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "unsupported_features": [
+          "create_table.column.unique"
+        ]
+      }
+    },
+    {
+      "id": "mysql-create-procedure-parser-error",
+      "dialect": "mysql",
+      "sql": "CREATE PROCEDURE p() BEGIN SELECT 1; END;",
+      "expect": {
+        "exit": 2,
+        "verdict": "",
+        "statements": 0,
+        "findings": 0,
+        "diagnostics": 2,
+        "unsupported": 0,
+        "coverage": "incomplete",
+        "statement_coverage": []
+      }
+    },
+    {
+      "id": "tidb-create-table-ordinary",
+      "dialect": "tidb",
+      "sql": "CREATE TABLE t (id INT PRIMARY KEY);",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ]
+      }
+    },
+    {
+      "id": "mysql-drop-table-ordinary",
+      "dialect": "mysql",
+      "sql": "DROP TABLE t;",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ]
+      }
+    },
+    {
+      "id": "mysql-drop-temporary-table",
+      "dialect": "mysql",
+      "sql": "DROP TEMPORARY TABLE t;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "unsupported_features": [
+          "drop_table.temporary"
+        ]
+      }
+    },
+    {
+      "id": "mysql-alter-add-column-auto-random",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t ADD COLUMN id BIGINT AUTO_RANDOM;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "unsupported_features": [
+          "alter_table.add_columns.column.auto_random"
+        ]
+      }
+    },
+    {
+      "id": "mysql-alter-add-column-position",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t ADD COLUMN c INT FIRST;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "unsupported_features": [
+          "alter_table.add_columns.column_position"
+        ]
+      }
+    },
+    {
+      "id": "tidb-alter-add-column-position",
+      "dialect": "tidb",
+      "sql": "ALTER TABLE t ADD COLUMN c INT AFTER id;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "unsupported_features": [
+          "alter_table.add_columns.column_position"
+        ]
+      }
+    },
+    {
+      "id": "mysql-create-table-tidb-only-options",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t (id INT) SHARD_ROW_ID_BITS=4 PRE_SPLIT_REGIONS=2;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 2,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "unsupported_features": [
+          "create_table.option.pre_split_regions",
+          "create_table.option.shard_row_id_bits"
+        ]
+      }
     }
   ],
   "required_case_ids": [
@@ -481,6 +963,27 @@
     "T03.cli.tidb-create-sequence-options",
     "T03.cli.mysql-alter-algorithm-lock",
     "T03.cli.mysql-alter-placement-policy",
-    "T03.cli.tidb-explain-readonly"
+    "T03.cli.tidb-explain-readonly",
+    "T03.cli.tidb-create-temporary-table",
+    "T03.cli.mysql-create-temporary-table",
+    "T03.cli.tidb-create-global-temporary-table",
+    "T03.cli.mysql-create-global-temporary-table",
+    "T03.cli.tidb-drop-temporary-table",
+    "T03.cli.tidb-create-table-auto-random",
+    "T03.cli.mysql-create-table-auto-random",
+    "T03.cli.tidb-alter-add-column-auto-random",
+    "T03.cli.mysql-create-procedure-body",
+    "T03.cli.mysql-create-table-generated-column",
+    "T03.cli.mysql-create-table-inline-reference",
+    "T03.cli.tidb-create-table-inline-check",
+    "T03.cli.mysql-create-table-inline-unique",
+    "T03.cli.mysql-create-procedure-parser-error",
+    "T03.cli.tidb-create-table-ordinary",
+    "T03.cli.mysql-drop-table-ordinary",
+    "T03.cli.mysql-drop-temporary-table",
+    "T03.cli.mysql-alter-add-column-auto-random",
+    "T03.cli.mysql-alter-add-column-position",
+    "T03.cli.tidb-alter-add-column-position",
+    "T03.cli.mysql-create-table-tidb-only-options"
   ]
 }

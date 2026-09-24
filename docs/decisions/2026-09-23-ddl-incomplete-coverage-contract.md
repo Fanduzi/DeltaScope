@@ -165,9 +165,58 @@ unknown path. Corrections:
 - `cli_cases` in `testdata/ddl-golden/T03.json` now lock each rework input
   (14 cases total) into the required denominator.
 
+## Amendment 2026-09-24 (second rework) — temporary scope, AUTO_RANDOM, procedure bodies, dropped column options
+
+A second probing round found four more parsed-but-unaudited families still
+reporting `coverage=complete`: temporary tables, `AUTO_RANDOM`, MySQL
+procedure bodies, and column options the extractor silently dropped.
+Corrections, all driven by AST facts only (no raw-SQL scanning):
+
+- `spec.DDL.TemporaryScope`/`OnCommitDelete` now project
+  `CreateTableStmt.TemporaryKeyword`/`OnCommitDelete` and the same field on
+  `DropTableStmt`. `CREATE/DROP TEMPORARY TABLE` records
+  `<op>.temporary` (unaudited, both dialects — owner T16); the `GLOBAL`
+  form records `<op>.temporary.global`, which is a vendor boundary under
+  MySQL (no global temporary feature) and unaudited under TiDB.
+- `spec.Column.AutoRandom` projects `ColumnOptionAutoRandom`. CREATE and
+  `ALTER ... ADD COLUMN` forms record `<op>.column.auto_random` /
+  `alter_table.<action>.column.auto_random`: unaudited under TiDB, vendor
+  boundary under MySQL (owner T23).
+- `extractCreateProcedure` now emits `has_body` only when
+  `ProcedureBody != nil`; a parsed body records `create_procedure.body`
+  (unaudited, owner T27). Unparseable bodies keep the parser-error
+  contract (CLI exit 2) — no body effects are inferred from failed text.
+- `spec.Column.UnextractedOptions` records every recognized-but-dropped
+  column option (`generated`, `reference`, `check`, `unique`, `fulltext`,
+  `column_format`, `storage`, `secondary_engine_attribute`) as
+  `<op>.column.<name>` evidence; inventory rows already documented these
+  as unchecked aspects (owners T07/T23/T27 etc.). `ColumnOptionNull` is a
+  no-op marker and stays excluded; column `COLLATE`/`COMMENT` are consumed
+  typed facts (`column.Collation`/`column.Comment` feeds charset rules),
+  not gaps; `SERIAL`'s implicit UNIQUE now honestly surfaces as
+  `create_table.column.unique`. Unmapped future option types synthesize a
+  fail-closed `column_option_<n>` name like `tableOptionName`.
+- `spec.Alter.HasColumnPosition` projects the parsed `FIRST|AFTER`
+  position clause; `alter_table.<action>.column_position` is unaudited
+  under both dialects (valid MySQL and TiDB syntax, unaudited ordering
+  semantics).
+- TiDB-only parsed table options (`auto_random_base`, `auto_id_cache`,
+  `shard_row_id_bits`, `pre_split_regions`, the TTL family, `stats_*`,
+  `affinity`) classify as vendor boundaries under MySQL in both the
+  create-table and alter unextracted-option paths — matching the column
+  `AUTO_RANDOM` form instead of under-claiming unaudited analysis.
+- `cli_cases` grow to 35 (21 new): all four repro inputs plus MySQL
+  temporary/global/AUTO_RANDOM vendor variants, temporary drops in both
+  dialects, alter AUTO_RANDOM in both dialects, `FIRST|AFTER` position
+  forms, TiDB-only option vendor marking, the dropped column-option
+  family, the procedure parser-error contract case (also pinned by a fast
+  unit test, since the `BEGIN..END` failure currently comes from the
+  statement splitter rather than the parser), and ordinary create/drop
+  contrasts.
+
 ## Verification Evidence
 
-- `make ddl-golden TASK=T03 ARTIFACT_DIR=/tmp/ddl-golden`: 22 cases, 169
+- `make ddl-golden TASK=T03 ARTIFACT_DIR=/tmp/ddl-golden`: 43 cases, 355
   assertions, PASS on all four anchors — `cli_cases` prove MySQL `CREATE SEQUENCE` + `ALTER TABLE
   ... ADD COLUMN` exits 1 with `coverage.status=incomplete`, bounded
   `create_sequence` evidence, and a `review` verdict under the
@@ -175,8 +224,13 @@ unknown path. Corrections:
   `alter_table.drop_check`, `create_table.option.placement_policy`,
   `drop_procedure`, `explain_analyze` (both dialects), `execute_prepared`,
   `trace`, `create_sequence.options`, `alter_table.algorithm`/
-  `alter_table.lock`, `alter_table.placement_policy`, and the read-only
-  `EXPLAIN` counter-example.
+  `alter_table.lock`, `alter_table.placement_policy`, the read-only
+  `EXPLAIN` counter-example, and the second-rework set: `create_table.temporary[.global]`
+  (both dialects), `drop_table.temporary`, `create_table.column.auto_random`
+  (both dialects) plus `alter_table.add_columns.column.auto_random`,
+  `create_procedure.body`, `create_table.column.generated`/`reference`/
+  `check`/`unique`, the procedure parser-error exit-2 case, and ordinary
+  create/drop-table contrasts.
 - `make ddl-golden TASK=T02 ARTIFACT_DIR=/tmp/ddl-golden`: 10 cases, 57
   assertions, PASS — baseline behavior unregressed.
 - `make ddl-golden-validator-test`: 24 contract cases — `cli_cases`

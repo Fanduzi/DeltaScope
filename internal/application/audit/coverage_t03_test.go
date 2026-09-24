@@ -258,6 +258,35 @@ func TestAuditSQLT03ParserFailureKeepsParserContract(t *testing.T) {
 	}
 }
 
+// TestAuditSQLT03ProcedureBodyParseFailureKeepsParserContract pins the
+// compound-body form that currently fails to parse: it must stay on the
+// parser-error path (CLI exit 2) and must never be converted into a
+// recognized has_body unsupported aspect inferred from the failed text.
+func TestAuditSQLT03ProcedureBodyParseFailureKeepsParserContract(t *testing.T) {
+	t.Parallel()
+	configPath := writeAllRulesDisabledPolicy(t)
+
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:        "CREATE PROCEDURE p() BEGIN SELECT 1; END;",
+		Dialect:    spec.DialectMySQL,
+		ConfigPath: configPath,
+	})
+	if err == nil || errors.Is(err, ErrUnsupportedStatement) {
+		t.Fatalf("expected parser error (not unsupported), got %v", err)
+	}
+	if result.Coverage.Status != report.CoverageIncomplete {
+		t.Fatalf("expected incomplete aggregate coverage on parse failure, got %q", result.Coverage.Status)
+	}
+	for _, detail := range result.Unsupported {
+		if strings.Contains(detail.Feature, "procedure") {
+			t.Fatalf("procedure effects must not be inferred from failed SQL text, got %#v", detail)
+		}
+	}
+	if len(result.Diagnostics) == 0 || result.Diagnostics[0].Classification != DiagnosticParserError {
+		t.Fatalf("expected parser_error diagnostic, got %#v", result.Diagnostics)
+	}
+}
+
 // TestAuditSQLT03MixedValidInvalidKeepsValidResults proves a parse failure
 // alongside valid statements keeps valid statement results and stays
 // distinguishable from recognized-unsupported outcomes.
@@ -324,6 +353,26 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 		{name: "tidb alter schema placement", sql: "ALTER DATABASE d1 PLACEMENT POLICY=p1;", dialect: spec.DialectTiDB, wantFeature: "alter_schema.option.placement_policy", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql alter schema placement vendor", sql: "ALTER DATABASE d1 PLACEMENT POLICY=p1;", dialect: spec.DialectMySQL, wantFeature: "alter_schema.option.placement_policy", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
 		{name: "tidb create table collate", sql: "CREATE TABLE t (id INT) COLLATE utf8mb4_bin;", dialect: spec.DialectTiDB, wantFeature: "create_table.option.collate", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "tidb create temporary table", sql: "CREATE TEMPORARY TABLE t (id INT PRIMARY KEY);", dialect: spec.DialectTiDB, wantFeature: "create_table.temporary", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql create temporary table", sql: "CREATE TEMPORARY TABLE t (id INT PRIMARY KEY);", dialect: spec.DialectMySQL, wantFeature: "create_table.temporary", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "tidb create global temporary table", sql: "CREATE GLOBAL TEMPORARY TABLE t (id INT PRIMARY KEY) ON COMMIT DELETE ROWS;", dialect: spec.DialectTiDB, wantFeature: "create_table.temporary.global", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql create global temporary table", sql: "CREATE GLOBAL TEMPORARY TABLE t (id INT PRIMARY KEY) ON COMMIT DELETE ROWS;", dialect: spec.DialectMySQL, wantFeature: "create_table.temporary.global", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
+		{name: "tidb drop temporary table", sql: "DROP TEMPORARY TABLE t;", dialect: spec.DialectTiDB, wantFeature: "drop_table.temporary", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql drop temporary table", sql: "DROP TEMPORARY TABLE t;", dialect: spec.DialectMySQL, wantFeature: "drop_table.temporary", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "tidb create table auto_random", sql: "CREATE TABLE t (id BIGINT PRIMARY KEY AUTO_RANDOM);", dialect: spec.DialectTiDB, wantFeature: "create_table.column.auto_random", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql create table auto_random", sql: "CREATE TABLE t (id BIGINT PRIMARY KEY AUTO_RANDOM);", dialect: spec.DialectMySQL, wantFeature: "create_table.column.auto_random", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
+		{name: "tidb alter add column auto_random", sql: "ALTER TABLE t ADD COLUMN id BIGINT AUTO_RANDOM;", dialect: spec.DialectTiDB, wantFeature: "alter_table.add_columns.column.auto_random", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql alter add column auto_random", sql: "ALTER TABLE t ADD COLUMN id BIGINT AUTO_RANDOM;", dialect: spec.DialectMySQL, wantFeature: "alter_table.add_columns.column.auto_random", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
+		{name: "mysql alter add column first", sql: "ALTER TABLE t ADD COLUMN c INT FIRST;", dialect: spec.DialectMySQL, wantFeature: "alter_table.add_columns.column_position", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "tidb alter add column after", sql: "ALTER TABLE t ADD COLUMN c INT AFTER id;", dialect: spec.DialectTiDB, wantFeature: "alter_table.add_columns.column_position", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql create table tidb-only options", sql: "CREATE TABLE t (id INT) SHARD_ROW_ID_BITS=4 PRE_SPLIT_REGIONS=2;", dialect: spec.DialectMySQL, wantFeature: "create_table.option.shard_row_id_bits", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
+		{name: "mysql create table auto_random_base", sql: "CREATE TABLE t (id INT) AUTO_RANDOM_BASE=10;", dialect: spec.DialectMySQL, wantFeature: "create_table.option.auto_random_base", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
+		{name: "tidb create table auto_random_base", sql: "CREATE TABLE t (id INT) AUTO_RANDOM_BASE=10;", dialect: spec.DialectTiDB, wantFeature: "create_table.option.auto_random_base", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql create procedure body", sql: "CREATE PROCEDURE p() SELECT 1;", dialect: spec.DialectMySQL, wantFeature: "create_procedure.body", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql create table generated column", sql: "CREATE TABLE t (a INT, b INT GENERATED ALWAYS AS (a+1) STORED);", dialect: spec.DialectMySQL, wantFeature: "create_table.column.generated", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql create table inline reference", sql: "CREATE TABLE t (id INT, pid INT REFERENCES parent(id));", dialect: spec.DialectMySQL, wantFeature: "create_table.column.reference", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "tidb create table inline check", sql: "CREATE TABLE t (id INT CHECK (id > 0));", dialect: spec.DialectTiDB, wantFeature: "create_table.column.check", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql create table inline unique", sql: "CREATE TABLE t (id INT UNIQUE);", dialect: spec.DialectMySQL, wantFeature: "create_table.column.unique", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -396,6 +445,10 @@ func TestAuditSQLT03RecognizedOutOfSurfaceStaysComplete(t *testing.T) {
 		{name: "mysql plain explain", sql: "EXPLAIN SELECT id FROM t;", dialect: spec.DialectMySQL},
 		{name: "tidb prepare deallocate", sql: "PREPARE s FROM 'SELECT 1'; DEALLOCATE PREPARE s;", dialect: spec.DialectTiDB},
 		{name: "tidb alter placement policy", sql: "ALTER TABLE t PLACEMENT POLICY=p;", dialect: spec.DialectTiDB},
+		{name: "mysql plain create table", sql: "CREATE TABLE t (id INT PRIMARY KEY);", dialect: spec.DialectMySQL},
+		{name: "tidb plain create table", sql: "CREATE TABLE t (id INT PRIMARY KEY);", dialect: spec.DialectTiDB},
+		{name: "mysql drop table", sql: "DROP TABLE t;", dialect: spec.DialectMySQL},
+		{name: "mysql drop procedure", sql: "DROP PROCEDURE p;", dialect: spec.DialectMySQL},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

@@ -1,6 +1,6 @@
 // Package tidbparser extracts parser-neutral statements from TiDB AST nodes.
 // input: TiDB parser statement nodes and parser-neutral dialect metadata
-// output: extractor-backed parsed statements for the application layer, including MutationTargets and mutation-target-only DML tables, normalized ALTER index/constraint actions, multi-target DDL Targets for DROP/RENAME/ALTER-rename, and primary-key metadata
+// output: extractor-backed parsed statements for the application layer, including MutationTargets and mutation-target-only DML tables, normalized ALTER index/constraint actions, multi-target DDL Targets for DROP/RENAME/ALTER-rename, temporary-table scope facts, typed and unextracted column-option facts, and primary-key metadata
 // pos: infrastructure extraction adapter between TiDB AST and domain spec
 // note: if this file changes, update this header and module README.md.
 package tidbparser
@@ -206,6 +206,13 @@ func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
 		HasSelect:     stmt.Select != nil,
 		HasPartition:  stmt.Partition != nil,
 	}
+	switch stmt.TemporaryKeyword {
+	case ast.TemporaryLocal:
+		ddl.TemporaryScope = spec.TemporaryScopeLocal
+	case ast.TemporaryGlobal:
+		ddl.TemporaryScope = spec.TemporaryScopeGlobal
+		ddl.OnCommitDelete = stmt.OnCommitDelete
+	}
 
 	for _, col := range stmt.Cols {
 		column := extractColumn(col)
@@ -275,6 +282,12 @@ func extractDropTable(stmt *ast.DropTableStmt) *spec.DDL {
 	ddl := &spec.DDL{Operation: operation, Options: map[string]string{}}
 	if stmt.IfExists {
 		ddl.Options["if_exists"] = "true"
+	}
+	switch stmt.TemporaryKeyword {
+	case ast.TemporaryLocal:
+		ddl.TemporaryScope = spec.TemporaryScopeLocal
+	case ast.TemporaryGlobal:
+		ddl.TemporaryScope = spec.TemporaryScopeGlobal
 	}
 	for _, tableName := range stmt.Tables {
 		if tableName == nil {
@@ -348,15 +361,19 @@ func extractAlterSpecs(specification *ast.AlterTableSpec, clause string) []spec.
 			if column == nil {
 				continue
 			}
-			alters = append(alters, spec.Alter{Action: alterActionName(specification.Tp), Name: column.Name.Name.L, Column: alterColumnFromColumnDef(column)})
+			alters = append(alters, spec.Alter{Action: alterActionName(specification.Tp), Name: column.Name.Name.L, Column: alterColumnFromColumnDef(column), HasColumnPosition: hasColumnPositionClause(specification)})
 		}
 		return alters
 	}
 	return []spec.Alter{extractAlterSpec(specification, clause)}
 }
 
+func hasColumnPositionClause(specification *ast.AlterTableSpec) bool {
+	return specification.Position != nil && specification.Position.Tp != ast.ColumnPositionNone
+}
+
 func extractAlterSpec(specification *ast.AlterTableSpec, clause string) spec.Alter {
-	alter := spec.Alter{Action: alterActionNameForSpec(specification, clause), Name: extractAlterName(specification)}
+	alter := spec.Alter{Action: alterActionNameForSpec(specification, clause), Name: extractAlterName(specification), HasColumnPosition: hasColumnPositionClause(specification)}
 	if column := extractAlterColumn(specification); column != nil {
 		alter.Column = column
 	}
@@ -508,9 +525,43 @@ func extractColumn(col *ast.ColumnDef) spec.Column {
 			column.DefaultIsCurrentTimestamp = exprIsCurrentTimestamp(option.Expr)
 		case ast.ColumnOptionOnUpdate:
 			column.OnUpdateCurrentTimestamp = exprIsCurrentTimestamp(option.Expr)
+		case ast.ColumnOptionAutoRandom:
+			column.AutoRandom = true
+		case ast.ColumnOptionNull:
+			// NULL is the default nullability — a no-op marker, not a gap.
+		default:
+			column.UnextractedOptions = append(column.UnextractedOptions, columnOptionName(option.Tp))
 		}
 	}
 	return column
+}
+
+// columnOptionName maps a parsed ColumnOption type to a stable bounded feature
+// name used in unextracted column-option evidence; unmapped future types
+// synthesize a fail-closed name like tableOptionName.
+func columnOptionName(tp ast.ColumnOptionType) string {
+	switch tp {
+	case ast.ColumnOptionUniqKey:
+		return "unique"
+	case ast.ColumnOptionFulltext:
+		return "fulltext"
+	case ast.ColumnOptionGenerated:
+		return "generated"
+	case ast.ColumnOptionReference:
+		return "reference"
+	case ast.ColumnOptionCheck:
+		return "check"
+	case ast.ColumnOptionColumnFormat:
+		return "column_format"
+	case ast.ColumnOptionStorage:
+		return "storage"
+	case ast.ColumnOptionAutoRandom:
+		return "auto_random"
+	case ast.ColumnOptionSecondaryEngineAttribute:
+		return "secondary_engine_attribute"
+	default:
+		return fmt.Sprintf("column_option_%d", int(tp))
+	}
 }
 
 func extractAlterColumn(specification *ast.AlterTableSpec) *spec.AlterColumn {
@@ -666,12 +717,15 @@ func extractCreateProcedure(stmt *ast.ProcedureInfo) *spec.DDL {
 	if stmt.ProcedureName != nil {
 		name = stmt.ProcedureName.Name.L
 	}
-	return &spec.DDL{
+	ddl := &spec.DDL{
 		Operation:  spec.DDLOperationCreateProcedure,
 		ObjectName: name,
 		ObjectType: "procedure",
-		Options:    map[string]string{"has_body": "true"},
 	}
+	if stmt.ProcedureBody != nil {
+		ddl.Options = map[string]string{"has_body": "true"}
+	}
+	return ddl
 }
 
 func extractDropProcedure(stmt *ast.DropProcedureStmt) *spec.DDL {

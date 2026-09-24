@@ -261,7 +261,7 @@ func TestAuditMySQLDDLNoLeakSensitivePayloads(t *testing.T) {
 				SQL:     tt.sql,
 				Dialect: DialectMySQL,
 			})
-			if err != nil {
+			if err != nil && !errors.Is(err, ErrUnsupportedStatement) {
 				t.Fatalf("audit error: %v", err)
 			}
 			for _, stmt := range result.Statements {

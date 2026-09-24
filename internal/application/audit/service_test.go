@@ -8,6 +8,7 @@ package audit
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -726,7 +727,9 @@ func TestAuditSQLMySQLSerialDoesNotAddGlobalNotice(t *testing.T) {
 		SQL:     "create table users (id serial primary key);",
 		Dialect: spec.DialectMySQL,
 	})
-	if err != nil {
+	// SERIAL expands to an implicit UNIQUE key — a parsed-but-unaudited
+	// aspect, so the unsupported sentinel is expected.
+	if err != nil && !errors.Is(err, ErrUnsupportedStatement) {
 		t.Fatalf("audit sql: %v", err)
 	}
 	assertHasNoPostgreSQLSyntaxNotice(t, result)
@@ -741,7 +744,7 @@ func TestAuditSQLTiDBSerialDoesNotAddGlobalNotice(t *testing.T) {
 		SQL:     "create table users (id serial primary key);",
 		Dialect: spec.DialectTiDB,
 	})
-	if err != nil {
+	if err != nil && !errors.Is(err, ErrUnsupportedStatement) {
 		t.Fatalf("audit sql: %v", err)
 	}
 	assertHasNoPostgreSQLSyntaxNotice(t, result)

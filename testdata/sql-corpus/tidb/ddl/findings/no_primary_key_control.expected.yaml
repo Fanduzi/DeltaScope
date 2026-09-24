@@ -6,7 +6,9 @@ expect:
   statement_kind: ddl
   operation: create_table
   unsupported:
-    count: 0
+    count: 1
+    include:
+      - create_table.column.unique
   findings:
     include:
       - ddl.table.primary_key.require

@@ -53,7 +53,7 @@ var mysqlPromotedMetadataCases = []metadataCensusCase{
 	{Name: "DROP INDEX", SQL: "DROP INDEX idx_email ON users", ExpectFindings: true},
 	{Name: "ALTER DATABASE", SQL: "ALTER DATABASE app CHARACTER SET utf8mb4", ExpectFindings: true, ExpectIncomplete: true},
 	{Name: "CREATE PROCEDURE", SQL: "CREATE PROCEDURE p_cleanup() SELECT 1", Sensitive: true,
-		ForbiddenSubstrings: []string{"SELECT 1"}, ExpectFindings: true},
+		ForbiddenSubstrings: []string{"SELECT 1"}, ExpectFindings: true, ExpectIncomplete: true},
 	{Name: "DROP PROCEDURE", SQL: "DROP PROCEDURE p_cleanup", ExpectFindings: true},
 	{Name: "CREATE USER", SQL: "CREATE USER 'admin'@'%' IDENTIFIED BY 'secret'", Sensitive: true,
 		ForbiddenSubstrings: []string{"secret", "IDENTIFIED BY"}, ExpectFindings: true},

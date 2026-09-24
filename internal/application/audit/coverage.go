@@ -145,8 +145,58 @@ func extractedOptionGap(dialect spec.Dialect, op spec.DDLOperation, name string)
 			spec.DDLOperationCreatePlacementPolicy, spec.DDLOperationAlterPlacementPolicy:
 			return true, false
 		}
+	case "has_body":
+		// A parsed procedure body carries static SQL no rule audits yet
+		// (inventory owner T27). Under TiDB the statement itself is already a
+		// vendor boundary, so this aspect only ever fires under MySQL.
+		return op == spec.DDLOperationCreateProcedure, false
 	}
 	return false, false
+}
+
+// tidbOnlyTableOption reports whether an unextracted table-option name is a
+// TiDB-only feature under the given dialect — i.e. parsed by the shared
+// parser but outside the MySQL surface (official MySQL 5.7/8.0/8.4 has no
+// AUTO_RANDOM-base/ID-cache/sharding/TTL/placement/stats/affinity options).
+// Consumed names such as placement_policy are handled by extractedOptionGap.
+func tidbOnlyTableOption(name string, dialect spec.Dialect) bool {
+	if dialect != spec.DialectMySQL {
+		return false
+	}
+	switch name {
+	case "auto_random_base", "auto_id_cache", "shard_row_id_bits",
+		"pre_split_regions", "ttl", "ttl_enable", "ttl_job_interval",
+		"stats_buckets", "stats_top_n", "stats_cols_choice", "stats_col_list",
+		"stats_sample_rate", "affinity":
+		return true
+	}
+	return false
+}
+
+// columnAspectGaps emits bounded evidence for parsed column attributes no rule
+// audits: the typed AUTO_RANDOM fact (a TiDB-only feature, so a vendor
+// boundary under MySQL — owner T23) and every unextracted column option the
+// extractor recognized but dropped (generated expressions, inline
+// REFERENCES/CHECK/UNIQUE, storage/format attributes).
+func columnAspectGaps(dialect spec.Dialect, op spec.DDLOperation, action string, column spec.Column) []spec.UnsupportedDetail {
+	prefix := fmt.Sprintf("%s.column", op)
+	if action != "" {
+		prefix = fmt.Sprintf("%s.%s.column", op, action)
+	}
+	var gaps []spec.UnsupportedDetail
+	if column.AutoRandom {
+		gaps = append(gaps, aspectGap(
+			prefix+".auto_random", dialect == spec.DialectMySQL,
+			map[string]any{"aspect": "column"},
+		))
+	}
+	for _, option := range column.UnextractedOptions {
+		gaps = append(gaps, aspectGap(
+			fmt.Sprintf("%s.%s", prefix, option), false,
+			map[string]any{"aspect": "column"},
+		))
+	}
+	return gaps
 }
 
 // aspectGap builds one bounded UnsupportedDetail for a recognized-but-
@@ -175,9 +225,10 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 	ddl := statement.DDL
 	var gaps []spec.UnsupportedDetail
 	for _, option := range ddl.UnextractedOptions {
-		// A dropped placement-policy option is still a vendor boundary under
-		// MySQL — MySQL has no placement surface regardless of modeling.
-		vendor := dialect == spec.DialectMySQL && option == "placement_policy"
+		// A dropped placement-policy or TiDB-only option is still a vendor
+		// boundary under MySQL — MySQL has no such feature regardless of
+		// modeling.
+		vendor := dialect == spec.DialectMySQL && (option == "placement_policy" || tidbOnlyTableOption(option, dialect))
 		gaps = append(gaps, aspectGap(
 			fmt.Sprintf("%s.option.%s", ddl.Operation, option), vendor,
 			map[string]any{"aspect": "option"},
@@ -186,11 +237,31 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 	for _, name := range sortedOptionNames(ddl.Options) {
 		if gap, vendor := extractedOptionGap(dialect, ddl.Operation, name); gap {
 			feature := fmt.Sprintf("%s.option.%s", ddl.Operation, name)
-			if name == "has_options" {
+			switch name {
+			case "has_options":
 				feature = fmt.Sprintf("%s.options", ddl.Operation)
+			case "has_body":
+				feature = fmt.Sprintf("%s.body", ddl.Operation)
 			}
 			gaps = append(gaps, aspectGap(feature, vendor, map[string]any{"aspect": "option"}))
 		}
+	}
+	if ddl.TemporaryScope != "" {
+		// A parsed temporary scope changes object identity and lifetime; no
+		// rule audits it yet (owner T16). GLOBAL TEMPORARY is TiDB-only, so it
+		// is a vendor boundary under MySQL; the local form exists in both
+		// products and stays unaudited analysis.
+		feature := fmt.Sprintf("%s.temporary", ddl.Operation)
+		vendor := false
+		if ddl.TemporaryScope == spec.TemporaryScopeGlobal {
+			feature += ".global"
+			vendor = dialect == spec.DialectMySQL
+		}
+		gaps = append(gaps, aspectGap(feature, vendor,
+			map[string]any{"aspect": "temporary", "temporary_scope": ddl.TemporaryScope}))
+	}
+	for _, column := range ddl.Columns {
+		gaps = append(gaps, columnAspectGaps(dialect, ddl.Operation, "", column)...)
 	}
 	for _, index := range ddl.Indexes {
 		if gap, vendor := indexKindGap(dialect, index.Kind); gap {
@@ -238,9 +309,18 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 				))
 			}
 		}
+		if alter.Column != nil && alter.Column.Definition != nil {
+			gaps = append(gaps, columnAspectGaps(dialect, ddl.Operation, alter.Action, *alter.Column.Definition)...)
+		}
+		if alter.HasColumnPosition {
+			gaps = append(gaps, aspectGap(
+				fmt.Sprintf("%s.%s.column_position", ddl.Operation, alter.Action), false,
+				map[string]any{"aspect": "column_position", "action": alter.Action},
+			))
+		}
 		for _, option := range alter.UnextractedOptions {
 			gaps = append(gaps, aspectGap(
-				fmt.Sprintf("%s.option.%s", ddl.Operation, option), false,
+				fmt.Sprintf("%s.option.%s", ddl.Operation, option), tidbOnlyTableOption(option, dialect),
 				map[string]any{"aspect": "option", "action": alter.Action},
 			))
 		}

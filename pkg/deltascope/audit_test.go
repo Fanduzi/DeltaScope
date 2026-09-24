@@ -543,7 +543,9 @@ func TestAuditMySQLSerialDoesNotAddGlobalNotice(t *testing.T) {
 		SQL:     "create table users (id serial primary key);",
 		Dialect: DialectMySQL,
 	})
-	if err != nil {
+	// SERIAL expands to an implicit UNIQUE key — a parsed-but-unaudited
+	// aspect, so the unsupported sentinel is expected.
+	if err != nil && !errors.Is(err, ErrUnsupportedStatement) {
 		t.Fatalf("audit: %v", err)
 	}
 	if len(result.GlobalFindings) != 0 {
