@@ -35,7 +35,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `Table`
 - `Column`
 - `Constraint`
-- `Index`
+- `Index` (carries `Global` for the parsed GLOBAL index modifier)
 - `IndexKind`
 - `ImpactSource`
 - `ImpactRisk`
@@ -125,7 +125,7 @@ Normalized statement specifications used as the stable input for rule evaluation
     - rename intent is inferred from `OldName` plus `Definition.Name`, not a separate boolean
     - an optional `Change` block with statement-local relation facts only for semantics the statement explicitly spells out, such as nullability, default, and auto-increment
     - target type and unsigned shape still live on `Definition`, but are not separately labeled as touched change facts
-  - `Index` carries `OldName` plus an optional target `Definition` reused from `Index`
+  - `Index` (carries `Global` for the parsed GLOBAL index modifier) carries `OldName` plus an optional target `Definition` reused from `Index`
   - `Options` is intentionally a flat normalized subset of table options, not a full option AST or ordering-preserving model
 
 ## Dependencies

@@ -191,8 +191,11 @@ func columnAspectGaps(dialect spec.Dialect, op spec.DDLOperation, action string,
 		))
 	}
 	for _, option := range column.UnextractedOptions {
+		// GLOBAL-qualified inline index options are TiDB-only syntax.
+		vendor := dialect == spec.DialectMySQL &&
+			(option == "unique_global" || option == "primary_key_global")
 		gaps = append(gaps, aspectGap(
-			fmt.Sprintf("%s.%s", prefix, option), false,
+			fmt.Sprintf("%s.%s", prefix, option), vendor,
 			map[string]any{"aspect": "column"},
 		))
 	}
@@ -263,10 +266,24 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 	for _, column := range ddl.Columns {
 		gaps = append(gaps, columnAspectGaps(dialect, ddl.Operation, "", column)...)
 	}
+	if ddl.PrimaryKey != nil && ddl.PrimaryKey.Global {
+		gaps = append(gaps, aspectGap(
+			fmt.Sprintf("%s.index.global", ddl.Operation), dialect == spec.DialectMySQL,
+			map[string]any{"aspect": "index", "index_kind": string(spec.IndexKindPrimary)},
+		))
+	}
 	for _, index := range ddl.Indexes {
 		if gap, vendor := indexKindGap(dialect, index.Kind); gap {
 			gaps = append(gaps, aspectGap(
 				fmt.Sprintf("%s.index.%s", ddl.Operation, index.Kind), vendor,
+				map[string]any{"aspect": "index", "index_kind": string(index.Kind)},
+			))
+		}
+		if index.Global {
+			// The GLOBAL modifier is TiDB-only syntax (global indexes on
+			// partitioned tables); under MySQL it is a vendor boundary.
+			gaps = append(gaps, aspectGap(
+				fmt.Sprintf("%s.index.global", ddl.Operation), dialect == spec.DialectMySQL,
 				map[string]any{"aspect": "index", "index_kind": string(index.Kind)},
 			))
 		}
@@ -305,6 +322,12 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 			if gap, vendor := indexKindGap(dialect, alter.Index.Definition.Kind); gap {
 				gaps = append(gaps, aspectGap(
 					fmt.Sprintf("%s.%s.%s", ddl.Operation, alter.Action, alter.Index.Definition.Kind), vendor,
+					map[string]any{"aspect": "index", "action": alter.Action, "index_kind": string(alter.Index.Definition.Kind)},
+				))
+			}
+			if alter.Index.Definition.Global {
+				gaps = append(gaps, aspectGap(
+					fmt.Sprintf("%s.%s.index.global", ddl.Operation, alter.Action), dialect == spec.DialectMySQL,
 					map[string]any{"aspect": "index", "action": alter.Action, "index_kind": string(alter.Index.Definition.Kind)},
 				))
 			}

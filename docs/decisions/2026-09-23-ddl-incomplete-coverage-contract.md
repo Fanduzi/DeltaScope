@@ -214,9 +214,37 @@ Corrections, all driven by AST facts only (no raw-SQL scanning):
   statement splitter rather than the parser), and ordinary create/drop
   contrasts.
 
+## Amendment 2026-09-25 — GLOBAL index modifier and evidence-fidelity follow-up
+
+External review of the second rework found the parser's `GLOBAL` index
+modifier was still being dropped on every path before this fix:
+
+- Column-level `UNIQUE [KEY] GLOBAL` and `PRIMARY KEY GLOBAL` carry the
+  modifier in `ColumnOption.StrValue`; extraction now records bounded
+  `unique_global` / `primary_key_global` option names. `LOCAL` parses to
+  an empty `StrValue` and remains ordinary `unique` (default scope, no
+  additional semantics).
+- Table-level and `ALTER ... ADD` constraints carry the modifier in
+  `Constraint.Option.Global`; standalone `CREATE INDEX ... GLOBAL` in
+  `CreateIndexStmt.IndexOption.Global`. Both now project the new
+  `spec.Index.Global` fact.
+- Classification: `create_table.index.global`,
+  `alter_table.<action>.index.global`, `create_index.create_index.index.global`,
+  and the column-level names above are vendor boundaries under MySQL
+  (MySQL has no `GLOBAL` index modifier) and unaudited under TiDB.
+- `cli_cases` grow to 42 (7 new). The golden runner additionally gained
+  optional `unsupported_reasons` and `statement_sql` expect keys, so
+  cases now pin the exact vendor-vs-unaudited reason list and returned
+  statement identity, not just feature names.
+
+Open contract question (unchanged by this diff): `unsupported[].sql`
+carries the original statement text per the documented public contract.
+A stricter no-raw-SQL reading would remove that field; doing so is a
+public-shape change deferred to an explicit decision.
+
 ## Verification Evidence
 
-- `make ddl-golden TASK=T03 ARTIFACT_DIR=/tmp/ddl-golden`: 43 cases, 355
+- `make ddl-golden TASK=T03 ARTIFACT_DIR=/tmp/ddl-golden`: 50 cases, 482
   assertions, PASS on all four anchors — `cli_cases` prove MySQL `CREATE SEQUENCE` + `ALTER TABLE
   ... ADD COLUMN` exits 1 with `coverage.status=incomplete`, bounded
   `create_sequence` evidence, and a `review` verdict under the

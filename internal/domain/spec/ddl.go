@@ -288,6 +288,10 @@ type Index struct {
 	HasPredicate      bool      `json:"has_predicate,omitempty"`
 	HasExpressionKeys bool      `json:"has_expression_keys,omitempty"`
 	ExpressionCount   int       `json:"expression_count,omitempty"`
+	// Global marks the TiDB-only GLOBAL index modifier parsed on table-level
+	// UNIQUE/PRIMARY KEY constraints and standalone CREATE INDEX statements.
+	// MySQL has no such modifier, so it is a vendor boundary there.
+	Global bool `json:"global,omitempty"`
 }
 
 // Constraint describes a non-index table constraint worth preserving for later rules.

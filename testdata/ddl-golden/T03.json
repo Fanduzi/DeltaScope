@@ -197,6 +197,9 @@
         ],
         "unsupported_features": [
           "alter_table.alter_index"
+        ],
+        "statement_sql": [
+          "ALTER TABLE t ALTER INDEX idx INVISIBLE;"
         ]
       }
     },
@@ -221,6 +224,9 @@
         ],
         "unsupported_features": [
           "alter_table.drop_check"
+        ],
+        "statement_sql": [
+          "ALTER TABLE t DROP CHECK chk;"
         ]
       }
     },
@@ -245,6 +251,9 @@
         ],
         "unsupported_features": [
           "create_table.option.placement_policy"
+        ],
+        "statement_sql": [
+          "CREATE TABLE t (id INT) PLACEMENT POLICY=p;"
         ]
       }
     },
@@ -269,6 +278,9 @@
         ],
         "unsupported_features": [
           "drop_procedure"
+        ],
+        "statement_sql": [
+          "DROP PROCEDURE IF EXISTS p;"
         ]
       }
     },
@@ -293,6 +305,9 @@
         ],
         "unsupported_features": [
           "explain_analyze"
+        ],
+        "statement_sql": [
+          "EXPLAIN ANALYZE DELETE FROM t;"
         ]
       }
     },
@@ -317,6 +332,9 @@
         ],
         "unsupported_features": [
           "explain_analyze"
+        ],
+        "statement_sql": [
+          "EXPLAIN ANALYZE DELETE FROM t;"
         ]
       }
     },
@@ -341,6 +359,9 @@
         ],
         "unsupported_features": [
           "execute_prepared"
+        ],
+        "statement_sql": [
+          "EXECUTE stmt;"
         ]
       }
     },
@@ -365,6 +386,9 @@
         ],
         "unsupported_features": [
           "trace"
+        ],
+        "statement_sql": [
+          "TRACE DELETE FROM t;"
         ]
       }
     },
@@ -389,6 +413,9 @@
         ],
         "unsupported_features": [
           "create_sequence.options"
+        ],
+        "statement_sql": [
+          "CREATE SEQUENCE seq1 START WITH 1 INCREMENT BY 1;"
         ]
       }
     },
@@ -414,6 +441,9 @@
         "unsupported_features": [
           "alter_table.algorithm",
           "alter_table.lock"
+        ],
+        "statement_sql": [
+          "ALTER TABLE t ALGORITHM=INPLACE, LOCK=NONE;"
         ]
       }
     },
@@ -438,6 +468,9 @@
         ],
         "unsupported_features": [
           "alter_table.placement_policy"
+        ],
+        "statement_sql": [
+          "ALTER TABLE t PLACEMENT POLICY=p;"
         ]
       }
     },
@@ -455,6 +488,9 @@
         "coverage": "complete",
         "statement_coverage": [
           "complete"
+        ],
+        "statement_sql": [
+          "EXPLAIN DELETE FROM t;"
         ]
       }
     },
@@ -479,6 +515,12 @@
         ],
         "unsupported_features": [
           "create_table.temporary"
+        ],
+        "unsupported_reasons": [
+          "parsed by the shared parser but not covered by audited semantics"
+        ],
+        "statement_sql": [
+          "CREATE TEMPORARY TABLE t (id INT PRIMARY KEY);"
         ]
       }
     },
@@ -503,6 +545,12 @@
         ],
         "unsupported_features": [
           "create_table.temporary"
+        ],
+        "unsupported_reasons": [
+          "parsed by the shared parser but not covered by audited semantics"
+        ],
+        "statement_sql": [
+          "CREATE TEMPORARY TABLE t (id INT);"
         ]
       }
     },
@@ -527,6 +575,12 @@
         ],
         "unsupported_features": [
           "create_table.temporary.global"
+        ],
+        "unsupported_reasons": [
+          "parsed by the shared parser but not covered by audited semantics"
+        ],
+        "statement_sql": [
+          "CREATE GLOBAL TEMPORARY TABLE t (id INT PRIMARY KEY) ON COMMIT DELETE ROWS;"
         ]
       }
     },
@@ -551,6 +605,12 @@
         ],
         "unsupported_features": [
           "create_table.temporary.global"
+        ],
+        "unsupported_reasons": [
+          "parsed by the shared parser but outside the supported statement surface for this dialect"
+        ],
+        "statement_sql": [
+          "CREATE GLOBAL TEMPORARY TABLE t (id INT) ON COMMIT DELETE ROWS;"
         ]
       }
     },
@@ -575,6 +635,12 @@
         ],
         "unsupported_features": [
           "drop_table.temporary"
+        ],
+        "unsupported_reasons": [
+          "parsed by the shared parser but not covered by audited semantics"
+        ],
+        "statement_sql": [
+          "DROP TEMPORARY TABLE t;"
         ]
       }
     },
@@ -599,6 +665,12 @@
         ],
         "unsupported_features": [
           "create_table.column.auto_random"
+        ],
+        "unsupported_reasons": [
+          "parsed by the shared parser but not covered by audited semantics"
+        ],
+        "statement_sql": [
+          "CREATE TABLE t (id BIGINT PRIMARY KEY AUTO_RANDOM);"
         ]
       }
     },
@@ -623,6 +695,12 @@
         ],
         "unsupported_features": [
           "create_table.column.auto_random"
+        ],
+        "unsupported_reasons": [
+          "parsed by the shared parser but outside the supported statement surface for this dialect"
+        ],
+        "statement_sql": [
+          "CREATE TABLE t (id BIGINT PRIMARY KEY AUTO_RANDOM);"
         ]
       }
     },
@@ -647,6 +725,12 @@
         ],
         "unsupported_features": [
           "alter_table.add_columns.column.auto_random"
+        ],
+        "unsupported_reasons": [
+          "parsed by the shared parser but not covered by audited semantics"
+        ],
+        "statement_sql": [
+          "ALTER TABLE t ADD COLUMN id BIGINT AUTO_RANDOM;"
         ]
       }
     },
@@ -671,6 +755,12 @@
         ],
         "unsupported_features": [
           "create_procedure.body"
+        ],
+        "unsupported_reasons": [
+          "parsed by the shared parser but not covered by audited semantics"
+        ],
+        "statement_sql": [
+          "CREATE PROCEDURE p() SELECT 1;"
         ]
       }
     },
@@ -695,6 +785,12 @@
         ],
         "unsupported_features": [
           "create_table.column.generated"
+        ],
+        "unsupported_reasons": [
+          "parsed by the shared parser but not covered by audited semantics"
+        ],
+        "statement_sql": [
+          "CREATE TABLE t (a INT, b INT GENERATED ALWAYS AS (a+1) STORED);"
         ]
       }
     },
@@ -719,6 +815,12 @@
         ],
         "unsupported_features": [
           "create_table.column.reference"
+        ],
+        "unsupported_reasons": [
+          "parsed by the shared parser but not covered by audited semantics"
+        ],
+        "statement_sql": [
+          "CREATE TABLE t (id INT, pid INT REFERENCES parent(id));"
         ]
       }
     },
@@ -743,6 +845,12 @@
         ],
         "unsupported_features": [
           "create_table.column.check"
+        ],
+        "unsupported_reasons": [
+          "parsed by the shared parser but not covered by audited semantics"
+        ],
+        "statement_sql": [
+          "CREATE TABLE t (id INT CHECK (id > 0));"
         ]
       }
     },
@@ -767,6 +875,12 @@
         ],
         "unsupported_features": [
           "create_table.column.unique"
+        ],
+        "unsupported_reasons": [
+          "parsed by the shared parser but not covered by audited semantics"
+        ],
+        "statement_sql": [
+          "CREATE TABLE t (id INT UNIQUE);"
         ]
       }
     },
@@ -799,6 +913,9 @@
         "coverage": "complete",
         "statement_coverage": [
           "complete"
+        ],
+        "statement_sql": [
+          "CREATE TABLE t (id INT PRIMARY KEY);"
         ]
       }
     },
@@ -816,6 +933,9 @@
         "coverage": "complete",
         "statement_coverage": [
           "complete"
+        ],
+        "statement_sql": [
+          "DROP TABLE t;"
         ]
       }
     },
@@ -840,6 +960,12 @@
         ],
         "unsupported_features": [
           "drop_table.temporary"
+        ],
+        "unsupported_reasons": [
+          "parsed by the shared parser but not covered by audited semantics"
+        ],
+        "statement_sql": [
+          "DROP TEMPORARY TABLE t;"
         ]
       }
     },
@@ -864,6 +990,12 @@
         ],
         "unsupported_features": [
           "alter_table.add_columns.column.auto_random"
+        ],
+        "unsupported_reasons": [
+          "parsed by the shared parser but outside the supported statement surface for this dialect"
+        ],
+        "statement_sql": [
+          "ALTER TABLE t ADD COLUMN id BIGINT AUTO_RANDOM;"
         ]
       }
     },
@@ -888,6 +1020,12 @@
         ],
         "unsupported_features": [
           "alter_table.add_columns.column_position"
+        ],
+        "unsupported_reasons": [
+          "parsed by the shared parser but not covered by audited semantics"
+        ],
+        "statement_sql": [
+          "ALTER TABLE t ADD COLUMN c INT FIRST;"
         ]
       }
     },
@@ -912,6 +1050,12 @@
         ],
         "unsupported_features": [
           "alter_table.add_columns.column_position"
+        ],
+        "unsupported_reasons": [
+          "parsed by the shared parser but not covered by audited semantics"
+        ],
+        "statement_sql": [
+          "ALTER TABLE t ADD COLUMN c INT AFTER id;"
         ]
       }
     },
@@ -937,6 +1081,223 @@
         "unsupported_features": [
           "create_table.option.pre_split_regions",
           "create_table.option.shard_row_id_bits"
+        ],
+        "unsupported_reasons": [
+          "parsed by the shared parser but outside the supported statement surface for this dialect",
+          "parsed by the shared parser but outside the supported statement surface for this dialect"
+        ],
+        "statement_sql": [
+          "CREATE TABLE t (id INT) SHARD_ROW_ID_BITS=4 PRE_SPLIT_REGIONS=2;"
+        ]
+      }
+    },
+    {
+      "id": "mysql-create-table-unique-global",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t (id INT UNIQUE GLOBAL);",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE TABLE t (id INT UNIQUE GLOBAL);"
+        ],
+        "unsupported_features": [
+          "create_table.column.unique_global"
+        ],
+        "unsupported_reasons": [
+          "parsed by the shared parser but outside the supported statement surface for this dialect"
+        ]
+      }
+    },
+    {
+      "id": "tidb-create-table-unique-global",
+      "dialect": "tidb",
+      "sql": "CREATE TABLE t (id INT UNIQUE GLOBAL);",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE TABLE t (id INT UNIQUE GLOBAL);"
+        ],
+        "unsupported_features": [
+          "create_table.column.unique_global"
+        ],
+        "unsupported_reasons": [
+          "parsed by the shared parser but not covered by audited semantics"
+        ]
+      }
+    },
+    {
+      "id": "mysql-create-table-index-global",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t (id INT, UNIQUE KEY uk (id) GLOBAL);",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE TABLE t (id INT, UNIQUE KEY uk (id) GLOBAL);"
+        ],
+        "unsupported_features": [
+          "create_table.index.global"
+        ],
+        "unsupported_reasons": [
+          "parsed by the shared parser but outside the supported statement surface for this dialect"
+        ]
+      }
+    },
+    {
+      "id": "mysql-alter-add-index-global",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t ADD UNIQUE KEY uk (c) GLOBAL;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "ALTER TABLE t ADD UNIQUE KEY uk (c) GLOBAL;"
+        ],
+        "unsupported_features": [
+          "alter_table.add_index.index.global"
+        ],
+        "unsupported_reasons": [
+          "parsed by the shared parser but outside the supported statement surface for this dialect"
+        ]
+      }
+    },
+    {
+      "id": "mysql-create-index-global",
+      "dialect": "mysql",
+      "sql": "CREATE UNIQUE INDEX uk ON t (c) GLOBAL;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE UNIQUE INDEX uk ON t (c) GLOBAL;"
+        ],
+        "unsupported_features": [
+          "create_index.create_index.index.global"
+        ],
+        "unsupported_reasons": [
+          "parsed by the shared parser but outside the supported statement surface for this dialect"
+        ]
+      }
+    },
+    {
+      "id": "mysql-alter-tidb-only-option",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t AUTO_RANDOM_BASE=10;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "ALTER TABLE t AUTO_RANDOM_BASE=10;"
+        ],
+        "unsupported_features": [
+          "alter_table.option.auto_random_base"
+        ],
+        "unsupported_reasons": [
+          "parsed by the shared parser but outside the supported statement surface for this dialect"
+        ]
+      }
+    },
+    {
+      "id": "mysql-alter-modify-column-position",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t MODIFY COLUMN c INT AFTER id;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "ALTER TABLE t MODIFY COLUMN c INT AFTER id;"
+        ],
+        "unsupported_features": [
+          "alter_table.modify_column.column_position"
+        ],
+        "unsupported_reasons": [
+          "parsed by the shared parser but not covered by audited semantics"
         ]
       }
     }
@@ -984,6 +1345,13 @@
     "T03.cli.mysql-alter-add-column-auto-random",
     "T03.cli.mysql-alter-add-column-position",
     "T03.cli.tidb-alter-add-column-position",
-    "T03.cli.mysql-create-table-tidb-only-options"
+    "T03.cli.mysql-create-table-tidb-only-options",
+    "T03.cli.mysql-create-table-unique-global",
+    "T03.cli.tidb-create-table-unique-global",
+    "T03.cli.mysql-create-table-index-global",
+    "T03.cli.mysql-alter-add-index-global",
+    "T03.cli.mysql-create-index-global",
+    "T03.cli.mysql-alter-tidb-only-option",
+    "T03.cli.mysql-alter-modify-column-position"
   ]
 }

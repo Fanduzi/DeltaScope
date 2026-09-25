@@ -351,6 +351,13 @@ def cli_case_expect_checks(parsed, rc, expect):
         got = sorted(u.get("feature") for u in unsupported)
         want = sorted(expect["unsupported_features"])
         checks.append(("unsupported features", parsed is not None and got == want, f"features={got!r} expected={want!r}"))
+    if "unsupported_reasons" in expect:
+        got = sorted(u.get("reason") for u in unsupported)
+        want = sorted(expect["unsupported_reasons"])
+        checks.append(("unsupported reasons", parsed is not None and got == want, f"reasons={got!r} expected={want!r}"))
+    if "statement_sql" in expect:
+        got = [s.get("raw_sql") for s in statements]
+        checks.append(("statement raw SQL identity", parsed is not None and got == expect["statement_sql"], f"raw_sql={got!r} expected={expect['statement_sql']!r}"))
     return checks
 
 

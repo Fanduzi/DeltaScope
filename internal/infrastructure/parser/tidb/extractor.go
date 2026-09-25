@@ -228,9 +228,9 @@ func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
 	for _, c := range stmt.Constraints {
 		switch c.Tp {
 		case ast.ConstraintPrimaryKey:
-			ddl.PrimaryKey = &spec.Index{Name: normalizeConstraintName(c), Kind: spec.IndexKindPrimary, Columns: extractIndexColumns(c.Keys)}
+			ddl.PrimaryKey = &spec.Index{Name: normalizeConstraintName(c), Kind: spec.IndexKindPrimary, Columns: extractIndexColumns(c.Keys), Global: c.Option != nil && c.Option.Global}
 		case ast.ConstraintKey, ast.ConstraintIndex, ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex, ast.ConstraintFulltext:
-			ddl.Indexes = append(ddl.Indexes, spec.Index{Name: normalizeConstraintName(c), Kind: indexKindForConstraint(c.Tp), Columns: extractIndexColumns(c.Keys)})
+			ddl.Indexes = append(ddl.Indexes, spec.Index{Name: normalizeConstraintName(c), Kind: indexKindForConstraint(c.Tp), Columns: extractIndexColumns(c.Keys), Global: c.Option != nil && c.Option.Global})
 		default:
 			ddl.Constraints = append(ddl.Constraints, spec.Constraint{Type: constraintTypeName(c.Tp), Name: normalizeConstraintName(c), Columns: extractIndexColumns(c.Keys)})
 		}
@@ -514,8 +514,13 @@ func extractColumn(col *ast.ColumnDef) spec.Column {
 			if option.Expr != nil {
 				column.Comment = normalizedExprText(option.Expr)
 			}
-		case ast.ColumnOptionNotNull, ast.ColumnOptionPrimaryKey:
+		case ast.ColumnOptionNotNull:
 			column.NotNull = true
+		case ast.ColumnOptionPrimaryKey:
+			column.NotNull = true
+			if option.StrValue == "Global" {
+				column.UnextractedOptions = append(column.UnextractedOptions, "primary_key_global")
+			}
 		case ast.ColumnOptionAutoIncrement:
 			column.AutoIncrement = true
 		case ast.ColumnOptionDefaultValue:
@@ -527,6 +532,14 @@ func extractColumn(col *ast.ColumnDef) spec.Column {
 			column.OnUpdateCurrentTimestamp = exprIsCurrentTimestamp(option.Expr)
 		case ast.ColumnOptionAutoRandom:
 			column.AutoRandom = true
+		case ast.ColumnOptionUniqKey:
+			// The TiDB-only GLOBAL qualifier (StrValue=="Global") changes the
+			// index class, so it gets its own bounded option name.
+			name := "unique"
+			if option.StrValue == "Global" {
+				name = "unique_global"
+			}
+			column.UnextractedOptions = append(column.UnextractedOptions, name)
 		case ast.ColumnOptionNull:
 			// NULL is the default nullability — a no-op marker, not a gap.
 		default:
@@ -541,8 +554,6 @@ func extractColumn(col *ast.ColumnDef) spec.Column {
 // synthesize a fail-closed name like tableOptionName.
 func columnOptionName(tp ast.ColumnOptionType) string {
 	switch tp {
-	case ast.ColumnOptionUniqKey:
-		return "unique"
 	case ast.ColumnOptionFulltext:
 		return "fulltext"
 	case ast.ColumnOptionGenerated:
@@ -609,12 +620,13 @@ func extractCreateIndex(stmt *ast.CreateIndexStmt) *spec.DDL {
 	}
 	indexName := stmt.IndexName
 	columns := extractIndexColumns(stmt.IndexPartSpecifications)
+	indexGlobal := stmt.IndexOption != nil && stmt.IndexOption.Global
 	return &spec.DDL{
 		Operation: spec.DDLOperationCreateIndex,
 		Table:     &spec.Table{Name: stmt.Table.Name.L, Schema: stmt.Table.Schema.L},
 		Alter: []spec.Alter{{
 			Action: "create_index",
-			Index:  &spec.AlterIndex{Definition: &spec.Index{Name: indexName, Kind: kind, Columns: columns}},
+			Index:  &spec.AlterIndex{Definition: &spec.Index{Name: indexName, Kind: kind, Columns: columns, Global: indexGlobal}},
 		}},
 	}
 }
@@ -989,7 +1001,7 @@ func extractAlterIndex(specification *ast.AlterTableSpec) *spec.AlterIndex {
 		if specification.Constraint == nil || !constraintProducesIndex(specification.Constraint.Tp) {
 			return nil
 		}
-		return &spec.AlterIndex{Definition: &spec.Index{Kind: indexKindForConstraint(specification.Constraint.Tp), Name: normalizeConstraintName(specification.Constraint), Columns: extractIndexColumns(specification.Constraint.Keys)}}
+		return &spec.AlterIndex{Definition: &spec.Index{Kind: indexKindForConstraint(specification.Constraint.Tp), Name: normalizeConstraintName(specification.Constraint), Columns: extractIndexColumns(specification.Constraint.Keys), Global: specification.Constraint.Option != nil && specification.Constraint.Option.Global}}
 	case ast.AlterTableDropIndex:
 		name := extractAlterName(specification)
 		if name == "" {
