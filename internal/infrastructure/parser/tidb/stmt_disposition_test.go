@@ -499,6 +499,64 @@ func scanStmtCandidates(t *testing.T, parserDir string) map[string]bool {
 	return candidates
 }
 
+// TestScanStmtCandidatesShapes pins the declaration forms the census scanner
+// must discover: embedded bases with trailing comments, one-line struct
+// declarations, unnamed and generic statement() receivers, and embedders of
+// direct-marker types. A regression here means a parser upgrade could
+// introduce a live statement type the census never sees.
+func TestScanStmtCandidatesShapes(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.Mkdir(filepath.Join(dir, "ast"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	source := `package ast
+
+type stmtNode struct{}
+type ddlNode struct{}
+type dmlNode struct{}
+
+type PlainStmt struct {
+	stmtNode
+}
+
+type CommentedStmt struct {
+	stmtNode // visitor base
+}
+
+type OneLineStmt struct{ ddlNode }
+
+type UnnamedMarker struct{}
+
+func (*UnnamedMarker) statement() {}
+
+type GenericMarker[T any] struct {
+	Value T
+}
+
+func (n *GenericMarker[T]) statement() {}
+
+type DirectBase struct{}
+
+func (n *DirectBase) statement() {}
+
+type DirectChild struct {
+	DirectBase
+}
+`
+	if err := os.WriteFile(filepath.Join(dir, "ast", "nodes.go"), []byte(source), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got := scanStmtCandidates(t, dir)
+	for _, name := range []string{
+		"PlainStmt", "CommentedStmt", "OneLineStmt", "UnnamedMarker",
+		"GenericMarker", "DirectBase", "DirectChild",
+	} {
+		if !got[name] {
+			t.Errorf("statement-node candidate %s missed by scanner", name)
+		}
+	}
+}
+
 // embeddedFieldName unwraps an anonymous field or method receiver type to the
 // base type name: handles T, *T, pkg.T, *pkg.T, and generic receivers T[P]
 // or *T[P].
