@@ -15,13 +15,16 @@ import (
 
 func TestAuditSQLToolMySQLDDLLifecycleFindings(t *testing.T) {
 	tests := []struct {
-		name       string
-		sql        string
-		wantRuleID string
+		name           string
+		sql            string
+		wantRuleID     string
+		wantIncomplete bool
 	}{
 		{name: "rename_table", sql: "RENAME TABLE users TO users_old", wantRuleID: "ddl.rename_table.notice"},
 		{name: "create_index", sql: "CREATE INDEX idx_email ON users (email)", wantRuleID: "ddl.create_index.notice"},
-		{name: "create_user", sql: "CREATE USER 'admin'@'%' IDENTIFIED BY 's3cret'", wantRuleID: "ddl.create_user.notice"},
+		// IDENTIFIED BY is a parsed-but-unaudited account clause: the finding
+		// still fires, but the tool reports incomplete coverage.
+		{name: "create_user", sql: "CREATE USER 'admin'@'%' IDENTIFIED BY 's3cret'", wantRuleID: "ddl.create_user.notice", wantIncomplete: true},
 		{name: "drop_resource_group", sql: "DROP RESOURCE GROUP rg1", wantRuleID: "ddl.drop_resource_group.notice"},
 	}
 
@@ -44,13 +47,23 @@ func TestAuditSQLToolMySQLDDLLifecycleFindings(t *testing.T) {
 			if err != nil {
 				t.Fatalf("call audit_sql: %v", err)
 			}
-			if result.IsError {
+			if tt.wantIncomplete {
+				if !result.IsError {
+					t.Fatalf("expected isError=true for incomplete coverage, got %#v", result)
+				}
+			} else if result.IsError {
 				t.Fatalf("expected success result, got tool error: %#v", result)
 			}
 
-			body, ok := result.StructuredContent.(map[string]any)
-			if !ok {
-				t.Fatalf("expected structured content, got %T", result.StructuredContent)
+			var body map[string]any
+			if result.IsError {
+				body = requireAuditStructuredMap(t, result)
+			} else {
+				var ok bool
+				body, ok = result.StructuredContent.(map[string]any)
+				if !ok {
+					t.Fatalf("expected structured content, got %T", result.StructuredContent)
+				}
 			}
 			stmts, ok := body["statements"].([]any)
 			if !ok || len(stmts) == 0 {
@@ -179,14 +192,14 @@ func TestAuditSQLToolMySQLDDLNoLeakPasswords(t *testing.T) {
 	if err != nil {
 		t.Fatalf("call audit_sql: %v", err)
 	}
-	if result.IsError {
-		t.Fatalf("expected success result, got tool error: %#v", result)
+	// IDENTIFIED BY is parsed-but-unaudited: the tool reports incomplete
+	// coverage, and the no-leak assertions below still apply to the
+	// findings/metadata carried inside the error envelope.
+	if !result.IsError {
+		t.Fatalf("expected isError=true for incomplete coverage, got %#v", result)
 	}
 
-	body, ok := result.StructuredContent.(map[string]any)
-	if !ok {
-		t.Fatalf("expected structured content, got %T", result.StructuredContent)
-	}
+	body := requireAuditStructuredMap(t, result)
 	stmts, ok := body["statements"].([]any)
 	if !ok || len(stmts) == 0 {
 		t.Fatalf("expected statements, got %#v", body["statements"])

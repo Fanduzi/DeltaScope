@@ -22,7 +22,7 @@ func TestAuditMySQLDDLLifecycleRuleCoverage(t *testing.T) {
 		{name: "rename_table_notice", sql: "RENAME TABLE users TO users_old", wantRuleID: "ddl.rename_table.notice"},
 		{name: "create_index_notice", sql: "CREATE INDEX idx_email ON users (email)", wantRuleID: "ddl.create_index.notice"},
 		{name: "alter_add_index_notice", sql: "ALTER TABLE users ADD INDEX idx_email (email)", wantRuleID: "ddl.create_index.notice"},
-		{name: "create_user_notice", sql: "CREATE USER 'admin'@'%' IDENTIFIED BY 'secret'", wantRuleID: "ddl.create_user.notice"},
+		{name: "create_user_notice", sql: "CREATE USER 'admin'@'%' IDENTIFIED BY 'secret'", wantRuleID: "ddl.create_user.notice", wantUnsupportedFeature: "create_user.option.identified"},
 		{name: "grant_notice", sql: "GRANT SELECT ON app.users TO 'reader'@'%'", wantRuleID: "ddl.grant.notice", wantUnsupportedFeature: "grant.unaudited_targets"},
 		{name: "drop_resource_group_notice", sql: "DROP RESOURCE GROUP rg1", wantRuleID: "ddl.drop_resource_group.notice"},
 	}
@@ -85,7 +85,7 @@ func TestAuditTiDBDDLLifecycleRuleCoverage(t *testing.T) {
 		{name: "rename_table_notice", sql: "RENAME TABLE users TO users_old", wantRuleID: "ddl.rename_table.notice"},
 		{name: "create_index_notice", sql: "CREATE INDEX idx_email ON users (email)", wantRuleID: "ddl.create_index.notice"},
 		{name: "alter_add_index_notice", sql: "ALTER TABLE users ADD INDEX idx_email (email)", wantRuleID: "ddl.create_index.notice"},
-		{name: "create_user_notice", sql: "CREATE USER 'admin'@'%' IDENTIFIED BY 'secret'", wantRuleID: "ddl.create_user.notice"},
+		{name: "create_user_notice", sql: "CREATE USER 'admin'@'%' IDENTIFIED BY 'secret'", wantRuleID: "ddl.create_user.notice", wantUnsupportedFeature: "create_user.option.identified"},
 		{name: "grant_notice", sql: "GRANT SELECT ON app.users TO 'reader'@'%'", wantRuleID: "ddl.grant.notice", wantUnsupportedFeature: "grant.unaudited_targets"},
 		{name: "create_placement_policy_notice", sql: "CREATE PLACEMENT POLICY p1 PRIMARY_REGION='us-east-1' REGIONS='us-east-1'", wantRuleID: "ddl.create_placement_policy.notice", wantUnsupportedFeature: "create_placement_policy.options"},
 		{name: "create_sequence_notice", sql: "CREATE SEQUENCE seq1 START WITH 1 INCREMENT BY 1", wantRuleID: "ddl.create_sequence.notice", wantUnsupportedFeature: "create_sequence.options"},

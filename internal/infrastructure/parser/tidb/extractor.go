@@ -861,7 +861,7 @@ func extractCreateUser(stmt *ast.CreateUserStmt) *spec.DDL {
 			ObjectName:         name,
 			ObjectType:         "role",
 			OmittedTargets:     omittedUserTargets(stmt.Specs),
-			UnextractedOptions: userOptionNames(stmt.AuthTokenOrTLSOptions, stmt.ResourceOptions, stmt.PasswordOrLockOptions, stmt.CommentOrAttributeOption, stmt.ResourceGroupNameOption),
+			UnextractedOptions: userOptionNames(stmt.Specs, nil, stmt.AuthTokenOrTLSOptions, stmt.ResourceOptions, stmt.PasswordOrLockOptions, stmt.CommentOrAttributeOption, stmt.ResourceGroupNameOption),
 		}
 	}
 	name := ""
@@ -874,7 +874,7 @@ func extractCreateUser(stmt *ast.CreateUserStmt) *spec.DDL {
 		ObjectType:         "user",
 		Options:            map[string]string{"has_auth": "true"},
 		OmittedTargets:     omittedUserTargets(stmt.Specs),
-		UnextractedOptions: userOptionNames(stmt.AuthTokenOrTLSOptions, stmt.ResourceOptions, stmt.PasswordOrLockOptions, stmt.CommentOrAttributeOption, stmt.ResourceGroupNameOption),
+		UnextractedOptions: userOptionNames(stmt.Specs, nil, stmt.AuthTokenOrTLSOptions, stmt.ResourceOptions, stmt.PasswordOrLockOptions, stmt.CommentOrAttributeOption, stmt.ResourceGroupNameOption),
 	}
 }
 
@@ -896,15 +896,35 @@ func extractAlterUser(stmt *ast.AlterUserStmt) *spec.DDL {
 		ObjectType:         "user",
 		Options:            map[string]string{"has_auth": "true"},
 		OmittedTargets:     omitted,
-		UnextractedOptions: userOptionNames(stmt.AuthTokenOrTLSOptions, stmt.ResourceOptions, stmt.PasswordOrLockOptions, stmt.CommentOrAttributeOption, stmt.ResourceGroupNameOption),
+		UnextractedOptions: userOptionNames(stmt.Specs, stmt.CurrentAuth, stmt.AuthTokenOrTLSOptions, stmt.ResourceOptions, stmt.PasswordOrLockOptions, stmt.CommentOrAttributeOption, stmt.ResourceGroupNameOption),
 	}
 }
 
-// userOptionNames maps the secondary account-option lists a CREATE/ALTER USER
-// statement carries to bounded option names: the lists exist, but no normalized
-// fact consumes their contents.
-func userOptionNames(auth []*ast.AuthTokenOrTLSOption, resource []*ast.ResourceOption, locks []*ast.PasswordOrLockOption, comment *ast.CommentOrAttributeOption, resourceGroup *ast.ResourceGroupNameOption) []string {
-	names := make([]string, 0, 5)
+// userOptionNames maps the parsed-but-unmodeled account clauses a CREATE/ALTER
+// USER statement carries to bounded option names: per-spec IDENTIFIED auth
+// clauses and dual-password flags, the statement-level current-auth clause, and
+// the secondary option lists. No credential values travel downstream — only
+// presence names.
+func userOptionNames(specs []*ast.UserSpec, currentAuth *ast.AuthOption, auth []*ast.AuthTokenOrTLSOption, resource []*ast.ResourceOption, locks []*ast.PasswordOrLockOption, comment *ast.CommentOrAttributeOption, resourceGroup *ast.ResourceGroupNameOption) []string {
+	names := make([]string, 0, 7)
+	identified, dualPassword := currentAuth != nil, false
+	for _, s := range specs {
+		if s == nil {
+			continue
+		}
+		if s.AuthOpt != nil {
+			identified = true
+		}
+		if s.DualPasswordOption != 0 {
+			dualPassword = true
+		}
+	}
+	if identified {
+		names = append(names, "identified")
+	}
+	if dualPassword {
+		names = append(names, "dual_password")
+	}
 	if len(auth) > 0 {
 		names = append(names, "auth_token_or_tls")
 	}
@@ -1062,6 +1082,11 @@ func extractCreatePlacementPolicy(stmt *ast.CreatePlacementPolicyStmt) *spec.DDL
 		Operation:  spec.DDLOperationCreatePlacementPolicy,
 		ObjectName: stmt.PolicyName.L,
 		ObjectType: "placement_policy",
+	}
+	if stmt.OrReplace {
+		// CREATE OR REPLACE PLACEMENT POLICY is parsed but the replacement
+		// semantics are unmodeled; record bounded presence.
+		ddl.UnextractedOptions = append(ddl.UnextractedOptions, "or_replace")
 	}
 	if len(stmt.PlacementOptions) > 0 {
 		ddl.Options = map[string]string{"has_options": "true"}

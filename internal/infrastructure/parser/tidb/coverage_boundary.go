@@ -256,7 +256,13 @@ func unhandledStatementFeature(node ast.StmtNode) string {
 		return "drop_query_watch"
 	case *ast.ProcedureWhileStmt, *ast.ProcedureRepeatStmt,
 		*ast.SimpleCaseStmt, *ast.SimpleWhenThenStmt,
-		*ast.SearchCaseStmt, *ast.SearchWhenThenStmt:
+		*ast.SearchCaseStmt, *ast.SearchWhenThenStmt,
+		*ast.ProcedureBlock, *ast.ProcedureIfBlock, *ast.ProcedureElseIfBlock,
+		*ast.ProcedureElseBlock, *ast.ProcedureLabelBlock, *ast.ProcedureLabelLoop,
+		*ast.ProcedureJump, *ast.ProcedureFetchInto, *ast.ProcedureOpenCur,
+		*ast.ProcedureCloseCur, *ast.ProcedureErrorCon,
+		*ast.ProcedureErrorState, *ast.ProcedureErrorVal,
+		*ast.ProcedureIfInfo:
 		return "procedure_body"
 	default:
 		return ""

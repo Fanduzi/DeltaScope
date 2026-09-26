@@ -19,10 +19,13 @@ func TestHandlerAuditMySQLDDLLifecycleFindings(t *testing.T) {
 		name       string
 		sql        string
 		wantRuleID string
+		wantStatus int
 	}{
 		{name: "rename_table", sql: "RENAME TABLE users TO users_old", wantRuleID: "ddl.rename_table.notice"},
 		{name: "create_index", sql: "CREATE INDEX idx_email ON users (email)", wantRuleID: "ddl.create_index.notice"},
-		{name: "create_user", sql: "CREATE USER 'admin'@'%' IDENTIFIED BY 's3cret'", wantRuleID: "ddl.create_user.notice"},
+		// IDENTIFIED BY is a parsed-but-unaudited account clause: the finding
+		// still fires, but the response is an incomplete-coverage 400 envelope.
+		{name: "create_user", sql: "CREATE USER 'admin'@'%' IDENTIFIED BY 's3cret'", wantRuleID: "ddl.create_user.notice", wantStatus: http.StatusBadRequest},
 		{name: "drop_resource_group", sql: "DROP RESOURCE GROUP rg1", wantRuleID: "ddl.drop_resource_group.notice"},
 	}
 
@@ -39,8 +42,12 @@ func TestHandlerAuditMySQLDDLLifecycleFindings(t *testing.T) {
 			rec := httptest.NewRecorder()
 			handler.ServeHTTP(rec, req)
 
-			if rec.Code != http.StatusOK {
-				t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+			wantStatus := tt.wantStatus
+			if wantStatus == 0 {
+				wantStatus = http.StatusOK
+			}
+			if rec.Code != wantStatus {
+				t.Fatalf("expected %d, got %d: %s", wantStatus, rec.Code, rec.Body.String())
 			}
 
 			var payload map[string]any
@@ -156,8 +163,11 @@ func TestHandlerAuditMySQLDDLNoLeakPasswords(t *testing.T) {
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, req)
 
-	if rec.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d: %s", rec.Code, rec.Body.String())
+	// IDENTIFIED BY is parsed-but-unaudited: the response is a 400 incomplete-
+	// coverage envelope, and the no-leak assertions below still apply to the
+	// findings/metadata carried inside it.
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d: %s", rec.Code, rec.Body.String())
 	}
 
 	var payload map[string]any

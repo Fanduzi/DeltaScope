@@ -444,6 +444,61 @@ non-view objects) stay exempt per the established boundary precedent.
 `cli_cases` grow to 95 (12 new, 103 cases total with the 8 DB cases);
 the census test guards statement-type drift across parser upgrades.
 
+## Amendment 2026-09-26 (part 7) — census hardened to the three review connections
+
+Independent review accepted the census direction but required proof of
+three connections instead of more ad-hoc field review. This amendment
+replaces the naming-based enumeration with structural ones and adds the
+missing field-level table.
+
+**AST full set → census.** Naming was never a completeness proof:
+`ProcedureInfo` is a real statement node without a `Stmt` suffix and the
+original `type XxxStmt struct` regex missed it. `stmt_disposition_test.go`
+now scans parser-module struct declarations and takes the transitive
+embedding closure of `stmtNode`/`ddlNode`/`dmlNode` plus any type
+defining `statement()` directly — 128 candidates. Reflection decides
+membership: 123 satisfy `ast.StmtNode` and must carry a disposition; 5
+structural carriers (`SplitOption`, `SplitIndexOption`,
+`QueryWatchOption`, `DynamicCalibrateResourceOption`,
+`ProcedureErrorCondition`) embed a statement base for visitor plumbing
+without satisfying the interface — they stay in the candidate registry so
+a parser upgrade that promotes them to statements cannot slip past the
+census, but they are never treated as parsed statements.
+
+**Census → actual dispatch.** Every row is verified reflectively:
+`extracted` types must reach a `classify` kind other than unknown, named
+rows must produce a feature via `unhandledStatementFeature`, and an
+extracted type carrying a boundary feature fails the test. The 19
+procedure helper nodes (`ProcedureInfo` family) classify as
+`procedure_body` defense-in-depth behind the extractor's own dispatch.
+
+**Field full set → field disposition table.** `field_census_test.go`
+pins a disposition for every exported field of every census-scope struct
+(28 statement types + 41 option/fact carriers): `projected`,
+`projected_evidence`, `evidence:<name>`, `carried:<parent>`,
+`subsumed:<scope>`, `exempt:<reason>`, or `deferred:<reason>`. An
+unlisted field fails the test — a parser upgrade adding a field cannot
+silently become complete coverage. A second test closes the carrier
+boundary: any ast-package struct reachable through a census field must
+join the scope or carry an explicit reach exemption (DML-context clause
+trees, `CIStr` identifier pairs, subsumed value carriers).
+
+**New evidence found by the field census** (fields the table enumerated
+that had no prior disposition):
+
+- `CreateUserStmt`/`AlterUserStmt` `UserSpec.AuthOpt`: per-target
+  `IDENTIFIED BY/WITH` produced only a static `has_auth` option with the
+  auth content dropped — now `*.option.identified` presence evidence;
+  credential values still never travel.
+- `AlterUserStmt` `UserSpec.DualPasswordOption` (and the `USER()`-path
+  `CurrentDualPasswordOption`): `RETAIN/DISCARD OLD PASSWORD` — now
+  `*.option.dual_password`; the `USER()` dual-password form keeps its
+  omitted-target evidence.
+- `CreatePlacementPolicyStmt.OrReplace`: `CREATE OR REPLACE PLACEMENT
+  POLICY` — now `create_placement_policy.option.or_replace`.
+
+`cli_cases` grow to 99 (107 cases total with the 8 DB cases).
+
 ## Verification Evidence
 
 - `make ddl-golden TASK=T03 ARTIFACT_DIR=/tmp/ddl-golden`: 91 cases, 1034

@@ -4,11 +4,13 @@ category: ddl
 expect:
   parse_ok: true
   unsupported:
-    count: 9
+    count: 11
     include:
       - alter_schema.option.charset
       - create_procedure
       - drop_procedure
+      - create_user.option.identified
+      - alter_user.option.identified
       - create_placement_policy.options
       - alter_placement_policy.options
       - create_sequence.options

@@ -2041,7 +2041,7 @@
         "statements": 1,
         "findings": 0,
         "diagnostics": 1,
-        "unsupported": 1,
+        "unsupported": 2,
         "coverage": "incomplete",
         "statement_coverage": [
           "incomplete"
@@ -2050,9 +2050,17 @@
           "ALTER USER USER() IDENTIFIED BY 'replacement';"
         ],
         "unsupported_features": [
+          "alter_user.option.identified",
           "alter_user.unaudited_targets"
         ],
         "unsupported_entries": [
+          {
+            "feature": "alter_user.option.identified",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "option"
+            }
+          },
           {
             "feature": "alter_user.unaudited_targets",
             "reason": "parsed by the shared parser but not covered by audited semantics",
@@ -2407,7 +2415,7 @@
         "statements": 1,
         "findings": 0,
         "diagnostics": 1,
-        "unsupported": 1,
+        "unsupported": 2,
         "coverage": "incomplete",
         "statement_coverage": [
           "incomplete"
@@ -2416,9 +2424,17 @@
           "ALTER USER CURRENT_USER() IDENTIFIED BY 'x';"
         ],
         "unsupported_features": [
+          "alter_user.option.identified",
           "alter_user.unaudited_targets"
         ],
         "unsupported_entries": [
+          {
+            "feature": "alter_user.option.identified",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "option"
+            }
+          },
           {
             "feature": "alter_user.unaudited_targets",
             "reason": "parsed by the shared parser but not covered by audited semantics",
@@ -2444,7 +2460,7 @@
         "statements": 1,
         "findings": 0,
         "diagnostics": 1,
-        "unsupported": 1,
+        "unsupported": 2,
         "coverage": "incomplete",
         "statement_coverage": [
           "incomplete"
@@ -2453,9 +2469,17 @@
           "CREATE USER CURRENT_USER() IDENTIFIED BY 'x';"
         ],
         "unsupported_features": [
+          "create_user.option.identified",
           "create_user.unaudited_targets"
         ],
         "unsupported_entries": [
+          {
+            "feature": "create_user.option.identified",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "option"
+            }
+          },
           {
             "feature": "create_user.unaudited_targets",
             "reason": "parsed by the shared parser but not covered by audited semantics",
@@ -3304,6 +3328,166 @@
           }
         ]
       }
+    },
+    {
+      "id": "mysql-create-user-identified",
+      "dialect": "mysql",
+      "sql": "CREATE USER u IDENTIFIED BY 'x';",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE USER u IDENTIFIED BY 'x';"
+        ],
+        "unsupported": 1,
+        "unsupported_features": [
+          "create_user.option.identified"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "create_user.option.identified",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "option"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-alter-user-identified",
+      "dialect": "mysql",
+      "sql": "ALTER USER u IDENTIFIED BY 'x';",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "ALTER USER u IDENTIFIED BY 'x';"
+        ],
+        "unsupported": 1,
+        "unsupported_features": [
+          "alter_user.option.identified"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "alter_user.option.identified",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "option"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-alter-user-dual-password",
+      "dialect": "mysql",
+      "sql": "ALTER USER u IDENTIFIED BY 'x' RETAIN CURRENT PASSWORD;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "ALTER USER u IDENTIFIED BY 'x' RETAIN CURRENT PASSWORD;"
+        ],
+        "unsupported": 2,
+        "unsupported_features": [
+          "alter_user.option.identified",
+          "alter_user.option.dual_password"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "alter_user.option.identified",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "option"
+            }
+          },
+          {
+            "feature": "alter_user.option.dual_password",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "option"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tidb-create-placement-policy-or-replace",
+      "dialect": "tidb",
+      "sql": "CREATE OR REPLACE PLACEMENT POLICY p1 PRIMARY_REGION='us-east-1' REGIONS='us-east-1';",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE OR REPLACE PLACEMENT POLICY p1 PRIMARY_REGION='us-east-1' REGIONS='us-east-1';"
+        ],
+        "unsupported": 2,
+        "unsupported_features": [
+          "create_placement_policy.option.or_replace",
+          "create_placement_policy.options"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "create_placement_policy.option.or_replace",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "option"
+            }
+          },
+          {
+            "feature": "create_placement_policy.options",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "option"
+            }
+          }
+        ]
+      }
     }
   ],
   "required_case_ids": [
@@ -3409,6 +3593,10 @@
     "T03.cli.tidb-grant-on-procedure",
     "T03.cli.mysql-revoke-column-privileges",
     "T03.cli.mysql-create-index-lock-algorithm",
-    "T03.cli.tidb-create-sequence-table-option"
+    "T03.cli.tidb-create-sequence-table-option",
+    "T03.cli.mysql-create-user-identified",
+    "T03.cli.mysql-alter-user-identified",
+    "T03.cli.mysql-alter-user-dual-password",
+    "T03.cli.tidb-create-placement-policy-or-replace"
   ]
 }

@@ -456,6 +456,12 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 		{name: "tidb drop index lock algorithm", sql: "DROP INDEX ix ON t LOCK=SHARED;", dialect: spec.DialectTiDB, wantFeature: "drop_index.option.lock_algorithm", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql create procedure params", sql: "CREATE PROCEDURE p(IN x INT) SELECT 1;", dialect: spec.DialectMySQL, wantFeature: "create_procedure.option.params", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "tidb create sequence table option", sql: "CREATE SEQUENCE s COMMENT 'x';", dialect: spec.DialectTiDB, wantFeature: "create_sequence.option.comment", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		// Per-spec account auth clauses and placement-policy REPLACE — the field
+		// census surface that previously completed silently.
+		{name: "mysql create user identified", sql: "CREATE USER u IDENTIFIED BY 'x';", dialect: spec.DialectMySQL, wantFeature: "create_user.option.identified", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql alter user identified", sql: "ALTER USER u IDENTIFIED BY 'x';", dialect: spec.DialectMySQL, wantFeature: "alter_user.option.identified", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql alter user dual password", sql: "ALTER USER u IDENTIFIED BY 'x' RETAIN CURRENT PASSWORD;", dialect: spec.DialectMySQL, wantFeature: "alter_user.option.dual_password", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "tidb create placement policy or replace", sql: "CREATE OR REPLACE PLACEMENT POLICY p1 PRIMARY_REGION='us-east-1' REGIONS='us-east-1';", dialect: spec.DialectTiDB, wantFeature: "create_placement_policy.option.or_replace", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -620,8 +626,8 @@ func TestAuditSQLT03RecognizedOutOfSurfaceStaysComplete(t *testing.T) {
 		{name: "mysql drop user single", sql: "DROP USER u1;", dialect: spec.DialectMySQL},
 		{name: "tidb drop sequence single", sql: "DROP SEQUENCE s1;", dialect: spec.DialectTiDB},
 		{name: "mysql create index plain", sql: "CREATE INDEX ix ON t (c);", dialect: spec.DialectMySQL},
-		{name: "mysql alter user single auth", sql: "ALTER USER u IDENTIFIED BY 'x';", dialect: spec.DialectMySQL},
-		{name: "mysql create user single auth", sql: "CREATE USER u IDENTIFIED BY 'x';", dialect: spec.DialectMySQL},
+		{name: "mysql alter user single", sql: "ALTER USER u;", dialect: spec.DialectMySQL},
+		{name: "mysql create user single", sql: "CREATE USER u;", dialect: spec.DialectMySQL},
 		{name: "mysql create table foreign key plain", sql: "CREATE TABLE t (a INT, FOREIGN KEY (a) REFERENCES p(id));", dialect: spec.DialectMySQL},
 		{name: "tidb alter add foreign key plain", sql: "ALTER TABLE t ADD FOREIGN KEY (c) REFERENCES p(id);", dialect: spec.DialectTiDB},
 		{name: "mysql create table partitioned plain", sql: "CREATE TABLE t (id INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (10));", dialect: spec.DialectMySQL},

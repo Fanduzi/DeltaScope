@@ -1,9 +1,10 @@
-// Package tidbparser pins the coverage disposition of every statement type in
-// the pinned TiDB parser.
-// input: the pinned parser's ast.*Stmt type registry plus extractor/boundary switches
+// Package tidbparser pins the coverage disposition of every statement-node
+// candidate in the pinned TiDB parser.
+// input: the parser's statement-node candidates (transitive stmtNode embedders
+// plus direct statement() definers) and the real extractor/boundary switches
 // output: drift detection when the parser adds or renames statement types, and
-// a fail-closed check that every recognized type is extracted, explicitly named
-// as unsupported evidence, or deliberately exempt from the audit surface
+// a fail-closed check that every ast.StmtNode implementer is extracted,
+// explicitly named as unsupported evidence, or deliberately exempt
 // pos: coverage-boundary census for issue #82 (statement-type completeness)
 // note: if this file changes, update this header and module README.md.
 package tidbparser
@@ -53,6 +54,7 @@ var stmtDispositions = map[string]string{
 	"CreateSequenceStmt":        "extracted",
 	"AlterSequenceStmt":         "extracted",
 	"DropSequenceStmt":          "extracted",
+	"ProcedureInfo":             "extracted",
 	"InsertStmt":                "extracted",
 	"UpdateStmt":                "extracted",
 	"DeleteStmt":                "extracted",
@@ -123,6 +125,20 @@ var stmtDispositions = map[string]string{
 	"SimpleWhenThenStmt":        "procedure_body",
 	"SearchCaseStmt":            "procedure_body",
 	"SearchWhenThenStmt":        "procedure_body",
+	"ProcedureBlock":            "procedure_body",
+	"ProcedureIfBlock":          "procedure_body",
+	"ProcedureElseIfBlock":      "procedure_body",
+	"ProcedureElseBlock":        "procedure_body",
+	"ProcedureLabelBlock":       "procedure_body",
+	"ProcedureLabelLoop":        "procedure_body",
+	"ProcedureJump":             "procedure_body",
+	"ProcedureFetchInto":        "procedure_body",
+	"ProcedureOpenCur":          "procedure_body",
+	"ProcedureCloseCur":         "procedure_body",
+	"ProcedureErrorCon":         "procedure_body",
+	"ProcedureErrorState":       "procedure_body",
+	"ProcedureErrorVal":         "procedure_body",
+	"ProcedureIfInfo":           "procedure_body",
 
 	// Exempt: read-only query forms, session state, transaction control.
 	// SelectStmt/SetOprStmt gain the "select_into" feature when an INTO OUTFILE
@@ -173,6 +189,7 @@ var stmtNodeTypes = map[string]reflect.Type{
 	"CreateSequenceStmt":        reflect.TypeOf((*ast.CreateSequenceStmt)(nil)),
 	"AlterSequenceStmt":         reflect.TypeOf((*ast.AlterSequenceStmt)(nil)),
 	"DropSequenceStmt":          reflect.TypeOf((*ast.DropSequenceStmt)(nil)),
+	"ProcedureInfo":             reflect.TypeOf((*ast.ProcedureInfo)(nil)),
 	"InsertStmt":                reflect.TypeOf((*ast.InsertStmt)(nil)),
 	"UpdateStmt":                reflect.TypeOf((*ast.UpdateStmt)(nil)),
 	"DeleteStmt":                reflect.TypeOf((*ast.DeleteStmt)(nil)),
@@ -241,6 +258,20 @@ var stmtNodeTypes = map[string]reflect.Type{
 	"SimpleWhenThenStmt":        reflect.TypeOf((*ast.SimpleWhenThenStmt)(nil)),
 	"SearchCaseStmt":            reflect.TypeOf((*ast.SearchCaseStmt)(nil)),
 	"SearchWhenThenStmt":        reflect.TypeOf((*ast.SearchWhenThenStmt)(nil)),
+	"ProcedureBlock":            reflect.TypeOf((*ast.ProcedureBlock)(nil)),
+	"ProcedureIfBlock":          reflect.TypeOf((*ast.ProcedureIfBlock)(nil)),
+	"ProcedureElseIfBlock":      reflect.TypeOf((*ast.ProcedureElseIfBlock)(nil)),
+	"ProcedureElseBlock":        reflect.TypeOf((*ast.ProcedureElseBlock)(nil)),
+	"ProcedureLabelBlock":       reflect.TypeOf((*ast.ProcedureLabelBlock)(nil)),
+	"ProcedureLabelLoop":        reflect.TypeOf((*ast.ProcedureLabelLoop)(nil)),
+	"ProcedureJump":             reflect.TypeOf((*ast.ProcedureJump)(nil)),
+	"ProcedureFetchInto":        reflect.TypeOf((*ast.ProcedureFetchInto)(nil)),
+	"ProcedureOpenCur":          reflect.TypeOf((*ast.ProcedureOpenCur)(nil)),
+	"ProcedureCloseCur":         reflect.TypeOf((*ast.ProcedureCloseCur)(nil)),
+	"ProcedureErrorCon":         reflect.TypeOf((*ast.ProcedureErrorCon)(nil)),
+	"ProcedureErrorState":       reflect.TypeOf((*ast.ProcedureErrorState)(nil)),
+	"ProcedureErrorVal":         reflect.TypeOf((*ast.ProcedureErrorVal)(nil)),
+	"ProcedureIfInfo":           reflect.TypeOf((*ast.ProcedureIfInfo)(nil)),
 	"SelectStmt":                reflect.TypeOf((*ast.SelectStmt)(nil)),
 	"SetOprStmt":                reflect.TypeOf((*ast.SetOprStmt)(nil)),
 	"ExplainStmt":               reflect.TypeOf((*ast.ExplainStmt)(nil)),
@@ -257,7 +288,21 @@ var stmtNodeTypes = map[string]reflect.Type{
 	"RollbackStmt":              reflect.TypeOf((*ast.RollbackStmt)(nil)),
 	"SavepointStmt":             reflect.TypeOf((*ast.SavepointStmt)(nil)),
 	"ReleaseSavepointStmt":      reflect.TypeOf((*ast.ReleaseSavepointStmt)(nil)),
+
+	// Structural carriers: embed a statement-node base for Visitor plumbing
+	// but do not satisfy ast.StmtNode (no disposition — the dispatch test
+	// asserts !Implements for them). They stay in this map so a parser
+	// upgrade that promotes one to a real statement forces a disposition.
+	"ProcedureErrorCondition":        reflect.TypeOf((*ast.ProcedureErrorCondition)(nil)),
+	"SplitIndexOption":               reflect.TypeOf((*ast.SplitIndexOption)(nil)),
+	"SplitOption":                    reflect.TypeOf((*ast.SplitOption)(nil)),
+	"QueryWatchOption":               reflect.TypeOf((*ast.QueryWatchOption)(nil)),
+	"DynamicCalibrateResourceOption": reflect.TypeOf((*ast.DynamicCalibrateResourceOption)(nil)),
 }
+
+// stmtNodeInterface is the interface every census candidate is checked
+// against — interface satisfaction, not naming, decides the census set.
+var stmtNodeInterface = reflect.TypeOf((*ast.StmtNode)(nil)).Elem()
 
 // dispositionOf resolves the coverage disposition of one parsed node through
 // the same switches extraction and boundary marking use.
@@ -271,43 +316,101 @@ func dispositionOf(node ast.StmtNode) string {
 	return "exempt"
 }
 
-// TestStatementTypeDisposition asserts every statement type in the pinned
-// parser lands exactly where the coverage contract says it should: extracted
-// into the model, named as unsupported evidence, or deliberately exempt.
+// TestStatementTypeDisposition asserts every census candidate lands exactly
+// where the coverage contract says it should. Candidates are instantiated and
+// pushed through the real classify + boundary switches — the table cannot
+// drift from the dispatch it describes. Structural carriers that embed a
+// statement base without satisfying ast.StmtNode must carry no disposition.
 func TestStatementTypeDisposition(t *testing.T) {
-	for name, want := range stmtDispositions {
-		typ, ok := stmtNodeTypes[name]
-		if !ok {
-			t.Fatalf("disposition table entry %q missing its type reference", name)
+	for name, typ := range stmtNodeTypes {
+		want, hasDisposition := stmtDispositions[name]
+		if !typ.Implements(stmtNodeInterface) {
+			// Embedded-but-not-implementer carrier (e.g. SplitIndexOption):
+			// cannot be a parse result, so it must not claim a disposition.
+			if hasDisposition {
+				t.Errorf("%s: disposition %q but the type does not implement ast.StmtNode", name, want)
+			}
+			continue
+		}
+		if !hasDisposition {
+			t.Errorf("ast.StmtNode implementer %s has no disposition-table entry — decide extracted/feature/exempt", name)
+			continue
 		}
 		node, ok := reflect.New(typ.Elem()).Interface().(ast.StmtNode)
 		if !ok {
-			t.Fatalf("%s does not implement ast.StmtNode", name)
+			t.Fatalf("%s implements the interface but cannot be instantiated as ast.StmtNode", name)
 		}
 		if got := dispositionOf(node); got != want {
 			t.Errorf("%s: want disposition %q, got %q", name, want, got)
+		}
+		if want == "extracted" && unhandledStatementFeature(node) != "" {
+			// An extracted type must not also carry boundary evidence: the
+			// classify switch wins, so the boundary case would be dead code
+			// describing the wrong contract.
+			t.Errorf("%s: extracted but boundary switch names it %q", name, unhandledStatementFeature(node))
+		}
+	}
+	for name := range stmtDispositions {
+		if _, ok := stmtNodeTypes[name]; !ok {
+			t.Errorf("disposition entry %q has no type reference — dropped rows must leave both tables", name)
 		}
 	}
 }
 
 // TestStatementTypeCensusDrift fails when the pinned parser gains or renames a
-// *ast.*Stmt type without a corresponding disposition-table update — this keeps
-// the complete-coverage boundary closed across parser upgrades.
+// statement-node candidate without a corresponding stmtNodeTypes row — this
+// keeps the complete-coverage boundary closed across parser upgrades.
+//
+// Candidates are enumerated by structure, not naming convention: every struct
+// that transitively embeds stmtNode/ddlNode/dmlNode, plus any type defining
+// statement() directly, is a candidate. Whether a candidate is a real
+// statement is decided by reflect Implements — that is how non-*Stmt
+// implementers like ProcedureInfo (the CREATE PROCEDURE statement node) and
+// non-statement carriers like SplitIndexOption are both kept inside the
+// census boundary.
 func TestStatementTypeCensusDrift(t *testing.T) {
+	candidates := scanStmtCandidates(t, parserModuleDir(t))
+	for name := range candidates {
+		if _, ok := stmtNodeTypes[name]; !ok {
+			t.Errorf("statement-node candidate %s missing from stmtNodeTypes — classify it as extracted/feature/exempt or a structural carrier", name)
+		}
+	}
+	for name := range stmtNodeTypes {
+		if !candidates[name] {
+			t.Errorf("stmtNodeTypes entry %s does not exist in the pinned parser — drop or update the row", name)
+		}
+	}
+}
+
+// parserModuleDir resolves the on-disk directory of the pinned parser module.
+func parserModuleDir(t *testing.T) string {
+	t.Helper()
 	out, err := exec.Command("go", "list", "-m", "-f", "{{.Dir}}", "github.com/pingcap/tidb/pkg/parser").Output()
 	if err != nil {
 		t.Fatalf("locate parser module: %v", err)
 	}
-	parserDir := strings.TrimSpace(string(out))
-	pattern := regexp.MustCompile(`^type (\w+Stmt) struct`)
+	return strings.TrimSpace(string(out))
+}
+
+// scanStmtCandidates parses every struct declaration in the parser's ast
+// package and returns the census candidate set: types that transitively embed
+// a statement-node base (stmtNode, ddlNode, dmlNode) or define statement()
+// directly. Some candidates satisfy ast.StmtNode; a few are structural
+// carriers — the dispatch test separates the two by reflection.
+func scanStmtCandidates(t *testing.T, parserDir string) map[string]bool {
+	t.Helper()
 	blockComment := regexp.MustCompile(`(?s)/\*.*?\*/`)
-	seen := map[string]bool{}
+	structDecl := regexp.MustCompile(`(?s)type (\w+)(?:\[[^\]]*\])? struct \{(.*?)\n\}`)
+	embeddedField := regexp.MustCompile(`^\s*\*?(\w+(?:\.\w+)?)\s*(?://.*)?$`)
+	stmtMarker := regexp.MustCompile(`func \(\w+ \*?(\w+)\) statement\(\)`)
+	structs := map[string][]string{}
+	directMarkers := map[string]bool{}
 	entries, err := os.ReadDir(filepath.Join(parserDir, "ast"))
 	if err != nil {
 		t.Fatalf("read parser ast dir: %v", err)
 	}
 	for _, entry := range entries {
-		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") || strings.HasSuffix(entry.Name(), "_test.go") {
 			continue
 		}
 		data, err := os.ReadFile(filepath.Join(parserDir, "ast", entry.Name()))
@@ -317,20 +420,53 @@ func TestStatementTypeCensusDrift(t *testing.T) {
 		// Dead types inside block comments (e.g. SetCharsetStmt) must not
 		// count as live parser surface.
 		source := blockComment.ReplaceAllString(string(data), "")
-		for _, line := range strings.Split(source, "\n") {
-			if m := pattern.FindStringSubmatch(line); m != nil {
-				seen[m[1]] = true
+		for _, m := range stmtMarker.FindAllStringSubmatch(source, -1) {
+			directMarkers[m[1]] = true
+		}
+		for _, decl := range structDecl.FindAllStringSubmatch(source, -1) {
+			name, body := decl[1], decl[2]
+			for _, line := range strings.Split(body, "\n") {
+				trimmed := strings.TrimSpace(line)
+				if trimmed == "" || strings.HasPrefix(trimmed, "//") {
+					continue
+				}
+				// Anonymous (embedded) field: a lone identifier, optionally
+				// package-qualified or pointer-typed, with no field name.
+				if m := embeddedField.FindStringSubmatch(trimmed); m != nil && !strings.Contains(trimmed, " ") && !strings.Contains(trimmed, "\t") {
+					field := m[1]
+					if i := strings.LastIndex(field, "."); i >= 0 {
+						field = field[i+1:]
+					}
+					structs[name] = append(structs[name], field)
+				}
 			}
 		}
 	}
-	for name := range seen {
-		if _, ok := stmtDispositions[name]; !ok {
-			t.Errorf("parser type %s has no disposition-table entry — decide extracted/feature/exempt", name)
+	candidates := map[string]bool{"stmtNode": true, "ddlNode": true, "dmlNode": true}
+	for changed := true; changed; {
+		changed = false
+		for name, embeds := range structs {
+			if candidates[name] {
+				continue
+			}
+			for _, embedded := range embeds {
+				if candidates[embedded] {
+					candidates[name] = true
+					changed = true
+					break
+				}
+			}
 		}
 	}
-	for name := range stmtDispositions {
-		if !seen[name] {
-			t.Errorf("disposition entry %s no longer exists in the pinned parser — drop or update the row", name)
+	delete(candidates, "stmtNode")
+	delete(candidates, "ddlNode")
+	delete(candidates, "dmlNode")
+	for name := range directMarkers {
+		// A type defining statement() itself is a candidate even without an
+		// embedded base (none exist today; the check stays for drift).
+		if name != "stmtNode" && name != "ddlNode" && name != "dmlNode" {
+			candidates[name] = true
 		}
 	}
+	return candidates
 }
