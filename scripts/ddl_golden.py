@@ -351,10 +351,11 @@ def cli_case_expect_checks(parsed, rc, expect):
         got = sorted(u.get("feature") for u in unsupported)
         want = sorted(expect["unsupported_features"])
         checks.append(("unsupported features", parsed is not None and got == want, f"features={got!r} expected={want!r}"))
-    if "unsupported_reasons" in expect:
-        got = sorted(u.get("reason") for u in unsupported)
-        want = sorted(expect["unsupported_reasons"])
-        checks.append(("unsupported reasons", parsed is not None and got == want, f"reasons={got!r} expected={want!r}"))
+    if "unsupported_entries" in expect:
+        # index carries omitempty, so a zero statement index is absent in JSON.
+        got = sorted((u.get("index", 0), u.get("feature"), u.get("reason")) for u in unsupported)
+        want = sorted((e.get("index", 0), e.get("feature"), e.get("reason")) for e in expect["unsupported_entries"])
+        checks.append(("unsupported entries", parsed is not None and got == want, f"entries={got!r} expected={want!r}"))
     if "statement_sql" in expect:
         got = [s.get("raw_sql") for s in statements]
         checks.append(("statement raw SQL identity", parsed is not None and got == expect["statement_sql"], f"raw_sql={got!r} expected={expect['statement_sql']!r}"))

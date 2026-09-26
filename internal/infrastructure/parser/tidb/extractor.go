@@ -355,15 +355,27 @@ func extractDropDatabase(stmt *ast.DropDatabaseStmt) *spec.DDL {
 }
 
 func extractAlterSpecs(specification *ast.AlterTableSpec, clause string) []spec.Alter {
-	if specification.Tp == ast.AlterTableAddColumns && len(specification.NewColumns) > 0 {
-		alters := make([]spec.Alter, 0, len(specification.NewColumns))
+	if specification.Tp == ast.AlterTableAddColumns {
+		alters := make([]spec.Alter, 0, len(specification.NewColumns)+len(specification.NewConstraints))
 		for _, column := range specification.NewColumns {
 			if column == nil {
 				continue
 			}
 			alters = append(alters, spec.Alter{Action: alterActionName(specification.Tp), Name: column.Name.Name.L, Column: alterColumnFromColumnDef(column), HasColumnPosition: hasColumnPositionClause(specification)})
 		}
-		return alters
+		// Constraints inside ADD (..., <constraint>) carry the same payload as
+		// standalone ADD <constraint> clauses. The AST does not record a
+		// CONSTRAINT keyword inside the list, so index kinds take the bare-form
+		// action (add_index) and PK/FK/CHECK take add_constraint.
+		for _, constraint := range specification.NewConstraints {
+			if constraint == nil {
+				continue
+			}
+			alters = append(alters, extractAlterSpec(&ast.AlterTableSpec{Tp: ast.AlterTableAddConstraint, Constraint: constraint}, clause))
+		}
+		if len(alters) > 0 {
+			return alters
+		}
 	}
 	return []spec.Alter{extractAlterSpec(specification, clause)}
 }

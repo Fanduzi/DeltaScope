@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -375,6 +376,10 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 		{name: "tidb create table index global", sql: "CREATE TABLE t (id INT, UNIQUE KEY uk (id) GLOBAL);", dialect: spec.DialectTiDB, wantFeature: "create_table.index.global", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql alter add index global", sql: "ALTER TABLE t ADD UNIQUE KEY uk (c) GLOBAL;", dialect: spec.DialectMySQL, wantFeature: "alter_table.add_index.index.global", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
 		{name: "mysql create index global", sql: "CREATE UNIQUE INDEX uk ON t (c) GLOBAL;", dialect: spec.DialectMySQL, wantFeature: "create_index.create_index.index.global", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
+		{name: "mysql alter add list index global", sql: "ALTER TABLE t ADD (c INT, UNIQUE KEY uk (c) GLOBAL);", dialect: spec.DialectMySQL, wantFeature: "alter_table.add_index.index.global", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
+		{name: "tidb alter add list index global", sql: "ALTER TABLE t ADD (c INT, UNIQUE KEY uk (c) GLOBAL);", dialect: spec.DialectTiDB, wantFeature: "alter_table.add_index.index.global", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql alter add list primary global", sql: "ALTER TABLE t ADD (c INT, PRIMARY KEY (c) GLOBAL);", dialect: spec.DialectMySQL, wantFeature: "alter_table.add_constraint.index.global", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
+		{name: "mysql alter add list check", sql: "ALTER TABLE t ADD (c INT, CHECK (c > 0));", dialect: spec.DialectMySQL, wantFeature: "alter_table.add_constraint.check", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql alter tidb-only option", sql: "ALTER TABLE t AUTO_RANDOM_BASE=10;", dialect: spec.DialectMySQL, wantFeature: "alter_table.option.auto_random_base", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
 		{name: "mysql alter modify column position", sql: "ALTER TABLE t MODIFY COLUMN c INT AFTER id;", dialect: spec.DialectMySQL, wantFeature: "alter_table.modify_column.column_position", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql alter change column position", sql: "ALTER TABLE t CHANGE COLUMN c c2 INT FIRST;", dialect: spec.DialectMySQL, wantFeature: "alter_table.change_column.column_position", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
@@ -438,6 +443,56 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 	}
 }
 
+// TestAuditSQLT03UnsupportedFeatureReasonPairs locks the exact
+// (index, feature, reason) association on mixed-gap statements: a vendor
+// boundary and an unaudited gap on the same statement must keep their own
+// reasons instead of being interchangeable.
+func TestAuditSQLT03UnsupportedFeatureReasonPairs(t *testing.T) {
+	t.Parallel()
+	configPath := writeAllRulesDisabledPolicy(t)
+
+	cases := []struct {
+		name    string
+		sql     string
+		dialect spec.Dialect
+		want    [][2]string
+	}{
+		{name: "mysql mixed column uniqueness", sql: "CREATE TABLE t (id INT UNIQUE GLOBAL, c INT UNIQUE);", dialect: spec.DialectMySQL, want: [][2]string{
+			{"create_table.column.unique", spec.UnsupportedUnauditedReason},
+			{"create_table.column.unique_global", spec.UnsupportedVendorBoundaryReason},
+		}},
+		{name: "mysql alter add list index global and check", sql: "ALTER TABLE t ADD (c INT, UNIQUE KEY uk (c) GLOBAL, CHECK (c > 0));", dialect: spec.DialectMySQL, want: [][2]string{
+			{"alter_table.add_index.index.global", spec.UnsupportedVendorBoundaryReason},
+			{"alter_table.add_constraint.check", spec.UnsupportedUnauditedReason},
+		}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := AuditSQL(context.Background(), Request{
+				SQL:        tc.sql,
+				Dialect:    tc.dialect,
+				ConfigPath: configPath,
+			})
+			if !errors.Is(err, ErrUnsupportedStatement) {
+				t.Fatalf("expected ErrUnsupportedStatement, got %v", err)
+			}
+			got := make([][2]string, 0, len(result.Unsupported))
+			for _, u := range result.Unsupported {
+				if u.Index != 0 {
+					t.Fatalf("expected unsupported entry bound to statement 0, got %#v", u)
+				}
+				got = append(got, [2]string{u.Feature, u.Reason})
+			}
+			sort.Slice(got, func(i, j int) bool { return got[i][0] < got[j][0] })
+			want := append([][2]string{}, tc.want...)
+			sort.Slice(want, func(i, j int) bool { return want[i][0] < want[j][0] })
+			if !reflect.DeepEqual(got, want) {
+				t.Fatalf("expected exact (feature,reason) pairs %#v, got %#v", want, got)
+			}
+		})
+	}
+}
+
 // TestAuditSQLT03RecognizedOutOfSurfaceStaysComplete locks the counter-examples:
 // ordinary read-only EXPLAIN, session-scope PREPARE/DEALLOCATE, and the
 // TiDB-audited placement-policy alter stay complete — only execution-capable or
@@ -459,6 +514,11 @@ func TestAuditSQLT03RecognizedOutOfSurfaceStaysComplete(t *testing.T) {
 		{name: "tidb plain create table", sql: "CREATE TABLE t (id INT PRIMARY KEY);", dialect: spec.DialectTiDB},
 		{name: "mysql drop table", sql: "DROP TABLE t;", dialect: spec.DialectMySQL},
 		{name: "mysql drop procedure", sql: "DROP PROCEDURE p;", dialect: spec.DialectMySQL},
+		{name: "mysql alter add list column only", sql: "ALTER TABLE t ADD (c INT);", dialect: spec.DialectMySQL},
+		{name: "mysql alter add list index", sql: "ALTER TABLE t ADD (c INT, UNIQUE KEY uk (c));", dialect: spec.DialectMySQL},
+		{name: "mysql alter add list index only", sql: "ALTER TABLE t ADD (UNIQUE KEY uk (id));", dialect: spec.DialectMySQL},
+		{name: "mysql alter add list foreign key", sql: "ALTER TABLE t ADD (c INT, FOREIGN KEY (c) REFERENCES p(id));", dialect: spec.DialectMySQL},
+		{name: "tidb alter add list check", sql: "ALTER TABLE t ADD (c INT, CHECK (c > 0));", dialect: spec.DialectTiDB},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

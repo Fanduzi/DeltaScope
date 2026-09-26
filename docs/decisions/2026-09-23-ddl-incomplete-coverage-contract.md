@@ -242,9 +242,37 @@ carries the original statement text per the documented public contract.
 A stricter no-raw-SQL reading would remove that field; doing so is a
 public-shape change deferred to an explicit decision.
 
+## Amendment 2026-09-25 (part 2) — parenthesized ADD constraint expansion
+
+Review of the GLOBAL fix found a deeper residual omission: the
+parenthesized `ALTER TABLE t ADD (<column>, <constraint>)` form parses
+into `AlterTableAddColumns` with constraints on `NewConstraints`, which
+extraction never consumed — so every constraint in the list (UNIQUE,
+PRIMARY KEY, FOREIGN KEY, CHECK, including GLOBAL variants) was silently
+dropped and the statement could still report `coverage=complete`.
+
+- `extractAlterSpecs` now expands `NewConstraints` through the same
+  `extractAlterSpec` path used by standalone `ADD <constraint>` clauses.
+  Index kinds take the `add_index` action and PK/FK/CHECK take
+  `add_constraint`, matching standalone equivalents; the AST does not
+  record a `CONSTRAINT` keyword inside the list, so `ADD (CONSTRAINT uq
+  UNIQUE ...)` also normalizes to `add_index` (documented ambiguity).
+- Consequences are wider than GLOBAL coverage: parenthesized CHECK now
+  surfaces `alter_table.add_constraint.check` under MySQL, parenthesized
+  FK reaches the `add_constraint` action like the standalone form, and
+  GLOBAL variants emit `alter_table.<action>.index.global`.
+- Golden `cli_cases` assertions were strengthened again: the optional
+  `unsupported_entries` key compares sorted (statement index, feature,
+  reason) tuples instead of independent sorted lists, so a swapped-reason
+  report is rejected (covered by a dedicated validator mutation case);
+  `statement_sql` pins returned raw-SQL identity.
+- `cli_cases` grow to 50 (8 new, 58 cases total): parenthesized GLOBAL/check mixed cases
+  in both dialects, a mixed unique/unique_global paired-reason case, and
+  complete controls for column-only, index-only, and foreign-key lists.
+
 ## Verification Evidence
 
-- `make ddl-golden TASK=T03 ARTIFACT_DIR=/tmp/ddl-golden`: 50 cases, 482
+- `make ddl-golden TASK=T03 ARTIFACT_DIR=/tmp/ddl-golden`: 58 cases, 564
   assertions, PASS on all four anchors — `cli_cases` prove MySQL `CREATE SEQUENCE` + `ALTER TABLE
   ... ADD COLUMN` exits 1 with `coverage.status=incomplete`, bounded
   `create_sequence` evidence, and a `review` verdict under the

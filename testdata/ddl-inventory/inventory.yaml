@@ -565,7 +565,7 @@ rows:
     sql_shape: "ALTER TABLE t ADD PRIMARY KEY (id)"
     prerequisites: "column legality for PK"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: only ddl.alter.add_constraint.notice fires; no PK-specific policy on ALTER path; ADD UNIQUE/PRIMARY KEY ... GLOBAL records alter_table.add_index.index.global evidence"
+    status_evidence: "2026-09-22 CLI probe: only ddl.alter.add_constraint.notice fires; no PK-specific policy on ALTER path; ADD PRIMARY KEY ... GLOBAL records alter_table.add_constraint.index.global evidence (add_constraint keeps PK actions; bare ADD UNIQUE KEY ... GLOBAL records alter_table.add_index.index.global). 2026-09-25 T03 follow-up (#82): parenthesized ALTER TABLE t ADD (...) now expands NewConstraints into the same normalized alters as standalone clauses - previously every constraint in the list (UNIQUE/PRIMARY/FK/CHECK incl. GLOBAL) was silently dropped and could pass complete"
     targets: "table, PK columns, clustered-index implications"
     acceptance:
       dimensions: "CREATE-vs-ALTER PK governance parity"
@@ -774,7 +774,7 @@ rows:
     sql_shape: "ALTER TABLE t ALTER INDEX i INVISIBLE"
     prerequisites: "index identity and current visibility"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: ADD INDEX gets prefix.require + notices (semantic partial), DROP INDEX notice only, RENAME INDEX gets forbid, ALTER INDEX INVISIBLE parses silently (T10 seed). ADD <index> ... GLOBAL records alter_table.<action>.index.global evidence. 2026-09-24 T03 rework (#82): ALTER INDEX INVISIBLE now carries bounded unsupported evidence (alter_table.alter_index) and coverage=incomplete — extraction never implied audited semantics"
+    status_evidence: "2026-09-22 CLI probe: ADD INDEX gets prefix.require + notices (semantic partial), DROP INDEX notice only, RENAME INDEX gets forbid, ALTER INDEX INVISIBLE parses silently (T10 seed). ADD <index> ... GLOBAL records alter_table.<action>.index.global evidence; constraints inside ADD (...) expand identically (index kinds -> add_index, PK/FK/CHECK -> add_constraint). 2026-09-24 T03 rework (#82): ALTER INDEX INVISIBLE now carries bounded unsupported evidence (alter_table.alter_index) and coverage=incomplete — extraction never implied audited semantics"
     targets: "index identity, visibility state, rename pairs"
     acceptance:
       dimensions: "visibility-change risk, VISIBLE restore and missing-index controls"
@@ -1518,7 +1518,7 @@ rows:
     sql_shape: "ALTER TABLE t ALTER INDEX i INVISIBLE"
     prerequisites: "index identity"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: ADD INDEX gets prefix.require + notice; RENAME INDEX gets forbid; ALTER INDEX INVISIBLE parses silently. ADD <index> ... GLOBAL records alter_table.<action>.index.global evidence. 2026-09-24 T03 rework (#82): now carries bounded unsupported evidence (alter_table.alter_index) and coverage=incomplete"
+    status_evidence: "2026-09-22 CLI probe: ADD INDEX gets prefix.require + notice; RENAME INDEX gets forbid; ALTER INDEX INVISIBLE parses silently. ADD <index> ... GLOBAL records alter_table.<action>.index.global evidence; constraints inside ADD (...) expand identically. 2026-09-24 T03 rework (#82): now carries bounded unsupported evidence (alter_table.alter_index) and coverage=incomplete"
     targets: "index identity, visibility, rename pairs"
     acceptance:
       dimensions: "visibility-change evidence on TiDB catalog"

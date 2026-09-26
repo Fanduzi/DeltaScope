@@ -293,6 +293,32 @@ def main():
         a["cases"][2]["actual"]["stdout"] = json.dumps(a["cases"][2]["actual"]["parsed"])
         results.append(check("cli_cases wrong unsupported feature rejected", a, "unsupported features", manifest=m))
 
+        # Paired (index, feature, reason) assertions: swapping reasons between a
+        # vendor-boundary feature and an unaudited feature must be rejected even
+        # though both sorted lists match independently.
+        V = "parsed by the shared parser but outside the supported statement surface for this dialect"
+        U = "parsed by the shared parser but not covered by audited semantics"
+        m["cli_cases"][0]["expect"]["unsupported"] = 2
+        m["cli_cases"][0]["expect"]["unsupported_features"] = ["create_table.column.unique", "create_table.column.unique_global"]
+        m["cli_cases"][0]["expect"]["unsupported_entries"] = [
+            {"feature": "create_table.column.unique_global", "reason": V},
+            {"feature": "create_table.column.unique", "reason": U},
+        ]
+
+        def paired_artifact(swap=False):
+            a = cli_cases_artifact()
+            parsed = a["cases"][2]["actual"]["parsed"]
+            parsed["unsupported"] = [
+                {"index": 0, "feature": "create_table.column.unique_global", "reason": U if swap else V},
+                {"index": 0, "feature": "create_table.column.unique", "reason": V if swap else U},
+            ]
+            a["cases"][2]["actual"]["stdout"] = json.dumps(parsed)
+            a["cases"][2]["expected"] = copy.deepcopy(m["cli_cases"][0]["expect"])
+            return a
+
+        results.append(check("cli_cases paired unsupported entries pass", paired_artifact(), "", manifest=m))
+        results.append(check("cli_cases swapped unsupported reasons rejected", paired_artifact(swap=True), "unsupported entries", manifest=m))
+
     failures = results.count(False)
     print(f"contract cases={len(results)} failures={failures}")
     return 1 if failures else 0
