@@ -451,6 +451,15 @@ func scanStmtCandidates(t *testing.T, parserDir string) map[string]bool {
 					if !ok {
 						continue
 					}
+					if ts.Assign.IsValid() {
+						// `type A = T` aliases share the target's method set, so
+						// an embedder of A is an embedder of T. Record the edge
+						// so the closure resolves alias-mediated embeddings.
+						if name := embeddedFieldName(ts.Type); name != "" {
+							structs[ts.Name.Name] = append(structs[ts.Name.Name], name)
+						}
+						continue
+					}
 					st, ok := ts.Type.(*goast.StructType)
 					if !ok {
 						continue
@@ -501,8 +510,10 @@ func scanStmtCandidates(t *testing.T, parserDir string) map[string]bool {
 
 // TestScanStmtCandidatesShapes pins the declaration forms the census scanner
 // must discover: embedded bases with trailing comments, one-line struct
-// declarations, unnamed and generic statement() receivers, and embedders of
-// direct-marker types. A regression here means a parser upgrade could
+// declarations, unnamed and generic statement() receivers, embedders of
+// direct-marker types, and embedders of local type aliases (an alias shares
+// its target's method set, so alias-mediated embedding is real embedding).
+// A regression here means a parser upgrade could
 // introduce a live statement type the census never sees.
 func TestScanStmtCandidatesShapes(t *testing.T) {
 	dir := t.TempDir()
@@ -542,6 +553,18 @@ func (n *DirectBase) statement() {}
 type DirectChild struct {
 	DirectBase
 }
+
+type BaseAlias = ddlNode
+
+type AliasStmt struct {
+	BaseAlias
+}
+
+type StmtAlias = PlainStmt
+
+type AliasChild struct {
+	StmtAlias
+}
 `
 	if err := os.WriteFile(filepath.Join(dir, "ast", "nodes.go"), []byte(source), 0o644); err != nil {
 		t.Fatal(err)
@@ -550,6 +573,7 @@ type DirectChild struct {
 	for _, name := range []string{
 		"PlainStmt", "CommentedStmt", "OneLineStmt", "UnnamedMarker",
 		"GenericMarker", "DirectBase", "DirectChild",
+		"BaseAlias", "AliasStmt", "StmtAlias", "AliasChild",
 	} {
 		if !got[name] {
 			t.Errorf("statement-node candidate %s missed by scanner", name)

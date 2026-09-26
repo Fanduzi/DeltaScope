@@ -191,9 +191,10 @@ func columnAspectGaps(dialect spec.Dialect, op spec.DDLOperation, action string,
 		))
 	}
 	for _, option := range column.UnextractedOptions {
-		// GLOBAL-qualified inline index options are TiDB-only syntax.
+		// GLOBAL-qualified inline index options and the CLUSTERED/
+		// NONCLUSTERED primary-key type are TiDB-only syntax.
 		vendor := dialect == spec.DialectMySQL &&
-			(option == "unique_global" || option == "primary_key_global")
+			(option == "unique_global" || option == "primary_key_global" || option == "primary_key_type")
 		gaps = append(gaps, aspectGap(
 			fmt.Sprintf("%s.%s", prefix, option), vendor,
 			map[string]any{"aspect": "column"},
@@ -298,9 +299,10 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 			))
 		}
 		for _, option := range index.UnmodeledOptions {
-			// split_opt, secondary_engine_attr, and columnar_replica are TiDB
-			// extensions: vendor boundaries under MySQL, unaudited under TiDB.
-			vendor := dialect == spec.DialectMySQL && (option == "split_opt" || option == "secondary_engine_attr" || option == "columnar_replica")
+			// split_opt, secondary_engine_attr, columnar_replica, and the
+			// CLUSTERED/NONCLUSTERED primary-key type are TiDB extensions:
+			// vendor boundaries under MySQL, unaudited under TiDB.
+			vendor := dialect == spec.DialectMySQL && (option == "split_opt" || option == "secondary_engine_attr" || option == "columnar_replica" || option == "primary_key_type")
 			gaps = append(gaps, aspectGap(
 				fmt.Sprintf("%s.option.%s", prefix, option), vendor,
 				map[string]any{"aspect": "index_option", "index_kind": string(index.Kind)},

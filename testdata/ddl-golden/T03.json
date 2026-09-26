@@ -3807,6 +3807,42 @@
       }
     },
     {
+      "id": "mysql-inline-pk-nonclustered",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t (id INT PRIMARY KEY NONCLUSTERED);",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE TABLE t (id INT PRIMARY KEY NONCLUSTERED);"
+        ],
+        "unsupported": 1,
+        "unsupported_features": [
+          "create_table.column.primary_key_type"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "create_table.column.primary_key_type",
+            "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+            "metadata": {
+              "aspect": "column"
+            }
+          }
+        ]
+      }
+    },
+    {
       "id": "mysql-alter-user-current-retain",
       "dialect": "mysql",
       "sql": "ALTER USER USER() IDENTIFIED BY 'x' RETAIN CURRENT PASSWORD;",
@@ -3977,6 +4013,7 @@
     "T03.cli.mysql-drop-hypo-index",
     "T03.cli.tidb-drop-hypo-index",
     "T03.cli.tidb-inline-pk-nonclustered",
+    "T03.cli.mysql-inline-pk-nonclustered",
     "T03.cli.mysql-alter-user-current-retain"
   ]
 }

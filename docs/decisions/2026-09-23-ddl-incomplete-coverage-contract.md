@@ -543,6 +543,24 @@ parser (verified via `Audit` probes before fixing):
 
 `cli_cases` grow to 109 (117 cases total with the 8 DB cases).
 
+## Amendment 2026-09-26 (part 9) — round-7 residual findings
+
+Follow-up review of `83cb00e..aa75594` verified F2/F3/F4/F5/F7 closed and
+found two residuals:
+
+- **Alias-mediated embedding (F1).** `type A = T` shares T's method set, so
+  an embedder of A is an embedder of T; the scanner now records
+  `TypeSpec.Assign` alias edges into the embedding graph and the fixture
+  test pins alias shapes (`BaseAlias = ddlNode`, `StmtAlias = PlainStmt`).
+  Non-alias defined types (`type A T`) deliberately stay outside — they do
+  not inherit methods.
+- **MySQL reason for `primary_key_type` (F6).** CLUSTERED/NONCLUSTERED are
+  TiDB syntax, so the marker is now a vendor boundary under MySQL on both
+  evidence paths (`create_table.column.primary_key_type` and
+  `create_table.index.option.primary_key_type`); TiDB stays unaudited.
+
+`cli_cases` grow to 110 (118 cases total).
+
 ## Verification Evidence
 
 - `make ddl-golden TASK=T03 ARTIFACT_DIR=/tmp/ddl-golden`: 91 cases, 1034
