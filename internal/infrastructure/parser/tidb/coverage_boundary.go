@@ -106,9 +106,10 @@ func ddlIndexKind(ddl *spec.DDL) spec.IndexKind {
 // (unless they carry INTO OUTFILE), SHOW/DESCRIBE/HELP, plain EXPLAIN and
 // EXPLAIN FOR CONNECTION (read-only plan inspection), transaction control
 // (BEGIN/COMMIT/ROLLBACK/SAVEPOINT/RELEASE SAVEPOINT), and the session-state
-// family USE/SET/SET CHARSET/SET SESSION_STATES plus session-scope
-// PREPARE/DEALLOCATE. Execution-capable forms — EXPLAIN ANALYZE/EXPLORE, TRACE,
-// EXECUTE, DO, BINLOG replay, and SELECT INTO OUTFILE — are never excluded:
+// family USE/session-scope SET/SET CHARSET/SET SESSION_STATES plus
+// session-scope PREPARE/DEALLOCATE. Execution-capable or server-wide forms —
+// EXPLAIN ANALYZE/EXPLORE, TRACE, EXECUTE, DO, BINLOG replay, SELECT INTO
+// OUTFILE, and SET GLOBAL — are never excluded:
 // they run the wrapped statement, dynamic SQL, expressions, or file writes,
 // so their effects cannot be audited.
 func unhandledStatementFeature(node ast.StmtNode) string {
@@ -140,6 +141,16 @@ func unhandledStatementFeature(node ast.StmtNode) string {
 		default:
 			return ""
 		}
+	case *ast.SetStmt:
+		// Session-scoped assignments are exempt, but SET GLOBAL / @@global
+		// assignments change server-wide settings for subsequent connections —
+		// mutating administrative effects the audit does not model.
+		for _, v := range n.Variables {
+			if v != nil && v.IsGlobal {
+				return "set_global"
+			}
+		}
+		return ""
 	case *ast.TraceStmt:
 		return "trace"
 	case *ast.ExecuteStmt:
@@ -272,17 +283,30 @@ func unhandledStatementFeature(node ast.StmtNode) string {
 // setOprHasSelectInto reports whether a UNION/INTERSECT/EXCEPT statement
 // carries an INTO OUTFILE clause on any inner select — the parser attaches the
 // clause to the trailing select inside the set-operation list, not to the
-// outer statement node.
+// outer statement node. Parenthesized operands nest as *ast.SetOprSelectList
+// rather than *ast.SetOprStmt, so both shapes recurse.
 func setOprHasSelectInto(stmt *ast.SetOprStmt) bool {
-	if stmt.SelectList == nil {
+	if stmt == nil || stmt.SelectList == nil {
 		return false
 	}
-	for _, inner := range stmt.SelectList.Selects {
-		if sel, ok := inner.(*ast.SelectStmt); ok && sel != nil && sel.SelectIntoOpt != nil {
-			return true
-		}
-		if nested, ok := inner.(*ast.SetOprStmt); ok && setOprHasSelectInto(nested) {
-			return true
+	return setOprListHasSelectInto(stmt.SelectList)
+}
+
+func setOprListHasSelectInto(list *ast.SetOprSelectList) bool {
+	for _, inner := range list.Selects {
+		switch n := inner.(type) {
+		case *ast.SelectStmt:
+			if n != nil && n.SelectIntoOpt != nil {
+				return true
+			}
+		case *ast.SetOprStmt:
+			if setOprHasSelectInto(n) {
+				return true
+			}
+		case *ast.SetOprSelectList:
+			if setOprListHasSelectInto(n) {
+				return true
+			}
 		}
 	}
 	return false

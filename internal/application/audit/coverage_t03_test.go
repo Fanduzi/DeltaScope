@@ -461,7 +461,19 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 		{name: "mysql create user identified", sql: "CREATE USER u IDENTIFIED BY 'x';", dialect: spec.DialectMySQL, wantFeature: "create_user.option.identified", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql alter user identified", sql: "ALTER USER u IDENTIFIED BY 'x';", dialect: spec.DialectMySQL, wantFeature: "alter_user.option.identified", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql alter user dual password", sql: "ALTER USER u IDENTIFIED BY 'x' RETAIN CURRENT PASSWORD;", dialect: spec.DialectMySQL, wantFeature: "alter_user.option.dual_password", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql alter user current dual password", sql: "ALTER USER USER() IDENTIFIED BY 'x' RETAIN CURRENT PASSWORD;", dialect: spec.DialectMySQL, wantFeature: "alter_user.option.dual_password", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "tidb create placement policy or replace", sql: "CREATE OR REPLACE PLACEMENT POLICY p1 PRIMARY_REGION='us-east-1' REGIONS='us-east-1';", dialect: spec.DialectTiDB, wantFeature: "create_placement_policy.option.or_replace", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		// Field-conditional statement markers closed in the sixth round.
+		{name: "mysql union parenthesized select into", sql: "SELECT 1 UNION (SELECT 2 INTO OUTFILE '/tmp/x.txt');", dialect: spec.DialectMySQL, wantFeature: "select_into", wantReason: spec.UnsupportedUnauditedReason, wantKind: "unknown"},
+		{name: "mysql union nested list select into", sql: "SELECT 1 UNION ((SELECT 2 INTO OUTFILE '/tmp/y.txt') UNION SELECT 3);", dialect: spec.DialectMySQL, wantFeature: "select_into", wantReason: spec.UnsupportedUnauditedReason, wantKind: "unknown"},
+		{name: "mysql set global", sql: "SET GLOBAL sql_mode = 'STRICT_TRANS_TABLES';", dialect: spec.DialectMySQL, wantFeature: "set_global", wantReason: spec.UnsupportedUnauditedReason, wantKind: "unknown"},
+		{name: "mysql set atat global", sql: "SET @@global.max_connections = 100;", dialect: spec.DialectMySQL, wantFeature: "set_global", wantReason: spec.UnsupportedUnauditedReason, wantKind: "unknown"},
+		{name: "tidb set global", sql: "SET GLOBAL tidb_enable_noop = 1;", dialect: spec.DialectTiDB, wantFeature: "set_global", wantReason: spec.UnsupportedUnauditedReason, wantKind: "unknown"},
+		{name: "mysql create table replace select", sql: "CREATE TABLE t (id INT) REPLACE SELECT 1 AS id;", dialect: spec.DialectMySQL, wantFeature: "create_table.option.on_duplicate", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql create table ignore select", sql: "CREATE TABLE t (id INT) IGNORE SELECT 1 AS id;", dialect: spec.DialectMySQL, wantFeature: "create_table.option.on_duplicate", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql drop hypo index", sql: "DROP HYPO INDEX ix ON t;", dialect: spec.DialectMySQL, wantFeature: "drop_index.option.hypo_index", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
+		{name: "tidb drop hypo index", sql: "DROP HYPO INDEX ix ON t;", dialect: spec.DialectTiDB, wantFeature: "drop_index.option.hypo_index", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "tidb inline primary key nonclustered", sql: "CREATE TABLE t (id INT PRIMARY KEY NONCLUSTERED);", dialect: spec.DialectTiDB, wantFeature: "create_table.column.primary_key_type", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

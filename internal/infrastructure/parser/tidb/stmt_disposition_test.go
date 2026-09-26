@@ -10,11 +10,13 @@
 package tidbparser
 
 import (
+	goast "go/ast"
+	goparser "go/parser"
+	"go/token"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"reflect"
-	"regexp"
 	"strings"
 	"testing"
 
@@ -142,8 +144,10 @@ var stmtDispositions = map[string]string{
 
 	// Exempt: read-only query forms, session state, transaction control.
 	// SelectStmt/SetOprStmt gain the "select_into" feature when an INTO OUTFILE
-	// clause is present; ExplainStmt gains explain_analyze/explain_explore —
-	// those paths are SQL-verified in the T03 coverage tests.
+	// clause is present; ExplainStmt gains explain_analyze/explain_explore;
+	// SetStmt gains "set_global" when any assignment is server-wide
+	// (IsGlobal/@@global) — those field-conditional paths are SQL-verified in
+	// the T03 coverage tests.
 	"SelectStmt":           "exempt",
 	"SetOprStmt":           "exempt",
 	"ExplainStmt":          "exempt",
@@ -357,6 +361,27 @@ func TestStatementTypeDisposition(t *testing.T) {
 	}
 }
 
+// TestExtractedTypesReachExtractor closes the census→dispatch connection:
+// every type classified "extracted" must have a case in the real Extract type
+// switch. classify() and the switch are separate lists, so this test — not
+// the disposition table — is what fails if an extractor case is dropped.
+func TestExtractedTypesReachExtractor(t *testing.T) {
+	handled := scanExtractorCases(t)
+	for name, disposition := range stmtDispositions {
+		if disposition != "extracted" {
+			continue
+		}
+		if !handled[name] {
+			t.Errorf("%s is classified extracted but has no case in tidbExtractor.Extract", name)
+		}
+	}
+	for name := range handled {
+		if stmtDispositions[name] != "extracted" {
+			t.Errorf("extractor case %s is not marked extracted in the disposition table", name)
+		}
+	}
+}
+
 // TestStatementTypeCensusDrift fails when the pinned parser gains or renames a
 // statement-node candidate without a corresponding stmtNodeTypes row — this
 // keeps the complete-coverage boundary closed across parser upgrades.
@@ -393,56 +418,66 @@ func parserModuleDir(t *testing.T) string {
 }
 
 // scanStmtCandidates parses every struct declaration in the parser's ast
-// package and returns the census candidate set: types that transitively embed
-// a statement-node base (stmtNode, ddlNode, dmlNode) or define statement()
-// directly. Some candidates satisfy ast.StmtNode; a few are structural
-// carriers — the dispatch test separates the two by reflection.
+// package with go/parser — not regex — and returns the census candidate set:
+// types that transitively embed a statement-node base (stmtNode, ddlNode,
+// dmlNode) or define statement() directly. Embedded fields are identified
+// structurally (a field with no name), so comments, one-line declarations,
+// pointer embeds, and generic receivers cannot evade the scan. Direct-marker
+// types seed the closure before the transitive pass so their embedders count
+// too. Some candidates satisfy ast.StmtNode; a few are structural carriers —
+// the dispatch test separates the two by reflection.
 func scanStmtCandidates(t *testing.T, parserDir string) map[string]bool {
 	t.Helper()
-	blockComment := regexp.MustCompile(`(?s)/\*.*?\*/`)
-	structDecl := regexp.MustCompile(`(?s)type (\w+)(?:\[[^\]]*\])? struct \{(.*?)\n\}`)
-	embeddedField := regexp.MustCompile(`^\s*\*?(\w+(?:\.\w+)?)\s*(?://.*)?$`)
-	stmtMarker := regexp.MustCompile(`func \(\w+ \*?(\w+)\) statement\(\)`)
 	structs := map[string][]string{}
-	directMarkers := map[string]bool{}
+	candidates := map[string]bool{"stmtNode": true, "ddlNode": true, "dmlNode": true}
 	entries, err := os.ReadDir(filepath.Join(parserDir, "ast"))
 	if err != nil {
 		t.Fatalf("read parser ast dir: %v", err)
 	}
+	fset := token.NewFileSet()
 	for _, entry := range entries {
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") || strings.HasSuffix(entry.Name(), "_test.go") {
 			continue
 		}
-		data, err := os.ReadFile(filepath.Join(parserDir, "ast", entry.Name()))
+		file, err := goparser.ParseFile(fset, filepath.Join(parserDir, "ast", entry.Name()), nil, 0)
 		if err != nil {
-			t.Fatalf("read %s: %v", entry.Name(), err)
+			t.Fatalf("parse %s: %v", entry.Name(), err)
 		}
-		// Dead types inside block comments (e.g. SetCharsetStmt) must not
-		// count as live parser surface.
-		source := blockComment.ReplaceAllString(string(data), "")
-		for _, m := range stmtMarker.FindAllStringSubmatch(source, -1) {
-			directMarkers[m[1]] = true
-		}
-		for _, decl := range structDecl.FindAllStringSubmatch(source, -1) {
-			name, body := decl[1], decl[2]
-			for _, line := range strings.Split(body, "\n") {
-				trimmed := strings.TrimSpace(line)
-				if trimmed == "" || strings.HasPrefix(trimmed, "//") {
+		for _, decl := range file.Decls {
+			switch d := decl.(type) {
+			case *goast.GenDecl:
+				for _, specDecl := range d.Specs {
+					ts, ok := specDecl.(*goast.TypeSpec)
+					if !ok {
+						continue
+					}
+					st, ok := ts.Type.(*goast.StructType)
+					if !ok {
+						continue
+					}
+					for _, field := range st.Fields.List {
+						if len(field.Names) != 0 {
+							continue
+						}
+						if name := embeddedFieldName(field.Type); name != "" {
+							structs[ts.Name.Name] = append(structs[ts.Name.Name], name)
+						}
+					}
+				}
+			case *goast.FuncDecl:
+				// A type defining statement() itself is a candidate even
+				// without an embedded base; seed it before the closure so
+				// its embedders transitively count.
+				if d.Recv == nil || len(d.Recv.List) == 0 || d.Name.Name != "statement" {
 					continue
 				}
-				// Anonymous (embedded) field: a lone identifier, optionally
-				// package-qualified or pointer-typed, with no field name.
-				if m := embeddedField.FindStringSubmatch(trimmed); m != nil && !strings.Contains(trimmed, " ") && !strings.Contains(trimmed, "\t") {
-					field := m[1]
-					if i := strings.LastIndex(field, "."); i >= 0 {
-						field = field[i+1:]
-					}
-					structs[name] = append(structs[name], field)
+				if name := embeddedFieldName(d.Recv.List[0].Type); name != "" &&
+					name != "stmtNode" && name != "ddlNode" && name != "dmlNode" {
+					candidates[name] = true
 				}
 			}
 		}
 	}
-	candidates := map[string]bool{"stmtNode": true, "ddlNode": true, "dmlNode": true}
 	for changed := true; changed; {
 		changed = false
 		for name, embeds := range structs {
@@ -461,12 +496,65 @@ func scanStmtCandidates(t *testing.T, parserDir string) map[string]bool {
 	delete(candidates, "stmtNode")
 	delete(candidates, "ddlNode")
 	delete(candidates, "dmlNode")
-	for name := range directMarkers {
-		// A type defining statement() itself is a candidate even without an
-		// embedded base (none exist today; the check stays for drift).
-		if name != "stmtNode" && name != "ddlNode" && name != "dmlNode" {
-			candidates[name] = true
+	return candidates
+}
+
+// embeddedFieldName unwraps an anonymous field or method receiver type to the
+// base type name: handles T, *T, pkg.T, *pkg.T, and generic receivers T[P]
+// or *T[P].
+func embeddedFieldName(expr goast.Expr) string {
+	for {
+		switch e := expr.(type) {
+		case *goast.StarExpr:
+			expr = e.X
+		case *goast.IndexExpr:
+			expr = e.X
+		case *goast.IndexListExpr:
+			expr = e.X
+		case *goast.SelectorExpr:
+			return e.Sel.Name
+		case *goast.Ident:
+			return e.Name
+		default:
+			return ""
 		}
 	}
-	return candidates
+}
+
+// scanExtractorCases parses this package's extractor.go with go/parser and
+// returns the AST type names handled by the Extract type switch — the real
+// dispatch set that classify must stay aligned with.
+func scanExtractorCases(t *testing.T) map[string]bool {
+	t.Helper()
+	fset := token.NewFileSet()
+	file, err := goparser.ParseFile(fset, "extractor.go", nil, 0)
+	if err != nil {
+		t.Fatalf("parse extractor.go: %v", err)
+	}
+	handled := map[string]bool{}
+	for _, decl := range file.Decls {
+		fn, ok := decl.(*goast.FuncDecl)
+		if !ok || fn.Name.Name != "Extract" || fn.Body == nil {
+			continue
+		}
+		goast.Inspect(fn.Body, func(n goast.Node) bool {
+			sw, ok := n.(*goast.TypeSwitchStmt)
+			if !ok {
+				return true
+			}
+			for _, stmt := range sw.Body.List {
+				clause, ok := stmt.(*goast.CaseClause)
+				if !ok {
+					continue
+				}
+				for _, expr := range clause.List {
+					if name := embeddedFieldName(expr); name != "" {
+						handled[name] = true
+					}
+				}
+			}
+			return false
+		})
+	}
+	return handled
 }

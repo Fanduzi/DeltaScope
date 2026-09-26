@@ -155,7 +155,7 @@ var fieldDispositions = map[string]map[string]string{
 		"SplitIndex":       "evidence:split_index",
 		"Options":          "projected_evidence — modeled keys plus unextracted names",
 		"Partition":        "projected_evidence — HasPartition feeds the forbid rule; nested option names walked",
-		"OnDuplicate":      "exempt:grammar_unreachable — probed: CREATE TABLE ON DUPLICATE is a parser error",
+		"OnDuplicate":      "evidence:on_duplicate — CREATE TABLE ... IGNORE|REPLACE SELECT duplicate handling",
 		"Select":           "projected — HasSelect feeds ddl.table.create_as.forbid",
 	},
 	"CreateViewStmt": {
@@ -200,7 +200,7 @@ var fieldDispositions = map[string]map[string]string{
 	"AlterDatabaseStmt": {
 		"ddlNode":              "exempt:embedded_base",
 		"Name":                 "projected",
-		"AlterDefaultDatabase": "exempt:grammar_unreachable — probed: ALTER DEFAULT DATABASE is a parser error",
+		"AlterDefaultDatabase": "subsumed:option_evidence — marks the no-name default-db form (ALTER DATABASE <options>); the charset/collate gap already fires on the same statement",
 		"Options":              "projected_evidence",
 	},
 	"CreateIndexStmt": {
@@ -219,7 +219,7 @@ var fieldDispositions = map[string]map[string]string{
 		"IndexName": "projected",
 		"Table":     "projected",
 		"LockAlg":   "evidence:lock_algorithm",
-		"IsHypo":    "exempt:grammar_unreachable — hypothetical-index flag has no production in the pinned grammar",
+		"IsHypo":    "evidence:hypo_index — DROP HYPO INDEX is a real TiDB production (vendor boundary under MySQL)",
 	},
 	"RenameTableStmt": {
 		"ddlNode":       "exempt:embedded_base",
@@ -253,7 +253,7 @@ var fieldDispositions = map[string]map[string]string{
 		"stmtNode":                  "exempt:embedded_base",
 		"IfExists":                  "exempt:existence_flag",
 		"CurrentAuth":               "projected_evidence — USER() target path plus identified evidence",
-		"CurrentDualPasswordOption": "projected_evidence — USER() dual-password target carrier",
+		"CurrentDualPasswordOption": "projected_evidence — USER() dual-password target carrier plus evidence:dual_password",
 		"Specs":                     "projected_evidence",
 		"AuthTokenOrTLSOptions":     "evidence:auth_token_or_tls",
 		"ResourceOptions":           "evidence:resource",
@@ -468,7 +468,7 @@ var fieldDispositions = map[string]map[string]string{
 		"AutoRandOpt":         "carried:option_name — auto_random flagged by name",
 		"Enforced":            "carried:option_name",
 		"ConstraintName":      "carried:option_name",
-		"PrimaryKeyTp":        "carried:option_name",
+		"PrimaryKeyTp":        "evidence:primary_key_type — inline CLUSTERED|NONCLUSTERED mirrors the table-level index-option gap",
 		"SecondaryEngineAttr": "carried:option_name",
 	},
 	"ColumnDef": {

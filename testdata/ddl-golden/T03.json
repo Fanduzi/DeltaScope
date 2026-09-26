@@ -2086,7 +2086,7 @@
         "statements": 1,
         "findings": 0,
         "diagnostics": 1,
-        "unsupported": 1,
+        "unsupported": 2,
         "coverage": "incomplete",
         "statement_coverage": [
           "incomplete"
@@ -2095,9 +2095,17 @@
           "ALTER USER USER() DISCARD OLD PASSWORD;"
         ],
         "unsupported_features": [
+          "alter_user.option.dual_password",
           "alter_user.unaudited_targets"
         ],
         "unsupported_entries": [
+          {
+            "feature": "alter_user.option.dual_password",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "option"
+            }
+          },
           {
             "feature": "alter_user.unaudited_targets",
             "reason": "parsed by the shared parser but not covered by audited semantics",
@@ -3488,6 +3496,368 @@
           }
         ]
       }
+    },
+    {
+      "id": "mysql-union-paren-select-into",
+      "dialect": "mysql",
+      "sql": "SELECT 1 UNION (SELECT 2 INTO OUTFILE '/tmp/x.txt');",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "SELECT 1 UNION (SELECT 2 INTO OUTFILE '/tmp/x.txt');"
+        ],
+        "unsupported": 1,
+        "unsupported_features": [
+          "select_into"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "select_into",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-union-nested-select-into",
+      "dialect": "mysql",
+      "sql": "SELECT 1 UNION ((SELECT 2 INTO OUTFILE '/tmp/y.txt') UNION SELECT 3);",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "SELECT 1 UNION ((SELECT 2 INTO OUTFILE '/tmp/y.txt') UNION SELECT 3);"
+        ],
+        "unsupported": 1,
+        "unsupported_features": [
+          "select_into"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "select_into",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-set-global",
+      "dialect": "mysql",
+      "sql": "SET GLOBAL sql_mode = 'STRICT_TRANS_TABLES';",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "SET GLOBAL sql_mode = 'STRICT_TRANS_TABLES';"
+        ],
+        "unsupported": 1,
+        "unsupported_features": [
+          "set_global"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "set_global",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-set-atat-global",
+      "dialect": "mysql",
+      "sql": "SET @@global.max_connections = 100;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "SET @@global.max_connections = 100;"
+        ],
+        "unsupported": 1,
+        "unsupported_features": [
+          "set_global"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "set_global",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tidb-set-global",
+      "dialect": "tidb",
+      "sql": "SET GLOBAL tidb_enable_noop = 1;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "SET GLOBAL tidb_enable_noop = 1;"
+        ],
+        "unsupported": 1,
+        "unsupported_features": [
+          "set_global"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "set_global",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-create-table-replace-select",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t (id INT) REPLACE SELECT 1 AS id;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE TABLE t (id INT) REPLACE SELECT 1 AS id;"
+        ],
+        "unsupported": 1,
+        "unsupported_features": [
+          "create_table.option.on_duplicate"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "create_table.option.on_duplicate",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "option"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-drop-hypo-index",
+      "dialect": "mysql",
+      "sql": "DROP HYPO INDEX ix ON t;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "DROP HYPO INDEX ix ON t;"
+        ],
+        "unsupported": 1,
+        "unsupported_features": [
+          "drop_index.option.hypo_index"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "drop_index.option.hypo_index",
+            "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+            "metadata": {
+              "aspect": "option"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tidb-drop-hypo-index",
+      "dialect": "tidb",
+      "sql": "DROP HYPO INDEX ix ON t;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "DROP HYPO INDEX ix ON t;"
+        ],
+        "unsupported": 1,
+        "unsupported_features": [
+          "drop_index.option.hypo_index"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "drop_index.option.hypo_index",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "option"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tidb-inline-pk-nonclustered",
+      "dialect": "tidb",
+      "sql": "CREATE TABLE t (id INT PRIMARY KEY NONCLUSTERED);",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE TABLE t (id INT PRIMARY KEY NONCLUSTERED);"
+        ],
+        "unsupported": 1,
+        "unsupported_features": [
+          "create_table.column.primary_key_type"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "create_table.column.primary_key_type",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "column"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-alter-user-current-retain",
+      "dialect": "mysql",
+      "sql": "ALTER USER USER() IDENTIFIED BY 'x' RETAIN CURRENT PASSWORD;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "ALTER USER USER() IDENTIFIED BY 'x' RETAIN CURRENT PASSWORD;"
+        ],
+        "unsupported": 3,
+        "unsupported_features": [
+          "alter_user.option.identified",
+          "alter_user.option.dual_password",
+          "alter_user.unaudited_targets"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "alter_user.option.identified",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "option"
+            }
+          },
+          {
+            "feature": "alter_user.option.dual_password",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "option"
+            }
+          },
+          {
+            "feature": "alter_user.unaudited_targets",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "targets",
+              "omitted": 1
+            }
+          }
+        ]
+      }
     }
   ],
   "required_case_ids": [
@@ -3597,6 +3967,16 @@
     "T03.cli.mysql-create-user-identified",
     "T03.cli.mysql-alter-user-identified",
     "T03.cli.mysql-alter-user-dual-password",
-    "T03.cli.tidb-create-placement-policy-or-replace"
+    "T03.cli.tidb-create-placement-policy-or-replace",
+    "T03.cli.mysql-union-paren-select-into",
+    "T03.cli.mysql-union-nested-select-into",
+    "T03.cli.mysql-set-global",
+    "T03.cli.mysql-set-atat-global",
+    "T03.cli.tidb-set-global",
+    "T03.cli.mysql-create-table-replace-select",
+    "T03.cli.mysql-drop-hypo-index",
+    "T03.cli.tidb-drop-hypo-index",
+    "T03.cli.tidb-inline-pk-nonclustered",
+    "T03.cli.mysql-alter-user-current-retain"
   ]
 }

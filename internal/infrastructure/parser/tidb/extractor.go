@@ -248,6 +248,11 @@ func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
 		}
 	}
 	ddl.UnextractedOptions = append(unextracted, partitionOptionNames(stmt.Partition)...)
+	if stmt.OnDuplicate != ast.OnDuplicateKeyHandlingError {
+		// CREATE TABLE ... IGNORE|REPLACE SELECT carries duplicate-key
+		// handling semantics the model does not project.
+		ddl.UnextractedOptions = append(ddl.UnextractedOptions, "on_duplicate")
+	}
 	if len(stmt.SplitIndex) > 0 {
 		// SPLIT PRIMARY KEY BETWEEN ... REGIONS is a separate collection beside
 		// the option lists; record bounded presence so the clause cannot pass
@@ -587,6 +592,11 @@ func extractColumn(col *ast.ColumnDef) spec.Column {
 			if option.StrValue == "Global" {
 				column.UnextractedOptions = append(column.UnextractedOptions, "primary_key_global")
 			}
+			if option.PrimaryKeyTp != ast.PrimaryKeyTypeDefault {
+				// Inline PRIMARY KEY CLUSTERED|NONCLUSTERED mirrors the
+				// table-level index-option gap.
+				column.UnextractedOptions = append(column.UnextractedOptions, "primary_key_type")
+			}
 		case ast.ColumnOptionAutoIncrement:
 			column.AutoIncrement = true
 		case ast.ColumnOptionDefaultValue:
@@ -709,6 +719,11 @@ func extractDropIndex(stmt *ast.DropIndexStmt) *spec.DDL {
 	var unextracted []string
 	if stmt.LockAlg != nil {
 		unextracted = append(unextracted, "lock_algorithm")
+	}
+	if stmt.IsHypo {
+		// DROP HYPO INDEX removes a TiDB hypothetical index — distinct from
+		// ordinary DROP INDEX.
+		unextracted = append(unextracted, "hypo_index")
 	}
 	return &spec.DDL{
 		Operation:          spec.DDLOperationDropIndex,
@@ -861,7 +876,7 @@ func extractCreateUser(stmt *ast.CreateUserStmt) *spec.DDL {
 			ObjectName:         name,
 			ObjectType:         "role",
 			OmittedTargets:     omittedUserTargets(stmt.Specs),
-			UnextractedOptions: userOptionNames(stmt.Specs, nil, stmt.AuthTokenOrTLSOptions, stmt.ResourceOptions, stmt.PasswordOrLockOptions, stmt.CommentOrAttributeOption, stmt.ResourceGroupNameOption),
+			UnextractedOptions: userOptionNames(stmt.Specs, nil, false, stmt.AuthTokenOrTLSOptions, stmt.ResourceOptions, stmt.PasswordOrLockOptions, stmt.CommentOrAttributeOption, stmt.ResourceGroupNameOption),
 		}
 	}
 	name := ""
@@ -874,7 +889,7 @@ func extractCreateUser(stmt *ast.CreateUserStmt) *spec.DDL {
 		ObjectType:         "user",
 		Options:            map[string]string{"has_auth": "true"},
 		OmittedTargets:     omittedUserTargets(stmt.Specs),
-		UnextractedOptions: userOptionNames(stmt.Specs, nil, stmt.AuthTokenOrTLSOptions, stmt.ResourceOptions, stmt.PasswordOrLockOptions, stmt.CommentOrAttributeOption, stmt.ResourceGroupNameOption),
+		UnextractedOptions: userOptionNames(stmt.Specs, nil, false, stmt.AuthTokenOrTLSOptions, stmt.ResourceOptions, stmt.PasswordOrLockOptions, stmt.CommentOrAttributeOption, stmt.ResourceGroupNameOption),
 	}
 }
 
@@ -896,7 +911,7 @@ func extractAlterUser(stmt *ast.AlterUserStmt) *spec.DDL {
 		ObjectType:         "user",
 		Options:            map[string]string{"has_auth": "true"},
 		OmittedTargets:     omitted,
-		UnextractedOptions: userOptionNames(stmt.Specs, stmt.CurrentAuth, stmt.AuthTokenOrTLSOptions, stmt.ResourceOptions, stmt.PasswordOrLockOptions, stmt.CommentOrAttributeOption, stmt.ResourceGroupNameOption),
+		UnextractedOptions: userOptionNames(stmt.Specs, stmt.CurrentAuth, stmt.CurrentDualPasswordOption != 0, stmt.AuthTokenOrTLSOptions, stmt.ResourceOptions, stmt.PasswordOrLockOptions, stmt.CommentOrAttributeOption, stmt.ResourceGroupNameOption),
 	}
 }
 
@@ -905,9 +920,9 @@ func extractAlterUser(stmt *ast.AlterUserStmt) *spec.DDL {
 // clauses and dual-password flags, the statement-level current-auth clause, and
 // the secondary option lists. No credential values travel downstream — only
 // presence names.
-func userOptionNames(specs []*ast.UserSpec, currentAuth *ast.AuthOption, auth []*ast.AuthTokenOrTLSOption, resource []*ast.ResourceOption, locks []*ast.PasswordOrLockOption, comment *ast.CommentOrAttributeOption, resourceGroup *ast.ResourceGroupNameOption) []string {
+func userOptionNames(specs []*ast.UserSpec, currentAuth *ast.AuthOption, currentDualPassword bool, auth []*ast.AuthTokenOrTLSOption, resource []*ast.ResourceOption, locks []*ast.PasswordOrLockOption, comment *ast.CommentOrAttributeOption, resourceGroup *ast.ResourceGroupNameOption) []string {
 	names := make([]string, 0, 7)
-	identified, dualPassword := currentAuth != nil, false
+	identified, dualPassword := currentAuth != nil, currentDualPassword
 	for _, s := range specs {
 		if s == nil {
 			continue

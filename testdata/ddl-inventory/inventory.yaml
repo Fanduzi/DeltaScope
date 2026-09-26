@@ -308,7 +308,7 @@ rows:
     sql_shape: "CREATE TABLE t3 AS SELECT * FROM t1"
     prerequisites: "none"
     status: semantically_checked
-    status_evidence: "2026-09-22 CLI probe: ddl.table.create_as.forbid plus hygiene rules fire"
+    status_evidence: "2026-09-22 CLI probe: ddl.table.create_as.forbid plus hygiene rules fire. 2026-09-26 T03 rework (#82): parsed IGNORE|REPLACE duplicate-key handling on CTAS records create_table.option.on_duplicate unaudited evidence"
     targets: "new table identity, SELECT source scope (not executed)"
     acceptance:
       dimensions: "CTAS policy, source scope boundary"
@@ -790,7 +790,7 @@ rows:
     sql_shape: "DROP INDEX idx ON t"
     prerequisites: "none"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: only ddl.drop_index.notice fires. 2026-09-25 T03 rework (#82): parsed ALGORITHM=/LOCK= clauses on DROP INDEX record drop_index.option.lock_algorithm unaudited evidence"
+    status_evidence: "2026-09-22 CLI probe: only ddl.drop_index.notice fires. 2026-09-25 T03 rework (#82): parsed ALGORITHM=/LOCK= clauses on DROP INDEX record drop_index.option.lock_algorithm unaudited evidence. 2026-09-26 T03 rework (#82): parsed DROP HYPO INDEX records drop_index.option.hypo_index vendor-boundary evidence"
     targets: "index identity, host table, dependent-constraint effects"
     acceptance:
       dimensions: "drop-index policy parity with ALTER DROP INDEX"
@@ -1647,7 +1647,7 @@ rows:
     sql_shape: "DROP INDEX idx ON t"
     prerequisites: "none"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: only ddl.drop_index.notice fires. 2026-09-25 T03 rework (#82): parsed ALGORITHM=/LOCK= clauses on DROP INDEX record drop_index.option.lock_algorithm unaudited evidence"
+    status_evidence: "2026-09-22 CLI probe: only ddl.drop_index.notice fires. 2026-09-25 T03 rework (#82): parsed ALGORITHM=/LOCK= clauses on DROP INDEX record drop_index.option.lock_algorithm unaudited evidence. 2026-09-26 T03 rework (#82): parsed DROP HYPO INDEX records drop_index.option.hypo_index unaudited evidence"
     targets: "index identity, host table"
     acceptance:
       dimensions: "drop policy parity"

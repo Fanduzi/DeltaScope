@@ -499,6 +499,50 @@ that had no prior disposition):
 
 `cli_cases` grow to 99 (107 cases total with the 8 DB cases).
 
+## Amendment 2026-09-26 (part 8) — round-6 review findings closed
+
+Independent review of `3fe763f..83cb00e` found seven defects against the
+three census connections. Six reproduced as false-completes on the pinned
+parser (verified via `Audit` probes before fixing):
+
+1. **Scanner gaps (minor).** The regex scanner missed embedded bases with
+   trailing comments, one-line struct declarations, unnamed/generic
+   `statement()` receivers, and direct-marker embedders. Replaced with
+   `go/parser`: anonymous fields are identified structurally and
+   direct-marker receivers seed the closure before the transitive pass.
+2. **Nested set-operation INTO (major).** `SELECT 1 UNION (SELECT 2 INTO
+   OUTFILE ...)` produced complete coverage: parenthesized operands nest
+   as `*ast.SetOprSelectList`, not `*ast.SetOprStmt`. The walker now
+   recurses through `SetOprSelectList.Selects` in both shapes.
+3. **SET GLOBAL exemption (major).** `SET GLOBAL`/`@@global` assignments
+   change server-wide settings; the blanket session exemption was wrong.
+   `SetStmt` now returns `set_global` when any `VariableAssignment.IsGlobal`
+   is set; session-scope `SET` stays exempt.
+4. **Extracted≠extractor guard gap (minor).** `classify()` and the
+   `Extract` type switch are separate lists; dropping a switch case kept
+   the census green. `TestExtractedTypesReachExtractor` parses
+   `extractor.go` with `go/parser` and asserts the two sets match.
+5. **Wrong "grammar unreachable" exemptions (major).** Field-census probes
+   tested misspelled syntax; the real productions are:
+   - `CreateTableStmt.OnDuplicate` ← `CREATE TABLE ... IGNORE|REPLACE
+     SELECT` → `create_table.option.on_duplicate` (both dialects).
+   - `DropIndexStmt.IsHypo` ← `DROP HYPO INDEX` →
+     `drop_index.option.hypo_index`: unaudited under TiDB (TiDB
+     hypothetical-index feature), vendor boundary under MySQL.
+   - `AlterDatabaseStmt.AlterDefaultDatabase` ← `ALTER DATABASE <options>`
+     (no name = default database). Coverage was already correct via the
+     charset gap; the disposition label is corrected to `subsumed`.
+6. **Inline PRIMARY KEY type discarded (major).** `id INT PRIMARY KEY
+   NONCLUSTERED` dropped the modifier while the table-level form recorded
+   `primary_key_type`. The column-option branch now emits
+   `create_table.column.primary_key_type`, mirroring the index path.
+7. **Current-user dual password (minor).** `ALTER USER USER()
+   DISCARD/RETAIN OLD PASSWORD` fed only omitted-target evidence;
+   `CurrentDualPasswordOption` now flows into `dual_password` beside
+   per-spec flags (USER() DISCARD → 2 entries, USER() IDENTIFIED+RETAIN → 3).
+
+`cli_cases` grow to 109 (117 cases total with the 8 DB cases).
+
 ## Verification Evidence
 
 - `make ddl-golden TASK=T03 ARTIFACT_DIR=/tmp/ddl-golden`: 91 cases, 1034
