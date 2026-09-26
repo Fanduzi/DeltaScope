@@ -34,7 +34,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `(*DDL).TableTargets()`
 - `Table`
 - `Column`
-- `Constraint`
+- `Constraint` (carries the referenced target/columns for foreign keys plus bounded `UnmodeledParts`/`UnmodeledReferencedParts`/`UnmodeledReferActions` counts for parsed key-part and ON DELETE/UPDATE/MATCH facts the model does not keep)
 - `Index` (carries `Global` for the parsed GLOBAL index modifier plus bounded key-part facts `PrefixParts`/`DescParts`/`ExpressionCount` for parsed-but-unmodeled expression, column-prefix, and descending parts)
 - `IndexKind`
 - `ImpactSource`

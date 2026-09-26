@@ -234,7 +234,7 @@ func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
 			expr, prefix, desc := countIndexPartKinds(c.Keys)
 			ddl.Indexes = append(ddl.Indexes, spec.Index{Name: normalizeConstraintName(c), Kind: indexKindForConstraint(c.Tp), Columns: extractIndexColumns(c.Keys), HasExpressionKeys: expr > 0, ExpressionCount: expr, PrefixParts: prefix, DescParts: desc, Global: c.Option != nil && c.Option.Global})
 		default:
-			ddl.Constraints = append(ddl.Constraints, spec.Constraint{Type: constraintTypeName(c.Tp), Name: normalizeConstraintName(c), Columns: extractIndexColumns(c.Keys)})
+			ddl.Constraints = append(ddl.Constraints, extractConstraint(c))
 		}
 	}
 
@@ -245,7 +245,7 @@ func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
 			ddl.Table.Comment = value
 		}
 	}
-	ddl.UnextractedOptions = unextracted
+	ddl.UnextractedOptions = append(unextracted, partitionOptionNames(stmt.Partition)...)
 
 	return ddl
 }
@@ -409,11 +409,8 @@ func extractAlterSpec(specification *ast.AlterTableSpec, clause string) spec.Alt
 		alter.UnextractedOptions = unextracted
 	}
 	if specification.Constraint != nil {
-		alter.Constraint = &spec.Constraint{
-			Type:    constraintTypeName(specification.Constraint.Tp),
-			Name:    normalizeConstraintName(specification.Constraint),
-			Columns: extractIndexColumns(specification.Constraint.Keys),
-		}
+		constraint := extractConstraint(specification.Constraint)
+		alter.Constraint = &constraint
 	}
 	return alter
 }
@@ -778,10 +775,11 @@ func extractCreateUser(stmt *ast.CreateUserStmt) *spec.DDL {
 			name = stmt.Specs[0].User.Username
 		}
 		return &spec.DDL{
-			Operation:      spec.DDLOperationCreateRole,
-			ObjectName:     name,
-			ObjectType:     "role",
-			OmittedTargets: len(stmt.Specs) - 1,
+			Operation:          spec.DDLOperationCreateRole,
+			ObjectName:         name,
+			ObjectType:         "role",
+			OmittedTargets:     len(stmt.Specs) - 1,
+			UnextractedOptions: userOptionNames(stmt.AuthTokenOrTLSOptions, stmt.ResourceOptions, stmt.PasswordOrLockOptions, stmt.CommentOrAttributeOption, stmt.ResourceGroupNameOption),
 		}
 	}
 	name := ""
@@ -789,11 +787,12 @@ func extractCreateUser(stmt *ast.CreateUserStmt) *spec.DDL {
 		name = stmt.Specs[0].User.Username
 	}
 	return &spec.DDL{
-		Operation:      spec.DDLOperationCreateUser,
-		ObjectName:     name,
-		ObjectType:     "user",
-		Options:        map[string]string{"has_auth": "true"},
-		OmittedTargets: len(stmt.Specs) - 1,
+		Operation:          spec.DDLOperationCreateUser,
+		ObjectName:         name,
+		ObjectType:         "user",
+		Options:            map[string]string{"has_auth": "true"},
+		OmittedTargets:     len(stmt.Specs) - 1,
+		UnextractedOptions: userOptionNames(stmt.AuthTokenOrTLSOptions, stmt.ResourceOptions, stmt.PasswordOrLockOptions, stmt.CommentOrAttributeOption, stmt.ResourceGroupNameOption),
 	}
 }
 
@@ -802,13 +801,47 @@ func extractAlterUser(stmt *ast.AlterUserStmt) *spec.DDL {
 	if len(stmt.Specs) > 0 && stmt.Specs[0] != nil && stmt.Specs[0].User != nil {
 		name = stmt.Specs[0].User.Username
 	}
-	return &spec.DDL{
-		Operation:      spec.DDLOperationAlterUser,
-		ObjectName:     name,
-		ObjectType:     "user",
-		Options:        map[string]string{"has_auth": "true"},
-		OmittedTargets: len(stmt.Specs) - 1,
+	omitted := 0
+	switch {
+	case len(stmt.Specs) > 0:
+		omitted = len(stmt.Specs) - 1
+	case stmt.CurrentAuth != nil || stmt.CurrentDualPasswordOption != 0:
+		// `ALTER USER USER()` carries its target on CurrentAuth / the
+		// current-user dual-password option instead of Specs; that single
+		// target is still not modeled.
+		omitted = 1
 	}
+	return &spec.DDL{
+		Operation:          spec.DDLOperationAlterUser,
+		ObjectName:         name,
+		ObjectType:         "user",
+		Options:            map[string]string{"has_auth": "true"},
+		OmittedTargets:     omitted,
+		UnextractedOptions: userOptionNames(stmt.AuthTokenOrTLSOptions, stmt.ResourceOptions, stmt.PasswordOrLockOptions, stmt.CommentOrAttributeOption, stmt.ResourceGroupNameOption),
+	}
+}
+
+// userOptionNames maps the secondary account-option lists a CREATE/ALTER USER
+// statement carries to bounded option names: the lists exist, but no normalized
+// fact consumes their contents.
+func userOptionNames(auth []*ast.AuthTokenOrTLSOption, resource []*ast.ResourceOption, locks []*ast.PasswordOrLockOption, comment *ast.CommentOrAttributeOption, resourceGroup *ast.ResourceGroupNameOption) []string {
+	names := make([]string, 0, 5)
+	if len(auth) > 0 {
+		names = append(names, "auth_token_or_tls")
+	}
+	if len(resource) > 0 {
+		names = append(names, "resource")
+	}
+	if len(locks) > 0 {
+		names = append(names, "password_or_lock")
+	}
+	if comment != nil {
+		names = append(names, "comment_or_attribute")
+	}
+	if resourceGroup != nil {
+		names = append(names, "resource_group_name")
+	}
+	return names
 }
 
 func extractDropUser(stmt *ast.DropUserStmt) *spec.DDL {
@@ -1301,7 +1334,11 @@ func countIndexPartKinds(parts []*ast.IndexPartSpecification) (expr, prefix, des
 		if part.Expr != nil || part.Column == nil {
 			expr++
 		}
-		if part.Length > 0 {
+		// OptFieldLen stores UnspecifiedLength (-1) when no prefix is given, so
+		// any other value on a column part is an explicitly written length —
+		// including zero. Expression parts leave Length at zero and are held
+		// off by the Column != nil guard.
+		if part.Column != nil && part.Length != tidbtypes.UnspecifiedLength {
 			prefix++
 		}
 		if part.Desc {
@@ -1309,6 +1346,93 @@ func countIndexPartKinds(parts []*ast.IndexPartSpecification) (expr, prefix, des
 		}
 	}
 	return expr, prefix, desc
+}
+
+// partitionOptionNames returns bounded option names found on CREATE TABLE
+// partition and sub-partition definitions. Those nested lists are separate
+// from the top-level table options the normalized model already tracks, so a
+// nested PLACEMENT POLICY or ENGINE binding would otherwise vanish entirely.
+// Names are deduplicated: the gap is per option family, not per occurrence.
+func partitionOptionNames(partition *ast.PartitionOptions) []string {
+	if partition == nil {
+		return nil
+	}
+	seen := make(map[string]bool)
+	names := make([]string, 0)
+	appendOption := func(option *ast.TableOption) {
+		if option == nil {
+			return
+		}
+		name := tableOptionName(option.Tp)
+		if !seen[name] {
+			seen[name] = true
+			names = append(names, name)
+		}
+	}
+	for _, definition := range partition.Definitions {
+		if definition == nil {
+			continue
+		}
+		for _, option := range definition.Options {
+			appendOption(option)
+		}
+		for _, sub := range definition.Sub {
+			if sub == nil {
+				continue
+			}
+			for _, option := range sub.Options {
+				appendOption(option)
+			}
+		}
+	}
+	if len(partition.UpdateIndexes) > 0 && !seen["partition_update_indexes"] {
+		names = append(names, "partition_update_indexes")
+	}
+	return names
+}
+
+// extractConstraint normalizes a non-index table constraint, preserving the
+// reference target of foreign keys and counting any parsed key-part or
+// reference-option facts the normalized model cannot keep.
+func extractConstraint(c *ast.Constraint) spec.Constraint {
+	constraint := spec.Constraint{
+		Type:           constraintTypeName(c.Tp),
+		Name:           normalizeConstraintName(c),
+		Columns:        extractIndexColumns(c.Keys),
+		UnmodeledParts: countUnmodeledIndexParts(c.Keys),
+	}
+	if c.Refer != nil {
+		constraint.ReferencedSchema = c.Refer.Table.Schema.L
+		constraint.ReferencedTable = c.Refer.Table.Name.L
+		constraint.ReferencedColumns = extractIndexColumns(c.Refer.IndexPartSpecifications)
+		constraint.UnmodeledReferencedParts = countUnmodeledIndexParts(c.Refer.IndexPartSpecifications)
+		if c.Refer.OnDelete != nil && c.Refer.OnDelete.ReferOpt != ast.ReferOptionNoOption {
+			constraint.UnmodeledReferActions++
+		}
+		if c.Refer.OnUpdate != nil && c.Refer.OnUpdate.ReferOpt != ast.ReferOptionNoOption {
+			constraint.UnmodeledReferActions++
+		}
+		if c.Refer.Match != ast.MatchNone {
+			constraint.UnmodeledReferActions++
+		}
+	}
+	return constraint
+}
+
+// countUnmodeledIndexParts counts key parts that carry any fact beyond a plain
+// column reference. It is used for constraint key lists — foreign-key local and
+// referenced parts — where the normalized model keeps only column names.
+func countUnmodeledIndexParts(parts []*ast.IndexPartSpecification) int {
+	count := 0
+	for _, part := range parts {
+		if part == nil {
+			continue
+		}
+		if part.Expr != nil || part.Column == nil || (part.Column != nil && part.Length != tidbtypes.UnspecifiedLength) || part.Desc {
+			count++
+		}
+	}
+	return count
 }
 
 func indexKindForConstraint(tp ast.ConstraintType) spec.IndexKind {

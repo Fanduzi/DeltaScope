@@ -311,6 +311,17 @@ type Constraint struct {
 	ReferencedSchema  string   `json:"referenced_schema,omitempty"`
 	ReferencedTable   string   `json:"referenced_table,omitempty"`
 	ReferencedColumns []string `json:"referenced_columns,omitempty"`
+	// UnmodeledParts counts local key parts (foreign keys) that carry more
+	// than a plain column name: expression parts, explicit prefix lengths
+	// (including zero), and descending parts.
+	UnmodeledParts int `json:"unmodeled_parts,omitempty"`
+	// UnmodeledReferencedParts is the same count over the referenced
+	// IndexPartSpecification list of a foreign key.
+	UnmodeledReferencedParts int `json:"unmodeled_referenced_parts,omitempty"`
+	// UnmodeledReferActions counts parsed reference options a foreign key
+	// carries that the normalized model does not keep: ON DELETE, ON UPDATE,
+	// and MATCH.
+	UnmodeledReferActions int `json:"unmodeled_refer_actions,omitempty"`
 }
 
 // AlterColumnChange describes statement-local column-change intent.

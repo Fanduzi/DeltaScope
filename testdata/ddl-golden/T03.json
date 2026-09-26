@@ -2,7 +2,7 @@
   "task_id": "T03",
   "issue": "https://github.com/Fanduzi/DeltaScope/issues/82",
   "policy_profile": "all-rules-disabled",
-  "description": "Incomplete-coverage golden path: the shared parser accepts CREATE SEQUENCE but MySQL does not support it, so the statement stays in the result as incomplete coverage with bounded unsupported evidence while a supported ALTER stays complete. DB steps prove uniform CREATE/ALTER/DROP legality on all four anchors; CLI cases prove the incomplete audit contract under an all-rules-disabled policy, including --fail-on none still exiting 1, recognized-but-unaudited ALTER sub-actions and nested options, vendor boundaries, execution-capable EXPLAIN ANALYZE/TRACE/EXECUTE, and the read-only EXPLAIN counter-example, and the remaining recognized-but-unaudited boundary families: temporary-table scope (local/global, create/drop), AUTO_RANDOM column attributes, MySQL procedure bodies, dropped column options (generated/inline REFERENCES/CHECK/UNIQUE), plus ordinary-table contrasts and the procedure parser-error contract (exit 2).",
+  "description": "Incomplete-coverage golden path: the shared parser accepts CREATE SEQUENCE but MySQL does not support it, so the statement stays in the result as incomplete coverage with bounded unsupported evidence while a supported ALTER stays complete. DB steps prove uniform CREATE/ALTER/DROP legality on all four anchors; CLI cases prove the incomplete audit contract under an all-rules-disabled policy, including --fail-on none still exiting 1, recognized-but-unaudited ALTER sub-actions and nested options, vendor boundaries, execution-capable EXPLAIN ANALYZE/TRACE/EXECUTE, and the read-only EXPLAIN counter-example, and the remaining recognized-but-unaudited boundary families: temporary-table scope (local/global, create/drop), AUTO_RANDOM column attributes, MySQL procedure bodies, dropped column options (generated/inline REFERENCES/CHECK/UNIQUE), plus ordinary-table contrasts and the procedure parser-error contract (exit 2). Fourth rework adds current-user ALTER USER targets, account secondary-option families, explicit zero-length index prefixes, foreign-key key-part and refer-action evidence, and nested partition options, with exact bounded-metadata pins.",
   "anchors": {
     "mysql57": {
       "service": "mysql57",
@@ -1759,7 +1759,7 @@
         "unsupported_entries": [
           {
             "feature": "create_table.index.expr",
-            "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+            "reason": "parsed by the shared parser but not covered by audited semantics"
           }
         ]
       }
@@ -1794,15 +1794,30 @@
         "unsupported_entries": [
           {
             "feature": "create_index.create_index.index.expr",
-            "reason": "parsed by the shared parser but not covered by audited semantics"
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "index",
+              "index_kind": "secondary",
+              "expression_count": 1
+            }
           },
           {
             "feature": "create_index.create_index.index.prefix",
-            "reason": "parsed by the shared parser but not covered by audited semantics"
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "index",
+              "index_kind": "secondary",
+              "prefix_parts": 1
+            }
           },
           {
             "feature": "create_index.create_index.index.desc",
-            "reason": "parsed by the shared parser but not covered by audited semantics"
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "index",
+              "index_kind": "secondary",
+              "desc_parts": 1
+            }
           }
         ]
       }
@@ -1837,15 +1852,30 @@
         "unsupported_entries": [
           {
             "feature": "create_index.create_index.index.expr",
-            "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "index",
+              "index_kind": "secondary",
+              "expression_count": 1
+            }
           },
           {
             "feature": "create_index.create_index.index.prefix",
-            "reason": "parsed by the shared parser but not covered by audited semantics"
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "index",
+              "index_kind": "secondary",
+              "prefix_parts": 1
+            }
           },
           {
             "feature": "create_index.create_index.index.desc",
-            "reason": "parsed by the shared parser but not covered by audited semantics"
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "index",
+              "index_kind": "secondary",
+              "desc_parts": 1
+            }
           }
         ]
       }
@@ -1878,7 +1908,11 @@
         "unsupported_entries": [
           {
             "feature": "drop_user.unaudited_targets",
-            "reason": "parsed by the shared parser but not covered by audited semantics"
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "targets",
+              "omitted": 1
+            }
           }
         ]
       }
@@ -1911,7 +1945,11 @@
         "unsupported_entries": [
           {
             "feature": "drop_sequence.unaudited_targets",
-            "reason": "parsed by the shared parser but not covered by audited semantics"
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "targets",
+              "omitted": 1
+            }
           }
         ]
       }
@@ -1944,7 +1982,11 @@
         "unsupported_entries": [
           {
             "feature": "grant.unaudited_targets",
-            "reason": "parsed by the shared parser but not covered by audited semantics"
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "targets",
+              "omitted": 2
+            }
           }
         ]
       }
@@ -1980,6 +2022,372 @@
           {
             "index": 1,
             "feature": "create_table.temporary",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-alter-user-current-auth",
+      "dialect": "mysql",
+      "sql": "ALTER USER USER() IDENTIFIED BY 'replacement';",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "ALTER USER USER() IDENTIFIED BY 'replacement';"
+        ],
+        "unsupported_features": [
+          "alter_user.unaudited_targets"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "alter_user.unaudited_targets",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "targets",
+              "omitted": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tidb-alter-user-current-discard",
+      "dialect": "tidb",
+      "sql": "ALTER USER USER() DISCARD OLD PASSWORD;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "ALTER USER USER() DISCARD OLD PASSWORD;"
+        ],
+        "unsupported_features": [
+          "alter_user.unaudited_targets"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "alter_user.unaudited_targets",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "targets",
+              "omitted": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-alter-user-account-lock",
+      "dialect": "mysql",
+      "sql": "ALTER USER u ACCOUNT LOCK;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "ALTER USER u ACCOUNT LOCK;"
+        ],
+        "unsupported_features": [
+          "alter_user.option.password_or_lock"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "alter_user.option.password_or_lock",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tidb-create-user-require-ssl",
+      "dialect": "tidb",
+      "sql": "CREATE USER u REQUIRE SSL;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE USER u REQUIRE SSL;"
+        ],
+        "unsupported_features": [
+          "create_user.option.auth_token_or_tls"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "create_user.option.auth_token_or_tls",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-create-index-zero-prefix",
+      "dialect": "mysql",
+      "sql": "CREATE INDEX ix ON t (c(0));",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX ix ON t (c(0));"
+        ],
+        "unsupported_features": [
+          "create_index.create_index.index.prefix"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "create_index.create_index.index.prefix",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "index",
+              "index_kind": "secondary",
+              "prefix_parts": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-alter-add-fk-prefix",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t ADD FOREIGN KEY (c(8)) REFERENCES p(id);",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "ALTER TABLE t ADD FOREIGN KEY (c(8)) REFERENCES p(id);"
+        ],
+        "unsupported_features": [
+          "alter_table.add_constraint.constraint.foreign_key.parts"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "alter_table.add_constraint.constraint.foreign_key.parts",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "constraint_parts",
+              "action": "add_constraint",
+              "constraint_type": "foreign_key",
+              "local_parts": 1,
+              "referenced_parts": 0,
+              "refer_actions": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tidb-alter-add-fk-expr-ref-desc",
+      "dialect": "tidb",
+      "sql": "ALTER TABLE t ADD FOREIGN KEY ((LOWER(c))) REFERENCES p(id(3) DESC);",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "ALTER TABLE t ADD FOREIGN KEY ((LOWER(c))) REFERENCES p(id(3) DESC);"
+        ],
+        "unsupported_features": [
+          "alter_table.add_constraint.constraint.foreign_key.parts"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "alter_table.add_constraint.constraint.foreign_key.parts",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "constraint_parts",
+              "action": "add_constraint",
+              "constraint_type": "foreign_key",
+              "local_parts": 1,
+              "referenced_parts": 1,
+              "refer_actions": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-create-table-fk-on-delete",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t (a INT, FOREIGN KEY (a) REFERENCES p(id) ON DELETE CASCADE);",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE TABLE t (a INT, FOREIGN KEY (a) REFERENCES p(id) ON DELETE CASCADE);"
+        ],
+        "unsupported_features": [
+          "create_table.constraint.foreign_key.parts"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "create_table.constraint.foreign_key.parts",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "constraint_parts",
+              "constraint_type": "foreign_key",
+              "local_parts": 0,
+              "referenced_parts": 0,
+              "refer_actions": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-create-table-partition-placement",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t (id INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (10) PLACEMENT POLICY=p);",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE TABLE t (id INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (10) PLACEMENT POLICY=p);"
+        ],
+        "unsupported_features": [
+          "create_table.option.placement_policy"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "create_table.option.placement_policy",
+            "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tidb-create-table-partition-placement",
+      "dialect": "tidb",
+      "sql": "CREATE TABLE t (id INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (10) PLACEMENT POLICY=p);",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE TABLE t (id INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (10) PLACEMENT POLICY=p);"
+        ],
+        "unsupported_features": [
+          "create_table.option.placement_policy"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "create_table.option.placement_policy",
             "reason": "parsed by the shared parser but not covered by audited semantics"
           }
         ]
@@ -2054,6 +2462,16 @@
     "T03.cli.mysql-drop-user-multi",
     "T03.cli.tidb-drop-sequence-multi",
     "T03.cli.mysql-grant-multi",
-    "T03.cli.mysql-unsupported-second-statement"
+    "T03.cli.mysql-unsupported-second-statement",
+    "T03.cli.mysql-alter-user-current-auth",
+    "T03.cli.tidb-alter-user-current-discard",
+    "T03.cli.mysql-alter-user-account-lock",
+    "T03.cli.tidb-create-user-require-ssl",
+    "T03.cli.mysql-create-index-zero-prefix",
+    "T03.cli.mysql-alter-add-fk-prefix",
+    "T03.cli.tidb-alter-add-fk-expr-ref-desc",
+    "T03.cli.mysql-create-table-fk-on-delete",
+    "T03.cli.mysql-create-table-partition-placement",
+    "T03.cli.tidb-create-table-partition-placement"
   ]
 }

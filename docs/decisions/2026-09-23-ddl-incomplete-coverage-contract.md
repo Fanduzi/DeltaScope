@@ -284,9 +284,11 @@ same-class residual omissions, all now resolved:
   `HasExpressionKeys`/`ExpressionCount` fields plus new bounded
   `PrefixParts`/`DescParts` counts, projected on table-level constraints,
   ALTER index definitions, and standalone CREATE INDEX. Classification:
-  `<op>.index.expr` is a vendor boundary under TiDB (engine-unsupported,
-  fulltext/spatial precedent) and unaudited under MySQL (8.0.13+
-  functional key parts are official syntax); `<op>.index.prefix` and
+  `<op>.index.expr` is unaudited on both dialects — TiDB 8.5 documents
+  expression indexes (`LOWER()` among the allowed functions) and MySQL
+  8.0.13+ ships functional key parts; presence/count alone cannot decide
+  per-expression engine legality, so the aspect stays incomplete rather
+  than vendor-boundary (part-4 correction). `<op>.index.prefix` and
   `<op>.index.desc` are unaudited under both.
 - Multi-target account/sequence lists were collapsed to their first
   member or ignored: `spec.DDL.OmittedTargets` now counts parsed targets
@@ -300,9 +302,55 @@ same-class residual omissions, all now resolved:
   TiDB grouped PRIMARY KEY GLOBAL, and a nonzero-index batch proving
   `unsupported_entries` binds entries to the right statement.
 
+## Amendment 2026-09-25 (part 4) — current-user ALTER USER, zero-length prefixes, secondary collections
+
+A fourth review found one residual coverage hole and four same-class
+omissions around secondary collection fields, plus a reason-fidelity
+defect:
+
+- `ALTER USER USER()` current-user forms carry their target on
+  `CurrentAuth` / `CurrentDualPasswordOption` while `Specs` stays empty;
+  `len(Specs)-1` produced `-1` and the statement stayed complete. The
+  extractor now counts the unmodeled current-user target as one omitted
+  target.
+- `index.expr` was misclassified as a TiDB vendor boundary on the
+  assumption the engine lacks expression indexes. TiDB 8.5 documents
+  them (`LOWER()` allowed; `tidb_allow_function_for_expression_index`
+  gates only experimental expressions), so the aspect is unaudited on
+  both dialects — presence/count cannot decide per-expression legality.
+- Explicit zero-length prefixes (`c(0)`) are indistinguishable from
+  unspecified ones when testing `Length > 0`. Column parts now test
+  `Length != types.UnspecifiedLength`, counting `c(0)` and `c(8)` alike
+  while leaving expression parts (Length unset) out.
+- Foreign-key key lists are not column-only: local and referenced
+  `IndexPartSpecification` lists accept expressions, prefixes, and
+  DESC, and `OnDelete`/`OnUpdate`/`Match` options were dropped.
+  `spec.Constraint` now projects the referenced target/columns and
+  carries bounded `UnmodeledParts`/`UnmodeledReferencedParts`/
+  `UnmodeledReferActions` counts; coverage emits
+  `<op>[.<action>].constraint.<type>.parts` unaudited evidence. CHECK
+  carries `Expr` rather than key parts and is not affected.
+- CREATE/ALTER USER secondary option lists
+  (`AuthTokenOrTLSOptions`/`ResourceOptions`/`PasswordOrLockOptions`/
+  `CommentOrAttributeOption`/`ResourceGroupNameOption`) were parsed but
+  never projected; bounded family names now flow through
+  `UnextractedOptions` as `<op>.option.<family>` unaudited evidence.
+- Nested `PARTITION p0 ... OPTIONS` and sub-partition option lists were
+  invisible to `extractTableOptions`, which only sees top-level table
+  options. `partitionOptionNames` now appends deduplicated bounded names
+  to `UnextractedOptions`, so a nested `PLACEMENT POLICY` reaches the
+  existing MySQL vendor-boundary classifier.
+- `unsupported_entries` expectations may pin `metadata` for exact
+  bounded-metadata comparison; new Go rows and golden cases assert
+  `expression_count`, `prefix_parts`, `omitted`, and
+  `local_parts`/`referenced_parts`/`refer_actions` values.
+- `cli_cases` grow to 70 (10 new, 78 cases total with the 8 DB cases):
+  current-user forms, account options, zero prefixes, FK key-part and
+  refer-action forms, and nested partition options.
+
 ## Verification Evidence
 
-- `make ddl-golden TASK=T03 ARTIFACT_DIR=/tmp/ddl-golden`: 68 cases, 676
+- `make ddl-golden TASK=T03 ARTIFACT_DIR=/tmp/ddl-golden`: 78 cases, 801
   assertions, PASS on all four anchors — `cli_cases` prove MySQL `CREATE SEQUENCE` + `ALTER TABLE
   ... ADD COLUMN` exits 1 with `coverage.status=incomplete`, bounded
   `create_sequence` evidence, and a `review` verdict under the
@@ -316,11 +364,17 @@ same-class residual omissions, all now resolved:
   (both dialects) plus `alter_table.add_columns.column.auto_random`,
   `create_procedure.body`, `create_table.column.generated`/`reference`/
   `check`/`unique`, the procedure parser-error exit-2 case, and ordinary
-  create/drop-table contrasts.
+  create/drop-table contrasts; the fourth-rework set: `alter_user.unaudited_targets`
+  on `ALTER USER USER()` current-user forms, account-option families,
+  `create_index.create_index.index.prefix` on `c(0)`, FK key-part and
+  refer-action `*.constraint.foreign_key.parts`, and nested partition
+  options, with exact-metadata pins on representative entries.
 - `make ddl-golden TASK=T02 ARTIFACT_DIR=/tmp/ddl-golden`: 10 cases, 57
   assertions, PASS — baseline behavior unregressed.
-- `make ddl-golden-validator-test`: 24 contract cases — `cli_cases`
-  coverage downgrade and wrong-feature tampering are rejected.
+- `make ddl-golden-validator-test`: 26 contract cases — `cli_cases`
+  coverage downgrade, wrong-feature tampering, and swapped-reason
+  entries are rejected; `unsupported_entries` metadata pins compare
+  bounded maps exactly.
 - `make ddl-inventory-gate`, `make sql-corpus-gates`, `make test`, and
   `make pg-unit-test-gates` all pass; PostgreSQL-tagged suites verify the
   uniform retained-statement contract.

@@ -267,13 +267,14 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 		gaps = append(gaps, columnAspectGaps(dialect, ddl.Operation, "", column)...)
 	}
 	indexPartGaps := func(prefix string, index spec.Index) {
-		// Expression key parts parse on both dialects but are unaudited; under
-		// TiDB the engine does not support them, so they are a vendor boundary
-		// there (fulltext/spatial precedent). Prefix lengths and descending
-		// parts are valid MySQL and TiDB syntax, merely unaudited.
+		// Expression key parts are official syntax on both dialects — TiDB
+		// documents expression indexes (LOWER() among the allowed functions)
+		// and MySQL 8.0.13+ ships functional key parts — but the audit model
+		// does not inspect expressions, so the aspect is unaudited on both.
+		// Prefix lengths and descending parts are likewise merely unaudited.
 		if index.HasExpressionKeys {
 			gaps = append(gaps, aspectGap(
-				fmt.Sprintf("%s.expr", prefix), dialect == spec.DialectTiDB,
+				fmt.Sprintf("%s.expr", prefix), false,
 				map[string]any{"aspect": "index", "index_kind": string(index.Kind), "expression_count": index.ExpressionCount},
 			))
 		}
@@ -335,6 +336,18 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 				map[string]any{"aspect": "constraint", "constraint_type": constraint.Type},
 			))
 		}
+		if constraint.UnmodeledParts > 0 || constraint.UnmodeledReferencedParts > 0 || constraint.UnmodeledReferActions > 0 {
+			gaps = append(gaps, aspectGap(
+				fmt.Sprintf("%s.constraint.%s.parts", ddl.Operation, constraint.Type), false,
+				map[string]any{
+					"aspect":           "constraint_parts",
+					"constraint_type":  constraint.Type,
+					"local_parts":      constraint.UnmodeledParts,
+					"referenced_parts": constraint.UnmodeledReferencedParts,
+					"refer_actions":    constraint.UnmodeledReferActions,
+				},
+			))
+		}
 	}
 	for _, alter := range ddl.Alter {
 		if ddl.Operation == spec.DDLOperationAlterTable && !auditedAlterAction(dialect, alter.Action) {
@@ -352,6 +365,19 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 				gaps = append(gaps, aspectGap(
 					fmt.Sprintf("%s.%s.%s", ddl.Operation, alter.Action, alter.Constraint.Type), vendor,
 					map[string]any{"aspect": "constraint", "action": alter.Action, "constraint_type": alter.Constraint.Type},
+				))
+			}
+			if alter.Constraint.UnmodeledParts > 0 || alter.Constraint.UnmodeledReferencedParts > 0 || alter.Constraint.UnmodeledReferActions > 0 {
+				gaps = append(gaps, aspectGap(
+					fmt.Sprintf("%s.%s.constraint.%s.parts", ddl.Operation, alter.Action, alter.Constraint.Type), false,
+					map[string]any{
+						"aspect":           "constraint_parts",
+						"action":           alter.Action,
+						"constraint_type":  alter.Constraint.Type,
+						"local_parts":      alter.Constraint.UnmodeledParts,
+						"referenced_parts": alter.Constraint.UnmodeledReferencedParts,
+						"refer_actions":    alter.Constraint.UnmodeledReferActions,
+					},
 				))
 			}
 		}

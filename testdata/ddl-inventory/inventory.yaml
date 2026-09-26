@@ -340,7 +340,7 @@ rows:
     sql_shape: "CREATE TABLE tf (id INT, pid INT, CONSTRAINT fk FOREIGN KEY (pid) REFERENCES tp(id))"
     prerequisites: "InnoDB for FK; CHECK enforcement needs 8.0.16+"
     status: semantically_checked
-    status_evidence: "2026-09-22 CLI probe: ddl.table.foreign_key.forbid fires on CREATE; CHECK parses but no constraint-policy check fires; table-level UNIQUE/PRIMARY KEY ... GLOBAL now records create_table.index.global evidence"
+    status_evidence: "2026-09-22 CLI probe: ddl.table.foreign_key.forbid fires on CREATE; CHECK parses but no constraint-policy check fires; table-level UNIQUE/PRIMARY KEY ... GLOBAL now records create_table.index.global evidence; 2026-09-24 T03 rework (#82): FK local/referenced key parts beyond plain columns (expression, explicit prefix incl. zero length, DESC) and ON DELETE/UPDATE/MATCH actions now record create_table.constraint.foreign_key.parts evidence — the referenced target and columns are also normalized into the constraint"
     targets: "constraint identity, referenced parent, referential actions, CHECK enforcement state by version"
     acceptance:
       dimensions: "CREATE vs ALTER FK parity (T11), CHECK version semantics (T12), UNIQUE consistency"
@@ -356,7 +356,7 @@ rows:
     sql_shape: "CREATE TABLE tp (id INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100))"
     prerequisites: "InnoDB native partitioning; ndbcluster has own rules"
     status: semantically_checked
-    status_evidence: "2026-09-22 CLI probe: ddl.table.partition.forbid fires; range/list corpus fixtures exist; partition topology facts not yet tracked"
+    status_evidence: "2026-09-22 CLI probe: ddl.table.partition.forbid fires; range/list corpus fixtures exist; partition topology facts not yet tracked. 2026-09-24 T03 rework (#82): nested partition/sub-partition option lists (e.g. PLACEMENT POLICY inside a partition definition) now surface bounded create_table.option.<name> evidence — MySQL classifies nested TiDB-only options as vendor boundaries just like top-level ones"
     targets: "partitioning scheme, partition identities, boundary values, subpartition boundary"
     acceptance:
       dimensions: "scheme capture, boundary fidelity, state visibility for later statements"
@@ -597,7 +597,7 @@ rows:
     sql_shape: "ALTER TABLE t ADD CONSTRAINT fk FOREIGN KEY (c) REFERENCES p (id)"
     prerequisites: "parent identity and key legality"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: only ddl.alter.add_constraint.notice; CREATE-path ddl.table.foreign_key.forbid has no ALTER-path parity (spec calls this a governance gap)"
+    status_evidence: "2026-09-22 CLI probe: only ddl.alter.add_constraint.notice; CREATE-path ddl.table.foreign_key.forbid has no ALTER-path parity (spec calls this a governance gap). 2026-09-24 T03 rework (#82): FK local/referenced key parts beyond plain columns and ON DELETE/UPDATE/MATCH actions now record alter_table.add_constraint.constraint.foreign_key.parts evidence"
     targets: "table, constraint name, referencing/parent columns, referential actions"
     acceptance:
       dimensions: "CREATE/ALTER FK parity (exactly the spec's parity oracle)"
@@ -758,7 +758,7 @@ rows:
     sql_shape: "CREATE INDEX idx_f ON t ((LOWER(c)))"
     prerequisites: "version/engine gates per variant; TiDB FULLTEXT/SPATIAL are vendor boundaries"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: FULLTEXT/SPATIAL/INVISIBLE parse to the same create_index.notice; functional/prefix/descending key parts now record <op>.index.expr (vendor boundary under TiDB)/prefix/desc evidence; CREATE INDEX ... GLOBAL records create_index.create_index.index.global evidence"
+    status_evidence: "2026-09-22 CLI probe: FULLTEXT/SPATIAL/INVISIBLE parse to the same create_index.notice; functional/prefix/descending key parts now record <op>.index.expr/prefix/desc unaudited evidence on both dialects (TiDB 8.5 documents expression indexes; explicit zero-length prefixes count as prefix parts); CREATE INDEX ... GLOBAL records create_index.create_index.index.global evidence"
     targets: "index kind, expression/prefix/descending/visibility facts, version applicability"
     acceptance:
       dimensions: "per-variant checks, version boundaries, not parse-acceptance-as-support"
@@ -774,7 +774,7 @@ rows:
     sql_shape: "ALTER TABLE t ALTER INDEX i INVISIBLE"
     prerequisites: "index identity and current visibility"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: ADD INDEX gets prefix.require + notices (semantic partial), DROP INDEX notice only, RENAME INDEX gets forbid, ALTER INDEX INVISIBLE parses silently (T10 seed). ADD <index> ... GLOBAL records alter_table.<action>.index.global evidence; constraints inside ADD (...) expand identically (index kinds -> add_index, PK/FK/CHECK -> add_constraint); expression/prefix/descending key parts record alter_table.<action>.index.expr/prefix/desc evidence (expr is a vendor boundary under TiDB). 2026-09-24 T03 rework (#82): ALTER INDEX INVISIBLE now carries bounded unsupported evidence (alter_table.alter_index) and coverage=incomplete — extraction never implied audited semantics"
+    status_evidence: "2026-09-22 CLI probe: ADD INDEX gets prefix.require + notices (semantic partial), DROP INDEX notice only, RENAME INDEX gets forbid, ALTER INDEX INVISIBLE parses silently (T10 seed). ADD <index> ... GLOBAL records alter_table.<action>.index.global evidence; constraints inside ADD (...) expand identically (index kinds -> add_index, PK/FK/CHECK -> add_constraint); expression/prefix/descending key parts record alter_table.<action>.index.expr/prefix/desc unaudited evidence on both dialects (explicit zero-length prefixes count as prefix parts); foreign-key local/referenced key parts and ON DELETE/UPDATE/MATCH actions record alter_table.add_constraint.constraint.foreign_key.parts evidence. 2026-09-24 T03 rework (#82): ALTER INDEX INVISIBLE now carries bounded unsupported evidence (alter_table.alter_index) and coverage=incomplete — extraction never implied audited semantics"
     targets: "index identity, visibility state, rename pairs"
     acceptance:
       dimensions: "visibility-change risk, VISIBLE restore and missing-index controls"
@@ -1325,7 +1325,7 @@ rows:
     sql_shape: "CREATE TABLE tp (id INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100))"
     prerequisites: "TiDB partitioning limits differ (no subpartition)"
     status: semantically_checked
-    status_evidence: "2026-09-22 CLI probe: ddl.table.partition.forbid fires; subpartition/vendor limits not yet checked"
+    status_evidence: "2026-09-22 CLI probe: ddl.table.partition.forbid fires; subpartition/vendor limits not yet checked. 2026-09-24 T03 rework (#82): nested partition/sub-partition option lists (e.g. PLACEMENT POLICY inside a partition definition) now surface bounded create_table.option.<name> unaudited evidence"
     targets: "scheme, partition identities, TiDB-specific limits"
     acceptance:
       dimensions: "scheme fidelity, unsupported-variant boundary"
@@ -1631,7 +1631,7 @@ rows:
     sql_shape: "CREATE INDEX idx ON t ((LOWER(c)))"
     prerequisites: "expression/visibility support per version"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: basic/INVISIBLE emit only create_index.notice; FULLTEXT/SPATIAL are vendor boundaries (Self-Managed unsupported); expression key parts are a vendor boundary under TiDB (<op>.index.expr), prefix/descending parts unaudited; CREATE INDEX ... GLOBAL records create_index.create_index.index.global unaudited evidence"
+    status_evidence: "2026-09-22 CLI probe: basic/INVISIBLE emit only create_index.notice; FULLTEXT/SPATIAL are vendor boundaries (Self-Managed unsupported); TiDB 8.5 documents expression indexes (LOWER() among allowed functions), so expression key parts record <op>.index.expr unaudited evidence — presence/count says nothing about per-expression engine legality; prefix/descending parts likewise unaudited (explicit zero-length prefixes count as prefix parts); CREATE INDEX ... GLOBAL records create_index.create_index.index.global unaudited evidence"
     targets: "index identity, expression/visibility/global facts"
     acceptance:
       dimensions: "variant checks, vendor-boundary rows explicit"

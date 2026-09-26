@@ -356,9 +356,35 @@ def cli_case_expect_checks(parsed, rc, expect):
         got = sorted((u.get("index", 0), u.get("feature"), u.get("reason")) for u in unsupported)
         want = sorted((e.get("index", 0), e.get("feature"), e.get("reason")) for e in expect["unsupported_entries"])
         checks.append(("unsupported entries", parsed is not None and got == want, f"entries={got!r} expected={want!r}"))
+        # Entries may additionally pin "metadata": the matching actual entry
+        # must carry exactly that bounded metadata map.
+        for e in expect["unsupported_entries"]:
+            if "metadata" not in e:
+                continue
+            key = (e.get("index", 0), e.get("feature"), e.get("reason"))
+            match = [u for u in unsupported if (u.get("index", 0), u.get("feature"), u.get("reason")) == key]
+            checks.append((
+                f"unsupported metadata {key}",
+                parsed is not None and len(match) == 1 and match[0].get("metadata") == e["metadata"],
+                f"entry={match!r} expected_metadata={e['metadata']!r}",
+            ))
     if "statement_sql" in expect:
         got = [s.get("raw_sql") for s in statements]
         checks.append(("statement raw SQL identity", parsed is not None and got == expect["statement_sql"], f"raw_sql={got!r} expected={expect['statement_sql']!r}"))
+    # Every unsupported entry carries the original statement SQL under the
+    # current public contract; when either side records it, the two must
+    # agree at the entry's statement index. Synthetic artifacts that omit
+    # both skip this check.
+    for u in unsupported:
+        idx = u.get("index", 0)
+        bound = statements[idx].get("raw_sql") if 0 <= idx < len(statements) else None
+        if u.get("sql") is None and bound is None:
+            continue
+        checks.append((
+            f"unsupported sql identity index={idx}",
+            parsed is not None and u.get("sql") == bound,
+            f"sql={u.get('sql')!r} expected={bound!r}",
+        ))
     return checks
 
 
