@@ -10,6 +10,7 @@
 package tidbparser
 
 import (
+	"fmt"
 	goast "go/ast"
 	goparser "go/parser"
 	"go/token"
@@ -365,20 +366,63 @@ func TestStatementTypeDisposition(t *testing.T) {
 // every type classified "extracted" must have a case in the real Extract type
 // switch. classify() and the switch are separate lists, so this test — not
 // the disposition table — is what fails if an extractor case is dropped.
+// Comparison runs on reflect.Type identity, not declaration names: a parser
+// `type A = B` alias registers as its own census row but is served by B's
+// extractor case, and a second `case *ast.A` would not even compile.
 func TestExtractedTypesReachExtractor(t *testing.T) {
-	handled := scanExtractorCases(t)
-	for name, disposition := range stmtDispositions {
+	for _, msg := range extractedDispatchErrors(stmtDispositions, scanExtractorCases(t), stmtNodeTypes) {
+		t.Error(msg)
+	}
+}
+
+// extractedDispatchErrors compares the extracted-disposition rows and the
+// extractor type-switch cases by reflect.Type identity. A parser
+// `type A = B` alias must register its own census row but is served by B's
+// extractor case — declaration-name equality would falsely reject it.
+func extractedDispatchErrors(dispositions map[string]string, handled map[string]bool, types map[string]reflect.Type) []string {
+	var errs []string
+	handledTypes := map[reflect.Type]string{}
+	for name := range handled {
+		typ, ok := types[name]
+		if !ok {
+			errs = append(errs, fmt.Sprintf("extractor case %s has no type in stmtNodeTypes — register it or remove the case", name))
+			continue
+		}
+		handledTypes[typ] = name
+	}
+	extractedTypes := map[reflect.Type]bool{}
+	for name, disposition := range dispositions {
 		if disposition != "extracted" {
 			continue
 		}
-		if !handled[name] {
-			t.Errorf("%s is classified extracted but has no case in tidbExtractor.Extract", name)
+		typ := types[name]
+		if _, ok := handledTypes[typ]; !ok {
+			errs = append(errs, fmt.Sprintf("%s is classified extracted but its type has no case in tidbExtractor.Extract", name))
+		}
+		extractedTypes[typ] = true
+	}
+	for typ, name := range handledTypes {
+		if !extractedTypes[typ] {
+			errs = append(errs, fmt.Sprintf("extractor case %s is not marked extracted in the disposition table", name))
 		}
 	}
-	for name := range handled {
-		if stmtDispositions[name] != "extracted" {
-			t.Errorf("extractor case %s is not marked extracted in the disposition table", name)
-		}
+	return errs
+}
+
+// TestExtractedDispatchAliasRegistration pins the alias interaction: when a
+// parser `type TableAlias = CreateTableStmt` upgrade forces its own census
+// row (marked extracted, sharing the target's reflect.Type), the extractor's
+// existing case *ast.CreateTableStmt must satisfy the guard — a duplicate
+// `case *ast.TableAlias` would not compile.
+func TestExtractedDispatchAliasRegistration(t *testing.T) {
+	typ := reflect.TypeOf((*ast.CreateTableStmt)(nil))
+	errs := extractedDispatchErrors(
+		map[string]string{"CreateTableStmt": "extracted", "TableAlias": "extracted"},
+		map[string]bool{"CreateTableStmt": true},
+		map[string]reflect.Type{"CreateTableStmt": typ, "TableAlias": typ},
+	)
+	if len(errs) != 0 {
+		t.Fatalf("alias of an extracted type must be satisfied by the target's case: %v", errs)
 	}
 }
 

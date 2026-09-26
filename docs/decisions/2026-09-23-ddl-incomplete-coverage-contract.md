@@ -553,7 +553,10 @@ found two residuals:
   `TypeSpec.Assign` alias edges into the embedding graph and the fixture
   test pins alias shapes (`BaseAlias = ddlNode`, `StmtAlias = PlainStmt`).
   Non-alias defined types (`type A T`) deliberately stay outside — they do
-  not inherit methods.
+  not inherit methods. The extracted→extractor guard compares
+  `reflect.Type` identity rather than declaration names: a registered
+  alias row resolves to the same type and is served by the target's
+  extractor case (a duplicate `case *ast.A` would not compile).
 - **MySQL reason for `primary_key_type` (F6).** CLUSTERED/NONCLUSTERED are
   TiDB syntax, so the marker is now a vendor boundary under MySQL on both
   evidence paths (`create_table.column.primary_key_type` and
