@@ -4,7 +4,7 @@ category: ddl
 expect:
   parse_ok: true
   unsupported:
-    count: 7
+    count: 9
     include:
       - alter_schema.option.charset
       - create_procedure
@@ -13,6 +13,8 @@ expect:
       - alter_placement_policy.options
       - create_sequence.options
       - alter_sequence.options
+      - grant.unaudited_targets
+      - revoke.unaudited_targets
   findings:
     include:
       - ddl.rename_table.notice

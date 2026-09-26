@@ -266,11 +266,38 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 	for _, column := range ddl.Columns {
 		gaps = append(gaps, columnAspectGaps(dialect, ddl.Operation, "", column)...)
 	}
+	indexPartGaps := func(prefix string, index spec.Index) {
+		// Expression key parts parse on both dialects but are unaudited; under
+		// TiDB the engine does not support them, so they are a vendor boundary
+		// there (fulltext/spatial precedent). Prefix lengths and descending
+		// parts are valid MySQL and TiDB syntax, merely unaudited.
+		if index.HasExpressionKeys {
+			gaps = append(gaps, aspectGap(
+				fmt.Sprintf("%s.expr", prefix), dialect == spec.DialectTiDB,
+				map[string]any{"aspect": "index", "index_kind": string(index.Kind), "expression_count": index.ExpressionCount},
+			))
+		}
+		if index.PrefixParts > 0 {
+			gaps = append(gaps, aspectGap(
+				fmt.Sprintf("%s.prefix", prefix), false,
+				map[string]any{"aspect": "index", "index_kind": string(index.Kind), "prefix_parts": index.PrefixParts},
+			))
+		}
+		if index.DescParts > 0 {
+			gaps = append(gaps, aspectGap(
+				fmt.Sprintf("%s.desc", prefix), false,
+				map[string]any{"aspect": "index", "index_kind": string(index.Kind), "desc_parts": index.DescParts},
+			))
+		}
+	}
 	if ddl.PrimaryKey != nil && ddl.PrimaryKey.Global {
 		gaps = append(gaps, aspectGap(
 			fmt.Sprintf("%s.index.global", ddl.Operation), dialect == spec.DialectMySQL,
 			map[string]any{"aspect": "index", "index_kind": string(spec.IndexKindPrimary)},
 		))
+	}
+	if ddl.PrimaryKey != nil {
+		indexPartGaps(fmt.Sprintf("%s.index", ddl.Operation), *ddl.PrimaryKey)
 	}
 	for _, index := range ddl.Indexes {
 		if gap, vendor := indexKindGap(dialect, index.Kind); gap {
@@ -287,6 +314,16 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 				map[string]any{"aspect": "index", "index_kind": string(index.Kind)},
 			))
 		}
+		indexPartGaps(fmt.Sprintf("%s.index", ddl.Operation), index)
+	}
+	if ddl.OmittedTargets > 0 {
+		// The normalized model kept only the first (or no) target of a parsed
+		// multi-object list; the dropped targets are unaudited evidence, not
+		// audited deletions.
+		gaps = append(gaps, aspectGap(
+			fmt.Sprintf("%s.unaudited_targets", ddl.Operation), false,
+			map[string]any{"aspect": "targets", "omitted": ddl.OmittedTargets},
+		))
 	}
 	for _, constraint := range ddl.Constraints {
 		// Create-table-level CHECK is already extracted and audited; only the
@@ -331,6 +368,7 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 					map[string]any{"aspect": "index", "action": alter.Action, "index_kind": string(alter.Index.Definition.Kind)},
 				))
 			}
+			indexPartGaps(fmt.Sprintf("%s.%s.index", ddl.Operation, alter.Action), *alter.Index.Definition)
 		}
 		if alter.Column != nil && alter.Column.Definition != nil {
 			gaps = append(gaps, columnAspectGaps(dialect, ddl.Operation, alter.Action, *alter.Column.Definition)...)

@@ -30,9 +30,14 @@ type DDL struct {
 	// recognized but did not model into Options. Presence marks an evidence
 	// gap: the fact was parsed but is not auditable.
 	UnextractedOptions []string `json:"unextracted_options,omitempty"`
-	HasReferTable      bool     `json:"has_refer_table,omitempty"`
-	HasSelect          bool     `json:"has_select,omitempty"`
-	HasPartition       bool     `json:"has_partition,omitempty"`
+	// OmittedTargets counts parsed statement targets the normalized model
+	// collapsed or ignored entirely: extra names in DROP USER/ROLE/SEQUENCE
+	// lists, extra CREATE/ALTER USER specs, and the whole user list on
+	// GRANT/REVOKE. A nonzero value is an evidence gap, not a wildcard.
+	OmittedTargets int  `json:"omitted_targets,omitempty"`
+	HasReferTable  bool `json:"has_refer_table,omitempty"`
+	HasSelect      bool `json:"has_select,omitempty"`
+	HasPartition   bool `json:"has_partition,omitempty"`
 	// TemporaryScope records a parsed temporary-table keyword on
 	// CREATE/DROP TABLE. The scope changes object identity and lifetime, so a
 	// non-empty value is a recognized-but-unaudited fact until temporary-table
@@ -288,6 +293,10 @@ type Index struct {
 	HasPredicate      bool      `json:"has_predicate,omitempty"`
 	HasExpressionKeys bool      `json:"has_expression_keys,omitempty"`
 	ExpressionCount   int       `json:"expression_count,omitempty"`
+	// PrefixParts/DescParts count column-prefix lengths and descending key
+	// parts parsed on the index but not yet modeled for audit semantics.
+	PrefixParts int `json:"prefix_parts,omitempty"`
+	DescParts   int `json:"desc_parts,omitempty"`
 	// Global marks the TiDB-only GLOBAL index modifier parsed on table-level
 	// UNIQUE/PRIMARY KEY constraints and standalone CREATE INDEX statements.
 	// MySQL has no such modifier, so it is a vendor boundary there.

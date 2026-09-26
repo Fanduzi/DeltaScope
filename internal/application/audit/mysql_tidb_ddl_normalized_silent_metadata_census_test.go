@@ -63,9 +63,9 @@ var mysqlPromotedMetadataCases = []metadataCensusCase{
 	{Name: "CREATE ROLE", SQL: "CREATE ROLE manager", ExpectFindings: true},
 	{Name: "DROP ROLE", SQL: "DROP ROLE manager", ExpectFindings: true},
 	{Name: "GRANT SELECT", SQL: "GRANT SELECT ON app.users TO 'reader'@'%'", Sensitive: true,
-		ForbiddenSubstrings: []string{"app.users", "reader"}, ExpectFindings: true},
+		ForbiddenSubstrings: []string{"app.users", "reader"}, ExpectFindings: true, ExpectIncomplete: true},
 	{Name: "REVOKE SELECT", SQL: "REVOKE SELECT ON app.users FROM 'reader'@'%'", Sensitive: true,
-		ForbiddenSubstrings: []string{"app.users", "reader"}, ExpectFindings: true},
+		ForbiddenSubstrings: []string{"app.users", "reader"}, ExpectFindings: true, ExpectIncomplete: true},
 	{Name: "DROP RESOURCE GROUP", SQL: "DROP RESOURCE GROUP rg1", ExpectFindings: true},
 }
 
@@ -102,9 +102,9 @@ var tidbPromotedMetadataCases = []metadataCensusCase{
 		ForbiddenSubstrings: []string{"new_secret", "IDENTIFIED BY"}, ExpectFindings: true},
 	{Name: "DROP USER", SQL: "DROP USER 'admin'@'%'", ExpectFindings: true},
 	{Name: "GRANT SELECT", SQL: "GRANT SELECT ON app.users TO 'reader'@'%'", Sensitive: true,
-		ForbiddenSubstrings: []string{"app.users", "reader"}, ExpectFindings: true},
+		ForbiddenSubstrings: []string{"app.users", "reader"}, ExpectFindings: true, ExpectIncomplete: true},
 	{Name: "REVOKE SELECT", SQL: "REVOKE SELECT ON app.users FROM 'reader'@'%'", Sensitive: true,
-		ForbiddenSubstrings: []string{"app.users", "reader"}, ExpectFindings: true},
+		ForbiddenSubstrings: []string{"app.users", "reader"}, ExpectFindings: true, ExpectIncomplete: true},
 	{Name: "ALTER TABLE PLACEMENT POLICY", SQL: "ALTER TABLE users PLACEMENT POLICY p1", ExpectFindings: true},
 }
 

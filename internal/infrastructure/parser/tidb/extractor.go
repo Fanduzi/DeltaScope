@@ -228,9 +228,11 @@ func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
 	for _, c := range stmt.Constraints {
 		switch c.Tp {
 		case ast.ConstraintPrimaryKey:
-			ddl.PrimaryKey = &spec.Index{Name: normalizeConstraintName(c), Kind: spec.IndexKindPrimary, Columns: extractIndexColumns(c.Keys), Global: c.Option != nil && c.Option.Global}
+			expr, prefix, desc := countIndexPartKinds(c.Keys)
+			ddl.PrimaryKey = &spec.Index{Name: normalizeConstraintName(c), Kind: spec.IndexKindPrimary, Columns: extractIndexColumns(c.Keys), HasExpressionKeys: expr > 0, ExpressionCount: expr, PrefixParts: prefix, DescParts: desc, Global: c.Option != nil && c.Option.Global}
 		case ast.ConstraintKey, ast.ConstraintIndex, ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex, ast.ConstraintFulltext:
-			ddl.Indexes = append(ddl.Indexes, spec.Index{Name: normalizeConstraintName(c), Kind: indexKindForConstraint(c.Tp), Columns: extractIndexColumns(c.Keys), Global: c.Option != nil && c.Option.Global})
+			expr, prefix, desc := countIndexPartKinds(c.Keys)
+			ddl.Indexes = append(ddl.Indexes, spec.Index{Name: normalizeConstraintName(c), Kind: indexKindForConstraint(c.Tp), Columns: extractIndexColumns(c.Keys), HasExpressionKeys: expr > 0, ExpressionCount: expr, PrefixParts: prefix, DescParts: desc, Global: c.Option != nil && c.Option.Global})
 		default:
 			ddl.Constraints = append(ddl.Constraints, spec.Constraint{Type: constraintTypeName(c.Tp), Name: normalizeConstraintName(c), Columns: extractIndexColumns(c.Keys)})
 		}
@@ -371,7 +373,11 @@ func extractAlterSpecs(specification *ast.AlterTableSpec, clause string) []spec.
 			if constraint == nil {
 				continue
 			}
-			alters = append(alters, extractAlterSpec(&ast.AlterTableSpec{Tp: ast.AlterTableAddConstraint, Constraint: constraint}, clause))
+			// Pass an empty clause: alterActionNameForSpec derives the action
+			// from constraint type only. The parent clause text (e.g. a column
+			// comment containing "ADD CONSTRAINT") must not leak into a
+			// sibling constraint's action name.
+			alters = append(alters, extractAlterSpec(&ast.AlterTableSpec{Tp: ast.AlterTableAddConstraint, Constraint: constraint}, ""))
 		}
 		if len(alters) > 0 {
 			return alters
@@ -632,13 +638,14 @@ func extractCreateIndex(stmt *ast.CreateIndexStmt) *spec.DDL {
 	}
 	indexName := stmt.IndexName
 	columns := extractIndexColumns(stmt.IndexPartSpecifications)
+	expr, prefix, desc := countIndexPartKinds(stmt.IndexPartSpecifications)
 	indexGlobal := stmt.IndexOption != nil && stmt.IndexOption.Global
 	return &spec.DDL{
 		Operation: spec.DDLOperationCreateIndex,
 		Table:     &spec.Table{Name: stmt.Table.Name.L, Schema: stmt.Table.Schema.L},
 		Alter: []spec.Alter{{
 			Action: "create_index",
-			Index:  &spec.AlterIndex{Definition: &spec.Index{Name: indexName, Kind: kind, Columns: columns, Global: indexGlobal}},
+			Index:  &spec.AlterIndex{Definition: &spec.Index{Name: indexName, Kind: kind, Columns: columns, HasExpressionKeys: expr > 0, ExpressionCount: expr, PrefixParts: prefix, DescParts: desc, Global: indexGlobal}},
 		}},
 	}
 }
@@ -771,9 +778,10 @@ func extractCreateUser(stmt *ast.CreateUserStmt) *spec.DDL {
 			name = stmt.Specs[0].User.Username
 		}
 		return &spec.DDL{
-			Operation:  spec.DDLOperationCreateRole,
-			ObjectName: name,
-			ObjectType: "role",
+			Operation:      spec.DDLOperationCreateRole,
+			ObjectName:     name,
+			ObjectType:     "role",
+			OmittedTargets: len(stmt.Specs) - 1,
 		}
 	}
 	name := ""
@@ -781,10 +789,11 @@ func extractCreateUser(stmt *ast.CreateUserStmt) *spec.DDL {
 		name = stmt.Specs[0].User.Username
 	}
 	return &spec.DDL{
-		Operation:  spec.DDLOperationCreateUser,
-		ObjectName: name,
-		ObjectType: "user",
-		Options:    map[string]string{"has_auth": "true"},
+		Operation:      spec.DDLOperationCreateUser,
+		ObjectName:     name,
+		ObjectType:     "user",
+		Options:        map[string]string{"has_auth": "true"},
+		OmittedTargets: len(stmt.Specs) - 1,
 	}
 }
 
@@ -794,10 +803,11 @@ func extractAlterUser(stmt *ast.AlterUserStmt) *spec.DDL {
 		name = stmt.Specs[0].User.Username
 	}
 	return &spec.DDL{
-		Operation:  spec.DDLOperationAlterUser,
-		ObjectName: name,
-		ObjectType: "user",
-		Options:    map[string]string{"has_auth": "true"},
+		Operation:      spec.DDLOperationAlterUser,
+		ObjectName:     name,
+		ObjectType:     "user",
+		Options:        map[string]string{"has_auth": "true"},
+		OmittedTargets: len(stmt.Specs) - 1,
 	}
 }
 
@@ -814,9 +824,10 @@ func extractDropUser(stmt *ast.DropUserStmt) *spec.DDL {
 			objectName = names[0]
 		}
 		return &spec.DDL{
-			Operation:  spec.DDLOperationDropRole,
-			ObjectName: objectName,
-			ObjectType: "role",
+			Operation:      spec.DDLOperationDropRole,
+			ObjectName:     objectName,
+			ObjectType:     "role",
+			OmittedTargets: len(names) - 1,
 		}
 	}
 	names := make([]string, 0, len(stmt.UserList))
@@ -830,9 +841,10 @@ func extractDropUser(stmt *ast.DropUserStmt) *spec.DDL {
 		objectName = names[0]
 	}
 	return &spec.DDL{
-		Operation:  spec.DDLOperationDropUser,
-		ObjectName: objectName,
-		ObjectType: "user",
+		Operation:      spec.DDLOperationDropUser,
+		ObjectName:     objectName,
+		ObjectType:     "user",
+		OmittedTargets: len(names) - 1,
 	}
 }
 
@@ -860,8 +872,9 @@ func extractGrant(stmt *ast.GrantStmt) *spec.DDL {
 		}
 	}
 	return &spec.DDL{
-		Operation: spec.DDLOperationGrant,
-		Options:   options,
+		Operation:      spec.DDLOperationGrant,
+		Options:        options,
+		OmittedTargets: len(stmt.Users),
 	}
 }
 
@@ -889,8 +902,9 @@ func extractRevoke(stmt *ast.RevokeStmt) *spec.DDL {
 		}
 	}
 	return &spec.DDL{
-		Operation: spec.DDLOperationRevoke,
-		Options:   options,
+		Operation:      spec.DDLOperationRevoke,
+		Options:        options,
+		OmittedTargets: len(stmt.Users),
 	}
 }
 
@@ -972,9 +986,10 @@ func extractDropSequence(stmt *ast.DropSequenceStmt) *spec.DDL {
 		name = stmt.Sequences[0].Name.L
 	}
 	return &spec.DDL{
-		Operation:  spec.DDLOperationDropSequence,
-		ObjectName: name,
-		ObjectType: "sequence",
+		Operation:      spec.DDLOperationDropSequence,
+		ObjectName:     name,
+		ObjectType:     "sequence",
+		OmittedTargets: len(stmt.Sequences) - 1,
 	}
 }
 
@@ -1013,7 +1028,8 @@ func extractAlterIndex(specification *ast.AlterTableSpec) *spec.AlterIndex {
 		if specification.Constraint == nil || !constraintProducesIndex(specification.Constraint.Tp) {
 			return nil
 		}
-		return &spec.AlterIndex{Definition: &spec.Index{Kind: indexKindForConstraint(specification.Constraint.Tp), Name: normalizeConstraintName(specification.Constraint), Columns: extractIndexColumns(specification.Constraint.Keys), Global: specification.Constraint.Option != nil && specification.Constraint.Option.Global}}
+		expr, prefix, desc := countIndexPartKinds(specification.Constraint.Keys)
+		return &spec.AlterIndex{Definition: &spec.Index{Kind: indexKindForConstraint(specification.Constraint.Tp), Name: normalizeConstraintName(specification.Constraint), Columns: extractIndexColumns(specification.Constraint.Keys), HasExpressionKeys: expr > 0, ExpressionCount: expr, PrefixParts: prefix, DescParts: desc, Global: specification.Constraint.Option != nil && specification.Constraint.Option.Global}}
 	case ast.AlterTableDropIndex:
 		name := extractAlterName(specification)
 		if name == "" {
@@ -1273,6 +1289,26 @@ func extractIndexColumns(parts []*ast.IndexPartSpecification) []string {
 		columns = append(columns, part.Column.Name.L)
 	}
 	return columns
+}
+
+// countIndexPartKinds counts key-part facts extractIndexColumns cannot keep:
+// expression (non-column) parts, column-prefix lengths, and descending parts.
+func countIndexPartKinds(parts []*ast.IndexPartSpecification) (expr, prefix, desc int) {
+	for _, part := range parts {
+		if part == nil {
+			continue
+		}
+		if part.Expr != nil || part.Column == nil {
+			expr++
+		}
+		if part.Length > 0 {
+			prefix++
+		}
+		if part.Desc {
+			desc++
+		}
+	}
+	return expr, prefix, desc
 }
 
 func indexKindForConstraint(tp ast.ConstraintType) spec.IndexKind {

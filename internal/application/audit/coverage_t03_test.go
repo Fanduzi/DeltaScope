@@ -380,6 +380,21 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 		{name: "tidb alter add list index global", sql: "ALTER TABLE t ADD (c INT, UNIQUE KEY uk (c) GLOBAL);", dialect: spec.DialectTiDB, wantFeature: "alter_table.add_index.index.global", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql alter add list primary global", sql: "ALTER TABLE t ADD (c INT, PRIMARY KEY (c) GLOBAL);", dialect: spec.DialectMySQL, wantFeature: "alter_table.add_constraint.index.global", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
 		{name: "mysql alter add list check", sql: "ALTER TABLE t ADD (c INT, CHECK (c > 0));", dialect: spec.DialectMySQL, wantFeature: "alter_table.add_constraint.check", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "tidb alter add list primary global", sql: "ALTER TABLE t ADD (c INT, PRIMARY KEY (c) GLOBAL);", dialect: spec.DialectTiDB, wantFeature: "alter_table.add_constraint.index.global", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql alter add list comment interference", sql: "ALTER TABLE t ADD (c INT COMMENT 'ADD CONSTRAINT', UNIQUE KEY uk (c) GLOBAL);", dialect: spec.DialectMySQL, wantFeature: "alter_table.add_index.index.global", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
+		{name: "mysql create table index expr", sql: "CREATE TABLE t (a VARCHAR(32), KEY ix (a, (LOWER(a))));", dialect: spec.DialectMySQL, wantFeature: "create_table.index.expr", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "tidb create table index expr", sql: "CREATE TABLE t (a VARCHAR(32), KEY ix (a, (LOWER(a))));", dialect: spec.DialectTiDB, wantFeature: "create_table.index.expr", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
+		{name: "mysql create index expr prefix desc", sql: "CREATE INDEX ix ON t (c(10), (LOWER(b)) DESC);", dialect: spec.DialectMySQL, wantFeature: "create_index.create_index.index.expr", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "tidb create index expr prefix desc", sql: "CREATE INDEX ix ON t (c(10), (LOWER(b)) DESC);", dialect: spec.DialectTiDB, wantFeature: "create_index.create_index.index.expr", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
+		{name: "mysql create table index prefix desc", sql: "CREATE TABLE t (a VARCHAR(32), KEY ix (a(8) DESC));", dialect: spec.DialectMySQL, wantFeature: "create_table.index.prefix", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql alter add index prefix", sql: "ALTER TABLE t ADD INDEX ix (c(8));", dialect: spec.DialectMySQL, wantFeature: "alter_table.add_index.index.prefix", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql drop user multi", sql: "DROP USER u1, u2;", dialect: spec.DialectMySQL, wantFeature: "drop_user.unaudited_targets", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "tidb drop sequence multi", sql: "DROP SEQUENCE s1, s2;", dialect: spec.DialectTiDB, wantFeature: "drop_sequence.unaudited_targets", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "tidb drop role multi", sql: "DROP ROLE r1, r2;", dialect: spec.DialectTiDB, wantFeature: "drop_role.unaudited_targets", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql grant multi", sql: "GRANT SELECT ON db.* TO 'a'@'%', 'b'@'%';", dialect: spec.DialectMySQL, wantFeature: "grant.unaudited_targets", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "tidb revoke single", sql: "REVOKE SELECT ON db.* FROM 'a'@'%';", dialect: spec.DialectTiDB, wantFeature: "revoke.unaudited_targets", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql create user multi", sql: "CREATE USER u1 IDENTIFIED BY 'x', u2 IDENTIFIED BY 'y';", dialect: spec.DialectMySQL, wantFeature: "create_user.unaudited_targets", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql alter user multi", sql: "ALTER USER u1 IDENTIFIED BY 'x', u2 IDENTIFIED BY 'y';", dialect: spec.DialectMySQL, wantFeature: "alter_user.unaudited_targets", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql alter tidb-only option", sql: "ALTER TABLE t AUTO_RANDOM_BASE=10;", dialect: spec.DialectMySQL, wantFeature: "alter_table.option.auto_random_base", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
 		{name: "mysql alter modify column position", sql: "ALTER TABLE t MODIFY COLUMN c INT AFTER id;", dialect: spec.DialectMySQL, wantFeature: "alter_table.modify_column.column_position", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql alter change column position", sql: "ALTER TABLE t CHANGE COLUMN c c2 INT FIRST;", dialect: spec.DialectMySQL, wantFeature: "alter_table.change_column.column_position", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
@@ -452,10 +467,11 @@ func TestAuditSQLT03UnsupportedFeatureReasonPairs(t *testing.T) {
 	configPath := writeAllRulesDisabledPolicy(t)
 
 	cases := []struct {
-		name    string
-		sql     string
-		dialect spec.Dialect
-		want    [][2]string
+		name      string
+		sql       string
+		dialect   spec.Dialect
+		wantIndex int
+		want      [][2]string
 	}{
 		{name: "mysql mixed column uniqueness", sql: "CREATE TABLE t (id INT UNIQUE GLOBAL, c INT UNIQUE);", dialect: spec.DialectMySQL, want: [][2]string{
 			{"create_table.column.unique", spec.UnsupportedUnauditedReason},
@@ -464,6 +480,9 @@ func TestAuditSQLT03UnsupportedFeatureReasonPairs(t *testing.T) {
 		{name: "mysql alter add list index global and check", sql: "ALTER TABLE t ADD (c INT, UNIQUE KEY uk (c) GLOBAL, CHECK (c > 0));", dialect: spec.DialectMySQL, want: [][2]string{
 			{"alter_table.add_index.index.global", spec.UnsupportedVendorBoundaryReason},
 			{"alter_table.add_constraint.check", spec.UnsupportedUnauditedReason},
+		}},
+		{name: "mysql unsupported second statement", sql: "ALTER TABLE t ADD COLUMN c INT; CREATE TEMPORARY TABLE x (id INT);", dialect: spec.DialectMySQL, wantIndex: 1, want: [][2]string{
+			{"create_table.temporary", spec.UnsupportedUnauditedReason},
 		}},
 	}
 	for _, tc := range cases {
@@ -478,8 +497,8 @@ func TestAuditSQLT03UnsupportedFeatureReasonPairs(t *testing.T) {
 			}
 			got := make([][2]string, 0, len(result.Unsupported))
 			for _, u := range result.Unsupported {
-				if u.Index != 0 {
-					t.Fatalf("expected unsupported entry bound to statement 0, got %#v", u)
+				if u.Index != tc.wantIndex {
+					t.Fatalf("expected unsupported entry bound to statement %d, got %#v", tc.wantIndex, u)
 				}
 				got = append(got, [2]string{u.Feature, u.Reason})
 			}
@@ -519,6 +538,10 @@ func TestAuditSQLT03RecognizedOutOfSurfaceStaysComplete(t *testing.T) {
 		{name: "mysql alter add list index only", sql: "ALTER TABLE t ADD (UNIQUE KEY uk (id));", dialect: spec.DialectMySQL},
 		{name: "mysql alter add list foreign key", sql: "ALTER TABLE t ADD (c INT, FOREIGN KEY (c) REFERENCES p(id));", dialect: spec.DialectMySQL},
 		{name: "tidb alter add list check", sql: "ALTER TABLE t ADD (c INT, CHECK (c > 0));", dialect: spec.DialectTiDB},
+		{name: "mysql alter add list primary key only", sql: "ALTER TABLE t ADD (PRIMARY KEY (c));", dialect: spec.DialectMySQL},
+		{name: "mysql drop user single", sql: "DROP USER u1;", dialect: spec.DialectMySQL},
+		{name: "tidb drop sequence single", sql: "DROP SEQUENCE s1;", dialect: spec.DialectTiDB},
+		{name: "mysql create index plain", sql: "CREATE INDEX ix ON t (c);", dialect: spec.DialectMySQL},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

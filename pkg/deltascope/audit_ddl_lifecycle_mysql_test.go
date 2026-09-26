@@ -14,15 +14,16 @@ import (
 
 func TestAuditMySQLDDLLifecycleRuleCoverage(t *testing.T) {
 	tests := []struct {
-		name       string
-		sql        string
-		wantRuleID string
+		name                   string
+		sql                    string
+		wantRuleID             string
+		wantUnsupportedFeature string
 	}{
 		{name: "rename_table_notice", sql: "RENAME TABLE users TO users_old", wantRuleID: "ddl.rename_table.notice"},
 		{name: "create_index_notice", sql: "CREATE INDEX idx_email ON users (email)", wantRuleID: "ddl.create_index.notice"},
 		{name: "alter_add_index_notice", sql: "ALTER TABLE users ADD INDEX idx_email (email)", wantRuleID: "ddl.create_index.notice"},
 		{name: "create_user_notice", sql: "CREATE USER 'admin'@'%' IDENTIFIED BY 'secret'", wantRuleID: "ddl.create_user.notice"},
-		{name: "grant_notice", sql: "GRANT SELECT ON app.users TO 'reader'@'%'", wantRuleID: "ddl.grant.notice"},
+		{name: "grant_notice", sql: "GRANT SELECT ON app.users TO 'reader'@'%'", wantRuleID: "ddl.grant.notice", wantUnsupportedFeature: "grant.unaudited_targets"},
 		{name: "drop_resource_group_notice", sql: "DROP RESOURCE GROUP rg1", wantRuleID: "ddl.drop_resource_group.notice"},
 	}
 
@@ -32,11 +33,26 @@ func TestAuditMySQLDDLLifecycleRuleCoverage(t *testing.T) {
 				SQL:     tt.sql,
 				Dialect: DialectMySQL,
 			})
-			if err != nil {
-				t.Fatalf("expected supported path, got error: %v", err)
-			}
-			if len(result.Unsupported) != 0 {
-				t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+			if tt.wantUnsupportedFeature == "" {
+				if err != nil {
+					t.Fatalf("expected supported path, got error: %v", err)
+				}
+				if len(result.Unsupported) != 0 {
+					t.Fatalf("expected 0 unsupported, got %#v", result.Unsupported)
+				}
+			} else {
+				if !errors.Is(err, ErrUnsupportedStatement) {
+					t.Fatalf("expected ErrUnsupportedStatement sentinel, got %v", err)
+				}
+				foundUnsupported := false
+				for _, u := range result.Unsupported {
+					if u.Feature == tt.wantUnsupportedFeature {
+						foundUnsupported = true
+					}
+				}
+				if !foundUnsupported {
+					t.Fatalf("expected unsupported feature %q, got %#v", tt.wantUnsupportedFeature, result.Unsupported)
+				}
 			}
 			if len(result.Statements) != 1 {
 				t.Fatalf("expected 1 statement, got %d", len(result.Statements))
@@ -70,7 +86,7 @@ func TestAuditTiDBDDLLifecycleRuleCoverage(t *testing.T) {
 		{name: "create_index_notice", sql: "CREATE INDEX idx_email ON users (email)", wantRuleID: "ddl.create_index.notice"},
 		{name: "alter_add_index_notice", sql: "ALTER TABLE users ADD INDEX idx_email (email)", wantRuleID: "ddl.create_index.notice"},
 		{name: "create_user_notice", sql: "CREATE USER 'admin'@'%' IDENTIFIED BY 'secret'", wantRuleID: "ddl.create_user.notice"},
-		{name: "grant_notice", sql: "GRANT SELECT ON app.users TO 'reader'@'%'", wantRuleID: "ddl.grant.notice"},
+		{name: "grant_notice", sql: "GRANT SELECT ON app.users TO 'reader'@'%'", wantRuleID: "ddl.grant.notice", wantUnsupportedFeature: "grant.unaudited_targets"},
 		{name: "create_placement_policy_notice", sql: "CREATE PLACEMENT POLICY p1 PRIMARY_REGION='us-east-1' REGIONS='us-east-1'", wantRuleID: "ddl.create_placement_policy.notice", wantUnsupportedFeature: "create_placement_policy.options"},
 		{name: "create_sequence_notice", sql: "CREATE SEQUENCE seq1 START WITH 1 INCREMENT BY 1", wantRuleID: "ddl.create_sequence.notice", wantUnsupportedFeature: "create_sequence.options"},
 		{name: "alter_table_placement_policy_notice", sql: "ALTER TABLE users PLACEMENT POLICY p1", wantRuleID: "ddl.tidb.alter_table.placement_policy.notice"},

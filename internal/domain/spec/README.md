@@ -9,7 +9,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 | statement.go | Defines the top-level normalized statement model and parser-neutral extraction interface |
 | statement_test.go | Verifies typed statement metadata behavior |
 | metadata.go | Defines optional schema context, instance facts, target-table snapshots, object-level validation snapshots, and lookup helpers for metadata-aware auditing |
-| ddl.go | Defines DDL-oriented specification types, including explicit DDL operations, richer column facts, typed index metadata, multi-target `Targets` plus `TableTargets()` fallback, create-table/object-lifecycle shape flags, declared-constraint alter payloads, and parsed-but-unmodeled option name evidence (`UnextractedOptions`) for offline and metadata-aware DDL rules |
+| ddl.go | Defines DDL-oriented specification types, including explicit DDL operations, richer column facts, typed index metadata, multi-target `Targets` plus `TableTargets()` fallback, create-table/object-lifecycle shape flags, declared-constraint alter payloads, and parsed-but-unmodeled option name evidence (`UnextractedOptions`) plus `OmittedTargets` for collapsed multi-object target lists for offline and metadata-aware DDL rules |
 | dml_impact.go | Defines shared DML impact estimation enums and payload types reused across audit layers |
 | dml.go | Defines DML-oriented specification types, including operation metadata, mentioned tables, MutationTargets, and MutationTargetTables() fallback to Tables |
 
@@ -35,7 +35,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `Table`
 - `Column`
 - `Constraint`
-- `Index` (carries `Global` for the parsed GLOBAL index modifier)
+- `Index` (carries `Global` for the parsed GLOBAL index modifier plus bounded key-part facts `PrefixParts`/`DescParts`/`ExpressionCount` for parsed-but-unmodeled expression, column-prefix, and descending parts)
 - `IndexKind`
 - `ImpactSource`
 - `ImpactRisk`
@@ -125,7 +125,7 @@ Normalized statement specifications used as the stable input for rule evaluation
     - rename intent is inferred from `OldName` plus `Definition.Name`, not a separate boolean
     - an optional `Change` block with statement-local relation facts only for semantics the statement explicitly spells out, such as nullability, default, and auto-increment
     - target type and unsigned shape still live on `Definition`, but are not separately labeled as touched change facts
-  - `Index` (carries `Global` for the parsed GLOBAL index modifier) carries `OldName` plus an optional target `Definition` reused from `Index`
+  - `Index` (carries `Global` for the parsed GLOBAL index modifier plus bounded key-part facts `PrefixParts`/`DescParts`/`ExpressionCount` for parsed-but-unmodeled expression, column-prefix, and descending parts) carries `OldName` plus an optional target `Definition` reused from `Index`
   - `Options` is intentionally a flat normalized subset of table options, not a full option AST or ordering-preserving model
 
 ## Dependencies

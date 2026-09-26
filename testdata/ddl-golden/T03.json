@@ -155,6 +155,17 @@
         ],
         "unsupported_features": [
           "create_sequence"
+        ],
+        "unsupported_entries": [
+          {
+            "index": 0,
+            "feature": "create_sequence",
+            "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+          }
+        ],
+        "statement_sql": [
+          "CREATE SEQUENCE golden_seq START WITH 1;",
+          "ALTER TABLE golden_t ADD COLUMN c INT;"
         ]
       }
     },
@@ -1620,6 +1631,359 @@
           "ALTER TABLE t ADD (c INT, FOREIGN KEY (c) REFERENCES p(id));"
         ]
       }
+    },
+    {
+      "id": "mysql-alter-add-list-comment-interference",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t ADD (c INT COMMENT 'ADD CONSTRAINT', UNIQUE KEY uk (c) GLOBAL);",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "ALTER TABLE t ADD (c INT COMMENT 'ADD CONSTRAINT', UNIQUE KEY uk (c) GLOBAL);"
+        ],
+        "unsupported_features": [
+          "alter_table.add_index.index.global"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "alter_table.add_index.index.global",
+            "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tidb-alter-add-list-primary-global",
+      "dialect": "tidb",
+      "sql": "ALTER TABLE t ADD (c INT, PRIMARY KEY (c) GLOBAL);",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "ALTER TABLE t ADD (c INT, PRIMARY KEY (c) GLOBAL);"
+        ],
+        "unsupported_features": [
+          "alter_table.add_constraint.index.global"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "alter_table.add_constraint.index.global",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-create-table-index-expr",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t (a VARCHAR(32), KEY ix (a, (LOWER(a))));",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE TABLE t (a VARCHAR(32), KEY ix (a, (LOWER(a))));"
+        ],
+        "unsupported_features": [
+          "create_table.index.expr"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "create_table.index.expr",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tidb-create-table-index-expr",
+      "dialect": "tidb",
+      "sql": "CREATE TABLE t (a VARCHAR(32), KEY ix (a, (LOWER(a))));",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE TABLE t (a VARCHAR(32), KEY ix (a, (LOWER(a))));"
+        ],
+        "unsupported_features": [
+          "create_table.index.expr"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "create_table.index.expr",
+            "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-create-index-expr-prefix-desc",
+      "dialect": "mysql",
+      "sql": "CREATE INDEX ix ON t (c(10), (LOWER(b)) DESC);",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 3,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX ix ON t (c(10), (LOWER(b)) DESC);"
+        ],
+        "unsupported_features": [
+          "create_index.create_index.index.expr",
+          "create_index.create_index.index.prefix",
+          "create_index.create_index.index.desc"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "create_index.create_index.index.expr",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          },
+          {
+            "feature": "create_index.create_index.index.prefix",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          },
+          {
+            "feature": "create_index.create_index.index.desc",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tidb-create-index-expr-prefix-desc",
+      "dialect": "tidb",
+      "sql": "CREATE INDEX ix ON t (c(10), (LOWER(b)) DESC);",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 3,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX ix ON t (c(10), (LOWER(b)) DESC);"
+        ],
+        "unsupported_features": [
+          "create_index.create_index.index.expr",
+          "create_index.create_index.index.prefix",
+          "create_index.create_index.index.desc"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "create_index.create_index.index.expr",
+            "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+          },
+          {
+            "feature": "create_index.create_index.index.prefix",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          },
+          {
+            "feature": "create_index.create_index.index.desc",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-drop-user-multi",
+      "dialect": "mysql",
+      "sql": "DROP USER u1, u2;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "DROP USER u1, u2;"
+        ],
+        "unsupported_features": [
+          "drop_user.unaudited_targets"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "drop_user.unaudited_targets",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tidb-drop-sequence-multi",
+      "dialect": "tidb",
+      "sql": "DROP SEQUENCE s1, s2;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "DROP SEQUENCE s1, s2;"
+        ],
+        "unsupported_features": [
+          "drop_sequence.unaudited_targets"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "drop_sequence.unaudited_targets",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-grant-multi",
+      "dialect": "mysql",
+      "sql": "GRANT SELECT ON db.* TO 'a'@'%', 'b'@'%';",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "GRANT SELECT ON db.* TO 'a'@'%', 'b'@'%';"
+        ],
+        "unsupported_features": [
+          "grant.unaudited_targets"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "grant.unaudited_targets",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-unsupported-second-statement",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t ADD COLUMN c INT; CREATE TEMPORARY TABLE x (id INT);",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 2,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "complete",
+          "incomplete"
+        ],
+        "statement_sql": [
+          "ALTER TABLE t ADD COLUMN c INT;",
+          "CREATE TEMPORARY TABLE x (id INT);"
+        ],
+        "unsupported_features": [
+          "create_table.temporary"
+        ],
+        "unsupported_entries": [
+          {
+            "index": 1,
+            "feature": "create_table.temporary",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ]
+      }
     }
   ],
   "required_case_ids": [
@@ -1680,6 +2044,16 @@
     "T03.cli.mysql-create-table-mixed-uniqueness",
     "T03.cli.mysql-alter-add-list-column-only",
     "T03.cli.mysql-alter-add-list-index",
-    "T03.cli.mysql-alter-add-list-foreign-key"
+    "T03.cli.mysql-alter-add-list-foreign-key",
+    "T03.cli.mysql-alter-add-list-comment-interference",
+    "T03.cli.tidb-alter-add-list-primary-global",
+    "T03.cli.mysql-create-table-index-expr",
+    "T03.cli.tidb-create-table-index-expr",
+    "T03.cli.mysql-create-index-expr-prefix-desc",
+    "T03.cli.tidb-create-index-expr-prefix-desc",
+    "T03.cli.mysql-drop-user-multi",
+    "T03.cli.tidb-drop-sequence-multi",
+    "T03.cli.mysql-grant-multi",
+    "T03.cli.mysql-unsupported-second-statement"
   ]
 }

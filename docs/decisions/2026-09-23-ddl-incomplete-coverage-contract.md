@@ -270,9 +270,39 @@ dropped and the statement could still report `coverage=complete`.
   in both dialects, a mixed unique/unique_global paired-reason case, and
   complete controls for column-only, index-only, and foreign-key lists.
 
+## Amendment 2026-09-25 (part 3) — index key-part facts and unaudited statement targets
+
+Review of the parenthesized-ADD fix found one introduced defect and two
+same-class residual omissions, all now resolved:
+
+- Introduced defect (fixed): the synthetic grouped-constraint spec reused
+  the parent clause text, so a sibling column `COMMENT 'ADD CONSTRAINT'`
+  could flip an index constraint's action to `add_constraint`. Grouped
+  constraints now derive their action from constraint type only.
+- `IndexPartSpecification.Expr`, `Length`, and `Desc` were silently
+  dropped by `extractIndexColumns`. `spec.Index` now reuses the existing
+  `HasExpressionKeys`/`ExpressionCount` fields plus new bounded
+  `PrefixParts`/`DescParts` counts, projected on table-level constraints,
+  ALTER index definitions, and standalone CREATE INDEX. Classification:
+  `<op>.index.expr` is a vendor boundary under TiDB (engine-unsupported,
+  fulltext/spatial precedent) and unaudited under MySQL (8.0.13+
+  functional key parts are official syntax); `<op>.index.prefix` and
+  `<op>.index.desc` are unaudited under both.
+- Multi-target account/sequence lists were collapsed to their first
+  member or ignored: `spec.DDL.OmittedTargets` now counts parsed targets
+  absent from the normalized model — extras in DROP USER/ROLE/SEQUENCE
+  lists, extra CREATE/ALTER USER specs, and the entire user list on
+  GRANT/REVOKE (all unaudited as `<op>.unaudited_targets`, single-target
+  grants included since no target identity is modeled).
+- `cli_cases` grow to 60 (10 new, 68 cases total with the 8 DB cases):
+  index-part classifications in both
+  dialects, unaudited-target forms, the comment-interference regression,
+  TiDB grouped PRIMARY KEY GLOBAL, and a nonzero-index batch proving
+  `unsupported_entries` binds entries to the right statement.
+
 ## Verification Evidence
 
-- `make ddl-golden TASK=T03 ARTIFACT_DIR=/tmp/ddl-golden`: 58 cases, 564
+- `make ddl-golden TASK=T03 ARTIFACT_DIR=/tmp/ddl-golden`: 68 cases, 676
   assertions, PASS on all four anchors — `cli_cases` prove MySQL `CREATE SEQUENCE` + `ALTER TABLE
   ... ADD COLUMN` exits 1 with `coverage.status=incomplete`, bounded
   `create_sequence` evidence, and a `review` verdict under the

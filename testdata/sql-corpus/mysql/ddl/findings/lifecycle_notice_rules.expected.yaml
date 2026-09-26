@@ -4,10 +4,12 @@ category: ddl
 expect:
   parse_ok: true
   unsupported:
-    count: 2
+    count: 4
     include:
       - alter_schema.option.charset
       - create_procedure.body
+      - grant.unaudited_targets
+      - revoke.unaudited_targets
   findings:
     include:
       - ddl.rename_table.notice

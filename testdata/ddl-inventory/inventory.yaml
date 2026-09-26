@@ -565,7 +565,7 @@ rows:
     sql_shape: "ALTER TABLE t ADD PRIMARY KEY (id)"
     prerequisites: "column legality for PK"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: only ddl.alter.add_constraint.notice fires; no PK-specific policy on ALTER path; ADD PRIMARY KEY ... GLOBAL records alter_table.add_constraint.index.global evidence (add_constraint keeps PK actions; bare ADD UNIQUE KEY ... GLOBAL records alter_table.add_index.index.global). 2026-09-25 T03 follow-up (#82): parenthesized ALTER TABLE t ADD (...) now expands NewConstraints into the same normalized alters as standalone clauses - previously every constraint in the list (UNIQUE/PRIMARY/FK/CHECK incl. GLOBAL) was silently dropped and could pass complete"
+    status_evidence: "2026-09-22 CLI probe: only ddl.alter.add_constraint.notice fires; no PK-specific policy on ALTER path; ADD PRIMARY KEY ... GLOBAL records alter_table.add_constraint.index.global evidence (add_constraint keeps PK actions; bare ADD UNIQUE KEY ... GLOBAL records alter_table.add_index.index.global). 2026-09-25 T03 follow-up (#82): parenthesized ALTER TABLE t ADD (...) now expands NewConstraints into the same normalized alters as standalone clauses - previously every constraint in the list (UNIQUE/PRIMARY/FK/CHECK incl. GLOBAL) was silently dropped and could pass complete; synthetic constraint actions derive from constraint type only (parent clause text such as a column COMMENT can no longer flip add_index to add_constraint)"
     targets: "table, PK columns, clustered-index implications"
     acceptance:
       dimensions: "CREATE-vs-ALTER PK governance parity"
@@ -758,7 +758,7 @@ rows:
     sql_shape: "CREATE INDEX idx_f ON t ((LOWER(c)))"
     prerequisites: "version/engine gates per variant; TiDB FULLTEXT/SPATIAL are vendor boundaries"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: FULLTEXT/SPATIAL/functional/descending/INVISIBLE/prefix all parse to the same create_index.notice; variant semantics unchecked; CREATE INDEX ... GLOBAL records create_index.create_index.index.global evidence"
+    status_evidence: "2026-09-22 CLI probe: FULLTEXT/SPATIAL/INVISIBLE parse to the same create_index.notice; functional/prefix/descending key parts now record <op>.index.expr (vendor boundary under TiDB)/prefix/desc evidence; CREATE INDEX ... GLOBAL records create_index.create_index.index.global evidence"
     targets: "index kind, expression/prefix/descending/visibility facts, version applicability"
     acceptance:
       dimensions: "per-variant checks, version boundaries, not parse-acceptance-as-support"
@@ -774,7 +774,7 @@ rows:
     sql_shape: "ALTER TABLE t ALTER INDEX i INVISIBLE"
     prerequisites: "index identity and current visibility"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: ADD INDEX gets prefix.require + notices (semantic partial), DROP INDEX notice only, RENAME INDEX gets forbid, ALTER INDEX INVISIBLE parses silently (T10 seed). ADD <index> ... GLOBAL records alter_table.<action>.index.global evidence; constraints inside ADD (...) expand identically (index kinds -> add_index, PK/FK/CHECK -> add_constraint). 2026-09-24 T03 rework (#82): ALTER INDEX INVISIBLE now carries bounded unsupported evidence (alter_table.alter_index) and coverage=incomplete — extraction never implied audited semantics"
+    status_evidence: "2026-09-22 CLI probe: ADD INDEX gets prefix.require + notices (semantic partial), DROP INDEX notice only, RENAME INDEX gets forbid, ALTER INDEX INVISIBLE parses silently (T10 seed). ADD <index> ... GLOBAL records alter_table.<action>.index.global evidence; constraints inside ADD (...) expand identically (index kinds -> add_index, PK/FK/CHECK -> add_constraint); expression/prefix/descending key parts record alter_table.<action>.index.expr/prefix/desc evidence (expr is a vendor boundary under TiDB). 2026-09-24 T03 rework (#82): ALTER INDEX INVISIBLE now carries bounded unsupported evidence (alter_table.alter_index) and coverage=incomplete — extraction never implied audited semantics"
     targets: "index identity, visibility state, rename pairs"
     acceptance:
       dimensions: "visibility-change risk, VISIBLE restore and missing-index controls"
@@ -1631,7 +1631,7 @@ rows:
     sql_shape: "CREATE INDEX idx ON t ((LOWER(c)))"
     prerequisites: "expression/visibility support per version"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: basic/expression/INVISIBLE all emit only create_index.notice; FULLTEXT/SPATIAL are vendor boundaries (Self-Managed unsupported); CREATE INDEX ... GLOBAL records create_index.create_index.index.global unaudited evidence"
+    status_evidence: "2026-09-22 CLI probe: basic/INVISIBLE emit only create_index.notice; FULLTEXT/SPATIAL are vendor boundaries (Self-Managed unsupported); expression key parts are a vendor boundary under TiDB (<op>.index.expr), prefix/descending parts unaudited; CREATE INDEX ... GLOBAL records create_index.create_index.index.global unaudited evidence"
     targets: "index identity, expression/visibility/global facts"
     acceptance:
       dimensions: "variant checks, vendor-boundary rows explicit"
