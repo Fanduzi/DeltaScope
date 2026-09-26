@@ -389,6 +389,61 @@ and two pre-existing omissions, plus two validator edge cases:
   applies, closing the invalid-index-plus-missing-sql bypass.
 - `cli_cases` grow to 83 (13 new, 91 cases total with the 8 DB cases).
 
+## Amendment 2026-09-25 (part 6) — exhaustive statement/field census
+
+Successive review rounds kept finding parsed-but-unprojected facts
+because the boundary was defined by case-by-case review rather than an
+enumerated census. This amendment closes the two remaining enumeration
+axes and pins them mechanically.
+
+Statement-type axis: `unhandledStatementFeature` returning "" used to
+admit every unlisted parsed type into complete coverage. A full census
+of the pinned parser's `*ast.*Stmt` registry classified all 108 types:
+27 extracted, 65 named unsupported features, 16 deliberately exempt
+(read-only query forms, session state, transaction control). Three
+executable markers joined the set: `do` (`DO expr` evaluates
+server-side expressions), `binlog` (`BINLOG 'base64'` replays row
+events — mutating), and `select_into` (`SELECT|UNION ... INTO OUTFILE`
+writes server files; the clause lands on the inner trailing select for
+set operations, so it is a field marker on `SelectStmt`/`SetOprStmt`
+rather than a type entry). `stmt_disposition_test.go` pins the table
+and scans
+the parser module for `type XxxStmt struct` declarations, failing the
+build when a parser upgrade adds or renames a type before a
+disposition is chosen.
+
+Field axis (extracted statements): previously-dropped AST fields now
+carry bounded evidence —
+
+- `CreateViewStmt`: `create_view.option.{or_replace, view_columns,
+  view_algorithm, definer, sql_security, check_option}`. The parser
+  fills MySQL-compatible defaults even when clauses are omitted
+  (DEFINER→CURRENT_USER, SECURITY→DEFINER, ALGORITHM→UNDEFINED, CHECK
+  OPTION→CASCADED), so only forms that provably deviate from defaults
+  emit evidence; explicit default-writes stay silent by design.
+- `GrantStmt`/`RevokeStmt`: `*.option.{column_privileges,
+  routine_object, require_tls, with_grant}` — `routine_object`
+  (FUNCTION|PROCEDURE grants) is the first MySQL-only surface
+  classification: vendor boundary under TiDB, unaudited under MySQL.
+- `CreateIndexStmt`/`DropIndexStmt` `LockAlg`: `*.option.lock_algorithm`
+  — real MySQL ALGORITHM=/LOCK= syntax, unaudited on both dialects.
+- `ProcedureInfo.ProcedureParam`: `create_procedure.option.params`
+  beside the existing `has_body` marker.
+- `CreateSequenceStmt.TblOptions` (shared table-option tail):
+  `create_sequence.option.<name>` under TiDB; MySQL stays boundary-marked.
+
+Deferred scope (documented, not fixed): DML modifier fields
+(`INSERT IGNORE/LOW_PRIORITY/PARTITION(...)` / `UPDATE`/`DELETE`
+priority and hints, `RETURNING`, row aliases) — the aspect mechanism is
+DDL-scoped and DML rows are rule-audited; `DropIndexStmt.IsHypo`,
+`AlterDatabaseStmt.AlterDefaultDatabase`, and
+`CreateTableStmt.OnDuplicate` are unreachable from the pinned grammar
+(probed); scalar existence flags (`IF [NOT] EXISTS`, `OrReplace` on
+non-view objects) stay exempt per the established boundary precedent.
+
+`cli_cases` grow to 95 (12 new, 103 cases total with the 8 DB cases);
+the census test guards statement-type drift across parser upgrades.
+
 ## Verification Evidence
 
 - `make ddl-golden TASK=T03 ARTIFACT_DIR=/tmp/ddl-golden`: 91 cases, 1034

@@ -102,13 +102,35 @@ func ddlIndexKind(ddl *spec.DDL) spec.IndexKind {
 // unhandledStatementFeature names parser-recognized mutating or administrative
 // statements that the extractor does not model. Read-only query, session, and
 // transaction statements return "" and stay out of the audit surface. Named
-// out-of-surface exclusions include SELECT/UNION, SHOW/DESCRIBE, plain EXPLAIN
-// and EXPLAIN FOR CONNECTION (read-only plan inspection), transaction control,
-// USE/SET session forms, and session-scope PREPARE/DEALLOCATE. Execution-capable
-// forms — EXPLAIN ANALYZE/EXPLORE, TRACE, and EXECUTE — are never excluded: they
-// run the wrapped statement or dynamic SQL, so their effects cannot be audited.
+// out-of-surface exclusions include SELECT/UNION/TABLE/VALUES query forms
+// (unless they carry INTO OUTFILE), SHOW/DESCRIBE/HELP, plain EXPLAIN and
+// EXPLAIN FOR CONNECTION (read-only plan inspection), transaction control
+// (BEGIN/COMMIT/ROLLBACK/SAVEPOINT/RELEASE SAVEPOINT), and the session-state
+// family USE/SET/SET CHARSET/SET SESSION_STATES plus session-scope
+// PREPARE/DEALLOCATE. Execution-capable forms — EXPLAIN ANALYZE/EXPLORE, TRACE,
+// EXECUTE, DO, BINLOG replay, and SELECT INTO OUTFILE — are never excluded:
+// they run the wrapped statement, dynamic SQL, expressions, or file writes,
+// so their effects cannot be audited.
 func unhandledStatementFeature(node ast.StmtNode) string {
 	switch n := node.(type) {
+	case *ast.DoStmt:
+		return "do"
+	case *ast.BinlogStmt:
+		// BINLOG 'base64' replays row events — a mutating statement, not a
+		// read-only inspection form.
+		return "binlog"
+	case *ast.SelectStmt:
+		if n.SelectIntoOpt != nil {
+			return "select_into"
+		}
+		return ""
+	case *ast.SetOprStmt:
+		// UNION/INTERSECT/EXCEPT queries stay read-only, but an INTO OUTFILE
+		// clause lands on the innermost trailing select of the set list.
+		if setOprHasSelectInto(n) {
+			return "select_into"
+		}
+		return ""
 	case *ast.ExplainStmt:
 		switch {
 		case n.Analyze:
@@ -239,4 +261,23 @@ func unhandledStatementFeature(node ast.StmtNode) string {
 	default:
 		return ""
 	}
+}
+
+// setOprHasSelectInto reports whether a UNION/INTERSECT/EXCEPT statement
+// carries an INTO OUTFILE clause on any inner select — the parser attaches the
+// clause to the trailing select inside the set-operation list, not to the
+// outer statement node.
+func setOprHasSelectInto(stmt *ast.SetOprStmt) bool {
+	if stmt.SelectList == nil {
+		return false
+	}
+	for _, inner := range stmt.SelectList.Selects {
+		if sel, ok := inner.(*ast.SelectStmt); ok && sel != nil && sel.SelectIntoOpt != nil {
+			return true
+		}
+		if nested, ok := inner.(*ast.SetOprStmt); ok && setOprHasSelectInto(nested) {
+			return true
+		}
+	}
+	return false
 }

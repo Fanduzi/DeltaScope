@@ -758,7 +758,7 @@ rows:
     sql_shape: "CREATE INDEX idx_f ON t ((LOWER(c)))"
     prerequisites: "version/engine gates per variant; TiDB FULLTEXT/SPATIAL are vendor boundaries"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: FULLTEXT/SPATIAL/INVISIBLE parse to the same create_index.notice; functional/prefix/descending key parts now record <op>.index.expr/prefix/desc unaudited evidence on both dialects (TiDB 8.5 documents expression indexes; explicit zero-length prefixes count as prefix parts); CREATE INDEX ... GLOBAL records create_index.create_index.index.global evidence. 2026-09-25 T03 rework (#82): WHERE predicates record <op>.index.predicate (MySQL vendor boundary / TiDB unaudited); unmodeled IndexOption members (invisible/visible, comment, key_block_size, index_type, with_parser, primary_key_type, split_opt, secondary_engine_attr, columnar_replica) record <op>.index.option.<name> evidence"
+    status_evidence: "2026-09-22 CLI probe: FULLTEXT/SPATIAL/INVISIBLE parse to the same create_index.notice; functional/prefix/descending key parts now record <op>.index.expr/prefix/desc unaudited evidence on both dialects (TiDB 8.5 documents expression indexes; explicit zero-length prefixes count as prefix parts); CREATE INDEX ... GLOBAL records create_index.create_index.index.global evidence. 2026-09-25 T03 rework (#82): WHERE predicates record <op>.index.predicate (MySQL vendor boundary / TiDB unaudited); unmodeled IndexOption members (invisible/visible, comment, key_block_size, index_type, with_parser, primary_key_type, split_opt, secondary_engine_attr, columnar_replica) record <op>.index.option.<name> evidence; statement-level ALGORITHM=/LOCK= clauses record create_index.option.lock_algorithm evidence"
     targets: "index kind, expression/prefix/descending/visibility facts, version applicability"
     acceptance:
       dimensions: "per-variant checks, version boundaries, not parse-acceptance-as-support"
@@ -790,7 +790,7 @@ rows:
     sql_shape: "DROP INDEX idx ON t"
     prerequisites: "none"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: only ddl.drop_index.notice fires"
+    status_evidence: "2026-09-22 CLI probe: only ddl.drop_index.notice fires. 2026-09-25 T03 rework (#82): parsed ALGORITHM=/LOCK= clauses on DROP INDEX record drop_index.option.lock_algorithm unaudited evidence"
     targets: "index identity, host table, dependent-constraint effects"
     acceptance:
       dimensions: "drop-index policy parity with ALTER DROP INDEX"
@@ -807,7 +807,7 @@ rows:
     sql_shape: "CREATE SQL SECURITY DEFINER VIEW v AS SELECT id FROM t"
     prerequisites: "referenced tables known for dependency facts"
     status: semantically_checked
-    status_evidence: "2026-09-22 CLI probe: ddl.view.create.forbid fires on plain/OR REPLACE/SQL SECURITY forms"
+    status_evidence: "2026-09-22 CLI probe: ddl.view.create.forbid fires on plain/OR REPLACE/SQL SECURITY forms. 2026-09-25 T03 rework (#82): parsed-but-unmodeled view clauses now record create_view.option.<name> unaudited evidence — or_replace, view_columns, view_algorithm (non-UNDEFINED), definer (named non-CURRENT_USER identity), sql_security (INVOKER), check_option (LOCAL); parser-defaulted forms stay complete"
     targets: "view identity, source tables, security attributes"
     acceptance:
       dimensions: "lifecycle policy, security-attribute capture, source dependency"
@@ -823,7 +823,7 @@ rows:
     sql_shape: "CREATE VIEW v AS SELECT id FROM t WITH CHECK OPTION"
     prerequisites: "none"
     status: parser_unsupported
-    status_evidence: "2026-09-22 CLI probe: parser_error on a vendor-valid CHECK OPTION form"
+    status_evidence: "2026-09-22 CLI probe: parser_error on a vendor-valid CHECK OPTION form. 2026-09-25 T03 rework (#82): scoped forms WITH LOCAL/CASCADED CHECK OPTION now parse — LOCAL records create_view.option.check_option unaudited evidence (CASCADED equals the parser default and stays silent); the bare WITH CHECK OPTION form remains a parser error"
     targets: "check-option semantics on the view"
     acceptance:
       dimensions: "valid-form parser evidence, upgrade decision"
@@ -872,7 +872,7 @@ rows:
     sql_shape: "CREATE PROCEDURE p() BEGIN DELETE FROM t; END;"
     prerequisites: "DELIMITER wrapping handled at batch level"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: CREATE PROCEDURE parses; only ddl.create_procedure.notice — body SQL unaudited (T27 first path is the dml.where.require body oracle) 2026-09-24 T03 rework (#82): has_body is now gated on ProcedureBody and records create_procedure.body incomplete evidence; unparseable bodies keep the parser-error contract (owner T27)"
+    status_evidence: "2026-09-22 CLI probe: CREATE PROCEDURE parses; only ddl.create_procedure.notice — body SQL unaudited (T27 first path is the dml.where.require body oracle) 2026-09-24 T03 rework (#82): has_body is now gated on ProcedureBody and records create_procedure.body incomplete evidence; unparseable bodies keep the parser-error contract (owner T27). 2026-09-25: parsed parameter lists additionally record create_procedure.option.params evidence"
     targets: "routine identity, static body statements with original locations, security attributes"
     acceptance:
       dimensions: "body finding on containing definition, bounded body identity, no raw-body leak"
@@ -1631,7 +1631,7 @@ rows:
     sql_shape: "CREATE INDEX idx ON t ((LOWER(c)))"
     prerequisites: "expression/visibility support per version"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: basic/INVISIBLE emit only create_index.notice; FULLTEXT/SPATIAL are vendor boundaries (Self-Managed unsupported); TiDB 8.5 documents expression indexes (LOWER() among allowed functions), so expression key parts record <op>.index.expr unaudited evidence — presence/count says nothing about per-expression engine legality; prefix/descending parts likewise unaudited (explicit zero-length prefixes count as prefix parts); CREATE INDEX ... GLOBAL records create_index.create_index.index.global unaudited evidence. 2026-09-25 T03 rework (#82): WHERE predicates record <op>.index.predicate unaudited (MySQL vendor boundary); unmodeled IndexOption members record <op>.index.option.<name> unaudited evidence"
+    status_evidence: "2026-09-22 CLI probe: basic/INVISIBLE emit only create_index.notice; FULLTEXT/SPATIAL are vendor boundaries (Self-Managed unsupported); TiDB 8.5 documents expression indexes (LOWER() among allowed functions), so expression key parts record <op>.index.expr unaudited evidence — presence/count says nothing about per-expression engine legality; prefix/descending parts likewise unaudited (explicit zero-length prefixes count as prefix parts); CREATE INDEX ... GLOBAL records create_index.create_index.index.global unaudited evidence. 2026-09-25 T03 rework (#82): WHERE predicates record <op>.index.predicate unaudited (MySQL vendor boundary); unmodeled IndexOption members record <op>.index.option.<name> unaudited evidence; statement-level ALGORITHM=/LOCK= clauses record create_index.option.lock_algorithm evidence"
     targets: "index identity, expression/visibility/global facts"
     acceptance:
       dimensions: "variant checks, vendor-boundary rows explicit"
@@ -1647,7 +1647,7 @@ rows:
     sql_shape: "DROP INDEX idx ON t"
     prerequisites: "none"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: only ddl.drop_index.notice fires"
+    status_evidence: "2026-09-22 CLI probe: only ddl.drop_index.notice fires. 2026-09-25 T03 rework (#82): parsed ALGORITHM=/LOCK= clauses on DROP INDEX record drop_index.option.lock_algorithm unaudited evidence"
     targets: "index identity, host table"
     acceptance:
       dimensions: "drop policy parity"
@@ -1664,7 +1664,7 @@ rows:
     sql_shape: "CREATE VIEW v AS SELECT id FROM t"
     prerequisites: "none"
     status: semantically_checked
-    status_evidence: "2026-09-22 CLI probe: ddl.view.create.forbid fires"
+    status_evidence: "2026-09-22 CLI probe: ddl.view.create.forbid fires. 2026-09-25 T03 rework (#82): parsed-but-unmodeled view clauses record create_view.option.<name> unaudited evidence (or_replace, view_columns, view_algorithm, definer, sql_security, check_option) — same contract as MySQL"
     targets: "view identity, source tables, security attributes"
     acceptance:
       dimensions: "lifecycle policy, attribute capture"
@@ -1713,7 +1713,7 @@ rows:
     sql_shape: "CREATE SEQUENCE seq1 START WITH 1 INCREMENT BY 1"
     prerequisites: "TiDB-only object (MySQL vendor boundary covered by T03 oracle)"
     status: generic_notice
-    status_evidence: "2026-09-24 T03 rework (#82): extracted-but-unchecked option facts now carry bounded unsupported evidence (create_sequence.options when an option list is present) and coverage=incomplete; option semantics still owned by T21. 2026-09-22 CLI probe: only ddl.create_sequence.notice fires; option facts unchecked"
+    status_evidence: "2026-09-24 T03 rework (#82): extracted-but-unchecked option facts now carry bounded unsupported evidence (create_sequence.options when an option list is present) and coverage=incomplete; option semantics still owned by T21. 2026-09-22 CLI probe: only ddl.create_sequence.notice fires; option facts unchecked. 2026-09-25: the shared table-option tail accepted by CREATE SEQUENCE records create_sequence.option.<name> unaudited evidence"
     targets: "sequence identity, start/increment/bounds/cycle/cache"
     acceptance:
       dimensions: "option capture, MySQL boundary stays explicit (not TiDB support on mysql)"

@@ -2859,6 +2859,451 @@
           }
         ]
       }
+    },
+    {
+      "id": "mysql-do-statement",
+      "dialect": "mysql",
+      "sql": "DO 1;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "DO 1;"
+        ],
+        "unsupported": 1,
+        "unsupported_features": [
+          "do"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "do",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-binlog-replay",
+      "dialect": "mysql",
+      "sql": "BINLOG 'abc';",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "BINLOG 'abc';"
+        ],
+        "unsupported": 1,
+        "unsupported_features": [
+          "binlog"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "binlog",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-select-into-outfile",
+      "dialect": "mysql",
+      "sql": "SELECT 1 INTO OUTFILE '/tmp/x';",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "SELECT 1 INTO OUTFILE '/tmp/x';"
+        ],
+        "unsupported": 1,
+        "unsupported_features": [
+          "select_into"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "select_into",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tidb-union-select-into",
+      "dialect": "tidb",
+      "sql": "SELECT 1 UNION SELECT 2 INTO OUTFILE '/tmp/x';",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "SELECT 1 UNION SELECT 2 INTO OUTFILE '/tmp/x';"
+        ],
+        "unsupported": 1,
+        "unsupported_features": [
+          "select_into"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "select_into",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-create-view-definer",
+      "dialect": "mysql",
+      "sql": "CREATE DEFINER='a'@'%' VIEW v AS SELECT 1;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE DEFINER='a'@'%' VIEW v AS SELECT 1;"
+        ],
+        "unsupported": 1,
+        "unsupported_features": [
+          "create_view.option.definer"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "create_view.option.definer",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "option"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-create-view-combined",
+      "dialect": "mysql",
+      "sql": "CREATE ALGORITHM=TEMPTABLE DEFINER='a'@'%' SQL SECURITY INVOKER VIEW v (a) AS SELECT 1 WITH LOCAL CHECK OPTION;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE ALGORITHM=TEMPTABLE DEFINER='a'@'%' SQL SECURITY INVOKER VIEW v (a) AS SELECT 1 WITH LOCAL CHECK OPTION;"
+        ],
+        "unsupported": 5,
+        "unsupported_features": [
+          "create_view.option.check_option",
+          "create_view.option.definer",
+          "create_view.option.sql_security",
+          "create_view.option.view_algorithm",
+          "create_view.option.view_columns"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "create_view.option.check_option",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          },
+          {
+            "feature": "create_view.option.definer",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          },
+          {
+            "feature": "create_view.option.sql_security",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          },
+          {
+            "feature": "create_view.option.view_algorithm",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          },
+          {
+            "feature": "create_view.option.view_columns",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-grant-with-grant",
+      "dialect": "mysql",
+      "sql": "GRANT SELECT ON db.t TO 'u'@'%' WITH GRANT OPTION;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "GRANT SELECT ON db.t TO 'u'@'%' WITH GRANT OPTION;"
+        ],
+        "unsupported": 2,
+        "unsupported_features": [
+          "grant.option.with_grant",
+          "grant.unaudited_targets"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "grant.option.with_grant",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          },
+          {
+            "feature": "grant.unaudited_targets",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-grant-require-ssl",
+      "dialect": "mysql",
+      "sql": "GRANT SELECT ON db.t TO 'u'@'%' REQUIRE SSL;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "GRANT SELECT ON db.t TO 'u'@'%' REQUIRE SSL;"
+        ],
+        "unsupported": 2,
+        "unsupported_features": [
+          "grant.option.require_tls",
+          "grant.unaudited_targets"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "grant.option.require_tls",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          },
+          {
+            "feature": "grant.unaudited_targets",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tidb-grant-on-procedure",
+      "dialect": "tidb",
+      "sql": "GRANT EXECUTE ON PROCEDURE db.p TO 'u'@'%';",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "GRANT EXECUTE ON PROCEDURE db.p TO 'u'@'%';"
+        ],
+        "unsupported": 2,
+        "unsupported_features": [
+          "grant.option.routine_object",
+          "grant.unaudited_targets"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "grant.option.routine_object",
+            "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+          },
+          {
+            "feature": "grant.unaudited_targets",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-revoke-column-privileges",
+      "dialect": "mysql",
+      "sql": "REVOKE SELECT(a) ON db.t FROM 'u'@'%';",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "REVOKE SELECT(a) ON db.t FROM 'u'@'%';"
+        ],
+        "unsupported": 2,
+        "unsupported_features": [
+          "revoke.option.column_privileges",
+          "revoke.unaudited_targets"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "revoke.option.column_privileges",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          },
+          {
+            "feature": "revoke.unaudited_targets",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-create-index-lock-algorithm",
+      "dialect": "mysql",
+      "sql": "CREATE INDEX ix ON t (c) ALGORITHM=INPLACE LOCK=NONE;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX ix ON t (c) ALGORITHM=INPLACE LOCK=NONE;"
+        ],
+        "unsupported": 1,
+        "unsupported_features": [
+          "create_index.option.lock_algorithm"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "create_index.option.lock_algorithm",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "option"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tidb-create-sequence-table-option",
+      "dialect": "tidb",
+      "sql": "CREATE SEQUENCE s COMMENT 'x';",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE SEQUENCE s COMMENT 'x';"
+        ],
+        "unsupported": 1,
+        "unsupported_features": [
+          "create_sequence.option.comment"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "create_sequence.option.comment",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "option"
+            }
+          }
+        ]
+      }
     }
   ],
   "required_case_ids": [
@@ -2952,6 +3397,18 @@
     "T03.cli.mysql-create-table-split-index",
     "T03.cli.tidb-create-table-split-index",
     "T03.cli.mysql-create-table-update-indexes",
-    "T03.cli.mysql-two-expression-indexes"
+    "T03.cli.mysql-two-expression-indexes",
+    "T03.cli.mysql-do-statement",
+    "T03.cli.mysql-binlog-replay",
+    "T03.cli.mysql-select-into-outfile",
+    "T03.cli.tidb-union-select-into",
+    "T03.cli.mysql-create-view-definer",
+    "T03.cli.mysql-create-view-combined",
+    "T03.cli.mysql-grant-with-grant",
+    "T03.cli.mysql-grant-require-ssl",
+    "T03.cli.tidb-grant-on-procedure",
+    "T03.cli.mysql-revoke-column-privileges",
+    "T03.cli.mysql-create-index-lock-algorithm",
+    "T03.cli.tidb-create-sequence-table-option"
   ]
 }

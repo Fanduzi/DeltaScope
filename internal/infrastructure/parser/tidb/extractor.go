@@ -259,7 +259,42 @@ func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
 }
 
 func extractCreateView(stmt *ast.CreateViewStmt) *spec.DDL {
-	return &spec.DDL{Operation: spec.DDLOperationCreateView, Table: &spec.Table{Schema: stmt.ViewName.Schema.L, Name: stmt.ViewName.Name.L}, HasSelect: stmt.Select != nil}
+	return &spec.DDL{
+		Operation:          spec.DDLOperationCreateView,
+		Table:              &spec.Table{Schema: stmt.ViewName.Schema.L, Name: stmt.ViewName.Name.L},
+		HasSelect:          stmt.Select != nil,
+		UnextractedOptions: viewOptionNames(stmt),
+	}
+}
+
+// viewOptionNames returns bounded names for parsed CREATE VIEW clauses the
+// normalized model does not keep. The parser fills MySQL-compatible defaults
+// even when clauses are omitted — DEFINER defaults to CURRENT_USER, SQL
+// SECURITY to DEFINER, ALGORITHM to UNDEFINED, CHECK OPTION to CASCADED — so
+// evidence only records forms that provably deviate from defaults. An
+// explicitly written default (e.g. SQL SECURITY DEFINER) is semantically
+// identical to the omitted form and stays out of the evidence set.
+func viewOptionNames(stmt *ast.CreateViewStmt) []string {
+	var names []string
+	if stmt.OrReplace {
+		names = append(names, "or_replace")
+	}
+	if len(stmt.Cols) > 0 || len(stmt.SchemaCols) > 0 {
+		names = append(names, "view_columns")
+	}
+	if stmt.Algorithm != ast.AlgorithmUndefined {
+		names = append(names, "view_algorithm")
+	}
+	if stmt.Definer != nil && !stmt.Definer.CurrentUser {
+		names = append(names, "definer")
+	}
+	if stmt.Security != ast.SecurityDefiner {
+		names = append(names, "sql_security")
+	}
+	if stmt.CheckOption == ast.CheckOptionLocal {
+		names = append(names, "check_option")
+	}
+	return names
 }
 
 func extractAlterTable(stmt *ast.AlterTableStmt, rawSQL string) *spec.DDL {
@@ -653,9 +688,16 @@ func extractCreateIndex(stmt *ast.CreateIndexStmt) *spec.DDL {
 	columns := extractIndexColumns(stmt.IndexPartSpecifications)
 	expr, prefix, desc := countIndexPartKinds(stmt.IndexPartSpecifications)
 	indexGlobal, hasPredicate, unmodeled := indexOptionFacts(stmt.IndexOption)
+	var unextracted []string
+	if stmt.LockAlg != nil {
+		// CREATE INDEX ... ALGORITHM=/LOCK= is real MySQL syntax the model does
+		// not carry; record bounded presence rather than the clause values.
+		unextracted = append(unextracted, "lock_algorithm")
+	}
 	return &spec.DDL{
-		Operation: spec.DDLOperationCreateIndex,
-		Table:     &spec.Table{Name: stmt.Table.Name.L, Schema: stmt.Table.Schema.L},
+		Operation:          spec.DDLOperationCreateIndex,
+		Table:              &spec.Table{Name: stmt.Table.Name.L, Schema: stmt.Table.Schema.L},
+		UnextractedOptions: unextracted,
 		Alter: []spec.Alter{{
 			Action: "create_index",
 			Index:  &spec.AlterIndex{Definition: &spec.Index{Name: indexName, Kind: kind, Columns: columns, HasExpressionKeys: expr > 0, ExpressionCount: expr, PrefixParts: prefix, DescParts: desc, Global: indexGlobal, HasPredicate: hasPredicate, UnmodeledOptions: unmodeled}},
@@ -664,9 +706,14 @@ func extractCreateIndex(stmt *ast.CreateIndexStmt) *spec.DDL {
 }
 
 func extractDropIndex(stmt *ast.DropIndexStmt) *spec.DDL {
+	var unextracted []string
+	if stmt.LockAlg != nil {
+		unextracted = append(unextracted, "lock_algorithm")
+	}
 	return &spec.DDL{
-		Operation: spec.DDLOperationDropIndex,
-		Table:     &spec.Table{Name: stmt.Table.Name.L, Schema: stmt.Table.Schema.L},
+		Operation:          spec.DDLOperationDropIndex,
+		Table:              &spec.Table{Name: stmt.Table.Name.L, Schema: stmt.Table.Schema.L},
+		UnextractedOptions: unextracted,
 		Alter: []spec.Alter{{
 			Action: "drop_index",
 			Index:  &spec.AlterIndex{OldName: stmt.IndexName},
@@ -768,6 +815,11 @@ func extractCreateProcedure(stmt *ast.ProcedureInfo) *spec.DDL {
 	}
 	if stmt.ProcedureBody != nil {
 		ddl.Options = map[string]string{"has_body": "true"}
+	}
+	if len(stmt.ProcedureParam) > 0 {
+		// Parameter lists are parsed but not modeled; bounded presence keeps
+		// the statement incomplete alongside the body marker.
+		ddl.UnextractedOptions = append(ddl.UnextractedOptions, "params")
 	}
 	return ddl
 }
@@ -932,10 +984,38 @@ func extractGrant(stmt *ast.GrantStmt) *spec.DDL {
 		}
 	}
 	return &spec.DDL{
-		Operation:      spec.DDLOperationGrant,
-		Options:        options,
-		OmittedTargets: len(stmt.Users),
+		Operation:          spec.DDLOperationGrant,
+		Options:            options,
+		OmittedTargets:     len(stmt.Users),
+		UnextractedOptions: grantOptionNames(stmt.Privs, stmt.ObjectType, stmt.AuthTokenOrTLSOptions, stmt.WithGrant),
 	}
+}
+
+// grantOptionNames returns bounded names for parsed GRANT/REVOKE details the
+// normalized model drops: column-level privileges, routine objects, TLS
+// requirements, and WITH GRANT OPTION. Privilege names and grant levels are
+// already projected into ddl.Options.
+func grantOptionNames(privs []*ast.PrivElem, objectType ast.ObjectTypeType, tls []*ast.AuthTokenOrTLSOption, withGrant bool) []string {
+	var names []string
+	for _, p := range privs {
+		if p != nil && len(p.Cols) > 0 {
+			names = append(names, "column_privileges")
+			break
+		}
+	}
+	if objectType == ast.ObjectTypeFunction || objectType == ast.ObjectTypeProcedure {
+		// GRANT/REVOKE ON FUNCTION|PROCEDURE binds privileges to routines —
+		// TiDB has no routine surface, so coverage classifies this name as a
+		// vendor boundary there and unaudited under MySQL.
+		names = append(names, "routine_object")
+	}
+	if len(tls) > 0 {
+		names = append(names, "require_tls")
+	}
+	if withGrant {
+		names = append(names, "with_grant")
+	}
+	return names
 }
 
 func extractRevoke(stmt *ast.RevokeStmt) *spec.DDL {
@@ -962,9 +1042,10 @@ func extractRevoke(stmt *ast.RevokeStmt) *spec.DDL {
 		}
 	}
 	return &spec.DDL{
-		Operation:      spec.DDLOperationRevoke,
-		Options:        options,
-		OmittedTargets: len(stmt.Users),
+		Operation:          spec.DDLOperationRevoke,
+		Options:            options,
+		OmittedTargets:     len(stmt.Users),
+		UnextractedOptions: grantOptionNames(stmt.Privs, stmt.ObjectType, nil, false),
 	}
 }
 
@@ -1020,6 +1101,14 @@ func extractCreateSequence(stmt *ast.CreateSequenceStmt) *spec.DDL {
 	}
 	if len(stmt.SeqOptions) > 0 {
 		ddl.Options = map[string]string{"has_options": "true"}
+	}
+	for _, opt := range stmt.TblOptions {
+		if opt == nil {
+			continue
+		}
+		// CREATE SEQUENCE accepts the shared table-option tail (e.g. COMMENT);
+		// every member is an unmodeled aspect on a sequence object.
+		ddl.UnextractedOptions = append(ddl.UnextractedOptions, tableOptionName(opt.Tp))
 	}
 	return ddl
 }

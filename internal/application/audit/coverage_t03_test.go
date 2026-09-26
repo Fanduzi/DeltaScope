@@ -429,6 +429,33 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 		{name: "mysql create table inline reference", sql: "CREATE TABLE t (id INT, pid INT REFERENCES parent(id));", dialect: spec.DialectMySQL, wantFeature: "create_table.column.reference", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "tidb create table inline check", sql: "CREATE TABLE t (id INT CHECK (id > 0));", dialect: spec.DialectTiDB, wantFeature: "create_table.column.check", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql create table inline unique", sql: "CREATE TABLE t (id INT UNIQUE);", dialect: spec.DialectMySQL, wantFeature: "create_table.column.unique", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		// Statement-level boundaries: executable forms outside the audited
+		// surface stay retained with bounded evidence.
+		{name: "mysql do statement", sql: "DO 1;", dialect: spec.DialectMySQL, wantFeature: "do", wantReason: spec.UnsupportedUnauditedReason, wantKind: "unknown"},
+		{name: "tidb do statement", sql: "DO SLEEP(0);", dialect: spec.DialectTiDB, wantFeature: "do", wantReason: spec.UnsupportedUnauditedReason, wantKind: "unknown"},
+		{name: "mysql binlog replay", sql: "BINLOG 'abc';", dialect: spec.DialectMySQL, wantFeature: "binlog", wantReason: spec.UnsupportedUnauditedReason, wantKind: "unknown"},
+		{name: "mysql select into outfile", sql: "SELECT 1 INTO OUTFILE '/tmp/x';", dialect: spec.DialectMySQL, wantFeature: "select_into", wantReason: spec.UnsupportedUnauditedReason, wantKind: "unknown"},
+		{name: "tidb union select into", sql: "SELECT 1 UNION SELECT 2 INTO OUTFILE '/tmp/x';", dialect: spec.DialectTiDB, wantFeature: "select_into", wantReason: spec.UnsupportedUnauditedReason, wantKind: "unknown"},
+		// CREATE VIEW option clauses the normalized model drops.
+		{name: "mysql create view or replace", sql: "CREATE OR REPLACE VIEW v AS SELECT 1;", dialect: spec.DialectMySQL, wantFeature: "create_view.option.or_replace", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql create view columns", sql: "CREATE VIEW v (a, b) AS SELECT 1, 2;", dialect: spec.DialectMySQL, wantFeature: "create_view.option.view_columns", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql create view algorithm", sql: "CREATE ALGORITHM=TEMPTABLE VIEW v AS SELECT 1;", dialect: spec.DialectMySQL, wantFeature: "create_view.option.view_algorithm", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql create view definer", sql: "CREATE DEFINER='a'@'%' VIEW v AS SELECT 1;", dialect: spec.DialectMySQL, wantFeature: "create_view.option.definer", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "tidb create view sql security", sql: "CREATE SQL SECURITY INVOKER VIEW v AS SELECT 1;", dialect: spec.DialectTiDB, wantFeature: "create_view.option.sql_security", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql create view check option", sql: "CREATE VIEW v AS SELECT 1 WITH LOCAL CHECK OPTION;", dialect: spec.DialectMySQL, wantFeature: "create_view.option.check_option", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		// GRANT/REVOKE option families.
+		{name: "mysql grant with grant option", sql: "GRANT SELECT ON db.t TO 'u'@'%' WITH GRANT OPTION;", dialect: spec.DialectMySQL, wantFeature: "grant.option.with_grant", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql grant column privileges", sql: "GRANT SELECT(a) ON db.t TO 'u'@'%';", dialect: spec.DialectMySQL, wantFeature: "grant.option.column_privileges", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql grant require ssl", sql: "GRANT SELECT ON db.t TO 'u'@'%' REQUIRE SSL;", dialect: spec.DialectMySQL, wantFeature: "grant.option.require_tls", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql grant on procedure", sql: "GRANT EXECUTE ON PROCEDURE db.p TO 'u'@'%';", dialect: spec.DialectMySQL, wantFeature: "grant.option.routine_object", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "tidb grant on procedure", sql: "GRANT EXECUTE ON PROCEDURE db.p TO 'u'@'%';", dialect: spec.DialectTiDB, wantFeature: "grant.option.routine_object", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
+		{name: "mysql revoke column privileges", sql: "REVOKE SELECT(a) ON db.t FROM 'u'@'%';", dialect: spec.DialectMySQL, wantFeature: "revoke.option.column_privileges", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "tidb revoke on function", sql: "REVOKE EXECUTE ON FUNCTION db.f FROM 'u'@'%';", dialect: spec.DialectTiDB, wantFeature: "revoke.option.routine_object", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
+		// Index ALGORITHM/LOCK clauses, procedure parameters, sequence table options.
+		{name: "mysql create index lock algorithm", sql: "CREATE INDEX ix ON t (c) ALGORITHM=INPLACE LOCK=NONE;", dialect: spec.DialectMySQL, wantFeature: "create_index.option.lock_algorithm", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "tidb drop index lock algorithm", sql: "DROP INDEX ix ON t LOCK=SHARED;", dialect: spec.DialectTiDB, wantFeature: "drop_index.option.lock_algorithm", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql create procedure params", sql: "CREATE PROCEDURE p(IN x INT) SELECT 1;", dialect: spec.DialectMySQL, wantFeature: "create_procedure.option.params", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "tidb create sequence table option", sql: "CREATE SEQUENCE s COMMENT 'x';", dialect: spec.DialectTiDB, wantFeature: "create_sequence.option.comment", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -523,6 +550,18 @@ func TestAuditSQLT03UnsupportedFeatureReasonPairs(t *testing.T) {
 			{"create_table.index.expr", spec.UnsupportedUnauditedReason},
 			{"create_table.index.expr", spec.UnsupportedUnauditedReason},
 		}},
+		{name: "mysql create view combined options", sql: "CREATE ALGORITHM=TEMPTABLE DEFINER='a'@'%' SQL SECURITY INVOKER VIEW v (a) AS SELECT 1 WITH LOCAL CHECK OPTION;", dialect: spec.DialectMySQL, want: [][2]string{
+			{"create_view.option.check_option", spec.UnsupportedUnauditedReason},
+			{"create_view.option.definer", spec.UnsupportedUnauditedReason},
+			{"create_view.option.sql_security", spec.UnsupportedUnauditedReason},
+			{"create_view.option.view_algorithm", spec.UnsupportedUnauditedReason},
+			{"create_view.option.view_columns", spec.UnsupportedUnauditedReason},
+		}},
+		{name: "mysql grant combined options", sql: "GRANT SELECT(a) ON db.t TO 'u'@'%' WITH GRANT OPTION;", dialect: spec.DialectMySQL, want: [][2]string{
+			{"grant.option.column_privileges", spec.UnsupportedUnauditedReason},
+			{"grant.option.with_grant", spec.UnsupportedUnauditedReason},
+			{"grant.unaudited_targets", spec.UnsupportedUnauditedReason},
+		}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -586,6 +625,10 @@ func TestAuditSQLT03RecognizedOutOfSurfaceStaysComplete(t *testing.T) {
 		{name: "mysql create table foreign key plain", sql: "CREATE TABLE t (a INT, FOREIGN KEY (a) REFERENCES p(id));", dialect: spec.DialectMySQL},
 		{name: "tidb alter add foreign key plain", sql: "ALTER TABLE t ADD FOREIGN KEY (c) REFERENCES p(id);", dialect: spec.DialectTiDB},
 		{name: "mysql create table partitioned plain", sql: "CREATE TABLE t (id INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (10));", dialect: spec.DialectMySQL},
+		{name: "mysql plain select", sql: "SELECT 1;", dialect: spec.DialectMySQL},
+		{name: "mysql plain union", sql: "SELECT 1 UNION SELECT 2;", dialect: spec.DialectMySQL},
+		{name: "mysql plain create view", sql: "CREATE VIEW v AS SELECT 1;", dialect: spec.DialectMySQL},
+		{name: "tidb plain create view", sql: "CREATE VIEW v AS SELECT 1;", dialect: spec.DialectTiDB},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
