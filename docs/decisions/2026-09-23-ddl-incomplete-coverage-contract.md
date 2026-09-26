@@ -348,9 +348,50 @@ defect:
   current-user forms, account options, zero prefixes, FK key-part and
   refer-action forms, and nested partition options.
 
+## Amendment 2026-09-25 (part 5) — CURRENT_USER(), IndexOption members, SPLIT/UPDATE INDEXES
+
+A fifth review found one residual coverage hole, two introduced defects,
+and two pre-existing omissions, plus two validator edge cases:
+
+- `ALTER USER CURRENT_USER()` resolves through `Specs` with
+  `UserIdentity.CurrentUser=true` and an empty username — unlike the
+  literal `USER()` form it is not carried on `CurrentAuth`. Specs[0]
+  current-user identities now count as one omitted target on
+  CREATE/ALTER USER and CREATE ROLE paths; extras still count via
+  `len(Specs)-1`.
+- Introduced defect (fixed): `extractAlterSpec` fed index-producing
+  constraints through `extractConstraint`, so `ALTER TABLE t ADD INDEX
+  ix (c(8))` emitted both `...constraint.index.parts` and
+  `...index.prefix` for the same fact. Constraint part counters are
+  zeroed when the constraint produces an index definition.
+- `IndexOption.Condition` (partial-index WHERE) and all other unmodeled
+  `IndexOption` members (comment, key_block_size, index_type,
+  with_parser, visibility, primary_key_type, split_opt,
+  secondary_engine_attr, columnar_replica) were silently dropped.
+  `spec.Index` now carries `HasPredicate` (wired from `Condition`) plus
+  a bounded `UnmodeledOptions` name list on all four index
+  construction sites. `*.index.predicate` is a MySQL vendor boundary
+  (no partial indexes) and TiDB unaudited (documented in the 8.5
+  grammar); `*.index.option.<name>` is unaudited except TiDB-only
+  members (split/engine/columnar), which stay vendor under MySQL.
+- `CreateTableStmt.SplitIndex` (SPLIT ... BETWEEN ... REGIONS) and
+  partition `UPDATE INDEXES` had no evidence; bounded markers
+  `create_table.option.split_index` and
+  `create_table.option.partition_update_indexes` now classify as MySQL
+  vendor boundaries (TiDB extensions) / TiDB unaudited.
+- `CREATE USER u RESOURCE GROUP rg` reaches
+  `create_user.option.resource_group_name`: MySQL vendor (the account
+  binding is TiDB-only) / TiDB unaudited.
+- Golden validator: metadata pins now consume actual entries one-to-one
+  (repeated `(index,feature,reason)` tuples are legal — two expr
+  indexes on one table emit two entries), and `unsupported[].index`
+  must reference a retained statement before the omitted-SQL exception
+  applies, closing the invalid-index-plus-missing-sql bypass.
+- `cli_cases` grow to 83 (13 new, 91 cases total with the 8 DB cases).
+
 ## Verification Evidence
 
-- `make ddl-golden TASK=T03 ARTIFACT_DIR=/tmp/ddl-golden`: 78 cases, 801
+- `make ddl-golden TASK=T03 ARTIFACT_DIR=/tmp/ddl-golden`: 91 cases, 1034
   assertions, PASS on all four anchors — `cli_cases` prove MySQL `CREATE SEQUENCE` + `ALTER TABLE
   ... ADD COLUMN` exits 1 with `coverage.status=incomplete`, bounded
   `create_sequence` evidence, and a `review` verdict under the

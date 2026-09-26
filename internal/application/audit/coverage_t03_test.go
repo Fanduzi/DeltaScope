@@ -409,6 +409,18 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 		{name: "mysql create table foreign key on delete", sql: "CREATE TABLE t (a INT, FOREIGN KEY (a) REFERENCES p(id) ON DELETE CASCADE);", dialect: spec.DialectMySQL, wantFeature: "create_table.constraint.foreign_key.parts", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl", wantMetadata: map[string]any{"aspect": "constraint_parts", "constraint_type": "foreign_key", "local_parts": 0, "referenced_parts": 0, "refer_actions": 1}},
 		{name: "mysql create table partition placement", sql: "CREATE TABLE t (id INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (10) PLACEMENT POLICY=p);", dialect: spec.DialectMySQL, wantFeature: "create_table.option.placement_policy", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
 		{name: "tidb create table partition placement", sql: "CREATE TABLE t (id INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (10) PLACEMENT POLICY=p);", dialect: spec.DialectTiDB, wantFeature: "create_table.option.placement_policy", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql alter user current function", sql: "ALTER USER CURRENT_USER() IDENTIFIED BY 'x';", dialect: spec.DialectMySQL, wantFeature: "alter_user.unaudited_targets", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl", wantMetadata: map[string]any{"aspect": "targets", "omitted": 1}},
+		{name: "mysql alter user current bare", sql: "ALTER USER CURRENT_USER IDENTIFIED BY 'x';", dialect: spec.DialectMySQL, wantFeature: "alter_user.unaudited_targets", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl", wantMetadata: map[string]any{"aspect": "targets", "omitted": 1}},
+		{name: "tidb create user current function", sql: "CREATE USER CURRENT_USER() IDENTIFIED BY 'x';", dialect: spec.DialectTiDB, wantFeature: "create_user.unaudited_targets", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl", wantMetadata: map[string]any{"aspect": "targets", "omitted": 1}},
+		{name: "mysql create user resource group", sql: "CREATE USER u RESOURCE GROUP rg;", dialect: spec.DialectMySQL, wantFeature: "create_user.option.resource_group_name", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
+		{name: "tidb create user resource group", sql: "CREATE USER u RESOURCE GROUP rg;", dialect: spec.DialectTiDB, wantFeature: "create_user.option.resource_group_name", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql create index predicate", sql: "CREATE INDEX ix ON t (c) WHERE c > 0;", dialect: spec.DialectMySQL, wantFeature: "create_index.create_index.index.predicate", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
+		{name: "tidb create index predicate", sql: "CREATE INDEX ix ON t (c) WHERE c > 0;", dialect: spec.DialectTiDB, wantFeature: "create_index.create_index.index.predicate", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql create index invisible", sql: "CREATE INDEX ix ON t (c) INVISIBLE;", dialect: spec.DialectMySQL, wantFeature: "create_index.create_index.index.option.invisible", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql create index comment keyblock", sql: "CREATE INDEX ix ON t (c) COMMENT 'x' KEY_BLOCK_SIZE=4;", dialect: spec.DialectMySQL, wantFeature: "create_index.create_index.index.option.comment", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql create table split index", sql: "CREATE TABLE t (id INT PRIMARY KEY) SPLIT PRIMARY KEY BETWEEN (0) AND (100) REGIONS 4;", dialect: spec.DialectMySQL, wantFeature: "create_table.option.split_index", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
+		{name: "tidb create table split index", sql: "CREATE TABLE t (id INT PRIMARY KEY) SPLIT PRIMARY KEY BETWEEN (0) AND (100) REGIONS 4;", dialect: spec.DialectTiDB, wantFeature: "create_table.option.split_index", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		{name: "mysql create table update indexes", sql: "CREATE TABLE t (id INT, KEY ix (id)) PARTITION BY HASH(id) PARTITIONS 2 UPDATE INDEXES (ix GLOBAL);", dialect: spec.DialectMySQL, wantFeature: "create_table.option.partition_update_indexes", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
 		{name: "mysql alter tidb-only option", sql: "ALTER TABLE t AUTO_RANDOM_BASE=10;", dialect: spec.DialectMySQL, wantFeature: "alter_table.option.auto_random_base", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
 		{name: "mysql alter modify column position", sql: "ALTER TABLE t MODIFY COLUMN c INT AFTER id;", dialect: spec.DialectMySQL, wantFeature: "alter_table.modify_column.column_position", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql alter change column position", sql: "ALTER TABLE t CHANGE COLUMN c c2 INT FIRST;", dialect: spec.DialectMySQL, wantFeature: "alter_table.change_column.column_position", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
@@ -500,6 +512,16 @@ func TestAuditSQLT03UnsupportedFeatureReasonPairs(t *testing.T) {
 		}},
 		{name: "mysql unsupported second statement", sql: "ALTER TABLE t ADD COLUMN c INT; CREATE TEMPORARY TABLE x (id INT);", dialect: spec.DialectMySQL, wantIndex: 1, want: [][2]string{
 			{"create_table.temporary", spec.UnsupportedUnauditedReason},
+		}},
+		{name: "mysql alter index prefix single entry", sql: "ALTER TABLE t ADD INDEX ix (c(8));", dialect: spec.DialectMySQL, want: [][2]string{
+			{"alter_table.add_index.index.prefix", spec.UnsupportedUnauditedReason},
+		}},
+		{name: "mysql alter pk prefix single entry", sql: "ALTER TABLE t ADD PRIMARY KEY (c(8));", dialect: spec.DialectMySQL, want: [][2]string{
+			{"alter_table.add_constraint.index.prefix", spec.UnsupportedUnauditedReason},
+		}},
+		{name: "mysql two expression indexes", sql: "CREATE TABLE t (a VARCHAR(32), b VARCHAR(32), KEY ix1 ((LOWER(a))), KEY ix2 ((LOWER(a)), (LOWER(b))));", dialect: spec.DialectMySQL, want: [][2]string{
+			{"create_table.index.expr", spec.UnsupportedUnauditedReason},
+			{"create_table.index.expr", spec.UnsupportedUnauditedReason},
 		}},
 	}
 	for _, tc := range cases {

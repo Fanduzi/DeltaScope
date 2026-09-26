@@ -230,8 +230,10 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 	for _, option := range ddl.UnextractedOptions {
 		// A dropped placement-policy or TiDB-only option is still a vendor
 		// boundary under MySQL — MySQL has no such feature regardless of
-		// modeling.
-		vendor := dialect == spec.DialectMySQL && (option == "placement_policy" || tidbOnlyTableOption(option, dialect))
+		// modeling. partition_update_indexes, split_index, and the
+		// resource_group_name account binding are TiDB extensions the shared
+		// parser accepts but MySQL does not ship.
+		vendor := dialect == spec.DialectMySQL && (option == "placement_policy" || option == "partition_update_indexes" || option == "split_index" || option == "resource_group_name" || tidbOnlyTableOption(option, dialect))
 		gaps = append(gaps, aspectGap(
 			fmt.Sprintf("%s.option.%s", ddl.Operation, option), vendor,
 			map[string]any{"aspect": "option"},
@@ -282,6 +284,23 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 			gaps = append(gaps, aspectGap(
 				fmt.Sprintf("%s.prefix", prefix), false,
 				map[string]any{"aspect": "index", "index_kind": string(index.Kind), "prefix_parts": index.PrefixParts},
+			))
+		}
+		if index.HasPredicate {
+			// Partial-index WHERE predicates are documented in TiDB's CREATE
+			// INDEX grammar but absent from MySQL's index options.
+			gaps = append(gaps, aspectGap(
+				fmt.Sprintf("%s.predicate", prefix), dialect == spec.DialectMySQL,
+				map[string]any{"aspect": "index", "index_kind": string(index.Kind)},
+			))
+		}
+		for _, option := range index.UnmodeledOptions {
+			// split_opt, secondary_engine_attr, and columnar_replica are TiDB
+			// extensions: vendor boundaries under MySQL, unaudited under TiDB.
+			vendor := dialect == spec.DialectMySQL && (option == "split_opt" || option == "secondary_engine_attr" || option == "columnar_replica")
+			gaps = append(gaps, aspectGap(
+				fmt.Sprintf("%s.option.%s", prefix, option), vendor,
+				map[string]any{"aspect": "index_option", "index_kind": string(index.Kind)},
 			))
 		}
 		if index.DescParts > 0 {

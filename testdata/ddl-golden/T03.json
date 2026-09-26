@@ -2,7 +2,7 @@
   "task_id": "T03",
   "issue": "https://github.com/Fanduzi/DeltaScope/issues/82",
   "policy_profile": "all-rules-disabled",
-  "description": "Incomplete-coverage golden path: the shared parser accepts CREATE SEQUENCE but MySQL does not support it, so the statement stays in the result as incomplete coverage with bounded unsupported evidence while a supported ALTER stays complete. DB steps prove uniform CREATE/ALTER/DROP legality on all four anchors; CLI cases prove the incomplete audit contract under an all-rules-disabled policy, including --fail-on none still exiting 1, recognized-but-unaudited ALTER sub-actions and nested options, vendor boundaries, execution-capable EXPLAIN ANALYZE/TRACE/EXECUTE, and the read-only EXPLAIN counter-example, and the remaining recognized-but-unaudited boundary families: temporary-table scope (local/global, create/drop), AUTO_RANDOM column attributes, MySQL procedure bodies, dropped column options (generated/inline REFERENCES/CHECK/UNIQUE), plus ordinary-table contrasts and the procedure parser-error contract (exit 2). Fourth rework adds current-user ALTER USER targets, account secondary-option families, explicit zero-length index prefixes, foreign-key key-part and refer-action evidence, and nested partition options, with exact bounded-metadata pins.",
+  "description": "Incomplete-coverage golden path: the shared parser accepts CREATE SEQUENCE but MySQL does not support it, so the statement stays in the result as incomplete coverage with bounded unsupported evidence while a supported ALTER stays complete. DB steps prove uniform CREATE/ALTER/DROP legality on all four anchors; CLI cases prove the incomplete audit contract under an all-rules-disabled policy, including --fail-on none still exiting 1, recognized-but-unaudited ALTER sub-actions and nested options, vendor boundaries, execution-capable EXPLAIN ANALYZE/TRACE/EXECUTE, and the read-only EXPLAIN counter-example, and the remaining recognized-but-unaudited boundary families: temporary-table scope (local/global, create/drop), AUTO_RANDOM column attributes, MySQL procedure bodies, dropped column options (generated/inline REFERENCES/CHECK/UNIQUE), plus ordinary-table contrasts and the procedure parser-error contract (exit 2). Fourth rework adds current-user ALTER USER targets, account secondary-option families, explicit zero-length index prefixes, foreign-key key-part and refer-action evidence, and nested partition options, with exact bounded-metadata pins. Fifth rework adds CURRENT_USER() account targets, ALTER index/constraint duplicate-part deduplication, partial-index WHERE predicates, unmodeled IndexOption members (invisible/comment/key_block_size/etc), CREATE TABLE SPLIT INDEX and partition UPDATE INDEXES markers, plus multi-occurrence metadata pins and unsupported[].sql index-range validation.",
   "anchors": {
     "mysql57": {
       "service": "mysql57",
@@ -2392,6 +2392,473 @@
           }
         ]
       }
+    },
+    {
+      "id": "mysql-alter-user-current-function",
+      "dialect": "mysql",
+      "sql": "ALTER USER CURRENT_USER() IDENTIFIED BY 'x';",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "ALTER USER CURRENT_USER() IDENTIFIED BY 'x';"
+        ],
+        "unsupported_features": [
+          "alter_user.unaudited_targets"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "alter_user.unaudited_targets",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "targets",
+              "omitted": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "tidb-create-user-current-function",
+      "dialect": "tidb",
+      "sql": "CREATE USER CURRENT_USER() IDENTIFIED BY 'x';",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE USER CURRENT_USER() IDENTIFIED BY 'x';"
+        ],
+        "unsupported_features": [
+          "create_user.unaudited_targets"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "create_user.unaudited_targets",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "targets",
+              "omitted": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-create-user-resource-group",
+      "dialect": "mysql",
+      "sql": "CREATE USER u RESOURCE GROUP rg;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE USER u RESOURCE GROUP rg;"
+        ],
+        "unsupported_features": [
+          "create_user.option.resource_group_name"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "create_user.option.resource_group_name",
+            "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-alter-index-prefix-single-entry",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t ADD INDEX ix (c(8));",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "ALTER TABLE t ADD INDEX ix (c(8));"
+        ],
+        "unsupported_features": [
+          "alter_table.add_index.index.prefix"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "alter_table.add_index.index.prefix",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "index",
+              "index_kind": "secondary",
+              "prefix_parts": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-alter-pk-prefix-single-entry",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t ADD PRIMARY KEY (c(8));",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "ALTER TABLE t ADD PRIMARY KEY (c(8));"
+        ],
+        "unsupported_features": [
+          "alter_table.add_constraint.index.prefix"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "alter_table.add_constraint.index.prefix",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "index",
+              "index_kind": "primary",
+              "prefix_parts": 1
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-create-index-predicate",
+      "dialect": "mysql",
+      "sql": "CREATE INDEX ix ON t (c) WHERE c > 0;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX ix ON t (c) WHERE c > 0;"
+        ],
+        "unsupported_features": [
+          "create_index.create_index.index.predicate"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "create_index.create_index.index.predicate",
+            "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tidb-create-index-predicate",
+      "dialect": "tidb",
+      "sql": "CREATE INDEX ix ON t (c) WHERE c > 0;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX ix ON t (c) WHERE c > 0;"
+        ],
+        "unsupported_features": [
+          "create_index.create_index.index.predicate"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "create_index.create_index.index.predicate",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-create-index-invisible",
+      "dialect": "mysql",
+      "sql": "CREATE INDEX ix ON t (c) INVISIBLE;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX ix ON t (c) INVISIBLE;"
+        ],
+        "unsupported_features": [
+          "create_index.create_index.index.option.invisible"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "create_index.create_index.index.option.invisible",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-create-index-comment-keyblock",
+      "dialect": "mysql",
+      "sql": "CREATE INDEX ix ON t (c) COMMENT 'x' KEY_BLOCK_SIZE=4;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 2,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX ix ON t (c) COMMENT 'x' KEY_BLOCK_SIZE=4;"
+        ],
+        "unsupported_features": [
+          "create_index.create_index.index.option.comment",
+          "create_index.create_index.index.option.key_block_size"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "create_index.create_index.index.option.comment",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          },
+          {
+            "feature": "create_index.create_index.index.option.key_block_size",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-create-table-split-index",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t (id INT PRIMARY KEY) SPLIT PRIMARY KEY BETWEEN (0) AND (100) REGIONS 4;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE TABLE t (id INT PRIMARY KEY) SPLIT PRIMARY KEY BETWEEN (0) AND (100) REGIONS 4;"
+        ],
+        "unsupported_features": [
+          "create_table.option.split_index"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "create_table.option.split_index",
+            "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tidb-create-table-split-index",
+      "dialect": "tidb",
+      "sql": "CREATE TABLE t (id INT PRIMARY KEY) SPLIT PRIMARY KEY BETWEEN (0) AND (100) REGIONS 4;",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE TABLE t (id INT PRIMARY KEY) SPLIT PRIMARY KEY BETWEEN (0) AND (100) REGIONS 4;"
+        ],
+        "unsupported_features": [
+          "create_table.option.split_index"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "create_table.option.split_index",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-create-table-update-indexes",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t (id INT, KEY ix (id)) PARTITION BY HASH(id) PARTITIONS 2 UPDATE INDEXES (ix GLOBAL);",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE TABLE t (id INT, KEY ix (id)) PARTITION BY HASH(id) PARTITIONS 2 UPDATE INDEXES (ix GLOBAL);"
+        ],
+        "unsupported_features": [
+          "create_table.option.partition_update_indexes"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "create_table.option.partition_update_indexes",
+            "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mysql-two-expression-indexes",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t (a VARCHAR(32), b VARCHAR(32), KEY ix1 ((LOWER(a))), KEY ix2 ((LOWER(a)), (LOWER(b))));",
+      "args": [
+        "--fail-on",
+        "none"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 2,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE TABLE t (a VARCHAR(32), b VARCHAR(32), KEY ix1 ((LOWER(a))), KEY ix2 ((LOWER(a)), (LOWER(b))));"
+        ],
+        "unsupported_features": [
+          "create_table.index.expr",
+          "create_table.index.expr"
+        ],
+        "unsupported_entries": [
+          {
+            "feature": "create_table.index.expr",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "index",
+              "index_kind": "secondary",
+              "expression_count": 1
+            }
+          },
+          {
+            "feature": "create_table.index.expr",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "index",
+              "index_kind": "secondary",
+              "expression_count": 2
+            }
+          }
+        ]
+      }
     }
   ],
   "required_case_ids": [
@@ -2472,6 +2939,19 @@
     "T03.cli.tidb-alter-add-fk-expr-ref-desc",
     "T03.cli.mysql-create-table-fk-on-delete",
     "T03.cli.mysql-create-table-partition-placement",
-    "T03.cli.tidb-create-table-partition-placement"
+    "T03.cli.tidb-create-table-partition-placement",
+    "T03.cli.mysql-alter-user-current-function",
+    "T03.cli.tidb-create-user-current-function",
+    "T03.cli.mysql-create-user-resource-group",
+    "T03.cli.mysql-alter-index-prefix-single-entry",
+    "T03.cli.mysql-alter-pk-prefix-single-entry",
+    "T03.cli.mysql-create-index-predicate",
+    "T03.cli.tidb-create-index-predicate",
+    "T03.cli.mysql-create-index-invisible",
+    "T03.cli.mysql-create-index-comment-keyblock",
+    "T03.cli.mysql-create-table-split-index",
+    "T03.cli.tidb-create-table-split-index",
+    "T03.cli.mysql-create-table-update-indexes",
+    "T03.cli.mysql-two-expression-indexes"
   ]
 }

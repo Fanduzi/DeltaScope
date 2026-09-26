@@ -35,7 +35,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `Table`
 - `Column`
 - `Constraint` (carries the referenced target/columns for foreign keys plus bounded `UnmodeledParts`/`UnmodeledReferencedParts`/`UnmodeledReferActions` counts for parsed key-part and ON DELETE/UPDATE/MATCH facts the model does not keep)
-- `Index` (carries `Global` for the parsed GLOBAL index modifier plus bounded key-part facts `PrefixParts`/`DescParts`/`ExpressionCount` for parsed-but-unmodeled expression, column-prefix, and descending parts)
+- `Index` (carries `Global` for the parsed GLOBAL index modifier, `HasPredicate` for partial-index WHERE clauses, bounded key-part facts `PrefixParts`/`DescParts`/`ExpressionCount` for parsed-but-unmodeled expression, column-prefix, and descending parts, and `UnmodeledOptions` bounded names for other parsed IndexOption members)
 - `IndexKind`
 - `ImpactSource`
 - `ImpactRisk`
@@ -125,7 +125,7 @@ Normalized statement specifications used as the stable input for rule evaluation
     - rename intent is inferred from `OldName` plus `Definition.Name`, not a separate boolean
     - an optional `Change` block with statement-local relation facts only for semantics the statement explicitly spells out, such as nullability, default, and auto-increment
     - target type and unsigned shape still live on `Definition`, but are not separately labeled as touched change facts
-  - `Index` (carries `Global` for the parsed GLOBAL index modifier plus bounded key-part facts `PrefixParts`/`DescParts`/`ExpressionCount` for parsed-but-unmodeled expression, column-prefix, and descending parts) carries `OldName` plus an optional target `Definition` reused from `Index`
+  - `Index` (carries `Global` for the parsed GLOBAL index modifier, `HasPredicate` for partial-index WHERE clauses, bounded key-part facts `PrefixParts`/`DescParts`/`ExpressionCount` for parsed-but-unmodeled expression, column-prefix, and descending parts, and `UnmodeledOptions` bounded names for other parsed IndexOption members) carries `OldName` plus an optional target `Definition` reused from `Index`
   - `Options` is intentionally a flat normalized subset of table options, not a full option AST or ordering-preserving model
 
 ## Dependencies

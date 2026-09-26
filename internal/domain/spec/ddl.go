@@ -301,6 +301,12 @@ type Index struct {
 	// UNIQUE/PRIMARY KEY constraints and standalone CREATE INDEX statements.
 	// MySQL has no such modifier, so it is a vendor boundary there.
 	Global bool `json:"global,omitempty"`
+	// UnmodeledOptions lists bounded names of parsed IndexOption members the
+	// normalized model does not keep (comment, key_block_size, index_type,
+	// with_parser, visibility, primary_key_type, split_opt,
+	// secondary_engine_attr, columnar_replica). Any name present means that
+	// parsed aspect is unaudited.
+	UnmodeledOptions []string `json:"unmodeled_options,omitempty"`
 }
 
 // Constraint describes a non-index table constraint worth preserving for later rules.

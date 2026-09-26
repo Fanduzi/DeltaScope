@@ -356,28 +356,49 @@ def cli_case_expect_checks(parsed, rc, expect):
         got = sorted((u.get("index", 0), u.get("feature"), u.get("reason")) for u in unsupported)
         want = sorted((e.get("index", 0), e.get("feature"), e.get("reason")) for e in expect["unsupported_entries"])
         checks.append(("unsupported entries", parsed is not None and got == want, f"entries={got!r} expected={want!r}"))
-        # Entries may additionally pin "metadata": the matching actual entry
-        # must carry exactly that bounded metadata map.
+        # Entries may additionally pin "metadata": each pinned expectation
+        # consumes one actual entry sharing its (index, feature, reason) tuple
+        # and carrying exactly that bounded metadata map. Repeated tuples are
+        # legal — two indexes on one table can emit two expr entries — so
+        # matching is one-to-one rather than uniqueness-based.
+        consumed = set()
         for e in expect["unsupported_entries"]:
             if "metadata" not in e:
                 continue
             key = (e.get("index", 0), e.get("feature"), e.get("reason"))
-            match = [u for u in unsupported if (u.get("index", 0), u.get("feature"), u.get("reason")) == key]
+            found = False
+            for i, u in enumerate(unsupported):
+                if i in consumed:
+                    continue
+                if (u.get("index", 0), u.get("feature"), u.get("reason")) == key and u.get("metadata") == e["metadata"]:
+                    consumed.add(i)
+                    found = True
+                    break
             checks.append((
                 f"unsupported metadata {key}",
-                parsed is not None and len(match) == 1 and match[0].get("metadata") == e["metadata"],
-                f"entry={match!r} expected_metadata={e['metadata']!r}",
+                parsed is not None and found,
+                f"entries={[u for u in unsupported if (u.get('index', 0), u.get('feature'), u.get('reason')) == key]!r} expected_metadata={e['metadata']!r}",
             ))
     if "statement_sql" in expect:
         got = [s.get("raw_sql") for s in statements]
         checks.append(("statement raw SQL identity", parsed is not None and got == expect["statement_sql"], f"raw_sql={got!r} expected={expect['statement_sql']!r}"))
     # Every unsupported entry carries the original statement SQL under the
     # current public contract; when either side records it, the two must
-    # agree at the entry's statement index. Synthetic artifacts that omit
-    # both skip this check.
+    # agree at the entry's statement index. The index itself must reference a
+    # retained statement — out-of-range indices are invalid even when both
+    # text fields are omitted. Synthetic artifacts that omit both fields on a
+    # valid index skip this check.
     for u in unsupported:
         idx = u.get("index", 0)
-        bound = statements[idx].get("raw_sql") if 0 <= idx < len(statements) else None
+        in_range = isinstance(idx, int) and not isinstance(idx, bool) and 0 <= idx < len(statements)
+        if not in_range:
+            checks.append((
+                f"unsupported sql identity index={idx!r}",
+                False,
+                f"index out of range for {len(statements)} statements",
+            ))
+            continue
+        bound = statements[idx].get("raw_sql")
         if u.get("sql") is None and bound is None:
             continue
         checks.append((

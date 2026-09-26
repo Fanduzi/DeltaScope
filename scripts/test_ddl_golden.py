@@ -319,6 +319,36 @@ def main():
         results.append(check("cli_cases paired unsupported entries pass", paired_artifact(), "", manifest=m))
         results.append(check("cli_cases swapped unsupported reasons rejected", paired_artifact(swap=True), "unsupported entries", manifest=m))
 
+        # An out-of-range unsupported index must be rejected even when the
+        # entry omits `sql` — missing text cannot mask a broken association.
+        a = paired_artifact()
+        parsed = a["cases"][2]["actual"]["parsed"]
+        parsed["unsupported"][0]["index"] = 999
+        a["cases"][2]["actual"]["stdout"] = json.dumps(parsed)
+        results.append(check("cli_cases out-of-range unsupported index rejected", a, "out of range", manifest=m))
+
+        # Exact metadata pins: a matching map passes; a wrong count in the
+        # actual metadata must be rejected.
+        m["cli_cases"][0]["expect"]["unsupported_entries"] = [
+            {"feature": "create_table.column.unique_global", "reason": V, "metadata": {"aspect": "index", "index_kind": "unique"}},
+            {"feature": "create_table.column.unique", "reason": U, "metadata": {"aspect": "option"}},
+        ]
+
+        def metadata_artifact(wrong=False):
+            a = cli_cases_artifact()
+            parsed = a["cases"][2]["actual"]["parsed"]
+            parsed["unsupported"] = [
+                {"index": 0, "feature": "create_table.column.unique_global", "reason": V,
+                 "metadata": {"aspect": "index", "index_kind": "unique" if not wrong else "secondary"}},
+                {"index": 0, "feature": "create_table.column.unique", "reason": U, "metadata": {"aspect": "option"}},
+            ]
+            a["cases"][2]["actual"]["stdout"] = json.dumps(parsed)
+            a["cases"][2]["expected"] = copy.deepcopy(m["cli_cases"][0]["expect"])
+            return a
+
+        results.append(check("cli_cases metadata pins pass", metadata_artifact(), "", manifest=m))
+        results.append(check("cli_cases wrong metadata rejected", metadata_artifact(wrong=True), "metadata", manifest=m))
+
     failures = results.count(False)
     print(f"contract cases={len(results)} failures={failures}")
     return 1 if failures else 0

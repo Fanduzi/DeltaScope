@@ -229,10 +229,12 @@ func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
 		switch c.Tp {
 		case ast.ConstraintPrimaryKey:
 			expr, prefix, desc := countIndexPartKinds(c.Keys)
-			ddl.PrimaryKey = &spec.Index{Name: normalizeConstraintName(c), Kind: spec.IndexKindPrimary, Columns: extractIndexColumns(c.Keys), HasExpressionKeys: expr > 0, ExpressionCount: expr, PrefixParts: prefix, DescParts: desc, Global: c.Option != nil && c.Option.Global}
+			global, hasPredicate, unmodeled := indexOptionFacts(c.Option)
+			ddl.PrimaryKey = &spec.Index{Name: normalizeConstraintName(c), Kind: spec.IndexKindPrimary, Columns: extractIndexColumns(c.Keys), HasExpressionKeys: expr > 0, ExpressionCount: expr, PrefixParts: prefix, DescParts: desc, Global: global, HasPredicate: hasPredicate, UnmodeledOptions: unmodeled}
 		case ast.ConstraintKey, ast.ConstraintIndex, ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex, ast.ConstraintFulltext:
 			expr, prefix, desc := countIndexPartKinds(c.Keys)
-			ddl.Indexes = append(ddl.Indexes, spec.Index{Name: normalizeConstraintName(c), Kind: indexKindForConstraint(c.Tp), Columns: extractIndexColumns(c.Keys), HasExpressionKeys: expr > 0, ExpressionCount: expr, PrefixParts: prefix, DescParts: desc, Global: c.Option != nil && c.Option.Global})
+			global, hasPredicate, unmodeled := indexOptionFacts(c.Option)
+			ddl.Indexes = append(ddl.Indexes, spec.Index{Name: normalizeConstraintName(c), Kind: indexKindForConstraint(c.Tp), Columns: extractIndexColumns(c.Keys), HasExpressionKeys: expr > 0, ExpressionCount: expr, PrefixParts: prefix, DescParts: desc, Global: global, HasPredicate: hasPredicate, UnmodeledOptions: unmodeled})
 		default:
 			ddl.Constraints = append(ddl.Constraints, extractConstraint(c))
 		}
@@ -246,6 +248,12 @@ func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
 		}
 	}
 	ddl.UnextractedOptions = append(unextracted, partitionOptionNames(stmt.Partition)...)
+	if len(stmt.SplitIndex) > 0 {
+		// SPLIT PRIMARY KEY BETWEEN ... REGIONS is a separate collection beside
+		// the option lists; record bounded presence so the clause cannot pass
+		// silently. Region bounds and split semantics stay unmodeled.
+		ddl.UnextractedOptions = append(ddl.UnextractedOptions, "split_index")
+	}
 
 	return ddl
 }
@@ -410,6 +418,14 @@ func extractAlterSpec(specification *ast.AlterTableSpec, clause string) spec.Alt
 	}
 	if specification.Constraint != nil {
 		constraint := extractConstraint(specification.Constraint)
+		if constraintProducesIndex(specification.Constraint.Tp) {
+			// Index-producing constraints carry their key-part facts on
+			// alter.Index.Definition; keeping them here too would emit the
+			// same aspect twice under constraint and index feature names.
+			constraint.UnmodeledParts = 0
+			constraint.UnmodeledReferencedParts = 0
+			constraint.UnmodeledReferActions = 0
+		}
 		alter.Constraint = &constraint
 	}
 	return alter
@@ -636,13 +652,13 @@ func extractCreateIndex(stmt *ast.CreateIndexStmt) *spec.DDL {
 	indexName := stmt.IndexName
 	columns := extractIndexColumns(stmt.IndexPartSpecifications)
 	expr, prefix, desc := countIndexPartKinds(stmt.IndexPartSpecifications)
-	indexGlobal := stmt.IndexOption != nil && stmt.IndexOption.Global
+	indexGlobal, hasPredicate, unmodeled := indexOptionFacts(stmt.IndexOption)
 	return &spec.DDL{
 		Operation: spec.DDLOperationCreateIndex,
 		Table:     &spec.Table{Name: stmt.Table.Name.L, Schema: stmt.Table.Schema.L},
 		Alter: []spec.Alter{{
 			Action: "create_index",
-			Index:  &spec.AlterIndex{Definition: &spec.Index{Name: indexName, Kind: kind, Columns: columns, HasExpressionKeys: expr > 0, ExpressionCount: expr, PrefixParts: prefix, DescParts: desc, Global: indexGlobal}},
+			Index:  &spec.AlterIndex{Definition: &spec.Index{Name: indexName, Kind: kind, Columns: columns, HasExpressionKeys: expr > 0, ExpressionCount: expr, PrefixParts: prefix, DescParts: desc, Global: indexGlobal, HasPredicate: hasPredicate, UnmodeledOptions: unmodeled}},
 		}},
 	}
 }
@@ -768,6 +784,20 @@ func extractDropProcedure(stmt *ast.DropProcedureStmt) *spec.DDL {
 	}
 }
 
+// omittedUserTargets counts parsed account targets absent from the normalized
+// model: every spec beyond the retained first one, plus a retained first spec
+// whose identity is the unresolved CURRENT_USER function rather than a name.
+func omittedUserTargets(specs []*ast.UserSpec) int {
+	if len(specs) == 0 {
+		return 0
+	}
+	omitted := len(specs) - 1
+	if first := specs[0]; first != nil && first.User != nil && first.User.CurrentUser {
+		omitted++
+	}
+	return omitted
+}
+
 func extractCreateUser(stmt *ast.CreateUserStmt) *spec.DDL {
 	if stmt.IsCreateRole {
 		name := ""
@@ -778,7 +808,7 @@ func extractCreateUser(stmt *ast.CreateUserStmt) *spec.DDL {
 			Operation:          spec.DDLOperationCreateRole,
 			ObjectName:         name,
 			ObjectType:         "role",
-			OmittedTargets:     len(stmt.Specs) - 1,
+			OmittedTargets:     omittedUserTargets(stmt.Specs),
 			UnextractedOptions: userOptionNames(stmt.AuthTokenOrTLSOptions, stmt.ResourceOptions, stmt.PasswordOrLockOptions, stmt.CommentOrAttributeOption, stmt.ResourceGroupNameOption),
 		}
 	}
@@ -791,7 +821,7 @@ func extractCreateUser(stmt *ast.CreateUserStmt) *spec.DDL {
 		ObjectName:         name,
 		ObjectType:         "user",
 		Options:            map[string]string{"has_auth": "true"},
-		OmittedTargets:     len(stmt.Specs) - 1,
+		OmittedTargets:     omittedUserTargets(stmt.Specs),
 		UnextractedOptions: userOptionNames(stmt.AuthTokenOrTLSOptions, stmt.ResourceOptions, stmt.PasswordOrLockOptions, stmt.CommentOrAttributeOption, stmt.ResourceGroupNameOption),
 	}
 }
@@ -801,11 +831,8 @@ func extractAlterUser(stmt *ast.AlterUserStmt) *spec.DDL {
 	if len(stmt.Specs) > 0 && stmt.Specs[0] != nil && stmt.Specs[0].User != nil {
 		name = stmt.Specs[0].User.Username
 	}
-	omitted := 0
-	switch {
-	case len(stmt.Specs) > 0:
-		omitted = len(stmt.Specs) - 1
-	case stmt.CurrentAuth != nil || stmt.CurrentDualPasswordOption != 0:
+	omitted := omittedUserTargets(stmt.Specs)
+	if len(stmt.Specs) == 0 && (stmt.CurrentAuth != nil || stmt.CurrentDualPasswordOption != 0) {
 		// `ALTER USER USER()` carries its target on CurrentAuth / the
 		// current-user dual-password option instead of Specs; that single
 		// target is still not modeled.
@@ -1062,7 +1089,8 @@ func extractAlterIndex(specification *ast.AlterTableSpec) *spec.AlterIndex {
 			return nil
 		}
 		expr, prefix, desc := countIndexPartKinds(specification.Constraint.Keys)
-		return &spec.AlterIndex{Definition: &spec.Index{Kind: indexKindForConstraint(specification.Constraint.Tp), Name: normalizeConstraintName(specification.Constraint), Columns: extractIndexColumns(specification.Constraint.Keys), HasExpressionKeys: expr > 0, ExpressionCount: expr, PrefixParts: prefix, DescParts: desc, Global: specification.Constraint.Option != nil && specification.Constraint.Option.Global}}
+		global, hasPredicate, unmodeled := indexOptionFacts(specification.Constraint.Option)
+		return &spec.AlterIndex{Definition: &spec.Index{Kind: indexKindForConstraint(specification.Constraint.Tp), Name: normalizeConstraintName(specification.Constraint), Columns: extractIndexColumns(specification.Constraint.Keys), HasExpressionKeys: expr > 0, ExpressionCount: expr, PrefixParts: prefix, DescParts: desc, Global: global, HasPredicate: hasPredicate, UnmodeledOptions: unmodeled}}
 	case ast.AlterTableDropIndex:
 		name := extractAlterName(specification)
 		if name == "" {
@@ -1433,6 +1461,49 @@ func countUnmodeledIndexParts(parts []*ast.IndexPartSpecification) int {
 		}
 	}
 	return count
+}
+
+// indexOptionFacts splits a parsed IndexOption into the members the normalized
+// model keeps (GLOBAL, partial-index WHERE predicate) and bounded names for
+// the members it does not. Only names travel downstream — option values,
+// comments, and predicate expressions stay out of the audit model.
+func indexOptionFacts(option *ast.IndexOption) (global, hasPredicate bool, unmodeled []string) {
+	if option == nil {
+		return false, false, nil
+	}
+	global = option.Global
+	hasPredicate = option.Condition != nil
+	if option.Comment != "" {
+		unmodeled = append(unmodeled, "comment")
+	}
+	if option.KeyBlockSize != 0 {
+		unmodeled = append(unmodeled, "key_block_size")
+	}
+	if option.Tp != ast.IndexTypeInvalid {
+		unmodeled = append(unmodeled, "index_type")
+	}
+	if option.ParserName.L != "" {
+		unmodeled = append(unmodeled, "with_parser")
+	}
+	switch option.Visibility {
+	case ast.IndexVisibilityVisible:
+		unmodeled = append(unmodeled, "visible")
+	case ast.IndexVisibilityInvisible:
+		unmodeled = append(unmodeled, "invisible")
+	}
+	if option.PrimaryKeyTp != ast.PrimaryKeyTypeDefault {
+		unmodeled = append(unmodeled, "primary_key_type")
+	}
+	if option.SplitOpt != nil {
+		unmodeled = append(unmodeled, "split_opt")
+	}
+	if option.SecondaryEngineAttr != "" {
+		unmodeled = append(unmodeled, "secondary_engine_attr")
+	}
+	if option.AddColumnarReplicaOnDemand != 0 {
+		unmodeled = append(unmodeled, "columnar_replica")
+	}
+	return global, hasPredicate, unmodeled
 }
 
 func indexKindForConstraint(tp ast.ConstraintType) spec.IndexKind {
