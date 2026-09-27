@@ -6,7 +6,7 @@ Audit result aggregation, summary counts, and verdict calculation.
 
 | File | Responsibility |
 |------|---------------|
-| result.go | Defines result types, per-scope `Coverage`/`CoverageStatus` completeness records, and verdict aggregation |
+| result.go | Defines result types, per-scope `Coverage`/`CoverageStatus` completeness records, per-statement `EvidenceGaps`, and verdict aggregation |
 | result_test.go | Verifies verdict and summary behavior |
 | action_summary.go | Derives a human-oriented action summary from findings and catalog entries |
 | action_summary_test.go | Verifies action summary grouping, ordering, and fallbacks |
@@ -50,6 +50,7 @@ Audit result aggregation, summary counts, and verdict calculation.
 - `StatementResult` also exposes an optional `Impact` field for additive statement-level DML impact estimates without changing verdict aggregation semantics.
 - `Result` now also exposes an `Unsupported` array for structured partial-support outcomes, allowing supported statements to audit while recognized-but-unsupported statements are still returned to callers.
 - `StatementResult` and `Result` carry a `Coverage` record. `Aggregate()` rolls statement coverage up to result coverage (`incomplete` dominates `unverified`, which dominates `complete`). Coverage is a capability fact: recognized-but-unaudited statements stay represented as statement results with `coverage.status=incomplete`, and callers floor `pass` to `review` on incomplete coverage without ever downgrading `reject`.
+- `StatementResult.EvidenceGaps` (issue #83 T04-A) carries per-statement `rule.EvidenceGap` records: enabled, applicable metadata-required rules that could not obtain declared source-column facts emit `missing_source_column`/`incomplete_source_column` with a bounded sorted `required_facts` list. Gaps are not findings — they never raise severity counters — but they lower an otherwise-complete statement's coverage to `unverified` and floor the verdict to `review` without ever overriding `reject`.
 - The additive `Impact` payload carries `estimated_rows`, `estimated_ratio`, `risk_level`, `confidence`, `source`, `reason_codes`, and optional `notes` for conservative `UPDATE` / `DELETE` estimation.
 
 ## Dependencies

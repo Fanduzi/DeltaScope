@@ -349,6 +349,202 @@ def main():
         results.append(check("cli_cases metadata pins pass", metadata_artifact(), "", manifest=m))
         results.append(check("cli_cases wrong metadata rejected", metadata_artifact(wrong=True), "metadata", manifest=m))
 
+        # ------------------------------------------------------------------
+        # T04 (#83): evidence-gap, metadata-backed, and error-case contracts.
+        # Gaps are a separate result channel — the validator must reject a
+        # missing gap, a wrong rule_id/required_facts, a gap smuggled into
+        # findings, and parsed blobs that disagree with raw stdout.
+        RID = "ddl.alter.modify_column.compatibility.require"
+        GAP = {"rule_id": RID, "reason_code": "missing_source_column",
+               "required_facts": ["source_column.definition"]}
+        mg = copy.deepcopy(MANIFEST)
+        del mg["cli_audit"]
+        mg["policy_profile"] = "t04-isolated"
+        mg["policy"] = {"enable": {RID: {"enabled": True, "level": "blocker",
+                                        "params": {"required": True, "requires_metadata": True}}}}
+        mg["cli_cases"] = [{
+            "id": "gap",
+            "dialect": "mysql",
+            "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(20);",
+            "expect": {"exit": 0, "verdict": "review", "statements": 1, "findings": 0,
+                       "diagnostics": 0, "unsupported": 0, "coverage": "unverified",
+                       "statement_coverage": ["unverified"],
+                       "evidence_gaps": 1, "evidence_gap_entries": [dict(GAP, index=0)],
+                       "fail_on_triggered": False},
+        }]
+        mg["metadata_cases"] = [{
+            "id": "meta-ok", "anchor": "mysqlX", "dialect": "mysql",
+            "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(20);",
+            "connect": {"host": "127.0.0.1", "port": 23384, "user": "root",
+                        "password_env": "DS_PW", "password": "root", "schema": "golden"},
+            "setup": [{"name": "create", "sql": "CREATE TABLE t (c VARCHAR(10))",
+                       "verify": [{"assert": "col", "sql": "SELECT COLUMN_TYPE", "expect": "varchar(10)"}]}],
+            "expect": {"exit": 0, "verdict": "pass", "statements": 1, "findings": 0,
+                       "diagnostics": 0, "unsupported": 0, "coverage": "complete",
+                       "statement_coverage": ["complete"], "evidence_gaps": 0},
+            "post_verify": [{"assert": "not executed", "sql": "SELECT COLUMN_TYPE", "expect": "varchar(10)"}],
+            "teardown": [{"name": "drop", "sql": "DROP TABLE t"}],
+        }]
+        mg["error_cases"] = [{
+            "id": "refused", "dialect": "mysql",
+            "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(20);",
+            "args": ["--host", "127.0.0.1", "--port", "23399"],
+            "expect": {"exit": 3, "stderr_contains": ["connection refused"]},
+        }]
+        mg["required_case_ids"] = [
+            "TX.cli.gap" if c == "TX.cli.mysql" else c
+            for c in MANIFEST["required_case_ids"]
+        ] + ["TX.meta.meta-ok", "TX.clierr.refused"]
+
+        iso_policy = tmp / "iso-policy.yaml"
+        iso_policy.write_text("rules:\n", encoding="utf-8")
+        off_policy = tmp / "off-policy.yaml"
+        off_policy.write_text("rules:\n", encoding="utf-8")
+        iso_record = {"profile": "t04-isolated", "path": str(iso_policy),
+                      "sha256": hashlib.sha256(iso_policy.read_bytes()).hexdigest(),
+                      "catalog_rules": 3, "enabled_rules": mg["policy"]["enable"], "disabled_rules": 2}
+        off_record = {"profile": "all-rules-disabled", "path": str(off_policy),
+                      "sha256": hashlib.sha256(off_policy.read_bytes()).hexdigest(),
+                      "catalog_rules": 3, "enabled_rules": {}, "disabled_rules": 3}
+
+        def gap_parsed():
+            return {"verdict": "review", "coverage": {"status": "unverified"},
+                    "statements": [{"index": 0, "raw_sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(20);",
+                                    "findings": [], "coverage": {"status": "unverified"},
+                                    "evidence_gaps": [dict(GAP)]}],
+                    "global_findings": [], "diagnostics": [], "unsupported": [],
+                    "fail_on_triggered": False}
+
+        def gap_artifact():
+            a = copy.deepcopy(base)
+            a["policy_profile"] = copy.deepcopy(iso_record)
+            a["policies"] = [copy.deepcopy(iso_record), copy.deepcopy(off_record)]
+            cli = a["cases"][2]
+            cli["case_id"] = "TX.cli.gap"
+            cli["cli_case"] = "gap"
+            cli["input_sql"] = mg["cli_cases"][0]["sql"]
+            cli["policy_profile"] = "t04-isolated"
+            cli["expected"] = copy.deepcopy(mg["cli_cases"][0]["expect"])
+            parsed = gap_parsed()
+            cli["actual"]["stdout"] = json.dumps(parsed)
+            cli["actual"]["parsed"] = copy.deepcopy(parsed)
+            cli["actual"]["exit"] = 0
+            meta_case = {
+                "case_id": "TX.meta.meta-ok", "kind": "cli_metadata", "cli_case": "meta-ok",
+                "anchor": "mysqlX", "dialect": "mysql", "input_sql": mg["metadata_cases"][0]["sql"],
+                "policy_profile": "t04-isolated", "policy_path": str(iso_policy),
+                "connect": {"host": "127.0.0.1", "port": 23384, "user": "root",
+                            "password_env": "DS_PW", "schema": "golden"},
+                "command": ["deltascope", "audit", "--dialect", "mysql", "--sql",
+                            mg["metadata_cases"][0]["sql"], "--config", str(iso_policy),
+                            "--format", "json", "--host", "127.0.0.1", "--port", "23384",
+                            "--user", "root", "--password-env", "DS_PW", "--schema", "golden"],
+                "expected": copy.deepcopy(mg["metadata_cases"][0]["expect"]),
+                "actual": {
+                    "database": {"product": "mysql", "image": "mysql:9.9.9",
+                                 "image_digest": "mysql@sha256:beef", "container": "c",
+                                 "reachable": True, "version": "9.9.9"},
+                    "setup": [{"name": "create", "sql": "CREATE TABLE t (c VARCHAR(10))", "rc": 0,
+                               "stdout": "", "stderr": "",
+                               "verify": [{"assert": "col", "sql": "SELECT COLUMN_TYPE",
+                                           "rc": 0, "output": "varchar(10)", "stderr": ""}]}],
+                    "exit": 0, "stdout": json.dumps({"verdict": "pass",
+                        "coverage": {"status": "complete"},
+                        "statements": [{"index": 0, "raw_sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(20);",
+                                        "coverage": {"status": "complete"}}],
+                        "global_findings": [], "diagnostics": [], "unsupported": []}),
+                    "stderr": "",
+                    "parsed": {"verdict": "pass", "coverage": {"status": "complete"},
+                               "statements": [{"index": 0, "raw_sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(20);",
+                                               "coverage": {"status": "complete"}}],
+                               "global_findings": [], "diagnostics": [], "unsupported": []},
+                    "post_verify": [{"assert": "not executed", "sql": "SELECT COLUMN_TYPE",
+                                     "rc": 0, "output": "varchar(10)", "stderr": ""}],
+                    "teardown": [{"name": "drop", "sql": "DROP TABLE t", "rc": 0, "stderr": ""}],
+                },
+                "assertions": [{"name": "a", "ok": True, "detail": "d"}], "status": "pass",
+            }
+            err_case = {
+                "case_id": "TX.clierr.refused", "kind": "cli_error", "cli_case": "refused",
+                "dialect": "mysql", "input_sql": mg["error_cases"][0]["sql"],
+                "policy_profile": "t04-isolated", "policy_path": str(iso_policy),
+                "command": ["deltascope", "audit", "--dialect", "mysql", "--sql",
+                            mg["error_cases"][0]["sql"], "--config", str(iso_policy),
+                            "--format", "json", "--host", "127.0.0.1", "--port", "23399"],
+                "expected": copy.deepcopy(mg["error_cases"][0]["expect"]),
+                "actual": {"exit": 3, "stdout": "", "stderr": "connection refused"},
+                "assertions": [{"name": "a", "ok": True, "detail": "d"}], "status": "pass",
+            }
+            a["cases"] += [meta_case, err_case]
+            a["required_case_ids"] = list(mg["required_case_ids"])
+            a["executed_count"] = len(a["cases"])
+            return a
+
+        results.append(check("t04 evidence-gap artifact passes", gap_artifact(), "", manifest=mg))
+
+        a = gap_artifact()
+        parsed = copy.deepcopy(a["cases"][2]["actual"]["parsed"])
+        del parsed["statements"][0]["evidence_gaps"]
+        a["cases"][2]["actual"]["stdout"] = json.dumps(parsed)
+        a["cases"][2]["actual"]["parsed"] = parsed
+        results.append(check("t04 missing evidence gap rejected", a, "evidence gap", manifest=mg))
+
+        a = gap_artifact()
+        parsed = copy.deepcopy(a["cases"][2]["actual"]["parsed"])
+        parsed["statements"][0]["evidence_gaps"][0]["rule_id"] = "ddl.other.rule"
+        a["cases"][2]["actual"]["stdout"] = json.dumps(parsed)
+        a["cases"][2]["actual"]["parsed"] = parsed
+        results.append(check("t04 wrong gap rule_id rejected", a, "evidence gap", manifest=mg))
+
+        a = gap_artifact()
+        parsed = copy.deepcopy(a["cases"][2]["actual"]["parsed"])
+        parsed["statements"][0]["evidence_gaps"][0]["required_facts"] = ["source_column.type"]
+        a["cases"][2]["actual"]["stdout"] = json.dumps(parsed)
+        a["cases"][2]["actual"]["parsed"] = parsed
+        results.append(check("t04 wrong required_facts rejected", a, "required_facts", manifest=mg))
+
+        a = gap_artifact()
+        parsed = copy.deepcopy(a["cases"][2]["actual"]["parsed"])
+        del parsed["statements"][0]["evidence_gaps"]
+        parsed["statements"][0]["findings"] = [dict(GAP)]
+        a["cases"][2]["actual"]["stdout"] = json.dumps(parsed)
+        a["cases"][2]["actual"]["parsed"] = parsed
+        results.append(check("t04 gap smuggled as finding rejected", a, "evidence gap", manifest=mg))
+
+        a = gap_artifact()
+        parsed = copy.deepcopy(a["cases"][2]["actual"]["parsed"])
+        del parsed["statements"][0]["evidence_gaps"]
+        a["cases"][2]["actual"]["parsed"] = parsed  # stdout still carries the gap
+        results.append(check("t04 parsed-only gap removal rejected", a, "parsed", manifest=mg))
+
+        a = gap_artifact()
+        a["cases"][3]["actual"]["post_verify"][0]["output"] = "varchar(20)"
+        results.append(check("t04 tampered post_verify rejected", a, "post_verify", manifest=mg))
+
+        a = gap_artifact()
+        a["cases"][3]["command"].append("root")
+        results.append(check("t04 password in command rejected", a, "password", manifest=mg))
+
+        a = gap_artifact()
+        a["cases"][4]["actual"]["exit"] = 0
+        results.append(check("t04 error-case exit mismatch rejected", a, "exit", manifest=mg))
+
+        a = gap_artifact()
+        a["cases"][4]["actual"]["stderr"] = "i/o timeout"
+        results.append(check("t04 error-case missing stderr marker rejected", a, "marker", manifest=mg))
+
+        a = gap_artifact()
+        a["policies"][0]["sha256"] = "0" * 64
+        results.append(check("t04 policy sha mismatch rejected", a, "sha256", manifest=mg))
+
+        a = gap_artifact()
+        a["cases"][2]["policy_profile"] = "nonexistent-profile"
+        results.append(check("t04 unknown policy profile rejected", a, "policy", manifest=mg))
+
+        a = gap_artifact()
+        a["policies"][0]["enabled_rules"] = {}
+        results.append(check("t04 tampered enabled_rules rejected", a, "enabled_rules", manifest=mg))
+
     failures = results.count(False)
     print(f"contract cases={len(results)} failures={failures}")
     return 1 if failures else 0

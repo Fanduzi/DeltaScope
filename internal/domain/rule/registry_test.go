@@ -7,6 +7,7 @@ package rule_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
@@ -371,5 +372,85 @@ func TestRegistryContainsLoadedRuleIDs(t *testing.T) {
 	var nilRegistry *rule.Registry
 	if nilRegistry.Contains("dml.where.require") {
 		t.Fatal("nil registry must not contain a rule")
+	}
+}
+
+// testGapReporterRule implements EvidenceReporter to pin the optional
+// extension contract: gaps are collected only after AppliesTo confirms the
+// rule is enabled and applicable.
+type testGapReporterRule struct {
+	id   string
+	kind spec.Kind
+	gaps []rule.EvidenceGap
+}
+
+func (r testGapReporterRule) ID() string { return r.id }
+func (r testGapReporterRule) AppliesTo(statement spec.Statement) bool {
+	return statement.Kind == r.kind
+}
+func (r testGapReporterRule) Evaluate(context.Context, spec.Statement) ([]rule.Finding, error) {
+	return nil, nil
+}
+func (r testGapReporterRule) EvidenceGaps(spec.Statement) []rule.EvidenceGap {
+	return r.gaps
+}
+
+func TestRegistryEvaluateStatementDetailedCollectsEvidenceGaps(t *testing.T) {
+	t.Parallel()
+	registry := rule.NewRegistry()
+	if err := registry.RegisterStatement(testGapReporterRule{
+		id:   "ddl.test.gap_rule",
+		kind: spec.KindDDL,
+		gaps: []rule.EvidenceGap{
+			{ReasonCode: "missing_source_column", RequiredFacts: []string{"source_column.definition"}},
+		},
+	}); err != nil {
+		t.Fatalf("register gap reporter: %v", err)
+	}
+	if err := registry.RegisterStatement(testStatementRule{
+		id: "ddl.test.plain", kind: spec.KindDML, level: rule.LevelNotice, message: "n/a",
+	}); err != nil {
+		t.Fatalf("register plain rule: %v", err)
+	}
+
+	eval, err := registry.EvaluateStatementDetailed(context.Background(), spec.Statement{Kind: spec.KindDDL, Dialect: spec.DialectMySQL})
+	if err != nil {
+		t.Fatalf("evaluate detailed: %v", err)
+	}
+	if len(eval.EvidenceGaps) != 1 {
+		t.Fatalf("expected 1 evidence gap, got %#v", eval.EvidenceGaps)
+	}
+	gap := eval.EvidenceGaps[0]
+	if gap.RuleID != "ddl.test.gap_rule" {
+		t.Fatalf("expected rule ID stamped on gap, got %q", gap.RuleID)
+	}
+	if len(eval.Findings) != 0 {
+		t.Fatalf("gaps must not leak into findings, got %#v", eval.Findings)
+	}
+
+	// Non-applicable statements produce no gaps even when the rule reports them.
+	eval, err = registry.EvaluateStatementDetailed(context.Background(), spec.Statement{Kind: spec.KindDML, Dialect: spec.DialectMySQL})
+	if err != nil {
+		t.Fatalf("evaluate detailed dml: %v", err)
+	}
+	if len(eval.EvidenceGaps) != 0 {
+		t.Fatalf("expected no gaps for non-applicable statement, got %#v", eval.EvidenceGaps)
+	}
+}
+
+func TestRegistryEvaluateStatementDetailedRejectsConflictingGapRuleID(t *testing.T) {
+	t.Parallel()
+	registry := rule.NewRegistry()
+	if err := registry.RegisterStatement(testGapReporterRule{
+		id:   "ddl.test.gap_rule",
+		kind: spec.KindDDL,
+		gaps: []rule.EvidenceGap{{RuleID: "ddl.test.other", ReasonCode: "x"}},
+	}); err != nil {
+		t.Fatalf("register gap reporter: %v", err)
+	}
+
+	_, err := registry.EvaluateStatementDetailed(context.Background(), spec.Statement{Kind: spec.KindDDL, Dialect: spec.DialectMySQL})
+	if err == nil || !strings.Contains(err.Error(), "gap=ddl.test.other") {
+		t.Fatalf("expected rule-ID mismatch error for gap, got %v", err)
 	}
 }

@@ -1,5 +1,5 @@
 # input: pinned MySQL 5.7.44/8.0.46/8.4.10 and TiDB 8.5.0 images for isolated DDL golden fixtures
-# output: disposable per-anchor database services reachable only inside the compose network
+# output: disposable per-anchor database services reachable inside the compose network; mysql84 also publishes 127.0.0.1:23384 for host-CLI metadata audit cases
 # pos: Docker fixtures consumed by scripts/ddl_golden.py via `make ddl-golden`
 # note: if this file changes, update this header and module README.md.
 # Version pins are normative anchors from milestone issue #79/#81. Do not move to
@@ -36,6 +36,10 @@ services:
   mysql84:
     image: mysql:8.4.10
     container_name: deltascope-ddl-golden-mysql84
+    # Loopback-only publish: T04 (#83) metadata cases run the freshly built
+    # host CLI against this anchor over TCP; all other anchors stay exec-only.
+    ports:
+      - "127.0.0.1:23384:3306"
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: golden

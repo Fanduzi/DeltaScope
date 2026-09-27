@@ -19,6 +19,8 @@ Rule contracts, registration, and finding types for audit evaluation.
 - `Finding`
 - `FindingExplanation`
 - `ExplanationMetadata`
+- `EvidenceGap`
+- `EvidenceReporter`
 - `Location`
 - `StatementRule`
 - `GlobalRule`

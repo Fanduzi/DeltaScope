@@ -22,6 +22,7 @@ Thin MCP adapter for exposing DeltaScope audit and rule-discovery capabilities t
 | `server_unsupported_diagnostics_evidence_test.go` | Verifies MCP parser errors preserve review-floored partial results, audited siblings/findings, context, structured error signaling, locations, and no-leak boundaries |
 | `server_unsupported_verdict_floor_postgresql_tag_test.go` | Verifies MCP PostgreSQL `SELECT 1` keeps tool-error signaling and serializes the review-floored unsupported result with the retained incomplete-coverage statement |
 | `audit_coverage_t03_test.go` | Verifies issue #82/T03 transport contract: MySQL `CREATE SEQUENCE` + supported `ALTER TABLE` returns `isError=true` with the partial result, retained incomplete coverage, and bounded unsupported evidence |
+| `audit_evidence_gap_t04_test.go` | Verifies issue #83 T04-A transport contract: an evidence-gap-only audit returns `isError=false` with `unverified` coverage and per-statement `evidence_gaps`, while a mixed gap+unsupported batch keeps `isError=true` |
 | `server_ddl_lifecycle_mysql_test.go` | Verifies MCP lifecycle findings for MySQL/TiDB DDL, including `isError=true` tool errors for supported statements that still carry extracted-but-unaudited option aspects (sequence/placement-policy option lists, per-spec account `identified` auth) |
 | `tool_errors.go` | Shapes stable structured MCP tool errors; connection-open failures go through connresolve.Classify then MCP codes |
 

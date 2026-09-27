@@ -27,6 +27,29 @@ Per-task manifests for the milestone DDL golden-path runner
   disqualify the negative).
 - `cli_audit`: `dialects`, the same `sql` batch, and `expect` on `exit`,
   `verdict`, `statements`, `findings`, `diagnostics`, `unsupported`.
+- `cli_cases`: named CLI audit cases (`id`, `dialect`, `sql`, optional
+  `args`, optional per-case `policy` profile selection, `expect`). Besides
+  the base keys, `expect` may pin `coverage`/`statement_coverage`,
+  `unsupported_features`/`unsupported_entries` (with exact bounded
+  `metadata` maps), `statement_sql` identity, `evidence_gaps`/
+  `evidence_gap_entries` (`index`/`rule_id`/`reason_code` plus exact
+  `required_facts`), `finding_entries`/`finding_metadata`/
+  `finding_locations`, and `fail_on_triggered`.
+- `policy`: optional isolated-policy declaration. `policy.enable` maps rule
+  IDs to `{enabled, level, params}`; the runner asserts each enabled rule
+  exists in the live `rules list` catalog, renders the isolated profile
+  under `policy_profile`'s name plus a generated `all-rules-disabled`
+  profile, and records sha256 per policy file into the artifact. Per-case
+  `policy` selects which generated profile a case pins.
+- `metadata_cases`: live-database audit cases. Each binds `anchor`,
+  `dialect`, `sql`, a `connect` block (`password` travels only via
+  `--password-env`/`--password-file` and is never recorded), ordered
+  `setup` steps (with `verify` metadata assertions), the same `expect`
+  vocabulary as `cli_cases`, `post_verify` assertions proving the audited
+  object was not mutated, and `teardown` steps.
+- `error_cases`: CLI invocations expected to fail before producing an audit
+  result (for example a real connection refusal). `expect` pins `exit` and
+  `stderr_contains` markers only; stdout is never parsed as a result.
 - `required_case_ids`: exact case IDs that must appear as executed in the
   artifact; any missing required case is a violation.
 
@@ -47,6 +70,9 @@ and audit behavior. Neither substitutes for the other. The artifact validator
 recomputes expectations from the manifest and results from raw evidence —
 it rejects zero/missing/unexecuted cases, stale binaries, version mismatches,
 external blockers, deleted or failed metadata-query records, non-JSON CLI
-stdout, parsed/stdout disagreement, artifact-internal expected tampering, and
-manifests/artifacts shrunk below the locked baseline — proven offline by
-`make ddl-golden-validator-test` (`scripts/test_ddl_golden.py`).
+stdout, parsed/stdout disagreement, artifact-internal expected tampering,
+missing or mis-attributed `evidence_gaps` entries (including a gap smuggled
+into `findings`), tampered policy files or `enabled_rules`, leaked fixture
+passwords in recorded commands, tampered metadata `setup`/`post_verify`/
+`teardown` records, and manifests/artifacts shrunk below the locked baseline —
+proven offline by `make ddl-golden-validator-test` (`scripts/test_ddl_golden.py`).

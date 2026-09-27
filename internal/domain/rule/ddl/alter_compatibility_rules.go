@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: metadata-enriched alter-table Statement specs with current and target column shapes
-// output: source-aware alter compatibility findings for change/modify column operations
+// output: source-aware alter compatibility findings and bounded evidence gaps for change/modify column operations
 // pos: DDL compatibility rules layered above metadata-backed existence checks
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -8,6 +8,7 @@ package ddl
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -16,12 +17,26 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
+// Evidence-gap vocabulary for alter column compatibility (issue #83 T04-A).
+// Reason codes and fact identifiers are a fixed public contract: they carry
+// machine-readable fact names only, never SQL text, credentials, or provider
+// error payloads.
+const (
+	gapReasonMissingSourceColumn    = "missing_source_column"
+	gapReasonIncompleteSourceColumn = "incomplete_source_column"
+
+	factSourceColumnDefinition = "source_column.definition"
+	factSourceColumnType       = "source_column.type"
+	factSourceColumnLength     = "source_column.length"
+)
+
 type alterColumnCompatibilityRule struct {
-	ruleID   string
-	action   string
-	label    string
-	required bool
-	level    rule.Level
+	ruleID           string
+	action           string
+	label            string
+	required         bool
+	requiresMetadata bool
+	level            rule.Level
 }
 
 type alterTableOptionCompatibilityRule struct {
@@ -34,12 +49,17 @@ func newAlterColumnCompatibilityRule(ruleID, action, label string, fallbackLevel
 	if err != nil {
 		return nil, err
 	}
+	requiresMetadata, err := boolParam(ruleID, cfg, "requires_metadata", false)
+	if err != nil {
+		return nil, err
+	}
 	return alterColumnCompatibilityRule{
-		ruleID:   ruleID,
-		action:   action,
-		label:    label,
-		required: required,
-		level:    configuredLevel(cfg, fallbackLevel),
+		ruleID:           ruleID,
+		action:           action,
+		label:            label,
+		required:         required,
+		requiresMetadata: requiresMetadata,
+		level:            configuredLevel(cfg, fallbackLevel),
 	}, nil
 }
 
@@ -90,6 +110,73 @@ func (r alterColumnCompatibilityRule) Evaluate(ctx context.Context, statement sp
 		findings = append(findings, compatibilityFindings(r.ruleID, r.level, statement.DDL.Table.Name, alter, *source, *target)...)
 	}
 	return findings, nil
+}
+
+// EvidenceGaps reports which source-column facts the rule needed but could not
+// obtain for an applicable alter. It runs only when the policy opts in with
+// requires_metadata: true; the default keeps the legacy silent skip so enabling
+// the rule without metadata awareness changes nothing. Missing facts never
+// suppress Evaluate — statements can carry both findings and gaps.
+func (r alterColumnCompatibilityRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
+	if !r.requiresMetadata || !r.AppliesTo(statement) {
+		return nil
+	}
+
+	missingDefinition := false
+	incomplete := make(map[string]struct{}, 2)
+	snapshot, hasSnapshot := targetTableSnapshot(statement)
+	for _, alter := range matchingAlterActions(statement, r.action) {
+		target, hasTarget := alterColumnDefinition(alter)
+		if !hasSnapshot || snapshot == nil || !snapshot.Exists || !hasTarget {
+			missingDefinition = true
+			continue
+		}
+		source := snapshot.FindColumn(alter.Name)
+		if source == nil {
+			missingDefinition = true
+			continue
+		}
+		if strings.TrimSpace(source.Type) == "" {
+			incomplete[factSourceColumnType] = struct{}{}
+		}
+		if sourceLengthFactRequired(*source, target) && source.Length <= 0 {
+			incomplete[factSourceColumnLength] = struct{}{}
+		}
+	}
+
+	gaps := make([]rule.EvidenceGap, 0, 2)
+	if missingDefinition {
+		gaps = append(gaps, rule.EvidenceGap{
+			ReasonCode:    gapReasonMissingSourceColumn,
+			RequiredFacts: []string{factSourceColumnDefinition},
+		})
+	}
+	if len(incomplete) > 0 {
+		facts := make([]string, 0, len(incomplete))
+		for fact := range incomplete {
+			facts = append(facts, fact)
+		}
+		sort.Strings(facts)
+		gaps = append(gaps, rule.EvidenceGap{
+			ReasonCode:    gapReasonIncompleteSourceColumn,
+			RequiredFacts: facts,
+		})
+	}
+	return gaps
+}
+
+// sourceLengthFactRequired reports whether the source column length is a fact
+// the compatibility comparison actually consumes: only a string-to-string
+// transition compares lengths. An unknown source type stays required because
+// it might be a string; a known non-string source never needs a length.
+func sourceLengthFactRequired(source spec.Column, target *spec.Column) bool {
+	if target == nil || columnTypeFamily(*target) != "string" {
+		return false
+	}
+	if strings.TrimSpace(source.Type) == "" {
+		return true
+	}
+	return columnTypeFamily(source) == "string"
 }
 
 func (r alterTableOptionCompatibilityRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {

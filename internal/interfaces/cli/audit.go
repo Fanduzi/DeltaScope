@@ -1,6 +1,6 @@
 // Package cli exposes the command-line adapter for DeltaScope.
 // input: audit command flags including -h/--help versus -H/--host, audit-local output format, skipped-rule detail, and fail threshold, whether --sql was explicitly provided, SQL text from flags/files/stdin, password prompt, connresolve Request fields, and application audit services
-// output: rendered audit results and located diagnostics, audit-only output validation, command-named empty-SQL usage errors, advertised audit exit table, CLI JSON skipped-rule aggregation with optional stable per-rule details, CLI JSON fail_on_triggered beside unchanged Verdict, dialect-aware connection-option normalization with MySQL/TiDB catalog aliases and PostgreSQL schema/database validation, password resolution, offline existence caveats, and user-vs-runtime exit-code mapping through connresolve Connection Failure Class mapped to CLI TLS/refusal/authentication phrases
+// output: rendered audit results and located diagnostics, audit-only output validation, command-named empty-SQL usage errors, advertised audit exit table, CLI JSON skipped-rule aggregation with optional stable per-rule details, CLI JSON fail_on_triggered beside unchanged Verdict with warning-equivalent evidence-gap weight, dialect-aware connection-option normalization with MySQL/TiDB catalog aliases and PostgreSQL schema/database validation, password resolution, offline existence caveats, and user-vs-runtime exit-code mapping through connresolve Connection Failure Class mapped to CLI TLS/refusal/authentication phrases
 // pos: CLI audit command implementation above the application service and output renderers
 // note: if this file changes, update this header and module README.md.
 package cli
@@ -565,17 +565,29 @@ func formatQuietFinding(finding rule.Finding) string {
 	return fmt.Sprintf("[%s] %s: %s", finding.Level, finding.RuleID, finding.Message)
 }
 
+// failOnTriggered maps findings to the configured threshold; evidence gaps
+// carry warning-equivalent weight — they trip warning and notice thresholds
+// but never blocker, and none disables the check entirely.
 func failOnTriggered(result report.Result, threshold string) bool {
 	switch threshold {
 	case "none":
 		return false
 	case "notice":
-		return result.Summary.Notices > 0 || result.Summary.Warnings > 0 || result.Summary.Blockers > 0
+		return result.Summary.Notices > 0 || result.Summary.Warnings > 0 || result.Summary.Blockers > 0 || hasEvidenceGaps(result)
 	case "warning":
-		return result.Summary.Warnings > 0 || result.Summary.Blockers > 0
+		return result.Summary.Warnings > 0 || result.Summary.Blockers > 0 || hasEvidenceGaps(result)
 	default:
 		return result.Summary.Blockers > 0
 	}
+}
+
+func hasEvidenceGaps(result report.Result) bool {
+	for _, statement := range result.Statements {
+		if len(statement.EvidenceGaps) > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 func exitCodeForResult(result report.Result, threshold string) int {

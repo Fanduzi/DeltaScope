@@ -1,6 +1,6 @@
 // Package deltascope exposes the public library surface for consumers.
 // input: public audit requests carrying SQL text, dialect, optional config path, and optional metadata providers
-// output: stable audit results for embedding DeltaScope in tools and agents
+// output: stable audit results with per-statement evidence gaps for embedding DeltaScope in tools and agents
 // pos: public audit API above the internal application service
 // note: if this file changes, update this header and module README.md.
 package deltascope
@@ -170,6 +170,15 @@ type FindingExplanation struct {
 	Metadata   *ExplanationMetadata `json:"metadata,omitempty"`
 }
 
+// EvidenceGap is the stable public evidence-gap shape: one enabled, applicable
+// rule could not verify a statement because the listed metadata facts were
+// unavailable. RequiredFacts is a bounded list of fixed fact identifiers.
+type EvidenceGap struct {
+	RuleID        string   `json:"rule_id"`
+	ReasonCode    string   `json:"reason_code"`
+	RequiredFacts []string `json:"required_facts,omitempty"`
+}
+
 // Finding is the stable public finding shape.
 type Finding struct {
 	RuleID         string              `json:"rule_id"`
@@ -185,14 +194,15 @@ type Finding struct {
 
 // StatementResult stores public findings for a single SQL statement.
 type StatementResult struct {
-	Index         int          `json:"index"`
-	Kind          string       `json:"kind"`
-	RawSQL        string       `json:"raw_sql,omitempty"`
-	NormalizedSQL string       `json:"normalized_sql,omitempty"`
-	Findings      []Finding    `json:"findings,omitempty"`
-	Impact        *Impact      `json:"impact,omitempty"`
-	Coverage      Coverage     `json:"coverage"`
-	Explanation   *Explanation `json:"explanation,omitempty"`
+	Index         int           `json:"index"`
+	Kind          string        `json:"kind"`
+	RawSQL        string        `json:"raw_sql,omitempty"`
+	NormalizedSQL string        `json:"normalized_sql,omitempty"`
+	Findings      []Finding     `json:"findings,omitempty"`
+	EvidenceGaps  []EvidenceGap `json:"evidence_gaps,omitempty"`
+	Impact        *Impact       `json:"impact,omitempty"`
+	Coverage      Coverage      `json:"coverage"`
+	Explanation   *Explanation  `json:"explanation,omitempty"`
 }
 
 // Result is the stable public audit output.
@@ -266,6 +276,7 @@ func fromDomainResult(result report.Result) Result {
 			RawSQL:        stmt.RawSQL,
 			NormalizedSQL: stmt.NormalizedSQL,
 			Findings:      fromDomainFindings(stmt.Findings),
+			EvidenceGaps:  fromDomainEvidenceGaps(stmt.EvidenceGaps),
 			Impact:        fromDomainImpact(stmt.Impact),
 			Coverage:      Coverage{Status: CoverageStatus(stmt.Coverage.Status)},
 			Explanation:   fromDomainExplanation(stmt.Explanation),
@@ -296,6 +307,21 @@ func fromDomainFindings(findings []rule.Finding) []Finding {
 			}
 		}
 		public = append(public, item)
+	}
+	return public
+}
+
+func fromDomainEvidenceGaps(gaps []rule.EvidenceGap) []EvidenceGap {
+	if len(gaps) == 0 {
+		return nil
+	}
+	public := make([]EvidenceGap, 0, len(gaps))
+	for _, gap := range gaps {
+		public = append(public, EvidenceGap{
+			RuleID:        gap.RuleID,
+			ReasonCode:    gap.ReasonCode,
+			RequiredFacts: append([]string(nil), gap.RequiredFacts...),
+		})
 	}
 	return public
 }

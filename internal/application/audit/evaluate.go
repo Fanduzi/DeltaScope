@@ -1,6 +1,6 @@
 // Package audit orchestrates audit use cases at the application layer.
 // input: extracted domain statements and the registered rule engine
-// output: aggregated report results with statement/global findings and preserved statement-level impact estimates
+// output: aggregated report results with statement/global findings, rule-declared evidence gaps lowering complete coverage to unverified, and preserved statement-level impact estimates
 // pos: application evaluation step between extraction/metadata refinement and reporting
 // note: if this file changes, update this header and module README.md.
 package audit
@@ -80,12 +80,19 @@ func EvaluateStatements(ctx context.Context, registry *rule.Registry, statements
 			}
 		}
 
+		// Metadata evidence gaps lower an otherwise-complete statement to
+		// unverified; they never override a recognized-but-incomplete status.
+		if len(eval.EvidenceGaps) > 0 && coverage.Status == report.CoverageComplete {
+			coverage.Status = report.CoverageUnverified
+		}
+
 		statementResults = append(statementResults, report.StatementResult{
 			Index:         idx,
 			Kind:          statement.Kind.String(),
 			RawSQL:        statement.RawSQL,
 			NormalizedSQL: statement.NormalizedSQL,
 			Findings:      findings,
+			EvidenceGaps:  eval.EvidenceGaps,
 			Impact:        reportImpact(statement),
 			Coverage:      coverage,
 		})

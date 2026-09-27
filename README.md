@@ -165,7 +165,7 @@ Example JSON shape:
 }
 ```
 
-`coverage.status` reports whether every recognized statement aspect had audited semantics (`complete`, `unverified`, `incomplete`). Recognized-but-unsupported statements stay in `statements` with `coverage.status=incomplete` and bounded `unsupported` evidence, floor the verdict to at least `review`, and surface as `ErrUnsupportedStatement` (SDK), exit 1 (CLI), HTTP 400, or MCP `isError=true`.
+`coverage.status` reports whether every recognized statement aspect had audited semantics (`complete`, `unverified`, `incomplete`). Recognized-but-unsupported statements stay in `statements` with `coverage.status=incomplete` and bounded `unsupported` evidence, floor the verdict to at least `review`, and surface as `ErrUnsupportedStatement` (SDK), exit 1 (CLI), HTTP 400, or MCP `isError=true`. Enabled rules that declare required metadata facts (policy `requires_metadata`) report per-statement `evidence_gaps` (`rule_id`, `reason_code`, `required_facts`) when those facts are unavailable: gaps are not findings, they mark the statement `unverified`, floor the verdict to `review`, and carry warning-equivalent `--fail-on` weight.
 
 Audit a TiDB statement:
 

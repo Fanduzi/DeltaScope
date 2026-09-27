@@ -146,7 +146,17 @@ execution platform.
   recorded as `external_blocker` violations in a real artifact.
 - Cleanup is deterministic (`compose down -v --remove-orphans` plus a residual
   container check) on success and failure; only compose-owned resources are
-  touched. The stack publishes no host ports.
+  touched. Only the `mysql84` anchor publishes a loopback-only host port
+  (`127.0.0.1:23384`) so manifest `metadata_cases` can run the freshly built
+  host CLI against a live database; all other anchors stay exec-only.
+- Manifests may declare `metadata_cases` (live-database CLI audit with
+  test-driven `setup`/`post_verify`/`teardown` proving the audited object was
+  never mutated) and `error_cases` (real pre-audit failures such as connection
+  refusal, pinned by exit code and bounded stderr markers). A `policy` block
+  generates an isolated policy that enables exactly the declared rules while
+  disabling the rest of the live catalog, alongside a generated
+  `all-rules-disabled` profile for per-case selection; policy file sha256s are
+  recorded and re-verified by the validator.
 
 `make ddl-golden-validator-test` runs the offline validator contract suite
 (`scripts/test_ddl_golden.py`), proving the rejection paths above actually

@@ -1,6 +1,6 @@
 // Package rule defines rule registration and evaluation infrastructure.
 // input: domain statements and registered statement/global rule implementations
-// output: deterministic finding collection and Loaded rule-ID membership for the audit engine
+// output: deterministic finding and evidence-gap collection plus Loaded rule-ID membership for the audit engine
 // pos: domain rule registry and execution coordination
 // note: if this file changes, update this header and module README.md.
 package rule
@@ -156,6 +156,13 @@ func (r *Registry) EvaluateStatementDetailed(ctx context.Context, statement spec
 			return StatementEvaluation{}, err
 		}
 		eval.Findings = append(eval.Findings, ruleFindings...)
+		if reporter, ok := registered.(EvidenceReporter); ok {
+			gaps, err := normalizeGapRuleIDs(registered.ID(), reporter.EvidenceGaps(statement))
+			if err != nil {
+				return StatementEvaluation{}, err
+			}
+			eval.EvidenceGaps = append(eval.EvidenceGaps, gaps...)
+		}
 		eval.AppliedRuleIDs = append(eval.AppliedRuleIDs, registered.ID())
 	}
 	return eval, nil
@@ -168,6 +175,23 @@ func inferSkipReason(ruleID string, statement spec.Statement) SkipReason {
 		return SkipReasonDialectMismatch
 	}
 	return ""
+}
+
+// normalizeGapRuleIDs applies the same identity guard as findings: a reporter
+// may leave RuleID empty (filled from the registration), but a conflicting ID
+// is a rule defect, not data.
+func normalizeGapRuleIDs(ruleID string, gaps []EvidenceGap) ([]EvidenceGap, error) {
+	for i := range gaps {
+		switch gaps[i].RuleID {
+		case "":
+			gaps[i].RuleID = ruleID
+		case ruleID:
+			continue
+		default:
+			return nil, fmt.Errorf("%w: rule=%s gap=%s", ErrRuleIDMismatch, ruleID, gaps[i].RuleID)
+		}
+	}
+	return gaps, nil
 }
 
 func normalizeFindingRuleIDs(ruleID string, findings []Finding) ([]Finding, error) {

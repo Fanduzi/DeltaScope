@@ -1,11 +1,15 @@
 // Package rule defines domain findings and rule-engine types.
 // input: rule evaluation details, source-location metadata, and statement/global rule implementations
-// output: normalized findings, skip reasons for loaded-but-inapplicable rules, and registry-facing rule contracts
+// output: normalized findings, evidence-gap declarations for rules missing required metadata facts, skip reasons for loaded-but-inapplicable rules, and registry-facing rule contracts
 // pos: domain rule vocabulary and execution contracts shared across audit evaluation
 // note: if this file changes, update this header and module README.md.
 package rule
 
-import "errors"
+import (
+	"errors"
+
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+)
 
 // Level describes how severe a finding is.
 type Level string
@@ -64,9 +68,31 @@ type SkippedRule struct {
 	Reason SkipReason `json:"reason"`
 }
 
+// EvidenceGap records one enabled, applicable rule that could not verify a
+// statement because required metadata facts were unavailable. Gaps are not
+// findings: they never raise severity counters, but they lower coverage to
+// unverified and hold a review floor on the verdict. RequiredFacts is a
+// bounded, machine-readable list of fixed fact identifiers — never SQL text,
+// credentials, provider errors, or arbitrary expressions.
+type EvidenceGap struct {
+	RuleID        string   `json:"rule_id"`
+	ReasonCode    string   `json:"reason_code"`
+	RequiredFacts []string `json:"required_facts,omitempty"`
+}
+
+// EvidenceReporter is an optional StatementRule extension: after AppliesTo
+// confirms a rule is enabled and applicable, EvidenceGaps reports which
+// declared metadata facts were missing. Rules that never need external facts
+// do not implement it. Returning gaps does not suppress Evaluate; a rule may
+// still emit findings for facts that are present.
+type EvidenceReporter interface {
+	EvidenceGaps(statement spec.Statement) []EvidenceGap
+}
+
 // StatementEvaluation holds the result of evaluating all statement rules against one statement.
 type StatementEvaluation struct {
 	Findings       []Finding     `json:"findings,omitempty"`
+	EvidenceGaps   []EvidenceGap `json:"evidence_gaps,omitempty"`
 	Skipped        []SkippedRule `json:"skipped,omitempty"`
 	AppliedRuleIDs []string      `json:"-"` // all rules where AppliesTo() returned true
 }

@@ -614,3 +614,63 @@ found two residuals:
 - Commits: this task's commit; prerequisites #80 `1768f05`, #81 `b2956b3`
 - Tests: `internal/application/audit/coverage_t03_test.go`, `internal/application/audit/coverage.go`, `internal/infrastructure/parser/tidb/coverage_boundary.go`, `internal/interfaces/{cli,http,mcp}/audit_coverage_t03_test.go`, `pkg/deltascope/audit_unsupported_verdict_floor_postgresql_tag_test.go`
 - Docs: `testdata/ddl-golden/T03.json`, `testdata/ddl-inventory/inventory.yaml`, `docs/decisions/2026-09-22-ddl-inventory-and-golden-baseline.md`
+
+## Amendment 2026-09-26 — metadata evidence gaps (issue #83 T04-A)
+
+`coverage.status=unverified` is now emitted. The first vertical slice is
+`ALTER TABLE ... MODIFY COLUMN` under
+`ddl.alter.modify_column.compatibility.require` with policy params
+`required: true` + `requires_metadata: true`.
+
+- **Gaps are a third channel, not findings and not unsupported.** Rules
+  that need external facts declare them through the optional
+  `rule.EvidenceReporter` interface: after `AppliesTo` confirms the rule is
+  enabled and applicable, the registry collects `rule.EvidenceGap` records
+  beside findings on `StatementEvaluation`. Per-statement
+  `evidence_gaps` carry `rule_id`, `reason_code`, and a bounded sorted
+  `required_facts` list of fixed fact identifiers
+  (`source_column.definition`, `source_column.type`,
+  `source_column.length`) — never SQL text, credentials, or provider error
+  payloads. There is no top-level copy of the gap list.
+- **Two reason codes for this slice.** `missing_source_column` when no
+  usable source-column definition exists (no snapshot/provider facts, or
+  the source column is absent); `incomplete_source_column` when a
+  snapshot-backed column lacks a fact the comparison consumes (type, or
+  length for string-to-string transitions — including the zero-length-is-
+  not-a-fact boundary). Zero values are never treated as verified facts.
+- **Aggregation and floors.** `incomplete` still dominates `unverified`,
+  which dominates `complete`. A gap lowers an otherwise-complete statement
+  to `unverified` and floors the verdict at `review`; a proven blocker
+  stays `reject`, so missing facts can never mask a real violation, and
+  one statement can carry findings and gaps simultaneously.
+- **Fail threshold weight.** Gaps carry warning-equivalent `--fail-on`
+  weight: `warning`/`notice` exit 1, `blocker`/`none` exit 0, and
+  `fail_on_triggered` reflects that weight. Finding counters stay 0.
+- **Opt-in only.** `requires_metadata` is consumed by rule construction;
+  without it the legacy silent path is unchanged, so enabling the rule
+  alone produces no gaps. `required: false` keeps the rule inapplicable
+  and cannot emit gaps. Provider errors keep their existing
+  error/diagnostic classes — an absent provider is a gap, a failing
+  provider is not.
+- **Surfaces.** SDK exposes `StatementResult.EvidenceGaps` (gap-only
+  results return nil error); CLI emits the field in JSON with the
+  threshold semantics above; HTTP returns 200 for gap-only results and
+  keeps 400 for results also carrying unsupported statements; MCP returns
+  `isError=false` for gap-only and `isError=true` when unsupported
+  statements are present. `context.unproven` remains the coarse offline
+  caveat and is never copied into rule gaps.
+- **Golden proof.** `testdata/ddl-golden/T04.json` pins an isolated policy
+  (the target rule enabled blocker + required + requires_metadata, all
+  other cataloged rules disabled) and runs the full T03 CLI denominator
+  plus gap matrix, metadata-backed pass/reject cases against the pinned
+  MySQL 8.4.10 fixture over a new loopback port with post-verify proof
+  that the product never executed the audited ALTER, a real
+  connection-refusal representative, and a parser-priority case. The
+  runner gained `policy`, `metadata_cases`, and `error_cases` manifest
+  kinds plus per-case policy selection; the validator recomputes all of
+  it from raw stdout and rejects missing/mis-attributed gaps, gaps
+  smuggled into findings, parsed-vs-stdout drift, and tampered policy
+  evidence.
+
+Deferred to T04-B/#84: `--target-version` input, version-dependent fact
+requirements, and capability-boundary gap reasons.

@@ -54,6 +54,7 @@ Stable public package surface for library consumers.
   Public completeness states `CoverageComplete`, `CoverageUnverified`, and `CoverageIncomplete`; `Result.Coverage` and `StatementResult.Coverage` report them
 - `Explanation`
 - `Finding`
+- `EvidenceGap`
 - `FindingExplanation`
 - `ExplanationMetadata`
 - `Level`
@@ -160,6 +161,7 @@ The unified online-session suite owns exhaustive semantic and detailed-probe evi
 - `Result` now also exposes `Unsupported` (`[]spec.UnsupportedDetail`) and `Diagnostics` (`[]spec.Diagnostic`) arrays so library consumers can inspect structured partial-support and parser-error/unsupported-statement outcomes. A partial result with an unaudited parser-error diagnostic is floored from `pass` to `review`; existing `review`/`reject` verdicts and wholly unparseable behavior remain unchanged.
 - `ErrUnsupportedStatement` is returned when unsupported statements are present, while still returning a populated `Result` for supported statements.
 - Unsupported statements are retained as top-level `StatementResult` entries with `coverage.status=incomplete`, preserving index, raw/normalized SQL, and source locations; `Result.Coverage` reports `incomplete` whenever any statement is incomplete. Coverage is a capability fact and is unaffected by policy rule configuration; an incomplete result floors `pass` to `review` but never downgrades `reject`.
+- `StatementResult.EvidenceGaps` (issue #83 T04-A) carries stable per-statement `EvidenceGap` records (`rule_id`, `reason_code`, bounded sorted `required_facts`) for enabled, applicable metadata-required rules whose declared facts were unavailable. Gaps are not findings: severity counters stay unchanged, coverage lowers to `unverified`, and the verdict floors to `review` without overriding `reject`. Gap-only results return a nil error; results that also carry unsupported statements keep the existing `ErrUnsupportedStatement` contract.
 - `Finding` now exposes an optional `Explanation` field so library consumers can read structured per-finding `why`, `risk`, `suggestion`, and metadata-status notes directly.
 - `DefaultVersion` is `v0.511.1`, the fallback when Go build information is absent.
 - `ReportedVersion()` prefers the Go module version (tag or pseudo-version) or VCS revision (`devel-<rev>` / `devel-<rev>-dirty`) so untagged, devel, and `go install @main` builds do not claim the last release tag as the sole version.

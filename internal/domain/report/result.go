@@ -1,6 +1,6 @@
 // Package report defines audit results, summaries, and verdict aggregation.
 // input: statement findings and global findings from audit evaluation
-// output: normalized audit results for CLI, APIs, and future integrations
+// output: normalized audit results with per-statement evidence gaps and the gap-aware verdict floor for CLI, APIs, and future integrations
 // pos: domain reporting model and verdict aggregation logic
 // note: if this file changes, update this header and module README.md.
 package report
@@ -87,14 +87,15 @@ type Impact struct {
 
 // StatementResult stores findings for a single SQL statement.
 type StatementResult struct {
-	Index         int            `json:"index"`
-	Kind          string         `json:"kind"`
-	RawSQL        string         `json:"raw_sql,omitempty"`
-	NormalizedSQL string         `json:"normalized_sql,omitempty"`
-	Findings      []rule.Finding `json:"findings,omitempty"`
-	Impact        *Impact        `json:"impact,omitempty"`
-	Coverage      Coverage       `json:"coverage"`
-	Explanation   *Explanation   `json:"explanation,omitempty"`
+	Index         int                `json:"index"`
+	Kind          string             `json:"kind"`
+	RawSQL        string             `json:"raw_sql,omitempty"`
+	NormalizedSQL string             `json:"normalized_sql,omitempty"`
+	Findings      []rule.Finding     `json:"findings,omitempty"`
+	EvidenceGaps  []rule.EvidenceGap `json:"evidence_gaps,omitempty"`
+	Impact        *Impact            `json:"impact,omitempty"`
+	Coverage      Coverage           `json:"coverage"`
+	Explanation   *Explanation       `json:"explanation,omitempty"`
 }
 
 // RuleSummary captures rule applicability statistics across the full audit.
@@ -156,6 +157,14 @@ func Aggregate(statements []StatementResult, findings []rule.Finding) Result {
 	}
 	allFindings = append(allFindings, findings...)
 
+	hasEvidenceGaps := false
+	for i := range result.Statements {
+		if len(result.Statements[i].EvidenceGaps) > 0 {
+			hasEvidenceGaps = true
+			break
+		}
+	}
+
 	for _, finding := range allFindings {
 		switch finding.Level {
 		case rule.LevelBlocker:
@@ -170,7 +179,8 @@ func Aggregate(statements []StatementResult, findings []rule.Finding) Result {
 	switch {
 	case result.Summary.Blockers > 0:
 		result.Verdict = VerdictReject
-	case result.Summary.Warnings > 0:
+	case result.Summary.Warnings > 0 || hasEvidenceGaps:
+		// Evidence gaps hold a review floor but never override a proven blocker.
 		result.Verdict = VerdictReview
 	default:
 		result.Verdict = VerdictPass

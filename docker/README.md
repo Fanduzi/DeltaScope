@@ -10,7 +10,7 @@ Container assets for DeltaScope local end-to-end environments.
 | query-access-builtin-compose.yaml | Defines isolated MySQL 5.7, 8.0, 8.4, and TiDB 8.5 services for builtin semantic evidence |
 | query-access-builtin-mysql-init.sql | Seeds the aggregate/window evidence table in each MySQL profile |
 | query-access-builtin-tidb-init.sql | Seeds the aggregate/window evidence table through the TiDB fixture client |
-| ddl-golden-compose.yaml | Defines pinned golden-path anchors MySQL 5.7.44, 8.0.46, 8.4.10, and TiDB 8.5.0 (not 8.5.7) plus a TiDB fixture client; mysql57 runs under `platform: linux/amd64` because `mysql:5.7.44` ships amd64 only |
+| ddl-golden-compose.yaml | Defines pinned golden-path anchors MySQL 5.7.44, 8.0.46, 8.4.10, and TiDB 8.5.0 (not 8.5.7) plus a TiDB fixture client; mysql57 runs under `platform: linux/amd64` because `mysql:5.7.44` ships amd64 only; mysql84 additionally publishes `127.0.0.1:23384` (loopback only) so the host-built CLI can run live metadata audit cases against it (#83 T04-A) |
 | mysql/init.sql | Seeds MySQL with deterministic schemas/tables for inference, ambiguity, and compatibility scenarios |
 | tidb/init.sql | Seeds TiDB with deterministic schemas/tables for inference, ambiguity, and compatibility scenarios |
 

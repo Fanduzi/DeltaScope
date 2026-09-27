@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # input: task manifest testdata/ddl-golden/<TASK>.json, docker/ddl-golden-compose.yaml, freshly built deltascope CLI
-# output: inspectable golden artifact (artifact.json + per-case raw evidence) validated against the manifest
+# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest
 # pos: DDL golden-path runner and artifact validator behind `make ddl-golden TASK=Txx ARTIFACT_DIR=...`
 # note: if this file changes, update this header and module README.md.
-"""DeltaScope DDL golden-path runner (milestone T02/#81).
+"""DeltaScope DDL golden-path runner (milestone T02/#81, T04/#83).
 
 `run` mode builds the CLI from the current checkout, starts the pinned
 per-anchor database services, executes the manifest's database and CLI cases,
@@ -189,7 +189,22 @@ def build_cli(work_dir):
     }
 
 
-def make_all_off_policy(binary, work_dir, profile_name):
+def sha256_file(path):
+    return hashlib.sha256(pathlib.Path(path).read_bytes()).hexdigest()
+
+
+def make_policies(binary, work_dir, manifest):
+    """Build every policy file a manifest may select.
+
+    Without a `policy` block the manifest behaves exactly as before: a single
+    generated all-rules-disabled profile (T02/T03 shape). With
+    `policy.enable` the manifest fixes an isolated profile — every listed rule
+    is enabled with its declared level/params and every other cataloged rule
+    is disabled — and an all-rules-disabled file is generated alongside it so
+    individual cases can still pin the rule-disabled path (issue #83 T04-A).
+    Each enabled rule ID must exist in the live `rules list` catalog; the
+    catalog size is never hardcoded.
+    """
     rc, out, err = run_cmd([binary, "rules", "list", "--format", "json"], timeout=60)
     if rc != 0:
         fail_run(f"rules list failed: {err.strip()}")
@@ -197,11 +212,62 @@ def make_all_off_policy(binary, work_dir, profile_name):
     ids = sorted({r["rule_id"] for r in catalog.get("rules", [])})
     if not ids:
         fail_run("rules catalog is empty; cannot build isolation profile")
-    lines = ["rules:"]
-    lines += [f"  {json.dumps(rid)}:\n    enabled: false" for rid in ids]
-    policy = work_dir / "golden-policy.yaml"
-    policy.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return {"path": str(policy), "disabled_rules": len(ids), "profile": profile_name}
+
+    profile = manifest.get("policy_profile", "all-rules-disabled")
+    policy_spec = manifest.get("policy") or {}
+    enable = policy_spec.get("enable") or {}
+    for rid in enable:
+        if rid not in ids:
+            fail_run(f"manifest policy enables unknown rule: {rid}")
+
+    def render(enabled):
+        lines = ["rules:"]
+        for rid in ids:
+            cfg = enabled.get(rid)
+            if cfg is None:
+                lines.append(f"  {json.dumps(rid)}:\n    enabled: false")
+                continue
+            lines.append(f"  {json.dumps(rid)}:")
+            lines.append(f"    enabled: {str(bool(cfg.get('enabled', True))).lower()}")
+            if cfg.get("level"):
+                lines.append(f"    level: {cfg['level']}")
+            params = cfg.get("params") or {}
+            if params:
+                lines.append("    params:")
+                for key in sorted(params):
+                    lines.append(f"      {key}: {json.dumps(params[key])}")
+        return "\n".join(lines) + "\n"
+
+    def record(name, path, enabled):
+        return {
+            "profile": name,
+            "path": str(path),
+            "sha256": sha256_file(path),
+            "catalog_rules": len(ids),
+            "enabled_rules": enabled,
+            "disabled_rules": len(ids) - len(enabled),
+        }
+
+    policies = {}
+    if enable:
+        policy_path = work_dir / "golden-policy.yaml"
+        policy_path.write_text(render(enable), encoding="utf-8")
+        policies[profile] = record(profile, policy_path, enable)
+    alloff_path = work_dir / ("golden-policy-all-off.yaml" if enable else "golden-policy.yaml")
+    alloff_path.write_text(render({}), encoding="utf-8")
+    policies["all-rules-disabled"] = record("all-rules-disabled", alloff_path, {})
+    return policies
+
+
+def policy_for_case(manifest, policies, spec):
+    """Resolve which generated policy a case pins. Defaults to the manifest
+    policy profile; `spec.policy` may select another generated profile such as
+    the always-available all-rules-disabled file."""
+    name = spec.get("policy") or manifest.get("policy_profile", "all-rules-disabled")
+    policy = policies.get(name)
+    if policy is None:
+        fail_run(f"case {spec.get('id')!r} selects unknown policy profile {name!r}")
+    return name, policy
 
 
 def execute_ddl_case(manifest, anchor_key):
@@ -333,6 +399,16 @@ def cli_case_expect_checks(parsed, rc, expect):
     findings = sum(len(s.get("findings", [])) for s in statements) + len((parsed or {}).get("global_findings") or [])
     diagnostics = (parsed or {}).get("diagnostics") or []
     unsupported = (parsed or {}).get("unsupported") or []
+    # evidence_gaps live per statement; the flat list pairs each gap with its
+    # owning statement index so entry assertions can pin attribution.
+    all_gaps = [
+        (i, g)
+        for i, s in enumerate(statements)
+        for g in (s.get("evidence_gaps") or [])
+    ]
+    all_findings = [
+        f for s in statements for f in (s.get("findings") or [])
+    ] + list((parsed or {}).get("global_findings") or [])
     checks = [
         ("exit code", parsed is not None and rc == expect["exit"], f"rc={rc} expected={expect['exit']}"),
         ("verdict", parsed is not None and parsed.get("verdict") == expect["verdict"], f"verdict={parsed.get('verdict') if parsed else None!r}"),
@@ -406,11 +482,87 @@ def cli_case_expect_checks(parsed, rc, expect):
             parsed is not None and u.get("sql") == bound,
             f"sql={u.get('sql')!r} expected={bound!r}",
         ))
+    if "evidence_gaps" in expect:
+        checks.append(("evidence gap count", len(all_gaps) == expect["evidence_gaps"], f"gaps={len(all_gaps)}"))
+    if "evidence_gap_entries" in expect:
+        got = sorted((i, g.get("rule_id"), g.get("reason_code")) for i, g in all_gaps)
+        want = sorted((e.get("index", 0), e.get("rule_id"), e.get("reason_code")) for e in expect["evidence_gap_entries"])
+        checks.append(("evidence gap entries", got == want, f"gaps={got!r} expected={want!r}"))
+        # required_facts pins consume actual entries one-to-one, like the
+        # unsupported metadata pins: order and content must match exactly.
+        consumed = set()
+        for e in expect["evidence_gap_entries"]:
+            if "required_facts" not in e:
+                continue
+            key = (e.get("index", 0), e.get("rule_id"), e.get("reason_code"))
+            found = False
+            for pos, (i, g) in enumerate(all_gaps):
+                if pos in consumed:
+                    continue
+                if (i, g.get("rule_id"), g.get("reason_code")) == key and (g.get("required_facts") or []) == e["required_facts"]:
+                    consumed.add(pos)
+                    found = True
+                    break
+            checks.append((
+                f"evidence gap required_facts {key}",
+                parsed is not None and found,
+                f"gaps={[g for _, g in all_gaps]!r} expected_facts={e['required_facts']!r}",
+            ))
+        # A gap smuggled into findings is a contract violation, not a variant.
+        gap_ids = {e.get("rule_id") for e in expect["evidence_gap_entries"]}
+        if gap_ids:
+            leaked = [f for f in all_findings if f.get("rule_id") in gap_ids and f.get("reason_code")]
+            checks.append(("no gap encoded as finding", not leaked, f"findings carrying gap shape={leaked!r}"))
+    if "finding_entries" in expect:
+        got = sorted(
+            (f.get("statement_index", 0), f.get("rule_id"), f.get("level"))
+            for f in all_findings
+        )
+        want = sorted(
+            (e.get("index", 0), e.get("rule_id"), e.get("level"))
+            for e in expect["finding_entries"]
+        )
+        checks.append(("finding entries", parsed is not None and got == want, f"findings={got!r} expected={want!r}"))
+    if "finding_metadata" in expect:
+        consumed = set()
+        for e in expect["finding_metadata"]:
+            key = (e.get("index", 0), e.get("rule_id"))
+            found = False
+            for pos, f in enumerate(all_findings):
+                if pos in consumed:
+                    continue
+                meta = f.get("metadata") or {}
+                if (f.get("statement_index", 0), f.get("rule_id")) == key and all(meta.get(k) == v for k, v in e["metadata"].items()):
+                    consumed.add(pos)
+                    found = True
+                    break
+            checks.append((
+                f"finding metadata {key}",
+                parsed is not None and found,
+                f"findings={[f.get('metadata') for f in all_findings]!r} expected_subset={e['metadata']!r}",
+            ))
+    if "finding_locations" in expect:
+        for e in expect["finding_locations"]:
+            idx = e.get("index", 0)
+            found = any(
+                f.get("statement_index", 0) == idx
+                and (f.get("location") or {}).get("line") == e.get("line")
+                and (f.get("location") or {}).get("column") == e.get("column")
+                for f in all_findings
+            )
+            checks.append((
+                f"finding location index={idx}",
+                parsed is not None and found,
+                f"locations={[f.get('location') for f in all_findings]!r} expected={e!r}",
+            ))
+    if "fail_on_triggered" in expect:
+        checks.append(("fail_on_triggered", parsed is not None and parsed.get("fail_on_triggered") == expect["fail_on_triggered"], f"fail_on_triggered={parsed.get('fail_on_triggered') if parsed else None!r}"))
     return checks
 
 
-def execute_cli_case(manifest, binary, policy, spec):
+def execute_cli_case(manifest, binary, policies, spec):
     case_id = f"{manifest['task_id']}.cli.{spec['id']}"
+    profile_name, policy = policy_for_case(manifest, policies, spec)
     args = [
         binary, "audit",
         "--dialect", spec["dialect"],
@@ -419,14 +571,14 @@ def execute_cli_case(manifest, binary, policy, spec):
         "--format", "json",
     ]
     args.extend(spec.get("args") or [])
-    rc, out, err = run_cmd(args, cwd=ROOT_DIR, timeout=120)
+    rc, out, err = run_cmd(args, cwd=ROOT_DIR, timeout=120, env=case_env(spec))
     case = {
         "case_id": case_id,
         "kind": "cli_audit",
         "cli_case": spec["id"],
         "dialect": spec["dialect"],
         "input_sql": spec["sql"],
-        "policy_profile": policy["profile"],
+        "policy_profile": profile_name,
         "policy_path": policy["path"],
         "command": args,
         "expected": spec["expect"],
@@ -442,6 +594,203 @@ def execute_cli_case(manifest, binary, policy, spec):
     case["actual"]["parsed"] = parsed
     for name, ok, detail in cli_case_expect_checks(parsed, rc, spec["expect"]):
         case["assertions"].append({"name": name, "ok": bool(ok), "detail": detail})
+    if not all(a["ok"] for a in case["assertions"]):
+        case["status"] = "fail"
+    return case
+
+
+def case_env(spec):
+    """Environment for a CLI invocation. `env` entries inject fixed fixture
+    values (for example a password env var name → the compose fixture's root
+    password); the manifest declares them so no secret ever enters the case."""
+    env = dict(os.environ)
+    for key, value in (spec.get("env") or {}).items():
+        env[key] = str(value)
+    return env
+
+
+def metadata_case_specs(manifest):
+    return manifest.get("metadata_cases") or []
+
+
+def metadata_case_spec_for(manifest, case):
+    case_name = case.get("cli_case") or case.get("metadata_case")
+    for spec in metadata_case_specs(manifest):
+        if spec.get("id") == case_name:
+            return spec
+    return None
+
+
+def execute_metadata_case(manifest, anchor_key, binary, policies, spec):
+    """Run the freshly built CLI audit against a live anchor database: fixture
+    setup and teardown stay test-driven, the audit only reads metadata, and
+    post_verify steps prove the audited object was not mutated."""
+    anchor = manifest["anchors"][anchor_key]
+    case_id = f"{manifest['task_id']}.meta.{spec['id']}"
+    profile_name, policy = policy_for_case(manifest, policies, spec)
+    conn = spec["connect"]
+    case = {
+        "case_id": case_id,
+        "kind": "cli_metadata",
+        "cli_case": spec["id"],
+        "anchor": anchor_key,
+        "dialect": spec["dialect"],
+        "input_sql": spec["sql"],
+        "policy_profile": profile_name,
+        "policy_path": policy["path"],
+        "connect": {k: v for k, v in conn.items() if k != "password"},
+        "expected": spec["expect"],
+        "actual": {"database": {}, "setup": [], "post_verify": [], "teardown": []},
+        "assertions": [],
+        "status": "pass",
+    }
+
+    database = {
+        "product": anchor["product"],
+        "image": anchor["image"],
+        "image_digest": image_digest(anchor["image"]),
+        "container": anchor["container"],
+        "reachable": False,
+        "version": "",
+    }
+    rc, out, _ = mysql_exec(anchor, "SELECT VERSION()")
+    database["reachable"] = rc == 0
+    database["version"] = out.strip()
+    case["actual"]["database"] = database
+    case["assertions"].append({
+        "name": "database reachable with expected version",
+        "ok": rc == 0 and anchor["version_contains"] in database["version"],
+        "detail": f"SELECT VERSION() rc={rc} version={database['version']!r} expected_contains={anchor['version_contains']!r}",
+    })
+    if not database["reachable"]:
+        case["status"] = "fail"
+        return case
+
+    for step in spec.get("setup") or []:
+        src, sout, serr = mysql_exec(anchor, step["sql"], database=anchor["database"], silent=False)
+        record = {"name": step["name"], "sql": step["sql"], "rc": src, "stdout": sout.strip(), "stderr": serr.strip()}
+        case["actual"]["setup"].append(record)
+        case["assertions"].append({
+            "name": f"setup {step['name']} return code",
+            "ok": src == step.get("expect_rc", 0),
+            "detail": f"rc={src} expected={step.get('expect_rc', 0)} stderr={serr.strip()!r}",
+        })
+        for verify in step.get("verify") or []:
+            vrc, vout, verr = mysql_exec(anchor, verify["sql"], silent=True)
+            record.setdefault("verify", []).append({"assert": verify["assert"], "sql": verify["sql"], "rc": vrc, "output": vout.strip(), "stderr": verr.strip()})
+            case["assertions"].append({
+                "name": f"setup {step['name']}: {verify['assert']}",
+                "ok": vrc == 0 and vout.strip() == verify["expect"],
+                "detail": f"rc={vrc} output={vout.strip()!r} expected={verify['expect']!r}",
+            })
+
+    args = [
+        binary, "audit",
+        "--dialect", spec["dialect"],
+        "--sql", spec["sql"],
+        "--config", policy["path"],
+        "--format", "json",
+        "--host", conn["host"],
+        "--port", str(conn["port"]),
+        "--user", conn["user"],
+    ]
+    if conn.get("password_env"):
+        args += ["--password-env", conn["password_env"]]
+    if conn.get("password_file"):
+        args += ["--password-file", conn["password_file"]]
+    if conn.get("schema"):
+        args += ["--schema", conn["schema"]]
+    args.extend(spec.get("args") or [])
+    env = case_env(spec)
+    if conn.get("password_env") and conn.get("password") is not None:
+        env[conn["password_env"]] = str(conn["password"])
+    rc, out, err = run_cmd(args, cwd=ROOT_DIR, timeout=180, env=env)
+    case["command"] = args
+    case["actual"].update({"exit": rc, "stdout": out, "stderr": err})
+    parsed = {}
+    try:
+        parsed = json.loads(out)
+    except json.JSONDecodeError:
+        parsed = None
+    case["actual"]["parsed"] = parsed
+    for name, ok, detail in cli_case_expect_checks(parsed, rc, spec["expect"]):
+        case["assertions"].append({"name": name, "ok": bool(ok), "detail": detail})
+
+    for check in spec.get("post_verify") or []:
+        vrc, vout, verr = mysql_exec(anchor, check["sql"], silent=True)
+        case["actual"]["post_verify"].append({"assert": check["assert"], "sql": check["sql"], "rc": vrc, "output": vout.strip(), "stderr": verr.strip()})
+        case["assertions"].append({
+            "name": f"post-verify {check['assert']}",
+            "ok": vrc == 0 and vout.strip() == check["expect"],
+            "detail": f"rc={vrc} output={vout.strip()!r} expected={check['expect']!r}",
+        })
+
+    for step in spec.get("teardown") or []:
+        trc, tout, terr = mysql_exec(anchor, step["sql"], database=anchor["database"], silent=False)
+        case["actual"]["teardown"].append({"name": step["name"], "sql": step["sql"], "rc": trc, "stderr": terr.strip()})
+        case["assertions"].append({
+            "name": f"teardown {step['name']} return code",
+            "ok": trc == step.get("expect_rc", 0),
+            "detail": f"rc={trc} expected={step.get('expect_rc', 0)} stderr={terr.strip()!r}",
+        })
+
+    if not all(a["ok"] for a in case["assertions"]):
+        case["status"] = "fail"
+    return case
+
+
+def error_case_specs(manifest):
+    return manifest.get("error_cases") or []
+
+
+def error_case_spec_for(manifest, case):
+    for spec in error_case_specs(manifest):
+        if spec.get("id") == (case.get("cli_case") or case.get("error_case")):
+            return spec
+    return None
+
+
+def execute_error_case(manifest, binary, policies, spec):
+    """Run a CLI invocation expected to fail before producing an audit result —
+    for example a real connection refusal — asserting only the exit code and
+    bounded stderr markers, never parsing stdout as a result."""
+    case_id = f"{manifest['task_id']}.clierr.{spec['id']}"
+    profile_name, policy = policy_for_case(manifest, policies, spec)
+    args = [
+        binary, "audit",
+        "--dialect", spec["dialect"],
+        "--sql", spec["sql"],
+        "--config", policy["path"],
+        "--format", "json",
+    ]
+    args.extend(spec.get("args") or [])
+    rc, out, err = run_cmd(args, cwd=ROOT_DIR, timeout=120, env=case_env(spec))
+    case = {
+        "case_id": case_id,
+        "kind": "cli_error",
+        "cli_case": spec["id"],
+        "dialect": spec["dialect"],
+        "input_sql": spec["sql"],
+        "policy_profile": profile_name,
+        "policy_path": policy["path"],
+        "command": args,
+        "expected": spec["expect"],
+        "actual": {"exit": rc, "stdout": out, "stderr": err},
+        "assertions": [],
+        "status": "pass",
+    }
+    expect = spec["expect"]
+    case["assertions"].append({
+        "name": "exit code",
+        "ok": rc == expect["exit"],
+        "detail": f"rc={rc} expected={expect['exit']}",
+    })
+    for marker in expect.get("stderr_contains") or []:
+        case["assertions"].append({
+            "name": f"stderr contains {marker!r}",
+            "ok": marker in err,
+            "detail": f"stderr={err.strip()!r} marker={marker!r}",
+        })
     if not all(a["ok"] for a in case["assertions"]):
         case["status"] = "fail"
     return case
@@ -473,7 +822,43 @@ def manifest_expected(manifest, case):
         if spec is None:
             return None
         return spec["expect"]
+    if kind == "cli_metadata":
+        spec = metadata_case_spec_for(manifest, case)
+        if spec is None:
+            return None
+        return spec["expect"]
+    if kind == "cli_error":
+        spec = error_case_spec_for(manifest, case)
+        if spec is None:
+            return None
+        return spec["expect"]
     return None
+
+
+def expected_policy_profile(manifest, case, spec):
+    """The profile a case must record, derived from the manifest alone."""
+    if spec is not None and spec.get("policy"):
+        return spec["policy"]
+    return manifest.get("policy_profile", "all-rules-disabled")
+
+
+def cli_stdout_expect_failures(case, spec, failures):
+    """Re-parse the recorded raw stdout and re-run the manifest expectation —
+    the artifact's stored `parsed` blob is never trusted over raw bytes."""
+    raw = case.get("actual", {}).get("stdout")
+    try:
+        reparsed = json.loads(raw) if isinstance(raw, str) else None
+    except json.JSONDecodeError:
+        reparsed = None
+    if reparsed is None:
+        failures.append(f"case {case.get('case_id')}: CLI stdout is not JSON")
+        return
+    recorded_parsed = case.get("actual", {}).get("parsed")
+    if recorded_parsed is not None and recorded_parsed != reparsed:
+        failures.append(f"case {case.get('case_id')}: recorded parsed disagrees with raw stdout")
+    for name, ok, detail in cli_case_expect_checks(reparsed, case.get("actual", {}).get("exit"), spec["expect"]):
+        if not ok:
+            failures.append(f"case {case.get('case_id')}: {name}: {detail}")
 
 
 def cli_case_spec_for(manifest, case):
@@ -537,6 +922,38 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
             actual_sha = hashlib.sha256(binary.read_bytes()).hexdigest()
             if actual_sha != cli["sha256"]:
                 failures.append("cli binary sha256 mismatch (stale or fabricated evidence)")
+
+    # Policy evidence: when the artifact carries a generated `policies` list,
+    # every recorded case profile must resolve to one entry whose sha256 still
+    # matches on disk, and the manifest's enable map must be the exact set
+    # recorded for the isolated profile. Legacy artifacts record only the
+    # artifact-level `policy_profile` dict (no sha256): profile membership is
+    # still checked against it, but byte integrity is not — that shape predates
+    # the multi-profile contract and its file may not survive.
+    policies = artifact.get("policies") or []
+    policy_by_name = {p.get("profile"): p for p in policies}
+    legacy_policy = artifact.get("policy_profile")
+    if isinstance(legacy_policy, dict) and legacy_policy.get("profile"):
+        policy_by_name.setdefault(legacy_policy["profile"], legacy_policy)
+    for case in artifact.get("cases") or []:
+        profile = case.get("policy_profile")
+        if profile and profile not in policy_by_name:
+            failures.append(f"case {case.get('case_id')}: policy_profile {profile!r} has no generated policy record")
+    for profile, record in policy_by_name.items():
+        if "sha256" not in record:
+            continue
+        path = pathlib.Path(record.get("path") or "")
+        if not path.is_file():
+            failures.append(f"policy {profile}: file missing on disk: {path} (stale or fabricated evidence)")
+        elif sha256_file(path) != record.get("sha256"):
+            failures.append(f"policy {profile}: sha256 mismatch (stale or fabricated evidence)")
+    manifest_enable = ((manifest.get("policy") or {}).get("enable") or {})
+    if manifest_enable:
+        record = policy_by_name.get(manifest.get("policy_profile", "all-rules-disabled"))
+        if record is None:
+            failures.append("manifest declares policy.enable but artifact has no isolated policy record")
+        elif record.get("enabled_rules") != manifest_enable:
+            failures.append(f"isolated policy enabled_rules differ from manifest: {record.get('enabled_rules')!r} != {manifest_enable!r}")
 
     anchors = manifest["anchors"]
     covered_anchors = set()
@@ -633,26 +1050,132 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
                     failures.append(f"case {case_id}: dialect {case.get('dialect')!r} != manifest spec {spec.get('dialect')!r}")
                 if case.get("input_sql") != spec["sql"]:
                     failures.append(f"case {case_id}: recorded input_sql differs from manifest cli case")
-            if case.get("policy_profile") not in (None, manifest.get("policy_profile", "all-rules-disabled")):
-                failures.append(f"case {case_id}: policy_profile {case.get('policy_profile')!r} differs from manifest")
+            want_profile = expected_policy_profile(manifest, case, spec)
+            if case.get("policy_profile") != want_profile:
+                failures.append(f"case {case_id}: policy_profile {case.get('policy_profile')!r} differs from manifest-derived {want_profile!r}")
             command = case.get("command") or []
             if "--dialect" not in command or case.get("dialect") not in command or "--config" not in command:
                 failures.append(f"case {case_id}: recorded command lacks --dialect/--config evidence")
-            raw = actual.get("stdout")
-            try:
-                reparsed = json.loads(raw) if isinstance(raw, str) else None
-            except json.JSONDecodeError:
-                reparsed = None
-            if reparsed is None:
-                failures.append(f"case {case_id}: CLI stdout is not JSON")
-            elif spec is not None:
-                recorded_parsed = actual.get("parsed")
-                if recorded_parsed is not None and recorded_parsed != reparsed:
-                    failures.append(f"case {case_id}: recorded parsed disagrees with raw stdout")
-                expect = spec["expect"]
-                for name, ok, detail in cli_case_expect_checks(reparsed, actual.get("exit"), expect):
-                    if not ok:
-                        failures.append(f"case {case_id}: {name}: {detail}")
+            if spec is not None:
+                cli_stdout_expect_failures(case, spec, failures)
+        elif kind == "cli_metadata":
+            spec = metadata_case_spec_for(manifest, case)
+            if spec is None:
+                failures.append(f"case {case_id}: no manifest metadata case matches {case.get('cli_case')!r}")
+                continue
+            anchor_key = case.get("anchor")
+            covered_anchors.add(anchor_key)
+            anchor = anchors.get(anchor_key)
+            if anchor is None or anchor_key != spec.get("anchor"):
+                failures.append(f"case {case_id}: unknown/mismatched anchor {anchor_key!r}")
+                continue
+            if case.get("dialect") != spec.get("dialect"):
+                failures.append(f"case {case_id}: dialect {case.get('dialect')!r} != manifest spec {spec.get('dialect')!r}")
+            if case.get("input_sql") != spec["sql"]:
+                failures.append(f"case {case_id}: recorded input_sql differs from manifest metadata case")
+            want_profile = expected_policy_profile(manifest, case, spec)
+            if case.get("policy_profile") != want_profile:
+                failures.append(f"case {case_id}: policy_profile {case.get('policy_profile')!r} differs from manifest-derived {want_profile!r}")
+            db = actual.get("database") or {}
+            if db.get("product") != anchor["product"]:
+                failures.append(f"case {case_id}: product {db.get('product')!r} != {anchor['product']!r}")
+            if not db.get("reachable"):
+                failures.append(f"case {case_id}: database not reachable")
+            if anchor["version_contains"] not in (db.get("version") or ""):
+                failures.append(f"case {case_id}: version mismatch {db.get('version')!r} expected contains {anchor['version_contains']!r}")
+            if not (db.get("image_digest") or "").startswith(anchor["image"].split(":")[0] + "@"):
+                failures.append(f"case {case_id}: missing/mismatched image digest {db.get('image_digest')!r}")
+            command = case.get("command") or []
+            if "--dialect" not in command or case.get("dialect") not in command or "--config" not in command or "--host" not in command:
+                failures.append(f"case {case_id}: recorded command lacks --dialect/--config/--host evidence")
+            conn = spec.get("connect") or {}
+            secret = conn.get("password")
+            if secret:
+                # The password must travel via --password-env/--password-file
+                # only. A token equal to the secret is legal solely as the
+                # value of a declared non-secret slot (fixtures may set
+                # user==password); a bare positional token or the value of a
+                # password-source flag equal to the secret is a leak.
+                value_flags = {"--host", "-H", "--port", "-P", "--user", "-u",
+                               "--schema", "-D", "--dialect", "--sql",
+                               "--config", "--format", "--fail-on"}
+                password_flags = {"--password-env", "--password-file"}
+                for pos, token in enumerate(command):
+                    if token != secret:
+                        continue
+                    prev = command[pos - 1] if pos else ""
+                    if prev in password_flags or prev not in value_flags:
+                        failures.append(f"case {case_id}: command leaks the fixture password value")
+                        break
+            recorded_conn = case.get("connect") or {}
+            if "password" in recorded_conn:
+                failures.append(f"case {case_id}: recorded connect block leaks the password field")
+            if recorded_conn.get("port") != conn.get("port") or recorded_conn.get("host") != conn.get("host"):
+                failures.append(f"case {case_id}: recorded connect target differs from manifest")
+            setups = actual.get("setup") or []
+            manifest_setups = spec.get("setup") or []
+            if len(setups) != len(manifest_setups):
+                failures.append(f"case {case_id}: setup step count {len(setups)} != manifest {len(manifest_setups)}")
+            for i, mstep in enumerate(manifest_setups):
+                if i >= len(setups):
+                    break
+                step = setups[i]
+                if step.get("sql") != mstep["sql"] or step.get("rc") != mstep.get("expect_rc", 0):
+                    failures.append(f"case {case_id}: setup step {mstep['name']} identity/rc mismatch")
+                verifies = step.get("verify") or []
+                if len(verifies) != len(mstep.get("verify") or []):
+                    failures.append(f"case {case_id}: setup {mstep['name']} verify count mismatch")
+                for j, mverify in enumerate(mstep.get("verify") or []):
+                    if j >= len(verifies):
+                        break
+                    verify = verifies[j]
+                    if verify.get("assert") != mverify["assert"] or verify.get("sql") != mverify["sql"]:
+                        failures.append(f"case {case_id}: setup verify {j} identity mismatch")
+                    if verify.get("rc") != 0 or verify.get("output") != mverify["expect"]:
+                        failures.append(f"case {case_id}: setup verify {mverify['assert']} output {verify.get('output')!r} != {mverify['expect']!r}")
+            cli_stdout_expect_failures(case, spec, failures)
+            posts = actual.get("post_verify") or []
+            manifest_posts = spec.get("post_verify") or []
+            if len(posts) != len(manifest_posts):
+                failures.append(f"case {case_id}: post_verify count {len(posts)} != manifest {len(manifest_posts)}")
+            for i, mcheck in enumerate(manifest_posts):
+                if i >= len(posts):
+                    break
+                check = posts[i]
+                if check.get("assert") != mcheck["assert"] or check.get("sql") != mcheck["sql"]:
+                    failures.append(f"case {case_id}: post_verify {i} identity mismatch")
+                if check.get("rc") != 0 or check.get("output") != mcheck["expect"]:
+                    failures.append(f"case {case_id}: post_verify {mcheck['assert']} output {check.get('output')!r} != {mcheck['expect']!r}")
+            teardowns = actual.get("teardown") or []
+            manifest_teardowns = spec.get("teardown") or []
+            if len(teardowns) != len(manifest_teardowns):
+                failures.append(f"case {case_id}: teardown count {len(teardowns)} != manifest {len(manifest_teardowns)}")
+            for i, mstep in enumerate(manifest_teardowns):
+                if i >= len(teardowns):
+                    break
+                step = teardowns[i]
+                if step.get("sql") != mstep["sql"] or step.get("rc") != mstep.get("expect_rc", 0):
+                    failures.append(f"case {case_id}: teardown {mstep['name']} identity/rc mismatch")
+        elif kind == "cli_error":
+            spec = error_case_spec_for(manifest, case)
+            if spec is None:
+                failures.append(f"case {case_id}: no manifest error case matches {case.get('cli_case')!r}")
+                continue
+            if case.get("dialect") != spec.get("dialect"):
+                failures.append(f"case {case_id}: dialect {case.get('dialect')!r} != manifest spec {spec.get('dialect')!r}")
+            if case.get("input_sql") != spec["sql"]:
+                failures.append(f"case {case_id}: recorded input_sql differs from manifest error case")
+            want_profile = expected_policy_profile(manifest, case, spec)
+            if case.get("policy_profile") != want_profile:
+                failures.append(f"case {case_id}: policy_profile {case.get('policy_profile')!r} differs from manifest-derived {want_profile!r}")
+            command = case.get("command") or []
+            if "--dialect" not in command or case.get("dialect") not in command or "--config" not in command:
+                failures.append(f"case {case_id}: recorded command lacks --dialect/--config evidence")
+            if actual.get("exit") != spec["expect"]["exit"]:
+                failures.append(f"case {case_id}: exit {actual.get('exit')} != expected {spec['expect']['exit']}")
+            for marker in spec["expect"].get("stderr_contains") or []:
+                if marker not in (actual.get("stderr") or ""):
+                    failures.append(f"case {case_id}: stderr missing marker {marker!r}")
         else:
             failures.append(f"case {case_id}: unknown kind {kind!r}")
 
@@ -690,7 +1213,7 @@ def cmd_run(args):
 
     cli = build_cli(artifact_root / "bin")
     cli["build"]["head_sha"] = head_sha
-    policy = make_all_off_policy(cli["path"], artifact_root, manifest.get("policy_profile", "all-rules-disabled"))
+    policies = make_policies(cli["path"], artifact_root, manifest)
 
     artifact = {
         "task_id": manifest["task_id"],
@@ -698,7 +1221,8 @@ def cmd_run(args):
         "head_sha": head_sha,
         "generated_at": utc_now(),
         "cli": cli,
-        "policy_profile": policy,
+        "policy_profile": policies[manifest.get("policy_profile", "all-rules-disabled")],
+        "policies": [policies[name] for name in sorted(policies)],
         "required_case_ids": list(manifest["required_case_ids"]),
         "cases": [],
         "executed_count": 0,
@@ -729,7 +1253,11 @@ def cmd_run(args):
                     artifact["cases"].append(execute_ddl_case(manifest, anchor_key))
                     artifact["cases"].append(execute_negative_case(manifest, anchor_key))
                 for spec in cli_case_specs(manifest):
-                    artifact["cases"].append(execute_cli_case(manifest, cli["path"], policy, spec))
+                    artifact["cases"].append(execute_cli_case(manifest, cli["path"], policies, spec))
+                for spec in metadata_case_specs(manifest):
+                    artifact["cases"].append(execute_metadata_case(manifest, spec["anchor"], cli["path"], policies, spec))
+                for spec in error_case_specs(manifest):
+                    artifact["cases"].append(execute_error_case(manifest, cli["path"], policies, spec))
     finally:
         artifact["cleanup"] = compose_cleanup()
         artifact["executed_count"] = len(artifact["cases"])
