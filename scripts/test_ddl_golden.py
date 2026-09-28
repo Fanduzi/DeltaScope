@@ -621,6 +621,31 @@ def main():
         a["cases"][3]["command"][a["cases"][3]["command"].index("--host") + 1] = "10.0.0.9"
         results.append(check("t04 mismatched metadata host rejected", a, "command", manifest=mg))
 
+        # Structural deviations in the restricted policy grammar must be
+        # rejected by the full validator even when the policy sha256 is
+        # honestly recomputed — grammar violations, not hash drift.
+        valid_iso = render_policy(mg["policy"]["enable"])
+
+        def tampered_structure(name, text):
+            iso_policy.write_text(text, encoding="utf-8")
+            a = gap_artifact()
+            a["policies"][0]["sha256"] = hashlib.sha256(iso_policy.read_bytes()).hexdigest()
+            results.append(check(name, a, "invalid policy YAML", manifest=mg))
+
+        tampered_structure("t04 duplicate enabled rejected",
+                           valid_iso.replace("enabled: true", "enabled: true\n    enabled: true", 1))
+        tampered_structure("t04 duplicate level rejected",
+                           valid_iso.replace("level: blocker", "level: blocker\n    level: blocker", 1))
+        tampered_structure("t04 duplicate params block rejected",
+                           valid_iso.replace("    params:", "    params:\n    params:", 1))
+        tampered_structure("t04 duplicate param key rejected",
+                           valid_iso.replace("      required: true", "      required: true\n      required: true", 1))
+        tampered_structure("t04 rule before rules header rejected",
+                           '  "ddl.fake.one":\n    enabled: false\n' + valid_iso)
+        tampered_structure("t04 duplicate rules header rejected",
+                           "rules:\n" + valid_iso)
+        iso_policy.write_text(valid_iso, encoding="utf-8")
+
     failures = results.count(False)
     print(f"contract cases={len(results)} failures={failures}")
     return 1 if failures else 0

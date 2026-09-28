@@ -797,24 +797,29 @@ def execute_error_case(manifest, binary, policies, spec):
 
 
 def parse_generated_policy(text):
-    """Parse the restricted, deterministic policy YAML shape make_policies
-    renders — stdlib-only, no third-party YAML dependency. Grammar:
-    a top-level `rules:` line; per rule a two-space `  "<id>":` header with a
-    JSON-quoted rule ID; optional four-space `enabled: true|false` and
-    `level: <scalar>`; optional `params:` block whose six-space entries carry
-    JSON-serialized scalar/list/map values. Anything else raises ValueError,
-    so a hand-tampered file with different YAML structure is rejected rather
-    than silently mis-parsed."""
+    """Explicit state machine for the restricted, deterministic policy YAML
+    shape make_policies renders — stdlib-only, no third-party dependency.
+    Grammar: exactly one `rules:` header as the first non-empty line; rule
+    blocks only after it; per rule at most one `enabled`, one `level`, and
+    one `params:` block (field order fixed: enabled/level before params);
+    each params key at most once. Unknown lines, entries outside a rule
+    block, duplicate headers/fields/param keys/rule IDs, and non-JSON param
+    values all raise ValueError, so a hand-tampered file with different
+    structure is rejected rather than silently mis-parsed."""
     rules = {}
+    saw_header = False
     current = None
     in_params = False
-    saw_rules = False
+    seen_enabled = seen_level = seen_params = False
+    param_keys = set()
     for lineno, raw in enumerate(text.splitlines(), 1):
         if not raw.strip():
             continue
-        if raw == "rules:":
-            saw_rules = True
-            continue
+        if not saw_header:
+            if raw == "rules:":
+                saw_header = True
+                continue
+            raise ValueError(f"line {lineno}: first non-empty line must be 'rules:', got {raw!r}")
         m = re.match(r'^  ("(?:[^"\\]|\\.)*"):\s*$', raw)
         if m:
             current = json.loads(m.group(1))
@@ -822,29 +827,42 @@ def parse_generated_policy(text):
                 raise ValueError(f"line {lineno}: duplicate rule id {current!r}")
             rules[current] = {}
             in_params = False
+            seen_enabled = seen_level = seen_params = False
+            param_keys = set()
             continue
         if current is None:
-            raise ValueError(f"line {lineno}: entry outside a rule block")
+            raise ValueError(f"line {lineno}: entry outside a rule block: {raw!r}")
         m = re.match(r'^    enabled: (true|false)\s*$', raw)
         if m:
+            if in_params or seen_enabled:
+                raise ValueError(f"line {lineno}: duplicate or misplaced enabled in {current!r}")
             rules[current]["enabled"] = m.group(1) == "true"
-            in_params = False
+            seen_enabled = True
             continue
         m = re.match(r'^    level: (\S+)\s*$', raw)
         if m:
+            if in_params or seen_level:
+                raise ValueError(f"line {lineno}: duplicate or misplaced level in {current!r}")
             rules[current]["level"] = m.group(1)
-            in_params = False
+            seen_level = True
             continue
         if raw == "    params:":
+            if seen_params:
+                raise ValueError(f"line {lineno}: duplicate params block in {current!r}")
             rules[current]["params"] = {}
+            seen_params = True
             in_params = True
             continue
         m = re.match(r'^      ([^\s:]+): (.*)$', raw)
         if m and in_params:
-            rules[current]["params"][m.group(1)] = json.loads(m.group(2))
+            key = m.group(1)
+            if key in param_keys:
+                raise ValueError(f"line {lineno}: duplicate param key {key!r} in {current!r}")
+            param_keys.add(key)
+            rules[current]["params"][key] = json.loads(m.group(2))
             continue
         raise ValueError(f"line {lineno}: unrecognized policy line: {raw!r}")
-    if not saw_rules:
+    if not saw_header:
         raise ValueError("policy file has no top-level rules: map")
     return rules
 
