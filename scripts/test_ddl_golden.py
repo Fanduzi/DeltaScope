@@ -64,7 +64,13 @@ BASELINE = {
 
 def make_artifact(tmp: pathlib.Path) -> dict:
     binary = tmp / "deltascope"
-    binary.write_bytes(b"fake-binary-for-contract-test")
+    # Executable catalog stub: the validator re-runs `rules list` on the
+    # recorded binary to bind generated policies to the live rule universe.
+    binary.write_text(
+        '#!/bin/sh\nprintf \'%s\' \'{"rules":[{"rule_id":"ddl.alter.modify_column.compatibility.require"},{"rule_id":"ddl.fake.one"},{"rule_id":"ddl.fake.two"}]}\'\n',
+        encoding="utf-8",
+    )
+    binary.chmod(0o755)
     sha = hashlib.sha256(binary.read_bytes()).hexdigest()
     return {
         "task_id": "TX",
@@ -105,7 +111,7 @@ def make_artifact(tmp: pathlib.Path) -> dict:
                 "dialect": "mysql",
                 "input_sql": MANIFEST["cli_audit"]["sql"],
                 "policy_profile": "all-rules-disabled",
-                "command": ["deltascope", "audit", "--dialect", "mysql", "--sql", MANIFEST["cli_audit"]["sql"], "--config", "policy.yaml", "--format", "json"],
+                "command": [str(binary), "audit", "--dialect", "mysql", "--sql", MANIFEST["cli_audit"]["sql"], "--config", str(tmp / "p.yaml"), "--format", "json"],
                 "expected": MANIFEST["cli_audit"]["expect"],
                 "actual": {"exit": 0, "stdout": json.dumps({"verdict": "pass", "statements": [{"findings": []}], "global_findings": [], "diagnostics": [], "unsupported": []}), "stderr": "", "parsed": {"verdict": "pass", "statements": [{"findings": []}], "global_findings": [], "diagnostics": [], "unsupported": []}},
                 "assertions": [{"name": "a", "ok": True, "detail": "d"}],
@@ -267,6 +273,9 @@ def main():
             cli = a["cases"][2]
             cli["cli_case"] = "mysql"
             cli["input_sql"] = "CREATE SEQUENCE s START WITH 1"
+            cli["command"] = [a["cli"]["path"], "audit", "--dialect", "mysql", "--sql",
+                              "CREATE SEQUENCE s START WITH 1", "--config", str(tmp / "p.yaml"),
+                              "--format", "json", "--fail-on", "none"]
             cli["expected"] = copy.deepcopy(m["cli_cases"][0]["expect"])
             parsed = {
                 "verdict": "review",
@@ -396,10 +405,26 @@ def main():
             for c in MANIFEST["required_case_ids"]
         ] + ["TX.meta.meta-ok", "TX.clierr.refused"]
 
+        import yaml as _yaml
+        FAKE_CATALOG = [RID, "ddl.fake.one", "ddl.fake.two"]
+
+        def render_policy(enabled_map):
+            rules = {}
+            for rid in FAKE_CATALOG:
+                cfg = enabled_map.get(rid)
+                if cfg is None:
+                    rules[rid] = {"enabled": False}
+                else:
+                    entry = {"enabled": True, "level": cfg["level"]}
+                    if cfg.get("params"):
+                        entry["params"] = dict(cfg["params"])
+                    rules[rid] = entry
+            return _yaml.safe_dump({"rules": rules})
+
         iso_policy = tmp / "iso-policy.yaml"
-        iso_policy.write_text("rules:\n", encoding="utf-8")
+        iso_policy.write_text(render_policy(mg["policy"]["enable"]), encoding="utf-8")
         off_policy = tmp / "off-policy.yaml"
-        off_policy.write_text("rules:\n", encoding="utf-8")
+        off_policy.write_text(render_policy({}), encoding="utf-8")
         iso_record = {"profile": "t04-isolated", "path": str(iso_policy),
                       "sha256": hashlib.sha256(iso_policy.read_bytes()).hexdigest(),
                       "catalog_rules": 3, "enabled_rules": mg["policy"]["enable"], "disabled_rules": 2}
@@ -424,6 +449,9 @@ def main():
             cli["cli_case"] = "gap"
             cli["input_sql"] = mg["cli_cases"][0]["sql"]
             cli["policy_profile"] = "t04-isolated"
+            cli["command"] = [a["cli"]["path"], "audit", "--dialect", "mysql", "--sql",
+                              mg["cli_cases"][0]["sql"], "--config", str(iso_policy),
+                              "--format", "json"]
             cli["expected"] = copy.deepcopy(mg["cli_cases"][0]["expect"])
             parsed = gap_parsed()
             cli["actual"]["stdout"] = json.dumps(parsed)
@@ -435,7 +463,7 @@ def main():
                 "policy_profile": "t04-isolated", "policy_path": str(iso_policy),
                 "connect": {"host": "127.0.0.1", "port": 23384, "user": "root",
                             "password_env": "DS_PW", "schema": "golden"},
-                "command": ["deltascope", "audit", "--dialect", "mysql", "--sql",
+                "command": [a["cli"]["path"], "audit", "--dialect", "mysql", "--sql",
                             mg["metadata_cases"][0]["sql"], "--config", str(iso_policy),
                             "--format", "json", "--host", "127.0.0.1", "--port", "23384",
                             "--user", "root", "--password-env", "DS_PW", "--schema", "golden"],
@@ -468,7 +496,7 @@ def main():
                 "case_id": "TX.clierr.refused", "kind": "cli_error", "cli_case": "refused",
                 "dialect": "mysql", "input_sql": mg["error_cases"][0]["sql"],
                 "policy_profile": "t04-isolated", "policy_path": str(iso_policy),
-                "command": ["deltascope", "audit", "--dialect", "mysql", "--sql",
+                "command": [a["cli"]["path"], "audit", "--dialect", "mysql", "--sql",
                             mg["error_cases"][0]["sql"], "--config", str(iso_policy),
                             "--format", "json", "--host", "127.0.0.1", "--port", "23399"],
                 "expected": copy.deepcopy(mg["error_cases"][0]["expect"]),
@@ -544,6 +572,46 @@ def main():
         a = gap_artifact()
         a["policies"][0]["enabled_rules"] = {}
         results.append(check("t04 tampered enabled_rules rejected", a, "enabled_rules", manifest=mg))
+
+        # Policy semantics: the YAML on disk is re-derived, so re-hashing a
+        # tampered file must not help — emptied/all-off, re-leveled, and
+        # re-paramed policies all differ from the manifest-declared profile.
+        a = gap_artifact()
+        iso_policy.write_text(render_policy({}), encoding="utf-8")
+        a["policies"][0]["sha256"] = hashlib.sha256(iso_policy.read_bytes()).hexdigest()
+        results.append(check("t04 emptied policy rejected", a, "enabled rule set", manifest=mg))
+
+        a = gap_artifact()
+        iso_policy.write_text(render_policy({RID: {"enabled": True, "level": "warning",
+                                                   "params": {"required": True, "requires_metadata": True}}}), encoding="utf-8")
+        a["policies"][0]["sha256"] = hashlib.sha256(iso_policy.read_bytes()).hexdigest()
+        results.append(check("t04 re-leveled policy rejected", a, "level", manifest=mg))
+
+        a = gap_artifact()
+        iso_policy.write_text(render_policy({RID: {"enabled": True, "level": "blocker",
+                                                   "params": {"required": False, "requires_metadata": True}}}), encoding="utf-8")
+        a["policies"][0]["sha256"] = hashlib.sha256(iso_policy.read_bytes()).hexdigest()
+        results.append(check("t04 re-paramed policy rejected", a, "params", manifest=mg))
+        iso_policy.write_text(render_policy(mg["policy"]["enable"]), encoding="utf-8")
+
+        # Command binding: --config must point at the declared profile's file,
+        # not another generated profile.
+        a = gap_artifact()
+        a["cases"][2]["command"][a["cases"][2]["command"].index("--config") + 1] = str(off_policy)
+        results.append(check("t04 wrong --config profile rejected", a, "command", manifest=mg))
+
+        a = gap_artifact()
+        del a["policies"][0]["sha256"]
+        a["policies"][0]["path"] = str(tmp / "missing-policy.yaml")
+        results.append(check("t04 policy without sha256 rejected", a, "sha256", manifest=mg))
+
+        a = gap_artifact()
+        a["cases"][3]["command"][a["cases"][3]["command"].index("--port") + 1] = "9999"
+        results.append(check("t04 mismatched metadata port rejected", a, "command", manifest=mg))
+
+        a = gap_artifact()
+        a["cases"][3]["command"][a["cases"][3]["command"].index("--host") + 1] = "10.0.0.9"
+        results.append(check("t04 mismatched metadata host rejected", a, "command", manifest=mg))
 
     failures = results.count(False)
     print(f"contract cases={len(results)} failures={failures}")

@@ -165,7 +165,7 @@ deltascope audit \
 }
 ```
 
-`coverage.status` 表示被识别语句的每个方面是否都有已审计语义（`complete`、`unverified`、`incomplete`）。已识别但未支持的语句保留在 `statements` 中并标记 `coverage.status=incomplete`，携带有界的 `unsupported` 证据，verdict 至少降为 `review`，并通过 `ErrUnsupportedStatement`（SDK）、退出码 1（CLI）、HTTP 400、MCP `isError=true` 暴露。声明了必需元数据事实的已启用规则（policy `requires_metadata`）在事实不可得时按语句报告 `evidence_gaps`（`rule_id`、`reason_code`、`required_facts`）：gap 不是 finding，它把语句标记为 `unverified`，将 verdict 降为 `review`，并按 warning 等效权重参与 `--fail-on` 判断。
+`coverage.status` 表示被识别语句的每个方面是否都有已审计语义（`complete`、`unverified`、`incomplete`）。已识别但未支持的语句保留在 `statements` 中并标记 `coverage.status=incomplete`，携带有界的 `unsupported` 证据，verdict 至少降为 `review`，并通过 `ErrUnsupportedStatement`（SDK）、退出码 1（CLI）、HTTP 400、MCP `isError=true` 暴露。声明了必需元数据事实的已启用必需规则在事实不可得时按语句报告 `evidence_gaps`（`rule_id`、`reason_code`、`required_facts`）：gap 不是 finding，它把语句标记为 `unverified`，将 verdict 降为 `review`，并按 warning 等效权重参与 `--fail-on` 判断。
 
 审核 TiDB 语句：
 

@@ -31,12 +31,11 @@ const (
 )
 
 type alterColumnCompatibilityRule struct {
-	ruleID           string
-	action           string
-	label            string
-	required         bool
-	requiresMetadata bool
-	level            rule.Level
+	ruleID   string
+	action   string
+	label    string
+	required bool
+	level    rule.Level
 }
 
 type alterTableOptionCompatibilityRule struct {
@@ -49,17 +48,18 @@ func newAlterColumnCompatibilityRule(ruleID, action, label string, fallbackLevel
 	if err != nil {
 		return nil, err
 	}
-	requiresMetadata, err := boolParam(ruleID, cfg, "requires_metadata", false)
-	if err != nil {
+	// requires_metadata is accepted for config compatibility but inert: it no
+	// longer gates evidence-gap emission. An enabled, required, applicable
+	// rule always reports the facts it could not obtain.
+	if _, err := boolParam(ruleID, cfg, "requires_metadata", false); err != nil {
 		return nil, err
 	}
 	return alterColumnCompatibilityRule{
-		ruleID:           ruleID,
-		action:           action,
-		label:            label,
-		required:         required,
-		requiresMetadata: requiresMetadata,
-		level:            configuredLevel(cfg, fallbackLevel),
+		ruleID:   ruleID,
+		action:   action,
+		label:    label,
+		required: required,
+		level:    configuredLevel(cfg, fallbackLevel),
 	}, nil
 }
 
@@ -113,12 +113,12 @@ func (r alterColumnCompatibilityRule) Evaluate(ctx context.Context, statement sp
 }
 
 // EvidenceGaps reports which source-column facts the rule needed but could not
-// obtain for an applicable alter. It runs only when the policy opts in with
-// requires_metadata: true; the default keeps the legacy silent skip so enabling
-// the rule without metadata awareness changes nothing. Missing facts never
+// obtain for an applicable alter. It runs whenever the rule is enabled,
+// required, and applicable — there is no opt-in: silently skipping the fact
+// check would let unverifiable audits report complete. Missing facts never
 // suppress Evaluate — statements can carry both findings and gaps.
 func (r alterColumnCompatibilityRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
-	if !r.requiresMetadata || !r.AppliesTo(statement) {
+	if !r.AppliesTo(statement) {
 		return nil
 	}
 
@@ -205,31 +205,37 @@ func compatibilityFindings(ruleID string, level rule.Level, tableName string, al
 	}
 	findings := make([]rule.Finding, 0)
 
-	sourceFamily := columnTypeFamily(source)
-	targetFamily := columnTypeFamily(target)
-	if sourceFamily != targetFamily {
-		findings = append(findings, newCompatibilityFinding(ruleID, level, tableName, alter, columnName,
-			fmt.Sprintf("column %q changes type family from %q to %q", alter.Name, sourceFamily, targetFamily),
-			"keep the column in the same type family or split the change into a reviewed migration",
-			map[string]any{"source_type": source.Type, "target_type": target.Type, "source_family": sourceFamily, "target_family": targetFamily},
-		))
-		return findings
-	}
+	// Type-family and width comparisons require a known source type: an empty
+	// type is an unverified fact, not the "other" family, so it must not
+	// fabricate a family-change or narrowing finding. Attribute comparisons
+	// below still run — their facts are known independently of the type.
+	if strings.TrimSpace(source.Type) != "" {
+		sourceFamily := columnTypeFamily(source)
+		targetFamily := columnTypeFamily(target)
+		if sourceFamily != targetFamily {
+			findings = append(findings, newCompatibilityFinding(ruleID, level, tableName, alter, columnName,
+				fmt.Sprintf("column %q changes type family from %q to %q", alter.Name, sourceFamily, targetFamily),
+				"keep the column in the same type family or split the change into a reviewed migration",
+				map[string]any{"source_type": source.Type, "target_type": target.Type, "source_family": sourceFamily, "target_family": targetFamily},
+			))
+			return findings
+		}
 
-	if sourceFamily == "integer" && integerTypeRank(target) < integerTypeRank(source) {
-		findings = append(findings, newCompatibilityFinding(ruleID, level, tableName, alter, columnName,
-			fmt.Sprintf("column %q narrows integer width from %q to %q", alter.Name, source.Type, target.Type),
-			"widen the target integer type or migrate data before shrinking integer width",
-			map[string]any{"source_type": source.Type, "target_type": target.Type},
-		))
-	}
+		if sourceFamily == "integer" && integerTypeRank(target) < integerTypeRank(source) {
+			findings = append(findings, newCompatibilityFinding(ruleID, level, tableName, alter, columnName,
+				fmt.Sprintf("column %q narrows integer width from %q to %q", alter.Name, source.Type, target.Type),
+				"widen the target integer type or migrate data before shrinking integer width",
+				map[string]any{"source_type": source.Type, "target_type": target.Type},
+			))
+		}
 
-	if sourceFamily == "string" && target.Length > 0 && source.Length > 0 && target.Length < source.Length {
-		findings = append(findings, newCompatibilityFinding(ruleID, level, tableName, alter, columnName,
-			fmt.Sprintf("column %q shrinks string length from %d to %d", alter.Name, source.Length, target.Length),
-			"keep the new length at or above the current size or validate existing data before shrinking",
-			map[string]any{"source_length": source.Length, "target_length": target.Length},
-		))
+		if sourceFamily == "string" && target.Length > 0 && source.Length > 0 && target.Length < source.Length {
+			findings = append(findings, newCompatibilityFinding(ruleID, level, tableName, alter, columnName,
+				fmt.Sprintf("column %q shrinks string length from %d to %d", alter.Name, source.Length, target.Length),
+				"keep the new length at or above the current size or validate existing data before shrinking",
+				map[string]any{"source_length": source.Length, "target_length": target.Length},
+			))
+		}
 	}
 
 	if source.Unsigned != target.Unsigned {

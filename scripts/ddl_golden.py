@@ -796,6 +796,96 @@ def execute_error_case(manifest, binary, policies, spec):
     return case
 
 
+def policy_semantics_failures(profile, record, path, expected_enable, catalog_ids):
+    """Re-derive a generated policy's semantics from the YAML on disk and the
+    live rules catalog — never from artifact fields alone. expected_enable is
+    the manifest-declared enabled map for the isolated profile and {} for
+    every other profile, so an emptied or re-leveled file fails even when its
+    sha256 was regenerated."""
+    failures = []
+    try:
+        import yaml
+    except ImportError:
+        failures.append(f"policy {profile}: PyYAML unavailable; cannot bind policy semantics")
+        return failures
+    try:
+        doc = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except (OSError, yaml.YAMLError) as exc:
+        failures.append(f"policy {profile}: unreadable/invalid YAML: {exc}")
+        return failures
+    rules = (doc or {}).get("rules")
+    if not isinstance(rules, dict):
+        failures.append(f"policy {profile}: YAML has no rules map")
+        return failures
+    if catalog_ids is not None:
+        if sorted(rules.keys()) != catalog_ids:
+            failures.append(f"policy {profile}: YAML rule set differs from live rules catalog")
+        if record.get("catalog_rules") != len(catalog_ids):
+            failures.append(f"policy {profile}: catalog_rules {record.get('catalog_rules')!r} != live catalog {len(catalog_ids)}")
+    elif record.get("catalog_rules") is not None and len(rules) != record["catalog_rules"]:
+        failures.append(f"policy {profile}: YAML rule count {len(rules)} != recorded catalog_rules {record['catalog_rules']}")
+    enabled_actual = {}
+    for rid, cfg in rules.items():
+        if not isinstance(cfg, dict):
+            failures.append(f"policy {profile}: rule {rid!r} has non-map config")
+            continue
+        if cfg.get("enabled") is True:
+            enabled_actual[rid] = cfg
+        elif cfg.get("enabled") is not False:
+            failures.append(f"policy {profile}: rule {rid!r} enabled flag is not a boolean")
+    if sorted(enabled_actual) != sorted(expected_enable):
+        failures.append(f"policy {profile}: enabled rule set {sorted(enabled_actual)!r} != manifest-derived {sorted(expected_enable)!r}")
+    for rid, cfg in enabled_actual.items():
+        want = expected_enable.get(rid) or {}
+        if cfg.get("level") != want.get("level"):
+            failures.append(f"policy {profile}: rule {rid!r} level {cfg.get('level')!r} != expected {want.get('level')!r}")
+        if (cfg.get("params") or {}) != (want.get("params") or {}):
+            failures.append(f"policy {profile}: rule {rid!r} params {cfg.get('params')!r} != expected {want.get('params')!r}")
+    if record.get("enabled_rules") != expected_enable:
+        failures.append(f"policy {profile}: recorded enabled_rules differ from manifest-derived expectation")
+    return failures
+
+
+def expected_cli_argv(cli_path, spec, policy_path, connect=None):
+    """Rebuild the exact argv a case must record, derived from the manifest
+    spec, the declared policy file path, and the declared connect target."""
+    argv = [cli_path, "audit",
+            "--dialect", spec["dialect"],
+            "--sql", spec["sql"],
+            "--config", policy_path,
+            "--format", "json"]
+    if connect:
+        argv += ["--host", connect["host"], "--port", str(connect["port"]), "--user", connect["user"]]
+        if connect.get("password_env"):
+            argv += ["--password-env", connect["password_env"]]
+        if connect.get("password_file"):
+            argv += ["--password-file", connect["password_file"]]
+        if connect.get("schema"):
+            argv += ["--schema", connect["schema"]]
+    argv += spec.get("args") or []
+    return argv
+
+
+def command_binding_failures(case, command, spec, policy_by_name, cli_path, connect=None):
+    """Bind the recorded command to the manifest-derived argv: binary path,
+    --dialect/--sql/--config/--format values, declared connect target, and any
+    spec args (including --fail-on) must match verbatim."""
+    failures = []
+    case_id = case.get("case_id")
+    if not command:
+        failures.append(f"case {case_id}: no recorded command")
+        return failures
+    profile_name = case.get("policy_profile")
+    record = policy_by_name.get(profile_name)
+    if record is None or not record.get("path"):
+        failures.append(f"case {case_id}: cannot bind --config, policy record for {profile_name!r} has no path")
+        return failures
+    expected = expected_cli_argv(cli_path, spec, record["path"], connect)
+    if command != expected:
+        failures.append(f"case {case_id}: recorded command differs from manifest-derived argv\n  expected: {expected!r}\n  recorded: {command!r}")
+    return failures
+
+
 def compose_cleanup():
     rc, out, err = compose("down", "-v", "--remove-orphans", timeout=180)
     rc2, remaining, _ = run_cmd(
@@ -924,32 +1014,57 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
                 failures.append("cli binary sha256 mismatch (stale or fabricated evidence)")
 
     # Policy evidence: when the artifact carries a generated `policies` list,
-    # every recorded case profile must resolve to one entry whose sha256 still
-    # matches on disk, and the manifest's enable map must be the exact set
-    # recorded for the isolated profile. Legacy artifacts record only the
-    # artifact-level `policy_profile` dict (no sha256): profile membership is
-    # still checked against it, but byte integrity is not — that shape predates
-    # the multi-profile contract and its file may not survive.
+    # every record must be complete — profile name, on-disk file, sha256,
+    # catalog size, and an enabled map that agrees with both the manifest's
+    # declared profile and the actual YAML on disk. The live `rules list`
+    # catalog (from the recorded binary) pins the rule universe so a tampered
+    # `catalog_rules` count cannot hide dropped or injected rules. Legacy
+    # artifacts record only the artifact-level `policy_profile` dict (no
+    # sha256): profile membership is still checked against it, but file
+    # integrity is not — that shape predates the multi-profile contract and
+    # its file may not survive.
     policies = artifact.get("policies") or []
     policy_by_name = {p.get("profile"): p for p in policies}
     legacy_policy = artifact.get("policy_profile")
     if isinstance(legacy_policy, dict) and legacy_policy.get("profile"):
         policy_by_name.setdefault(legacy_policy["profile"], legacy_policy)
+    manifest_enable = ((manifest.get("policy") or {}).get("enable") or {})
+    manifest_profile = manifest.get("policy_profile", "all-rules-disabled")
+    catalog_ids = None
+    if policies and verify_binary and (cli.get("path") or "") and pathlib.Path(cli["path"]).is_file():
+        crc, cout, cerr = run_cmd([cli["path"], "rules", "list", "--format", "json"], timeout=60)
+        if crc != 0:
+            failures.append(f"rules list for policy binding failed: {cerr.strip()}")
+        else:
+            try:
+                catalog_ids = sorted({r["rule_id"] for r in json.loads(cout).get("rules", [])})
+            except (json.JSONDecodeError, KeyError, TypeError):
+                failures.append("rules list for policy binding returned unparseable catalog")
+            if catalog_ids is not None and not catalog_ids:
+                failures.append("rules list for policy binding returned empty catalog")
     for case in artifact.get("cases") or []:
         profile = case.get("policy_profile")
         if profile and profile not in policy_by_name:
             failures.append(f"case {case.get('case_id')}: policy_profile {profile!r} has no generated policy record")
     for profile, record in policy_by_name.items():
-        if "sha256" not in record:
+        if policies:
+            for field in ("path", "sha256", "catalog_rules", "enabled_rules", "disabled_rules"):
+                if field not in record:
+                    failures.append(f"policy {profile}: missing generated-policy field {field}")
+            if "path" not in record:
+                continue
+        elif "sha256" not in record:
             continue
         path = pathlib.Path(record.get("path") or "")
         if not path.is_file():
             failures.append(f"policy {profile}: file missing on disk: {path} (stale or fabricated evidence)")
-        elif sha256_file(path) != record.get("sha256"):
+            continue
+        if sha256_file(path) != record.get("sha256"):
             failures.append(f"policy {profile}: sha256 mismatch (stale or fabricated evidence)")
-    manifest_enable = ((manifest.get("policy") or {}).get("enable") or {})
+        expected_enable = manifest_enable if profile == manifest_profile else {}
+        failures.extend(policy_semantics_failures(profile, record, path, expected_enable, catalog_ids))
     if manifest_enable:
-        record = policy_by_name.get(manifest.get("policy_profile", "all-rules-disabled"))
+        record = policy_by_name.get(manifest_profile)
         if record is None:
             failures.append("manifest declares policy.enable but artifact has no isolated policy record")
         elif record.get("enabled_rules") != manifest_enable:
@@ -1054,10 +1169,11 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
             if case.get("policy_profile") != want_profile:
                 failures.append(f"case {case_id}: policy_profile {case.get('policy_profile')!r} differs from manifest-derived {want_profile!r}")
             command = case.get("command") or []
-            if "--dialect" not in command or case.get("dialect") not in command or "--config" not in command:
-                failures.append(f"case {case_id}: recorded command lacks --dialect/--config evidence")
             if spec is not None:
+                failures.extend(command_binding_failures(case, command, spec, policy_by_name, cli.get("path") or ""))
                 cli_stdout_expect_failures(case, spec, failures)
+            elif not command:
+                failures.append(f"case {case_id}: no recorded command")
         elif kind == "cli_metadata":
             spec = metadata_case_spec_for(manifest, case)
             if spec is None:
@@ -1086,9 +1202,8 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
             if not (db.get("image_digest") or "").startswith(anchor["image"].split(":")[0] + "@"):
                 failures.append(f"case {case_id}: missing/mismatched image digest {db.get('image_digest')!r}")
             command = case.get("command") or []
-            if "--dialect" not in command or case.get("dialect") not in command or "--config" not in command or "--host" not in command:
-                failures.append(f"case {case_id}: recorded command lacks --dialect/--config/--host evidence")
             conn = spec.get("connect") or {}
+            failures.extend(command_binding_failures(case, command, spec, policy_by_name, cli.get("path") or "", connect=conn))
             secret = conn.get("password")
             if secret:
                 # The password must travel via --password-env/--password-file
@@ -1169,8 +1284,7 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
             if case.get("policy_profile") != want_profile:
                 failures.append(f"case {case_id}: policy_profile {case.get('policy_profile')!r} differs from manifest-derived {want_profile!r}")
             command = case.get("command") or []
-            if "--dialect" not in command or case.get("dialect") not in command or "--config" not in command:
-                failures.append(f"case {case_id}: recorded command lacks --dialect/--config evidence")
+            failures.extend(command_binding_failures(case, command, spec, policy_by_name, cli.get("path") or ""))
             if actual.get("exit") != spec["expect"]["exit"]:
                 failures.append(f"case {case_id}: exit {actual.get('exit')} != expected {spec['expect']['exit']}")
             for marker in spec["expect"].get("stderr_contains") or []:

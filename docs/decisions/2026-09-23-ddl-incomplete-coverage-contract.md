@@ -646,12 +646,13 @@ found two residuals:
 - **Fail threshold weight.** Gaps carry warning-equivalent `--fail-on`
   weight: `warning`/`notice` exit 1, `blocker`/`none` exit 0, and
   `fail_on_triggered` reflects that weight. Finding counters stay 0.
-- **Opt-in only.** `requires_metadata` is consumed by rule construction;
-  without it the legacy silent path is unchanged, so enabling the rule
-  alone produces no gaps. `required: false` keeps the rule inapplicable
-  and cannot emit gaps. Provider errors keep their existing
-  error/diagnostic classes — an absent provider is a gap, a failing
-  provider is not.
+- **No silent opt-in (corrected 2026-09-28).** `requires_metadata` remains
+  an accepted boolean param for config compatibility, but it is inert: an
+  enabled, `required: true`, applicable rule always reports the facts it
+  could not obtain, whether the param is absent, `false`, or `true`.
+  `required: false` keeps the rule inapplicable and cannot emit gaps.
+  Provider errors keep their existing error/diagnostic classes — an
+  absent provider is a gap, a failing provider is not.
 - **Surfaces.** SDK exposes `StatementResult.EvidenceGaps` (gap-only
   results return nil error); CLI emits the field in JSON with the
   threshold semantics above; HTTP returns 200 for gap-only results and
@@ -674,3 +675,30 @@ found two residuals:
 
 Deferred to T04-B/#84: `--target-version` input, version-dependent fact
 requirements, and capability-boundary gap reasons.
+
+## Amendment 2026-09-28 — T04-A-R1 fact gating and evidence binding
+
+Review rework corrected three defects in the T04-A slice:
+
+- **Fact-gated comparisons.** An unknown source `Type` no longer enters
+  type-family or width comparisons: the empty type is an unverified fact,
+  not the `"other"` family, so the rule can no longer fabricate a
+  family-change or narrowing finding. Attribute comparisons
+  (unsigned/nullability/auto_increment) still evaluate because their
+  facts are known independently — gaps suppress only the checks whose
+  facts are missing, never `Evaluate` as a whole. MODIFY and CHANGE share
+  the corrected comparison.
+- **Silent opt-in removed.** The `requires_metadata` param no longer
+  gates `EvidenceGaps`; the default policy enabling these rules with
+  `required: true` now surfaces missing-fact gaps instead of silently
+  passing. The param stays accepted (non-boolean values still rejected)
+  but is ignored. Disabled rules, `required: false`, and non-applicable
+  statements remain gap-free.
+- **Evidence binding.** The golden validator now re-derives policy
+  semantics from the YAML on disk and the live `rules list` catalog —
+  emptied/re-leveled/re-paramed policies fail even when their recorded
+  sha256 is regenerated, and generated-policy records must carry complete
+  fields. Recorded commands must equal the manifest-derived argv:
+  binary path, `--dialect`/`--sql`/`--config`/`--format` values, declared
+  connect target, and `--fail-on` args are bound verbatim, so an isolated
+  case cannot silently run the all-off profile or a different connection.

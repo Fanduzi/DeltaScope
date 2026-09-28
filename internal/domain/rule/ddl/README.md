@@ -37,7 +37,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | denylist_rules.go | Implements DDL table denylist checks that evaluate every normalized `TableTargets()` entry (multi-target DROP, RENAME source/destination pairs, ALTER rename destinations) against protected schemas or tables, resolving explicit target schema before metadata schema and deduplicating findings per resolved `(schema, table)` identity so dotted qualified names do not merge |
 | denylist_rules_test.go | Verifies per-target denylist evaluation, qualified-name resolution, tuple-identity deduplication across dotted names, and deterministic source ordering |
 | size_rules.go | Implements metadata-backed rough row-size and index-key-length checks for create-table statements |
-| alter_compatibility_rules.go | Implements source-aware compatibility checks for metadata-backed change/modify column operations, plus opt-in `requires_metadata` evidence-gap declarations (`missing_source_column`/`incomplete_source_column` with bounded `required_facts`) when an enabled applicable rule cannot obtain source-column facts (#83 T04-A) |
+| alter_compatibility_rules.go | Implements source-aware compatibility checks for metadata-backed change/modify column operations with fact-gated comparisons (an unknown source type never enters type-family/width checks), plus evidence-gap declarations (`missing_source_column`/`incomplete_source_column` with bounded `required_facts`) emitted by every enabled, required, applicable rule that cannot obtain source-column facts — `requires_metadata` is accepted but inert (#83 T04-A/R1) |
 | alter_semantic_rules.go | Implements rename-index forbids, metadata-gated MODIFY nullability transitions, unknown-prior-state advisories, explicit alter-column change forbids, normalized add-index naming/lifecycle rules, and conservative alter target-type-family rules |
 | table_option_rules.go | Implements create-table option, foreign-key, and object-shape rules |
 | register.go | Registers enabled DDL rules into the shared registry, including shipped alter-added index lifecycle rules |
@@ -55,7 +55,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | metadata_rules_test.go | Verifies metadata-backed table, column, index, and primary-key existence rules |
 | object_lifecycle_rules_test.go | Verifies create-view, drop-table, truncate-table, metadata-backed lifecycle existence, and adaptive-hash caution rules |
 | merge_alter_rules_test.go | Verifies global merge-alter governance rules |
-| alter_compatibility_rules_test.go | Verifies source-aware compatibility checks for change/modify column operations, including evidence-gap opt-in boundaries, gap/finding coexistence, partial-fact `required_facts` selection, and the CHANGE COLUMN `OldName` source-lookup regression |
+| alter_compatibility_rules_test.go | Verifies source-aware compatibility checks for change/modify column operations, including the inert `requires_metadata` boundary, gap/finding coexistence, partial-fact `required_facts` selection, and the CHANGE COLUMN `OldName` source-lookup regression |
 | size_rules_test.go | Verifies metadata-backed row-size and index-key-length checks |
 | alter_semantic_rules_test.go | Verifies semantic alter rename-index, explicit alter-column change, alter-added index lifecycle, and conservative target-type-family rules plus registration order |
 | table_option_rules_test.go | Verifies create-table option and object-shape rules |

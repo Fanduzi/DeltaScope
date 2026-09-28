@@ -309,7 +309,7 @@ func TestAuditSQLT04CompleteMetadataCoversBothDirections(t *testing.T) {
 
 // TestAuditSQLT04DisabledOrNonApplicableRulesStaySilent covers matrix case D:
 // no gap is emitted when the target rule is disabled, non-applicable, or
-// configured with required=false / requires_metadata unset.
+// configured with required=false.
 func TestAuditSQLT04DisabledOrNonApplicableRulesStaySilent(t *testing.T) {
 	t.Parallel()
 
@@ -317,6 +317,7 @@ func TestAuditSQLT04DisabledOrNonApplicableRulesStaySilent(t *testing.T) {
 		name       string
 		sql        string
 		configPath func(t *testing.T) string
+		wantGap    bool
 	}{
 		{
 			name: "rule disabled",
@@ -344,17 +345,18 @@ func TestAuditSQLT04DisabledOrNonApplicableRulesStaySilent(t *testing.T) {
 			},
 		},
 		{
-			name: "requires_metadata unset keeps legacy silent path",
+			name: "requires_metadata false stays applicable",
 			sql:  "ALTER TABLE t MODIFY COLUMN c VARCHAR(20);",
 			configPath: func(t *testing.T) string {
 				return writeIsolatedPolicy(t, map[string]policy.RulePolicy{
 					t04TargetRule: {
 						Enabled: true,
 						Level:   "blocker",
-						Params:  map[string]any{"required": true},
+						Params:  map[string]any{"required": true, "requires_metadata": false},
 					},
 				})
 			},
+			wantGap: true,
 		},
 	}
 
@@ -369,11 +371,25 @@ func TestAuditSQLT04DisabledOrNonApplicableRulesStaySilent(t *testing.T) {
 				t.Fatalf("expected successful audit, got %v", err)
 			}
 			statement := result.Statements[0]
-			if len(statement.EvidenceGaps) != 0 {
-				t.Fatalf("expected no evidence gaps, got %#v", statement.EvidenceGaps)
-			}
 			if len(statement.Findings) != 0 {
 				t.Fatalf("expected no findings, got %#v", statement.Findings)
+			}
+			if tc.wantGap {
+				// requires_metadata is inert: the inert param value must not
+				// hide a missing-fact gap for an enabled, required, applicable rule.
+				if len(statement.EvidenceGaps) != 1 || statement.EvidenceGaps[0].ReasonCode != "missing_source_column" {
+					t.Fatalf("expected one missing_source_column gap, got %#v", statement.EvidenceGaps)
+				}
+				if statement.Coverage.Status != report.CoverageUnverified || result.Coverage.Status != report.CoverageUnverified {
+					t.Fatalf("expected unverified coverage, got statement=%q aggregate=%q", statement.Coverage.Status, result.Coverage.Status)
+				}
+				if result.Verdict != report.VerdictReview {
+					t.Fatalf("expected review verdict, got %q", result.Verdict)
+				}
+				return
+			}
+			if len(statement.EvidenceGaps) != 0 {
+				t.Fatalf("expected no evidence gaps, got %#v", statement.EvidenceGaps)
 			}
 			if statement.Coverage.Status != report.CoverageComplete || result.Coverage.Status != report.CoverageComplete {
 				t.Fatalf("expected complete coverage, got statement=%q aggregate=%q", statement.Coverage.Status, result.Coverage.Status)
@@ -526,11 +542,103 @@ func TestAuditSQLT04MixedResultsPreserveSemantics(t *testing.T) {
 			t.Fatalf("expected reject verdict (blocker beats gap floor), got %q", result.Verdict)
 		}
 	})
+
+	t.Run("same statement keeps blocker and gap attribution", func(t *testing.T) {
+		provider := &t04SnapshotProvider{snapshots: map[string]*spec.TableSnapshot{
+			"app.t": {
+				Exists:  true,
+				Table:   &spec.Table{Name: "t"},
+				Columns: []spec.Column{{Name: "c", Type: "varchar", Length: 200}},
+			},
+		}}
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:              "ALTER TABLE t MODIFY COLUMN c VARCHAR(20), MODIFY COLUMN missing VARCHAR(20);",
+			Dialect:          spec.DialectMySQL,
+			ConfigPath:       configPath,
+			Schema:           "app",
+			MetadataProvider: provider,
+		})
+		if err != nil {
+			t.Fatalf("expected successful audit, got %v", err)
+		}
+		if len(result.Statements) != 1 {
+			t.Fatalf("expected 1 statement, got %#v", result.Statements)
+		}
+		stmt := result.Statements[0]
+		if stmt.Coverage.Status != report.CoverageUnverified {
+			t.Fatalf("expected statement unverified, got %q", stmt.Coverage.Status)
+		}
+		if len(stmt.Findings) != 1 || stmt.Findings[0].Level != rule.LevelBlocker {
+			t.Fatalf("expected exactly one blocker finding, got %#v", stmt.Findings)
+		}
+		if name, _ := stmt.Findings[0].Metadata["name"].(string); name != "c" {
+			t.Fatalf("expected blocker attributed to column c, got %#v", stmt.Findings[0].Metadata)
+		}
+		if len(stmt.EvidenceGaps) != 1 || stmt.EvidenceGaps[0].ReasonCode != "missing_source_column" {
+			t.Fatalf("expected one missing_source_column gap, got %#v", stmt.EvidenceGaps)
+		}
+		if result.Verdict != report.VerdictReject {
+			t.Fatalf("expected reject verdict (blocker beats gap floor), got %q", result.Verdict)
+		}
+		if result.Summary.Blockers != 1 {
+			t.Fatalf("expected summary blockers=1, got %+v", result.Summary)
+		}
+	})
 }
 
 // t04SnapshotProvider is a controlled substitute for metadata-gap tests: it
 // returns fixed snapshots keyed by schema.table and can inject provider errors.
 // Real MySQL 8.4.10 metadata proofs live in the T04 golden cases, not here.
+// TestAuditSQLT04R1TypeMissingWithKnownLength pins the R1 fact boundary: a
+// source column with a known length but an unknown type must not enter the
+// type-family or width comparisons, and must still report the missing-type
+// fact as an incomplete_source_column gap without fabricating findings.
+func TestAuditSQLT04R1TypeMissingWithKnownLength(t *testing.T) {
+	t.Parallel()
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:        "ALTER TABLE t MODIFY COLUMN c VARCHAR(20);",
+		Dialect:    spec.DialectMySQL,
+		ConfigPath: writeT04TargetPolicy(t),
+		Schema:     "app",
+		MetadataProvider: &t04SnapshotProvider{snapshots: map[string]*spec.TableSnapshot{
+			"app.t": {
+				Exists: true,
+				Table:  &spec.Table{Name: "t"},
+				Columns: []spec.Column{{
+					Name: "c", Type: "", Length: 10,
+					NotNull: false, Unsigned: false, AutoIncrement: false,
+				}},
+			},
+		}},
+	})
+	if err != nil {
+		t.Fatalf("expected successful audit, got %v", err)
+	}
+	if result.Coverage.Status != report.CoverageUnverified {
+		t.Fatalf("expected unverified coverage, got %s", result.Coverage.Status)
+	}
+	if result.Verdict != report.VerdictReview {
+		t.Fatalf("expected review verdict floor, got %s", result.Verdict)
+	}
+	if result.Summary.Blockers != 0 || result.Summary.Warnings != 0 || result.Summary.Notices != 0 {
+		t.Fatalf("expected zero findings for unknown-type source, got %+v", result.Summary)
+	}
+	stmt := result.Statements[0]
+	if len(stmt.Findings) != 0 {
+		t.Fatalf("expected no compatibility finding for unknown type, got %+v", stmt.Findings)
+	}
+	if len(stmt.EvidenceGaps) != 1 {
+		t.Fatalf("expected exactly one gap, got %+v", stmt.EvidenceGaps)
+	}
+	gap := stmt.EvidenceGaps[0]
+	if gap.RuleID != t04TargetRule || gap.ReasonCode != "incomplete_source_column" {
+		t.Fatalf("unexpected gap record %+v", gap)
+	}
+	if len(gap.RequiredFacts) != 1 || gap.RequiredFacts[0] != "source_column.type" {
+		t.Fatalf("expected required_facts=[source_column.type], got %v", gap.RequiredFacts)
+	}
+}
+
 type t04SnapshotProvider struct {
 	snapshots   map[string]*spec.TableSnapshot
 	factsErr    error

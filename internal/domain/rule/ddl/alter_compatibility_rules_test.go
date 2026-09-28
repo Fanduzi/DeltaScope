@@ -169,10 +169,11 @@ func TestAlterTableOptionCompatibilityRuleFlagsMetadataBackedChanges(t *testing.
 	}
 }
 
-// TestAlterColumnCompatibilityEvidenceGapsRequireOptIn pins the
-// requires_metadata gate: the gap channel stays off unless the policy sets
-// requires_metadata, and it respects required/applicability independently.
-func TestAlterColumnCompatibilityEvidenceGapsRequireOptIn(t *testing.T) {
+// TestAlterColumnCompatibilityEvidenceGapsIgnoreOptInParam pins the inert
+// requires_metadata contract: no param value may hide the missing-fact gap of
+// an enabled, required, applicable rule; required=false and non-applicable
+// input stay silent independently.
+func TestAlterColumnCompatibilityEvidenceGapsIgnoreOptInParam(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
 		name   string
@@ -180,8 +181,8 @@ func TestAlterColumnCompatibilityEvidenceGapsRequireOptIn(t *testing.T) {
 		want   int
 	}{
 		{name: "requires_metadata true", params: map[string]any{"required": true, "requires_metadata": true}, want: 1},
-		{name: "requires_metadata absent", params: map[string]any{"required": true}, want: 0},
-		{name: "requires_metadata false", params: map[string]any{"required": true, "requires_metadata": false}, want: 0},
+		{name: "requires_metadata absent", params: map[string]any{"required": true}, want: 1},
+		{name: "requires_metadata false", params: map[string]any{"required": true, "requires_metadata": false}, want: 1},
 		{name: "required false", params: map[string]any{"required": false, "requires_metadata": true}, want: 0},
 	}
 	for _, tc := range cases {
