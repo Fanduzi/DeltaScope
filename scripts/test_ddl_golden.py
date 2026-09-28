@@ -405,21 +405,29 @@ def main():
             for c in MANIFEST["required_case_ids"]
         ] + ["TX.meta.meta-ok", "TX.clierr.refused"]
 
-        import yaml as _yaml
         FAKE_CATALOG = [RID, "ddl.fake.one", "ddl.fake.two"]
 
         def render_policy(enabled_map):
-            rules = {}
+            # Same restricted YAML shape ddl_golden.make_policies renders:
+            # quoted rule IDs, `enabled` booleans, `level` scalars, and
+            # JSON-serialized params values — parseable by the stdlib-only
+            # validator grammar, no PyYAML required.
+            lines = ["rules:"]
             for rid in FAKE_CATALOG:
                 cfg = enabled_map.get(rid)
                 if cfg is None:
-                    rules[rid] = {"enabled": False}
-                else:
-                    entry = {"enabled": True, "level": cfg["level"]}
-                    if cfg.get("params"):
-                        entry["params"] = dict(cfg["params"])
-                    rules[rid] = entry
-            return _yaml.safe_dump({"rules": rules})
+                    lines.append(f"  {json.dumps(rid)}:\n    enabled: false")
+                    continue
+                lines.append(f"  {json.dumps(rid)}:")
+                lines.append(f"    enabled: {str(bool(cfg.get('enabled', True))).lower()}")
+                if cfg.get("level"):
+                    lines.append(f"    level: {cfg['level']}")
+                params = cfg.get("params") or {}
+                if params:
+                    lines.append("    params:")
+                    for key in sorted(params):
+                        lines.append(f"      {key}: {json.dumps(params[key])}")
+            return "\n".join(lines) + "\n"
 
         iso_policy = tmp / "iso-policy.yaml"
         iso_policy.write_text(render_policy(mg["policy"]["enable"]), encoding="utf-8")

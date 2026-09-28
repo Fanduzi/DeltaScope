@@ -796,26 +796,71 @@ def execute_error_case(manifest, binary, policies, spec):
     return case
 
 
+def parse_generated_policy(text):
+    """Parse the restricted, deterministic policy YAML shape make_policies
+    renders — stdlib-only, no third-party YAML dependency. Grammar:
+    a top-level `rules:` line; per rule a two-space `  "<id>":` header with a
+    JSON-quoted rule ID; optional four-space `enabled: true|false` and
+    `level: <scalar>`; optional `params:` block whose six-space entries carry
+    JSON-serialized scalar/list/map values. Anything else raises ValueError,
+    so a hand-tampered file with different YAML structure is rejected rather
+    than silently mis-parsed."""
+    rules = {}
+    current = None
+    in_params = False
+    saw_rules = False
+    for lineno, raw in enumerate(text.splitlines(), 1):
+        if not raw.strip():
+            continue
+        if raw == "rules:":
+            saw_rules = True
+            continue
+        m = re.match(r'^  ("(?:[^"\\]|\\.)*"):\s*$', raw)
+        if m:
+            current = json.loads(m.group(1))
+            if current in rules:
+                raise ValueError(f"line {lineno}: duplicate rule id {current!r}")
+            rules[current] = {}
+            in_params = False
+            continue
+        if current is None:
+            raise ValueError(f"line {lineno}: entry outside a rule block")
+        m = re.match(r'^    enabled: (true|false)\s*$', raw)
+        if m:
+            rules[current]["enabled"] = m.group(1) == "true"
+            in_params = False
+            continue
+        m = re.match(r'^    level: (\S+)\s*$', raw)
+        if m:
+            rules[current]["level"] = m.group(1)
+            in_params = False
+            continue
+        if raw == "    params:":
+            rules[current]["params"] = {}
+            in_params = True
+            continue
+        m = re.match(r'^      ([^\s:]+): (.*)$', raw)
+        if m and in_params:
+            rules[current]["params"][m.group(1)] = json.loads(m.group(2))
+            continue
+        raise ValueError(f"line {lineno}: unrecognized policy line: {raw!r}")
+    if not saw_rules:
+        raise ValueError("policy file has no top-level rules: map")
+    return rules
+
+
 def policy_semantics_failures(profile, record, path, expected_enable, catalog_ids):
     """Re-derive a generated policy's semantics from the YAML on disk and the
     live rules catalog — never from artifact fields alone. expected_enable is
     the manifest-declared enabled map for the isolated profile and {} for
     every other profile, so an emptied or re-leveled file fails even when its
-    sha256 was regenerated."""
+    sha256 was regenerated. The file is parsed with the stdlib-only restricted
+    parser matching the runner's own generated grammar."""
     failures = []
     try:
-        import yaml
-    except ImportError:
-        failures.append(f"policy {profile}: PyYAML unavailable; cannot bind policy semantics")
-        return failures
-    try:
-        doc = yaml.safe_load(path.read_text(encoding="utf-8"))
-    except (OSError, yaml.YAMLError) as exc:
-        failures.append(f"policy {profile}: unreadable/invalid YAML: {exc}")
-        return failures
-    rules = (doc or {}).get("rules")
-    if not isinstance(rules, dict):
-        failures.append(f"policy {profile}: YAML has no rules map")
+        rules = parse_generated_policy(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        failures.append(f"policy {profile}: unreadable/invalid policy YAML: {exc}")
         return failures
     if catalog_ids is not None:
         if sorted(rules.keys()) != catalog_ids:

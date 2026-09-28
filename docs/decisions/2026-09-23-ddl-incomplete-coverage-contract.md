@@ -673,7 +673,7 @@ found two residuals:
   smuggled into findings, parsed-vs-stdout drift, and tampered policy
   evidence.
 
-Deferred to T04-B/#84: `--target-version` input, version-dependent fact
+Deferred to T04-B/#83: `--target-version` input, version-dependent fact
 requirements, and capability-boundary gap reasons.
 
 ## Amendment 2026-09-28 — T04-A-R1 fact gating and evidence binding
