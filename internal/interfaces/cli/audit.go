@@ -1,5 +1,5 @@
 // Package cli exposes the command-line adapter for DeltaScope.
-// input: audit command flags including -h/--help versus -H/--host, audit-local output format, skipped-rule detail, and fail threshold, whether --sql was explicitly provided, SQL text from flags/files/stdin, password prompt, connresolve Request fields, and application audit services
+// input: audit command flags including -h/--help versus -H/--host, audit-local output format, skipped-rule detail, fail threshold, and --target-version, whether --sql was explicitly provided, SQL text from flags/files/stdin, password prompt, connresolve Request fields, and application audit services
 // output: rendered audit results and located diagnostics, audit-only output validation, command-named empty-SQL usage errors, advertised audit exit table, CLI JSON skipped-rule aggregation with optional stable per-rule details, CLI JSON fail_on_triggered beside unchanged Verdict with warning-equivalent evidence-gap weight, dialect-aware connection-option normalization with MySQL/TiDB catalog aliases and PostgreSQL schema/database validation, password resolution, offline existence caveats, and user-vs-runtime exit-code mapping through connresolve Connection Failure Class mapped to CLI TLS/refusal/authentication phrases
 // pos: CLI audit command implementation above the application service and output renderers
 // note: if this file changes, update this header and module README.md.
@@ -100,6 +100,13 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 				return err
 			}
 
+			// Shared target_version syntax preflight: a malformed value is an
+			// input error and must win over any connection lookup or open.
+			if err := spec.ValidateTargetVersion(options.TargetVersion); err != nil {
+				*exitCode = exitUser
+				return newUserError(err.Error())
+			}
+
 			connection, err := resolveConnectionOptions(cmd, options)
 			if err != nil {
 				*exitCode = exitUser
@@ -136,6 +143,7 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 				ConfigPath:       options.ConfigPath,
 				Schema:           schema,
 				MetadataProvider: metadataProvider,
+				TargetVersion:    options.TargetVersion,
 			})
 			if auditErr != nil && !errors.Is(auditErr, appaudit.ErrUnsupportedStatement) && !hasRenderableAuditResult(result) {
 				return mapAuditError(exitCode, auditErr)
@@ -182,6 +190,7 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 	cmd.Flags().StringVarP(&options.Socket, "socket", "S", "", "database Unix socket for metadata-aware audit")
 	cmd.Flags().StringVar(&options.Database, "database", "", "database/catalog for metadata-aware audit (MySQL/TiDB alias of --schema; PostgreSQL database)")
 	cmd.Flags().StringVar(&options.MetadataConnectTimeout, "metadata-connect-timeout", "", "metadata connection timeout for metadata-aware audit, for example 5s or 500ms")
+	cmd.Flags().StringVar(&options.TargetVersion, "target-version", "", "expected server version [v]MAJOR.MINOR.PATCH; offline it is the version fact, online it is verified against the observed version")
 	cmd.Flags().StringVar(&options.TLSMode, "tls-mode", "disabled", "TLS mode for database connection: disabled or enabled")
 	cmd.Flags().StringVar(&options.TLSCAFile, "tls-ca-file", "", "path to TLS CA certificate PEM file (requires tls-mode=enabled)")
 	return cmd
@@ -608,7 +617,9 @@ func mapAuditError(exitCode *int, err error) error {
 	switch {
 	case errors.As(err, &inputErr):
 		*exitCode = exitUser
-	case errors.Is(err, appaudit.ErrEmptySQL), errors.Is(err, appaudit.ErrUnknownDialect), errors.Is(err, appaudit.ErrUnsupportedStatement):
+	case errors.Is(err, appaudit.ErrEmptySQL), errors.Is(err, appaudit.ErrUnknownDialect), errors.Is(err, appaudit.ErrUnsupportedStatement),
+		errors.Is(err, appaudit.ErrInvalidTargetVersion), errors.Is(err, appaudit.ErrTargetVersionMismatch),
+		errors.Is(err, appaudit.ErrDialectProductMismatch):
 		*exitCode = exitUser
 	case errors.As(err, &fileNotFoundErr), errors.As(err, &configParseErr):
 		*exitCode = exitUser

@@ -40,9 +40,15 @@ type fakeMetadataClient struct {
 	closed         bool
 }
 
-func (f *fakeMetadataClient) LoadInstanceFacts(_ context.Context, _ spec.Dialect, schema string) (*spec.InstanceFacts, error) {
+func (f *fakeMetadataClient) LoadInstanceFacts(_ context.Context, dialect spec.Dialect, schema string) (*spec.InstanceFacts, error) {
 	f.instanceCalls = append(f.instanceCalls, schema)
-	return &spec.InstanceFacts{Version: "8.0.36", DefaultCharset: "utf8mb4"}, nil
+	// Mirror real servers: a TiDB endpoint reports its compatibility banner,
+	// anything else is a plain MySQL banner.
+	version := "8.0.36"
+	if dialect == spec.DialectTiDB {
+		version = "8.0.11-TiDB-v8.5.0"
+	}
+	return &spec.InstanceFacts{Version: version, DefaultCharset: "utf8mb4"}, nil
 }
 
 func (f *fakeMetadataClient) LoadTableSnapshot(_ context.Context, _ spec.Dialect, schema string, table string) (*spec.TableSnapshot, error) {

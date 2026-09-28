@@ -9,6 +9,8 @@ Normalized statement specifications used as the stable input for rule evaluation
 | statement.go | Defines the top-level normalized statement model and parser-neutral extraction interface |
 | statement_test.go | Verifies typed statement metadata behavior |
 | metadata.go | Defines optional schema context, instance facts, target-table snapshots, object-level validation snapshots, and lookup helpers for metadata-aware auditing |
+| version.go | Defines the shared parser-neutral `VersionIdentity` fact (numeric components always serialize, including zero), strict `[v]MAJOR.MINOR.PATCH` target_version parsing plus the shared `ValidateTargetVersion` transport preflight, provider-banner observed canonicalization where the product is derived from the banner itself (including the TiDB compatibility prefix, never from the request dialect), and the milestone-validated product/version series |
+| version_test.go | Verifies target_version grammar acceptance/rejection, canonicalization, TiDB observed-banner resolution, product derivation independent of caller dialect, zero-component JSON serialization, `ValidateTargetVersion` preflight semantics, and validated-series classification |
 | ddl.go | Defines DDL-oriented specification types, including explicit DDL operations, richer column facts, typed index metadata, multi-target `Targets` plus `TableTargets()` fallback, create-table/object-lifecycle shape flags, declared-constraint alter payloads, and parsed-but-unmodeled option name evidence (`UnextractedOptions`) plus `OmittedTargets` for collapsed multi-object target lists for offline and metadata-aware DDL rules |
 | dml_impact.go | Defines shared DML impact estimation enums and payload types reused across audit layers |
 | dml.go | Defines DML-oriented specification types, including operation metadata, mentioned tables, MutationTargets, and MutationTargetTables() fallback to Tables |
@@ -24,8 +26,10 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `Dialect`
   Includes `DialectPostgreSQL` for PostgreSQL routing support
 - `Metadata`
-  Now carries `Objects []ObjectSnapshot` for non-table object validation
-- `InstanceFacts`
+  Now carries `Objects []ObjectSnapshot` for non-table object validation and a `Version *VersionIdentity` fact for version-dependent rules
+- `VersionIdentity`
+- `ParseTargetVersion`, `ParseObservedVersion`, `ValidateTargetVersion`, `ErrInvalidTargetVersion`
+- `InstanceFacts` (explicit known-bit pairs: `InnoDBPageSizeKnown`/`InnoDBPageSizeBytes`, `InnoDBLargePrefixKnown`/`InnoDBLargePrefixOn`, `TiDBMaxIndexLengthKnown`/`TiDBMaxIndexLengthBytes` — a zero or absent value stays unknown rather than defaulting)
 - `TableSnapshot`
 - `ObjectSnapshot`
 - `MetadataStatus`
@@ -64,6 +68,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 - `Statement` may now carry optional metadata-aware context through `Metadata`:
   - `Schema` for request-level schema context even when no provider is attached
   - `Instance` for normalized server-level facts such as version and InnoDB defaults
+  - `Version` for the canonical `VersionIdentity` fact (issue #83 T04-B): `product`/`version`/`major`/`minor`/`patch`/`source` (`target` or `observed`)/`validated_range`. Offline, an explicit `target_version` becomes the fact; online, the provider-observed identity is authoritative and a caller `target_version` may only constrain it. The raw provider banner stays internal and is never projected into public output. Validated series: MySQL 5.7.x/8.0.x/8.4.x, TiDB 8.5.x — syntactically valid versions outside that series keep `validated_range=false` so version-dependent rules emit bounded evidence gaps instead of guessing.
   - `TargetTable` for the current metadata-backed shape of the table being audited
   - `Objects` for non-table object validation snapshots (types, domains, extensions, publications, subscriptions, foreign objects, event triggers, rewrite rules, annotation targets)
 - `TableSnapshot` includes convenience lookups for case-insensitive column/index existence checks so future rules do not need to duplicate iteration logic.

@@ -1,5 +1,5 @@
 // Package mcpapi exposes the MCP adapter for DeltaScope.
-// input: audit_sql MCP requests, shared DeltaScope public audit API, and resolved run-context metadata
+// input: audit_sql MCP requests (including target_version), shared DeltaScope public audit API, and resolved run-context metadata
 // output: structured MCP audit_sql responses, partial parser-error results, and compact finding summaries with offline existence caveats and resolved catalog-aware metadata audits
 // pos: MCP audit tool adapter between tool invocations and the shared audit engine
 // note: if this file changes, update this header and module README.md.
@@ -41,6 +41,12 @@ var prepareMetadataAudit = auditmeta.Prepare
 
 func newAuditSQLTool(config Config) func(context.Context, *sdkmcp.CallToolRequest, AuditSQLParams) (*sdkmcp.CallToolResult, any, error) {
 	return func(ctx context.Context, _ *sdkmcp.CallToolRequest, input AuditSQLParams) (*sdkmcp.CallToolResult, any, error) {
+		// Shared target_version syntax preflight: a malformed value is an
+		// input error and must win over any connection lookup or open.
+		if err := spec.ValidateTargetVersion(input.TargetVersion); err != nil {
+			toolResult, toolErr := toolError(mapAuditToolError(err), err.Error())
+			return toolResult, nil, toolErr
+		}
 		connection, err := ResolveAuditConnection(input, ResolveConnectionOptions{
 			ConnectionsPath: strings.TrimSpace(config.ConnectionsPath),
 		})
@@ -74,9 +80,10 @@ func resolvePublicDialect(raw string) (publicapi.Dialect, string) {
 func auditSQLOffline(ctx context.Context, input AuditSQLParams) (*sdkmcp.CallToolResult, any, error) {
 	dialect, dialectSource := resolvePublicDialect(input.Dialect)
 	result, err := publicapi.Audit(ctx, publicapi.Request{
-		SQL:        input.SQL,
-		Dialect:    dialect,
-		ConfigPath: strings.TrimSpace(input.ConfigPath),
+		SQL:           input.SQL,
+		Dialect:       dialect,
+		ConfigPath:    strings.TrimSpace(input.ConfigPath),
+		TargetVersion: input.TargetVersion,
 	})
 	if err != nil {
 		if len(result.Diagnostics) > 0 {
@@ -161,6 +168,7 @@ func auditSQLWithMetadata(ctx context.Context, input AuditSQLParams, connection 
 		ConfigPath:       strings.TrimSpace(input.ConfigPath),
 		Schema:           prepared.Schema,
 		MetadataProvider: publicMetadataProvider{client: prepared.Client},
+		TargetVersion:    input.TargetVersion,
 	})
 	if err != nil {
 		if len(result.Diagnostics) > 0 {

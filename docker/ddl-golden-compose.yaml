@@ -1,5 +1,5 @@
-# input: pinned MySQL 5.7.44/8.0.46/8.4.10 and TiDB 8.5.0 images for isolated DDL golden fixtures
-# output: disposable per-anchor database services reachable inside the compose network; mysql84 also publishes 127.0.0.1:23384 for host-CLI metadata audit cases
+# input: pinned MySQL 5.7.44/8.0.46/8.4.10 and TiDB 8.5.0 images for isolated DDL golden fixtures, plus docker/tidb/ddl-golden-max-index-length.toml for the T04-B auxiliary TiDB variant
+# output: disposable per-anchor database services reachable inside the compose network; all four anchors publish loopback ports for host-CLI metadata audit cases (T04-B version identity), and two T04-B auxiliary fixtures (mysql84 4KB pages, tidb85 max-index-length=12288) prove configured instance facts
 # pos: Docker fixtures consumed by scripts/ddl_golden.py via `make ddl-golden`
 # note: if this file changes, update this header and module README.md.
 # Version pins are normative anchors from milestone issue #79/#81. Do not move to
@@ -10,6 +10,10 @@ services:
     image: mysql:5.7.44
     platform: linux/amd64
     container_name: deltascope-ddl-golden-mysql57
+    # Loopback-only publish: T04-B (#83) version-identity metadata cases run
+    # the freshly built host CLI against this anchor over TCP.
+    ports:
+      - "127.0.0.1:23357:3306"
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: golden
@@ -23,6 +27,8 @@ services:
   mysql80:
     image: mysql:8.0.46
     container_name: deltascope-ddl-golden-mysql80
+    ports:
+      - "127.0.0.1:23380:3306"
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: golden
@@ -36,8 +42,6 @@ services:
   mysql84:
     image: mysql:8.4.10
     container_name: deltascope-ddl-golden-mysql84
-    # Loopback-only publish: T04 (#83) metadata cases run the freshly built
-    # host CLI against this anchor over TCP; all other anchors stay exec-only.
     ports:
       - "127.0.0.1:23384:3306"
     environment:
@@ -53,6 +57,10 @@ services:
   tidb85:
     image: pingcap/tidb:v8.5.0
     container_name: deltascope-ddl-golden-tidb85
+    # Loopback publish of the MySQL protocol port so the host CLI can audit
+    # against the TiDB compatibility banner directly (T04-B/#83).
+    ports:
+      - "127.0.0.1:24000:4000"
     command:
       - --store=unistore
       - --path=
@@ -74,6 +82,63 @@ services:
       - exec sleep infinity
     healthcheck:
       test: ["CMD-SHELL", "mysql --protocol=tcp -h tidb85 -P 4000 -uroot -Nse 'SELECT 1' | grep -qx '1'"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 5s
+
+  # --- T04-B-R1 auxiliary fixtures (issue #83) -----------------------------
+  # Disposable variants pinned to the same anchor images; the four baseline
+  # anchors above are untouched. They exist to prove instance-fact reads:
+  # mysql84-4k runs InnoDB on 4KB pages (index bound 768), tidb85-12288 sets
+  # tidb-server max-index-length=12288.
+
+  mysql84-4k:
+    image: mysql:8.4.10
+    container_name: deltascope-ddl-golden-mysql84-4k
+    ports:
+      - "127.0.0.1:23394:3306"
+    command:
+      - --innodb-page-size=4096
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: golden
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -proot --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 20s
+
+  tidb85-12288:
+    image: pingcap/tidb:v8.5.0
+    container_name: deltascope-ddl-golden-tidb85-12288
+    ports:
+      - "127.0.0.1:24001:4000"
+    volumes:
+      - ./tidb/ddl-golden-max-index-length.toml:/tidb-aux.toml:ro
+    command:
+      - --store=unistore
+      - --path=
+      - --config=/tidb-aux.toml
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:10080/status >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 15s
+
+  tidb85-12288-client:
+    image: mysql:8.4.10
+    container_name: deltascope-ddl-golden-tidb85-12288-client
+    depends_on:
+      tidb85-12288:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - exec sleep infinity
+    healthcheck:
+      test: ["CMD-SHELL", "mysql --protocol=tcp -h tidb85-12288 -P 4000 -uroot -Nse 'SELECT 1' | grep -qx '1'"]
       interval: 5s
       timeout: 5s
       retries: 30

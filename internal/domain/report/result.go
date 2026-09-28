@@ -1,6 +1,6 @@
 // Package report defines audit results, summaries, and verdict aggregation.
 // input: statement findings and global findings from audit evaluation
-// output: normalized audit results with per-statement evidence gaps and the gap-aware verdict floor for CLI, APIs, and future integrations
+// output: normalized audit results with per-statement evidence gaps, the gap-aware verdict floor, and an optional resolved canonical version identity for CLI, APIs, and future integrations
 // pos: domain reporting model and verdict aggregation logic
 // note: if this file changes, update this header and module README.md.
 package report
@@ -124,6 +124,11 @@ type Result struct {
 	Explanation    *Explanation             `json:"explanation,omitempty"`
 	RuleSummary    *RuleSummary             `json:"rule_summary,omitempty"`
 	Diagnostics    []spec.Diagnostic        `json:"diagnostics,omitempty"`
+	// Version records the resolved product/version identity (canonical
+	// MAJOR.MINOR.PATCH) when one was established by an explicit
+	// target_version or a live observed banner. It stays nil when no
+	// verified version fact exists; raw server banners never project here.
+	Version *spec.VersionIdentity `json:"version,omitempty"`
 }
 
 // Aggregate builds a final Result from statement and global findings.

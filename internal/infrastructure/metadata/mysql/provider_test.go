@@ -538,6 +538,256 @@ func TestLoadInstanceFactsWithMockDB(t *testing.T) {
 	}
 }
 
+// innodb_page_size becomes a known numeric fact only when the server reports
+// a positive integer; a missing or unparsable row must stay unknown so rules
+// downgrade to a bounded evidence gap instead of assuming a page size.
+func TestLoadInstanceFactsInnoDBPageSize(t *testing.T) {
+	cases := []struct {
+		name      string
+		value     *string
+		wantBytes int
+		wantKnown bool
+	}{
+		{name: "16k page", value: ptrTestString("16384"), wantBytes: 16384, wantKnown: true},
+		{name: "4k page", value: ptrTestString("4096"), wantBytes: 4096, wantKnown: true},
+		{name: "missing row", value: nil, wantKnown: false},
+		{name: "zero is unknown", value: ptrTestString("0"), wantKnown: false},
+		{name: "unparsable is unknown", value: ptrTestString("auto"), wantKnown: false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			variables := [][]driver.Value{
+				{"version", "8.4.10"},
+				{"character_set_database", "utf8mb4"},
+			}
+			if tc.value != nil {
+				variables = append(variables, []driver.Value{"innodb_page_size", *tc.value})
+			}
+			db := openTestDB(t, map[string]testQueryResult{
+				"show variables": {
+					columns: []string{"Variable_name", "Value"},
+					rows:    variables,
+				},
+			})
+			defer db.Close()
+
+			facts, err := NewProvider(db).LoadInstanceFacts(context.Background(), spec.DialectMySQL, "app")
+			if err != nil {
+				t.Fatalf("LoadInstanceFacts: %v", err)
+			}
+			if facts.InnoDBPageSizeKnown != tc.wantKnown {
+				t.Fatalf("expected known=%t, got %t (bytes=%d)", tc.wantKnown, facts.InnoDBPageSizeKnown, facts.InnoDBPageSizeBytes)
+			}
+			if tc.wantKnown && facts.InnoDBPageSizeBytes != tc.wantBytes {
+				t.Fatalf("expected %d bytes, got %d", tc.wantBytes, facts.InnoDBPageSizeBytes)
+			}
+		})
+	}
+}
+
+// TiDB's index-length bound lives in tidb-server max-index-length config, read
+// via SHOW CONFIG. Every matching row is verified — single row, same-value
+// multi-row, disagreeing multi-row in both orders, zero rows, and unparsable
+// values — while a real query/scan/iteration failure propagates as a provider
+// error and never degrades into a gap.
+func TestLoadInstanceFactsTiDBMaxIndexLength(t *testing.T) {
+	tidbVariables := testQueryResult{
+		columns: []string{"Variable_name", "Value"},
+		rows: [][]driver.Value{
+			{"version", "8.0.11-TiDB-v8.5.0"},
+			{"character_set_database", "utf8mb4"},
+			{"innodb_page_size", "16384"},
+		},
+	}
+	configRow := func(instance, value string) []driver.Value {
+		return []driver.Value{"tidb", instance, "max-index-length", value}
+	}
+	configColumns := []string{"Type", "Instance", "Name", "Value"}
+
+	cases := []struct {
+		name      string
+		config    testQueryResult
+		wantBytes int
+		wantKnown bool
+		wantErr   bool
+	}{
+		{
+			name:      "single row becomes known",
+			config:    testQueryResult{columns: configColumns, rows: [][]driver.Value{configRow("n1:4000", "12288")}},
+			wantBytes: 12288, wantKnown: true,
+		},
+		{
+			name: "same value across rows becomes known",
+			config: testQueryResult{columns: configColumns, rows: [][]driver.Value{
+				configRow("n1:4000", "3072"), configRow("n2:4000", "3072"), configRow("n3:4000", "3072"),
+			}},
+			wantBytes: 3072, wantKnown: true,
+		},
+		{
+			name: "disagreeing rows ascending stays unknown",
+			config: testQueryResult{columns: configColumns, rows: [][]driver.Value{
+				configRow("n1:4000", "3072"), configRow("n2:4000", "12288"),
+			}},
+			wantKnown: false,
+		},
+		{
+			name: "disagreeing rows descending stays unknown",
+			config: testQueryResult{columns: configColumns, rows: [][]driver.Value{
+				configRow("n1:4000", "12288"), configRow("n2:4000", "3072"),
+			}},
+			wantKnown: false,
+		},
+		{
+			name:      "zero rows stays unknown",
+			config:    testQueryResult{columns: configColumns, rows: [][]driver.Value{}},
+			wantKnown: false,
+		},
+		{
+			name:      "unparsable value stays unknown",
+			config:    testQueryResult{columns: configColumns, rows: [][]driver.Value{configRow("n1:4000", "auto")}},
+			wantKnown: false,
+		},
+		{
+			name:      "non-positive value stays unknown",
+			config:    testQueryResult{columns: configColumns, rows: [][]driver.Value{configRow("n1:4000", "0")}},
+			wantKnown: false,
+		},
+		{
+			name: "unparsable row among consistent rows stays unknown",
+			config: testQueryResult{columns: configColumns, rows: [][]driver.Value{
+				configRow("n1:4000", "3072"), configRow("n2:4000", "auto"),
+			}},
+			wantKnown: false,
+		},
+		{
+			name: "unparsable first row then valid stays unknown",
+			config: testQueryResult{columns: configColumns, rows: [][]driver.Value{
+				configRow("n1:4000", "auto"), configRow("n2:4000", "3072"),
+			}},
+			wantKnown: false,
+		},
+		{
+			name:    "query error propagates as provider error",
+			config:  testQueryResult{queryErr: errors.New("SHOW CONFIG denied")},
+			wantErr: true,
+		},
+		{
+			name: "scan error propagates as provider error",
+			config: testQueryResult{
+				columns: []string{"Type", "Instance", "Name"},
+				rows:    [][]driver.Value{{"tidb", "n1:4000", "max-index-length"}},
+			},
+			wantErr: true,
+		},
+		{
+			name: "mid-iteration error propagates as provider error",
+			config: testQueryResult{
+				columns:  configColumns,
+				rows:     [][]driver.Value{configRow("n1:4000", "3072"), configRow("n2:4000", "3072")},
+				rowErrAt: 1,
+				rowErr:   errors.New("connection lost mid-result"),
+			},
+			wantErr: true,
+		},
+		// T04-B-R2 residual: an invalid value marks the read unusable but must
+		// never short-circuit the stream — a following iteration or scan
+		// failure is still a provider error, not an unknown fact.
+		{
+			name: "invalid value still surfaces following iteration error",
+			config: testQueryResult{
+				columns:  configColumns,
+				rows:     [][]driver.Value{configRow("n1:4000", "auto"), configRow("n2:4000", "3072")},
+				rowErrAt: 1,
+				rowErr:   errors.New("connection lost mid-result"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "non-positive value still surfaces following iteration error",
+			config: testQueryResult{
+				columns:  configColumns,
+				rows:     [][]driver.Value{configRow("n1:4000", "0"), configRow("n2:4000", "3072")},
+				rowErrAt: 1,
+				rowErr:   errors.New("connection lost mid-result"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "consistent prefix still surfaces trailing iteration error",
+			config: testQueryResult{
+				columns: configColumns,
+				rows: [][]driver.Value{
+					configRow("n1:4000", "3072"), configRow("n2:4000", "auto"), configRow("n3:4000", "3072"),
+				},
+				rowErrAt: 2,
+				rowErr:   errors.New("connection lost mid-result"),
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid value still surfaces following scan error",
+			config: testQueryResult{
+				columns: configColumns,
+				rows: [][]driver.Value{
+					configRow("n1:4000", "auto"),
+					{"tidb", "n2:4000", "max-index-length"}, // short row → scan error on the second row
+				},
+			},
+			wantErr: true,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			db := openTestDB(t, map[string]testQueryResult{
+				"show variables":    tidbVariables,
+				"show config where": tc.config,
+			})
+			defer db.Close()
+
+			facts, err := NewProvider(db).LoadInstanceFacts(context.Background(), spec.DialectTiDB, "app")
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("expected provider error, got facts=%#v", facts)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("LoadInstanceFacts: %v", err)
+			}
+			if facts.TiDBMaxIndexLengthKnown != tc.wantKnown {
+				t.Fatalf("expected known=%t, got %t (bytes=%d)", tc.wantKnown, facts.TiDBMaxIndexLengthKnown, facts.TiDBMaxIndexLengthBytes)
+			}
+			if tc.wantKnown && facts.TiDBMaxIndexLengthBytes != tc.wantBytes {
+				t.Fatalf("expected %d bytes, got %d", tc.wantBytes, facts.TiDBMaxIndexLengthBytes)
+			}
+		})
+	}
+
+	t.Run("mysql banner never probes tidb config", func(t *testing.T) {
+		db := openTestDB(t, map[string]testQueryResult{
+			"show variables": {
+				columns: []string{"Variable_name", "Value"},
+				rows:    [][]driver.Value{{"version", "8.4.10"}},
+			},
+			// SHOW CONFIG would not exist on MySQL; the provider must not
+			// even attempt it for a MySQL banner.
+		})
+		defer db.Close()
+
+		facts, err := NewProvider(db).LoadInstanceFacts(context.Background(), spec.DialectMySQL, "app")
+		if err != nil {
+			t.Fatalf("LoadInstanceFacts: %v", err)
+		}
+		if facts.TiDBMaxIndexLengthKnown {
+			t.Fatalf("mysql banner must not produce tidb fact, got %d", facts.TiDBMaxIndexLengthBytes)
+		}
+	})
+}
+
+func ptrTestString(value string) *string {
+	return &value
+}
+
 func TestLoadTableSnapshotReturnsNotExistsWhenNoTableRow(t *testing.T) {
 	db := openTestDB(t, map[string]testQueryResult{
 		"from information_schema.tables": {
@@ -638,6 +888,12 @@ func testPtrInt64(value int64) *int64 {
 type testQueryResult struct {
 	columns []string
 	rows    [][]driver.Value
+	// queryErr fails the whole query at QueryContext time.
+	queryErr error
+	// rowErr fails iteration at the rowErrAt index (a mid-iteration error
+	// surfaced through rows.Err() once rows.Next() returns false).
+	rowErrAt int
+	rowErr   error
 }
 
 type testDriver struct {
@@ -649,9 +905,11 @@ type testConn struct {
 }
 
 type testRows struct {
-	columns []string
-	rows    [][]driver.Value
-	index   int
+	columns  []string
+	rows     [][]driver.Value
+	index    int
+	rowErrAt int
+	rowErr   error
 }
 
 var (
@@ -687,8 +945,11 @@ func registerTestDriverResults(name string, results map[string]testQueryResult) 
 			rows[i] = append([]driver.Value(nil), result.rows[i]...)
 		}
 		cloned[key] = testQueryResult{
-			columns: append([]string(nil), result.columns...),
-			rows:    rows,
+			columns:  append([]string(nil), result.columns...),
+			rows:     rows,
+			queryErr: result.queryErr,
+			rowErrAt: result.rowErrAt,
+			rowErr:   result.rowErr,
 		}
 	}
 	testDriverResults.Store(name, cloned)
@@ -711,9 +972,14 @@ func (c testConn) Begin() (driver.Tx, error)           { return nil, driver.ErrS
 func (c testConn) QueryContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Rows, error) {
 	for fragment, result := range c.results {
 		if strings.Contains(query, fragment) {
+			if result.queryErr != nil {
+				return nil, result.queryErr
+			}
 			return &testRows{
-				columns: append([]string(nil), result.columns...),
-				rows:    append([][]driver.Value(nil), result.rows...),
+				columns:  append([]string(nil), result.columns...),
+				rows:     append([][]driver.Value(nil), result.rows...),
+				rowErrAt: result.rowErrAt,
+				rowErr:   result.rowErr,
 			}, nil
 		}
 	}
@@ -727,8 +993,16 @@ func (r *testRows) Columns() []string {
 func (r *testRows) Close() error { return nil }
 
 func (r *testRows) Next(dest []driver.Value) error {
+	if r.rowErr != nil && r.index == r.rowErrAt {
+		return r.rowErr
+	}
 	if r.index >= len(r.rows) {
 		return io.EOF
+	}
+	// database/sql reuses the raw buffer across Next calls; a short row must
+	// leave nil holes (scanning NULL → error), not inherit stale values.
+	for i := range dest {
+		dest[i] = nil
 	}
 	copy(dest, r.rows[r.index])
 	r.index++

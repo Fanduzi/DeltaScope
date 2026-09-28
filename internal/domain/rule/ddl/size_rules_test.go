@@ -86,10 +86,20 @@ func TestIndexKeyLengthRuleFindsLargePrefixOverflow(t *testing.T) {
 			},
 		},
 		Metadata: &spec.Metadata{
+			Version: &spec.VersionIdentity{
+				Product:        spec.VersionProductMySQL,
+				Version:        "5.7.35",
+				Major:          5,
+				Minor:          7,
+				Patch:          35,
+				Source:         spec.VersionSourceObserved,
+				ValidatedRange: true,
+			},
 			Instance: &spec.InstanceFacts{
 				Version:                  "5.7.35",
 				DefaultCharset:           "utf8mb4",
 				InnoDBLargePrefixEnabled: false,
+				InnoDBLargePrefixKnown:   true,
 			},
 		},
 	}

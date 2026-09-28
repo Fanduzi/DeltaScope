@@ -1,7 +1,7 @@
 // Package audit orchestrates audit use cases at the application layer.
-// input: audit requests carrying SQL text, dialect, optional policy override paths, optional metadata providers, and shared input normalization
-// output: end-to-end audit results assembled from policy loading, parsing, extraction, metadata enrichment, rule evaluation, and a review floor for partial parser failures and structured unsupported statements
-// pos: application service entrypoint for the unified offline/metadata-aware SQL audit use case with preserved statement impact estimates
+// input: audit requests carrying SQL text, dialect, optional target_version, optional policy override paths, optional metadata providers, and shared input normalization
+// output: end-to-end audit results assembled from policy loading, parsing, extraction, metadata enrichment, rule evaluation, a resolved canonical version identity, and a review floor for partial parser failures and structured unsupported statements
+// pos: application service entrypoint for the unified offline/metadata-aware SQL audit use case with preserved statement impact estimates and target/observed version reconciliation
 // note: if this file changes, update this header and module README.md.
 package audit
 
@@ -28,6 +28,16 @@ var (
 	ErrUnknownDialect = errors.New("audit dialect must be mysql, tidb, or postgresql")
 	// ErrUnsupportedStatement indicates at least one parsed statement is recognized but unsupported.
 	ErrUnsupportedStatement = errors.New("audit includes unsupported statements")
+	// ErrInvalidTargetVersion indicates target_version did not match [v]MAJOR.MINOR.PATCH.
+	ErrInvalidTargetVersion = spec.ErrInvalidTargetVersion
+	// ErrTargetVersionMismatch indicates the caller-supplied target_version
+	// contradicts the observed live-server version and cannot be honored.
+	ErrTargetVersionMismatch = errors.New("audit target_version does not match the observed server version")
+	// ErrDialectProductMismatch indicates the requested audit dialect conflicts
+	// with the product independently derived from the observed server banner
+	// (for example dialect=tidb against a MySQL banner). It is an input error:
+	// the caller-declared product can never override observed identity.
+	ErrDialectProductMismatch = errors.New("audit dialect does not match the observed server product")
 )
 
 // Request describes one application-level audit invocation.
@@ -38,6 +48,11 @@ type Request struct {
 	Schema           string
 	MetadataProvider MetadataProvider
 	Metadata         *MetadataRequest
+	// TargetVersion optionally pins the audited server version as strict
+	// [v]MAJOR.MINOR.PATCH. Empty means no version was supplied — never
+	// defaulted. Online it acts only as a constraint checked against the
+	// observed identity; offline it is the version fact itself.
+	TargetVersion string
 }
 
 // Service coordinates the full audit use case.
@@ -64,6 +79,10 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 	}
 	if request.Dialect != spec.DialectMySQL && request.Dialect != spec.DialectTiDB && request.Dialect != spec.DialectPostgreSQL {
 		return report.Result{}, ErrUnknownDialect
+	}
+	targetVersion, err := parseAuditTargetVersion(request.Dialect, request.TargetVersion)
+	if err != nil {
+		return report.Result{}, err
 	}
 
 	policyCfg, err := apppolicy.Load(request.ConfigPath)
@@ -118,7 +137,7 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 		return report.Result{}, err
 	}
 
-	statements, err = enrichStatementsWithMetadata(ctx, request.Dialect, metadataRequestFor(request), statements)
+	statements, err = enrichStatementsWithMetadata(ctx, request.Dialect, metadataRequestFor(request, targetVersion), statements)
 	if err != nil {
 		return report.Result{}, err
 	}
@@ -140,6 +159,7 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 	if err != nil {
 		return report.Result{}, err
 	}
+	result.Version = resolvedVersionIdentity(statements)
 	if request.Dialect == spec.DialectMySQL || request.Dialect == spec.DialectTiDB {
 		for _, failure := range parsed.failures {
 			if token, ok := possiblePostgreSQLMismatch(failure.RawSQL); ok {
@@ -187,7 +207,34 @@ func parserFailureDiagnostics(failures []parseFailure, dialect spec.Dialect) []s
 	return diagnostics
 }
 
-func metadataRequestFor(request Request) *MetadataRequest {
+// parseAuditTargetVersion validates the optional target_version and stamps it
+// with the dialect-implied product. Syntactically valid versions outside the
+// validated series are returned with ValidatedRange=false rather than an
+// error — malformed strings are the only input error here.
+func parseAuditTargetVersion(dialect spec.Dialect, raw string) (*spec.VersionIdentity, error) {
+	if strings.TrimSpace(raw) == "" {
+		return nil, nil
+	}
+	parsed, err := spec.ParseTargetVersion(raw)
+	if err != nil {
+		return nil, err
+	}
+	identity := parsed.WithTargetSource(spec.VersionProductForDialect(dialect))
+	return &identity, nil
+}
+
+// resolvedVersionIdentity returns the shared version fact attached during
+// enrichment — identical across statements, so the first populated one wins.
+func resolvedVersionIdentity(statements []spec.Statement) *spec.VersionIdentity {
+	for i := range statements {
+		if statements[i].Metadata != nil && statements[i].Metadata.Version != nil {
+			return statements[i].Metadata.Version
+		}
+	}
+	return nil
+}
+
+func metadataRequestFor(request Request, targetVersion *spec.VersionIdentity) *MetadataRequest {
 	legacy := request.Metadata
 	schema := strings.TrimSpace(request.Schema)
 	provider := request.MetadataProvider
@@ -200,12 +247,13 @@ func metadataRequestFor(request Request) *MetadataRequest {
 			provider = legacy.Provider
 		}
 	}
-	if schema == "" && provider == nil {
+	if schema == "" && provider == nil && targetVersion == nil {
 		return nil
 	}
 	return &MetadataRequest{
-		Schema:   schema,
-		Provider: provider,
+		Schema:        schema,
+		Provider:      provider,
+		TargetVersion: targetVersion,
 	}
 }
 
@@ -237,5 +285,6 @@ func addGlobalFinding(result report.Result, finding rule.Finding) report.Result 
 	reaggregated := report.Aggregate(result.Statements, findings)
 	reaggregated.Unsupported = append([]spec.UnsupportedDetail(nil), result.Unsupported...)
 	reaggregated.RuleSummary = result.RuleSummary
+	reaggregated.Version = result.Version
 	return reaggregated
 }

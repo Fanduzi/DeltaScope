@@ -1,6 +1,6 @@
 // Package audit orchestrates audit use cases at the application layer.
-// input: optional metadata providers plus parsed statement MutationTargets for enrichment
-// output: metadata-enriched statements with resolved target schemas for rules that can use live instance or schema facts
+// input: optional metadata providers, parsed statement MutationTargets, and the validated target_version for observed-identity reconciliation
+// output: metadata-enriched statements with resolved target schemas and a canonical Version identity (target fact offline, observed fact online) for rules that can use live instance or schema facts
 // pos: application-layer bridge between provider-backed metadata and domain statements
 // note: if this file changes, update this header and module README.md.
 package audit
@@ -38,6 +38,11 @@ type ObjectResolver interface {
 type MetadataRequest struct {
 	Schema   string
 	Provider MetadataProvider
+	// TargetVersion is the caller-supplied version constraint (already
+	// strict-parsed and product-stamped by the audit service). Offline it is
+	// the statement's version fact; online it only bounds the observed
+	// identity and can never override it.
+	TargetVersion *spec.VersionIdentity
 }
 
 func enrichStatementsWithMetadata(ctx context.Context, dialect spec.Dialect, request *MetadataRequest, statements []spec.Statement) ([]spec.Statement, error) {
@@ -46,13 +51,16 @@ func enrichStatementsWithMetadata(ctx context.Context, dialect spec.Dialect, req
 	}
 
 	if request.Provider == nil {
-		if strings.TrimSpace(request.Schema) == "" {
+		if strings.TrimSpace(request.Schema) == "" && request.TargetVersion == nil {
 			return statements, nil
 		}
 		enriched := make([]spec.Statement, len(statements))
 		for i, statement := range statements {
 			enriched[i] = statement
-			enriched[i].Metadata = &spec.Metadata{Schema: metadataTargetSchema(request, statement)}
+			enriched[i].Metadata = &spec.Metadata{
+				Schema:  metadataTargetSchema(request, statement),
+				Version: request.TargetVersion,
+			}
 
 			if lookup := planObjectLookup(request.Schema, statement); lookup != nil {
 				objSnapshot := resolveObjectSnapshot(ctx, request, dialect, lookup)
@@ -69,13 +77,30 @@ func enrichStatementsWithMetadata(ctx context.Context, dialect spec.Dialect, req
 		return nil, fmt.Errorf("load instance facts: %w", err)
 	}
 
+	// The observed banner is the only authoritative online version fact — its
+	// product is derived from the banner itself, never injected from the
+	// requested dialect. A dialect/observed product conflict and a
+	// target/observed version conflict are both typed input mismatches; an
+	// unparseable banner stays missing so version-dependent rules report a
+	// bounded gap.
+	observed := spec.ParseObservedVersion(instanceFactVersion(instanceFacts))
+	if observed != nil && observed.Version != "" {
+		if dialectProduct := spec.VersionProductForDialect(dialect); dialectProduct != "" && observed.Product != dialectProduct {
+			return nil, fmt.Errorf("%w: dialect=%s observed_product=%s observed_version=%s", ErrDialectProductMismatch, dialect, observed.Product, observed.Version)
+		}
+		if request.TargetVersion != nil && request.TargetVersion.Version != observed.Version {
+			return nil, fmt.Errorf("%w: target=%s observed=%s", ErrTargetVersionMismatch, request.TargetVersion.Version, observed.Version)
+		}
+	}
+	resolvedVersion := observed
+
 	snapshots := make(map[string]*spec.TableSnapshot)
 	enriched := make([]spec.Statement, len(statements))
 
 	for i, statement := range statements {
 		enriched[i] = statement
 		metadataSchema := metadataTargetSchema(request, statement)
-		metadata := &spec.Metadata{Schema: metadataSchema, Instance: instanceFacts}
+		metadata := &spec.Metadata{Schema: metadataSchema, Instance: instanceFacts, Version: resolvedVersion}
 
 		tableName, err := metadataTargetTableName(ctx, dialect, request, statement)
 		if err != nil {
@@ -94,7 +119,7 @@ func enrichStatementsWithMetadata(ctx context.Context, dialect spec.Dialect, req
 			metadata.TargetTable = snapshot
 		}
 
-		if metadata.Schema != "" || metadata.Instance != nil || metadata.TargetTable != nil {
+		if metadata.Schema != "" || metadata.Instance != nil || metadata.TargetTable != nil || metadata.Version != nil {
 			enriched[i].Metadata = metadata
 		}
 
@@ -103,7 +128,7 @@ func enrichStatementsWithMetadata(ctx context.Context, dialect spec.Dialect, req
 			objSnapshot := resolveObjectSnapshot(ctx, request, dialect, lookup)
 			if objSnapshot != nil {
 				if enriched[i].Metadata == nil {
-					enriched[i].Metadata = &spec.Metadata{Schema: request.Schema, Instance: instanceFacts}
+					enriched[i].Metadata = &spec.Metadata{Schema: request.Schema, Instance: instanceFacts, Version: resolvedVersion}
 				}
 				enriched[i].Metadata.Objects = append(enriched[i].Metadata.Objects, *objSnapshot)
 			}
@@ -111,6 +136,13 @@ func enrichStatementsWithMetadata(ctx context.Context, dialect spec.Dialect, req
 	}
 
 	return enriched, nil
+}
+
+func instanceFactVersion(facts *spec.InstanceFacts) string {
+	if facts == nil {
+		return ""
+	}
+	return facts.Version
 }
 
 func targetTableName(statement spec.Statement) string {

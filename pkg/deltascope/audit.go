@@ -1,6 +1,6 @@
 // Package deltascope exposes the public library surface for consumers.
-// input: public audit requests carrying SQL text, dialect, optional config path, and optional metadata providers
-// output: stable audit results with per-statement evidence gaps for embedding DeltaScope in tools and agents
+// input: public audit requests carrying SQL text, dialect, optional target_version, optional config path, and optional metadata providers
+// output: stable audit results with per-statement evidence gaps and an optional resolved canonical version identity for embedding DeltaScope in tools and agents
 // pos: public audit API above the internal application service
 // note: if this file changes, update this header and module README.md.
 package deltascope
@@ -26,6 +26,21 @@ const (
 )
 
 var ErrUnsupportedStatement = errors.New("deltascope audit includes unsupported statements")
+
+var (
+	// ErrInvalidTargetVersion rejects a target_version that is not strict
+	// [v]MAJOR.MINOR.PATCH syntax.
+	ErrInvalidTargetVersion = appaudit.ErrInvalidTargetVersion
+	// ErrTargetVersionMismatch rejects a target_version that contradicts the
+	// observed live-server version.
+	ErrTargetVersionMismatch = appaudit.ErrTargetVersionMismatch
+	// ErrDialectProductMismatch rejects a request whose dialect contradicts
+	// the product independently derived from the observed server banner.
+	ErrDialectProductMismatch = appaudit.ErrDialectProductMismatch
+)
+
+// VersionIdentity mirrors the shared product/version fact projected on results.
+type VersionIdentity = spec.VersionIdentity
 
 // Verdict identifies the final public audit outcome.
 type Verdict string
@@ -84,6 +99,11 @@ type Request struct {
 	ConfigPath       string
 	Schema           string
 	MetadataProvider MetadataProvider
+	// TargetVersion optionally pins the audited server version as strict
+	// [v]MAJOR.MINOR.PATCH. Empty means no version was supplied — it is never
+	// defaulted. With a MetadataProvider it is only a constraint checked
+	// against the observed identity; a mismatch returns ErrTargetVersionMismatch.
+	TargetVersion string
 }
 
 // Summary captures high-level public audit counts.
@@ -215,6 +235,9 @@ type Result struct {
 	Unsupported    []spec.UnsupportedDetail `json:"unsupported,omitempty"`
 	Explanation    *Explanation             `json:"explanation,omitempty"`
 	Diagnostics    []spec.Diagnostic        `json:"diagnostics,omitempty"`
+	// Version is the resolved canonical product/version identity when a
+	// verified target or observed version fact exists; nil otherwise.
+	Version *VersionIdentity `json:"version,omitempty"`
 }
 
 // Audit executes the stable public audit flow.
@@ -228,6 +251,8 @@ func Audit(ctx context.Context, request Request) (Result, error) {
 	if request.MetadataProvider != nil {
 		appRequest.MetadataProvider = publicMetadataProvider{provider: request.MetadataProvider}
 	}
+
+	appRequest.TargetVersion = request.TargetVersion
 
 	result, err := appaudit.AuditSQL(ctx, appRequest)
 	publicResult := fromDomainResult(result)
@@ -267,6 +292,7 @@ func fromDomainResult(result report.Result) Result {
 		Unsupported:    append([]spec.UnsupportedDetail(nil), result.Unsupported...),
 		Explanation:    fromDomainExplanation(result.Explanation),
 		Diagnostics:    append([]spec.Diagnostic(nil), result.Diagnostics...),
+		Version:        cloneVersionIdentity(result.Version),
 	}
 
 	for _, stmt := range result.Statements {
@@ -413,6 +439,14 @@ func cloneFloat64Ptr(value *float64) *float64 {
 	}
 	cloned := *value
 	return &cloned
+}
+
+func cloneVersionIdentity(in *spec.VersionIdentity) *spec.VersionIdentity {
+	if in == nil {
+		return nil
+	}
+	out := *in
+	return &out
 }
 
 func cloneInstanceFacts(in *spec.InstanceFacts) *spec.InstanceFacts {

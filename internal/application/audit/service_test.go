@@ -1439,7 +1439,7 @@ func TestMetadataRequestForMergesTopLevelAndLegacyFields(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt := tt
 			t.Parallel()
-			got := metadataRequestFor(tt.request)
+			got := metadataRequestFor(tt.request, parseAuditTargetVersionOrNil(t, tt.request))
 			if tt.wantNil {
 				if got != nil {
 					t.Fatalf("expected nil metadata request, got %#v", got)
@@ -1919,4 +1919,13 @@ func assertAuditResultTextHasNoTokens(t *testing.T, result report.Result, forbid
 	if len(matched) > 0 {
 		t.Fatalf("expected finding text to exclude forbidden tokens; matched=%v text=%s", matched, fmt.Sprintf("%q", text))
 	}
+}
+
+func parseAuditTargetVersionOrNil(t *testing.T, request Request) *spec.VersionIdentity {
+	t.Helper()
+	identity, err := parseAuditTargetVersion(request.Dialect, request.TargetVersion)
+	if err != nil {
+		t.Fatalf("parse target version: %v", err)
+	}
+	return identity
 }

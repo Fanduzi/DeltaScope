@@ -49,7 +49,18 @@ Per-task manifests for the milestone DDL golden-path runner
   object was not mutated, and `teardown` steps.
 - `error_cases`: CLI invocations expected to fail before producing an audit
   result (for example a real connection refusal). `expect` pins `exit` and
-  `stderr_contains` markers only; stdout is never parsed as a result.
+  `stderr_contains` markers only; stdout is never parsed as a result. An
+  anchored error case (`anchor` key) additionally records the live observed
+  banner into `version_evidence`, and the validator requires it — a
+  product/version mismatch can never be laundered into a connection failure
+  or lack its observed identity proof (#83 T04-B).
+- `metadata_cases` may declare `instance_facts` (`innodb_page_size`,
+  `tidb_max_index_length`): the runner live-reads each declared fact from
+  the anchor (`SHOW VARIABLES` for MySQL page size, `SHOW CONFIG` for TiDB
+  `max-index-length`) and the validator rejects deleted, emptied, or
+  tampered values — the manifest can never substitute for live evidence.
+  Task-scoped auxiliary anchors (e.g. `mysql84-4k`, `tidb85-12288`) pin the
+  fact in compose instead of the manifest so live reads prove it.
 - `required_case_ids`: exact case IDs that must appear as executed in the
   artifact; any missing required case is a violation.
 

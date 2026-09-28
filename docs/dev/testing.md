@@ -146,9 +146,9 @@ execution platform.
   recorded as `external_blocker` violations in a real artifact.
 - Cleanup is deterministic (`compose down -v --remove-orphans` plus a residual
   container check) on success and failure; only compose-owned resources are
-  touched. Only the `mysql84` anchor publishes a loopback-only host port
-  (`127.0.0.1:23384`) so manifest `metadata_cases` can run the freshly built
-  host CLI against a live database; all other anchors stay exec-only.
+  touched. All four anchors publish loopback-only host ports
+  (`127.0.0.1:23357/23380/23384/24000`) so manifest `metadata_cases` can run
+  the freshly built host CLI against a live database.
 - Manifests may declare `metadata_cases` (live-database CLI audit with
   test-driven `setup`/`post_verify`/`teardown` proving the audited object was
   never mutated) and `error_cases` (real pre-audit failures such as connection
@@ -157,6 +157,25 @@ execution platform.
   disabling the rest of the live catalog, alongside a generated
   `all-rules-disabled` profile for per-case selection; policy file sha256s are
   recorded and re-verified by the validator.
+- `policy.profiles` declares additional named isolated profiles a case selects
+  via its `policy` field (issue #83 T04-B); each generated profile is
+  re-parsed from disk and its enabled/level/params semantics re-derived by the
+  validator, so a rewritten YAML plus a recomputed sha256 still fails.
+- Version-evidence cases (T04-B) assert the result `version` block
+  (`product`/canonical `version`/`source`/`validated_range`) via
+  `expect.version`; the validator independently canonicalizes
+  `--target-version` args and recorded observed banners — a request/observed
+  conflict recorded as a success, a TiDB compatibility prefix resolved to the
+  MySQL `8.0.11` prefix instead of the `TiDB-v8.5.x` suffix, an out-of-range
+  version marked `complete`, a missing `minor`/`patch` numeric component
+  (e.g. `8.0.46` without `minor: 0`), a malformed target recorded as a
+  connection failure, or a provider error laundered into a normal/gap
+  result all fail validation. Anchored error cases must carry the live
+  observed banner; `metadata_cases` declaring `instance_facts`
+  (`innodb_page_size`, `tidb_max_index_length`) are live-read per case and
+  deleted or tampered values fail validation. Raw server banners appear
+  only inside `version_evidence` artifact records, never in public result
+  expectations.
 
 `make ddl-golden-validator-test` runs the offline validator contract suite
 (`scripts/test_ddl_golden.py`), proving the rejection paths above actually

@@ -700,6 +700,11 @@ rules:
     enabled: true
     level: blocker
     params:
+      # Version-dependent bound (issue #83 T04-B): resolves 767/3072 from the
+      # audit's canonical version fact — request target_version offline,
+      # observed server identity online — plus instance facts on MySQL 5.7.
+      # A missing or out-of-series version reports evidence_gaps, never a
+      # guessed newest-version bound.
       required: true
 
   ddl.index.name.keyword.forbid:

@@ -1,5 +1,5 @@
 // Package cli exposes the command-line adapter for DeltaScope.
-// input: Cobra command construction inputs, process-like stdin/stdout/stderr dependencies, and shared CLI option state
+// input: Cobra command construction inputs, process-like stdin/stdout/stderr dependencies, and shared CLI option state (including target_version)
 // output: root command wiring for audit, query-access, rules, config, capabilities, ddl-coverage, and version subcommands, with audit-only rendering and threshold flags kept off the root
 // pos: CLI command assembly and shared option definitions
 // note: if this file changes, update this header and module README.md.
@@ -30,6 +30,7 @@ type cliOptions struct {
 	MetadataConnectTimeout string
 	TLSMode                string
 	TLSCAFile              string
+	TargetVersion          string
 	ShowVersion            bool
 }
 

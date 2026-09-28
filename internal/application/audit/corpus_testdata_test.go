@@ -120,6 +120,7 @@ type corpusInstanceFacts struct {
 	Version                   string `yaml:"version,omitempty"`
 	DefaultCharset            string `yaml:"default_charset,omitempty"`
 	InnoDBLargePrefixEnabled  bool   `yaml:"innodb_large_prefix_enabled,omitempty"`
+	InnoDBLargePrefixKnown    bool   `yaml:"innodb_large_prefix_known,omitempty"`
 	InnoDBDefaultRowFormat    string `yaml:"innodb_default_row_format,omitempty"`
 	InnoDBAdaptiveHashEnabled bool   `yaml:"innodb_adaptive_hash_enabled,omitempty"`
 }

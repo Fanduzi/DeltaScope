@@ -202,8 +202,9 @@ def make_policies(binary, work_dir, manifest):
     is enabled with its declared level/params and every other cataloged rule
     is disabled — and an all-rules-disabled file is generated alongside it so
     individual cases can still pin the rule-disabled path (issue #83 T04-A).
-    Each enabled rule ID must exist in the live `rules list` catalog; the
-    catalog size is never hardcoded.
+    `policy.profiles` names additional isolated profiles a case may select via
+    `spec.policy` (issue #83 T04-B). Each enabled rule ID must exist in the
+    live `rules list` catalog; the catalog size is never hardcoded.
     """
     rc, out, err = run_cmd([binary, "rules", "list", "--format", "json"], timeout=60)
     if rc != 0:
@@ -216,9 +217,17 @@ def make_policies(binary, work_dir, manifest):
     profile = manifest.get("policy_profile", "all-rules-disabled")
     policy_spec = manifest.get("policy") or {}
     enable = policy_spec.get("enable") or {}
-    for rid in enable:
-        if rid not in ids:
-            fail_run(f"manifest policy enables unknown rule: {rid}")
+    extra_profiles = {
+        name: (spec.get("enable") or {})
+        for name, spec in (policy_spec.get("profiles") or {}).items()
+    }
+    for name in extra_profiles:
+        if name == "all-rules-disabled":
+            fail_run("policy.profiles may not redefine all-rules-disabled")
+    for name, enable_map in [(profile, enable)] + list(extra_profiles.items()):
+        for rid in enable_map:
+            if rid not in ids:
+                fail_run(f"manifest policy profile {name!r} enables unknown rule: {rid}")
 
     def render(enabled):
         lines = ["rules:"]
@@ -253,7 +262,11 @@ def make_policies(binary, work_dir, manifest):
         policy_path = work_dir / "golden-policy.yaml"
         policy_path.write_text(render(enable), encoding="utf-8")
         policies[profile] = record(profile, policy_path, enable)
-    alloff_path = work_dir / ("golden-policy-all-off.yaml" if enable else "golden-policy.yaml")
+    for name, enable_map in extra_profiles.items():
+        policy_path = work_dir / f"golden-policy-{name}.yaml"
+        policy_path.write_text(render(enable_map), encoding="utf-8")
+        policies[name] = record(name, policy_path, enable_map)
+    alloff_path = work_dir / ("golden-policy-all-off.yaml" if enable or extra_profiles else "golden-policy.yaml")
     alloff_path.write_text(render({}), encoding="utf-8")
     policies["all-rules-disabled"] = record("all-rules-disabled", alloff_path, {})
     return policies
@@ -557,7 +570,68 @@ def cli_case_expect_checks(parsed, rc, expect):
             ))
     if "fail_on_triggered" in expect:
         checks.append(("fail_on_triggered", parsed is not None and parsed.get("fail_on_triggered") == expect["fail_on_triggered"], f"fail_on_triggered={parsed.get('fail_on_triggered') if parsed else None!r}"))
+    if "version" in expect:
+        got = (parsed or {}).get("version")
+        want = expect["version"]
+        checks.append((
+            "version identity",
+            parsed is not None and isinstance(got, dict) and all(got.get(k) == v for k, v in want.items()),
+            f"version={got!r} expected={want!r}",
+        ))
     return checks
+
+
+def spec_target_version_raw(spec):
+    """The raw --target-version token a case's extra args carry, if any."""
+    args = spec.get("args") or []
+    for i, token in enumerate(args):
+        if token == "--target-version" and i + 1 < len(args):
+            return args[i + 1]
+    return None
+
+
+def canonical_target_version(raw):
+    """Mirror of spec.ParseTargetVersion: [v]MAJOR.MINOR.PATCH → canonical, or
+    None when the input is malformed (an input error, never a silent default)."""
+    if raw is None:
+        return None
+    match = re.match(r"^[vV]?(\d+)\.(\d+)\.(\d+)$", raw.strip())
+    if not match:
+        return None
+    return f"{int(match[1])}.{int(match[2])}.{int(match[3])}"
+
+
+def canonical_observed_version(product, banner):
+    """Mirror of spec.ParseObservedVersion: a raw server banner →
+    {product, version} canonical dict, honoring the TiDB compatibility marker
+    (`8.0.11-TiDB-v8.5.0` → tidb/8.5.0, never the MySQL prefix)."""
+    raw = (banner or "").strip()
+    if not raw:
+        return None
+    tidb = re.search(r"-TiDB-v(\d+)\.(\d+)\.(\d+)", raw, re.IGNORECASE)
+    if tidb:
+        return {"product": "tidb", "version": f"{int(tidb[1])}.{int(tidb[2])}.{int(tidb[3])}"}
+    match = re.match(r"^(\d+)\.(\d+)\.(\d+)", raw)
+    if not match or not (product or "").strip():
+        return None
+    return {"product": product.strip(), "version": f"{int(match[1])}.{int(match[2])}.{int(match[3])}"}
+
+
+def version_evidence_record(spec, parsed, observed_banner=None, observed_product=None):
+    """The recorded version evidence for one executed case: raw target input
+    plus its canonical form (or None when malformed), the raw observed banner
+    plus its canonical form for online cases, and the identity the audit
+    result actually emitted. Raw banners stay inside this record and are never
+    projected into expectations."""
+    target_raw = spec_target_version_raw(spec)
+    observed_canonical = canonical_observed_version(observed_product, observed_banner)
+    return {
+        "target_raw": target_raw,
+        "target_canonical": canonical_target_version(target_raw),
+        "observed_raw": (observed_banner or "").strip() or None,
+        "observed_canonical": observed_canonical,
+        "resolved": (parsed or {}).get("version") if isinstance(parsed, dict) else None,
+    }
 
 
 def execute_cli_case(manifest, binary, policies, spec):
@@ -592,6 +666,7 @@ def execute_cli_case(manifest, binary, policies, spec):
     except json.JSONDecodeError:
         parsed = None
     case["actual"]["parsed"] = parsed
+    case["actual"]["version_evidence"] = version_evidence_record(spec, parsed)
     for name, ok, detail in cli_case_expect_checks(parsed, rc, spec["expect"]):
         case["assertions"].append({"name": name, "ok": bool(ok), "detail": detail})
     if not all(a["ok"] for a in case["assertions"]):
@@ -611,6 +686,38 @@ def case_env(spec):
 
 def metadata_case_specs(manifest):
     return manifest.get("metadata_cases") or []
+
+
+# Instance facts a metadata case may pin (issue #83 T04-B): each name maps to
+# the live read path the runner executes against the case's anchor, so the
+# artifact records real observed values — never fabricated defaults.
+INSTANCE_FACT_QUERIES = {
+    "innodb_page_size": "show variables like 'innodb_page_size'",
+    "innodb_large_prefix": "show variables like 'innodb_large_prefix'",
+    "innodb_default_row_format": "show variables like 'innodb_default_row_format'",
+    "tidb_max_index_length": "show config where Type = 'tidb' and Name = 'max-index-length'",
+}
+
+
+def read_instance_fact(anchor, fact):
+    """Read one live instance fact through the anchor's fixture client.
+    Numeric facts return ints, on/off variables return the raw token; a failed
+    or empty read returns None so an unreadable fact can never masquerade as
+    an observed value."""
+    query = INSTANCE_FACT_QUERIES.get(fact)
+    if query is None:
+        return None
+    rc, out, _ = mysql_exec(anchor, query)
+    if rc != 0:
+        return None
+    lines = [line for line in out.strip().splitlines() if line.strip()]
+    if not lines:
+        return None
+    raw = lines[0].split("\t")[-1].strip()
+    try:
+        return int(raw)
+    except ValueError:
+        return raw or None
 
 
 def metadata_case_spec_for(manifest, case):
@@ -713,6 +820,20 @@ def execute_metadata_case(manifest, anchor_key, binary, policies, spec):
     except json.JSONDecodeError:
         parsed = None
     case["actual"]["parsed"] = parsed
+    case["actual"]["version_evidence"] = version_evidence_record(
+        spec, parsed, observed_banner=database.get("version"), observed_product=anchor["product"],
+    )
+    declared_facts = (spec.get("expect") or {}).get("instance_facts")
+    if declared_facts is not None:
+        observed_facts = {}
+        for fact_name, want in declared_facts.items():
+            observed_facts[fact_name] = read_instance_fact(anchor, fact_name)
+            case["assertions"].append({
+                "name": f"instance fact {fact_name}",
+                "ok": observed_facts[fact_name] == want,
+                "detail": f"{fact_name}={observed_facts[fact_name]!r} expected={want!r}",
+            })
+        case["actual"]["instance_facts"] = observed_facts
     for name, ok, detail in cli_case_expect_checks(parsed, rc, spec["expect"]):
         case["assertions"].append({"name": name, "ok": bool(ok), "detail": detail})
 
@@ -765,6 +886,17 @@ def execute_error_case(manifest, binary, policies, spec):
     ]
     args.extend(spec.get("args") or [])
     rc, out, err = run_cmd(args, cwd=ROOT_DIR, timeout=120, env=case_env(spec))
+    # Anchored error cases record the observed server banner they conflicted
+    # with, so the validator can re-derive the canonical identity behind a
+    # version/product mismatch instead of trusting stderr text alone.
+    anchor = (manifest.get("anchors") or {}).get(spec.get("anchor") or "")
+    observed_banner = None
+    observed_product = None
+    if anchor is not None:
+        brc, bout, _ = mysql_exec(anchor, "SELECT VERSION()")
+        if brc == 0:
+            observed_banner = bout.strip()
+            observed_product = anchor["product"]
     case = {
         "case_id": case_id,
         "kind": "cli_error",
@@ -775,10 +907,20 @@ def execute_error_case(manifest, binary, policies, spec):
         "policy_path": policy["path"],
         "command": args,
         "expected": spec["expect"],
-        "actual": {"exit": rc, "stdout": out, "stderr": err},
+        "actual": {"exit": rc, "stdout": out, "stderr": err,
+                   "version_evidence": version_evidence_record(
+                       spec, None, observed_banner=observed_banner, observed_product=observed_product)},
         "assertions": [],
         "status": "pass",
     }
+    if anchor is not None:
+        case["anchor"] = spec["anchor"]
+        case["actual"]["observed_banner"] = observed_banner
+        case["assertions"].append({
+            "name": "observed banner evidence",
+            "ok": observed_banner is not None,
+            "detail": f"SELECT VERSION() on {spec['anchor']} returned {observed_banner!r}",
+        })
     expect = spec["expect"]
     case["assertions"].append({
         "name": "exit code",
@@ -995,7 +1137,101 @@ def expected_policy_profile(manifest, case, spec):
     return manifest.get("policy_profile", "all-rules-disabled")
 
 
-def cli_stdout_expect_failures(case, spec, failures):
+def manifest_declared_policy_enables(manifest):
+    """{profile: enable_map} for every manifest-declared isolated profile —
+    the default `policy.enable` profile plus every `policy.profiles` entry."""
+    policy_spec = manifest.get("policy") or {}
+    declared = {}
+    if (policy_spec.get("enable") or {}):
+        declared[manifest.get("policy_profile", "all-rules-disabled")] = policy_spec["enable"]
+    for name, spec in (policy_spec.get("profiles") or {}).items():
+        declared[name] = spec.get("enable") or {}
+    return declared
+
+
+def version_evidence_failures(case, spec, reparsed, anchor=None):
+    """Re-derive version evidence from the manifest spec and raw stdout.
+
+    The recorded version_evidence block is never trusted: target raw input and
+    its canonical form must match the declared --target-version arg; observed
+    raw/canonical identity must match the live anchor banner; and the emitted
+    result version must equal the canonical observed identity online (never a
+    caller override, never the TiDB compatibility prefix)."""
+    failures = []
+    case_id = case.get("case_id")
+    actual = case.get("actual") or {}
+    evidence = actual.get("version_evidence")
+    target_raw = spec_target_version_raw(spec) if spec else None
+    target_canonical = canonical_target_version(target_raw)
+
+    if evidence is None:
+        if target_raw is not None or reparsed and reparsed.get("version") is not None:
+            failures.append(f"case {case_id}: missing version_evidence record")
+        return failures
+
+    if evidence.get("target_raw") != target_raw:
+        failures.append(f"case {case_id}: recorded target_raw {evidence.get('target_raw')!r} != manifest --target-version {target_raw!r}")
+    if evidence.get("target_canonical") != target_canonical:
+        failures.append(f"case {case_id}: target_canonical {evidence.get('target_canonical')!r} inconsistent with raw input {target_raw!r}")
+
+    observed_canonical = None
+    if anchor is not None:
+        # cli_metadata cases record the live banner under actual.database;
+        # anchored cli_error cases record it under actual.observed_banner.
+        banner = ((actual.get("database") or {}).get("version") or (actual.get("observed_banner") or "")).strip()
+        observed_canonical = canonical_observed_version(anchor["product"], banner)
+        if not banner:
+            failures.append(f"case {case_id}: anchored case is missing the observed server banner")
+        if evidence.get("observed_raw") != (banner or None):
+            failures.append(f"case {case_id}: observed_raw {evidence.get('observed_raw')!r} != recorded database banner {banner!r}")
+        if evidence.get("observed_canonical") != observed_canonical:
+            failures.append(f"case {case_id}: observed_canonical {evidence.get('observed_canonical')!r} != canonical banner {observed_canonical!r}")
+
+    reparsed_version = reparsed.get("version") if isinstance(reparsed, dict) else None
+    if evidence.get("resolved") != reparsed_version:
+        failures.append(f"case {case_id}: recorded resolved version differs from raw stdout version")
+
+    if isinstance(reparsed_version, dict):
+        # Public numeric components are always serialized — a zero minor or
+        # patch (8.0.46, 8.5.0) must not vanish through omitempty, and the trio
+        # must rebuild the canonical version string.
+        for component in ("major", "minor", "patch"):
+            if component not in reparsed_version:
+                failures.append(f"case {case_id}: emitted version missing numeric component {component!r}")
+        canonical = reparsed_version.get("version")
+        parts = canonical.split(".") if isinstance(canonical, str) else []
+        if len(parts) == 3 and all(p.isdigit() for p in parts):
+            actual_components = (
+                reparsed_version.get("major"),
+                reparsed_version.get("minor"),
+                reparsed_version.get("patch"),
+            )
+            if actual_components != (int(parts[0]), int(parts[1]), int(parts[2])):
+                failures.append(
+                    f"case {case_id}: emitted version components {actual_components!r} "
+                    f"disagree with canonical version {canonical!r}")
+        product = reparsed_version.get("product")
+        version = reparsed_version.get("version")
+        source = reparsed_version.get("source")
+        if anchor is not None and observed_canonical is not None:
+            if (product, version, source) != (observed_canonical["product"], observed_canonical["version"], "observed"):
+                failures.append(
+                    f"case {case_id}: emitted version {reparsed_version!r} does not match canonical observed identity {observed_canonical!r}")
+            if target_canonical is not None and version != target_canonical:
+                failures.append(
+                    f"case {case_id}: target {target_canonical!r} conflicts with observed {version!r} yet recorded as a successful audit")
+        elif anchor is None and target_canonical is not None:
+            want_product = {"mysql": "mysql", "tidb": "tidb"}.get((spec or {}).get("dialect"))
+            if version != target_canonical or source != "target" or (want_product and product != want_product):
+                failures.append(f"case {case_id}: emitted version {reparsed_version!r} inconsistent with canonical target {target_canonical!r}")
+        if reparsed_version.get("validated_range") is False:
+            coverage = (reparsed.get("coverage") or {}).get("status") if isinstance(reparsed, dict) else None
+            if coverage == "complete":
+                failures.append(f"case {case_id}: out-of-range version recorded as complete coverage")
+    return failures
+
+
+def cli_stdout_expect_failures(case, spec, failures, anchor=None):
     """Re-parse the recorded raw stdout and re-run the manifest expectation —
     the artifact's stored `parsed` blob is never trusted over raw bytes."""
     raw = case.get("actual", {}).get("stdout")
@@ -1012,6 +1248,7 @@ def cli_stdout_expect_failures(case, spec, failures):
     for name, ok, detail in cli_case_expect_checks(reparsed, case.get("actual", {}).get("exit"), spec["expect"]):
         if not ok:
             failures.append(f"case {case.get('case_id')}: {name}: {detail}")
+    failures.extend(version_evidence_failures(case, spec, reparsed, anchor=anchor))
 
 
 def cli_case_spec_for(manifest, case):
@@ -1091,8 +1328,7 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
     legacy_policy = artifact.get("policy_profile")
     if isinstance(legacy_policy, dict) and legacy_policy.get("profile"):
         policy_by_name.setdefault(legacy_policy["profile"], legacy_policy)
-    manifest_enable = ((manifest.get("policy") or {}).get("enable") or {})
-    manifest_profile = manifest.get("policy_profile", "all-rules-disabled")
+    declared_enables = manifest_declared_policy_enables(manifest)
     catalog_ids = None
     if policies and verify_binary and (cli.get("path") or "") and pathlib.Path(cli["path"]).is_file():
         crc, cout, cerr = run_cmd([cli["path"], "rules", "list", "--format", "json"], timeout=60)
@@ -1124,14 +1360,14 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
             continue
         if sha256_file(path) != record.get("sha256"):
             failures.append(f"policy {profile}: sha256 mismatch (stale or fabricated evidence)")
-        expected_enable = manifest_enable if profile == manifest_profile else {}
+        expected_enable = declared_enables.get(profile) or {}
         failures.extend(policy_semantics_failures(profile, record, path, expected_enable, catalog_ids))
-    if manifest_enable:
-        record = policy_by_name.get(manifest_profile)
+    for name, enable_map in declared_enables.items():
+        record = policy_by_name.get(name)
         if record is None:
-            failures.append("manifest declares policy.enable but artifact has no isolated policy record")
-        elif record.get("enabled_rules") != manifest_enable:
-            failures.append(f"isolated policy enabled_rules differ from manifest: {record.get('enabled_rules')!r} != {manifest_enable!r}")
+            failures.append(f"manifest declares isolated profile {name!r} but artifact has no generated policy record")
+        elif record.get("enabled_rules") != enable_map:
+            failures.append(f"isolated policy {name!r} enabled_rules differ from manifest: {record.get('enabled_rules')!r} != {enable_map!r}")
 
     anchors = manifest["anchors"]
     covered_anchors = set()
@@ -1311,7 +1547,21 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
                         failures.append(f"case {case_id}: setup verify {j} identity mismatch")
                     if verify.get("rc") != 0 or verify.get("output") != mverify["expect"]:
                         failures.append(f"case {case_id}: setup verify {mverify['assert']} output {verify.get('output')!r} != {mverify['expect']!r}")
-            cli_stdout_expect_failures(case, spec, failures)
+            cli_stdout_expect_failures(case, spec, failures, anchor=anchor)
+            # Declared instance facts must have been read live and recorded —
+            # a missing or diverging record means the evidence was fabricated
+            # or the read path silently broke (issue #83 T04-B).
+            declared_facts = (spec.get("expect") or {}).get("instance_facts")
+            if declared_facts is not None:
+                recorded_facts = actual.get("instance_facts")
+                if recorded_facts is None:
+                    failures.append(f"case {case_id}: manifest declares instance_facts but none were recorded")
+                else:
+                    for fact_name, want in declared_facts.items():
+                        if fact_name not in recorded_facts:
+                            failures.append(f"case {case_id}: instance_facts missing declared key {fact_name!r}")
+                        elif recorded_facts[fact_name] != want:
+                            failures.append(f"case {case_id}: instance_facts[{fact_name!r}] {recorded_facts[fact_name]!r} != manifest {want!r}")
             posts = actual.get("post_verify") or []
             manifest_posts = spec.get("post_verify") or []
             if len(posts) != len(manifest_posts):
@@ -1353,6 +1603,29 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
             for marker in spec["expect"].get("stderr_contains") or []:
                 if marker not in (actual.get("stderr") or ""):
                     failures.append(f"case {case_id}: stderr missing marker {marker!r}")
+            # An input/provider error path never emits an audit result — a
+            # verdict payload in stdout means an error was laundered into a
+            # normal (or gap-shaped) audit record.
+            stdout_blob = None
+            try:
+                stdout_blob = json.loads(actual.get("stdout") or "")
+            except (json.JSONDecodeError, TypeError):
+                stdout_blob = None
+            if isinstance(stdout_blob, dict) and "verdict" in stdout_blob:
+                failures.append(f"case {case_id}: error case stdout carries an audit result")
+            error_anchor_key = spec.get("anchor")
+            error_anchor = anchors.get(error_anchor_key) if error_anchor_key else None
+            if error_anchor_key and error_anchor is None:
+                failures.append(f"case {case_id}: manifest error case references unknown anchor {error_anchor_key!r}")
+            if error_anchor is not None:
+                if case.get("anchor") != error_anchor_key:
+                    failures.append(f"case {case_id}: recorded anchor {case.get('anchor')!r} != manifest {error_anchor_key!r}")
+                # A mismatch/conflict without observed evidence is
+                # indistinguishable from a fabricated error — the raw banner
+                # and its canonical form must both be present.
+                if not (actual.get("observed_banner") or "").strip():
+                    failures.append(f"case {case_id}: anchored error case missing observed_banner evidence")
+            failures.extend(version_evidence_failures(case, spec, None, anchor=error_anchor))
         else:
             failures.append(f"case {case_id}: unknown kind {kind!r}")
 

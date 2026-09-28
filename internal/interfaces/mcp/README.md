@@ -6,7 +6,7 @@ Thin MCP adapter for exposing DeltaScope audit and rule-discovery capabilities t
 
 | File | Responsibility |
 |------|---------------|
-| `audit_tool.go` | Implements `audit_sql` on the shared DeltaScope path, including catalog-aware metadata audits, and passes full partial public results and context into bounded diagnostic tool errors |
+| `audit_tool.go` | Implements `audit_sql` on the shared DeltaScope path, including catalog-aware metadata audits and the `target_version` input (validated by shared `spec.ValidateTargetVersion` preflight before any connection-ref resolution or metadata preparation), and passes full partial public results and context into bounded diagnostic tool errors |
 | `audit_tool_test.go` | Verifies `audit_sql` compact text, structured result without CLI-only `fail_on_triggered`, empty-SQL `bad_request`, offline `context.note` / `context.unproven`, and per-target denylist findings for multi-target DROP/RENAME via `config_path` |
 | `audit_impact_postgresql_tag_test.go` | Verifies PostgreSQL offline primary-key equality impact in MCP structured output |
 | `audit_dml_table_existence_test.go` | Verifies metadata-aware MySQL/TiDB INSERT/UPDATE/DELETE missing-target findings and stable MCP structured-result shape |
@@ -23,6 +23,7 @@ Thin MCP adapter for exposing DeltaScope audit and rule-discovery capabilities t
 | `server_unsupported_verdict_floor_postgresql_tag_test.go` | Verifies MCP PostgreSQL `SELECT 1` keeps tool-error signaling and serializes the review-floored unsupported result with the retained incomplete-coverage statement |
 | `audit_coverage_t03_test.go` | Verifies issue #82/T03 transport contract: MySQL `CREATE SEQUENCE` + supported `ALTER TABLE` returns `isError=true` with the partial result, retained incomplete coverage, and bounded unsupported evidence |
 | `audit_evidence_gap_t04_test.go` | Verifies issue #83 T04-A transport contract: an evidence-gap-only audit returns `isError=false` with `unverified` coverage and per-statement `evidence_gaps`, while a mixed gap+unsupported batch keeps `isError=true` |
+| `audit_version_t04b_test.go` | Verifies issue #83 T04-B transport contract: `target_version` projects the canonical `version` block under `isError=false`, malformed or mismatched input returns `isError=true` as a `bad_request`-shaped tool error, and missing/out-of-range versions produce bounded `evidence_gaps` |
 | `server_ddl_lifecycle_mysql_test.go` | Verifies MCP lifecycle findings for MySQL/TiDB DDL, including `isError=true` tool errors for supported statements that still carry extracted-but-unaudited option aspects (sequence/placement-policy option lists, per-spec account `identified` auth) |
 | `tool_errors.go` | Shapes stable structured MCP tool errors; connection-open failures go through connresolve.Classify then MCP codes |
 

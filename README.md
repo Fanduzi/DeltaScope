@@ -167,6 +167,8 @@ Example JSON shape:
 
 `coverage.status` reports whether every recognized statement aspect had audited semantics (`complete`, `unverified`, `incomplete`). Recognized-but-unsupported statements stay in `statements` with `coverage.status=incomplete` and bounded `unsupported` evidence, floor the verdict to at least `review`, and surface as `ErrUnsupportedStatement` (SDK), exit 1 (CLI), HTTP 400, or MCP `isError=true`. Enabled required rules that declare required metadata facts report per-statement `evidence_gaps` (`rule_id`, `reason_code`, `required_facts`) when those facts are unavailable: gaps are not findings, they mark the statement `unverified`, floor the verdict to `review`, and carry warning-equivalent `--fail-on` weight.
 
+Version-dependent checks (currently `ddl.index.key_length.max_bytes.require`) resolve their bound from a canonical version fact plus known-bit instance facts. Supply it offline with `--target-version [v]MAJOR.MINOR.PATCH` — the result then carries a top-level `version` block (`product`, canonical `version`, `source`, `validated_range`). Online the observed server identity is authoritative and its product is read from the banner itself: a matching `--target-version` proceeds, a version or product mismatch is an input error (SDK typed error, CLI exit 2, HTTP 400, MCP `isError=true`), and the raw server banner is never projected into output. When a version or instance fact that could change the outcome is missing (e.g. an unobserved `innodb_page_size` or TiDB `max-index-length`), the rule reports a bounded `evidence_gaps` entry instead of assuming a default; validated series are MySQL 5.7.x/8.0.x/8.4.x and TiDB 8.5.x.
+
 Audit a TiDB statement:
 
 ```bash

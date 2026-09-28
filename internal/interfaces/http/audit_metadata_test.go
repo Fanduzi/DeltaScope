@@ -31,8 +31,14 @@ type metadataAuditTestClient struct {
 	objectCalls    []spec.ObjectLookupRequest
 }
 
-func (c *metadataAuditTestClient) LoadInstanceFacts(context.Context, spec.Dialect, string) (*spec.InstanceFacts, error) {
-	return &spec.InstanceFacts{Version: "8.0.36"}, nil
+func (c *metadataAuditTestClient) LoadInstanceFacts(_ context.Context, dialect spec.Dialect, _ string) (*spec.InstanceFacts, error) {
+	// Mirror real servers: a TiDB endpoint reports its compatibility banner,
+	// anything else is a plain MySQL banner.
+	version := "8.0.36"
+	if dialect == spec.DialectTiDB {
+		version = "8.0.11-TiDB-v8.5.0"
+	}
+	return &spec.InstanceFacts{Version: version}, nil
 }
 
 func (c *metadataAuditTestClient) LoadTableSnapshot(_ context.Context, _ spec.Dialect, _ string, table string) (*spec.TableSnapshot, error) {

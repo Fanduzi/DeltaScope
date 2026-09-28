@@ -1,0 +1,5 @@
+# input: tidb-server config for the ddl-golden T04-B auxiliary fixture
+# output: max-index-length raised to its documented 12288 ceiling so the golden
+#         run proves the configured bound is read, not the 3072 default assumed
+# pos: mounted read-only into the tidb85-12288 service in ddl-golden-compose.yaml
+max-index-length = 12288

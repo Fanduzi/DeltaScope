@@ -60,6 +60,33 @@ The database version against which an audit's version-dependent conclusions are
 assessed. An unspecified target leaves those conclusions undetermined.
 _Avoid_: parser version, latest version, DeltaScope version
 
+**Version Identity**:
+The canonical product/version fact an audit resolves for version-dependent
+rules: `product`, canonical `version`, components, `source`, and
+`validated_range`. Offline it comes from the strict `target_version` input;
+online the provider-observed identity is authoritative — its product is
+derived from the banner itself (a `8.0.11-TiDB-v8.5.0` banner is
+`tidb/8.5.0`, never MySQL `8.0.11`), and a caller `target_version` may only
+constrain it (a version or product mismatch is an input error, never an
+override). The raw provider banner stays internal.
+_Avoid_: server banner text, connection-reported version string, caller
+dialect, caller guess
+
+**Instance Fact**:
+A normalized live-server configuration fact carried with explicit known bits
+(`instance.innodb_page_size`, `instance.innodb_large_prefix_enabled`,
+`instance.tidb_max_index_length`, ...). Zero, absent, or unparseable provider
+values stay unknown — they are never defaulted into evidence. A fact that can
+change a rule's outcome but was not observed produces an audit evidence gap.
+_Avoid_: server default, assumed configuration, version fact
+
+**Validated Version Series**:
+The product/version series this milestone verified against versioned
+documentation and live anchors: MySQL 5.7.x, 8.0.x, 8.4.x, and TiDB 8.5.x.
+A syntactically valid version outside the series is not an input error — it
+produces bounded version evidence gaps on version-dependent rules.
+_Avoid_: supported version, newest version, parser-supported version
+
 **Audit Evidence Gap**:
 Missing facts needed to resolve an enabled, applicable audit check. It leaves
 that conclusion unverified even when the operation's semantics are understood.

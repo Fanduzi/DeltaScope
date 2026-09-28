@@ -1,5 +1,5 @@
 // Package httpapi exposes the HTTP adapter for DeltaScope.
-// input: parsed HTTP audit requests, shared metadata-preparation helpers, and public audit execution functions
+// input: parsed HTTP audit requests (including target_version), shared metadata-preparation helpers, and public audit execution functions
 // output: additive HTTP audit context including offline existence caveats plus offline or registry-based metadata-aware audit execution results
 // pos: HTTP adapter glue between request-scoped metadata inputs and the public DeltaScope audit API
 // note: if this file changes, update this header and module README.md.
@@ -49,6 +49,11 @@ func executeAuditRequest(
 	registry *runtimeconfig.Registry,
 	principalID string,
 ) (auditResponse, error) {
+	// Shared target_version syntax preflight: a malformed value is a bad
+	// request and must win over any connection lookup or open.
+	if err := spec.ValidateTargetVersion(request.TargetVersion); err != nil {
+		return auditResponse{}, err
+	}
 	if request.ConnectionID == "" {
 		return executeOfflineAudit(ctx, request, configPath, auditFn)
 	}
@@ -74,10 +79,11 @@ func executeOfflineAudit(
 		Unproven:       ifaceconn.OfflineExistenceUnproven(),
 	}
 	result, err := auditFn(ctx, deltascope.Request{
-		SQL:        request.SQL,
-		Dialect:    dialect,
-		ConfigPath: configPath,
-		Schema:     schema,
+		SQL:           request.SQL,
+		Dialect:       dialect,
+		ConfigPath:    configPath,
+		Schema:        schema,
+		TargetVersion: request.TargetVersion,
 	})
 	if err != nil {
 		if len(result.Diagnostics) > 0 {
@@ -161,6 +167,7 @@ func executeRegistryAwareAudit(
 		ConfigPath:       configSnapshotPath,
 		Schema:           prepared.Schema,
 		MetadataProvider: publicMetadataProvider{client: prepared.Client},
+		TargetVersion:    request.TargetVersion,
 	})
 	runContext := &auditRunContext{
 		Mode:           "metadata-aware",

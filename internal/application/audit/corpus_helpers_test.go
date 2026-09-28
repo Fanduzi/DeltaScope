@@ -63,6 +63,7 @@ func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataP
 			Version:                   metadata.Instance.Version,
 			DefaultCharset:            metadata.Instance.DefaultCharset,
 			InnoDBLargePrefixEnabled:  metadata.Instance.InnoDBLargePrefixEnabled,
+			InnoDBLargePrefixKnown:    metadata.Instance.InnoDBLargePrefixKnown,
 			InnoDBDefaultRowFormat:    metadata.Instance.InnoDBDefaultRowFormat,
 			InnoDBAdaptiveHashEnabled: metadata.Instance.InnoDBAdaptiveHashEnabled,
 		}

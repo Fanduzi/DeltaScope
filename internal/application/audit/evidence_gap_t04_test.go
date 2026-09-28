@@ -641,6 +641,7 @@ func TestAuditSQLT04R1TypeMissingWithKnownLength(t *testing.T) {
 
 type t04SnapshotProvider struct {
 	snapshots   map[string]*spec.TableSnapshot
+	facts       *spec.InstanceFacts
 	factsErr    error
 	snapshotErr error
 }
@@ -648,6 +649,9 @@ type t04SnapshotProvider struct {
 func (p *t04SnapshotProvider) LoadInstanceFacts(context.Context, spec.Dialect, string) (*spec.InstanceFacts, error) {
 	if p.factsErr != nil {
 		return nil, p.factsErr
+	}
+	if p.facts != nil {
+		return p.facts, nil
 	}
 	return &spec.InstanceFacts{}, nil
 }

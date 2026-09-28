@@ -646,6 +646,273 @@ def main():
                            "rules:\n" + valid_iso)
         iso_policy.write_text(valid_iso, encoding="utf-8")
 
+        # ------------------------------------------------------------------
+        # T04-B (#83): version evidence contract. A second isolated profile
+        # proves `policy.profiles` generation; target raw/canonical, observed
+        # raw/canonical, emitted identity, and range state are all re-derived
+        # from the manifest + raw stdout, never from artifact-recorded blobs.
+        mvg = copy.deepcopy(mg)
+        mvg["anchors"]["tidbX"] = {
+            "service": "tidbX",
+            "container": "golden-test-tidbX",
+            "image": "tidb:v8.5.0",
+            "product": "tidb",
+            "version_contains": "TiDB-v8.5.0",
+            "database": "golden",
+            "exec_client": ["mysql", "-uroot"],
+        }
+        mvg["policy"]["profiles"] = {
+            "t04b-keylen": {"enable": {"ddl.fake.two": {"enabled": True, "level": "blocker",
+                                                      "params": {"required": True}}}}
+        }
+        keylen_policy = tmp / "keylen-policy.yaml"
+        keylen_policy.write_text(render_policy(mvg["policy"]["profiles"]["t04b-keylen"]["enable"]), encoding="utf-8")
+        keylen_record = {"profile": "t04b-keylen", "path": str(keylen_policy),
+                         "sha256": hashlib.sha256(keylen_policy.read_bytes()).hexdigest(),
+                         "catalog_rules": 3,
+                         "enabled_rules": mvg["policy"]["profiles"]["t04b-keylen"]["enable"],
+                         "disabled_rules": 2}
+
+        VSQL = "CREATE TABLE t (c VARCHAR(255), KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;"
+        mvg["cli_cases"] = [{
+            "id": "ver-ok", "dialect": "mysql", "sql": VSQL, "policy": "t04b-keylen",
+            "args": ["--target-version", "v8.0.46"],
+            "expect": {"exit": 0, "verdict": "pass", "statements": 1, "findings": 0,
+                       "diagnostics": 0, "unsupported": 0, "coverage": "complete",
+                       "statement_coverage": ["complete"],
+                       "version": {"product": "mysql", "version": "8.0.46",
+                                   "source": "target", "validated_range": True}},
+        }]
+        mvg["metadata_cases"] = [{
+            "id": "ver-tidb", "anchor": "tidbX", "dialect": "tidb",
+            "sql": VSQL, "policy": "t04b-keylen",
+            "connect": {"host": "127.0.0.1", "port": 24000, "user": "root", "schema": "golden"},
+            "expect": {"exit": 0, "verdict": "pass", "statements": 1, "findings": 0,
+                       "diagnostics": 0, "unsupported": 0, "coverage": "complete",
+                       "statement_coverage": ["complete"],
+                       "version": {"product": "tidb", "version": "8.5.0",
+                                   "source": "observed", "validated_range": True},
+                       "instance_facts": {"tidb_max_index_length": 3072}},
+        }]
+        mvg["error_cases"] = [
+            {
+                "id": "ver-bad", "dialect": "mysql", "sql": VSQL, "policy": "t04b-keylen",
+                "args": ["--target-version", "8.4"],
+                "expect": {"exit": 2, "stderr_contains": ["target_version"]},
+            },
+            {
+                "id": "ver-mismatch", "anchor": "tidbX", "dialect": "mysql",
+                "sql": VSQL, "policy": "t04b-keylen",
+                "args": ["--host", "127.0.0.1", "--port", "24000", "--user", "root",
+                         "--schema", "golden", "--target-version", "8.5.0"],
+                "expect": {"exit": 2, "stderr_contains": ["does not match requested dialect"]},
+            },
+        ]
+        mvg["required_case_ids"] = ["TX.cli.ver-ok", "TX.meta.ver-tidb", "TX.clierr.ver-bad",
+                                  "TX.clierr.ver-mismatch"]
+
+        TIDB_BANNER = "8.0.11-TiDB-v8.5.0"
+        RESOLVED_TARGET = {"product": "mysql", "version": "8.0.46", "major": 8, "minor": 0,
+                           "patch": 46, "source": "target", "validated_range": True}
+        RESOLVED_TIDB = {"product": "tidb", "version": "8.5.0", "major": 8, "minor": 5,
+                         "patch": 0, "source": "observed", "validated_range": True}
+
+        def version_artifact():
+            a = copy.deepcopy(base)
+            a["policy_profile"] = copy.deepcopy(iso_record)
+            a["policies"] = [copy.deepcopy(iso_record), copy.deepcopy(off_record), copy.deepcopy(keylen_record)]
+            ver_parsed = {"verdict": "pass", "coverage": {"status": "complete"},
+                          "version": dict(RESOLVED_TARGET),
+                          "statements": [{"index": 0, "raw_sql": VSQL, "findings": [],
+                                          "coverage": {"status": "complete"}}],
+                          "global_findings": [], "diagnostics": [], "unsupported": []}
+            cli = {
+                "case_id": "TX.cli.ver-ok", "kind": "cli_audit", "cli_case": "ver-ok",
+                "dialect": "mysql", "input_sql": VSQL,
+                "policy_profile": "t04b-keylen", "policy_path": str(keylen_policy),
+                "command": [a["cli"]["path"], "audit", "--dialect", "mysql", "--sql", VSQL,
+                            "--config", str(keylen_policy), "--format", "json",
+                            "--target-version", "v8.0.46"],
+                "expected": copy.deepcopy(mvg["cli_cases"][0]["expect"]),
+                "actual": {"exit": 0, "stdout": json.dumps(ver_parsed), "stderr": "",
+                           "parsed": copy.deepcopy(ver_parsed),
+                           "version_evidence": {"target_raw": "v8.0.46", "target_canonical": "8.0.46",
+                                                "observed_raw": None, "observed_canonical": None,
+                                                "resolved": dict(RESOLVED_TARGET)}},
+                "assertions": [{"name": "a", "ok": True, "detail": "d"}], "status": "pass",
+            }
+            tidb_parsed = {"verdict": "pass", "coverage": {"status": "complete"},
+                           "version": dict(RESOLVED_TIDB),
+                           "statements": [{"index": 0, "raw_sql": VSQL, "findings": [],
+                                           "coverage": {"status": "complete"}}],
+                           "global_findings": [], "diagnostics": [], "unsupported": []}
+            meta = {
+                "case_id": "TX.meta.ver-tidb", "kind": "cli_metadata", "cli_case": "ver-tidb",
+                "anchor": "tidbX", "dialect": "tidb", "input_sql": VSQL,
+                "policy_profile": "t04b-keylen", "policy_path": str(keylen_policy),
+                "connect": {"host": "127.0.0.1", "port": 24000, "user": "root", "schema": "golden"},
+                "command": [a["cli"]["path"], "audit", "--dialect", "tidb", "--sql", VSQL,
+                            "--config", str(keylen_policy), "--format", "json",
+                            "--host", "127.0.0.1", "--port", "24000", "--user", "root",
+                            "--schema", "golden"],
+                "expected": copy.deepcopy(mvg["metadata_cases"][0]["expect"]),
+                "actual": {
+                    "database": {"product": "tidb", "image": "tidb:v8.5.0",
+                                 "image_digest": "tidb@sha256:beef", "container": "c",
+                                 "reachable": True, "version": TIDB_BANNER},
+                    "setup": [], "exit": 0, "stdout": json.dumps(tidb_parsed), "stderr": "",
+                    "parsed": copy.deepcopy(tidb_parsed),
+                    "version_evidence": {"target_raw": None, "target_canonical": None,
+                                         "observed_raw": TIDB_BANNER,
+                                         "observed_canonical": {"product": "tidb", "version": "8.5.0"},
+                                         "resolved": dict(RESOLVED_TIDB)},
+                    "instance_facts": {"tidb_max_index_length": 3072},
+                    "post_verify": [], "teardown": [],
+                },
+                "assertions": [{"name": "a", "ok": True, "detail": "d"}], "status": "pass",
+            }
+            err = {
+                "case_id": "TX.clierr.ver-bad", "kind": "cli_error", "cli_case": "ver-bad",
+                "dialect": "mysql", "input_sql": VSQL,
+                "policy_profile": "t04b-keylen", "policy_path": str(keylen_policy),
+                "command": [a["cli"]["path"], "audit", "--dialect", "mysql", "--sql", VSQL,
+                            "--config", str(keylen_policy), "--format", "json",
+                            "--target-version", "8.4"],
+                "expected": copy.deepcopy(mvg["error_cases"][0]["expect"]),
+                "actual": {"exit": 2, "stdout": "", "stderr": "target_version must match",
+                           "version_evidence": {"target_raw": "8.4", "target_canonical": None,
+                                                "observed_raw": None, "observed_canonical": None,
+                                                "resolved": None}},
+                "assertions": [{"name": "a", "ok": True, "detail": "d"}], "status": "pass",
+            }
+            # Anchored product-mismatch error: dialect=mysql against the TiDB
+            # anchor must carry observed banner + canonical evidence.
+            errm = {
+                "case_id": "TX.clierr.ver-mismatch", "kind": "cli_error", "cli_case": "ver-mismatch",
+                "anchor": "tidbX",
+                "dialect": "mysql", "input_sql": VSQL,
+                "policy_profile": "t04b-keylen", "policy_path": str(keylen_policy),
+                "command": [a["cli"]["path"], "audit", "--dialect", "mysql", "--sql", VSQL,
+                            "--config", str(keylen_policy), "--format", "json",
+                            "--host", "127.0.0.1", "--port", "24000", "--user", "root",
+                            "--schema", "golden", "--target-version", "8.5.0"],
+                "expected": copy.deepcopy(mvg["error_cases"][1]["expect"]),
+                "actual": {"exit": 2, "stdout": "", "stderr": 'detected dialect "tidb" does not match requested dialect "mysql"',
+                           "observed_banner": TIDB_BANNER,
+                           "version_evidence": {"target_raw": "8.5.0", "target_canonical": "8.5.0",
+                                                "observed_raw": TIDB_BANNER,
+                                                "observed_canonical": {"product": "tidb", "version": "8.5.0"},
+                                                "resolved": None}},
+                "assertions": [{"name": "a", "ok": True, "detail": "d"}], "status": "pass",
+            }
+            a["cases"] = [c for c in a["cases"] if c["kind"].startswith("db_")] + [cli, meta, err, errm]
+            a["required_case_ids"] = list(mvg["required_case_ids"]) + [c["case_id"] for c in a["cases"] if c["kind"].startswith("db_")]
+            a["required_case_ids"] = list(dict.fromkeys(a["required_case_ids"]))
+            mvg["required_case_ids"] = list(a["required_case_ids"])
+            a["executed_count"] = len(a["cases"])
+            return a
+
+        results.append(check("t04b version artifact passes", version_artifact(), "", manifest=mvg))
+
+        a = version_artifact()
+        a["cases"][2]["actual"]["version_evidence"]["target_raw"] = "9.9.9"
+        results.append(check("t04b tampered target_raw rejected", a, "target_raw", manifest=mvg))
+
+        a = version_artifact()
+        a["cases"][2]["actual"]["version_evidence"]["target_canonical"] = "8.0.47"
+        results.append(check("t04b tampered target_canonical rejected", a, "target_canonical", manifest=mvg))
+
+        a = version_artifact()
+        parsed = a["cases"][2]["actual"]["parsed"]
+        parsed["version"]["version"] = "8.0.47"
+        a["cases"][2]["actual"]["stdout"] = json.dumps(parsed)
+        results.append(check("t04b canonical inconsistent with raw rejected", a, "version", manifest=mvg))
+
+        a = version_artifact()
+        parsed = a["cases"][3]["actual"]["parsed"]
+        parsed["version"] = dict(parsed["version"], version="8.0.11", product="mysql")
+        a["cases"][3]["actual"]["stdout"] = json.dumps(parsed)
+        results.append(check("t04b tidb compat prefix 8.0.11 rejected", a, "observed", manifest=mvg))
+
+        a = version_artifact()
+        cmd = a["cases"][3]["command"]
+        cmd += ["--target-version", "9.9.9"]
+        mvg2 = copy.deepcopy(mvg)
+        mvg2["metadata_cases"][0]["args"] = ["--target-version", "9.9.9"]
+        a["cases"][3]["actual"]["version_evidence"]["target_raw"] = "9.9.9"
+        a["cases"][3]["actual"]["version_evidence"]["target_canonical"] = "9.9.9"
+        results.append(check("t04b request/observed conflict as success rejected", a, "conflicts with observed", manifest=mvg2))
+
+        a = version_artifact()
+        parsed = a["cases"][2]["actual"]["parsed"]
+        parsed["version"]["validated_range"] = False
+        a["cases"][2]["actual"]["stdout"] = json.dumps(parsed)
+        results.append(check("t04b out-of-range recorded complete rejected", a, "out-of-range", manifest=mvg))
+
+        a = version_artifact()
+        del a["cases"][2]["actual"]["version_evidence"]
+        results.append(check("t04b missing version_evidence rejected", a, "version_evidence", manifest=mvg))
+
+        a = version_artifact()
+        cmd = a["cases"][2]["command"]
+        del cmd[cmd.index("--target-version"):cmd.index("--target-version") + 2]
+        results.append(check("t04b removed --target-version argv rejected", a, "command", manifest=mvg))
+
+        a = version_artifact()
+        a["cases"][4]["actual"]["stdout"] = json.dumps({"verdict": "review", "statements": [{"evidence_gaps": [{"reason_code": "x"}]}]})
+        results.append(check("t04b provider error laundered as gap result rejected", a, "audit result", manifest=mvg))
+
+        # ------------------------------------------------------------------
+        # T04-B-R1: instance-fact evidence, observed-product evidence on error
+        # cases, and zero-valued numeric components are all integrity-checked.
+        a = version_artifact()
+        del a["cases"][3]["actual"]["instance_facts"]
+        results.append(check("t04b-r1 deleted instance_facts rejected", a, "instance_facts", manifest=mvg))
+
+        a = version_artifact()
+        a["cases"][3]["actual"]["instance_facts"] = {"tidb_max_index_length": 12288}
+        results.append(check("t04b-r1 tampered max-index-length rejected", a, "instance_facts", manifest=mvg))
+
+        a = version_artifact()
+        a["cases"][3]["actual"]["instance_facts"] = {}
+        results.append(check("t04b-r1 emptied instance_facts rejected", a, "instance_facts", manifest=mvg))
+
+        a = version_artifact()
+        del a["cases"][5]["actual"]["observed_banner"]
+        results.append(check("t04b-r1 mismatch without observed banner rejected", a, "observed", manifest=mvg))
+
+        a = version_artifact()
+        a["cases"][5]["actual"]["version_evidence"]["observed_canonical"] = {"product": "mysql", "version": "8.0.11"}
+        results.append(check("t04b-r1 mismatch canonical prefix-taken rejected", a, "observed_canonical", manifest=mvg))
+
+        a = version_artifact()
+        a["cases"][5]["actual"]["exit"] = 0
+        a["cases"][5]["actual"]["stdout"] = json.dumps({"verdict": "pass", "coverage": {"status": "complete"}})
+        results.append(check("t04b-r1 product mismatch as success rejected", a, "exit", manifest=mvg))
+
+        a = version_artifact()
+        a["cases"][4]["actual"]["exit"] = 3
+        a["cases"][4]["actual"]["stderr"] = "dial tcp 127.0.0.1:1: connect: connection refused"
+        results.append(check("t04b-r1 malformed target as connection failure rejected", a, "exit", manifest=mvg))
+
+        a = version_artifact()
+        parsed = a["cases"][2]["actual"]["parsed"]
+        parsed["version"] = {k: v for k, v in parsed["version"].items() if k != "minor"}
+        a["cases"][2]["actual"]["stdout"] = json.dumps(parsed)
+        results.append(check("t04b-r1 8.0.46 missing minor=0 rejected", a, "minor", manifest=mvg))
+
+        a = version_artifact()
+        parsed = a["cases"][3]["actual"]["parsed"]
+        parsed["version"] = {k: v for k, v in parsed["version"].items() if k != "patch"}
+        a["cases"][3]["actual"]["stdout"] = json.dumps(parsed)
+        results.append(check("t04b-r1 8.5.0 missing patch rejected", a, "patch", manifest=mvg))
+
+        a = version_artifact()
+        parsed = a["cases"][2]["actual"]["parsed"]
+        parsed["version"]["minor"] = 9
+        a["cases"][2]["actual"]["stdout"] = json.dumps(parsed)
+        results.append(check("t04b-r1 component/canonical drift rejected", a, "components", manifest=mvg))
+
     failures = results.count(False)
     print(f"contract cases={len(results)} failures={failures}")
     return 1 if failures else 0

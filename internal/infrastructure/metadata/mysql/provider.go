@@ -1,6 +1,6 @@
 // Package mysqlmeta implements metadata-aware audit adapters over the MySQL protocol.
 // input: sql.DB access plus connection configs, version/schema/table lookup requests, and MySQL/TiDB metadata queries
-// output: normalized instance facts, dialect detection, schema discovery, and table snapshots with preserved index cardinality for application-level audit enrichment
+// output: normalized instance facts with explicit known bits (innodb_page_size, 5.7 large-prefix, TiDB max-index-length via all-rows SHOW CONFIG verification — read failures propagate as provider errors, only absent/ambiguous values stay unknown), dialect detection, schema discovery, and table snapshots with preserved index cardinality for application-level audit enrichment
 // pos: infrastructure metadata adapter between database/sql and domain metadata specs
 // note: if this file changes, update this header and module README.md.
 package mysqlmeta
@@ -195,10 +195,12 @@ func (p *Provider) FindSchemasForTable(ctx context.Context, table string) ([]str
 var _ appaudit.MetadataProvider = (*Provider)(nil)
 
 // LoadInstanceFacts reads server-level variables that influence audit behavior.
+// Facts that cannot be observed stay unknown (Known=false) rather than being
+// back-filled with defaults — rules downgrade to bounded evidence gaps on them.
 func (p *Provider) LoadInstanceFacts(ctx context.Context, _ spec.Dialect, _ string) (*spec.InstanceFacts, error) {
 	rows, err := p.db.QueryContext(ctx, `
 		show variables where Variable_name in
-		('version','character_set_database','innodb_large_prefix','innodb_default_row_format','innodb_adaptive_hash_index')
+		('version','character_set_database','innodb_large_prefix','innodb_default_row_format','innodb_adaptive_hash_index','innodb_page_size')
 	`)
 	if err != nil {
 		return nil, fmt.Errorf("query instance facts: %w", err)
@@ -219,16 +221,85 @@ func (p *Provider) LoadInstanceFacts(ctx context.Context, _ spec.Dialect, _ stri
 			facts.DefaultCharset = value
 		case "innodb_large_prefix":
 			facts.InnoDBLargePrefixEnabled = normalizeOnOff(value)
+			facts.InnoDBLargePrefixKnown = true
 		case "innodb_default_row_format":
 			facts.InnoDBDefaultRowFormat = strings.ToLower(value)
 		case "innodb_adaptive_hash_index":
 			facts.InnoDBAdaptiveHashEnabled = normalizeOnOff(value)
+		case "innodb_page_size":
+			if parsed, parseErr := strconv.Atoi(strings.TrimSpace(value)); parseErr == nil && parsed > 0 {
+				facts.InnoDBPageSizeBytes = parsed
+				facts.InnoDBPageSizeKnown = true
+			}
 		}
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("iterate instance facts: %w", err)
 	}
+
+	// TiDB's index-length bound is the tidb-server max-index-length config,
+	// not a system variable. SHOW CONFIG is the supported read path. An
+	// actual read failure propagates as a provider error; only a clean read
+	// with no usable or no consistent value leaves the fact unknown so the
+	// rule reports a bounded gap instead of assuming the 3072 default.
+	if strings.Contains(strings.ToLower(facts.Version), "-tidb-") {
+		value, known, cfgErr := p.loadTiDBMaxIndexLength(ctx)
+		if cfgErr != nil {
+			return nil, fmt.Errorf("load tidb max-index-length: %w", cfgErr)
+		}
+		if known {
+			facts.TiDBMaxIndexLengthBytes = value
+			facts.TiDBMaxIndexLengthKnown = true
+		}
+	}
 	return facts, nil
+}
+
+// loadTiDBMaxIndexLength reads the effective tidb-server max-index-length
+// configuration via SHOW CONFIG and verifies every matching row — one row
+// per tidb-server instance — never trusting the first row alone. Query,
+// scan, and iteration failures return an error (provider errors never
+// degrade into gaps); an unparsable or non-positive value marks the read
+// unverifiable but the stream is still drained, so a later failure still
+// surfaces as an error. A clean read ends in zero rows, an invalid value,
+// or disagreeing instances → ok=false: the fact stays unknown rather than
+// fabricating a bound.
+func (p *Provider) loadTiDBMaxIndexLength(ctx context.Context) (value int, ok bool, err error) {
+	rows, err := p.db.QueryContext(ctx, `
+		show config where Type = 'tidb' and Name = 'max-index-length'
+	`)
+	if err != nil {
+		return 0, false, fmt.Errorf("query tidb max-index-length: %w", err)
+	}
+	defer rows.Close()
+
+	consistent := true
+	for rows.Next() {
+		var typ, instance, name, raw string
+		if err := rows.Scan(&typ, &instance, &name, &raw); err != nil {
+			return 0, false, fmt.Errorf("scan tidb max-index-length: %w", err)
+		}
+		parsed, parseErr := strconv.Atoi(strings.TrimSpace(raw))
+		if parseErr != nil || parsed <= 0 {
+			// An unusable value marks the read unverifiable but the stream
+			// is still drained to its end: a later scan or iteration
+			// failure remains a provider error, never an unknown fact.
+			consistent = false
+			continue
+		}
+		if !ok {
+			value, ok = parsed, true
+		} else if parsed != value {
+			consistent = false
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return 0, false, fmt.Errorf("iterate tidb max-index-length: %w", err)
+	}
+	if !consistent {
+		return 0, false, nil
+	}
+	return value, ok, nil
 }
 
 // LoadTableSnapshot reads one target table shape from information_schema.

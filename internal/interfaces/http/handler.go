@@ -1,6 +1,6 @@
 // Package httpapi exposes the HTTP adapter for DeltaScope.
-// input: HTTP requests carrying SQL audit payloads plus service-level config/version wiring
-// output: JSON audit, partial audit error results, named invalid_request envelopes for rejected connection/connection_ref fields, rule-catalog, capability, health, readiness, version, and structured access log lines
+// input: HTTP requests carrying SQL audit payloads (including target_version) plus service-level config/version wiring
+// output: JSON audit, partial audit error results, HTTP 400 typed version input errors, named invalid_request envelopes for rejected connection/connection_ref fields, rule-catalog, capability, health, readiness, version, and structured access log lines
 // pos: interface adapter between net/http and the public DeltaScope audit API
 // note: if this file changes, update this header and module README.md.
 package httpapi
@@ -34,10 +34,11 @@ import (
 )
 
 type auditRequest struct {
-	SQL          string             `json:"sql"`
-	Dialect      deltascope.Dialect `json:"dialect,omitempty"`
-	Schema       string             `json:"schema,omitempty"`
-	ConnectionID string             `json:"connection_id,omitempty"`
+	SQL           string             `json:"sql"`
+	Dialect       deltascope.Dialect `json:"dialect,omitempty"`
+	Schema        string             `json:"schema,omitempty"`
+	ConnectionID  string             `json:"connection_id,omitempty"`
+	TargetVersion string             `json:"target_version,omitempty"`
 }
 
 type errorEnvelope struct {
@@ -642,7 +643,9 @@ func handleAudit(
 
 func mapAuditError(err error) (status int, code string) {
 	switch {
-	case errors.Is(err, appaudit.ErrEmptySQL), errors.Is(err, appaudit.ErrUnknownDialect):
+	case errors.Is(err, appaudit.ErrEmptySQL), errors.Is(err, appaudit.ErrUnknownDialect),
+		errors.Is(err, appaudit.ErrInvalidTargetVersion), errors.Is(err, appaudit.ErrTargetVersionMismatch),
+		errors.Is(err, appaudit.ErrDialectProductMismatch):
 		return http.StatusBadRequest, "bad_request"
 	case strings.Contains(err.Error(), "load policy:"):
 		return http.StatusInternalServerError, "config_invalid"
@@ -663,6 +666,12 @@ func mapAuditErrorMessage(err error) string {
 		return "sql must not be empty"
 	case errors.Is(err, appaudit.ErrUnknownDialect):
 		return "unsupported dialect"
+	case errors.Is(err, appaudit.ErrInvalidTargetVersion):
+		return "invalid target_version"
+	case errors.Is(err, appaudit.ErrTargetVersionMismatch):
+		return "target_version does not match the observed server version"
+	case errors.Is(err, appaudit.ErrDialectProductMismatch):
+		return "dialect does not match the observed server product"
 	case strings.Contains(err.Error(), "load policy:"):
 		return "invalid policy configuration"
 	}

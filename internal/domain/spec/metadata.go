@@ -1,5 +1,5 @@
 // Package spec defines normalized statement specifications for rule evaluation.
-// input: optional metadata-aware audit facts such as instance variables and target-table snapshots
+// input: optional metadata-aware audit facts such as explicit known-bit instance variables, target-table snapshots, and the canonical version identity
 // output: parser-neutral metadata structures and lookup helpers for future rules
 // pos: domain metadata model shared by offline and metadata-aware audit paths
 // note: if this file changes, update this header and module README.md.
@@ -11,17 +11,26 @@ import "strings"
 type Metadata struct {
 	Schema      string           `json:"schema,omitempty"`
 	Instance    *InstanceFacts   `json:"instance,omitempty"`
+	Version     *VersionIdentity `json:"version,omitempty"`
 	TargetTable *TableSnapshot   `json:"target_table,omitempty"`
 	Objects     []ObjectSnapshot `json:"objects,omitempty"`
 }
 
 // InstanceFacts are normalized server-level facts that influence audit behavior.
+// Numeric facts pair a value with an explicit Known flag: a zero value is never
+// treated as evidence — unknown facts stay unknown so rules can emit bounded
+// evidence gaps instead of fabricating a configuration.
 type InstanceFacts struct {
 	Version                   string `json:"version,omitempty"`
 	DefaultCharset            string `json:"default_charset,omitempty"`
 	InnoDBLargePrefixEnabled  bool   `json:"innodb_large_prefix_enabled,omitempty"`
+	InnoDBLargePrefixKnown    bool   `json:"innodb_large_prefix_known,omitempty"`
 	InnoDBDefaultRowFormat    string `json:"innodb_default_row_format,omitempty"`
 	InnoDBAdaptiveHashEnabled bool   `json:"innodb_adaptive_hash_enabled,omitempty"`
+	InnoDBPageSizeBytes       int    `json:"innodb_page_size,omitempty"`
+	InnoDBPageSizeKnown       bool   `json:"innodb_page_size_known,omitempty"`
+	TiDBMaxIndexLengthBytes   int    `json:"tidb_max_index_length,omitempty"`
+	TiDBMaxIndexLengthKnown   bool   `json:"tidb_max_index_length_known,omitempty"`
 }
 
 // TableSnapshot is the current metadata-backed shape of a target table.

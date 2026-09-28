@@ -12,9 +12,22 @@
      "requires_metadata": true
     }
    }
+  },
+  "profiles": {
+   "t04b-key-length-isolated": {
+    "enable": {
+     "ddl.index.key_length.max_bytes.require": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "required": true
+      }
+     }
+    }
+   }
   }
  },
- "description": "T04-A metadata evidence-gap slice of issue #83: an isolated policy enables only ddl.alter.modify_column.compatibility.require (blocker, required, requires_metadata). Offline MODIFY COLUMN emits a statement evidence gap (missing_source_column) and unverified coverage at warning-equivalent fail-on weight; the same statement audited against the pinned MySQL 8.4.10 fixture proves metadata-backed pass and reject paths with post-verify evidence that the product never executed the submitted ALTER. The locked four-anchor db baseline and the T03 CLI denominator are preserved verbatim; mysql-alter-modify-column-position additionally pins gap+incomplete coexistence. This is the T04-A slice only \u2014 target-version/capability work stays deferred to T04-B.",
+ "description": "T04 (issue #83) evidence contract: the t04-modify-column-compat-isolated profile proves metadata evidence gaps for ALTER MODIFY COLUMN, and the t04b-key-length-isolated profile proves the T04-B target_version/observed-version contract for ddl.index.key_length.max_bytes.require. Offline target_version is strict [v]MAJOR.MINOR.PATCH (never defaulted); missing input yields a missing_target_version gap, syntactically valid versions outside the validated series (MySQL 5.7/8.0/8.4, TiDB 8.5) yield target_version_out_of_validated_range, and malformed input is an exit-2 input error validated before any connection is attempted. Instance facts are explicit known/unknown evidence: an unobserved innodb_page_size or tidb max-index-length yields a missing_instance_fact gap whenever the index size lands between candidate bounds, never a fabricated default. Online cases run against all four anchors plus two T04-B auxiliary fixtures (mysql84 on 4KB pages, tidb85 with max-index-length=12288): the observed product/version banner is authoritative, an equal target passes, a version or product mismatch is an exit-2 input error, and the TiDB compatibility banner 8.0.11-TiDB-v8.5.0 resolves to tidb/8.5.0 (never the MySQL prefix). The locked four-anchor db baseline and the T03 CLI denominator are preserved verbatim.",
  "anchors": {
   "mysql57": {
    "service": "mysql57",
@@ -77,6 +90,42 @@
     "-uroot"
    ],
    "needs_database_create": true
+  },
+  "mysql84-4k": {
+   "service": "mysql84-4k",
+   "container": "deltascope-ddl-golden-mysql84-4k",
+   "image": "mysql:8.4.10",
+   "product": "mysql",
+   "version_contains": "8.4.10",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "-proot"
+   ],
+   "needs_database_create": false,
+   "auxiliary": "T04-B: innodb_page_size=4096 via --innodb-page-size"
+  },
+  "tidb85-12288": {
+   "service": "tidb85-12288",
+   "container": "deltascope-ddl-golden-tidb85-12288",
+   "client_container": "deltascope-ddl-golden-tidb85-12288-client",
+   "client_service": "tidb85-12288-client",
+   "image": "pingcap/tidb:v8.5.0",
+   "product": "tidb",
+   "version_contains": "v8.5.0",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "--protocol=tcp",
+    "-h",
+    "tidb85-12288",
+    "-P",
+    "4000",
+    "-uroot"
+   ],
+   "needs_database_create": true,
+   "auxiliary": "T04-B: tidb-server max-index-length=12288 via mounted config"
   }
  },
  "ddl_steps": [
@@ -4256,6 +4305,459 @@
     ],
     "fail_on_triggered": false
    }
+  },
+  {
+   "id": "t04b-missing-version",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "rule_id": "ddl.index.key_length.max_bytes.require",
+      "reason_code": "missing_target_version",
+      "required_facts": [
+       "target.version"
+      ],
+      "index": 0
+     }
+    ],
+    "fail_on_triggered": true
+   }
+  },
+  {
+   "id": "t04b-target-8410",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "args": [
+    "--target-version",
+    "8.4.10"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "rule_id": "ddl.index.key_length.max_bytes.require",
+      "reason_code": "missing_instance_fact",
+      "required_facts": [
+       "instance.innodb_page_size"
+      ],
+      "index": 0
+     }
+    ],
+    "fail_on_triggered": false,
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10",
+     "source": "target",
+     "validated_range": true
+    }
+   }
+  },
+  {
+   "id": "t04b-target-v-prefix",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(191) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "args": [
+    "--target-version",
+    "v8.0.46"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46",
+     "source": "target",
+     "validated_range": true
+    }
+   }
+  },
+  {
+   "id": "t04b-target-out-of-range",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "args": [
+    "--target-version",
+    "8.3.0"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "rule_id": "ddl.index.key_length.max_bytes.require",
+      "reason_code": "target_version_out_of_validated_range",
+      "required_facts": [
+       "target.version.validated_range"
+      ],
+      "index": 0
+     }
+    ],
+    "fail_on_triggered": false,
+    "version": {
+     "product": "mysql",
+     "version": "8.3.0",
+     "source": "target",
+     "validated_range": false
+    }
+   }
+  },
+  {
+   "id": "t04b-mysql57-instance-fact-gap",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "args": [
+    "--target-version",
+    "5.7.44"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "rule_id": "ddl.index.key_length.max_bytes.require",
+      "reason_code": "missing_instance_fact",
+      "required_facts": [
+       "instance.innodb_page_size",
+       "instance.innodb_large_prefix_enabled"
+      ],
+      "index": 0
+     }
+    ],
+    "fail_on_triggered": false,
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44",
+     "source": "target",
+     "validated_range": true
+    }
+   }
+  },
+  {
+   "id": "t04b-missing-version-proven-blocker",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(800) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "rule_id": "ddl.index.key_length.max_bytes.require",
+      "reason_code": "missing_target_version",
+      "required_facts": [
+       "target.version"
+      ],
+      "index": 0
+     }
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.index.key_length.max_bytes.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.index.key_length.max_bytes.require",
+      "metadata": {
+       "limit": 3072
+      }
+     }
+    ],
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "t04b-tidb-missing-version",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "rule_id": "ddl.index.key_length.max_bytes.require",
+      "reason_code": "missing_target_version",
+      "required_facts": [
+       "target.version"
+      ],
+      "index": 0
+     }
+    ],
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "t04b-tidb-850",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "args": [
+    "--target-version",
+    "8.5.0"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0",
+     "source": "target",
+     "validated_range": true
+    }
+   }
+  },
+  {
+   "id": "t04b-tidb-out-of-range",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "args": [
+    "--target-version",
+    "8.4.0"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "rule_id": "ddl.index.key_length.max_bytes.require",
+      "reason_code": "target_version_out_of_validated_range",
+      "required_facts": [
+       "target.version.validated_range"
+      ],
+      "index": 0
+     }
+    ],
+    "fail_on_triggered": false,
+    "version": {
+     "product": "tidb",
+     "version": "8.4.0",
+     "source": "target",
+     "validated_range": false
+    }
+   }
+  },
+  {
+   "id": "t04b-mysql84-small-index-complete",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(191) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "args": [
+    "--target-version",
+    "8.4.10"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10",
+     "source": "target",
+     "validated_range": true
+    }
+   }
+  },
+  {
+   "id": "t04b-tidb85-unknown-limit-gap",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(1000) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB;",
+   "policy": "t04b-key-length-isolated",
+   "args": [
+    "--target-version",
+    "8.5.0"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "rule_id": "ddl.index.key_length.max_bytes.require",
+      "reason_code": "missing_instance_fact",
+      "required_facts": [
+       "instance.tidb_max_index_length"
+      ],
+      "index": 0
+     }
+    ],
+    "fail_on_triggered": false,
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0",
+     "source": "target",
+     "validated_range": true
+    }
+   }
+  },
+  {
+   "id": "t04b-tidb85-proven-blocker",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(3200) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB;",
+   "policy": "t04b-key-length-isolated",
+   "args": [
+    "--target-version",
+    "8.5.0",
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.index.key_length.max_bytes.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.index.key_length.max_bytes.require",
+      "metadata": {
+       "limit": 12288
+      }
+     }
+    ],
+    "fail_on_triggered": false,
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0",
+     "source": "target",
+     "validated_range": true
+    }
+   }
   }
  ],
  "metadata_cases": [
@@ -4394,6 +4896,503 @@
      "sql": "DROP TABLE IF EXISTS t"
     }
    ]
+  },
+  {
+   "id": "t04b-mysql57-observed",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=COMPACT;",
+   "policy": "t04b-key-length-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T04_GOLDEN_PW",
+    "password": "root"
+   },
+   "setup": [
+    {
+     "name": "create fixture",
+     "expect_rc": 0,
+     "sql": "CREATE TABLE IF NOT EXISTS t (c VARCHAR(10) NOT NULL)",
+     "verify": [
+      {
+       "assert": "fixture column is varchar(10)",
+       "expect": "varchar(10)",
+       "sql": "SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'"
+      }
+     ]
+    }
+   ],
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.index.key_length.max_bytes.require",
+      "level": "blocker"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44",
+     "source": "observed",
+     "validated_range": true
+    },
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.index.key_length.max_bytes.require",
+      "metadata": {
+       "limit": 767
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not execute the submitted CREATE TABLE",
+     "expect": "varchar(10)",
+     "sql": "SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS t"
+    }
+   ]
+  },
+  {
+   "id": "t04b-mysql57-observed-dynamic",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T04_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "policy": "t04b-key-length-isolated",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44",
+     "source": "observed",
+     "validated_range": true
+    }
+   }
+  },
+  {
+   "id": "t04b-mysql80-observed",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T04_GOLDEN_PW",
+    "password": "root"
+   },
+   "setup": [
+    {
+     "name": "create fixture",
+     "expect_rc": 0,
+     "sql": "CREATE TABLE IF NOT EXISTS t (c VARCHAR(10) NOT NULL)",
+     "verify": [
+      {
+       "assert": "fixture column is varchar(10)",
+       "expect": "varchar(10)",
+       "sql": "SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46",
+     "source": "observed",
+     "validated_range": true
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not execute the submitted CREATE TABLE",
+     "expect": "varchar(10)",
+     "sql": "SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS t"
+    }
+   ]
+  },
+  {
+   "id": "t04b-mysql84-target-match",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T04_GOLDEN_PW",
+    "password": "root"
+   },
+   "setup": [
+    {
+     "name": "create fixture",
+     "expect_rc": 0,
+     "sql": "CREATE TABLE IF NOT EXISTS t (c VARCHAR(10) NOT NULL)",
+     "verify": [
+      {
+       "assert": "fixture column is varchar(10)",
+       "expect": "varchar(10)",
+       "sql": "SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'"
+      }
+     ]
+    }
+   ],
+   "args": [
+    "--target-version",
+    "8.4.10"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10",
+     "source": "observed",
+     "validated_range": true
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not execute the submitted CREATE TABLE",
+     "expect": "varchar(10)",
+     "sql": "SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS t"
+    }
+   ]
+  },
+  {
+   "id": "t04b-tidb85-target-match",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "create fixture",
+     "expect_rc": 0,
+     "sql": "CREATE TABLE IF NOT EXISTS t (c VARCHAR(10) NOT NULL)",
+     "verify": [
+      {
+       "assert": "fixture column is varchar(10)",
+       "expect": "varchar(10)",
+       "sql": "SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'"
+      }
+     ]
+    }
+   ],
+   "args": [
+    "--target-version",
+    "8.5.0"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0",
+     "source": "observed",
+     "validated_range": true
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not execute the submitted CREATE TABLE",
+     "expect": "varchar(10)",
+     "sql": "SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS t"
+    }
+   ]
+  },
+  {
+   "id": "t04b-mysql84-16k-page-pass",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T04_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10",
+     "source": "observed",
+     "validated_range": true
+    },
+    "instance_facts": {
+     "innodb_page_size": 16384
+    }
+   }
+  },
+  {
+   "id": "t04b-mysql84-4k-page-blocker",
+   "anchor": "mysql84-4k",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23394,
+    "user": "root",
+    "password_env": "DS_T04_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.index.key_length.max_bytes.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.index.key_length.max_bytes.require",
+      "metadata": {
+       "limit": 768
+      }
+     }
+    ],
+    "fail_on_triggered": false,
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10",
+     "source": "observed",
+     "validated_range": true
+    },
+    "instance_facts": {
+     "innodb_page_size": 4096
+    }
+   },
+   "args": [
+    "--fail-on",
+    "none"
+   ]
+  },
+  {
+   "id": "t04b-tidb85-config-3072-blocker",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(1000) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB;",
+   "policy": "t04b-key-length-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.index.key_length.max_bytes.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.index.key_length.max_bytes.require",
+      "metadata": {
+       "limit": 3072
+      }
+     }
+    ],
+    "fail_on_triggered": false,
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0",
+     "source": "observed",
+     "validated_range": true
+    },
+    "instance_facts": {
+     "tidb_max_index_length": 3072
+    }
+   },
+   "args": [
+    "--fail-on",
+    "none"
+   ]
+  },
+  {
+   "id": "t04b-tidb85-config-12288-pass",
+   "anchor": "tidb85-12288",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(1000) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB;",
+   "policy": "t04b-key-length-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24001,
+    "user": "root",
+    "schema": "golden"
+   },
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0",
+     "source": "observed",
+     "validated_range": true
+    },
+    "instance_facts": {
+     "tidb_max_index_length": 12288
+    }
+   }
   }
  ],
  "error_cases": [
@@ -4418,6 +5417,179 @@
     "exit": 3,
     "stderr_contains": [
      "connection refused"
+    ]
+   }
+  },
+  {
+   "id": "t04b-malformed-target",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "args": [
+    "--target-version",
+    "8.4"
+   ],
+   "expect": {
+    "exit": 2,
+    "stderr_contains": [
+     "target_version"
+    ]
+   }
+  },
+  {
+   "id": "t04b-mysql84-target-mismatch",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "args": [
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23384",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T04_GOLDEN_PW",
+    "--schema",
+    "golden",
+    "--target-version",
+    "8.0.46"
+   ],
+   "env": {
+    "DS_T04_GOLDEN_PW": "root"
+   },
+   "expect": {
+    "exit": 2,
+    "stderr_contains": [
+     "target_version",
+     "observed"
+    ]
+   },
+   "anchor": "mysql84"
+  },
+  {
+   "id": "t04b-tidb85-target-compat-mismatch",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "args": [
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "golden",
+    "--target-version",
+    "8.0.11"
+   ],
+   "expect": {
+    "exit": 2,
+    "stderr_contains": [
+     "target_version",
+     "observed"
+    ]
+   },
+   "anchor": "tidb85"
+  },
+  {
+   "id": "t04b-mysql-dialect-vs-tidb85-product",
+   "anchor": "tidb85",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "args": [
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "golden"
+   ],
+   "expect": {
+    "exit": 2,
+    "stderr_contains": [
+     "does not match requested dialect"
+    ]
+   }
+  },
+  {
+   "id": "t04b-mysql-dialect-vs-tidb85-same-version",
+   "anchor": "tidb85",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "args": [
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "golden",
+    "--target-version",
+    "8.5.0"
+   ],
+   "expect": {
+    "exit": 2,
+    "stderr_contains": [
+     "does not match requested dialect"
+    ]
+   }
+  },
+  {
+   "id": "t04b-tidb-dialect-vs-mysql84-product",
+   "anchor": "mysql84",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "args": [
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23384",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T04_GOLDEN_PW",
+    "--schema",
+    "golden"
+   ],
+   "env": {
+    "DS_T04_GOLDEN_PW": "root"
+   },
+   "expect": {
+    "exit": 2,
+    "stderr_contains": [
+     "does not match requested dialect"
+    ]
+   }
+  },
+  {
+   "id": "t04b-malformed-target-unreachable",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "args": [
+    "--target-version",
+    "8.4",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "1",
+    "--user",
+    "root",
+    "--schema",
+    "golden"
+   ],
+   "expect": {
+    "exit": 2,
+    "stderr_contains": [
+     "target_version"
     ]
    }
   }
@@ -4553,6 +5725,38 @@
   "T04.cli.t04-parser-failure-priority",
   "T04.meta.t04-mysql84-modify-compatible",
   "T04.meta.t04-mysql84-modify-incompatible",
-  "T04.clierr.t04-conn-refused"
+  "T04.clierr.t04-conn-refused",
+  "T04.cli.t04b-missing-version",
+  "T04.cli.t04b-target-8410",
+  "T04.cli.t04b-target-v-prefix",
+  "T04.cli.t04b-target-out-of-range",
+  "T04.cli.t04b-mysql57-instance-fact-gap",
+  "T04.cli.t04b-missing-version-proven-blocker",
+  "T04.cli.t04b-tidb-missing-version",
+  "T04.cli.t04b-tidb-850",
+  "T04.cli.t04b-tidb-out-of-range",
+  "T04.meta.t04b-mysql57-observed",
+  "T04.meta.t04b-mysql57-observed-dynamic",
+  "T04.meta.t04b-mysql80-observed",
+  "T04.meta.t04b-mysql84-target-match",
+  "T04.meta.t04b-tidb85-target-match",
+  "T04.clierr.t04b-malformed-target",
+  "T04.clierr.t04b-mysql84-target-mismatch",
+  "T04.clierr.t04b-tidb85-target-compat-mismatch",
+  "T04.db.mysql84-4k.ddl",
+  "T04.db.mysql84-4k.syntax_negative",
+  "T04.db.tidb85-12288.ddl",
+  "T04.db.tidb85-12288.syntax_negative",
+  "T04.cli.t04b-mysql84-small-index-complete",
+  "T04.cli.t04b-tidb85-unknown-limit-gap",
+  "T04.cli.t04b-tidb85-proven-blocker",
+  "T04.meta.t04b-mysql84-16k-page-pass",
+  "T04.meta.t04b-mysql84-4k-page-blocker",
+  "T04.meta.t04b-tidb85-config-3072-blocker",
+  "T04.meta.t04b-tidb85-config-12288-pass",
+  "T04.clierr.t04b-mysql-dialect-vs-tidb85-product",
+  "T04.clierr.t04b-mysql-dialect-vs-tidb85-same-version",
+  "T04.clierr.t04b-tidb-dialect-vs-mysql84-product",
+  "T04.clierr.t04b-malformed-target-unreachable"
  ]
 }

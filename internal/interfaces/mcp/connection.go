@@ -1,5 +1,5 @@
 // Package mcpapi exposes the MCP adapter for DeltaScope.
-// input: audit tool connection parameters, local connection config files, password lookup sources, and optional database/catalog selection
+// input: audit tool connection parameters (including target_version), local connection config files, password lookup sources, and optional database/catalog selection
 // output: normalized metadata-aware connection settings for MCP audit requests with database and schema preserved separately
 // pos: MCP connection resolution layer between tool inputs and metadata provider wiring
 // note: if this file changes, update this header and module README.md.
@@ -35,6 +35,7 @@ type AuditSQLParams struct {
 	SQL           string           `json:"sql"`
 	Dialect       string           `json:"dialect,omitempty"`
 	ConfigPath    string           `json:"config_path,omitempty"`
+	TargetVersion string           `json:"target_version,omitempty"`
 	ConnectionRef string           `json:"connection_ref,omitempty"`
 	Connection    *ConnectionInput `json:"connection,omitempty"`
 }

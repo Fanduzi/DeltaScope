@@ -1,6 +1,6 @@
 // Package mcpapi exposes the MCP adapter for DeltaScope.
-// input: adapter and audit errors plus partial audit results arising during MCP tool execution; connection-open errors classified by connresolve
-// output: stable MCP tool error payloads with machine-readable codes, messages, and partial results when available
+// input: adapter and audit errors plus partial audit results arising during MCP tool execution; connection-open errors classified by connresolve; typed target_version input errors
+// output: stable MCP tool error payloads with machine-readable codes (bad_request for version input errors), messages, and partial results when available
 // pos: shared error-shaping helpers for MCP tool handlers
 // note: if this file changes, update this header and module README.md.
 package mcpapi
@@ -67,7 +67,9 @@ func mapAuditToolError(err error) string {
 	}
 
 	switch {
-	case errors.Is(err, appaudit.ErrEmptySQL), errors.Is(err, appaudit.ErrUnknownDialect):
+	case errors.Is(err, appaudit.ErrEmptySQL), errors.Is(err, appaudit.ErrUnknownDialect),
+		errors.Is(err, appaudit.ErrInvalidTargetVersion), errors.Is(err, appaudit.ErrTargetVersionMismatch),
+		errors.Is(err, appaudit.ErrDialectProductMismatch):
 		return "bad_request"
 	case strings.Contains(err.Error(), "load policy:"),
 		strings.Contains(err.Error(), "read connections config:"),

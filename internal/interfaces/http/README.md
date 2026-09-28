@@ -6,7 +6,7 @@ HTTP exposes DeltaScope audit and metadata-aware review capabilities as a JSON s
 
 | File | Responsibility |
 |------|---------------|
-| audit_metadata.go | Executes one HTTP audit request through offline or registry metadata-aware flows and preserves adapter context plus partial public results when an audit returns diagnostics and an error |
+| audit_metadata.go | Executes one HTTP audit request through offline or registry metadata-aware flows and preserves adapter context plus partial public results when an audit returns diagnostics and an error; `target_version` is forwarded to the shared request, `spec.ValidateTargetVersion` preflight runs at the start of `executeAuditRequest` before any registry lookup or metadata preparation, and typed version input errors map to HTTP 400 |
 | audit_metadata_test.go | Verifies HTTP metadata-aware execution wiring, additive context, and direct metadata client lifecycle handling |
 | audit_impact_postgresql_tag_test.go | Verifies PostgreSQL offline primary-key equality impact in HTTP JSON output |
 | audit_dml_table_existence_test.go | Verifies registry-backed MySQL/TiDB INSERT/UPDATE/DELETE missing-target findings and stable HTTP result shape |
@@ -16,6 +16,7 @@ HTTP exposes DeltaScope audit and metadata-aware review capabilities as a JSON s
 | handler_unsupported_verdict_floor_postgresql_tag_test.go | Verifies HTTP PostgreSQL `SELECT 1` keeps non-success status and serializes the review-floored unsupported result with the retained incomplete-coverage statement |
 | audit_coverage_t03_test.go | Verifies issue #82/T03 transport contract: MySQL `CREATE SEQUENCE` + supported `ALTER TABLE` returns HTTP 400 with the partial result, retained incomplete coverage, and bounded unsupported evidence |
 | audit_evidence_gap_t04_test.go | Verifies issue #83 T04-A transport contract: an evidence-gap-only audit returns HTTP 200 with `unverified` coverage and per-statement `evidence_gaps`, while a mixed gap+unsupported batch keeps the HTTP 400 partial-result contract |
+| audit_version_t04b_test.go | Verifies issue #83 T04-B transport contract: `target_version` projects the canonical `version` block, malformed or mismatched input maps to HTTP 400 with no audit result, and missing/out-of-range versions produce bounded `evidence_gaps` |
 | handler_ddl_lifecycle_mysql_test.go | Verifies HTTP lifecycle findings for MySQL/TiDB DDL, including 400 envelopes for supported statements that still carry extracted-but-unaudited option aspects (sequence/placement-policy option lists, per-spec account `identified` auth) |
 | handler_test.go | Verifies HTTP request binding, error mapping, JSON response shape without CLI-only `fail_on_triggered`, metadata-aware omission of offline existence caveats, field-level rejection of MCP `connection_ref`, and per-target denylist findings for multi-target DROP/RENAME via `config_path` |
 | rule_catalog.go | Builds HTTP rule-list, rule-detail, and capability payloads from the shipped catalog metadata, including `note` / `unproven` on `context_fields` and stable online identity/authentication error codes |
