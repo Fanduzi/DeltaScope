@@ -4808,8 +4808,8 @@
       "rule_id": "ddl.create_index.columns.exists.require",
       "reason_code": "unknown_table_state",
       "required_facts": [
-       "target_table.existence",
-       "target_table.columns"
+       "target_table.columns",
+       "target_table.existence"
       ]
      }
     ],
@@ -5125,8 +5125,8 @@
       "rule_id": "ddl.alter.add_column.exists.forbid",
       "reason_code": "unknown_table_state",
       "required_facts": [
-       "target_table.existence",
-       "target_table.columns"
+       "target_table.columns",
+       "target_table.existence"
       ]
      }
     ],
@@ -5454,8 +5454,8 @@
       "rule_id": "ddl.alter.add_column.exists.forbid",
       "reason_code": "unknown_table_state",
       "required_facts": [
-       "target_table.existence",
-       "target_table.columns"
+       "target_table.columns",
+       "target_table.existence"
       ]
      }
     ],

@@ -308,7 +308,7 @@ func memberExistenceGaps(snapshot *spec.TableSnapshot, ok bool) []rule.EvidenceG
 	if !ok || snapshot == nil {
 		return []rule.EvidenceGap{{
 			ReasonCode:    gapReasonUnknownTableState,
-			RequiredFacts: []string{"target_table.existence", "target_table.columns"},
+			RequiredFacts: []string{"target_table.columns", "target_table.existence"},
 		}}
 	}
 	if snapshot.Exists && snapshot.Columns == nil {

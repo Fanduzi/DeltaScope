@@ -32,10 +32,27 @@ const (
 
 const t05FirstPathSQL = "CREATE TABLE t (id INT PRIMARY KEY); ALTER TABLE t ADD COLUMN c INT; CREATE INDEX idx_c ON t (c);"
 
+// t05RuleConfig pins one enabled rule's level and optional params block.
+type t05RuleConfig struct {
+	level  string
+	params string
+}
+
 // t05PolicyPath writes a policy that disables every default rule except the
 // listed ones, so assertions bind to the ordered-state seam rather than the
 // full default rule surface.
 func t05PolicyPath(t *testing.T, enabled map[string]string) string {
+	t.Helper()
+	configured := make(map[string]t05RuleConfig, len(enabled))
+	for id, params := range enabled {
+		configured[id] = t05RuleConfig{level: "blocker", params: params}
+	}
+	return t05PolicyPathConfigured(t, configured)
+}
+
+// t05PolicyPathConfigured is t05PolicyPath with per-rule level control, for
+// compat controls that keep a rule at its shipped level (e.g. notice).
+func t05PolicyPathConfigured(t *testing.T, enabled map[string]t05RuleConfig) string {
 	t.Helper()
 	var builder strings.Builder
 	builder.WriteString("rules:\n")
@@ -50,11 +67,11 @@ func t05PolicyPath(t *testing.T, enabled map[string]string) string {
 		}
 		fmt.Fprintf(&builder, "  %s:\n    enabled: false\n", strconv.Quote(id))
 	}
-	for id, params := range enabled {
-		fmt.Fprintf(&builder, "  %s:\n    enabled: true\n    level: blocker\n", strconv.Quote(id))
-		if params != "" {
+	for id, cfg := range enabled {
+		fmt.Fprintf(&builder, "  %s:\n    enabled: true\n    level: %s\n", strconv.Quote(id), cfg.level)
+		if cfg.params != "" {
 			builder.WriteString("    params:\n")
-			builder.WriteString(params)
+			builder.WriteString(cfg.params)
 		}
 	}
 	path := filepath.Join(t.TempDir(), "policy.yaml")
@@ -473,5 +490,141 @@ func TestBatchStateProviderReadsAreRequestLocal(t *testing.T) {
 	}
 	if len(provider.calls) != 2 {
 		t.Fatalf("expected one provider call per request (2 total), got %#v", provider.calls)
+	}
+}
+
+// RENAME TABLE has no modeled migration this slice: both its source and its
+// destination are invalidated, so later statements on either end report
+// unknown-table gaps instead of an absent finding or a stale derived shape.
+func TestBatchStateRenameTableInvalidatesBothEnds(t *testing.T) {
+	t.Parallel()
+	provider := &t05AbsentProvider{}
+	result, err := AuditSQL(context.Background(), Request{
+		SQL: "CREATE TABLE t (id INT PRIMARY KEY); RENAME TABLE t TO t_new;" +
+			" ALTER TABLE t ADD COLUMN c INT; ALTER TABLE t_new ADD COLUMN c INT;",
+		Dialect:          spec.DialectMySQL,
+		Schema:           "app",
+		ConfigPath:       t05FourRulePolicy(t),
+		MetadataProvider: provider,
+	})
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	// Both ends must report unknown-table gaps — never a confirmed-absent
+	// finding. The destination must not be recorded as absent even though the
+	// provider snapshot for it said exists:false before the rename.
+	for i := 2; i <= 3; i++ {
+		if len(result.Statements[i].Findings) != 0 {
+			t.Fatalf("renamed end on statement %d must not produce findings, got %+v", i, result.Statements[i].Findings)
+		}
+		for _, ruleID := range []string{t05RuleAlterRequire, t05RuleAddColumnForbid} {
+			gaps := t05GapsByRule(result, i, ruleID)
+			if len(gaps) != 1 || gaps[0].ReasonCode != "unknown_table_state" {
+				t.Fatalf("statement %d rule %s must report unknown_table_state, got %+v", i, ruleID, result.Statements[i].EvidenceGaps)
+			}
+		}
+		if result.Statements[i].Coverage.Status != report.CoverageUnverified {
+			t.Fatalf("statement %d coverage = %+v, want unverified", i, result.Statements[i].Coverage)
+		}
+	}
+}
+
+// Compat control for the frozen first profile: ddl.create_index.notice stays
+// registered and unchanged — the same forward path with it enabled emits
+// exactly its one legacy notice and still passes.
+func TestBatchStateNoticeControlKeepsLegacyNotice(t *testing.T) {
+	t.Parallel()
+	provider := &t05AbsentProvider{}
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     t05FirstPathSQL,
+		Dialect: spec.DialectMySQL,
+		Schema:  "app",
+		ConfigPath: t05PolicyPathConfigured(t, map[string]t05RuleConfig{
+			t05RuleCreateForbid:       {level: "blocker"},
+			t05RuleAlterRequire:       {level: "blocker"},
+			t05RuleAddColumnForbid:    {level: "blocker"},
+			t05RuleCreateIndexColumns: {level: "blocker", params: "      required: true\n"},
+			"ddl.create_index.notice": {level: "notice"},
+		}),
+		MetadataProvider: provider,
+	})
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	if result.Verdict != report.VerdictPass {
+		t.Fatalf("notice-enabled control must still pass, got %s", result.Verdict)
+	}
+	if len(result.Statements) != 3 {
+		t.Fatalf("expected 3 statements, got %d", len(result.Statements))
+	}
+	for i := range result.Statements {
+		if len(result.Statements[i].EvidenceGaps) != 0 {
+			t.Fatalf("statement %d must have no gaps, got %+v", i, result.Statements[i].EvidenceGaps)
+		}
+	}
+	notices := t05FindingsByRule(result, 2, "ddl.create_index.notice")
+	if len(notices) != 1 || notices[0].Level != rule.LevelNotice {
+		t.Fatalf("expected exactly one legacy notice on statement 2, got %+v", result.Statements[2].Findings)
+	}
+	for i := 0; i < 2; i++ {
+		if len(result.Statements[i].Findings) != 0 {
+			t.Fatalf("statement %d must have no findings, got %+v", i, result.Statements[i].Findings)
+		}
+	}
+}
+
+// Provider snapshots are borrowed, never owned: enrichment must not mutate
+// the provider's returned object, and the snapshot attached to an earlier
+// statement must not be back-mutated by a later derivation.
+func TestBatchStateDoesNotMutateProviderSnapshotOrEarlierMetadata(t *testing.T) {
+	t.Parallel()
+	shared := &spec.TableSnapshot{
+		Exists:  true,
+		Table:   &spec.Table{Schema: "app", Name: "t"},
+		Columns: []spec.Column{{Name: "id", Type: "int"}},
+		Options: map[string]string{"table_rows": "500"},
+	}
+	provider := &dmlTableMetadataProvider{snapshots: map[string]*spec.TableSnapshot{
+		"app.t": shared,
+	}}
+	parsed, parseErr := parseSQL(context.Background(),
+		"ALTER TABLE t ADD COLUMN c INT; CREATE INDEX i_c ON t (c);", spec.DialectMySQL)
+	if parseErr != nil || len(parsed.Statements) != 2 {
+		t.Fatalf("parse: err=%v statements=%d", parseErr, len(parsed.Statements))
+	}
+	statements, err := Extract(context.Background(), parsed)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	enriched, err := enrichStatementsWithMetadata(context.Background(), spec.DialectMySQL,
+		&MetadataRequest{Schema: "app", Provider: provider}, statements, parsed.failures)
+	if err != nil {
+		t.Fatalf("enrich: %v", err)
+	}
+	// Statement 0 reads the provider shape; statement 1 reads the derived
+	// post-ADD shape. Neither may alias or back-mutate the provider object.
+	if enriched[0].Metadata == nil || enriched[0].Metadata.TargetTable == nil {
+		t.Fatalf("statement 0 must carry a target snapshot, got %+v", enriched[0].Metadata)
+	}
+	if enriched[1].Metadata == nil || enriched[1].Metadata.TargetTable == nil {
+		t.Fatalf("statement 1 must carry a target snapshot, got %+v", enriched[1].Metadata)
+	}
+	if got := len(enriched[0].Metadata.TargetTable.Columns); got != 1 {
+		t.Fatalf("statement 0 pre-state columns = %d, want 1", got)
+	}
+	if got := len(enriched[1].Metadata.TargetTable.Columns); got != 2 {
+		t.Fatalf("statement 1 pre-state columns = %d, want 2 (derived id+c)", got)
+	}
+	if enriched[0].Metadata.TargetTable == shared {
+		t.Fatal("statement snapshot must not alias the provider object")
+	}
+	if enriched[1].Metadata.TargetTable == shared {
+		t.Fatal("derived snapshot must not alias the provider object")
+	}
+	if len(shared.Columns) != 1 || shared.Columns[0].Name != "id" {
+		t.Fatalf("provider snapshot mutated: columns=%+v", shared.Columns)
+	}
+	if shared.Options["table_rows"] != "500" || len(shared.Options) != 1 {
+		t.Fatalf("provider snapshot options mutated: %+v", shared.Options)
 	}
 }

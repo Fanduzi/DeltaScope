@@ -10,7 +10,7 @@ HTTP exposes DeltaScope audit and metadata-aware review capabilities as a JSON s
 | audit_metadata_test.go | Verifies HTTP metadata-aware execution wiring, additive context, and direct metadata client lifecycle handling |
 | audit_impact_postgresql_tag_test.go | Verifies PostgreSQL offline primary-key equality impact in HTTP JSON output |
 | audit_dml_table_existence_test.go | Verifies registry-backed MySQL/TiDB INSERT/UPDATE/DELETE missing-target findings and stable HTTP result shape |
-| audit_offline_existence_test.go | Locks offline ALTER DROP COLUMN HTTP JSON review verdict, `unknown_table_state` evidence gaps, `context.note` / `context.unproven`, and capabilities `context_fields` |
+| audit_offline_existence_test.go | Locks offline ALTER DROP COLUMN HTTP JSON review verdict, `unknown_table_state` evidence gaps, `context.note` / `context.unproven`, capabilities `context_fields`, and the four-rule ordered first-path projection (first-statement gap, derived-complete followers) |
 | handler.go | Binds Gin HTTP requests to public APIs, emits diagnostic error envelopes that retain the full partial audit result beside the bounded transport error, and maps MCP `connection_ref` to field-level `invalid_request` instead of opaque `invalid_json` |
 | handler_unsupported_diagnostics_evidence_test.go | Verifies HTTP parser diagnostics preserve the review-floored partial result, valid statements/findings, locations, context, error status, and no-leak boundaries |
 | handler_unsupported_verdict_floor_postgresql_tag_test.go | Verifies HTTP PostgreSQL `SELECT 1` keeps non-success status and serializes the review-floored unsupported result with the retained incomplete-coverage statement |
