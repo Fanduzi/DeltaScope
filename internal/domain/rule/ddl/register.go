@@ -376,6 +376,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDTableExistsAlterRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newTableExistenceRule(ruleIDTableExistsAlterRequire, true, rule.LevelBlocker, cfg)
 		}},
+		{ruleID: ruleIDCreateIndexColumnsExistRequire, construct: newCreateIndexColumnsExistRule},
 		{ruleID: ruleIDAlterAddColumnExistsForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAlterObjectExistenceRule(ruleIDAlterAddColumnExistsForbid, []string{"add_columns"}, "column", true, rule.LevelBlocker, cfg, alterObjectName, snapshotHasColumn)
 		}},

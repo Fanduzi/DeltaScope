@@ -1661,7 +1661,7 @@ func TestEnrichStatementsWithMetadataAddsInstanceAndTargetTableFacts(t *testing.
 	enriched, err := enrichStatementsWithMetadata(context.Background(), spec.DialectMySQL, &MetadataRequest{
 		Schema:   "app",
 		Provider: provider,
-	}, statements)
+	}, statements, nil)
 	if err != nil {
 		t.Fatalf("enrich statements: %v", err)
 	}
@@ -1703,7 +1703,7 @@ func TestEnrichStatementsWithMetadataResolvesStandaloneIndexOwnerWhenAvailable(t
 	enriched, err := enrichStatementsWithMetadata(context.Background(), spec.DialectPostgreSQL, &MetadataRequest{
 		Schema:   "public",
 		Provider: provider,
-	}, statements)
+	}, statements, nil)
 	if err != nil {
 		t.Fatalf("enrich standalone index statements: %v", err)
 	}
@@ -1736,7 +1736,7 @@ func TestEnrichStatementsWithMetadataSkipsStandaloneIndexOwnerWithoutResolver(t 
 	enriched, err := enrichStatementsWithMetadata(context.Background(), spec.DialectPostgreSQL, &MetadataRequest{
 		Schema:   "public",
 		Provider: provider,
-	}, statements)
+	}, statements, nil)
 	if err != nil {
 		t.Fatalf("enrich standalone index statements without resolver: %v", err)
 	}
@@ -1773,7 +1773,7 @@ func TestEnrichStatementsWithMetadataPreservesSchemaContextWithoutProvider(t *te
 		{Kind: spec.KindDML, Dialect: spec.DialectMySQL, DML: &spec.DML{Operation: spec.DMLOperationDelete, Tables: []spec.Table{{Name: "users"}}}},
 	}
 
-	enriched, err := enrichStatementsWithMetadata(context.Background(), spec.DialectMySQL, &MetadataRequest{Schema: "app"}, statements)
+	enriched, err := enrichStatementsWithMetadata(context.Background(), spec.DialectMySQL, &MetadataRequest{Schema: "app"}, statements, nil)
 	if err != nil {
 		t.Fatalf("enrich statements with schema only: %v", err)
 	}
@@ -1820,7 +1820,7 @@ func TestEnrichStatementsWithMetadataKeepsOfflinePathWhenProviderIsAbsent(t *tes
 		{Kind: spec.KindDDL, Dialect: spec.DialectMySQL, DDL: &spec.DDL{Table: &spec.Table{Name: "users"}}},
 	}
 
-	enriched, err := enrichStatementsWithMetadata(context.Background(), spec.DialectMySQL, nil, statements)
+	enriched, err := enrichStatementsWithMetadata(context.Background(), spec.DialectMySQL, nil, statements, nil)
 	if err != nil {
 		t.Fatalf("enrich statements without provider: %v", err)
 	}

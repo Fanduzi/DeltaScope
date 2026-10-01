@@ -1,0 +1,5673 @@
+{
+ "task_id": "T05",
+ "issue": "https://github.com/Fanduzi/DeltaScope/issues/84",
+ "policy_profile": "t04-modify-column-compat-isolated",
+ "policy": {
+  "enable": {
+   "ddl.alter.modify_column.compatibility.require": {
+    "enabled": true,
+    "level": "blocker",
+    "params": {
+     "required": true,
+     "requires_metadata": true
+    }
+   }
+  },
+  "profiles": {
+   "t04b-key-length-isolated": {
+    "enable": {
+     "ddl.index.key_length.max_bytes.require": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "required": true
+      }
+     }
+    }
+   },
+   "t05-first-path-isolated": {
+    "enable": {
+     "ddl.table.exists.create.forbid": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {}
+     },
+     "ddl.table.exists.alter.require": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {}
+     },
+     "ddl.alter.add_column.exists.forbid": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {}
+     },
+     "ddl.create_index.columns.exists.require": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "required": true
+      }
+     }
+    }
+   }
+  }
+ },
+ "description": "T05-A1 (issue #84) ordered schema-state contract: the t05-first-path-isolated profile enables exactly four blocker rules (ddl.table.exists.create.forbid, ddl.table.exists.alter.require, ddl.alter.add_column.exists.forbid, and the new ddl.create_index.columns.exists.require). Metadata cases on mysql84 and tidb85 prove the request-local ordered-state path: CREATE/ADD/CREATE INDEX derive conditional post-state, a repeated ADD fires the duplicate blocker, a missing index column produces a per-column blocker, a confirmed-absent index target reports one table_not_found blocker, and an unaudited generated-column ALTER invalidates only its own table so later statements report unknown_table_state gaps while an unrelated table still derives cleanly. Offline cli_cases pin the same contract without a provider. The locked four-anchor db baseline and the inherited CLI denominator are preserved verbatim.",
+ "anchors": {
+  "mysql57": {
+   "service": "mysql57",
+   "container": "deltascope-ddl-golden-mysql57",
+   "image": "mysql:5.7.44",
+   "product": "mysql",
+   "version_contains": "5.7.44",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "-proot"
+   ],
+   "needs_database_create": false
+  },
+  "mysql80": {
+   "service": "mysql80",
+   "container": "deltascope-ddl-golden-mysql80",
+   "image": "mysql:8.0.46",
+   "product": "mysql",
+   "version_contains": "8.0.46",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "-proot"
+   ],
+   "needs_database_create": false
+  },
+  "mysql84": {
+   "service": "mysql84",
+   "container": "deltascope-ddl-golden-mysql84",
+   "image": "mysql:8.4.10",
+   "product": "mysql",
+   "version_contains": "8.4.10",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "-proot"
+   ],
+   "needs_database_create": false
+  },
+  "tidb85": {
+   "service": "tidb85",
+   "container": "deltascope-ddl-golden-tidb85",
+   "client_container": "deltascope-ddl-golden-tidb85-client",
+   "client_service": "tidb85-client",
+   "image": "pingcap/tidb:v8.5.0",
+   "product": "tidb",
+   "version_contains": "v8.5.0",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "--protocol=tcp",
+    "-h",
+    "tidb85",
+    "-P",
+    "4000",
+    "-uroot"
+   ],
+   "needs_database_create": true
+  }
+ },
+ "ddl_steps": [
+  {
+   "name": "create",
+   "sql": "CREATE TABLE golden_t (id INT PRIMARY KEY)",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "table exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary key exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "1"
+    }
+   ]
+  },
+  {
+   "name": "alter",
+   "sql": "ALTER TABLE golden_t ADD COLUMN c INT",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "column c exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND COLUMN_NAME='c'",
+     "expect": "1"
+    }
+   ]
+  },
+  {
+   "name": "drop",
+   "sql": "DROP TABLE golden_t",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "table absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+     "expect": "0"
+    }
+   ]
+  }
+ ],
+ "syntax_negative": {
+  "sql": "CREATE TABLE golden_broken (",
+  "expect": {
+   "rc_nonzero": true,
+   "error_class": "1064",
+   "forbidden_markers": [
+    "ERROR 1045",
+    "ERROR 1044",
+    "ERROR 1049",
+    "ERROR 1142",
+    "ERROR 1143",
+    "ERROR 2002",
+    "ERROR 2003",
+    "ERROR 2005",
+    "Access denied",
+    "Unknown database",
+    "Can't connect",
+    "Connection refused",
+    "already exists"
+   ]
+  }
+ },
+ "cli_cases": [
+  {
+   "id": "mysql",
+   "dialect": "mysql",
+   "sql": "CREATE SEQUENCE golden_seq START WITH 1; ALTER TABLE golden_t ADD COLUMN c INT;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete",
+     "complete"
+    ],
+    "unsupported_features": [
+     "create_sequence"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "create_sequence",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+     }
+    ],
+    "statement_sql": [
+     "CREATE SEQUENCE golden_seq START WITH 1;",
+     "ALTER TABLE golden_t ADD COLUMN c INT;"
+    ]
+   }
+  },
+  {
+   "id": "tidb",
+   "dialect": "tidb",
+   "sql": "CREATE SEQUENCE golden_seq; ALTER TABLE golden_t ADD COLUMN c INT;",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete"
+    ]
+   }
+  },
+  {
+   "id": "mysql-alter-index-invisible",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t ALTER INDEX idx INVISIBLE;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_features": [
+     "alter_table.alter_index"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t ALTER INDEX idx INVISIBLE;"
+    ]
+   }
+  },
+  {
+   "id": "tidb-alter-drop-check",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t DROP CHECK chk;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_features": [
+     "alter_table.drop_check"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t DROP CHECK chk;"
+    ]
+   }
+  },
+  {
+   "id": "mysql-create-table-placement-policy",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT) PLACEMENT POLICY=p;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_features": [
+     "create_table.option.placement_policy"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT) PLACEMENT POLICY=p;"
+    ]
+   }
+  },
+  {
+   "id": "tidb-drop-procedure",
+   "dialect": "tidb",
+   "sql": "DROP PROCEDURE IF EXISTS p;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_features": [
+     "drop_procedure"
+    ],
+    "statement_sql": [
+     "DROP PROCEDURE IF EXISTS p;"
+    ]
+   }
+  },
+  {
+   "id": "tidb-explain-analyze",
+   "dialect": "tidb",
+   "sql": "EXPLAIN ANALYZE DELETE FROM t;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_features": [
+     "explain_analyze"
+    ],
+    "statement_sql": [
+     "EXPLAIN ANALYZE DELETE FROM t;"
+    ]
+   }
+  },
+  {
+   "id": "mysql-explain-analyze",
+   "dialect": "mysql",
+   "sql": "EXPLAIN ANALYZE DELETE FROM t;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_features": [
+     "explain_analyze"
+    ],
+    "statement_sql": [
+     "EXPLAIN ANALYZE DELETE FROM t;"
+    ]
+   }
+  },
+  {
+   "id": "tidb-execute-prepared",
+   "dialect": "tidb",
+   "sql": "EXECUTE stmt;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_features": [
+     "execute_prepared"
+    ],
+    "statement_sql": [
+     "EXECUTE stmt;"
+    ]
+   }
+  },
+  {
+   "id": "tidb-trace",
+   "dialect": "tidb",
+   "sql": "TRACE DELETE FROM t;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_features": [
+     "trace"
+    ],
+    "statement_sql": [
+     "TRACE DELETE FROM t;"
+    ]
+   }
+  },
+  {
+   "id": "tidb-create-sequence-options",
+   "dialect": "tidb",
+   "sql": "CREATE SEQUENCE seq1 START WITH 1 INCREMENT BY 1;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_features": [
+     "create_sequence.options"
+    ],
+    "statement_sql": [
+     "CREATE SEQUENCE seq1 START WITH 1 INCREMENT BY 1;"
+    ]
+   }
+  },
+  {
+   "id": "mysql-alter-algorithm-lock",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t ALGORITHM=INPLACE, LOCK=NONE;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 2,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_features": [
+     "alter_table.algorithm",
+     "alter_table.lock"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t ALGORITHM=INPLACE, LOCK=NONE;"
+    ]
+   }
+  },
+  {
+   "id": "mysql-alter-placement-policy",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t PLACEMENT POLICY=p;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_features": [
+     "alter_table.placement_policy"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t PLACEMENT POLICY=p;"
+    ]
+   }
+  },
+  {
+   "id": "tidb-explain-readonly",
+   "dialect": "tidb",
+   "sql": "EXPLAIN DELETE FROM t;",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "EXPLAIN DELETE FROM t;"
+    ]
+   }
+  },
+  {
+   "id": "tidb-create-temporary-table",
+   "dialect": "tidb",
+   "sql": "CREATE TEMPORARY TABLE t (id INT PRIMARY KEY);",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_features": [
+     "create_table.temporary"
+    ],
+    "statement_sql": [
+     "CREATE TEMPORARY TABLE t (id INT PRIMARY KEY);"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_table.temporary",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-create-temporary-table",
+   "dialect": "mysql",
+   "sql": "CREATE TEMPORARY TABLE t (id INT);",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_features": [
+     "create_table.temporary"
+    ],
+    "statement_sql": [
+     "CREATE TEMPORARY TABLE t (id INT);"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_table.temporary",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-create-global-temporary-table",
+   "dialect": "tidb",
+   "sql": "CREATE GLOBAL TEMPORARY TABLE t (id INT PRIMARY KEY) ON COMMIT DELETE ROWS;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_features": [
+     "create_table.temporary.global"
+    ],
+    "statement_sql": [
+     "CREATE GLOBAL TEMPORARY TABLE t (id INT PRIMARY KEY) ON COMMIT DELETE ROWS;"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_table.temporary.global",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-create-global-temporary-table",
+   "dialect": "mysql",
+   "sql": "CREATE GLOBAL TEMPORARY TABLE t (id INT) ON COMMIT DELETE ROWS;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_features": [
+     "create_table.temporary.global"
+    ],
+    "statement_sql": [
+     "CREATE GLOBAL TEMPORARY TABLE t (id INT) ON COMMIT DELETE ROWS;"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_table.temporary.global",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-drop-temporary-table",
+   "dialect": "tidb",
+   "sql": "DROP TEMPORARY TABLE t;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_features": [
+     "drop_table.temporary"
+    ],
+    "statement_sql": [
+     "DROP TEMPORARY TABLE t;"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "drop_table.temporary",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-create-table-auto-random",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id BIGINT PRIMARY KEY AUTO_RANDOM);",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_features": [
+     "create_table.column.auto_random"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id BIGINT PRIMARY KEY AUTO_RANDOM);"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_table.column.auto_random",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-create-table-auto-random",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id BIGINT PRIMARY KEY AUTO_RANDOM);",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_features": [
+     "create_table.column.auto_random"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id BIGINT PRIMARY KEY AUTO_RANDOM);"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_table.column.auto_random",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-alter-add-column-auto-random",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t ADD COLUMN id BIGINT AUTO_RANDOM;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_features": [
+     "alter_table.add_columns.column.auto_random"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t ADD COLUMN id BIGINT AUTO_RANDOM;"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_table.add_columns.column.auto_random",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-create-procedure-body",
+   "dialect": "mysql",
+   "sql": "CREATE PROCEDURE p() SELECT 1;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_features": [
+     "create_procedure.body"
+    ],
+    "statement_sql": [
+     "CREATE PROCEDURE p() SELECT 1;"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_procedure.body",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-create-table-generated-column",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (a INT, b INT GENERATED ALWAYS AS (a+1) STORED);",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_features": [
+     "create_table.column.generated"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (a INT, b INT GENERATED ALWAYS AS (a+1) STORED);"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_table.column.generated",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-create-table-inline-reference",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT, pid INT REFERENCES parent(id));",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_features": [
+     "create_table.column.reference"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT, pid INT REFERENCES parent(id));"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_table.column.reference",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-create-table-inline-check",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT CHECK (id > 0));",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_features": [
+     "create_table.column.check"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT CHECK (id > 0));"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_table.column.check",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-create-table-inline-unique",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT UNIQUE);",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_features": [
+     "create_table.column.unique"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT UNIQUE);"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_table.column.unique",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-create-procedure-parser-error",
+   "dialect": "mysql",
+   "sql": "CREATE PROCEDURE p() BEGIN SELECT 1; END;",
+   "expect": {
+    "exit": 2,
+    "verdict": "",
+    "statements": 0,
+    "findings": 0,
+    "diagnostics": 2,
+    "unsupported": 0,
+    "coverage": "incomplete",
+    "statement_coverage": []
+   }
+  },
+  {
+   "id": "tidb-create-table-ordinary",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY);",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY);"
+    ]
+   }
+  },
+  {
+   "id": "mysql-drop-table-ordinary",
+   "dialect": "mysql",
+   "sql": "DROP TABLE t;",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "DROP TABLE t;"
+    ]
+   }
+  },
+  {
+   "id": "mysql-drop-temporary-table",
+   "dialect": "mysql",
+   "sql": "DROP TEMPORARY TABLE t;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_features": [
+     "drop_table.temporary"
+    ],
+    "statement_sql": [
+     "DROP TEMPORARY TABLE t;"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "drop_table.temporary",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-alter-add-column-auto-random",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t ADD COLUMN id BIGINT AUTO_RANDOM;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_features": [
+     "alter_table.add_columns.column.auto_random"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t ADD COLUMN id BIGINT AUTO_RANDOM;"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_table.add_columns.column.auto_random",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-alter-add-column-position",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t ADD COLUMN c INT FIRST;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_features": [
+     "alter_table.add_columns.column_position"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t ADD COLUMN c INT FIRST;"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_table.add_columns.column_position",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-alter-add-column-position",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t ADD COLUMN c INT AFTER id;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_features": [
+     "alter_table.add_columns.column_position"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t ADD COLUMN c INT AFTER id;"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_table.add_columns.column_position",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-create-table-tidb-only-options",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT) SHARD_ROW_ID_BITS=4 PRE_SPLIT_REGIONS=2;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 2,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "unsupported_features": [
+     "create_table.option.pre_split_regions",
+     "create_table.option.shard_row_id_bits"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT) SHARD_ROW_ID_BITS=4 PRE_SPLIT_REGIONS=2;"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_table.option.pre_split_regions",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+     },
+     {
+      "feature": "create_table.option.shard_row_id_bits",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-create-table-unique-global",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT UNIQUE GLOBAL);",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT UNIQUE GLOBAL);"
+    ],
+    "unsupported_features": [
+     "create_table.column.unique_global"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_table.column.unique_global",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-create-table-unique-global",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT UNIQUE GLOBAL);",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT UNIQUE GLOBAL);"
+    ],
+    "unsupported_features": [
+     "create_table.column.unique_global"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_table.column.unique_global",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-create-table-index-global",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT, UNIQUE KEY uk (id) GLOBAL);",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT, UNIQUE KEY uk (id) GLOBAL);"
+    ],
+    "unsupported_features": [
+     "create_table.index.global"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_table.index.global",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-alter-add-index-global",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t ADD UNIQUE KEY uk (c) GLOBAL;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t ADD UNIQUE KEY uk (c) GLOBAL;"
+    ],
+    "unsupported_features": [
+     "alter_table.add_index.index.global"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_table.add_index.index.global",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-create-index-global",
+   "dialect": "mysql",
+   "sql": "CREATE UNIQUE INDEX uk ON t (c) GLOBAL;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE UNIQUE INDEX uk ON t (c) GLOBAL;"
+    ],
+    "unsupported_features": [
+     "create_index.create_index.index.global"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_index.create_index.index.global",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-alter-tidb-only-option",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t AUTO_RANDOM_BASE=10;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t AUTO_RANDOM_BASE=10;"
+    ],
+    "unsupported_features": [
+     "alter_table.option.auto_random_base"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_table.option.auto_random_base",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-alter-modify-column-position",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t MODIFY COLUMN c INT AFTER id;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t MODIFY COLUMN c INT AFTER id;"
+    ],
+    "unsupported_features": [
+     "alter_table.modify_column.column_position"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_table.modify_column.column_position",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "reason_code": "missing_source_column",
+      "required_facts": [
+       "source_column.definition"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-alter-add-list-index-global",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t ADD (c INT, UNIQUE KEY uk (c) GLOBAL);",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t ADD (c INT, UNIQUE KEY uk (c) GLOBAL);"
+    ],
+    "unsupported_features": [
+     "alter_table.add_index.index.global"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_table.add_index.index.global",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-alter-add-list-index-global",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t ADD (c INT, UNIQUE KEY uk (c) GLOBAL);",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t ADD (c INT, UNIQUE KEY uk (c) GLOBAL);"
+    ],
+    "unsupported_features": [
+     "alter_table.add_index.index.global"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_table.add_index.index.global",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-alter-add-list-primary-global",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t ADD (c INT, PRIMARY KEY (c) GLOBAL);",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t ADD (c INT, PRIMARY KEY (c) GLOBAL);"
+    ],
+    "unsupported_features": [
+     "alter_table.add_constraint.index.global"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_table.add_constraint.index.global",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-alter-add-list-check",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t ADD (c INT, CHECK (c > 0));",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t ADD (c INT, CHECK (c > 0));"
+    ],
+    "unsupported_features": [
+     "alter_table.add_constraint.check"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_table.add_constraint.check",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-create-table-mixed-uniqueness",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT UNIQUE GLOBAL, c INT UNIQUE);",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 2,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT UNIQUE GLOBAL, c INT UNIQUE);"
+    ],
+    "unsupported_features": [
+     "create_table.column.unique",
+     "create_table.column.unique_global"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_table.column.unique",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     },
+     {
+      "feature": "create_table.column.unique_global",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-alter-add-list-column-only",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t ADD (c INT);",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t ADD (c INT);"
+    ]
+   }
+  },
+  {
+   "id": "mysql-alter-add-list-index",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t ADD (c INT, UNIQUE KEY uk (c));",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t ADD (c INT, UNIQUE KEY uk (c));"
+    ]
+   }
+  },
+  {
+   "id": "mysql-alter-add-list-foreign-key",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t ADD (c INT, FOREIGN KEY (c) REFERENCES p(id));",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t ADD (c INT, FOREIGN KEY (c) REFERENCES p(id));"
+    ]
+   }
+  },
+  {
+   "id": "mysql-alter-add-list-comment-interference",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t ADD (c INT COMMENT 'ADD CONSTRAINT', UNIQUE KEY uk (c) GLOBAL);",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t ADD (c INT COMMENT 'ADD CONSTRAINT', UNIQUE KEY uk (c) GLOBAL);"
+    ],
+    "unsupported_features": [
+     "alter_table.add_index.index.global"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_table.add_index.index.global",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-alter-add-list-primary-global",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t ADD (c INT, PRIMARY KEY (c) GLOBAL);",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t ADD (c INT, PRIMARY KEY (c) GLOBAL);"
+    ],
+    "unsupported_features": [
+     "alter_table.add_constraint.index.global"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_table.add_constraint.index.global",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-create-table-index-expr",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (a VARCHAR(32), KEY ix (a, (LOWER(a))));",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (a VARCHAR(32), KEY ix (a, (LOWER(a))));"
+    ],
+    "unsupported_features": [
+     "create_table.index.expr"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_table.index.expr",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-create-table-index-expr",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (a VARCHAR(32), KEY ix (a, (LOWER(a))));",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (a VARCHAR(32), KEY ix (a, (LOWER(a))));"
+    ],
+    "unsupported_features": [
+     "create_table.index.expr"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_table.index.expr",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-create-index-expr-prefix-desc",
+   "dialect": "mysql",
+   "sql": "CREATE INDEX ix ON t (c(10), (LOWER(b)) DESC);",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 3,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE INDEX ix ON t (c(10), (LOWER(b)) DESC);"
+    ],
+    "unsupported_features": [
+     "create_index.create_index.index.expr",
+     "create_index.create_index.index.prefix",
+     "create_index.create_index.index.desc"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_index.create_index.index.expr",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "index",
+       "index_kind": "secondary",
+       "expression_count": 1
+      }
+     },
+     {
+      "feature": "create_index.create_index.index.prefix",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "index",
+       "index_kind": "secondary",
+       "prefix_parts": 1
+      }
+     },
+     {
+      "feature": "create_index.create_index.index.desc",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "index",
+       "index_kind": "secondary",
+       "desc_parts": 1
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-create-index-expr-prefix-desc",
+   "dialect": "tidb",
+   "sql": "CREATE INDEX ix ON t (c(10), (LOWER(b)) DESC);",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 3,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE INDEX ix ON t (c(10), (LOWER(b)) DESC);"
+    ],
+    "unsupported_features": [
+     "create_index.create_index.index.expr",
+     "create_index.create_index.index.prefix",
+     "create_index.create_index.index.desc"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_index.create_index.index.expr",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "index",
+       "index_kind": "secondary",
+       "expression_count": 1
+      }
+     },
+     {
+      "feature": "create_index.create_index.index.prefix",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "index",
+       "index_kind": "secondary",
+       "prefix_parts": 1
+      }
+     },
+     {
+      "feature": "create_index.create_index.index.desc",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "index",
+       "index_kind": "secondary",
+       "desc_parts": 1
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-drop-user-multi",
+   "dialect": "mysql",
+   "sql": "DROP USER u1, u2;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "DROP USER u1, u2;"
+    ],
+    "unsupported_features": [
+     "drop_user.unaudited_targets"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "drop_user.unaudited_targets",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "targets",
+       "omitted": 1
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-drop-sequence-multi",
+   "dialect": "tidb",
+   "sql": "DROP SEQUENCE s1, s2;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "DROP SEQUENCE s1, s2;"
+    ],
+    "unsupported_features": [
+     "drop_sequence.unaudited_targets"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "drop_sequence.unaudited_targets",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "targets",
+       "omitted": 1
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-grant-multi",
+   "dialect": "mysql",
+   "sql": "GRANT SELECT ON db.* TO 'a'@'%', 'b'@'%';",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "GRANT SELECT ON db.* TO 'a'@'%', 'b'@'%';"
+    ],
+    "unsupported_features": [
+     "grant.unaudited_targets"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "grant.unaudited_targets",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "targets",
+       "omitted": 2
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-unsupported-second-statement",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t ADD COLUMN c INT; CREATE TEMPORARY TABLE x (id INT);",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "complete",
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t ADD COLUMN c INT;",
+     "CREATE TEMPORARY TABLE x (id INT);"
+    ],
+    "unsupported_features": [
+     "create_table.temporary"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 1,
+      "feature": "create_table.temporary",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-alter-user-current-auth",
+   "dialect": "mysql",
+   "sql": "ALTER USER USER() IDENTIFIED BY 'replacement';",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 2,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER USER USER() IDENTIFIED BY 'replacement';"
+    ],
+    "unsupported_features": [
+     "alter_user.option.identified",
+     "alter_user.unaudited_targets"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_user.option.identified",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "option"
+      }
+     },
+     {
+      "feature": "alter_user.unaudited_targets",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "targets",
+       "omitted": 1
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-alter-user-current-discard",
+   "dialect": "tidb",
+   "sql": "ALTER USER USER() DISCARD OLD PASSWORD;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 2,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER USER USER() DISCARD OLD PASSWORD;"
+    ],
+    "unsupported_features": [
+     "alter_user.option.dual_password",
+     "alter_user.unaudited_targets"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_user.option.dual_password",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "option"
+      }
+     },
+     {
+      "feature": "alter_user.unaudited_targets",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "targets",
+       "omitted": 1
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-alter-user-account-lock",
+   "dialect": "mysql",
+   "sql": "ALTER USER u ACCOUNT LOCK;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER USER u ACCOUNT LOCK;"
+    ],
+    "unsupported_features": [
+     "alter_user.option.password_or_lock"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_user.option.password_or_lock",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-create-user-require-ssl",
+   "dialect": "tidb",
+   "sql": "CREATE USER u REQUIRE SSL;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE USER u REQUIRE SSL;"
+    ],
+    "unsupported_features": [
+     "create_user.option.auth_token_or_tls"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_user.option.auth_token_or_tls",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-create-index-zero-prefix",
+   "dialect": "mysql",
+   "sql": "CREATE INDEX ix ON t (c(0));",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE INDEX ix ON t (c(0));"
+    ],
+    "unsupported_features": [
+     "create_index.create_index.index.prefix"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_index.create_index.index.prefix",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "index",
+       "index_kind": "secondary",
+       "prefix_parts": 1
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-alter-add-fk-prefix",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t ADD FOREIGN KEY (c(8)) REFERENCES p(id);",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t ADD FOREIGN KEY (c(8)) REFERENCES p(id);"
+    ],
+    "unsupported_features": [
+     "alter_table.add_constraint.constraint.foreign_key.parts"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_table.add_constraint.constraint.foreign_key.parts",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "constraint_parts",
+       "action": "add_constraint",
+       "constraint_type": "foreign_key",
+       "local_parts": 1,
+       "referenced_parts": 0,
+       "refer_actions": 0
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-alter-add-fk-expr-ref-desc",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t ADD FOREIGN KEY ((LOWER(c))) REFERENCES p(id(3) DESC);",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t ADD FOREIGN KEY ((LOWER(c))) REFERENCES p(id(3) DESC);"
+    ],
+    "unsupported_features": [
+     "alter_table.add_constraint.constraint.foreign_key.parts"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_table.add_constraint.constraint.foreign_key.parts",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "constraint_parts",
+       "action": "add_constraint",
+       "constraint_type": "foreign_key",
+       "local_parts": 1,
+       "referenced_parts": 1,
+       "refer_actions": 0
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-create-table-fk-on-delete",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (a INT, FOREIGN KEY (a) REFERENCES p(id) ON DELETE CASCADE);",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (a INT, FOREIGN KEY (a) REFERENCES p(id) ON DELETE CASCADE);"
+    ],
+    "unsupported_features": [
+     "create_table.constraint.foreign_key.parts"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_table.constraint.foreign_key.parts",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "constraint_parts",
+       "constraint_type": "foreign_key",
+       "local_parts": 0,
+       "referenced_parts": 0,
+       "refer_actions": 1
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-create-table-partition-placement",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (10) PLACEMENT POLICY=p);",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (10) PLACEMENT POLICY=p);"
+    ],
+    "unsupported_features": [
+     "create_table.option.placement_policy"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_table.option.placement_policy",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-create-table-partition-placement",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (10) PLACEMENT POLICY=p);",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (10) PLACEMENT POLICY=p);"
+    ],
+    "unsupported_features": [
+     "create_table.option.placement_policy"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_table.option.placement_policy",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-alter-user-current-function",
+   "dialect": "mysql",
+   "sql": "ALTER USER CURRENT_USER() IDENTIFIED BY 'x';",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 2,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER USER CURRENT_USER() IDENTIFIED BY 'x';"
+    ],
+    "unsupported_features": [
+     "alter_user.option.identified",
+     "alter_user.unaudited_targets"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_user.option.identified",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "option"
+      }
+     },
+     {
+      "feature": "alter_user.unaudited_targets",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "targets",
+       "omitted": 1
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-create-user-current-function",
+   "dialect": "tidb",
+   "sql": "CREATE USER CURRENT_USER() IDENTIFIED BY 'x';",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 2,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE USER CURRENT_USER() IDENTIFIED BY 'x';"
+    ],
+    "unsupported_features": [
+     "create_user.option.identified",
+     "create_user.unaudited_targets"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_user.option.identified",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "option"
+      }
+     },
+     {
+      "feature": "create_user.unaudited_targets",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "targets",
+       "omitted": 1
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-create-user-resource-group",
+   "dialect": "mysql",
+   "sql": "CREATE USER u RESOURCE GROUP rg;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE USER u RESOURCE GROUP rg;"
+    ],
+    "unsupported_features": [
+     "create_user.option.resource_group_name"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_user.option.resource_group_name",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-alter-index-prefix-single-entry",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t ADD INDEX ix (c(8));",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t ADD INDEX ix (c(8));"
+    ],
+    "unsupported_features": [
+     "alter_table.add_index.index.prefix"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_table.add_index.index.prefix",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "index",
+       "index_kind": "secondary",
+       "prefix_parts": 1
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-alter-pk-prefix-single-entry",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t ADD PRIMARY KEY (c(8));",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t ADD PRIMARY KEY (c(8));"
+    ],
+    "unsupported_features": [
+     "alter_table.add_constraint.index.prefix"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_table.add_constraint.index.prefix",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "index",
+       "index_kind": "primary",
+       "prefix_parts": 1
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-create-index-predicate",
+   "dialect": "mysql",
+   "sql": "CREATE INDEX ix ON t (c) WHERE c > 0;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE INDEX ix ON t (c) WHERE c > 0;"
+    ],
+    "unsupported_features": [
+     "create_index.create_index.index.predicate"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_index.create_index.index.predicate",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-create-index-predicate",
+   "dialect": "tidb",
+   "sql": "CREATE INDEX ix ON t (c) WHERE c > 0;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE INDEX ix ON t (c) WHERE c > 0;"
+    ],
+    "unsupported_features": [
+     "create_index.create_index.index.predicate"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_index.create_index.index.predicate",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-create-index-invisible",
+   "dialect": "mysql",
+   "sql": "CREATE INDEX ix ON t (c) INVISIBLE;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE INDEX ix ON t (c) INVISIBLE;"
+    ],
+    "unsupported_features": [
+     "create_index.create_index.index.option.invisible"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_index.create_index.index.option.invisible",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-create-index-comment-keyblock",
+   "dialect": "mysql",
+   "sql": "CREATE INDEX ix ON t (c) COMMENT 'x' KEY_BLOCK_SIZE=4;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 2,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE INDEX ix ON t (c) COMMENT 'x' KEY_BLOCK_SIZE=4;"
+    ],
+    "unsupported_features": [
+     "create_index.create_index.index.option.comment",
+     "create_index.create_index.index.option.key_block_size"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_index.create_index.index.option.comment",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     },
+     {
+      "feature": "create_index.create_index.index.option.key_block_size",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-create-table-split-index",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY) SPLIT PRIMARY KEY BETWEEN (0) AND (100) REGIONS 4;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY) SPLIT PRIMARY KEY BETWEEN (0) AND (100) REGIONS 4;"
+    ],
+    "unsupported_features": [
+     "create_table.option.split_index"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_table.option.split_index",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-create-table-split-index",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY) SPLIT PRIMARY KEY BETWEEN (0) AND (100) REGIONS 4;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY) SPLIT PRIMARY KEY BETWEEN (0) AND (100) REGIONS 4;"
+    ],
+    "unsupported_features": [
+     "create_table.option.split_index"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_table.option.split_index",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-create-table-update-indexes",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT, KEY ix (id)) PARTITION BY HASH(id) PARTITIONS 2 UPDATE INDEXES (ix GLOBAL);",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT, KEY ix (id)) PARTITION BY HASH(id) PARTITIONS 2 UPDATE INDEXES (ix GLOBAL);"
+    ],
+    "unsupported_features": [
+     "create_table.option.partition_update_indexes"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_table.option.partition_update_indexes",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-two-expression-indexes",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (a VARCHAR(32), b VARCHAR(32), KEY ix1 ((LOWER(a))), KEY ix2 ((LOWER(a)), (LOWER(b))));",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 2,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (a VARCHAR(32), b VARCHAR(32), KEY ix1 ((LOWER(a))), KEY ix2 ((LOWER(a)), (LOWER(b))));"
+    ],
+    "unsupported_features": [
+     "create_table.index.expr",
+     "create_table.index.expr"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_table.index.expr",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "index",
+       "index_kind": "secondary",
+       "expression_count": 1
+      }
+     },
+     {
+      "feature": "create_table.index.expr",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "index",
+       "index_kind": "secondary",
+       "expression_count": 2
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-do-statement",
+   "dialect": "mysql",
+   "sql": "DO 1;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "DO 1;"
+    ],
+    "unsupported": 1,
+    "unsupported_features": [
+     "do"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "do",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-binlog-replay",
+   "dialect": "mysql",
+   "sql": "BINLOG 'abc';",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "BINLOG 'abc';"
+    ],
+    "unsupported": 1,
+    "unsupported_features": [
+     "binlog"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "binlog",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-select-into-outfile",
+   "dialect": "mysql",
+   "sql": "SELECT 1 INTO OUTFILE '/tmp/x';",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "SELECT 1 INTO OUTFILE '/tmp/x';"
+    ],
+    "unsupported": 1,
+    "unsupported_features": [
+     "select_into"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "select_into",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-union-select-into",
+   "dialect": "tidb",
+   "sql": "SELECT 1 UNION SELECT 2 INTO OUTFILE '/tmp/x';",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "SELECT 1 UNION SELECT 2 INTO OUTFILE '/tmp/x';"
+    ],
+    "unsupported": 1,
+    "unsupported_features": [
+     "select_into"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "select_into",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-create-view-definer",
+   "dialect": "mysql",
+   "sql": "CREATE DEFINER='a'@'%' VIEW v AS SELECT 1;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE DEFINER='a'@'%' VIEW v AS SELECT 1;"
+    ],
+    "unsupported": 1,
+    "unsupported_features": [
+     "create_view.option.definer"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_view.option.definer",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "option"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-create-view-combined",
+   "dialect": "mysql",
+   "sql": "CREATE ALGORITHM=TEMPTABLE DEFINER='a'@'%' SQL SECURITY INVOKER VIEW v (a) AS SELECT 1 WITH LOCAL CHECK OPTION;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE ALGORITHM=TEMPTABLE DEFINER='a'@'%' SQL SECURITY INVOKER VIEW v (a) AS SELECT 1 WITH LOCAL CHECK OPTION;"
+    ],
+    "unsupported": 5,
+    "unsupported_features": [
+     "create_view.option.check_option",
+     "create_view.option.definer",
+     "create_view.option.sql_security",
+     "create_view.option.view_algorithm",
+     "create_view.option.view_columns"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_view.option.check_option",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     },
+     {
+      "feature": "create_view.option.definer",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     },
+     {
+      "feature": "create_view.option.sql_security",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     },
+     {
+      "feature": "create_view.option.view_algorithm",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     },
+     {
+      "feature": "create_view.option.view_columns",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-grant-with-grant",
+   "dialect": "mysql",
+   "sql": "GRANT SELECT ON db.t TO 'u'@'%' WITH GRANT OPTION;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "GRANT SELECT ON db.t TO 'u'@'%' WITH GRANT OPTION;"
+    ],
+    "unsupported": 2,
+    "unsupported_features": [
+     "grant.option.with_grant",
+     "grant.unaudited_targets"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "grant.option.with_grant",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     },
+     {
+      "feature": "grant.unaudited_targets",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-grant-require-ssl",
+   "dialect": "mysql",
+   "sql": "GRANT SELECT ON db.t TO 'u'@'%' REQUIRE SSL;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "GRANT SELECT ON db.t TO 'u'@'%' REQUIRE SSL;"
+    ],
+    "unsupported": 2,
+    "unsupported_features": [
+     "grant.option.require_tls",
+     "grant.unaudited_targets"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "grant.option.require_tls",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     },
+     {
+      "feature": "grant.unaudited_targets",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-grant-on-procedure",
+   "dialect": "tidb",
+   "sql": "GRANT EXECUTE ON PROCEDURE db.p TO 'u'@'%';",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "GRANT EXECUTE ON PROCEDURE db.p TO 'u'@'%';"
+    ],
+    "unsupported": 2,
+    "unsupported_features": [
+     "grant.option.routine_object",
+     "grant.unaudited_targets"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "grant.option.routine_object",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+     },
+     {
+      "feature": "grant.unaudited_targets",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-revoke-column-privileges",
+   "dialect": "mysql",
+   "sql": "REVOKE SELECT(a) ON db.t FROM 'u'@'%';",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "REVOKE SELECT(a) ON db.t FROM 'u'@'%';"
+    ],
+    "unsupported": 2,
+    "unsupported_features": [
+     "revoke.option.column_privileges",
+     "revoke.unaudited_targets"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "revoke.option.column_privileges",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     },
+     {
+      "feature": "revoke.unaudited_targets",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-create-index-lock-algorithm",
+   "dialect": "mysql",
+   "sql": "CREATE INDEX ix ON t (c) ALGORITHM=INPLACE LOCK=NONE;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE INDEX ix ON t (c) ALGORITHM=INPLACE LOCK=NONE;"
+    ],
+    "unsupported": 1,
+    "unsupported_features": [
+     "create_index.option.lock_algorithm"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_index.option.lock_algorithm",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "option"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-create-sequence-table-option",
+   "dialect": "tidb",
+   "sql": "CREATE SEQUENCE s COMMENT 'x';",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE SEQUENCE s COMMENT 'x';"
+    ],
+    "unsupported": 1,
+    "unsupported_features": [
+     "create_sequence.option.comment"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_sequence.option.comment",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "option"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-create-user-identified",
+   "dialect": "mysql",
+   "sql": "CREATE USER u IDENTIFIED BY 'x';",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE USER u IDENTIFIED BY 'x';"
+    ],
+    "unsupported": 1,
+    "unsupported_features": [
+     "create_user.option.identified"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_user.option.identified",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "option"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-alter-user-identified",
+   "dialect": "mysql",
+   "sql": "ALTER USER u IDENTIFIED BY 'x';",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER USER u IDENTIFIED BY 'x';"
+    ],
+    "unsupported": 1,
+    "unsupported_features": [
+     "alter_user.option.identified"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_user.option.identified",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "option"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-alter-user-dual-password",
+   "dialect": "mysql",
+   "sql": "ALTER USER u IDENTIFIED BY 'x' RETAIN CURRENT PASSWORD;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER USER u IDENTIFIED BY 'x' RETAIN CURRENT PASSWORD;"
+    ],
+    "unsupported": 2,
+    "unsupported_features": [
+     "alter_user.option.identified",
+     "alter_user.option.dual_password"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_user.option.identified",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "option"
+      }
+     },
+     {
+      "feature": "alter_user.option.dual_password",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "option"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-create-placement-policy-or-replace",
+   "dialect": "tidb",
+   "sql": "CREATE OR REPLACE PLACEMENT POLICY p1 PRIMARY_REGION='us-east-1' REGIONS='us-east-1';",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE OR REPLACE PLACEMENT POLICY p1 PRIMARY_REGION='us-east-1' REGIONS='us-east-1';"
+    ],
+    "unsupported": 2,
+    "unsupported_features": [
+     "create_placement_policy.option.or_replace",
+     "create_placement_policy.options"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_placement_policy.option.or_replace",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "option"
+      }
+     },
+     {
+      "feature": "create_placement_policy.options",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "option"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-union-paren-select-into",
+   "dialect": "mysql",
+   "sql": "SELECT 1 UNION (SELECT 2 INTO OUTFILE '/tmp/x.txt');",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "SELECT 1 UNION (SELECT 2 INTO OUTFILE '/tmp/x.txt');"
+    ],
+    "unsupported": 1,
+    "unsupported_features": [
+     "select_into"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "select_into",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-union-nested-select-into",
+   "dialect": "mysql",
+   "sql": "SELECT 1 UNION ((SELECT 2 INTO OUTFILE '/tmp/y.txt') UNION SELECT 3);",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "SELECT 1 UNION ((SELECT 2 INTO OUTFILE '/tmp/y.txt') UNION SELECT 3);"
+    ],
+    "unsupported": 1,
+    "unsupported_features": [
+     "select_into"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "select_into",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-set-global",
+   "dialect": "mysql",
+   "sql": "SET GLOBAL sql_mode = 'STRICT_TRANS_TABLES';",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "SET GLOBAL sql_mode = 'STRICT_TRANS_TABLES';"
+    ],
+    "unsupported": 1,
+    "unsupported_features": [
+     "set_global"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "set_global",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-set-atat-global",
+   "dialect": "mysql",
+   "sql": "SET @@global.max_connections = 100;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "SET @@global.max_connections = 100;"
+    ],
+    "unsupported": 1,
+    "unsupported_features": [
+     "set_global"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "set_global",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-set-global",
+   "dialect": "tidb",
+   "sql": "SET GLOBAL tidb_enable_noop = 1;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "SET GLOBAL tidb_enable_noop = 1;"
+    ],
+    "unsupported": 1,
+    "unsupported_features": [
+     "set_global"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "set_global",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-create-table-replace-select",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT) REPLACE SELECT 1 AS id;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT) REPLACE SELECT 1 AS id;"
+    ],
+    "unsupported": 1,
+    "unsupported_features": [
+     "create_table.option.on_duplicate"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_table.option.on_duplicate",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "option"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-drop-hypo-index",
+   "dialect": "mysql",
+   "sql": "DROP HYPO INDEX ix ON t;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "DROP HYPO INDEX ix ON t;"
+    ],
+    "unsupported": 1,
+    "unsupported_features": [
+     "drop_index.option.hypo_index"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "drop_index.option.hypo_index",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "aspect": "option"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-drop-hypo-index",
+   "dialect": "tidb",
+   "sql": "DROP HYPO INDEX ix ON t;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "DROP HYPO INDEX ix ON t;"
+    ],
+    "unsupported": 1,
+    "unsupported_features": [
+     "drop_index.option.hypo_index"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "drop_index.option.hypo_index",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "option"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-inline-pk-nonclustered",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY NONCLUSTERED);",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY NONCLUSTERED);"
+    ],
+    "unsupported": 1,
+    "unsupported_features": [
+     "create_table.column.primary_key_type"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_table.column.primary_key_type",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "column"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-inline-pk-nonclustered",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY NONCLUSTERED);",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY NONCLUSTERED);"
+    ],
+    "unsupported": 1,
+    "unsupported_features": [
+     "create_table.column.primary_key_type"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "create_table.column.primary_key_type",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "aspect": "column"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-alter-user-current-retain",
+   "dialect": "mysql",
+   "sql": "ALTER USER USER() IDENTIFIED BY 'x' RETAIN CURRENT PASSWORD;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER USER USER() IDENTIFIED BY 'x' RETAIN CURRENT PASSWORD;"
+    ],
+    "unsupported": 3,
+    "unsupported_features": [
+     "alter_user.option.identified",
+     "alter_user.option.dual_password",
+     "alter_user.unaudited_targets"
+    ],
+    "unsupported_entries": [
+     {
+      "feature": "alter_user.option.identified",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "option"
+      }
+     },
+     {
+      "feature": "alter_user.option.dual_password",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "option"
+      }
+     },
+     {
+      "feature": "alter_user.unaudited_targets",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "targets",
+       "omitted": 1
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "t04-modify-gap-failon-blocker",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(20);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(20);"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "reason_code": "missing_source_column",
+      "required_facts": [
+       "source_column.definition"
+      ]
+     }
+    ],
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "t04-modify-gap-failon-warning",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(20);",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(20);"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "reason_code": "missing_source_column",
+      "required_facts": [
+       "source_column.definition"
+      ]
+     }
+    ],
+    "fail_on_triggered": true
+   }
+  },
+  {
+   "id": "t04-modify-gap-failon-notice",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(20);",
+   "args": [
+    "--fail-on",
+    "notice"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(20);"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "reason_code": "missing_source_column",
+      "required_facts": [
+       "source_column.definition"
+      ]
+     }
+    ],
+    "fail_on_triggered": true
+   }
+  },
+  {
+   "id": "t04-modify-gap-failon-none",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(20);",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(20);"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "reason_code": "missing_source_column",
+      "required_facts": [
+       "source_column.definition"
+      ]
+     }
+    ],
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "t04-modify-rule-disabled",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(20);",
+   "policy": "all-rules-disabled",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(20);"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "t04-add-column-no-gap",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t ADD COLUMN c2 INT;",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t ADD COLUMN c2 INT;"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "t04-change-column-scoped",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t CHANGE COLUMN c c2 VARCHAR(20);",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t CHANGE COLUMN c c2 VARCHAR(20);"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "t04-multi-alter-gap",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t ADD COLUMN d INT, MODIFY COLUMN c VARCHAR(20);",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t ADD COLUMN d INT, MODIFY COLUMN c VARCHAR(20);"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "reason_code": "missing_source_column",
+      "required_facts": [
+       "source_column.definition"
+      ]
+     }
+    ],
+    "fail_on_triggered": true
+   }
+  },
+  {
+   "id": "t04-mixed-gap-unsupported",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(20); CREATE SEQUENCE t04_seq START WITH 1;",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "unverified",
+     "incomplete"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(20);",
+     "CREATE SEQUENCE t04_seq START WITH 1;"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "reason_code": "missing_source_column",
+      "required_facts": [
+       "source_column.definition"
+      ]
+     }
+    ],
+    "unsupported_features": [
+     "create_sequence"
+    ],
+    "unsupported_entries": [
+     {
+      "index": 1,
+      "feature": "create_sequence",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+     }
+    ],
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "t04-parser-failure-priority",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(20); THIS IS NOT VALID SQL;",
+   "expect": {
+    "exit": 2,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(20);"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "reason_code": "missing_source_column",
+      "required_facts": [
+       "source_column.definition"
+      ]
+     }
+    ],
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "t04b-missing-version",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "rule_id": "ddl.index.key_length.max_bytes.require",
+      "reason_code": "missing_target_version",
+      "required_facts": [
+       "target.version"
+      ],
+      "index": 0
+     }
+    ],
+    "fail_on_triggered": true
+   }
+  },
+  {
+   "id": "t04b-target-8410",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "args": [
+    "--target-version",
+    "8.4.10"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "rule_id": "ddl.index.key_length.max_bytes.require",
+      "reason_code": "missing_instance_fact",
+      "required_facts": [
+       "instance.innodb_page_size"
+      ],
+      "index": 0
+     }
+    ],
+    "fail_on_triggered": false,
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10",
+     "source": "target",
+     "validated_range": true
+    }
+   }
+  },
+  {
+   "id": "t04b-target-v-prefix",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(191) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "args": [
+    "--target-version",
+    "v8.0.46"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46",
+     "source": "target",
+     "validated_range": true
+    }
+   }
+  },
+  {
+   "id": "t04b-target-out-of-range",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "args": [
+    "--target-version",
+    "8.3.0"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "rule_id": "ddl.index.key_length.max_bytes.require",
+      "reason_code": "target_version_out_of_validated_range",
+      "required_facts": [
+       "target.version.validated_range"
+      ],
+      "index": 0
+     }
+    ],
+    "fail_on_triggered": false,
+    "version": {
+     "product": "mysql",
+     "version": "8.3.0",
+     "source": "target",
+     "validated_range": false
+    }
+   }
+  },
+  {
+   "id": "t04b-mysql57-instance-fact-gap",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "args": [
+    "--target-version",
+    "5.7.44"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "rule_id": "ddl.index.key_length.max_bytes.require",
+      "reason_code": "missing_instance_fact",
+      "required_facts": [
+       "instance.innodb_page_size",
+       "instance.innodb_large_prefix_enabled"
+      ],
+      "index": 0
+     }
+    ],
+    "fail_on_triggered": false,
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44",
+     "source": "target",
+     "validated_range": true
+    }
+   }
+  },
+  {
+   "id": "t04b-missing-version-proven-blocker",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(800) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "rule_id": "ddl.index.key_length.max_bytes.require",
+      "reason_code": "missing_target_version",
+      "required_facts": [
+       "target.version"
+      ],
+      "index": 0
+     }
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.index.key_length.max_bytes.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.index.key_length.max_bytes.require",
+      "metadata": {
+       "limit": 3072
+      }
+     }
+    ],
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "t04b-tidb-missing-version",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "rule_id": "ddl.index.key_length.max_bytes.require",
+      "reason_code": "missing_target_version",
+      "required_facts": [
+       "target.version"
+      ],
+      "index": 0
+     }
+    ],
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "t04b-tidb-850",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "args": [
+    "--target-version",
+    "8.5.0"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0",
+     "source": "target",
+     "validated_range": true
+    }
+   }
+  },
+  {
+   "id": "t04b-tidb-out-of-range",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "args": [
+    "--target-version",
+    "8.4.0"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "rule_id": "ddl.index.key_length.max_bytes.require",
+      "reason_code": "target_version_out_of_validated_range",
+      "required_facts": [
+       "target.version.validated_range"
+      ],
+      "index": 0
+     }
+    ],
+    "fail_on_triggered": false,
+    "version": {
+     "product": "tidb",
+     "version": "8.4.0",
+     "source": "target",
+     "validated_range": false
+    }
+   }
+  },
+  {
+   "id": "t04b-mysql84-small-index-complete",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(191) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t04b-key-length-isolated",
+   "args": [
+    "--target-version",
+    "8.4.10"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10",
+     "source": "target",
+     "validated_range": true
+    }
+   }
+  },
+  {
+   "id": "t04b-tidb85-unknown-limit-gap",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(1000) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB;",
+   "policy": "t04b-key-length-isolated",
+   "args": [
+    "--target-version",
+    "8.5.0"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "rule_id": "ddl.index.key_length.max_bytes.require",
+      "reason_code": "missing_instance_fact",
+      "required_facts": [
+       "instance.tidb_max_index_length"
+      ],
+      "index": 0
+     }
+    ],
+    "fail_on_triggered": false,
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0",
+     "source": "target",
+     "validated_range": true
+    }
+   }
+  },
+  {
+   "id": "t04b-tidb85-proven-blocker",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(3200) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB;",
+   "policy": "t04b-key-length-isolated",
+   "args": [
+    "--target-version",
+    "8.5.0",
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.index.key_length.max_bytes.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.index.key_length.max_bytes.require",
+      "metadata": {
+       "limit": 12288
+      }
+     }
+    ],
+    "fail_on_triggered": false,
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0",
+     "source": "target",
+     "validated_range": true
+    }
+   }
+  },
+  {
+   "id": "t05-offline-first-path",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY); ALTER TABLE t ADD COLUMN c INT; CREATE INDEX idx_c ON t (c);",
+   "policy": "t05-first-path-isolated",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 3,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified",
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.exists.create.forbid",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.existence"
+      ]
+     }
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY);",
+     "ALTER TABLE t ADD COLUMN c INT;",
+     "CREATE INDEX idx_c ON t (c);"
+    ]
+   }
+  },
+  {
+   "id": "t05-offline-create-index-unknown-table",
+   "dialect": "mysql",
+   "sql": "CREATE INDEX idx_c ON t (c);",
+   "policy": "t05-first-path-isolated",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.existence",
+       "target_table.columns"
+      ]
+     }
+    ],
+    "statement_sql": [
+     "CREATE INDEX idx_c ON t (c);"
+    ]
+   }
+  }
+ ],
+ "metadata_cases": [
+  {
+   "id": "t05-mysql84-first-path",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY); ALTER TABLE t ADD COLUMN c INT; CREATE INDEX idx_c ON t (c);",
+   "policy": "t05-first-path-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS t"
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 3,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS t"
+    }
+   ]
+  },
+  {
+   "id": "t05-mysql84-index-missing-column",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY); CREATE INDEX idx_c ON t (missing_c);",
+   "policy": "t05-first-path-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS t"
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 2,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 1,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 1,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "metadata": {
+       "table": "t",
+       "index": "idx_c",
+       "column": "missing_c",
+       "exists": false
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS t"
+    }
+   ]
+  },
+  {
+   "id": "t05-mysql84-repeat-add-column",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY); ALTER TABLE t ADD COLUMN c INT; ALTER TABLE t ADD COLUMN c INT;",
+   "policy": "t05-first-path-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS t"
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 3,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 2,
+      "rule_id": "ddl.alter.add_column.exists.forbid",
+      "level": "blocker"
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS t"
+    }
+   ]
+  },
+  {
+   "id": "t05-mysql84-index-absent-table",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE INDEX idx_c ON gone_t (c);",
+   "policy": "t05-first-path-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "ensure gone_t absent",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS gone_t"
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "metadata": {
+       "table": "gone_t",
+       "index": "idx_c",
+       "reason": "table_not_found"
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create gone_t",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='gone_t'"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS gone_t"
+    }
+   ]
+  },
+  {
+   "id": "t05-mysql84-unaudited-invalidation",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY); CREATE TABLE u (id INT PRIMARY KEY); ALTER TABLE t ADD COLUMN g INT GENERATED ALWAYS AS (id+1) STORED; ALTER TABLE t ADD COLUMN c INT; ALTER TABLE u ADD COLUMN c INT;",
+   "policy": "t05-first-path-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS t"
+    },
+    {
+     "name": "ensure u absent",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS u"
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 5,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "incomplete",
+     "unverified",
+     "complete"
+    ],
+    "evidence_gaps": 2,
+    "evidence_gap_entries": [
+     {
+      "index": 3,
+      "rule_id": "ddl.table.exists.alter.require",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.existence"
+      ]
+     },
+     {
+      "index": 3,
+      "rule_id": "ddl.alter.add_column.exists.forbid",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.existence",
+       "target_table.columns"
+      ]
+     }
+    ],
+    "unsupported_entries": [
+     {
+      "index": 2,
+      "feature": "alter_table.add_columns.column.generated",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ],
+    "fail_on_triggered": false
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'"
+    },
+    {
+     "assert": "audit did not create u",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='u'"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixtures",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS t, u"
+    }
+   ]
+  },
+  {
+   "id": "t05-tidb85-first-path",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY); ALTER TABLE t ADD COLUMN c INT; CREATE INDEX idx_c ON t (c);",
+   "policy": "t05-first-path-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS t"
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 3,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS t"
+    }
+   ]
+  },
+  {
+   "id": "t05-tidb85-index-missing-column",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY); CREATE INDEX idx_c ON t (missing_c);",
+   "policy": "t05-first-path-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS t"
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 2,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 1,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 1,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "metadata": {
+       "table": "t",
+       "index": "idx_c",
+       "column": "missing_c",
+       "exists": false
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS t"
+    }
+   ]
+  },
+  {
+   "id": "t05-tidb85-repeat-add-column",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY); ALTER TABLE t ADD COLUMN c INT; ALTER TABLE t ADD COLUMN c INT;",
+   "policy": "t05-first-path-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS t"
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 3,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 2,
+      "rule_id": "ddl.alter.add_column.exists.forbid",
+      "level": "blocker"
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS t"
+    }
+   ]
+  },
+  {
+   "id": "t05-tidb85-index-absent-table",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE INDEX idx_c ON gone_t (c);",
+   "policy": "t05-first-path-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "ensure gone_t absent",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS gone_t"
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "metadata": {
+       "table": "gone_t",
+       "index": "idx_c",
+       "reason": "table_not_found"
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create gone_t",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='gone_t'"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS gone_t"
+    }
+   ]
+  },
+  {
+   "id": "t05-tidb85-unaudited-invalidation",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY); CREATE TABLE u (id INT PRIMARY KEY); ALTER TABLE t ADD COLUMN g INT GENERATED ALWAYS AS (id+1) STORED; ALTER TABLE t ADD COLUMN c INT; ALTER TABLE u ADD COLUMN c INT;",
+   "policy": "t05-first-path-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS t"
+    },
+    {
+     "name": "ensure u absent",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS u"
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 5,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "incomplete",
+     "unverified",
+     "complete"
+    ],
+    "evidence_gaps": 2,
+    "evidence_gap_entries": [
+     {
+      "index": 3,
+      "rule_id": "ddl.table.exists.alter.require",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.existence"
+      ]
+     },
+     {
+      "index": 3,
+      "rule_id": "ddl.alter.add_column.exists.forbid",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.existence",
+       "target_table.columns"
+      ]
+     }
+    ],
+    "unsupported_entries": [
+     {
+      "index": 2,
+      "feature": "alter_table.add_columns.column.generated",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ],
+    "fail_on_triggered": false
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'"
+    },
+    {
+     "assert": "audit did not create u",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='u'"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixtures",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS t, u"
+    }
+   ]
+  }
+ ],
+ "error_cases": [
+  {
+   "id": "t05-conn-refused",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY); ALTER TABLE t ADD COLUMN c INT;",
+   "args": [
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23399",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T05_GOLDEN_PW"
+   ],
+   "env": {
+    "DS_T05_GOLDEN_PW": "root"
+   },
+   "expect": {
+    "exit": 3,
+    "stderr_contains": [
+     "connection refused"
+    ]
+   }
+  }
+ ],
+ "required_case_ids": [
+  "T05.db.mysql57.ddl",
+  "T05.db.mysql57.syntax_negative",
+  "T05.db.mysql80.ddl",
+  "T05.db.mysql80.syntax_negative",
+  "T05.db.mysql84.ddl",
+  "T05.db.mysql84.syntax_negative",
+  "T05.db.tidb85.ddl",
+  "T05.db.tidb85.syntax_negative",
+  "T05.cli.mysql",
+  "T05.cli.tidb",
+  "T05.cli.mysql-alter-index-invisible",
+  "T05.cli.tidb-alter-drop-check",
+  "T05.cli.mysql-create-table-placement-policy",
+  "T05.cli.tidb-drop-procedure",
+  "T05.cli.tidb-explain-analyze",
+  "T05.cli.mysql-explain-analyze",
+  "T05.cli.tidb-execute-prepared",
+  "T05.cli.tidb-trace",
+  "T05.cli.tidb-create-sequence-options",
+  "T05.cli.mysql-alter-algorithm-lock",
+  "T05.cli.mysql-alter-placement-policy",
+  "T05.cli.tidb-explain-readonly",
+  "T05.cli.tidb-create-temporary-table",
+  "T05.cli.mysql-create-temporary-table",
+  "T05.cli.tidb-create-global-temporary-table",
+  "T05.cli.mysql-create-global-temporary-table",
+  "T05.cli.tidb-drop-temporary-table",
+  "T05.cli.tidb-create-table-auto-random",
+  "T05.cli.mysql-create-table-auto-random",
+  "T05.cli.tidb-alter-add-column-auto-random",
+  "T05.cli.mysql-create-procedure-body",
+  "T05.cli.mysql-create-table-generated-column",
+  "T05.cli.mysql-create-table-inline-reference",
+  "T05.cli.tidb-create-table-inline-check",
+  "T05.cli.mysql-create-table-inline-unique",
+  "T05.cli.mysql-create-procedure-parser-error",
+  "T05.cli.tidb-create-table-ordinary",
+  "T05.cli.mysql-drop-table-ordinary",
+  "T05.cli.mysql-drop-temporary-table",
+  "T05.cli.mysql-alter-add-column-auto-random",
+  "T05.cli.mysql-alter-add-column-position",
+  "T05.cli.tidb-alter-add-column-position",
+  "T05.cli.mysql-create-table-tidb-only-options",
+  "T05.cli.mysql-create-table-unique-global",
+  "T05.cli.tidb-create-table-unique-global",
+  "T05.cli.mysql-create-table-index-global",
+  "T05.cli.mysql-alter-add-index-global",
+  "T05.cli.mysql-create-index-global",
+  "T05.cli.mysql-alter-tidb-only-option",
+  "T05.cli.mysql-alter-modify-column-position",
+  "T05.cli.mysql-alter-add-list-index-global",
+  "T05.cli.tidb-alter-add-list-index-global",
+  "T05.cli.mysql-alter-add-list-primary-global",
+  "T05.cli.mysql-alter-add-list-check",
+  "T05.cli.mysql-create-table-mixed-uniqueness",
+  "T05.cli.mysql-alter-add-list-column-only",
+  "T05.cli.mysql-alter-add-list-index",
+  "T05.cli.mysql-alter-add-list-foreign-key",
+  "T05.cli.mysql-alter-add-list-comment-interference",
+  "T05.cli.tidb-alter-add-list-primary-global",
+  "T05.cli.mysql-create-table-index-expr",
+  "T05.cli.tidb-create-table-index-expr",
+  "T05.cli.mysql-create-index-expr-prefix-desc",
+  "T05.cli.tidb-create-index-expr-prefix-desc",
+  "T05.cli.mysql-drop-user-multi",
+  "T05.cli.tidb-drop-sequence-multi",
+  "T05.cli.mysql-grant-multi",
+  "T05.cli.mysql-unsupported-second-statement",
+  "T05.cli.mysql-alter-user-current-auth",
+  "T05.cli.tidb-alter-user-current-discard",
+  "T05.cli.mysql-alter-user-account-lock",
+  "T05.cli.tidb-create-user-require-ssl",
+  "T05.cli.mysql-create-index-zero-prefix",
+  "T05.cli.mysql-alter-add-fk-prefix",
+  "T05.cli.tidb-alter-add-fk-expr-ref-desc",
+  "T05.cli.mysql-create-table-fk-on-delete",
+  "T05.cli.mysql-create-table-partition-placement",
+  "T05.cli.tidb-create-table-partition-placement",
+  "T05.cli.mysql-alter-user-current-function",
+  "T05.cli.tidb-create-user-current-function",
+  "T05.cli.mysql-create-user-resource-group",
+  "T05.cli.mysql-alter-index-prefix-single-entry",
+  "T05.cli.mysql-alter-pk-prefix-single-entry",
+  "T05.cli.mysql-create-index-predicate",
+  "T05.cli.tidb-create-index-predicate",
+  "T05.cli.mysql-create-index-invisible",
+  "T05.cli.mysql-create-index-comment-keyblock",
+  "T05.cli.mysql-create-table-split-index",
+  "T05.cli.tidb-create-table-split-index",
+  "T05.cli.mysql-create-table-update-indexes",
+  "T05.cli.mysql-two-expression-indexes",
+  "T05.cli.mysql-do-statement",
+  "T05.cli.mysql-binlog-replay",
+  "T05.cli.mysql-select-into-outfile",
+  "T05.cli.tidb-union-select-into",
+  "T05.cli.mysql-create-view-definer",
+  "T05.cli.mysql-create-view-combined",
+  "T05.cli.mysql-grant-with-grant",
+  "T05.cli.mysql-grant-require-ssl",
+  "T05.cli.tidb-grant-on-procedure",
+  "T05.cli.mysql-revoke-column-privileges",
+  "T05.cli.mysql-create-index-lock-algorithm",
+  "T05.cli.tidb-create-sequence-table-option",
+  "T05.cli.mysql-create-user-identified",
+  "T05.cli.mysql-alter-user-identified",
+  "T05.cli.mysql-alter-user-dual-password",
+  "T05.cli.tidb-create-placement-policy-or-replace",
+  "T05.cli.mysql-union-paren-select-into",
+  "T05.cli.mysql-union-nested-select-into",
+  "T05.cli.mysql-set-global",
+  "T05.cli.mysql-set-atat-global",
+  "T05.cli.tidb-set-global",
+  "T05.cli.mysql-create-table-replace-select",
+  "T05.cli.mysql-drop-hypo-index",
+  "T05.cli.tidb-drop-hypo-index",
+  "T05.cli.tidb-inline-pk-nonclustered",
+  "T05.cli.mysql-inline-pk-nonclustered",
+  "T05.cli.mysql-alter-user-current-retain",
+  "T05.cli.t04-modify-gap-failon-blocker",
+  "T05.cli.t04-modify-gap-failon-warning",
+  "T05.cli.t04-modify-gap-failon-notice",
+  "T05.cli.t04-modify-gap-failon-none",
+  "T05.cli.t04-modify-rule-disabled",
+  "T05.cli.t04-add-column-no-gap",
+  "T05.cli.t04-change-column-scoped",
+  "T05.cli.t04-multi-alter-gap",
+  "T05.cli.t04-mixed-gap-unsupported",
+  "T05.cli.t04-parser-failure-priority",
+  "T05.cli.t04b-missing-version",
+  "T05.cli.t04b-target-8410",
+  "T05.cli.t04b-target-v-prefix",
+  "T05.cli.t04b-target-out-of-range",
+  "T05.cli.t04b-mysql57-instance-fact-gap",
+  "T05.cli.t04b-missing-version-proven-blocker",
+  "T05.cli.t04b-tidb-missing-version",
+  "T05.cli.t04b-tidb-850",
+  "T05.cli.t04b-tidb-out-of-range",
+  "T05.cli.t04b-mysql84-small-index-complete",
+  "T05.cli.t04b-tidb85-unknown-limit-gap",
+  "T05.cli.t04b-tidb85-proven-blocker",
+  "T05.cli.t05-offline-first-path",
+  "T05.cli.t05-offline-create-index-unknown-table",
+  "T05.meta.t05-mysql84-first-path",
+  "T05.meta.t05-mysql84-index-missing-column",
+  "T05.meta.t05-mysql84-repeat-add-column",
+  "T05.meta.t05-mysql84-index-absent-table",
+  "T05.meta.t05-mysql84-unaudited-invalidation",
+  "T05.meta.t05-tidb85-first-path",
+  "T05.meta.t05-tidb85-index-missing-column",
+  "T05.meta.t05-tidb85-repeat-add-column",
+  "T05.meta.t05-tidb85-index-absent-table",
+  "T05.meta.t05-tidb85-unaudited-invalidation",
+  "T05.clierr.t05-conn-refused"
+ ]
+}

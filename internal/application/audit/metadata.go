@@ -1,13 +1,14 @@
 // Package audit orchestrates audit use cases at the application layer.
-// input: optional metadata providers, parsed statement MutationTargets, and the validated target_version for observed-identity reconciliation
-// output: metadata-enriched statements with resolved target schemas and a canonical Version identity (target fact offline, observed fact online) for rules that can use live instance or schema facts
-// pos: application-layer bridge between provider-backed metadata and domain statements
+// input: optional metadata providers, parsed statement MutationTargets, the validated target_version for observed-identity reconciliation, and parse-failure positions that contaminate later derived state
+// output: metadata-enriched statements with resolved target schemas, per-statement pre-state snapshots from the request-local ordered batch state (provider facts or in-batch derivations for MySQL/TiDB), and a canonical Version identity for rules that can use live instance or schema facts
+// pos: application-layer bridge between provider-backed metadata and domain statements, owning the ordered schema-state seam (batch_state.go)
 // note: if this file changes, update this header and module README.md.
 package audit
 
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -45,31 +46,22 @@ type MetadataRequest struct {
 	TargetVersion *spec.VersionIdentity
 }
 
-func enrichStatementsWithMetadata(ctx context.Context, dialect spec.Dialect, request *MetadataRequest, statements []spec.Statement) ([]spec.Statement, error) {
+func enrichStatementsWithMetadata(ctx context.Context, dialect spec.Dialect, request *MetadataRequest, statements []spec.Statement, failures []parseFailure) ([]spec.Statement, error) {
 	if request == nil {
-		return statements, nil
+		if !orderedStateDialect(dialect) {
+			return statements, nil
+		}
+		// No request at all still gets the ordered state pass: batch-local
+		// derived facts satisfy table/column existence even when no provider,
+		// schema, or version is configured.
+		return enrichOrderedStatements(ctx, dialect, nil, statements, failures, nil, nil)
 	}
 
 	if request.Provider == nil {
-		if strings.TrimSpace(request.Schema) == "" && request.TargetVersion == nil {
+		if strings.TrimSpace(request.Schema) == "" && request.TargetVersion == nil && !orderedStateDialect(dialect) {
 			return statements, nil
 		}
-		enriched := make([]spec.Statement, len(statements))
-		for i, statement := range statements {
-			enriched[i] = statement
-			enriched[i].Metadata = &spec.Metadata{
-				Schema:  metadataTargetSchema(request, statement),
-				Version: request.TargetVersion,
-			}
-
-			if lookup := planObjectLookup(request.Schema, statement); lookup != nil {
-				objSnapshot := resolveObjectSnapshot(ctx, request, dialect, lookup)
-				if objSnapshot != nil {
-					enriched[i].Metadata.Objects = append(enriched[i].Metadata.Objects, *objSnapshot)
-				}
-			}
-		}
-		return enriched, nil
+		return enrichOrderedStatements(ctx, dialect, request, statements, failures, nil, request.TargetVersion)
 	}
 
 	instanceFacts, err := request.Provider.LoadInstanceFacts(ctx, dialect, request.Schema)
@@ -93,6 +85,10 @@ func enrichStatementsWithMetadata(ctx context.Context, dialect spec.Dialect, req
 		}
 	}
 	resolvedVersion := observed
+
+	if orderedStateDialect(dialect) {
+		return enrichOrderedStatements(ctx, dialect, request, statements, failures, instanceFacts, resolvedVersion)
+	}
 
 	snapshots := make(map[string]*spec.TableSnapshot)
 	enriched := make([]spec.Statement, len(statements))
@@ -136,6 +132,105 @@ func enrichStatementsWithMetadata(ctx context.Context, dialect spec.Dialect, req
 	}
 
 	return enriched, nil
+}
+
+// enrichOrderedStatements is the MySQL/TiDB enrichment path: one batch-local
+// state table feeds every statement an immutable pre-state projection, then
+// records the statement's conditional post-state. Provider facts load at most
+// once per (schema, table); derived state never flows back into the provider
+// and never aliases into statement metadata.
+func enrichOrderedStatements(ctx context.Context, dialect spec.Dialect, request *MetadataRequest, statements []spec.Statement, failures []parseFailure, instanceFacts *spec.InstanceFacts, resolvedVersion *spec.VersionIdentity) ([]spec.Statement, error) {
+	requestSchema := ""
+	var provider MetadataProvider
+	if request != nil {
+		requestSchema = request.Schema
+		provider = request.Provider
+	}
+	state := newBatchState(dialect, requestSchema, provider)
+	enriched := make([]spec.Statement, len(statements))
+	// Object lookups resolve at most once per distinct (schema, type, name,
+	// qualifiers) identity per request — the same object is never re-asked.
+	objectCache := make(map[objectLookupKey]*spec.ObjectSnapshot)
+
+	for i, statement := range statements {
+		for _, failure := range failures {
+			if failureBefore(failure.Line, failure.Column, statement.Line, statement.Column) {
+				state.contaminated = true
+				break
+			}
+		}
+
+		enriched[i] = statement
+		metadataSchema := metadataTargetSchema(request, statement)
+		metadata := &spec.Metadata{Schema: metadataSchema, Instance: instanceFacts, Version: resolvedVersion}
+
+		tableName, err := orderedTargetTableName(ctx, dialect, request, statement)
+		if err != nil {
+			return nil, fmt.Errorf("resolve index owner: %w", err)
+		}
+		if tableName != "" {
+			target := orderedTargetTable(statement, metadataSchema, tableName)
+			snapshot, err := state.preState(ctx, metadataSchema, target)
+			if err != nil {
+				return nil, fmt.Errorf("load table snapshot for %s: %w", tableName, err)
+			}
+			metadata.TargetTable = snapshot
+		}
+
+		if metadata.Schema != "" || metadata.Instance != nil || metadata.TargetTable != nil || metadata.Version != nil {
+			enriched[i].Metadata = metadata
+		}
+
+		if request != nil {
+			if lookup := planObjectLookup(requestSchema, statement); lookup != nil {
+				cacheKey := newObjectLookupKey(lookup)
+				objSnapshot, cached := objectCache[cacheKey]
+				if !cached {
+					objSnapshot = resolveObjectSnapshot(ctx, request, dialect, lookup)
+					objectCache[cacheKey] = objSnapshot
+				}
+				if objSnapshot != nil {
+					if enriched[i].Metadata == nil {
+						enriched[i].Metadata = &spec.Metadata{Schema: requestSchema, Instance: instanceFacts, Version: resolvedVersion}
+					}
+					enriched[i].Metadata.Objects = append(enriched[i].Metadata.Objects, *objSnapshot)
+				}
+			}
+		}
+
+		state.apply(statement)
+	}
+
+	return enriched, nil
+}
+
+// orderedTargetTable picks the table identity a statement's pre-state
+// projection is about. Qualified names keep their qualifier; index-owner
+// resolver answers on statements without a direct table fall back to the
+// resolved name under the statement's effective schema.
+func orderedTargetTable(statement spec.Statement, metadataSchema, tableName string) spec.Table {
+	switch {
+	case statement.DDL != nil && statement.DDL.Table != nil:
+		return *statement.DDL.Table
+	case statement.DML != nil:
+		if targets := statement.DML.MutationTargetTables(); len(targets) > 0 {
+			return targets[0]
+		}
+	}
+	return spec.Table{Schema: metadataSchema, Name: tableName}
+}
+
+// orderedTargetTableName resolves the primary target table for the ordered
+// path. Standalone CREATE INDEX names its target table directly — the only
+// wiring this slice adds over the shared resolver path.
+func orderedTargetTableName(ctx context.Context, dialect spec.Dialect, request *MetadataRequest, statement spec.Statement) (string, error) {
+	if statement.DDL != nil && statement.DDL.Operation == spec.DDLOperationCreateIndex {
+		if statement.DDL.Table == nil {
+			return "", nil
+		}
+		return strings.TrimSpace(statement.DDL.Table.Name), nil
+	}
+	return metadataTargetTableName(ctx, dialect, request, statement)
 }
 
 func instanceFactVersion(facts *spec.InstanceFacts) string {
@@ -313,6 +408,40 @@ func objectTypeForOperation(op spec.DDLOperation, extractedType string) string {
 	default:
 		return ""
 	}
+}
+
+// objectLookupKey is the structured identity of one object-resolution request
+// inside an audit: schema, object type, name, and the canonical qualifiers
+// list so qualifier-carrying lookups never collide with bare ones.
+type objectLookupKey struct {
+	schema     string
+	objectType string
+	name       string
+	qualifiers string
+}
+
+func newObjectLookupKey(lookup *spec.ObjectLookupRequest) objectLookupKey {
+	key := objectLookupKey{
+		schema:     strings.ToLower(strings.TrimSpace(lookup.Schema)),
+		objectType: strings.ToLower(strings.TrimSpace(lookup.Type)),
+		name:       strings.ToLower(strings.TrimSpace(lookup.Name)),
+	}
+	if len(lookup.Qualifiers) > 0 {
+		names := make([]string, 0, len(lookup.Qualifiers))
+		for name := range lookup.Qualifiers {
+			names = append(names, name)
+		}
+		sort.Strings(names)
+		var b strings.Builder
+		for _, name := range names {
+			b.WriteString(name)
+			b.WriteByte('=')
+			b.WriteString(lookup.Qualifiers[name])
+			b.WriteByte(';')
+		}
+		key.qualifiers = b.String()
+	}
+	return key
 }
 
 // resolveObjectSnapshot calls the ObjectResolver if available, or returns

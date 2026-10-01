@@ -2474,13 +2474,19 @@ rules:
 
 ### DDL: Alter Table — Existence Check Rules (Metadata-Backed)
 
-All rules in this section require metadata-aware mode. They silently no-op during offline audits.
+These rules evaluate against the request-local ordered schema view. With a live connection
+they consume the provider snapshot; offline, MySQL/TiDB batches derive state from earlier
+statements in the same audit. `ddl.table.exists.alter.require`,
+`ddl.table.exists.create.forbid`, `ddl.alter.add_column.exists.forbid`, and
+`ddl.create_index.columns.exists.require` emit `unknown_table_state` /
+`incomplete_table_structure` evidence gaps (coverage `unverified`) when that state cannot
+prove the premise; the remaining rules still silently no-op without usable state.
 
 ---
 
 #### ddl.table.exists.alter.require
 
-> **Metadata-aware mode only.**
+> **Ordered schema state.** With metadata this rule consumes the provider snapshot; offline it evaluates the MySQL/TiDB batch-derived pre-state, and emits an evidence gap (`unverified`) when neither can prove the premise.
 
 Fails when `ALTER TABLE` targets a table that does not exist in the connected schema.
 
@@ -2499,7 +2505,7 @@ rules:
 
 #### ddl.table.exists.create.forbid
 
-> **Metadata-aware mode only.**
+> **Ordered schema state.** With metadata this rule consumes the provider snapshot; offline it evaluates the MySQL/TiDB batch-derived pre-state, and emits an evidence gap (`unverified`) when neither can prove the premise.
 
 Fails when `CREATE TABLE` (without `IF NOT EXISTS`) targets a table that already exists.
 
@@ -2518,7 +2524,7 @@ rules:
 
 #### ddl.alter.add_column.exists.forbid
 
-> **Metadata-aware mode only.**
+> **Ordered schema state.** With metadata this rule consumes the provider snapshot; offline it evaluates the MySQL/TiDB batch-derived pre-state, and emits an evidence gap (`unverified`) when neither can prove the premise.
 
 Fails when `ADD COLUMN` targets a column that already exists in the current table schema.
 
@@ -2683,6 +2689,32 @@ rules:
     enabled: true
     level: blocker
     params:    # no configurable parameters
+```
+
+---
+
+#### ddl.create_index.columns.exists.require
+
+> **Ordered schema state.** With metadata this rule consumes the provider snapshot; offline it evaluates the MySQL/TiDB batch-derived pre-state, and emits an evidence gap (`unverified`) when neither can prove the premise.
+
+Fails when a standalone `CREATE INDEX` references a column that does not exist on the target table. A confirmed-absent table reports a single `table_not_found` blocker instead of one finding per column; missing columns are deduplicated in source order. Applies to MySQL and TiDB.
+
+**Default:** `enabled: true`, `level: blocker`
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `required` | bool | `true` | When `true`, missing column references and unprovable premises produce findings/gaps; `false` makes the rule inert |
+
+**Config example:**
+```yaml
+rules:
+  ddl.create_index.columns.exists.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
 ```
 
 ---

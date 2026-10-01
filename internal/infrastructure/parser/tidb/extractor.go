@@ -1,6 +1,6 @@
 // Package tidbparser extracts parser-neutral statements from TiDB AST nodes.
 // input: TiDB parser statement nodes and parser-neutral dialect metadata
-// output: extractor-backed parsed statements for the application layer, including MutationTargets and mutation-target-only DML tables, normalized ALTER index/constraint actions, multi-target DDL Targets for DROP/RENAME/ALTER-rename, temporary-table scope facts, typed and unextracted column-option facts, and primary-key metadata
+// output: extractor-backed parsed statements for the application layer, including MutationTargets and mutation-target-only DML tables, normalized ALTER index/constraint actions, multi-target DDL Targets for DROP/RENAME/ALTER-rename, temporary-table scope facts, typed and unextracted column-option facts, primary-key metadata, and if_exists/if_not_exists option markers for conditional-existence derivation
 // pos: infrastructure extraction adapter between TiDB AST and domain spec
 // note: if this file changes, update this header and module README.md.
 package tidbparser
@@ -205,6 +205,9 @@ func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
 		HasReferTable: stmt.ReferTable != nil,
 		HasSelect:     stmt.Select != nil,
 		HasPartition:  stmt.Partition != nil,
+	}
+	if stmt.IfNotExists {
+		ddl.Options["if_not_exists"] = "true"
 	}
 	switch stmt.TemporaryKeyword {
 	case ast.TemporaryLocal:
@@ -411,7 +414,9 @@ func extractAlterSpecs(specification *ast.AlterTableSpec, clause string) []spec.
 			if column == nil {
 				continue
 			}
-			alters = append(alters, spec.Alter{Action: alterActionName(specification.Tp), Name: column.Name.Name.L, Column: alterColumnFromColumnDef(column), HasColumnPosition: hasColumnPositionClause(specification)})
+			alter := spec.Alter{Action: alterActionName(specification.Tp), Name: column.Name.Name.L, Column: alterColumnFromColumnDef(column), HasColumnPosition: hasColumnPositionClause(specification)}
+			markAlterExistenceClauses(specification, &alter)
+			alters = append(alters, alter)
 		}
 		// Constraints inside ADD (..., <constraint>) carry the same payload as
 		// standalone ADD <constraint> clauses. The AST does not record a
@@ -468,7 +473,26 @@ func extractAlterSpec(specification *ast.AlterTableSpec, clause string) spec.Alt
 		}
 		alter.Constraint = &constraint
 	}
+	markAlterExistenceClauses(specification, &alter)
 	return alter
+}
+
+// markAlterExistenceClauses records parsed IF EXISTS / IF NOT EXISTS clauses
+// on an alter spec. They are extracted facts the ordered state pass may
+// consume; they are not unmodeled options and never produce aspect gaps.
+func markAlterExistenceClauses(specification *ast.AlterTableSpec, alter *spec.Alter) {
+	if specification.IfNotExists {
+		if alter.Options == nil {
+			alter.Options = map[string]string{}
+		}
+		alter.Options["if_not_exists"] = "true"
+	}
+	if specification.IfExists {
+		if alter.Options == nil {
+			alter.Options = map[string]string{}
+		}
+		alter.Options["if_exists"] = "true"
+	}
 }
 
 func alterActionNameForSpec(specification *ast.AlterTableSpec, clause string) string {

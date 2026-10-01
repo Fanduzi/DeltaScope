@@ -37,8 +37,8 @@ Policy model for rule configuration and future audit settings.
 - The default create-table index policy now also enables left-prefix and unique-overlap redundant-index findings on top of exact duplicate detection.
 - The default create-table option policy now requires `ROW_FORMAT=DYNAMIC` when row format is specified and requires explicit `AUTO_INCREMENT` seeds to stay at `1`.
 - The default metadata-aware create-table sizing policy now also enables rough `row_size` and `index key length` guards; they only run when instance facts are attached and intentionally stay conservative.
-- The default metadata-backed DDL policy enables existence checks for create/alter table plus add/drop/rename column/index and drop-primary-key operations.
-- Those existence rules stay enabled in the shipped policy/template, but they still no-op offline when no live table snapshot is attached.
+- The default metadata-backed DDL policy enables existence checks for create/alter table plus add/drop/rename column/index, drop-primary-key, and standalone `create_index` column operations.
+- For MySQL/TiDB the whitelisted existence rules (`ddl.table.exists.create.forbid`, `ddl.table.exists.alter.require`, `ddl.alter.add_column.exists.forbid`, `ddl.create_index.columns.exists.require`) evaluate the request-local ordered schema state offline — deriving facts from earlier statements in the same batch — and emit `unknown_table_state` / `incomplete_table_structure` evidence gaps instead of silently passing when that state cannot prove the premise. The remaining existence rules still no-op without a usable snapshot.
 - The default lifecycle policy now also blocks `create view`, `drop table`, and `truncate table`, and ships adaptive-hash cautions plus metadata-backed existence checks for drop/truncate operations.
 - The default lifecycle policy also ships row-count cautions for `drop table` and `truncate table`, using metadata-backed `table_rows` snapshots with a default threshold of `100`.
 - The default global DDL policy enables MySQL merge-alter guidance and ships the TiDB variant in a relaxed state until a team chooses to require merged alters there as well.

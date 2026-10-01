@@ -824,7 +824,7 @@ rules:
 
 当目标表已存在于数据库中时，禁止执行 `CREATE TABLE`。
 
-> **需要元数据感知模式。** 离线审计时本规则不生效（no-op）。
+> **有序 schema 状态。** 连接元数据时消费 provider 快照；离线时对 MySQL/TiDB 评估同批次派生的前序状态，两者都无法证明前提时产出证据缺口（coverage `unverified`）。
 
 - **默认**：已启用，级别 `blocker`
 - **参数**：无
@@ -2579,7 +2579,7 @@ rules:
 
 当目标表不存在于数据库中时，禁止执行 `ALTER TABLE`。
 
-> **需要元数据感知模式。** 离线审计时本规则不生效（no-op）。
+> **有序 schema 状态。** 连接元数据时消费 provider 快照；离线时对 MySQL/TiDB 评估同批次派生的前序状态，两者都无法证明前提时产出证据缺口（coverage `unverified`）。
 
 - **默认**：已启用，级别 `blocker`
 - **参数**：无
@@ -2599,7 +2599,7 @@ rules:
 
 当要添加的列已存在时，阻止 `ALTER TABLE ... ADD COLUMN`。
 
-> **需要元数据感知模式。** 离线审计时本规则不生效（no-op）。
+> **有序 schema 状态。** 连接元数据时消费 provider 快照；离线时对 MySQL/TiDB 评估同批次派生的前序状态，两者都无法证明前提时产出证据缺口（coverage `unverified`）。
 
 - **默认**：已启用，级别 `blocker`
 - **参数**：无
@@ -2771,6 +2771,27 @@ rules:
     enabled: true
     level: blocker
     params:
+```
+
+---
+
+### `ddl.create_index.columns.exists.require`
+
+当独立 `CREATE INDEX` 引用的列在目标表上不存在时阻止该语句。目标表确认不存在时只报告一个 `table_not_found` blocker；缺失列按书写顺序去重后逐条报告。适用于 MySQL 与 TiDB。
+
+> **有序 schema 状态。** 连接元数据时消费 provider 快照；离线时对 MySQL/TiDB 评估同批次派生的前序状态，两者都无法证明前提时产出证据缺口（coverage `unverified`）。
+
+- **默认**：已启用，级别 `blocker`
+- **参数**：`required`（默认 `true`）
+
+**YAML 配置示例：**
+```yaml
+rules:
+  ddl.create_index.columns.exists.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
 ```
 
 ---

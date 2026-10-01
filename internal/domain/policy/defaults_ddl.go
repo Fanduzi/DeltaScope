@@ -611,6 +611,13 @@ func ddlCoreRules() map[string]RulePolicy {
 			Level:   rule.LevelBlocker,
 			Params:  map[string]any{},
 		},
+		"ddl.create_index.columns.exists.require": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params: map[string]any{
+				"required": true,
+			},
+		},
 		// MySQL/TiDB database lifecycle rules.
 		"ddl.database.create.notice": {
 			Enabled: true,

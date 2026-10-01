@@ -539,6 +539,12 @@ rules:
     level: notice
     params:
 
+  ddl.create_index.columns.exists.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
+
   ddl.drop_index.notice:
     enabled: true
     level: notice

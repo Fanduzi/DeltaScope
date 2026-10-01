@@ -224,6 +224,8 @@ def make_policies(binary, work_dir, manifest):
     for name in extra_profiles:
         if name == "all-rules-disabled":
             fail_run("policy.profiles may not redefine all-rules-disabled")
+        if name == profile:
+            fail_run(f"policy.profiles may not redefine the default policy_profile {profile!r}")
     for name, enable_map in [(profile, enable)] + list(extra_profiles.items()):
         for rid in enable_map:
             if rid not in ids:

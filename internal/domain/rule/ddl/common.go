@@ -128,6 +128,7 @@ const (
 	ruleIDPrimaryKeyNotNullRequire                           = "ddl.table.primary_key.not_null.require"
 	ruleIDTableExistsCreateForbid                            = "ddl.table.exists.create.forbid"
 	ruleIDTableExistsAlterRequire                            = "ddl.table.exists.alter.require"
+	ruleIDCreateIndexColumnsExistRequire                     = "ddl.create_index.columns.exists.require"
 	ruleIDAlterAddColumnExistsForbid                         = "ddl.alter.add_column.exists.forbid"
 	ruleIDAlterDropColumnExistsRequire                       = "ddl.alter.drop_column.exists.require"
 	ruleIDAlterModifyColumnExistsRequire                     = "ddl.alter.modify_column.exists.require"

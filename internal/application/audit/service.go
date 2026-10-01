@@ -137,7 +137,7 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 		return report.Result{}, err
 	}
 
-	statements, err = enrichStatementsWithMetadata(ctx, request.Dialect, metadataRequestFor(request, targetVersion), statements)
+	statements, err = enrichStatementsWithMetadata(ctx, request.Dialect, metadataRequestFor(request, targetVersion), statements, parsed.failures)
 	if err != nil {
 		return report.Result{}, err
 	}

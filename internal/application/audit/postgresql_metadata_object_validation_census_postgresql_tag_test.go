@@ -1,5 +1,10 @@
 //go:build postgresql
 
+// Package audit censuses PostgreSQL non-table object metadata validation.
+// input: PostgreSQL DDL statements targeting non-table objects (types, domains, extensions, publications, subscriptions, foreign objects, annotation targets, event triggers, rewrite rules)
+// output: per-case classification of metadata_confirmed / metadata_unavailable / offline_only / parser_or_extractor_blocked enrichment behavior
+// pos: application-layer PostgreSQL object-metadata census; observes behavior only, must not modify production code
+// note: if this file changes, update this header and module README.md.
 package audit
 
 import (
@@ -254,7 +259,7 @@ func classifyPGMetaCensusCase(t *testing.T, tc pgMetaCensusCase, provider *fakeM
 		Schema:   "public",
 		Provider: provider,
 	}
-	enriched, enrichErr := enrichStatementsWithMetadata(context.Background(), spec.DialectPostgreSQL, metaReq, statements)
+	enriched, enrichErr := enrichStatementsWithMetadata(context.Background(), spec.DialectPostgreSQL, metaReq, statements, nil)
 	if enrichErr != nil {
 		t.Logf("pg-meta-census: %-45s -> enrich_error: %v", tc.Name, enrichErr)
 	}

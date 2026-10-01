@@ -160,7 +160,9 @@ execution platform.
 - `policy.profiles` declares additional named isolated profiles a case selects
   via its `policy` field (issue #83 T04-B); each generated profile is
   re-parsed from disk and its enabled/level/params semantics re-derived by the
-  validator, so a rewritten YAML plus a recomputed sha256 still fails.
+  validator, so a rewritten YAML plus a recomputed sha256 still fails. A
+  `profiles` key equal to `policy_profile` (or `all-rules-disabled`) fails
+  the run instead of silently redefining the default profile (#84 T05-A1).
 - Version-evidence cases (T04-B) assert the result `version` block
   (`product`/canonical `version`/`source`/`validated_range`) via
   `expect.version`; the validator independently canonicalizes

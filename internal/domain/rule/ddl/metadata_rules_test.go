@@ -149,6 +149,7 @@ func TestAlterIndexAndPrimaryKeyExistenceRules(t *testing.T) {
 			TargetTable: &spec.TableSnapshot{
 				Exists:      true,
 				Table:       &spec.Table{Name: "users"},
+				Columns:     []spec.Column{{Name: "id", Type: "int"}},
 				PrimaryKey:  &spec.Index{Name: "users_primary_idx", Kind: spec.IndexKindPrimary},
 				Constraints: []spec.Constraint{{Type: "primary_key", Name: "users_pkey"}},
 				Indexes:     []spec.Index{{Name: "idx_email", Kind: spec.IndexKindSecondary}},
@@ -181,6 +182,7 @@ func TestAlterIndexAndPrimaryKeyExistenceRules(t *testing.T) {
 		TargetTable: &spec.TableSnapshot{
 			Exists:  true,
 			Table:   &spec.Table{Name: "users"},
+			Columns: []spec.Column{{Name: "id", Type: "int"}},
 			Indexes: []spec.Index{{Name: "idx_email", Kind: spec.IndexKindSecondary}},
 		},
 	}
@@ -213,6 +215,7 @@ func TestAlterIndexExistenceRuleSupportsStandaloneIndexDDL(t *testing.T) {
 			TargetTable: &spec.TableSnapshot{
 				Exists:  true,
 				Table:   &spec.Table{Name: "users"},
+				Columns: []spec.Column{{Name: "id", Type: "int"}},
 				Indexes: []spec.Index{{Name: "idx_email", Kind: spec.IndexKindSecondary}},
 			},
 		},

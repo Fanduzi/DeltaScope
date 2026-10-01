@@ -31,7 +31,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | postgresql_replication_lifecycle_rules.go | Implements PostgreSQL-only publication/subscription lifecycle rules: create/alter/drop publication notices/warnings, create/alter/drop subscription notices/warnings, alter-subscription disable warning |
 | postgresql_privilege_rules.go | Implements PostgreSQL-only table privilege rules: grant-table notice, grant-table all-privileges warn, revoke-table notice, revoke-table cascade warn |
 | postgresql_privilege_rules_test.go | Verifies PG table privilege rules with positive, negative, cross-dialect, deferred-form, registration, and defaults coverage |
-| metadata_rules.go | Implements metadata-backed table, column, index, and primary-key existence rules |
+| metadata_rules.go | Implements metadata-backed table, column, index, and primary-key existence rules plus the standalone `CREATE INDEX` column-existence rule; the whitelisted existence rules declare `unknown_table_state` / `incomplete_table_structure` / `table_not_found` evidence gaps when the ordered schema state cannot prove a premise |
 | object_lifecycle_rules.go | Implements create-view, drop-table, truncate-table, metadata-backed lifecycle existence, and adaptive-hash caution rules |
 | merge_alter_rules.go | Implements global merge-alter governance across statement batches |
 | denylist_rules.go | Implements DDL table denylist checks that evaluate every normalized `TableTargets()` entry (multi-target DROP, RENAME source/destination pairs, ALTER rename destinations) against protected schemas or tables, resolving explicit target schema before metadata schema and deduplicating findings per resolved `(schema, table)` identity so dotted qualified names do not merge |
@@ -52,7 +52,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | alter_rules_test.go | Verifies action-level ALTER TABLE restriction rules |
 | mysql_tidb_alter_action_rules.go | Implements MySQL/TiDB ALTER TABLE action notices, including hypothetical DROP COLUMN wording that does not claim the column exists |
 | mysql_tidb_alter_action_rules_test.go | Verifies DROP COLUMN notice copy stays hypothetical and does not assert live-schema existence |
-| metadata_rules_test.go | Verifies metadata-backed table, column, index, and primary-key existence rules |
+| metadata_rules_test.go | Verifies metadata-backed table, column, index, and primary-key existence rules plus standalone `CREATE INDEX` column existence, unknown/absent/incomplete state gaps, and deduped missing-column findings |
 | object_lifecycle_rules_test.go | Verifies create-view, drop-table, truncate-table, metadata-backed lifecycle existence, and adaptive-hash caution rules |
 | merge_alter_rules_test.go | Verifies global merge-alter governance rules |
 | alter_compatibility_rules_test.go | Verifies source-aware compatibility checks for change/modify column operations, including the inert `requires_metadata` boundary, gap/finding coexistence, partial-fact `required_facts` selection, and the CHANGE COLUMN `OldName` source-lookup regression |
@@ -225,6 +225,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.alter.drop_index.exists.require`
 - `ddl.alter.rename_index.exists.require`
 - `ddl.alter.drop_primary_key.exists.require`
+- `ddl.create_index.columns.exists.require`
 - `ddl.database.create.notice`
 - `ddl.database.drop.warn`
 - `ddl.pg.create_schema.notice`
@@ -429,7 +430,7 @@ These compatibility rules are intentionally limited:
 
 ## Metadata-Backed Existence Surface
 
-The first metadata-backed DDL rule batch covers:
+The metadata-backed DDL existence batch covers:
 
 - create-table target table already exists
 - alter-table target table must exist
@@ -438,13 +439,15 @@ The first metadata-backed DDL rule batch covers:
 - add-index target already exists
 - drop/rename index target must exist
 - drop primary key target must exist
+- standalone `CREATE INDEX` referenced columns must exist on the target table
 
-These rules are intentionally metadata-gated:
+These rules consume a request-local ordered schema view instead of a raw live snapshot:
 
-- the shipped default policy keeps them enabled, but offline audits still skip them when no live table snapshot is attached
-- offline audits skip them when no live table snapshot is attached
+- in metadata-aware mode the view is seeded by the provider snapshot (loaded once per table per request)
+- for MySQL/TiDB, fully audited in-batch statements derive later pre-states (`CREATE TABLE`/`ADD COLUMN`/`CREATE INDEX`/`DROP TABLE`/`TRUNCATE`), so a later statement never sees a stale pre-batch snapshot and offline batches can still satisfy existence premises
 - `policy.Enabled` still controls whether the rule is registered at all
-- in metadata-aware mode they consume the normalized `TargetTable` snapshot carried on `spec.Statement.Metadata`
+- `ddl.table.exists.create.forbid`, `ddl.table.exists.alter.require`, `ddl.alter.add_column.exists.forbid`, and `ddl.create_index.columns.exists.require` declare `unknown_table_state` / `incomplete_table_structure` evidence gaps when the ordered state cannot prove the premise (instead of silently skipping); `ddl.create_index.columns.exists.require` emits a single `table_not_found` blocker against a confirmed-absent table and deduped `missing_column` blockers in source order otherwise
+- the remaining existence rules still skip silently when no usable snapshot is attached
 
 ## Metadata-Backed Sizing Surface
 

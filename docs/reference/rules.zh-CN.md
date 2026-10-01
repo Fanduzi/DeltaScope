@@ -407,9 +407,9 @@ rules:
 | `ddl.alter.change_column.explicit_auto_increment_change.forbid` | CHANGE COLUMN 不得添加或删除 AUTO_INCREMENT | blocker | **是** |
 | `ddl.alter.table_option.compatibility.require` | 表选项变更必须与当前表选项兼容 | warning | **是** |
 
-### 存在性检查规则（11 条 — 元数据支撑）
+### 存在性检查规则（12 条 — 元数据支撑）
 
-这些规则验证 `ALTER TABLE` 语句引用的对象在实时 schema 中确实存在（或确实不存在）。在离线审计期间，这些规则将静默跳过。
+这些规则验证 DDL 语句引用的对象在请求内有序 schema 视图中确实存在（或确实不存在）：配置了元数据时取实时表快照，否则对 MySQL 与 TiDB 使用同一审计批次内先前语句派生的状态。`ddl.table.exists.alter.require`、`ddl.table.exists.create.forbid`、`ddl.alter.add_column.exists.forbid` 与 `ddl.create_index.columns.exists.require` 在状态无法确定时产生 `unknown_table_state` / `incomplete_table_structure` 证据缺口；其余规则在无可用状态时仍静默跳过。
 
 | 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
 |---------|------|:--------:|:--------------:|
@@ -424,6 +424,7 @@ rules:
 | `ddl.alter.drop_index.exists.require` | DROP INDEX 目标索引必须存在 | blocker | **是** |
 | `ddl.alter.rename_index.exists.require` | RENAME INDEX 源索引必须存在 | blocker | **是** |
 | `ddl.alter.drop_primary_key.exists.require` | DROP PRIMARY KEY 要求主键存在 | blocker | **是** |
+| `ddl.create_index.columns.exists.require` | 独立 `CREATE INDEX` 引用的列必须在目标表上存在 | blocker | **是** |
 
 ---
 
@@ -987,6 +988,7 @@ unknown-prior-state advisory 会在元数据可用时消费实时状态，因此
 | `ddl.alter.drop_index.exists.require` |
 | `ddl.alter.rename_index.exists.require` |
 | `ddl.alter.drop_primary_key.exists.require` |
+| `ddl.create_index.columns.exists.require` |
 | `ddl.table.drop.exists.require` |
 | `ddl.table.drop.adaptive_hash.warn` |
 | `ddl.table.drop.rows.max_count` |

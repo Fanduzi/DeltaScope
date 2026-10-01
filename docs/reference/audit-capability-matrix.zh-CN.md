@@ -163,11 +163,15 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 
 ### 存在性检查（仅元数据感知模式）
 
-以下规则需要实时表快照，离线模式下将被跳过。
+以下规则基于请求内有序 schema 视图评估：配置了元数据时取实时表快照，否则对 MySQL 与
+TiDB 使用同一审计批次内先前语句派生的状态。表存在性（`exists.alter`、`exists.create`）、
+ADD COLUMN 存在性与独立 `CREATE INDEX` 列存在性在状态无法确定时产生
+`unknown_table_state` / `incomplete_table_structure` 证据缺口；其余规则在无可用状态时仍被跳过。
 
 | 规则 ID | 检查描述 | 离线 | 元数据 | 默认级别 |
 |---------|---------|:----:|:------:|---------|
 | `ddl.alter.column.add.exists` | 待添加的列在当前 Schema 中已存在 | ✗ | ✓ | blocker |
+| `ddl.create_index.columns.exists` | 独立 `CREATE INDEX` 引用了目标表上不存在的列 | ✗ | ✓ | blocker |
 | `ddl.alter.column.drop.exists` | 待删除的列在当前 Schema 中不存在 | ✗ | ✓ | blocker |
 | `ddl.alter.column.modify.exists` | 待修改的列在当前 Schema 中不存在 | ✗ | ✓ | blocker |
 | `ddl.alter.column.change.exists` | 待变更的列在当前 Schema 中不存在 | ✗ | ✓ | blocker |

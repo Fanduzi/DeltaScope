@@ -29,6 +29,7 @@ expect:
       - ddl.table.truncate.rows.max_count
       - ddl.table.row_size.max_bytes.require
       - ddl.index.key_length.max_bytes.require
+      - ddl.create_index.columns.exists.require
 config:
   rules:
     ddl.table.drop.rows.max_count:
@@ -40,15 +41,60 @@ config:
 metadata:
   schema: app
   instance:
-    version: 8.0.11-TiDB-v8.5.0
     default_charset: utf8mb4
     innodb_default_row_format: COMPACT
     innodb_large_prefix_enabled: false
     innodb_adaptive_hash_enabled: true
+    version: 8.0.11-TiDB-v8.5.0
   tables:
     missing_table:
       exists: false
     users:
+      exists: true
+      columns:
+        - {name: existing, type: int}
+      indexes:
+        - {name: existing_idx, kind: secondary, columns: [existing]}
+    # Each unmodeled/duplicate mutation below owns a private table: after the
+    # ordered-state pass invalidates or mutates a table entry, sibling
+    # statements would otherwise read a contaminated pre-state.
+    users_dc:
+      exists: true
+      columns:
+        - {name: existing, type: int}
+      indexes:
+        - {name: existing_idx, kind: secondary, columns: [existing]}
+    users_mc:
+      exists: true
+      columns:
+        - {name: existing, type: int}
+      indexes:
+        - {name: existing_idx, kind: secondary, columns: [existing]}
+    users_cc:
+      exists: true
+      columns:
+        - {name: existing, type: int}
+      indexes:
+        - {name: existing_idx, kind: secondary, columns: [existing]}
+    users_rc:
+      exists: true
+      columns:
+        - {name: existing, type: int}
+      indexes:
+        - {name: existing_idx, kind: secondary, columns: [existing]}
+    users_ai:
+      exists: true
+      columns:
+        - {name: existing, type: int}
+      indexes:
+        - {name: existing_idx, kind: secondary, columns: [existing]}
+    users_di:
+      exists: true
+      columns:
+        - {name: existing, type: int}
+      indexes:
+        - {name: existing_idx, kind: secondary, columns: [existing]}
+    users_ri:
       exists: true
       columns:
         - {name: existing, type: int}
@@ -63,7 +109,33 @@ metadata:
       options:
         engine: MyISAM
         auto_increment: "100"
+    compat_table2:
+      exists: true
+      columns:
+        - {name: amount, type: bigint, unsigned: true, auto_increment: true}
+      options:
+        engine: MyISAM
+        auto_increment: "100"
+    compat_table3:
+      exists: true
+      columns:
+        - {name: amount, type: bigint, unsigned: true, auto_increment: true}
+      options:
+        engine: MyISAM
+        auto_increment: "100"
+    gone_table:
+      exists: false
+    gone_table_2:
+      exists: false
     big_table:
       exists: true
       options:
         table_rows: "1000"
+    huge_table:
+      exists: true
+      options:
+        table_rows: "1000"
+    ci_table:
+      exists: true
+      columns:
+        - {name: existing, type: int}

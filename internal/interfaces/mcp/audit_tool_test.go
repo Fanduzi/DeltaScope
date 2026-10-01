@@ -146,8 +146,8 @@ func TestAuditSQLOfflineDropColumnStatesExistenceNotChecked(t *testing.T) {
 	text := requireAuditToolText(t, result)
 	body := requireAuditStructuredMap(t, result)
 
-	if body["verdict"] != "pass" {
-		t.Fatalf("expected pass verdict, got %#v", body["verdict"])
+	if body["verdict"] != "review" {
+		t.Fatalf("expected review verdict, got %#v", body["verdict"])
 	}
 	assertJSONContextExistenceCaveat(t, body)
 	if !strings.Contains(text, "existence not checked (no database connection)") {

@@ -150,6 +150,7 @@ func isMySQLFamilyOnlyRule(ruleID string) bool {
 		"ddl.alter.drop_column.exists.require",
 		"ddl.alter.drop_index.forbid",
 		"ddl.alter.drop_index.exists.require",
+		"ddl.create_index.columns.exists.require",
 		"ddl.alter.drop_primary_key.forbid",
 		"ddl.alter.drop_primary_key.exists.require",
 		"ddl.alter.rename_index.forbid",

@@ -409,10 +409,15 @@ These rules check that column type and attribute changes made via `MODIFY COLUMN
 | `ddl.alter.change_column.explicit_auto_increment_change.forbid` | CHANGE COLUMN must not add or remove AUTO_INCREMENT | blocker | **Yes** |
 | `ddl.alter.table_option.compatibility.require` | Table option changes must be compatible with current table options | warning | **Yes** |
 
-### Existence Check Rules (11 rules — metadata-backed)
+### Existence Check Rules (12 rules — metadata-backed)
 
-These rules verify that the objects referenced by an `ALTER TABLE` statement actually exist (or do not
-already exist) in the live schema. They are silently skipped during offline audits.
+These rules verify that the objects referenced by a DDL statement actually exist (or do not
+already exist) in the request-local ordered schema view: a live table snapshot when metadata
+is configured, or a state derived from earlier statements in the same audit batch for MySQL
+and TiDB. `ddl.table.exists.alter.require`, `ddl.table.exists.create.forbid`,
+`ddl.alter.add_column.exists.forbid`, and `ddl.create_index.columns.exists.require` emit
+`unknown_table_state` / `incomplete_table_structure` evidence gaps when that state cannot be
+established; the remaining rules are still silently skipped without usable state.
 
 | Rule ID | Description | Default Level | Metadata Required |
 |---------|-------------|:-------------:|:-----------------:|
@@ -427,6 +432,7 @@ already exist) in the live schema. They are silently skipped during offline audi
 | `ddl.alter.drop_index.exists.require` | DROP INDEX target must exist | blocker | **Yes** |
 | `ddl.alter.rename_index.exists.require` | RENAME INDEX source must exist | blocker | **Yes** |
 | `ddl.alter.drop_primary_key.exists.require` | DROP PRIMARY KEY requires a primary key to exist | blocker | **Yes** |
+| `ddl.create_index.columns.exists.require` | Standalone `CREATE INDEX` column references must exist on the target table | blocker | **Yes** |
 
 ---
 
@@ -998,6 +1004,7 @@ bounded notice during offline audits.
 | `ddl.alter.drop_index.exists.require` |
 | `ddl.alter.rename_index.exists.require` |
 | `ddl.alter.drop_primary_key.exists.require` |
+| `ddl.create_index.columns.exists.require` |
 | `ddl.table.drop.exists.require` |
 | `ddl.table.drop.adaptive_hash.warn` |
 | `ddl.table.drop.rows.max_count` |

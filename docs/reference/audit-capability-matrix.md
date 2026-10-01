@@ -177,11 +177,17 @@ Alter-path index checks reuse the same logic as CREATE TABLE.
 
 ### Existence Checks (Metadata-Aware Only)
 
-These rules require a live table snapshot and are skipped in offline mode.
+These rules evaluate against a request-local ordered schema view: a live table snapshot when
+metadata is configured, or a state derived from earlier statements in the same audit batch for
+MySQL and TiDB. Table existence (`exists.alter`, `exists.create`), add-column existence, and
+standalone `CREATE INDEX` column existence emit `unknown_table_state` /
+`incomplete_table_structure` evidence gaps when the state cannot be established; the remaining
+rules are still skipped without usable state.
 
 | Rule ID | Check Description | Offline | Metadata | Default Level |
 |---------|-------------------|:-------:|:--------:|---------------|
 | `ddl.alter.column.add.exists` | Column being added already exists in the current schema | ✗ | ✓ | blocker |
+| `ddl.create_index.columns.exists` | Standalone `CREATE INDEX` references a column missing from the target table | ✗ | ✓ | blocker |
 | `ddl.alter.column.drop.exists` | Column being dropped does not exist in the current schema | ✗ | ✓ | blocker |
 | `ddl.alter.column.modify.exists` | Column being modified does not exist in the current schema | ✗ | ✓ | blocker |
 | `ddl.alter.column.change.exists` | Column being changed does not exist in the current schema | ✗ | ✓ | blocker |

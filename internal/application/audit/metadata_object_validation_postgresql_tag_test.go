@@ -1,5 +1,10 @@
 //go:build postgresql
 
+// Package audit verifies PostgreSQL non-table object metadata enrichment.
+// input: PostgreSQL DDL statements with a fake object resolver returning confirmed, not-found, ambiguous, and unavailable object facts
+// output: metadata_status / metadata_object_type / metadata_exists enrichment assertions plus preserved table-metadata behavior
+// pos: application-layer PostgreSQL object-metadata regression coverage
+// note: if this file changes, update this header and module README.md.
 package audit
 
 import (
@@ -91,7 +96,7 @@ func TestObjectEnrichmentConfirmedFromResolver(t *testing.T) {
 	enriched, err := enrichStatementsWithMetadata(context.Background(), spec.DialectPostgreSQL, &MetadataRequest{
 		Schema:   "public",
 		Provider: resolver,
-	}, statements)
+	}, statements, nil)
 	if err != nil {
 		t.Fatalf("enrich: %v", err)
 	}
@@ -137,7 +142,7 @@ func TestObjectEnrichmentNotFoundFromResolver(t *testing.T) {
 	enriched, _ := enrichStatementsWithMetadata(context.Background(), spec.DialectPostgreSQL, &MetadataRequest{
 		Schema:   "public",
 		Provider: resolver,
-	}, statements)
+	}, statements, nil)
 
 	if len(enriched[0].Metadata.Objects) != 1 {
 		t.Fatalf("expected 1 object, got %d", len(enriched[0].Metadata.Objects))
@@ -164,7 +169,7 @@ func TestObjectEnrichmentAmbiguousFromResolver(t *testing.T) {
 	enriched, _ := enrichStatementsWithMetadata(context.Background(), spec.DialectPostgreSQL, &MetadataRequest{
 		Schema:   "public",
 		Provider: resolver,
-	}, statements)
+	}, statements, nil)
 
 	obj := enriched[0].Metadata.Objects[0]
 	if obj.Status != spec.MetadataStatusAmbiguous {
@@ -186,7 +191,7 @@ func TestObjectEnrichmentUnavailableWhenNoResolver(t *testing.T) {
 	enriched, _ := enrichStatementsWithMetadata(context.Background(), spec.DialectPostgreSQL, &MetadataRequest{
 		Schema:   "public",
 		Provider: provider,
-	}, statements)
+	}, statements, nil)
 
 	if enriched[0].Metadata == nil {
 		t.Fatal("expected metadata to be attached")
@@ -213,7 +218,7 @@ func TestObjectEnrichmentResolverErrorFallsBackToUnavailable(t *testing.T) {
 	enriched, _ := enrichStatementsWithMetadata(context.Background(), spec.DialectPostgreSQL, &MetadataRequest{
 		Schema:   "public",
 		Provider: resolver,
-	}, statements)
+	}, statements, nil)
 
 	obj := enriched[0].Metadata.Objects[0]
 	if obj.Status != spec.MetadataStatusUnavailable {
@@ -230,7 +235,7 @@ func TestObjectEnrichmentNoLookupForTableOperations(t *testing.T) {
 	enriched, _ := enrichStatementsWithMetadata(context.Background(), spec.DialectPostgreSQL, &MetadataRequest{
 		Schema:   "public",
 		Provider: resolver,
-	}, statements)
+	}, statements, nil)
 
 	if len(resolver.calls) != 0 {
 		t.Fatalf("expected 0 resolver calls for table operations, got %d", len(resolver.calls))
@@ -250,7 +255,7 @@ func TestObjectEnrichmentExistingIndexOwnerResolutionPreserved(t *testing.T) {
 	_, _ = enrichStatementsWithMetadata(context.Background(), spec.DialectPostgreSQL, &MetadataRequest{
 		Schema:   "public",
 		Provider: resolver,
-	}, statements)
+	}, statements, nil)
 
 	// ALTER INDEX should not produce object lookup (it uses IndexOwnerResolver).
 	if len(resolver.calls) != 0 {
@@ -292,7 +297,7 @@ func TestObjectEnrichmentAllObjectFamilies(t *testing.T) {
 			enriched, _ := enrichStatementsWithMetadata(context.Background(), spec.DialectPostgreSQL, &MetadataRequest{
 				Schema:   "public",
 				Provider: nil, // No provider — should get unavailable.
-			}, statements)
+			}, statements, nil)
 
 			if len(enriched) == 0 {
 				t.Fatalf("expected at least 1 statement")
@@ -387,7 +392,7 @@ func TestCensusUnavailabilityNowFromObjectFallback(t *testing.T) {
 			enriched, _ := enrichStatementsWithMetadata(context.Background(), spec.DialectPostgreSQL, &MetadataRequest{
 				Schema:   "public",
 				Provider: provider,
-			}, statements)
+			}, statements, nil)
 
 			if enriched[0].Metadata == nil {
 				t.Fatalf("expected metadata attached for %s", tc.name)

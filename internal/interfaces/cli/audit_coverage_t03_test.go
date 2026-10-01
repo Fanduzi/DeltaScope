@@ -52,8 +52,8 @@ func TestAuditCommandT03IncompleteCoverageExitsAudit(t *testing.T) {
 	if c, _ := first["coverage"].(map[string]any); c["status"] != "incomplete" {
 		t.Fatalf("expected statement 0 coverage incomplete, got %#v", first["coverage"])
 	}
-	if c, _ := second["coverage"].(map[string]any); c["status"] != "complete" {
-		t.Fatalf("expected statement 1 coverage complete, got %#v", second["coverage"])
+	if c, _ := second["coverage"].(map[string]any); c["status"] != "unverified" {
+		t.Fatalf("expected statement 1 coverage unverified, got %#v", second["coverage"])
 	}
 	unsupported, _ := decoded["unsupported"].([]any)
 	if len(unsupported) != 1 {

@@ -1,7 +1,7 @@
 // Package httpapi verifies HTTP offline existence caveats on audit context.
 // input: offline ALTER DROP COLUMN HTTP audit requests
-// output: pass verdict plus JSON context.note / context.unproven matching the CLI caveat
-// pos: HTTP contract coverage for issue #28
+// output: review verdict plus JSON evidence-gap contract matching the CLI caveat (context.unproven, unknown_table_state)
+// pos: HTTP contract coverage for issue #28 and the T05 offline existence-gap behavior
 // note: if this file changes, update this header and module README.md.
 package httpapi
 
@@ -33,8 +33,8 @@ func TestHandlerOfflineDropColumnStatesExistenceNotChecked(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
-	if payload["verdict"] != "pass" {
-		t.Fatalf("expected verdict pass, got %#v", payload["verdict"])
+	if payload["verdict"] != "review" {
+		t.Fatalf("expected verdict review, got %#v", payload["verdict"])
 	}
 	assertJSONContextExistenceCaveat(t, payload)
 	if strings.Contains(rec.Body.String(), "existing column") {

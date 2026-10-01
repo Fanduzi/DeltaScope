@@ -40,7 +40,10 @@ Per-task manifests for the milestone DDL golden-path runner
   exists in the live `rules list` catalog, renders the isolated profile
   under `policy_profile`'s name plus a generated `all-rules-disabled`
   profile, and records sha256 per policy file into the artifact. Per-case
-  `policy` selects which generated profile a case pins.
+  `policy` selects which generated profile a case pins. `policy.profiles`
+  names additional isolated profiles; a `profiles` key equal to
+  `policy_profile` or `all-rules-disabled` fails the run instead of
+  silently redefining the default.
 - `metadata_cases`: live-database audit cases. Each binds `anchor`,
   `dialect`, `sql`, a `connect` block (`password` travels only via
   `--password-env`/`--password-file` and is never recorded), ordered

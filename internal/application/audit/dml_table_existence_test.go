@@ -166,7 +166,7 @@ func TestEnrichMetadataKeepsRequestSchemaForPostgreSQLAndDDL(t *testing.T) {
 			enriched, err := enrichStatementsWithMetadata(context.Background(), tc.dialect, &MetadataRequest{
 				Schema:   "app",
 				Provider: provider,
-			}, []spec.Statement{tc.statement})
+			}, []spec.Statement{tc.statement}, nil)
 			if err != nil {
 				t.Fatalf("enrich: %v", err)
 			}

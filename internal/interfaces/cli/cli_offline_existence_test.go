@@ -1,7 +1,7 @@
 // Package cli verifies offline existence caveats on default audit surfaces.
 // input: offline ALTER DROP COLUMN / ALTER missing-table CLI invocations
-// output: pass verdict plus markdown/quiet/JSON copy that existence was not checked
-// pos: CLI contract coverage for issue #28
+// output: review verdict plus evidence-gap contract (unknown_table_state, context.unproven) that existence was not checked
+// pos: CLI contract coverage for issue #28 and the T05 offline existence-gap behavior
 // note: if this file changes, update this header and module README.md.
 package cli
 
@@ -18,7 +18,7 @@ import (
 const offlineExistenceSQLDropColumn = "alter table users drop column not_a_col"
 const offlineExistenceSQLMissingTable = "alter table missing_table add column x int"
 
-func TestOfflineDropColumnMissingStaysPassAndStatesExistenceNotChecked(t *testing.T) {
+func TestOfflineDropColumnMissingStaysReviewAndStatesExistenceNotChecked(t *testing.T) {
 	assertOfflineExistenceCaveat(t, offlineExistenceSQLDropColumn, []string{
 		"ddl.alter.drop_column.notice",
 		"would drop column",
@@ -30,7 +30,7 @@ func TestOfflineDropColumnMissingStaysPassAndStatesExistenceNotChecked(t *testin
 	})
 }
 
-func TestOfflineAlterMissingTableStaysPassAndStatesExistenceNotChecked(t *testing.T) {
+func TestOfflineAlterMissingTableStaysReviewAndStatesExistenceNotChecked(t *testing.T) {
 	assertOfflineExistenceCaveat(t, offlineExistenceSQLMissingTable, []string{
 		"ddl.alter.add_column.notice",
 	}, []string{
@@ -54,8 +54,8 @@ func TestQuietJSONOfflineDropColumnKeepsStatementFindingsAndContextCaveat(t *tes
 	}
 
 	decoded := decodeAuditJSON(t, stdout.String())
-	if decoded["verdict"] != "pass" {
-		t.Fatalf("expected verdict pass, got %#v", decoded["verdict"])
+	if decoded["verdict"] != "review" {
+		t.Fatalf("expected verdict review, got %#v", decoded["verdict"])
 	}
 	if _, ok := decoded["findings"]; ok {
 		t.Fatalf("JSON contract has no top-level findings array, got %#v", decoded["findings"])
@@ -152,8 +152,8 @@ func assertOfflineExistenceCaveat(t *testing.T, sql string, wantContain, wantOmi
 	if markdownCode != 0 {
 		t.Fatalf("markdown: expected exit 0, got %d\n%s", markdownCode, markdownOut)
 	}
-	if !strings.Contains(markdownOut, "Verdict: `pass`") {
-		t.Fatalf("markdown: expected pass verdict, got %s", markdownOut)
+	if !strings.Contains(markdownOut, "Verdict: `review`") {
+		t.Fatalf("markdown: expected review verdict, got %s", markdownOut)
 	}
 	action := actionSummarySection(markdownOut)
 	if !strings.Contains(action, existenceNotCheckedNote) {
@@ -180,8 +180,8 @@ func assertOfflineExistenceCaveat(t *testing.T, sql string, wantContain, wantOmi
 		t.Fatalf("json: expected exit 0, got %d\n%s", jsonCode, jsonOut)
 	}
 	decoded := decodeAuditJSON(t, jsonOut)
-	if decoded["verdict"] != "pass" {
-		t.Fatalf("json: expected verdict pass, got %#v", decoded["verdict"])
+	if decoded["verdict"] != "review" {
+		t.Fatalf("json: expected verdict review, got %#v", decoded["verdict"])
 	}
 	assertJSONContextExistenceCaveat(t, decoded)
 	assertContainsAll(t, "json", jsonOut, wantContain)
