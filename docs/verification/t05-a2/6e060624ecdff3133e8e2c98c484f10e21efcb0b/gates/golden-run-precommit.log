@@ -1,0 +1,4 @@
+python3 ./scripts/ddl_golden.py run --task "T05" --artifact-dir "/tmp/ds-t05-a2-evidence/precommit"
+[ddl-golden] task=T05 head=624b1263da65 cases=167 passed=167 assertions=2396
+[ddl-golden] artifact=/private/tmp/ds-t05-a2-evidence/precommit/T05/artifact.json
+[ddl-golden] PASS

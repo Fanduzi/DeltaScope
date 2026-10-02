@@ -1,0 +1,35 @@
+--- FAIL: TestBatchStateA2PolicyBlockerKeepsMigration (0.01s)
+    batch_state_a2_test.go:514: statement 2 must stay deterministic under the policy blocker, got findings=[] gaps=[{RuleID:ddl.table.exists.alter.require ReasonCode:unknown_table_state RequiredFacts:[target_table.existence]} {RuleID:ddl.alter.add_column.exists.forbid ReasonCode:unknown_table_state RequiredFacts:[target_table.columns target_table.existence]}]
+--- FAIL: TestBatchStateA2MemberTransportBoundary (0.00s)
+    --- FAIL: TestBatchStateA2MemberTransportBoundary/migrated_primary_key_stays_provable (0.00s)
+        batch_state_a2_test.go:668: the migrated destination must still carry the primary key, got <nil>
+    --- FAIL: TestBatchStateA2MemberTransportBoundary/renamed_shape_keeps_statistics_values (0.00s)
+        batch_state_a2_test.go:686: migration must preserve observed statistics, got <nil>
+--- FAIL: TestBatchStateA2OldNameStaysAbsent (0.01s)
+    batch_state_a2_test.go:229: statement 2 must stay clean, got findings=[] gaps=[{RuleID:ddl.table.exists.alter.require ReasonCode:unknown_table_state RequiredFacts:[target_table.existence]} {RuleID:ddl.alter.add_column.exists.forbid ReasonCode:unknown_table_state RequiredFacts:[target_table.columns target_table.existence]}]
+--- FAIL: TestBatchStateA2RenameMigratesIdentity (0.00s)
+    --- FAIL: TestBatchStateA2RenameMigratesIdentity/standalone_qualified (0.01s)
+        batch_state_a2_test.go:158: statement 2 must not report gaps after migration, got [{RuleID:ddl.table.exists.alter.require ReasonCode:unknown_table_state RequiredFacts:[target_table.existence]} {RuleID:ddl.alter.add_column.exists.forbid ReasonCode:unknown_table_state RequiredFacts:[target_table.columns target_table.existence]}]
+    --- FAIL: TestBatchStateA2RenameMigratesIdentity/alter_rename_to (0.01s)
+        batch_state_a2_test.go:158: statement 2 must not report gaps after migration, got [{RuleID:ddl.table.exists.alter.require ReasonCode:unknown_table_state RequiredFacts:[target_table.existence]} {RuleID:ddl.alter.add_column.exists.forbid ReasonCode:unknown_table_state RequiredFacts:[target_table.columns target_table.existence]}]
+    --- FAIL: TestBatchStateA2RenameMigratesIdentity/same_schema (0.01s)
+        batch_state_a2_test.go:158: statement 2 must not report gaps after migration, got [{RuleID:ddl.table.exists.alter.require ReasonCode:unknown_table_state RequiredFacts:[target_table.existence]} {RuleID:ddl.alter.add_column.exists.forbid ReasonCode:unknown_table_state RequiredFacts:[target_table.columns target_table.existence]}]
+    --- FAIL: TestBatchStateA2RenameMigratesIdentity/unqualified_destination_uses_request_schema (0.01s)
+        batch_state_a2_test.go:158: statement 2 must not report gaps after migration, got [{RuleID:ddl.table.exists.alter.require ReasonCode:unknown_table_state RequiredFacts:[target_table.existence]} {RuleID:ddl.alter.add_column.exists.forbid ReasonCode:unknown_table_state RequiredFacts:[target_table.columns target_table.existence]}]
+    --- FAIL: TestBatchStateA2RenameMigratesIdentity/same_name_cross_schema (0.01s)
+        batch_state_a2_test.go:158: statement 2 must not report gaps after migration, got [{RuleID:ddl.table.exists.alter.require ReasonCode:unknown_table_state RequiredFacts:[target_table.existence]} {RuleID:ddl.alter.add_column.exists.forbid ReasonCode:unknown_table_state RequiredFacts:[target_table.columns target_table.existence]}]
+--- FAIL: TestBatchStateA2ReadLedger (0.00s)
+    --- FAIL: TestBatchStateA2ReadLedger/destination_provider_error_aborts_without_half_post-state (0.01s)
+        batch_state_a2_test.go:587: destination read error must propagate, got <nil>
+    --- FAIL: TestBatchStateA2ReadLedger/destination_first-touch_resolves_once (0.01s)
+        batch_state_a2_test.go:544: each rename endpoint must resolve at most once, got []string{"src.t"}
+    --- FAIL: TestBatchStateA2ReadLedger/second_audit_does_not_inherit_derived_state (0.01s)
+        batch_state_a2_test.go:608: each audit must read its own request-local facts, got []string{"src.t", "src.t"}
+--- FAIL: TestBatchStateA2ExistenceGrid (0.00s)
+    --- FAIL: TestBatchStateA2ExistenceGrid/present+absent_migrates (0.01s)
+        batch_state_a2_test.go:371: statement 1 must emit exactly one table_not_found blocker, got []
+    --- FAIL: TestBatchStateA2ExistenceGrid/present-incomplete+absent_migrates_incompletely (0.01s)
+        batch_state_a2_test.go:371: statement 1 must emit exactly one table_not_found blocker, got []
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.554s
+FAIL

@@ -1,0 +1,199 @@
+{
+  "case_id": "T05.cli.mysql-grant-with-grant",
+  "kind": "cli_audit",
+  "cli_case": "mysql-grant-with-grant",
+  "dialect": "mysql",
+  "input_sql": "GRANT SELECT ON db.t TO 'u'@'%' WITH GRANT OPTION;",
+  "policy_profile": "t04-modify-column-compat-isolated",
+  "policy_path": "/private/tmp/ds-t05-a2-evidence/postcommit/T05/golden-policy.yaml",
+  "command": [
+    "/private/tmp/ds-t05-a2-evidence/postcommit/T05/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "GRANT SELECT ON db.t TO 'u'@'%' WITH GRANT OPTION;",
+    "--config",
+    "/private/tmp/ds-t05-a2-evidence/postcommit/T05/golden-policy.yaml",
+    "--format",
+    "json",
+    "--fail-on",
+    "none"
+  ],
+  "expected": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+      "incomplete"
+    ],
+    "statement_sql": [
+      "GRANT SELECT ON db.t TO 'u'@'%' WITH GRANT OPTION;"
+    ],
+    "unsupported": 2,
+    "unsupported_features": [
+      "grant.option.with_grant",
+      "grant.unaudited_targets"
+    ],
+    "unsupported_entries": [
+      {
+        "feature": "grant.option.with_grant",
+        "reason": "parsed by the shared parser but not covered by audited semantics"
+      },
+      {
+        "feature": "grant.unaudited_targets",
+        "reason": "parsed by the shared parser but not covered by audited semantics"
+      }
+    ]
+  },
+  "actual": {
+    "exit": 1,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"incomplete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"GRANT SELECT ON db.t TO 'u'@'%' WITH GRANT OPTION;\",\"normalized_sql\":\"GRANT SELECT ON db.t TO 'u'@'%' WITH GRANT OPTION\",\"coverage\":{\"status\":\"incomplete\"}}],\"unsupported\":[{\"feature\":\"grant.option.with_grant\",\"sql\":\"GRANT SELECT ON db.t TO 'u'@'%' WITH GRANT OPTION;\",\"reason\":\"parsed by the shared parser but not covered by audited semantics\",\"metadata\":{\"aspect\":\"option\"}},{\"feature\":\"grant.unaudited_targets\",\"sql\":\"GRANT SELECT ON db.t TO 'u'@'%' WITH GRANT OPTION;\",\"reason\":\"parsed by the shared parser but not covered by audited semantics\",\"metadata\":{\"aspect\":\"targets\",\"omitted\":1}}],\"diagnostics\":[{\"classification\":\"unsupported_statement\",\"reason\":\"DeltaScope recognized this statement or feature but does not audit it yet\",\"action_hint\":\"treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release\",\"audited\":false,\"dialect\":\"mysql\"}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":0,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "incomplete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "GRANT SELECT ON db.t TO 'u'@'%' WITH GRANT OPTION;",
+          "normalized_sql": "GRANT SELECT ON db.t TO 'u'@'%' WITH GRANT OPTION",
+          "coverage": {
+            "status": "incomplete"
+          }
+        }
+      ],
+      "unsupported": [
+        {
+          "feature": "grant.option.with_grant",
+          "sql": "GRANT SELECT ON db.t TO 'u'@'%' WITH GRANT OPTION;",
+          "reason": "parsed by the shared parser but not covered by audited semantics",
+          "metadata": {
+            "aspect": "option"
+          }
+        },
+        {
+          "feature": "grant.unaudited_targets",
+          "sql": "GRANT SELECT ON db.t TO 'u'@'%' WITH GRANT OPTION;",
+          "reason": "parsed by the shared parser but not covered by audited semantics",
+          "metadata": {
+            "aspect": "targets",
+            "omitted": 1
+          }
+        }
+      ],
+      "diagnostics": [
+        {
+          "classification": "unsupported_statement",
+          "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+          "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+          "audited": false,
+          "dialect": "mysql"
+        }
+      ],
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 0,
+        "skipped": []
+      },
+      "context": {
+        "mode": "offline",
+        "dialect": "mysql",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[{'classification': 'unsupported_statement', 'reason': 'DeltaScope recognized this statement or feature but does not audit it yet', 'action_hint': 'treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release', 'audited': False, 'dialect': 'mysql'}]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[{'feature': 'grant.option.with_grant', 'sql': \"GRANT SELECT ON db.t TO 'u'@'%' WITH GRANT OPTION;\", 'reason': 'parsed by the shared parser but not covered by audited semantics', 'metadata': {'aspect': 'option'}}, {'feature': 'grant.unaudited_targets', 'sql': \"GRANT SELECT ON db.t TO 'u'@'%' WITH GRANT OPTION;\", 'reason': 'parsed by the shared parser but not covered by audited semantics', 'metadata': {'aspect': 'targets', 'omitted': 1}}]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='incomplete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['incomplete']"
+    },
+    {
+      "name": "unsupported features",
+      "ok": true,
+      "detail": "features=['grant.option.with_grant', 'grant.unaudited_targets'] expected=['grant.option.with_grant', 'grant.unaudited_targets']"
+    },
+    {
+      "name": "unsupported entries",
+      "ok": true,
+      "detail": "entries=[(0, 'grant.option.with_grant', 'parsed by the shared parser but not covered by audited semantics'), (0, 'grant.unaudited_targets', 'parsed by the shared parser but not covered by audited semantics')] expected=[(0, 'grant.option.with_grant', 'parsed by the shared parser but not covered by audited semantics'), (0, 'grant.unaudited_targets', 'parsed by the shared parser but not covered by audited semantics')]"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=[\"GRANT SELECT ON db.t TO 'u'@'%' WITH GRANT OPTION;\"] expected=[\"GRANT SELECT ON db.t TO 'u'@'%' WITH GRANT OPTION;\"]"
+    },
+    {
+      "name": "unsupported sql identity index=0",
+      "ok": true,
+      "detail": "sql=\"GRANT SELECT ON db.t TO 'u'@'%' WITH GRANT OPTION;\" expected=\"GRANT SELECT ON db.t TO 'u'@'%' WITH GRANT OPTION;\""
+    },
+    {
+      "name": "unsupported sql identity index=0",
+      "ok": true,
+      "detail": "sql=\"GRANT SELECT ON db.t TO 'u'@'%' WITH GRANT OPTION;\" expected=\"GRANT SELECT ON db.t TO 'u'@'%' WITH GRANT OPTION;\""
+    }
+  ],
+  "status": "pass"
+}

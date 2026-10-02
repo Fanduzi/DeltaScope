@@ -1,0 +1,60 @@
+{
+  "case_id": "T05.clierr.t05-conn-refused",
+  "kind": "cli_error",
+  "cli_case": "t05-conn-refused",
+  "dialect": "mysql",
+  "input_sql": "CREATE TABLE t (id INT PRIMARY KEY); ALTER TABLE t ADD COLUMN c INT;",
+  "policy_profile": "t04-modify-column-compat-isolated",
+  "policy_path": "/private/tmp/ds-t05-a2-evidence/postcommit/T05/golden-policy.yaml",
+  "command": [
+    "/private/tmp/ds-t05-a2-evidence/postcommit/T05/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "CREATE TABLE t (id INT PRIMARY KEY); ALTER TABLE t ADD COLUMN c INT;",
+    "--config",
+    "/private/tmp/ds-t05-a2-evidence/postcommit/T05/golden-policy.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23399",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T05_GOLDEN_PW"
+  ],
+  "expected": {
+    "exit": 3,
+    "stderr_contains": [
+      "connection refused"
+    ]
+  },
+  "actual": {
+    "exit": 3,
+    "stdout": "",
+    "stderr": "connection refused\n",
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=3 expected=3"
+    },
+    {
+      "name": "stderr contains 'connection refused'",
+      "ok": true,
+      "detail": "stderr='connection refused' marker='connection refused'"
+    }
+  ],
+  "status": "pass"
+}

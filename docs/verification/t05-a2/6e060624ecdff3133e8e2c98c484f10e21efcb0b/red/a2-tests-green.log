@@ -1,0 +1,158 @@
+=== RUN   TestBatchStateA2RenameMigratesIdentity
+=== PAUSE TestBatchStateA2RenameMigratesIdentity
+=== RUN   TestBatchStateA2RenameKeepsSourcePreState
+=== PAUSE TestBatchStateA2RenameKeepsSourcePreState
+=== RUN   TestBatchStateA2OldNameStaysAbsent
+=== PAUSE TestBatchStateA2OldNameStaysAbsent
+=== RUN   TestBatchStateA2RenamePremiseCellsInvalidate
+=== PAUSE TestBatchStateA2RenamePremiseCellsInvalidate
+=== RUN   TestBatchStateA2ExistenceGrid
+=== PAUSE TestBatchStateA2ExistenceGrid
+=== RUN   TestBatchStateA2ContaminationAndForms
+=== PAUSE TestBatchStateA2ContaminationAndForms
+=== RUN   TestBatchStateA2PolicyBlockerKeepsMigration
+=== PAUSE TestBatchStateA2PolicyBlockerKeepsMigration
+=== RUN   TestBatchStateA2ReadLedger
+=== PAUSE TestBatchStateA2ReadLedger
+=== RUN   TestBatchStateA2MemberTransportBoundary
+=== PAUSE TestBatchStateA2MemberTransportBoundary
+=== CONT  TestBatchStateA2RenameMigratesIdentity
+=== CONT  TestBatchStateA2ContaminationAndForms
+=== RUN   TestBatchStateA2RenameMigratesIdentity/standalone_qualified
+=== RUN   TestBatchStateA2ContaminationAndForms/execute_contamination_survives_rename
+=== PAUSE TestBatchStateA2RenameMigratesIdentity/standalone_qualified
+=== RUN   TestBatchStateA2RenameMigratesIdentity/alter_rename_to
+=== PAUSE TestBatchStateA2RenameMigratesIdentity/alter_rename_to
+=== RUN   TestBatchStateA2RenameMigratesIdentity/same_schema
+=== PAUSE TestBatchStateA2RenameMigratesIdentity/same_schema
+=== RUN   TestBatchStateA2RenameMigratesIdentity/same_name_cross_schema
+=== CONT  TestBatchStateA2RenamePremiseCellsInvalidate
+=== CONT  TestBatchStateA2ExistenceGrid
+=== PAUSE TestBatchStateA2ContaminationAndForms/execute_contamination_survives_rename
+=== PAUSE TestBatchStateA2RenameMigratesIdentity/same_name_cross_schema
+=== CONT  TestBatchStateA2MemberTransportBoundary
+=== CONT  TestBatchStateA2OldNameStaysAbsent
+=== CONT  TestBatchStateA2ReadLedger
+=== CONT  TestBatchStateA2PolicyBlockerKeepsMigration
+=== RUN   TestBatchStateA2RenamePremiseCellsInvalidate/source_absent_invalidates_both_ends
+=== PAUSE TestBatchStateA2RenamePremiseCellsInvalidate/source_absent_invalidates_both_ends
+=== RUN   TestBatchStateA2ExistenceGrid/present+absent_migrates
+=== RUN   TestBatchStateA2ContaminationAndForms/multi-pair_rename_invalidates_every_endpoint
+=== CONT  TestBatchStateA2RenameKeepsSourcePreState
+=== PAUSE TestBatchStateA2ExistenceGrid/present+absent_migrates
+=== RUN   TestBatchStateA2RenamePremiseCellsInvalidate/destination_present_invalidates_both_ends
+=== PAUSE TestBatchStateA2ContaminationAndForms/multi-pair_rename_invalidates_every_endpoint
+=== PAUSE TestBatchStateA2RenamePremiseCellsInvalidate/destination_present_invalidates_both_ends
+=== RUN   TestBatchStateA2RenameMigratesIdentity/unqualified_destination_uses_request_schema
+=== RUN   TestBatchStateA2MemberTransportBoundary/known_constraint_shape_invalidates_both_ends
+=== RUN   TestBatchStateA2ExistenceGrid/present+present
+=== RUN   TestBatchStateA2ReadLedger/destination_first-touch_resolves_once
+=== RUN   TestBatchStateA2RenamePremiseCellsInvalidate/alter_rename_keeps_source_existence_finding
+=== PAUSE TestBatchStateA2RenamePremiseCellsInvalidate/alter_rename_keeps_source_existence_finding
+=== CONT  TestBatchStateA2RenamePremiseCellsInvalidate/source_absent_invalidates_both_ends
+=== CONT  TestBatchStateA2RenamePremiseCellsInvalidate/alter_rename_keeps_source_existence_finding
+=== PAUSE TestBatchStateA2RenameMigratesIdentity/unqualified_destination_uses_request_schema
+=== PAUSE TestBatchStateA2ReadLedger/destination_first-touch_resolves_once
+=== CONT  TestBatchStateA2RenameMigratesIdentity/standalone_qualified
+=== CONT  TestBatchStateA2RenamePremiseCellsInvalidate/destination_present_invalidates_both_ends
+=== CONT  TestBatchStateA2RenameMigratesIdentity/same_name_cross_schema
+=== PAUSE TestBatchStateA2MemberTransportBoundary/known_constraint_shape_invalidates_both_ends
+=== RUN   TestBatchStateA2MemberTransportBoundary/same_effective_key_invalidates_instead_of_self-migration
+=== PAUSE TestBatchStateA2MemberTransportBoundary/same_effective_key_invalidates_instead_of_self-migration
+=== RUN   TestBatchStateA2MemberTransportBoundary/migrated_primary_key_stays_provable
+=== PAUSE TestBatchStateA2MemberTransportBoundary/migrated_primary_key_stays_provable
+=== RUN   TestBatchStateA2ContaminationAndForms/mixed_alter_invalidates_both_ends
+=== PAUSE TestBatchStateA2ContaminationAndForms/mixed_alter_invalidates_both_ends
+=== PAUSE TestBatchStateA2ExistenceGrid/present+present
+=== RUN   TestBatchStateA2ReadLedger/invalidated_destination_is_never_re-read
+=== RUN   TestBatchStateA2ExistenceGrid/present+unknown
+=== PAUSE TestBatchStateA2ReadLedger/invalidated_destination_is_never_re-read
+=== RUN   TestBatchStateA2MemberTransportBoundary/renamed_shape_keeps_statistics_values
+=== RUN   TestBatchStateA2ContaminationAndForms/unrelated_table_survives_rename
+=== PAUSE TestBatchStateA2ExistenceGrid/present+unknown
+=== RUN   TestBatchStateA2ExistenceGrid/absent+absent
+=== PAUSE TestBatchStateA2ContaminationAndForms/unrelated_table_survives_rename
+=== CONT  TestBatchStateA2RenameMigratesIdentity/unqualified_destination_uses_request_schema
+=== RUN   TestBatchStateA2ReadLedger/destination_provider_error_aborts_without_half_post-state
+=== PAUSE TestBatchStateA2ExistenceGrid/absent+absent
+=== RUN   TestBatchStateA2ExistenceGrid/absent+present
+=== PAUSE TestBatchStateA2MemberTransportBoundary/renamed_shape_keeps_statistics_values
+=== CONT  TestBatchStateA2RenameMigratesIdentity/same_schema
+=== PAUSE TestBatchStateA2ReadLedger/destination_provider_error_aborts_without_half_post-state
+=== RUN   TestBatchStateA2ReadLedger/second_audit_does_not_inherit_derived_state
+=== PAUSE TestBatchStateA2ReadLedger/second_audit_does_not_inherit_derived_state
+=== CONT  TestBatchStateA2RenameMigratesIdentity/alter_rename_to
+=== PAUSE TestBatchStateA2ExistenceGrid/absent+present
+=== RUN   TestBatchStateA2ExistenceGrid/absent+unknown
+=== PAUSE TestBatchStateA2ExistenceGrid/absent+unknown
+=== RUN   TestBatchStateA2ExistenceGrid/unknown+absent_cannot_derive_source_absent
+=== PAUSE TestBatchStateA2ExistenceGrid/unknown+absent_cannot_derive_source_absent
+=== RUN   TestBatchStateA2ExistenceGrid/unknown+present
+=== PAUSE TestBatchStateA2ExistenceGrid/unknown+present
+=== RUN   TestBatchStateA2ExistenceGrid/unknown+unknown
+=== PAUSE TestBatchStateA2ExistenceGrid/unknown+unknown
+=== RUN   TestBatchStateA2ExistenceGrid/present-incomplete+absent_migrates_incompletely
+=== PAUSE TestBatchStateA2ExistenceGrid/present-incomplete+absent_migrates_incompletely
+=== CONT  TestBatchStateA2ContaminationAndForms/execute_contamination_survives_rename
+--- PASS: TestBatchStateA2RenameKeepsSourcePreState (0.00s)
+=== CONT  TestBatchStateA2ContaminationAndForms/mixed_alter_invalidates_both_ends
+=== CONT  TestBatchStateA2ContaminationAndForms/unrelated_table_survives_rename
+=== CONT  TestBatchStateA2ContaminationAndForms/multi-pair_rename_invalidates_every_endpoint
+=== CONT  TestBatchStateA2MemberTransportBoundary/known_constraint_shape_invalidates_both_ends
+=== CONT  TestBatchStateA2MemberTransportBoundary/migrated_primary_key_stays_provable
+=== CONT  TestBatchStateA2MemberTransportBoundary/renamed_shape_keeps_statistics_values
+=== CONT  TestBatchStateA2MemberTransportBoundary/same_effective_key_invalidates_instead_of_self-migration
+--- PASS: TestBatchStateA2PolicyBlockerKeepsMigration (0.01s)
+=== CONT  TestBatchStateA2ReadLedger/destination_first-touch_resolves_once
+=== CONT  TestBatchStateA2ReadLedger/second_audit_does_not_inherit_derived_state
+--- PASS: TestBatchStateA2OldNameStaysAbsent (0.01s)
+=== CONT  TestBatchStateA2ReadLedger/destination_provider_error_aborts_without_half_post-state
+=== CONT  TestBatchStateA2ReadLedger/invalidated_destination_is_never_re-read
+=== CONT  TestBatchStateA2ExistenceGrid/present+absent_migrates
+--- PASS: TestBatchStateA2RenamePremiseCellsInvalidate (0.00s)
+    --- PASS: TestBatchStateA2RenamePremiseCellsInvalidate/source_absent_invalidates_both_ends (0.01s)
+    --- PASS: TestBatchStateA2RenamePremiseCellsInvalidate/alter_rename_keeps_source_existence_finding (0.01s)
+    --- PASS: TestBatchStateA2RenamePremiseCellsInvalidate/destination_present_invalidates_both_ends (0.01s)
+=== CONT  TestBatchStateA2ExistenceGrid/absent+unknown
+--- PASS: TestBatchStateA2RenameMigratesIdentity (0.00s)
+    --- PASS: TestBatchStateA2RenameMigratesIdentity/same_name_cross_schema (0.01s)
+    --- PASS: TestBatchStateA2RenameMigratesIdentity/standalone_qualified (0.01s)
+    --- PASS: TestBatchStateA2RenameMigratesIdentity/alter_rename_to (0.01s)
+    --- PASS: TestBatchStateA2RenameMigratesIdentity/unqualified_destination_uses_request_schema (0.01s)
+    --- PASS: TestBatchStateA2RenameMigratesIdentity/same_schema (0.02s)
+=== CONT  TestBatchStateA2ExistenceGrid/present-incomplete+absent_migrates_incompletely
+=== CONT  TestBatchStateA2ExistenceGrid/unknown+unknown
+=== CONT  TestBatchStateA2ExistenceGrid/unknown+present
+--- PASS: TestBatchStateA2ContaminationAndForms (0.00s)
+    --- PASS: TestBatchStateA2ContaminationAndForms/execute_contamination_survives_rename (0.01s)
+    --- PASS: TestBatchStateA2ContaminationAndForms/mixed_alter_invalidates_both_ends (0.02s)
+    --- PASS: TestBatchStateA2ContaminationAndForms/unrelated_table_survives_rename (0.01s)
+    --- PASS: TestBatchStateA2ContaminationAndForms/multi-pair_rename_invalidates_every_endpoint (0.01s)
+=== CONT  TestBatchStateA2ExistenceGrid/unknown+absent_cannot_derive_source_absent
+=== CONT  TestBatchStateA2ExistenceGrid/absent+absent
+=== CONT  TestBatchStateA2ExistenceGrid/absent+present
+--- PASS: TestBatchStateA2MemberTransportBoundary (0.00s)
+    --- PASS: TestBatchStateA2MemberTransportBoundary/migrated_primary_key_stays_provable (0.00s)
+    --- PASS: TestBatchStateA2MemberTransportBoundary/renamed_shape_keeps_statistics_values (0.00s)
+    --- PASS: TestBatchStateA2MemberTransportBoundary/same_effective_key_invalidates_instead_of_self-migration (0.01s)
+    --- PASS: TestBatchStateA2MemberTransportBoundary/known_constraint_shape_invalidates_both_ends (0.01s)
+=== CONT  TestBatchStateA2ExistenceGrid/present+unknown
+=== CONT  TestBatchStateA2ExistenceGrid/present+present
+--- PASS: TestBatchStateA2ReadLedger (0.00s)
+    --- PASS: TestBatchStateA2ReadLedger/destination_provider_error_aborts_without_half_post-state (0.01s)
+    --- PASS: TestBatchStateA2ReadLedger/destination_first-touch_resolves_once (0.01s)
+    --- PASS: TestBatchStateA2ReadLedger/invalidated_destination_is_never_re-read (0.01s)
+    --- PASS: TestBatchStateA2ReadLedger/second_audit_does_not_inherit_derived_state (0.01s)
+--- PASS: TestBatchStateA2ExistenceGrid (0.00s)
+    --- PASS: TestBatchStateA2ExistenceGrid/present-incomplete+absent_migrates_incompletely (0.01s)
+    --- PASS: TestBatchStateA2ExistenceGrid/unknown+unknown (0.01s)
+    --- PASS: TestBatchStateA2ExistenceGrid/present+absent_migrates (0.01s)
+    --- PASS: TestBatchStateA2ExistenceGrid/absent+unknown (0.01s)
+    --- PASS: TestBatchStateA2ExistenceGrid/unknown+absent_cannot_derive_source_absent (0.01s)
+    --- PASS: TestBatchStateA2ExistenceGrid/absent+absent (0.01s)
+    --- PASS: TestBatchStateA2ExistenceGrid/unknown+present (0.01s)
+    --- PASS: TestBatchStateA2ExistenceGrid/present+present (0.01s)
+    --- PASS: TestBatchStateA2ExistenceGrid/present+unknown (0.01s)
+    --- PASS: TestBatchStateA2ExistenceGrid/absent+present (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.335s

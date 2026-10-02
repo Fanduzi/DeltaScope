@@ -1,0 +1,541 @@
+{
+  "case_id": "T05.meta.t05-tidb85-rename-alter",
+  "kind": "cli_metadata",
+  "cli_case": "t05-tidb85-rename-alter",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "CREATE TABLE src.t (id INT PRIMARY KEY); ALTER TABLE src.t RENAME TO dst.t2; ALTER TABLE dst.t2 ADD COLUMN c INT; CREATE INDEX idx_c ON dst.t2(c);",
+  "policy_profile": "t05-first-path-isolated",
+  "policy_path": "/private/tmp/ds-t05-a2-evidence/postcommit/T05/golden-policy-t05-first-path-isolated.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+  },
+  "expected": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 4,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete",
+      "complete",
+      "complete",
+      "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "statement_sql": [
+      "CREATE TABLE src.t (id INT PRIMARY KEY);",
+      "ALTER TABLE src.t RENAME TO dst.t2;",
+      "ALTER TABLE dst.t2 ADD COLUMN c INT;",
+      "CREATE INDEX idx_c ON dst.t2(c);"
+    ]
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [
+      {
+        "name": "create src schema",
+        "sql": "CREATE DATABASE IF NOT EXISTS src",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "create dst schema",
+        "sql": "CREATE DATABASE IF NOT EXISTS dst",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "drop stale source",
+        "sql": "DROP TABLE IF EXISTS src.t",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "drop stale destination",
+        "sql": "DROP TABLE IF EXISTS dst.t2",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "src.t absent before audit",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          },
+          {
+            "assert": "dst.t2 absent before audit",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit did not create src.t",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "0",
+        "stderr": ""
+      },
+      {
+        "assert": "audit did not create dst.t2",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'",
+        "rc": 0,
+        "output": "0",
+        "stderr": ""
+      }
+    ],
+    "execute": [
+      {
+        "name": "driver applies create",
+        "sql": "CREATE TABLE src.t (id INT PRIMARY KEY)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "driver applies rename",
+        "sql": "ALTER TABLE src.t RENAME TO dst.t2",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "driver applies add column",
+        "sql": "ALTER TABLE dst.t2 ADD COLUMN c INT",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "driver applies create index",
+        "sql": "CREATE INDEX idx_c ON dst.t2(c)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "structure": [
+      {
+        "assert": "src.t gone after rename",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "0",
+        "stderr": ""
+      },
+      {
+        "assert": "dst.t2 exists after rename",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'",
+        "rc": 0,
+        "output": "1",
+        "stderr": ""
+      },
+      {
+        "assert": "column c has type int",
+        "sql": "SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2' AND COLUMN_NAME='c'",
+        "rc": 0,
+        "output": "int",
+        "stderr": ""
+      },
+      {
+        "assert": "idx_c contains exactly c",
+        "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2' AND INDEX_NAME='idx_c'",
+        "rc": 0,
+        "output": "c",
+        "stderr": ""
+      },
+      {
+        "assert": "primary key contains exactly id",
+        "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2' AND INDEX_NAME='PRIMARY'",
+        "rc": 0,
+        "output": "id",
+        "stderr": ""
+      }
+    ],
+    "teardown": [
+      {
+        "name": "drop renamed table",
+        "sql": "DROP TABLE IF EXISTS dst.t2",
+        "rc": 0,
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "no residual dst.t2",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "drop stale source",
+        "sql": "DROP TABLE IF EXISTS src.t",
+        "rc": 0,
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "no residual src.t",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "drop src schema",
+        "sql": "DROP DATABASE IF EXISTS src",
+        "rc": 0,
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "no residual src schema",
+            "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='src'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "drop dst schema",
+        "sql": "DROP DATABASE IF EXISTS dst",
+        "rc": 0,
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "no residual dst schema",
+            "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='dst'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "exit": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":4,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE src.t (id INT PRIMARY KEY);\",\"normalized_sql\":\"CREATE TABLE src.t (id INT PRIMARY KEY)\",\"coverage\":{\"status\":\"complete\"}},{\"index\":1,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE src.t RENAME TO dst.t2;\",\"normalized_sql\":\"ALTER TABLE src.t RENAME TO dst.t2\",\"coverage\":{\"status\":\"complete\"}},{\"index\":2,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE dst.t2 ADD COLUMN c INT;\",\"normalized_sql\":\"ALTER TABLE dst.t2 ADD COLUMN c INT\",\"coverage\":{\"status\":\"complete\"}},{\"index\":3,\"kind\":\"ddl\",\"raw_sql\":\"CREATE INDEX idx_c ON dst.t2(c);\",\"normalized_sql\":\"CREATE INDEX idx_c ON dst.t2(c)\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":4,\"applicable\":4,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "pass",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 4,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE src.t (id INT PRIMARY KEY);",
+          "normalized_sql": "CREATE TABLE src.t (id INT PRIMARY KEY)",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 1,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE src.t RENAME TO dst.t2;",
+          "normalized_sql": "ALTER TABLE src.t RENAME TO dst.t2",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 2,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE dst.t2 ADD COLUMN c INT;",
+          "normalized_sql": "ALTER TABLE dst.t2 ADD COLUMN c INT",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 3,
+          "kind": "ddl",
+          "raw_sql": "CREATE INDEX idx_c ON dst.t2(c);",
+          "normalized_sql": "CREATE INDEX idx_c ON dst.t2(c)",
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 4,
+        "applicable": 4,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "tidb",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "setup create src schema return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup create dst schema return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup drop stale source return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup drop stale destination return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup drop stale destination: src.t absent before audit",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "setup drop stale destination: dst.t2 absent before audit",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='pass'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=4 expected=4"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete', 'complete', 'complete', 'complete']"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['CREATE TABLE src.t (id INT PRIMARY KEY);', 'ALTER TABLE src.t RENAME TO dst.t2;', 'ALTER TABLE dst.t2 ADD COLUMN c INT;', 'CREATE INDEX idx_c ON dst.t2(c);'] expected=['CREATE TABLE src.t (id INT PRIMARY KEY);', 'ALTER TABLE src.t RENAME TO dst.t2;', 'ALTER TABLE dst.t2 ADD COLUMN c INT;', 'CREATE INDEX idx_c ON dst.t2(c);']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "fail_on_triggered",
+      "ok": true,
+      "detail": "fail_on_triggered=False"
+    },
+    {
+      "name": "post-verify audit did not create src.t",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "post-verify audit did not create dst.t2",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute driver applies create return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute driver applies rename return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute driver applies add column return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute driver applies create index return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "structure src.t gone after rename",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "structure dst.t2 exists after rename",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "structure column c has type int",
+      "ok": true,
+      "detail": "rc=0 output='int' expected='int'"
+    },
+    {
+      "name": "structure idx_c contains exactly c",
+      "ok": true,
+      "detail": "rc=0 output='c' expected='c'"
+    },
+    {
+      "name": "structure primary key contains exactly id",
+      "ok": true,
+      "detail": "rc=0 output='id' expected='id'"
+    },
+    {
+      "name": "teardown drop renamed table return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop renamed table: no residual dst.t2",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "teardown drop stale source return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop stale source: no residual src.t",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "teardown drop src schema return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop src schema: no residual src schema",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "teardown drop dst schema return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop dst schema: no residual dst schema",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ds-t05-a2-evidence/postcommit/T05/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "CREATE TABLE src.t (id INT PRIMARY KEY); ALTER TABLE src.t RENAME TO dst.t2; ALTER TABLE dst.t2 ADD COLUMN c INT; CREATE INDEX idx_c ON dst.t2(c);",
+    "--config",
+    "/private/tmp/ds-t05-a2-evidence/postcommit/T05/golden-policy-t05-first-path-isolated.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "golden"
+  ]
+}

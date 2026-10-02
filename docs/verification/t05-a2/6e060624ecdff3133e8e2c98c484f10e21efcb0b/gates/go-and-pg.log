@@ -1,0 +1,11 @@
+=== HEAD ===
+6e060624ecdff3133e8e2c98c484f10e21efcb0b
+=== go test audit ===
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.824s
+=== pg tag ===
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	1.055s
+=== validator ===
+PASS t05 required rename case removed rejected
+contract cases=98 failures=0
+=== gofmt ===
+=== gofmt done ===
