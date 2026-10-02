@@ -25,6 +25,14 @@ const (
 	gapReasonUnknownTableState = "unknown_table_state"
 )
 
+// orderedGapDialects scopes this slice's evidence-gap projection to the
+// dialects the ordered-state machine serves. PostgreSQL keeps its legacy
+// contract — real provider-backed findings still fire through Evaluate, but
+// the new unknown-state gaps never appear on it.
+func orderedGapDialect(dialect spec.Dialect) bool {
+	return dialect == spec.DialectMySQL || dialect == spec.DialectTiDB
+}
+
 type tableExistenceRule struct {
 	ruleID       string
 	requireExist bool
@@ -90,7 +98,7 @@ func (r tableExistenceRule) Evaluate(ctx context.Context, statement spec.Stateme
 // establish. A nil or absent snapshot is definite evidence (the rule either
 // fires or stays silent on purpose); only an unknown target state is a gap.
 func (r tableExistenceRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
-	if !r.AppliesTo(statement) {
+	if !orderedGapDialect(statement.Dialect) || !r.AppliesTo(statement) {
 		return nil
 	}
 	snapshot, ok := targetTableSnapshot(statement)
@@ -190,14 +198,18 @@ func (r alterObjectExistenceRule) Evaluate(ctx context.Context, statement spec.S
 	return findings, nil
 }
 
-// EvidenceGaps reports missing member-existence evidence for the rules on the
-// ordered-state path (currently only add_column). Other object rules keep the
-// legacy silent-skip until their slice opts in.
+// EvidenceGaps reports missing member-existence evidence for every rule in
+// this shared class on the ordered-state path. The knowledge premise mirrors
+// Evaluate exactly: a rule that skips because its member collection is
+// unknown must also report the gap, so "not checked" can never read as
+// "checked". A confirmed-absent table is a settled parent failure and adds
+// no member gap.
 func (r alterObjectExistenceRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
-	if r.ruleID != ruleIDAlterAddColumnExistsForbid || !r.AppliesTo(statement) {
+	if !orderedGapDialect(statement.Dialect) || !r.AppliesTo(statement) {
 		return nil
 	}
-	return memberExistenceGaps(targetTableSnapshot(statement))
+	snapshot, ok := targetTableSnapshot(statement)
+	return memberExistenceGaps(snapshot, ok, r.objectLabel)
 }
 
 type alterPrimaryKeyExistenceRule struct {
@@ -248,7 +260,8 @@ func (r alterPrimaryKeyExistenceRule) Evaluate(ctx context.Context, statement sp
 // bans the action outright and needs no member facts. A confirmed-absent
 // table is a settled parent failure — no member gap is emitted.
 func (r alterPrimaryKeyExistenceRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
-	if r.ruleID != ruleIDAlterDropPrimaryKeyExistsRequire || !r.AppliesTo(statement) {
+	if r.ruleID != ruleIDAlterDropPrimaryKeyExistsRequire ||
+		!orderedGapDialect(statement.Dialect) || !r.AppliesTo(statement) {
 		return nil
 	}
 	snapshot, ok := targetTableSnapshot(statement)
@@ -330,22 +343,50 @@ func snapshotHasIndex(snapshot *spec.TableSnapshot, name string) bool {
 	return snapshot.HasIndex(name)
 }
 
+// memberCollectionFact returns the required_facts name of the collection a
+// member rule consults.
+func memberCollectionFact(objectLabel string) string {
+	if objectLabel == "index" {
+		return "target_table.indexes"
+	}
+	return "target_table.columns"
+}
+
+// memberCollectionUnknown mirrors the Evaluate skip premise for each
+// collection: a withheld column set is a nil Columns slice, while an index
+// set the projection cannot vouch for is marked IndexesUnknown (a loaded
+// empty Indexes list stays an authoritative answer).
+func memberCollectionUnknown(snapshot *spec.TableSnapshot, objectLabel string) bool {
+	if objectLabel == "index" {
+		return snapshot.IndexesUnknown
+	}
+	return snapshot.Columns == nil
+}
+
 // memberExistenceGaps is the shared evidence-gap projection for rules that
 // check table-member existence: an unknown target state needs both facts, a
-// confirmed-present table with an unprovided column set needs only the column
-// collection, and a confirmed-absent table is a settled parent failure that
-// adds no member gap.
-func memberExistenceGaps(snapshot *spec.TableSnapshot, ok bool) []rule.EvidenceGap {
+// confirmed-present table whose relevant collection is unknown needs only
+// that collection, and a confirmed-absent table is a settled parent failure
+// that adds no member gap. The frozen fact ordering pins the member fact
+// first for columns and existence first for indexes.
+func memberExistenceGaps(snapshot *spec.TableSnapshot, ok bool, objectLabel string) []rule.EvidenceGap {
+	collectionFact := memberCollectionFact(objectLabel)
 	if !ok || snapshot == nil {
+		if objectLabel == "index" {
+			return []rule.EvidenceGap{{
+				ReasonCode:    gapReasonUnknownTableState,
+				RequiredFacts: []string{"target_table.existence", collectionFact},
+			}}
+		}
 		return []rule.EvidenceGap{{
 			ReasonCode:    gapReasonUnknownTableState,
-			RequiredFacts: []string{"target_table.columns", "target_table.existence"},
+			RequiredFacts: []string{collectionFact, "target_table.existence"},
 		}}
 	}
-	if snapshot.Exists && snapshot.Columns == nil {
+	if snapshot.Exists && memberCollectionUnknown(snapshot, objectLabel) {
 		return []rule.EvidenceGap{{
 			ReasonCode:    gapReasonUnknownTableState,
-			RequiredFacts: []string{"target_table.columns"},
+			RequiredFacts: []string{collectionFact},
 		}}
 	}
 	return nil
@@ -472,7 +513,8 @@ func (r createIndexColumnsExistRule) EvidenceGaps(statement spec.Statement) []ru
 	if !r.AppliesTo(statement) {
 		return nil
 	}
-	return memberExistenceGaps(targetTableSnapshot(statement))
+	snapshot, ok := targetTableSnapshot(statement)
+	return memberExistenceGaps(snapshot, ok, "column")
 }
 
 func standaloneCreateIndexActions(statement spec.Statement) []spec.Alter {

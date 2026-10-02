@@ -145,6 +145,18 @@ The first implementation was reviewed and reworked (`T05-A1-R1`):
   favour of the frozen `unknown_table_state` vocabulary.
 - PostgreSQL was pinned off the ordered path under every request/provider
   shape (the schema-only, provider-less branch had leaked in).
+- R2 residuals closed: `alterObjectExistenceRule` now shares one knowledge
+  premise between `Evaluate` and `EvidenceGaps`, so every column/index
+  member-existence rule (`add`/`drop`/`modify`/`change`/`rename` column,
+  `add`/`drop`/`rename` index) reports `unknown_table_state` on an unknown
+  collection — a silent skip can no longer count as a completed check.
+  Frozen fact ordering pins `[columns, existence]` for column members and
+  `[existence, indexes]` for index members, matching
+  `target_table.primary_key` for the primary-key rule.
+- The new gap projection is dialect-gated at the rule layer
+  (`orderedGapDialect`): PostgreSQL keeps its legacy finding/skip contract
+  on every request shape — provider-backed findings still fire, and no
+  `unknown_table_state` gap ever appears.
 - Golden acceptance was completed for all four anchors: every anchor's
   first-path metadata case now carries the full six-phase oracle — the
   fixture confirms `t` absent, runs the CLI audit (which must not mutate),

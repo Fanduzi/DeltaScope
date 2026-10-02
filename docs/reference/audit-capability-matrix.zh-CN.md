@@ -165,8 +165,9 @@ ALTER 路径的索引检查复用 CREATE TABLE 中的相同逻辑。
 
 以下规则基于请求内有序 schema 视图评估：配置了元数据时取实时表快照，否则对 MySQL 与
 TiDB 使用同一审计批次内先前语句派生的状态。表存在性（`exists.alter`、`exists.create`）、
-ADD COLUMN 存在性与独立 `CREATE INDEX` 列存在性在状态无法确定时产生
-`unknown_table_state` 证据缺口；其余规则在无可用状态时仍被跳过。
+全部列/索引成员存在性（`add`/`drop`/`modify`/`change`/`rename` 列与 `add`/`drop`/`rename`
+索引）、DROP PRIMARY KEY 存在性与独立 `CREATE INDEX` 列存在性在 MySQL/TiDB 上状态无法确定时产生
+`unknown_table_state` 证据缺口；其余规则在无可用状态时仍被跳过。PostgreSQL 从不产生这些缺口。
 
 | 规则 ID | 检查描述 | 离线 | 元数据 | 默认级别 |
 |---------|---------|:----:|:------:|---------|

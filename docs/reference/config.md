@@ -2476,11 +2476,14 @@ rules:
 
 These rules evaluate against the request-local ordered schema view. With a live connection
 they consume the provider snapshot; offline, MySQL/TiDB batches derive state from earlier
-statements in the same audit. `ddl.table.exists.alter.require`,
-`ddl.table.exists.create.forbid`, `ddl.alter.add_column.exists.forbid`, and
+statements in the same audit. On MySQL/TiDB, the table-existence rules
+(`ddl.table.exists.alter.require`, `ddl.table.exists.create.forbid`), every column/index
+member-existence rule (`add`/`drop`/`modify`/`change`/`rename` column and `add`/`drop`/`rename`
+index), `ddl.alter.drop_primary_key.exists.require`, and
 `ddl.create_index.columns.exists.require` emit `unknown_table_state`
 evidence gaps (coverage `unverified`) when that state cannot
-prove the premise; the remaining rules still silently no-op without usable state.
+prove the premise; the remaining rules still silently no-op without usable state. The new
+gap projection never applies to PostgreSQL — it keeps its legacy finding/skip contract.
 
 ---
 
