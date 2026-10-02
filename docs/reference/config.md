@@ -2478,8 +2478,8 @@ These rules evaluate against the request-local ordered schema view. With a live 
 they consume the provider snapshot; offline, MySQL/TiDB batches derive state from earlier
 statements in the same audit. `ddl.table.exists.alter.require`,
 `ddl.table.exists.create.forbid`, `ddl.alter.add_column.exists.forbid`, and
-`ddl.create_index.columns.exists.require` emit `unknown_table_state` /
-`incomplete_table_structure` evidence gaps (coverage `unverified`) when that state cannot
+`ddl.create_index.columns.exists.require` emit `unknown_table_state`
+evidence gaps (coverage `unverified`) when that state cannot
 prove the premise; the remaining rules still silently no-op without usable state.
 
 ---

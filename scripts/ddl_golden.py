@@ -749,7 +749,7 @@ def execute_metadata_case(manifest, anchor_key, binary, policies, spec):
         "policy_path": policy["path"],
         "connect": {k: v for k, v in conn.items() if k != "password"},
         "expected": spec["expect"],
-        "actual": {"database": {}, "setup": [], "post_verify": [], "teardown": []},
+        "actual": {"database": {}, "setup": [], "post_verify": [], "execute": [], "structure": [], "teardown": []},
         "assertions": [],
         "status": "pass",
     }
@@ -848,14 +848,48 @@ def execute_metadata_case(manifest, anchor_key, binary, policies, spec):
             "detail": f"rc={vrc} output={vout.strip()!r} expected={check['expect']!r}",
         })
 
+    # The test driver applies the audited statements itself, statement by
+    # statement — the product only ever reads; the fixture must prove the
+    # audited SQL actually works on this anchor (issue #84 T05 oracle).
+    for step in spec.get("execute") or []:
+        erc, eout, eerr = mysql_exec(anchor, step["sql"], database=anchor["database"], silent=False)
+        record = {"name": step["name"], "sql": step["sql"], "rc": erc, "stdout": eout.strip(), "stderr": eerr.strip()}
+        case["actual"]["execute"].append(record)
+        case["assertions"].append({
+            "name": f"execute {step['name']} return code",
+            "ok": erc == step.get("expect_rc", 0),
+            "detail": f"rc={erc} expected={step.get('expect_rc', 0)} stderr={eerr.strip()!r}",
+        })
+
+    # Structure oracle: after the driver applies the audited statements the
+    # resulting schema must match the frozen expectation exactly — column
+    # type, index membership/order, primary key membership/order.
+    for check in spec.get("structure") or []:
+        vrc, vout, verr = mysql_exec(anchor, check["sql"], silent=True)
+        case["actual"]["structure"].append({"assert": check["assert"], "sql": check["sql"], "rc": vrc, "output": vout.strip(), "stderr": verr.strip()})
+        case["assertions"].append({
+            "name": f"structure {check['assert']}",
+            "ok": vrc == 0 and vout.strip() == check["expect"],
+            "detail": f"rc={vrc} output={vout.strip()!r} expected={check['expect']!r}",
+        })
+
     for step in spec.get("teardown") or []:
         trc, tout, terr = mysql_exec(anchor, step["sql"], database=anchor["database"], silent=False)
-        case["actual"]["teardown"].append({"name": step["name"], "sql": step["sql"], "rc": trc, "stderr": terr.strip()})
+        record = {"name": step["name"], "sql": step["sql"], "rc": trc, "stderr": terr.strip()}
+        case["actual"]["teardown"].append(record)
         case["assertions"].append({
             "name": f"teardown {step['name']} return code",
             "ok": trc == step.get("expect_rc", 0),
             "detail": f"rc={trc} expected={step.get('expect_rc', 0)} stderr={terr.strip()!r}",
         })
+        for verify in step.get("verify") or []:
+            vrc, vout, verr = mysql_exec(anchor, verify["sql"], silent=True)
+            record.setdefault("verify", []).append({"assert": verify["assert"], "sql": verify["sql"], "rc": vrc, "output": vout.strip(), "stderr": verr.strip()})
+            case["assertions"].append({
+                "name": f"teardown {step['name']}: {verify['assert']}",
+                "ok": vrc == 0 and vout.strip() == verify["expect"],
+                "detail": f"rc={vrc} output={vout.strip()!r} expected={verify['expect']!r}",
+            })
 
     if not all(a["ok"] for a in case["assertions"]):
         case["status"] = "fail"
@@ -1331,6 +1365,13 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
     if isinstance(legacy_policy, dict) and legacy_policy.get("profile"):
         policy_by_name.setdefault(legacy_policy["profile"], legacy_policy)
     declared_enables = manifest_declared_policy_enables(manifest)
+    # A named profile that collides with the reserved/default profile name
+    # would silently redefine it in the declared map — fail closed at the
+    # manifest level just like the runner does.
+    reserved_profile_names = {manifest.get("policy_profile", "all-rules-disabled"), "all-rules-disabled"}
+    for name in (manifest.get("policy") or {}).get("profiles") or {}:
+        if name in reserved_profile_names:
+            failures.append(f"manifest policy.profiles {name!r} collides with the default/reserved profile name")
     catalog_ids = None
     if policies and verify_binary and (cli.get("path") or "") and pathlib.Path(cli["path"]).is_file():
         crc, cout, cerr = run_cmd([cli["path"], "rules", "list", "--format", "json"], timeout=60)
@@ -1576,6 +1617,35 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
                     failures.append(f"case {case_id}: post_verify {i} identity mismatch")
                 if check.get("rc") != 0 or check.get("output") != mcheck["expect"]:
                     failures.append(f"case {case_id}: post_verify {mcheck['assert']} output {check.get('output')!r} != {mcheck['expect']!r}")
+            # Driver-applied statements and the structure oracle are recorded
+            # evidence, not decoration: every manifest-declared execute step
+            # must appear in order with the expected return code, and every
+            # structure query must appear in order with its exact expected
+            # output. A dropped or rewritten step is a fabricated oracle.
+            execs = actual.get("execute") or []
+            manifest_execs = spec.get("execute") or []
+            if len(execs) != len(manifest_execs):
+                failures.append(f"case {case_id}: execute step count {len(execs)} != manifest {len(manifest_execs)}")
+            for i, mstep in enumerate(manifest_execs):
+                if i >= len(execs):
+                    break
+                step = execs[i]
+                if step.get("name") != mstep["name"] or step.get("sql") != mstep["sql"]:
+                    failures.append(f"case {case_id}: execute step {mstep['name']} identity mismatch")
+                if step.get("rc") != mstep.get("expect_rc", 0):
+                    failures.append(f"case {case_id}: execute step {mstep['name']} rc {step.get('rc')} != expected {mstep.get('expect_rc', 0)}")
+            structures = actual.get("structure") or []
+            manifest_structure = spec.get("structure") or []
+            if len(structures) != len(manifest_structure):
+                failures.append(f"case {case_id}: structure query count {len(structures)} != manifest {len(manifest_structure)}")
+            for i, mcheck in enumerate(manifest_structure):
+                if i >= len(structures):
+                    break
+                check = structures[i]
+                if check.get("assert") != mcheck["assert"] or check.get("sql") != mcheck["sql"]:
+                    failures.append(f"case {case_id}: structure {i} identity mismatch")
+                if check.get("rc") != 0 or check.get("output") != mcheck["expect"]:
+                    failures.append(f"case {case_id}: structure {mcheck['assert']} output {check.get('output')!r} != {mcheck['expect']!r}")
             teardowns = actual.get("teardown") or []
             manifest_teardowns = spec.get("teardown") or []
             if len(teardowns) != len(manifest_teardowns):
@@ -1586,6 +1656,17 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
                 step = teardowns[i]
                 if step.get("sql") != mstep["sql"] or step.get("rc") != mstep.get("expect_rc", 0):
                     failures.append(f"case {case_id}: teardown {mstep['name']} identity/rc mismatch")
+                verifies = step.get("verify") or []
+                if len(verifies) != len(mstep.get("verify") or []):
+                    failures.append(f"case {case_id}: teardown {mstep['name']} verify count mismatch")
+                for j, mverify in enumerate(mstep.get("verify") or []):
+                    if j >= len(verifies):
+                        break
+                    verify = verifies[j]
+                    if verify.get("assert") != mverify["assert"] or verify.get("sql") != mverify["sql"]:
+                        failures.append(f"case {case_id}: teardown verify {j} identity mismatch")
+                    if verify.get("rc") != 0 or verify.get("output") != mverify["expect"]:
+                        failures.append(f"case {case_id}: teardown verify {mverify['assert']} output {verify.get('output')!r} != {mverify['expect']!r}")
         elif kind == "cli_error":
             spec = error_case_spec_for(manifest, case)
             if spec is None:

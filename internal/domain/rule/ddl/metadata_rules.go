@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: metadata-enriched DDL Statement specs plus per-rule policy values, where enriched snapshots may be unknown, known-absent, complete, or complete-present with incomplete structural collections
-// output: existence and snapshot-backed findings for create-table, alter-table, and standalone create-index operations, plus evidence gaps (unknown_table_state / incomplete_table_structure / table_not_found) on the whitelisted existence rules when the ordered schema state cannot prove a premise
+// output: existence and snapshot-backed findings for create-table, alter-table, and standalone create-index operations, plus evidence gaps (unknown_table_state / table_not_found) on the whitelisted existence rules when the ordered schema state cannot prove a premise
 // pos: DDL rule implementations that depend on optional metadata-aware or batch-derived facts
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -17,13 +17,12 @@ import (
 
 const (
 	// gapReasonUnknownTableState marks statements whose target table state the
-	// ordered batch view could not establish (no provider snapshot and no
-	// reliable in-batch derivation, or a contaminated entry).
+	// ordered batch view could not establish (no provider snapshot, no
+	// reliable in-batch derivation, a withheld member collection, or a
+	// contaminated entry). The frozen gap vocabulary has no separate
+	// "incomplete structure" reason — unknown member facts report the same
+	// unknown-state reason with narrower required_facts.
 	gapReasonUnknownTableState = "unknown_table_state"
-	// gapReasonIncompleteTableStructure marks tables confirmed present whose
-	// column/index shape was not provided, so member-existence checks cannot
-	// run without fabricating structure.
-	gapReasonIncompleteTableStructure = "incomplete_table_structure"
 )
 
 type tableExistenceRule struct {
@@ -140,9 +139,12 @@ func (r alterObjectExistenceRule) Evaluate(ctx context.Context, statement spec.S
 	// A present table with nil Columns means the column shape was not
 	// provided — column-member existence checks must skip rather than
 	// fabricate absent members. Index members are not gated on Columns: a
-	// loaded-but-empty Indexes set is authoritative for the provider, while
-	// every real table has at least one column.
-	if !ok || snapshot == nil || !snapshot.Exists || (r.objectLabel == "column" && snapshot.Columns == nil) {
+	// loaded-but-empty Indexes set is authoritative for the provider — but a
+	// projection that cannot vouch for indexes (IndexesUnknown) must skip
+	// the same way.
+	if !ok || snapshot == nil || !snapshot.Exists ||
+		(r.objectLabel == "column" && snapshot.Columns == nil) ||
+		(r.objectLabel == "index" && snapshot.IndexesUnknown) {
 		return nil, nil
 	}
 
@@ -221,7 +223,12 @@ func (r alterPrimaryKeyExistenceRule) Evaluate(ctx context.Context, statement sp
 		return nil, nil
 	}
 	snapshot, ok := targetTableSnapshot(statement)
-	if !ok || snapshot == nil || !snapshot.Exists || snapshot.HasPrimaryKey() {
+	// Unknown member collections must not read as "primary key absent":
+	// PrimaryKeyUnknown/ConstraintsUnknown mark projections that cannot
+	// vouch for those sets, and nil-provider/derived-incomplete shapes
+	// stay silent instead of fabricating a missing-key finding.
+	if !ok || snapshot == nil || !snapshot.Exists ||
+		snapshot.PrimaryKeyUnknown || snapshot.ConstraintsUnknown || snapshot.HasPrimaryKey() {
 		return nil, nil
 	}
 	return []rule.Finding{{
@@ -234,6 +241,30 @@ func (r alterPrimaryKeyExistenceRule) Evaluate(ctx context.Context, statement sp
 			"exists": false,
 		},
 	}}, nil
+}
+
+// EvidenceGaps reports the primary-key fact this rule needed but could not
+// establish. Only the require-presence variant opts in; the forbid variant
+// bans the action outright and needs no member facts. A confirmed-absent
+// table is a settled parent failure — no member gap is emitted.
+func (r alterPrimaryKeyExistenceRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
+	if r.ruleID != ruleIDAlterDropPrimaryKeyExistsRequire || !r.AppliesTo(statement) {
+		return nil
+	}
+	snapshot, ok := targetTableSnapshot(statement)
+	if !ok || snapshot == nil {
+		return []rule.EvidenceGap{{
+			ReasonCode:    gapReasonUnknownTableState,
+			RequiredFacts: []string{"target_table.primary_key", "target_table.existence"},
+		}}
+	}
+	if snapshot.Exists && (snapshot.PrimaryKeyUnknown || snapshot.ConstraintsUnknown) {
+		return []rule.EvidenceGap{{
+			ReasonCode:    gapReasonUnknownTableState,
+			RequiredFacts: []string{"target_table.primary_key"},
+		}}
+	}
+	return nil
 }
 
 func matchingAlterObjectActions(statement spec.Statement, actions ...string) []spec.Alter {
@@ -313,7 +344,7 @@ func memberExistenceGaps(snapshot *spec.TableSnapshot, ok bool) []rule.EvidenceG
 	}
 	if snapshot.Exists && snapshot.Columns == nil {
 		return []rule.EvidenceGap{{
-			ReasonCode:    gapReasonIncompleteTableStructure,
+			ReasonCode:    gapReasonUnknownTableState,
 			RequiredFacts: []string{"target_table.columns"},
 		}}
 	}
@@ -368,9 +399,11 @@ func (r createIndexColumnsExistRule) Evaluate(ctx context.Context, statement spe
 	}
 
 	tableName := metadataTargetTableName(statement, snapshot)
-	schema := strings.TrimSpace(statement.Metadata.Schema)
-	if schema == "" && snapshot != nil {
-		schema = strings.TrimSpace(snapshot.Schema)
+	// The snapshot's schema is the effective target identity — an explicit
+	// qualifier beats the request schema recorded on statement metadata.
+	schema := strings.TrimSpace(snapshot.Schema)
+	if schema == "" {
+		schema = strings.TrimSpace(statement.Metadata.Schema)
 	}
 
 	// A confirmed-absent table is a settled parent failure: report the

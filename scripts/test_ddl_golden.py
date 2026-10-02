@@ -913,6 +913,353 @@ def main():
         a["cases"][2]["actual"]["stdout"] = json.dumps(parsed)
         results.append(check("t04b-r1 component/canonical drift rejected", a, "components", manifest=mvg))
 
+        # ------------------------------------------------------------------
+        # T05 (#84): ordered-state metadata cases carry a six-phase oracle —
+        # setup (absent confirmed) → audit → post_verify (no mutation) →
+        # execute (driver applies the audited SQL) → structure (c/idx_c/PK) →
+        # teardown (residual absent). Every phase is manifest-derived and
+        # recomputed; nothing is trusted from artifact.expected/.parsed/.ok.
+        T05SQL = "CREATE TABLE t (id INT PRIMARY KEY); ALTER TABLE t ADD COLUMN c INT; CREATE INDEX idx_c ON t (c);"
+        T05_MISS = "CREATE TABLE t (id INT PRIMARY KEY); CREATE INDEX idx_c ON t (missing_c);"
+        T05_EXEC = "CREATE TABLE t (id INT PRIMARY KEY); EXECUTE stmt; CREATE INDEX ix ON t (id);"
+        RID5 = "ddl.fake.one"
+
+        mt5 = copy.deepcopy(MANIFEST)
+        mt5["policy"] = {"enable": {},
+                         "profiles": {"t05-first-path": {"enable": {RID5: {"enabled": True, "level": "blocker",
+                                                                          "params": {"required": True}}}}}}
+        mt5["metadata_cases"] = [
+            {
+                "id": "t05-first", "anchor": "mysqlX", "dialect": "mysql",
+                "sql": T05SQL, "policy": "t05-first-path",
+                "connect": {"host": "127.0.0.1", "port": 23384, "user": "root",
+                            "password_env": "DS_PW", "password": "root", "schema": "golden"},
+                "setup": [{"name": "ensure t absent", "expect_rc": 0, "sql": "DROP TABLE IF EXISTS t",
+                           "verify": [{"assert": "t absent before audit",
+                                       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+                                       "expect": "0"}]}],
+                "expect": {"exit": 0, "verdict": "pass", "statements": 3, "findings": 0,
+                           "diagnostics": 0, "unsupported": 0, "coverage": "complete",
+                           "statement_coverage": ["complete", "complete", "complete"],
+                           "evidence_gaps": 0, "fail_on_triggered": False},
+                "post_verify": [{"assert": "audit did not create t",
+                                 "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+                                 "expect": "0"}],
+                "execute": [
+                    {"name": "driver applies create", "expect_rc": 0, "sql": "CREATE TABLE t (id INT PRIMARY KEY)"},
+                    {"name": "driver applies add column", "expect_rc": 0, "sql": "ALTER TABLE t ADD COLUMN c INT"},
+                    {"name": "driver applies create index", "expect_rc": 0, "sql": "CREATE INDEX idx_c ON t (c)"},
+                ],
+                "structure": [
+                    {"assert": "column c has type int", "expect": "int",
+                     "sql": "SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'"},
+                    {"assert": "idx_c contains exactly c", "expect": "c",
+                     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_c'"},
+                    {"assert": "primary key contains exactly id", "expect": "id",
+                     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'"},
+                ],
+                "teardown": [{"name": "drop fixture", "expect_rc": 0, "sql": "DROP TABLE IF EXISTS t",
+                              "verify": [{"assert": "no residual t",
+                                          "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+                                          "expect": "0"}]}],
+            },
+            {
+                "id": "t05-missing-col", "anchor": "mysqlX", "dialect": "mysql",
+                "sql": T05_MISS, "policy": "t05-first-path",
+                "connect": {"host": "127.0.0.1", "port": 23384, "user": "root",
+                            "password_env": "DS_PW", "password": "root", "schema": "golden"},
+                "setup": [{"name": "ensure t absent", "expect_rc": 0, "sql": "DROP TABLE IF EXISTS t"}],
+                "expect": {"exit": 1, "verdict": "reject", "statements": 2, "findings": 1,
+                           "diagnostics": 0, "unsupported": 0, "coverage": "complete",
+                           "statement_coverage": ["complete", "complete"],
+                           "evidence_gaps": 0, "fail_on_triggered": True,
+                           "finding_entries": [{"index": 1, "rule_id": RID5, "level": "blocker"}],
+                           "finding_metadata": [{"index": 1, "rule_id": RID5,
+                                                 "metadata": {"schema": "golden", "table": "t",
+                                                              "index": "idx_c", "column": "missing_c",
+                                                              "exists": False}}]},
+                "post_verify": [{"assert": "audit did not create t",
+                                 "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+                                 "expect": "0"}],
+                "teardown": [{"name": "drop fixture", "expect_rc": 0, "sql": "DROP TABLE IF EXISTS t"}],
+            },
+            {
+                "id": "t05-exec", "anchor": "mysqlX", "dialect": "mysql",
+                "sql": T05_EXEC, "policy": "t05-first-path",
+                "connect": {"host": "127.0.0.1", "port": 23384, "user": "root",
+                            "password_env": "DS_PW", "password": "root", "schema": "golden"},
+                "setup": [{"name": "ensure t absent", "expect_rc": 0, "sql": "DROP TABLE IF EXISTS t"}],
+                "expect": {"exit": 1, "verdict": "review", "statements": 3, "findings": 0,
+                           "diagnostics": 1, "unsupported": 1, "coverage": "incomplete",
+                           "statement_coverage": ["complete", "incomplete", "unverified"],
+                           "unsupported_features": ["execute_prepared"],
+                           "evidence_gaps": 1,
+                           "evidence_gap_entries": [{"index": 2, "rule_id": RID5,
+                                                     "reason_code": "unknown_table_state",
+                                                     "required_facts": ["target_table.columns",
+                                                                        "target_table.existence"]}],
+                           "fail_on_triggered": False},
+                "post_verify": [{"assert": "audit did not create t",
+                                 "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+                                 "expect": "0"}],
+                "teardown": [{"name": "drop fixture", "expect_rc": 0, "sql": "DROP TABLE IF EXISTS t"}],
+            },
+        ]
+        mt5["required_case_ids"] = list(mt5["required_case_ids"]) + [
+            "TX.meta.t05-first", "TX.meta.t05-missing-col", "TX.meta.t05-exec"]
+
+        t05_enable = {RID5: {"enabled": True, "level": "blocker", "params": {"required": True}}}
+        t05_policy = tmp / "t05-policy.yaml"
+        t05_policy.write_text(render_policy(t05_enable), encoding="utf-8")
+        t05_record = {"profile": "t05-first-path", "path": str(t05_policy),
+                      "sha256": hashlib.sha256(t05_policy.read_bytes()).hexdigest(),
+                      "catalog_rules": 3,
+                      "enabled_rules": t05_enable,
+                      "disabled_rules": 2}
+        t05_default_policy = tmp / "t05-default-policy.yaml"
+        t05_default_policy.write_text(render_policy({}), encoding="utf-8")
+        t05_default_record = {"profile": "all-rules-disabled", "path": str(t05_default_policy),
+                              "sha256": hashlib.sha256(t05_default_policy.read_bytes()).hexdigest(),
+                              "catalog_rules": 3,
+                              "enabled_rules": {},
+                              "disabled_rules": 3}
+
+        def t05_meta_record(case_id, spec_id, sql, expect, parsed, extra_actual=None):
+            actual = {
+                "database": {"product": "mysql", "image": "mysql:9.9.9",
+                             "image_digest": "mysql@sha256:beef", "container": "c",
+                             "reachable": True, "version": "9.9.9"},
+                "setup": [], "exit": expect["exit"], "stdout": json.dumps(parsed), "stderr": "",
+                "parsed": copy.deepcopy(parsed),
+                "post_verify": [], "execute": [], "structure": [], "teardown": [],
+            }
+            if extra_actual:
+                actual.update(copy.deepcopy(extra_actual))
+            return {
+                "case_id": case_id, "kind": "cli_metadata", "cli_case": spec_id,
+                "anchor": "mysqlX", "dialect": "mysql", "input_sql": sql,
+                "policy_profile": "t05-first-path", "policy_path": str(t05_policy),
+                "connect": {"host": "127.0.0.1", "port": 23384, "user": "root",
+                            "password_env": "DS_PW", "schema": "golden"},
+                "command": [str(tmp / "deltascope"), "audit", "--dialect", "mysql", "--sql",
+                            sql, "--config", str(t05_policy),
+                            "--format", "json", "--host", "127.0.0.1", "--port", "23384",
+                            "--user", "root", "--password-env", "DS_PW", "--schema", "golden"],
+                "expected": copy.deepcopy(expect),
+                "actual": actual,
+                "assertions": [{"name": "a", "ok": True, "detail": "d"}], "status": "pass",
+            }
+
+        def t05_artifact():
+            a = copy.deepcopy(base)
+            a["policy_profile"] = copy.deepcopy(t05_default_record)
+            a["policies"] = [copy.deepcopy(t05_default_record), copy.deepcopy(t05_record)]
+            # The baseline cli case records its --config path verbatim; rebind
+            # it to the regenerated default policy record.
+            cli = next(c for c in a["cases"] if c["case_id"] == "TX.cli.mysql")
+            cmd = cli["command"]
+            cmd[cmd.index("--config") + 1] = str(t05_default_policy)
+            first_spec = mt5["metadata_cases"][0]
+            first_parsed = {"verdict": "pass", "coverage": {"status": "complete"},
+                            "statements": [
+                                {"index": 0, "raw_sql": "CREATE TABLE t (id INT PRIMARY KEY);",
+                                 "findings": [], "coverage": {"status": "complete"}},
+                                {"index": 1, "raw_sql": "ALTER TABLE t ADD COLUMN c INT;",
+                                 "findings": [], "coverage": {"status": "complete"}},
+                                {"index": 2, "raw_sql": "CREATE INDEX idx_c ON t (c);",
+                                 "findings": [], "coverage": {"status": "complete"}}],
+                            "global_findings": [], "diagnostics": [], "unsupported": [],
+                            "fail_on_triggered": False}
+            first_actual = {
+                "setup": [{"name": "ensure t absent", "sql": "DROP TABLE IF EXISTS t", "rc": 0,
+                           "stdout": "", "stderr": "",
+                           "verify": [{"assert": "t absent before audit",
+                                       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+                                       "rc": 0, "output": "0", "stderr": ""}]}],
+                "post_verify": [{"assert": "audit did not create t",
+                                 "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+                                 "rc": 0, "output": "0", "stderr": ""}],
+                "execute": [{"name": "driver applies create", "sql": "CREATE TABLE t (id INT PRIMARY KEY)",
+                             "rc": 0, "stdout": "", "stderr": ""},
+                            {"name": "driver applies add column", "sql": "ALTER TABLE t ADD COLUMN c INT",
+                             "rc": 0, "stdout": "", "stderr": ""},
+                            {"name": "driver applies create index", "sql": "CREATE INDEX idx_c ON t (c)",
+                             "rc": 0, "stdout": "", "stderr": ""}],
+                "structure": [
+                    {"assert": "column c has type int", "rc": 0, "output": "int", "stderr": "",
+                     "sql": "SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'"},
+                    {"assert": "idx_c contains exactly c", "rc": 0, "output": "c", "stderr": "",
+                     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_c'"},
+                    {"assert": "primary key contains exactly id", "rc": 0, "output": "id", "stderr": "",
+                     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'"}],
+                "teardown": [{"name": "drop fixture", "sql": "DROP TABLE IF EXISTS t", "rc": 0, "stderr": "",
+                              "verify": [{"assert": "no residual t",
+                                          "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+                                          "rc": 0, "output": "0", "stderr": ""}]}],
+            }
+            miss_spec = mt5["metadata_cases"][1]
+            miss_parsed = {"verdict": "reject", "coverage": {"status": "complete"},
+                           "statements": [
+                               {"index": 0, "raw_sql": "CREATE TABLE t (id INT PRIMARY KEY);",
+                                "findings": [], "coverage": {"status": "complete"}},
+                               {"index": 1, "raw_sql": "CREATE INDEX idx_c ON t (missing_c);",
+                                "findings": [{"rule_id": RID5, "level": "blocker",
+                                              "statement_index": 1,
+                                              "metadata": {"schema": "golden", "table": "t",
+                                                           "index": "idx_c", "column": "missing_c",
+                                                           "exists": False}}],
+                                "coverage": {"status": "complete"}}],
+                           "global_findings": [], "diagnostics": [], "unsupported": [],
+                           "fail_on_triggered": True}
+            miss_actual = {
+                "setup": [{"name": "ensure t absent", "sql": "DROP TABLE IF EXISTS t", "rc": 0,
+                           "stdout": "", "stderr": ""}],
+                "post_verify": [{"assert": "audit did not create t",
+                                 "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+                                 "rc": 0, "output": "0", "stderr": ""}],
+                "teardown": [{"name": "drop fixture", "sql": "DROP TABLE IF EXISTS t", "rc": 0, "stderr": ""}],
+            }
+            exec_spec = mt5["metadata_cases"][2]
+            exec_parsed = {"verdict": "review", "coverage": {"status": "incomplete"},
+                           "statements": [
+                               {"index": 0, "raw_sql": "CREATE TABLE t (id INT PRIMARY KEY);",
+                                "findings": [], "coverage": {"status": "complete"}},
+                               {"index": 1, "raw_sql": "EXECUTE stmt;", "findings": [],
+                                "coverage": {"status": "incomplete"}},
+                               {"index": 2, "raw_sql": "CREATE INDEX ix ON t (id);", "findings": [],
+                                "coverage": {"status": "unverified"},
+                                "evidence_gaps": [{"rule_id": RID5,
+                                                   "reason_code": "unknown_table_state",
+                                                   "required_facts": ["target_table.columns",
+                                                                      "target_table.existence"]}]}],
+                           "global_findings": [], "unsupported": [
+                               {"index": 1, "feature": "execute_prepared",
+                                "sql": "EXECUTE stmt;",
+                                "reason": "parsed by the shared parser but not covered by audited semantics"}],
+                           "diagnostics": [{"classification": "unsupported_statement"}],
+                           "fail_on_triggered": False}
+            exec_actual = {
+                "setup": [{"name": "ensure t absent", "sql": "DROP TABLE IF EXISTS t", "rc": 0,
+                           "stdout": "", "stderr": ""}],
+                "post_verify": [{"assert": "audit did not create t",
+                                 "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+                                 "rc": 0, "output": "0", "stderr": ""}],
+                "teardown": [{"name": "drop fixture", "sql": "DROP TABLE IF EXISTS t", "rc": 0, "stderr": ""}],
+            }
+            a["cases"] = list(a["cases"]) + [
+                t05_meta_record("TX.meta.t05-first", "t05-first", T05SQL, first_spec["expect"],
+                                first_parsed, first_actual),
+                t05_meta_record("TX.meta.t05-missing-col", "t05-missing-col", T05_MISS,
+                                miss_spec["expect"], miss_parsed, miss_actual),
+                t05_meta_record("TX.meta.t05-exec", "t05-exec", T05_EXEC, exec_spec["expect"],
+                                exec_parsed, exec_actual),
+            ]
+            a["required_case_ids"] = list(dict.fromkeys(
+                list(a["required_case_ids"]) + ["TX.meta.t05-first", "TX.meta.t05-missing-col",
+                                                "TX.meta.t05-exec"]))
+            a["executed_count"] = len(a["cases"])
+            return a
+
+        def t05_case(a, case_id):
+            return next(c for c in a["cases"] if c["case_id"] == case_id)
+
+        results.append(check("t05 ordered-state artifact passes", t05_artifact(), "", manifest=mt5))
+
+        # Mutation: a dropped middle statement cannot hide behind the recorded
+        # parsed blob — raw stdout recomputation sees the count shrink.
+        a = t05_artifact()
+        case = t05_case(a, "TX.meta.t05-first")
+        parsed = copy.deepcopy(case["actual"]["parsed"])
+        del parsed["statements"][1]
+        case["actual"]["stdout"] = json.dumps(parsed)
+        case["actual"]["parsed"] = parsed
+        results.append(check("t05 deleted middle statement rejected", a, "statements", manifest=mt5))
+
+        # Mutation: the missing-column negative rewritten to pass — exit,
+        # verdict, findings, and fail_on_triggered all disagree with the
+        # manifest-derived expectation.
+        a = t05_artifact()
+        case = t05_case(a, "TX.meta.t05-missing-col")
+        parsed = copy.deepcopy(case["actual"]["parsed"])
+        parsed["verdict"] = "pass"
+        parsed["statements"][1]["findings"] = []
+        parsed["fail_on_triggered"] = False
+        case["actual"]["stdout"] = json.dumps(parsed)
+        case["actual"]["parsed"] = parsed
+        results.append(check("t05 missing-column negative as pass rejected", a, "verdict", manifest=mt5))
+
+        # Mutation: the contaminated dependent statement promoted to complete.
+        a = t05_artifact()
+        case = t05_case(a, "TX.meta.t05-exec")
+        parsed = copy.deepcopy(case["actual"]["parsed"])
+        del parsed["statements"][2]["evidence_gaps"]
+        parsed["statements"][2]["coverage"]["status"] = "complete"
+        case["actual"]["stdout"] = json.dumps(parsed)
+        case["actual"]["parsed"] = parsed
+        results.append(check("t05 dependent-after-unsupported as complete rejected", a, "coverage", manifest=mt5))
+
+        # Mutation: a finding moved to the wrong statement — the recorded
+        # statement_index no longer matches the manifest's pinned index.
+        a = t05_artifact()
+        case = t05_case(a, "TX.meta.t05-missing-col")
+        parsed = copy.deepcopy(case["actual"]["parsed"])
+        finding = parsed["statements"][1]["findings"].pop(0)
+        finding["statement_index"] = 0
+        parsed["statements"][0]["findings"] = [finding]
+        case["actual"]["stdout"] = json.dumps(parsed)
+        case["actual"]["parsed"] = parsed
+        results.append(check("t05 finding moved to wrong statement rejected", a, "finding entries", manifest=mt5))
+
+        # Mutation: the finding's bound column rewritten — metadata pins must
+        # consume the exact (index, rule_id, metadata subset) tuple.
+        a = t05_artifact()
+        case = t05_case(a, "TX.meta.t05-missing-col")
+        parsed = copy.deepcopy(case["actual"]["parsed"])
+        parsed["statements"][1]["findings"][0]["metadata"]["column"] = "other_c"
+        case["actual"]["stdout"] = json.dumps(parsed)
+        case["actual"]["parsed"] = parsed
+        results.append(check("t05 finding metadata column changed rejected", a, "finding metadata", manifest=mt5))
+
+        # Mutation: the audit-before verify (t absent confirmation) removed.
+        a = t05_artifact()
+        t05_case(a, "TX.meta.t05-first")["actual"]["setup"][0]["verify"] = []
+        results.append(check("t05 audit-before query removed rejected", a, "verify count", manifest=mt5))
+
+        # Mutation: the audit-after query output rewritten.
+        a = t05_artifact()
+        t05_case(a, "TX.meta.t05-first")["actual"]["post_verify"][0]["output"] = "1"
+        results.append(check("t05 audit-after query altered rejected", a, "post_verify", manifest=mt5))
+
+        # Mutation: a structure-oracle query removed outright.
+        a = t05_artifact()
+        del t05_case(a, "TX.meta.t05-first")["actual"]["structure"][1]
+        results.append(check("t05 structure query removed rejected", a, "structure", manifest=mt5))
+
+        # Mutation: a structure-oracle answer rewritten (PK reports wrong
+        # column order/content but the record claims pass).
+        a = t05_artifact()
+        t05_case(a, "TX.meta.t05-first")["actual"]["structure"][2]["output"] = "c,id"
+        results.append(check("t05 structure answer altered rejected", a, "structure", manifest=mt5))
+
+        # Mutation: a fixture execution failed while the record claims pass —
+        # rc must equal the manifest's expect_rc regardless of status fields.
+        a = t05_artifact()
+        t05_case(a, "TX.meta.t05-first")["actual"]["execute"][1]["rc"] = 1
+        results.append(check("t05 failed fixture execute as success rejected", a, "execute", manifest=mt5))
+
+        # Mutation: the residual check under teardown removed.
+        a = t05_artifact()
+        t05_case(a, "TX.meta.t05-first")["actual"]["teardown"][0]["verify"] = []
+        results.append(check("t05 teardown residual verify removed rejected", a, "verify count", manifest=mt5))
+
+        # Mutation: a new policy.profiles entry collides with the default
+        # profile name — the validator must fail closed at manifest level.
+        m_collision = copy.deepcopy(mt5)
+        m_collision["policy"]["profiles"]["all-rules-disabled"] = {
+            "enable": {"ddl.fake.two": {"enabled": True, "level": "blocker", "params": {}}}}
+        results.append(check("t05 profile name colliding with default rejected",
+                             t05_artifact(), "collides", manifest=m_collision))
+
     failures = results.count(False)
     print(f"contract cases={len(results)} failures={failures}")
     return 1 if failures else 0

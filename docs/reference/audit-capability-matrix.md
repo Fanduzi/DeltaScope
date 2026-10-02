@@ -180,8 +180,8 @@ Alter-path index checks reuse the same logic as CREATE TABLE.
 These rules evaluate against a request-local ordered schema view: a live table snapshot when
 metadata is configured, or a state derived from earlier statements in the same audit batch for
 MySQL and TiDB. Table existence (`exists.alter`, `exists.create`), add-column existence, and
-standalone `CREATE INDEX` column existence emit `unknown_table_state` /
-`incomplete_table_structure` evidence gaps when the state cannot be established; the remaining
+standalone `CREATE INDEX` column existence emit `unknown_table_state`
+evidence gaps when the state cannot be established; the remaining
 rules are still skipped without usable state.
 
 | Rule ID | Check Description | Offline | Metadata | Default Level |

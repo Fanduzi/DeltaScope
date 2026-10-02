@@ -1,6 +1,6 @@
 // Package spec defines normalized statement specifications for rule evaluation.
 // input: optional metadata-aware audit facts such as explicit known-bit instance variables, target-table snapshots, and the canonical version identity
-// output: parser-neutral metadata structures and lookup helpers for future rules
+// output: parser-neutral metadata structures (including per-collection unknown markers on table snapshots) and lookup helpers for future rules
 // pos: domain metadata model shared by offline and metadata-aware audit paths
 // note: if this file changes, update this header and module README.md.
 package spec
@@ -34,6 +34,10 @@ type InstanceFacts struct {
 }
 
 // TableSnapshot is the current metadata-backed shape of a target table.
+// Member collections keep their source semantics: a nil Columns marks a
+// withheld column set (unknown), while PrimaryKey/Indexes/Constraints treat
+// nil as "loaded, absent/empty" — the *Unknown flags below override that
+// convention when a projection cannot vouch for those collections.
 type TableSnapshot struct {
 	Schema      string            `json:"schema,omitempty"`
 	Exists      bool              `json:"exists"`
@@ -43,6 +47,14 @@ type TableSnapshot struct {
 	Indexes     []Index           `json:"indexes,omitempty"`
 	Constraints []Constraint      `json:"constraints,omitempty"`
 	Options     map[string]string `json:"options,omitempty"`
+
+	// PrimaryKeyUnknown/IndexesUnknown/ConstraintsUnknown mark member
+	// collections the snapshot cannot vouch for (a derived-incomplete
+	// projection). Rules must treat them as unknown — never as confirmed
+	// absence. Internal audit markers; not part of serialized output.
+	PrimaryKeyUnknown  bool `json:"-"`
+	IndexesUnknown     bool `json:"-"`
+	ConstraintsUnknown bool `json:"-"`
 }
 
 // HasColumn reports whether the snapshot contains a column by name, case-insensitively.

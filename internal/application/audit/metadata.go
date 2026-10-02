@@ -1,7 +1,7 @@
 // Package audit orchestrates audit use cases at the application layer.
 // input: optional metadata providers, parsed statement MutationTargets, the validated target_version for observed-identity reconciliation, and parse-failure positions that contaminate later derived state
-// output: metadata-enriched statements with resolved target schemas, per-statement pre-state snapshots from the request-local ordered batch state (provider facts or in-batch derivations for MySQL/TiDB), and a canonical Version identity for rules that can use live instance or schema facts
-// pos: application-layer bridge between provider-backed metadata and domain statements, owning the ordered schema-state seam (batch_state.go)
+// output: metadata-enriched statements with resolved target schemas, per-statement pre-state snapshots from the request-local ordered batch state (provider facts or in-batch derivations for MySQL/TiDB — PostgreSQL keeps its original enrichment in every request shape), and a canonical Version identity for rules that can use live instance or schema facts
+// pos: application-layer bridge between provider-backed metadata and domain statements, owning the ordered schema-state seam (batch_state.go) and the effective-identity resolver (explicit qualifiers win over the request schema)
 // note: if this file changes, update this header and module README.md.
 package audit
 
@@ -58,8 +58,28 @@ func enrichStatementsWithMetadata(ctx context.Context, dialect spec.Dialect, req
 	}
 
 	if request.Provider == nil {
-		if strings.TrimSpace(request.Schema) == "" && request.TargetVersion == nil && !orderedStateDialect(dialect) {
-			return statements, nil
+		if !orderedStateDialect(dialect) {
+			// PostgreSQL keeps its original enrichment: schema/version
+			// attachment plus object lookups, never the ordered state pass.
+			if strings.TrimSpace(request.Schema) == "" && request.TargetVersion == nil {
+				return statements, nil
+			}
+			enriched := make([]spec.Statement, len(statements))
+			for i, statement := range statements {
+				enriched[i] = statement
+				enriched[i].Metadata = &spec.Metadata{
+					Schema:  metadataTargetSchema(request, statement),
+					Version: request.TargetVersion,
+				}
+
+				if lookup := planObjectLookup(request.Schema, statement); lookup != nil {
+					objSnapshot := resolveObjectSnapshot(ctx, request, dialect, lookup)
+					if objSnapshot != nil {
+						enriched[i].Metadata.Objects = append(enriched[i].Metadata.Objects, *objSnapshot)
+					}
+				}
+			}
+			return enriched, nil
 		}
 		return enrichOrderedStatements(ctx, dialect, request, statements, failures, nil, request.TargetVersion)
 	}
@@ -164,12 +184,11 @@ func enrichOrderedStatements(ctx context.Context, dialect spec.Dialect, request 
 		metadataSchema := metadataTargetSchema(request, statement)
 		metadata := &spec.Metadata{Schema: metadataSchema, Instance: instanceFacts, Version: resolvedVersion}
 
-		tableName, err := orderedTargetTableName(ctx, dialect, request, statement)
+		target, err := orderedTargetTable(ctx, dialect, request, statement, metadataSchema)
 		if err != nil {
 			return nil, fmt.Errorf("resolve index owner: %w", err)
 		}
-		if tableName != "" {
-			target := orderedTargetTable(statement, metadataSchema, tableName)
+		if tableName := strings.TrimSpace(target.Name); tableName != "" {
 			snapshot, err := state.preState(ctx, metadataSchema, target)
 			if err != nil {
 				return nil, fmt.Errorf("load table snapshot for %s: %w", tableName, err)
@@ -204,33 +223,34 @@ func enrichOrderedStatements(ctx context.Context, dialect spec.Dialect, request 
 	return enriched, nil
 }
 
-// orderedTargetTable picks the table identity a statement's pre-state
-// projection is about. Qualified names keep their qualifier; index-owner
-// resolver answers on statements without a direct table fall back to the
-// resolved name under the statement's effective schema.
-func orderedTargetTable(statement spec.Statement, metadataSchema, tableName string) spec.Table {
+// orderedTargetTable resolves the effective table identity a statement's
+// pre-state projection is about. Qualified names keep their qualifier — the
+// explicit schema always wins over the request schema; index-owner resolver
+// answers carry the schema they were resolved under, falling back to the
+// statement's effective schema.
+func orderedTargetTable(ctx context.Context, dialect spec.Dialect, request *MetadataRequest, statement spec.Statement, metadataSchema string) (spec.Table, error) {
 	switch {
 	case statement.DDL != nil && statement.DDL.Table != nil:
-		return *statement.DDL.Table
+		return *statement.DDL.Table, nil
 	case statement.DML != nil:
 		if targets := statement.DML.MutationTargetTables(); len(targets) > 0 {
-			return targets[0]
+			return targets[0], nil
 		}
+		return spec.Table{}, nil
+	case statement.DDL == nil:
+		return spec.Table{}, nil
 	}
-	return spec.Table{Schema: metadataSchema, Name: tableName}
-}
-
-// orderedTargetTableName resolves the primary target table for the ordered
-// path. Standalone CREATE INDEX names its target table directly — the only
-// wiring this slice adds over the shared resolver path.
-func orderedTargetTableName(ctx context.Context, dialect spec.Dialect, request *MetadataRequest, statement spec.Statement) (string, error) {
-	if statement.DDL != nil && statement.DDL.Operation == spec.DDLOperationCreateIndex {
-		if statement.DDL.Table == nil {
-			return "", nil
-		}
-		return strings.TrimSpace(statement.DDL.Table.Name), nil
+	name, schema, err := indexOwnerTarget(ctx, dialect, request, statement)
+	if err != nil {
+		return spec.Table{}, err
 	}
-	return metadataTargetTableName(ctx, dialect, request, statement)
+	if strings.TrimSpace(name) == "" {
+		return spec.Table{}, nil
+	}
+	if schema == "" {
+		schema = metadataSchema
+	}
+	return spec.Table{Schema: schema, Name: name}, nil
 }
 
 func instanceFactVersion(facts *spec.InstanceFacts) string {
@@ -276,28 +296,38 @@ func metadataTargetTableName(ctx context.Context, dialect spec.Dialect, request 
 	if tableName != "" {
 		return tableName, nil
 	}
+	name, _, err := indexOwnerTarget(ctx, dialect, request, statement)
+	return name, err
+}
+
+// indexOwnerTarget resolves a statement's owning table through the optional
+// IndexOwnerResolver — for statements that name an index but not its table
+// (standalone ALTER INDEX, alter-based rename/drop index). It returns the
+// resolved table name and the schema the resolution ran under.
+func indexOwnerTarget(ctx context.Context, dialect spec.Dialect, request *MetadataRequest, statement spec.Statement) (string, string, error) {
 	if request == nil || request.Provider == nil || statement.DDL == nil {
-		return "", nil
+		return "", "", nil
 	}
 	resolver, ok := request.Provider.(IndexOwnerResolver)
 	if !ok {
-		return "", nil
+		return "", "", nil
 	}
 	// Standalone ALTER INDEX operations (PostgreSQL).
 	if statement.DDL.Operation == spec.DDLOperationAlterIndex {
 		indexName := strings.TrimSpace(statement.DDL.ObjectName)
 		if indexName == "" {
-			return "", nil
+			return "", "", nil
 		}
 		schema := indexOwnerSchema(request, statement.DDL.Options)
 		if schema == "" {
-			return "", nil
+			return "", "", nil
 		}
-		return resolver.ResolveTableForIndex(ctx, dialect, schema, indexName)
+		name, err := resolver.ResolveTableForIndex(ctx, dialect, schema, indexName)
+		return name, schema, err
 	}
 	// Alter-based index operations (MySQL/TiDB).
 	if len(statement.DDL.Alter) == 0 {
-		return "", nil
+		return "", "", nil
 	}
 	for _, alter := range statement.DDL.Alter {
 		switch alter.Action {
@@ -309,10 +339,11 @@ func metadataTargetTableName(ctx context.Context, dialect spec.Dialect, request 
 			if schema == "" {
 				continue
 			}
-			return resolver.ResolveTableForIndex(ctx, dialect, schema, alter.Name)
+			name, err := resolver.ResolveTableForIndex(ctx, dialect, schema, alter.Name)
+			return name, schema, err
 		}
 	}
-	return "", nil
+	return "", "", nil
 }
 
 func indexOwnerSchema(request *MetadataRequest, options map[string]string) string {

@@ -409,7 +409,7 @@ rules:
 
 ### 存在性检查规则（12 条 — 元数据支撑）
 
-这些规则验证 DDL 语句引用的对象在请求内有序 schema 视图中确实存在（或确实不存在）：配置了元数据时取实时表快照，否则对 MySQL 与 TiDB 使用同一审计批次内先前语句派生的状态。`ddl.table.exists.alter.require`、`ddl.table.exists.create.forbid`、`ddl.alter.add_column.exists.forbid` 与 `ddl.create_index.columns.exists.require` 在状态无法确定时产生 `unknown_table_state` / `incomplete_table_structure` 证据缺口；其余规则在无可用状态时仍静默跳过。
+这些规则验证 DDL 语句引用的对象在请求内有序 schema 视图中确实存在（或确实不存在）：配置了元数据时取实时表快照，否则对 MySQL 与 TiDB 使用同一审计批次内先前语句派生的状态。`ddl.table.exists.alter.require`、`ddl.table.exists.create.forbid`、`ddl.alter.add_column.exists.forbid` 与 `ddl.create_index.columns.exists.require` 在状态无法确定时产生 `unknown_table_state` 证据缺口；其余规则在无可用状态时仍静默跳过。
 
 | 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
 |---------|------|:--------:|:--------------:|

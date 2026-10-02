@@ -160,7 +160,8 @@ func TestEnrichMetadataKeepsRequestSchemaForPostgreSQLAndDDL(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			provider := &dmlTableMetadataProvider{
 				snapshots: map[string]*spec.TableSnapshot{
-					"app.users": {Schema: "app", Exists: true},
+					"app.users":      {Schema: "app", Exists: true},
+					"tenant_a.users": {Schema: "tenant_a", Exists: true},
 				},
 			}
 			enriched, err := enrichStatementsWithMetadata(context.Background(), tc.dialect, &MetadataRequest{
@@ -170,8 +171,15 @@ func TestEnrichMetadataKeepsRequestSchemaForPostgreSQLAndDDL(t *testing.T) {
 			if err != nil {
 				t.Fatalf("enrich: %v", err)
 			}
-			if len(provider.snapshotCalls) != 1 || provider.snapshotCalls[0] != "app.users" {
-				t.Fatalf("snapshot calls = %#v, want app.users", provider.snapshotCalls)
+			// PostgreSQL keeps the request schema for provider reads (legacy
+			// contract); MySQL/TiDB follow the effective statement identity —
+			// an explicit table qualifier wins over the request schema.
+			wantCall := "app.users"
+			if tc.dialect != spec.DialectPostgreSQL {
+				wantCall = "tenant_a.users"
+			}
+			if len(provider.snapshotCalls) != 1 || provider.snapshotCalls[0] != wantCall {
+				t.Fatalf("snapshot calls = %#v, want %s", provider.snapshotCalls, wantCall)
 			}
 			if enriched[0].Metadata == nil || enriched[0].Metadata.Schema != "app" {
 				t.Fatalf("metadata schema = %#v, want app", enriched[0].Metadata)

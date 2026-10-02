@@ -354,12 +354,15 @@ func TestBatchStateIncompleteProviderShapeYieldsIncompleteStructureGap(t *testin
 		}
 	}
 	gaps := t05GapsByRule(result, 0, t05RuleAddColumnForbid)
-	if len(gaps) != 1 || gaps[0].ReasonCode != "incomplete_table_structure" {
-		t.Fatalf("statement 0 add-column must report incomplete_table_structure, got %+v", result.Statements[0].EvidenceGaps)
+	if len(gaps) != 1 || gaps[0].ReasonCode != "unknown_table_state" {
+		t.Fatalf("statement 0 add-column must report unknown_table_state, got %+v", result.Statements[0].EvidenceGaps)
+	}
+	if len(gaps[0].RequiredFacts) != 1 || gaps[0].RequiredFacts[0] != "target_table.columns" {
+		t.Fatalf("required_facts must be [target_table.columns], got %+v", gaps[0].RequiredFacts)
 	}
 	gaps = t05GapsByRule(result, 1, t05RuleCreateIndexColumns)
-	if len(gaps) != 1 || gaps[0].ReasonCode != "incomplete_table_structure" {
-		t.Fatalf("statement 1 create-index must report incomplete_table_structure, got %+v", result.Statements[1].EvidenceGaps)
+	if len(gaps) != 1 || gaps[0].ReasonCode != "unknown_table_state" {
+		t.Fatalf("statement 1 create-index must report unknown_table_state, got %+v", result.Statements[1].EvidenceGaps)
 	}
 }
 

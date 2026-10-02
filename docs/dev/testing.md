@@ -152,7 +152,16 @@ execution platform.
 - Manifests may declare `metadata_cases` (live-database CLI audit with
   test-driven `setup`/`post_verify`/`teardown` proving the audited object was
   never mutated) and `error_cases` (real pre-audit failures such as connection
-  refusal, pinned by exit code and bounded stderr markers). A `policy` block
+  refusal, pinned by exit code and bounded stderr markers). `metadata_cases`
+  may additionally declare `execute` (the test driver applies the audited
+  statements one by one after the product audit — the product itself only
+  ever reads) and `structure` (post-execution `information_schema` oracle
+  queries pinned to exact output such as column type, index membership, and
+  primary-key membership); `setup`/`teardown` steps may carry `verify`
+  queries that prove pre/post absence. Every recorded step is re-derived
+  from the manifest by the validator — a missing or rewritten execute step,
+  an altered structure answer, or a dropped verify all fail validation
+  (#84 T05-A1-R1). A `policy` block
   generates an isolated policy that enables exactly the declared rules while
   disabling the rest of the live catalog, alongside a generated
   `all-rules-disabled` profile for per-case selection; policy file sha256s are
