@@ -785,7 +785,7 @@ def execute_metadata_case(manifest, anchor_key, binary, policies, spec):
             "detail": f"rc={src} expected={step.get('expect_rc', 0)} stderr={serr.strip()!r}",
         })
         for verify in step.get("verify") or []:
-            vrc, vout, verr = mysql_exec(anchor, verify["sql"], silent=True)
+            vrc, vout, verr = mysql_exec(anchor, verify["sql"], database=anchor["database"] if verify.get("use_database") else None, silent=True)
             record.setdefault("verify", []).append({"assert": verify["assert"], "sql": verify["sql"], "rc": vrc, "output": vout.strip(), "stderr": verr.strip()})
             case["assertions"].append({
                 "name": f"setup {step['name']}: {verify['assert']}",
@@ -840,7 +840,7 @@ def execute_metadata_case(manifest, anchor_key, binary, policies, spec):
         case["assertions"].append({"name": name, "ok": bool(ok), "detail": detail})
 
     for check in spec.get("post_verify") or []:
-        vrc, vout, verr = mysql_exec(anchor, check["sql"], silent=True)
+        vrc, vout, verr = mysql_exec(anchor, check["sql"], database=anchor["database"] if check.get("use_database") else None, silent=True)
         case["actual"]["post_verify"].append({"assert": check["assert"], "sql": check["sql"], "rc": vrc, "output": vout.strip(), "stderr": verr.strip()})
         case["assertions"].append({
             "name": f"post-verify {check['assert']}",
@@ -865,7 +865,7 @@ def execute_metadata_case(manifest, anchor_key, binary, policies, spec):
     # resulting schema must match the frozen expectation exactly — column
     # type, index membership/order, primary key membership/order.
     for check in spec.get("structure") or []:
-        vrc, vout, verr = mysql_exec(anchor, check["sql"], silent=True)
+        vrc, vout, verr = mysql_exec(anchor, check["sql"], database=anchor["database"] if check.get("use_database") else None, silent=True)
         case["actual"]["structure"].append({"assert": check["assert"], "sql": check["sql"], "rc": vrc, "output": vout.strip(), "stderr": verr.strip()})
         case["assertions"].append({
             "name": f"structure {check['assert']}",
@@ -883,7 +883,7 @@ def execute_metadata_case(manifest, anchor_key, binary, policies, spec):
             "detail": f"rc={trc} expected={step.get('expect_rc', 0)} stderr={terr.strip()!r}",
         })
         for verify in step.get("verify") or []:
-            vrc, vout, verr = mysql_exec(anchor, verify["sql"], silent=True)
+            vrc, vout, verr = mysql_exec(anchor, verify["sql"], database=anchor["database"] if verify.get("use_database") else None, silent=True)
             record.setdefault("verify", []).append({"assert": verify["assert"], "sql": verify["sql"], "rc": vrc, "output": vout.strip(), "stderr": verr.strip()})
             case["assertions"].append({
                 "name": f"teardown {step['name']}: {verify['assert']}",

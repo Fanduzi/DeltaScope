@@ -158,7 +158,10 @@ execution platform.
   ever reads) and `structure` (post-execution `information_schema` oracle
   queries pinned to exact output such as column type, index membership, and
   primary-key membership); `setup`/`teardown` steps may carry `verify`
-  queries that prove pre/post absence. Every recorded step is re-derived
+  queries that prove pre/post absence, and any `verify`/`post_verify`/
+  `structure` entry may set `use_database: true` to run inside the anchor's
+  fixture database (for session facts such as `SELECT DATABASE()` on the
+  unqualified-destination rename path). Every recorded step is re-derived
   from the manifest by the validator — a missing or rewritten execute step,
   an altered structure answer, or a dropped verify all fail validation
   (#84 T05-A1-R1). A `policy` block

@@ -496,10 +496,11 @@ func TestBatchStateProviderReadsAreRequestLocal(t *testing.T) {
 	}
 }
 
-// RENAME TABLE has no modeled migration this slice: both its source and its
-// destination are invalidated, so later statements on either end report
-// unknown-table gaps instead of an absent finding or a stale derived shape.
-func TestBatchStateRenameTableInvalidatesBothEnds(t *testing.T) {
+// A2: a single-pair RENAME onto a known-absent destination migrates the
+// derived shape instead of tombstoning both ends. The freed source name is a
+// settled absent fact — touching it produces the confirmed-absent blocker —
+// and the destination carries the moved structure into later statements.
+func TestBatchStateRenameTableMigratesToAbsentDestination(t *testing.T) {
 	t.Parallel()
 	provider := &t05AbsentProvider{}
 	result, err := AuditSQL(context.Background(), Request{
@@ -513,22 +514,23 @@ func TestBatchStateRenameTableInvalidatesBothEnds(t *testing.T) {
 	if err != nil {
 		t.Fatalf("audit: %v", err)
 	}
-	// Both ends must report unknown-table gaps — never a confirmed-absent
-	// finding. The destination must not be recorded as absent even though the
-	// provider snapshot for it said exists:false before the rename.
-	for i := 2; i <= 3; i++ {
-		if len(result.Statements[i].Findings) != 0 {
-			t.Fatalf("renamed end on statement %d must not produce findings, got %+v", i, result.Statements[i].Findings)
-		}
-		for _, ruleID := range []string{t05RuleAlterRequire, t05RuleAddColumnForbid} {
-			gaps := t05GapsByRule(result, i, ruleID)
-			if len(gaps) != 1 || gaps[0].ReasonCode != "unknown_table_state" {
-				t.Fatalf("statement %d rule %s must report unknown_table_state, got %+v", i, ruleID, result.Statements[i].EvidenceGaps)
-			}
-		}
-		if result.Statements[i].Coverage.Status != report.CoverageUnverified {
-			t.Fatalf("statement %d coverage = %+v, want unverified", i, result.Statements[i].Coverage)
-		}
+	// The old name is confirmed absent after migration: a deterministic
+	// existence finding, never an unknown-state gap.
+	findings := t05FindingsByRule(result, 2, t05RuleAlterRequire)
+	if len(findings) != 1 || findings[0].Metadata["exists"] != false {
+		t.Fatalf("old source name must report a confirmed-absent finding, got %+v", result.Statements[2].Findings)
+	}
+	if len(result.Statements[2].EvidenceGaps) != 0 {
+		t.Fatalf("confirmed-absent source must not report gaps, got %+v", result.Statements[2].EvidenceGaps)
+	}
+	// The destination owns the migrated shape: adding a fresh column is a
+	// clean complete statement on derived state.
+	if len(result.Statements[3].Findings) != 0 || len(result.Statements[3].EvidenceGaps) != 0 {
+		t.Fatalf("migrated destination must stay clean, findings=%+v gaps=%+v",
+			result.Statements[3].Findings, result.Statements[3].EvidenceGaps)
+	}
+	if result.Statements[3].Coverage.Status != report.CoverageComplete {
+		t.Fatalf("migrated destination coverage = %+v, want complete", result.Statements[3].Coverage)
 	}
 }
 

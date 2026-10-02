@@ -5783,6 +5783,2240 @@
      "sql": "DROP TABLE IF EXISTS t, u"
     }
    ]
+  },
+  {
+   "id": "t05-mysql57-rename-qualified",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE src.t (id INT PRIMARY KEY); RENAME TABLE src.t TO dst.t2; ALTER TABLE dst.t2 ADD COLUMN c INT; CREATE INDEX idx_c ON dst.t2(c);",
+   "policy": "t05-first-path-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "create src schema",
+     "expect_rc": 0,
+     "sql": "CREATE DATABASE IF NOT EXISTS src"
+    },
+    {
+     "name": "create dst schema",
+     "expect_rc": 0,
+     "sql": "CREATE DATABASE IF NOT EXISTS dst"
+    },
+    {
+     "name": "drop stale source",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t"
+    },
+    {
+     "name": "drop stale destination",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS dst.t2",
+     "verify": [
+      {
+       "assert": "src.t absent before audit",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+      },
+      {
+       "assert": "dst.t2 absent before audit",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 4,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "statement_sql": [
+     "CREATE TABLE src.t (id INT PRIMARY KEY);",
+     "RENAME TABLE src.t TO dst.t2;",
+     "ALTER TABLE dst.t2 ADD COLUMN c INT;",
+     "CREATE INDEX idx_c ON dst.t2(c);"
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create src.t",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+    },
+    {
+     "assert": "audit did not create dst.t2",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies create",
+     "expect_rc": 0,
+     "sql": "CREATE TABLE src.t (id INT PRIMARY KEY)"
+    },
+    {
+     "name": "driver applies rename",
+     "expect_rc": 0,
+     "sql": "RENAME TABLE src.t TO dst.t2"
+    },
+    {
+     "name": "driver applies add column",
+     "expect_rc": 0,
+     "sql": "ALTER TABLE dst.t2 ADD COLUMN c INT"
+    },
+    {
+     "name": "driver applies create index",
+     "expect_rc": 0,
+     "sql": "CREATE INDEX idx_c ON dst.t2(c)"
+    }
+   ],
+   "structure": [
+    {
+     "assert": "src.t gone after rename",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+    },
+    {
+     "assert": "dst.t2 exists after rename",
+     "expect": "1",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+    },
+    {
+     "assert": "column c has type int",
+     "expect": "int",
+     "sql": "SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2' AND COLUMN_NAME='c'"
+    },
+    {
+     "assert": "idx_c contains exactly c",
+     "expect": "c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2' AND INDEX_NAME='idx_c'"
+    },
+    {
+     "assert": "primary key contains exactly id",
+     "expect": "id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2' AND INDEX_NAME='PRIMARY'"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop renamed table",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS dst.t2",
+     "verify": [
+      {
+       "assert": "no residual dst.t2",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+      }
+     ]
+    },
+    {
+     "name": "drop stale source",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t",
+     "verify": [
+      {
+       "assert": "no residual src.t",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+      }
+     ]
+    },
+    {
+     "name": "drop src schema",
+     "expect_rc": 0,
+     "sql": "DROP DATABASE IF EXISTS src",
+     "verify": [
+      {
+       "assert": "no residual src schema",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='src'"
+      }
+     ]
+    },
+    {
+     "name": "drop dst schema",
+     "expect_rc": 0,
+     "sql": "DROP DATABASE IF EXISTS dst",
+     "verify": [
+      {
+       "assert": "no residual dst schema",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='dst'"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-mysql57-rename-alter",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE src.t (id INT PRIMARY KEY); ALTER TABLE src.t RENAME TO dst.t2; ALTER TABLE dst.t2 ADD COLUMN c INT; CREATE INDEX idx_c ON dst.t2(c);",
+   "policy": "t05-first-path-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "create src schema",
+     "expect_rc": 0,
+     "sql": "CREATE DATABASE IF NOT EXISTS src"
+    },
+    {
+     "name": "create dst schema",
+     "expect_rc": 0,
+     "sql": "CREATE DATABASE IF NOT EXISTS dst"
+    },
+    {
+     "name": "drop stale source",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t"
+    },
+    {
+     "name": "drop stale destination",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS dst.t2",
+     "verify": [
+      {
+       "assert": "src.t absent before audit",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+      },
+      {
+       "assert": "dst.t2 absent before audit",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 4,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "statement_sql": [
+     "CREATE TABLE src.t (id INT PRIMARY KEY);",
+     "ALTER TABLE src.t RENAME TO dst.t2;",
+     "ALTER TABLE dst.t2 ADD COLUMN c INT;",
+     "CREATE INDEX idx_c ON dst.t2(c);"
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create src.t",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+    },
+    {
+     "assert": "audit did not create dst.t2",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies create",
+     "expect_rc": 0,
+     "sql": "CREATE TABLE src.t (id INT PRIMARY KEY)"
+    },
+    {
+     "name": "driver applies rename",
+     "expect_rc": 0,
+     "sql": "ALTER TABLE src.t RENAME TO dst.t2"
+    },
+    {
+     "name": "driver applies add column",
+     "expect_rc": 0,
+     "sql": "ALTER TABLE dst.t2 ADD COLUMN c INT"
+    },
+    {
+     "name": "driver applies create index",
+     "expect_rc": 0,
+     "sql": "CREATE INDEX idx_c ON dst.t2(c)"
+    }
+   ],
+   "structure": [
+    {
+     "assert": "src.t gone after rename",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+    },
+    {
+     "assert": "dst.t2 exists after rename",
+     "expect": "1",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+    },
+    {
+     "assert": "column c has type int",
+     "expect": "int",
+     "sql": "SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2' AND COLUMN_NAME='c'"
+    },
+    {
+     "assert": "idx_c contains exactly c",
+     "expect": "c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2' AND INDEX_NAME='idx_c'"
+    },
+    {
+     "assert": "primary key contains exactly id",
+     "expect": "id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2' AND INDEX_NAME='PRIMARY'"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop renamed table",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS dst.t2",
+     "verify": [
+      {
+       "assert": "no residual dst.t2",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+      }
+     ]
+    },
+    {
+     "name": "drop stale source",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t",
+     "verify": [
+      {
+       "assert": "no residual src.t",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+      }
+     ]
+    },
+    {
+     "name": "drop src schema",
+     "expect_rc": 0,
+     "sql": "DROP DATABASE IF EXISTS src",
+     "verify": [
+      {
+       "assert": "no residual src schema",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='src'"
+      }
+     ]
+    },
+    {
+     "name": "drop dst schema",
+     "expect_rc": 0,
+     "sql": "DROP DATABASE IF EXISTS dst",
+     "verify": [
+      {
+       "assert": "no residual dst schema",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='dst'"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-mysql57-rename-unqualified",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE src.t (id INT PRIMARY KEY); RENAME TABLE src.t TO t2; ALTER TABLE t2 ADD COLUMN c INT; CREATE INDEX idx_c ON t2(c);",
+   "policy": "t05-first-path-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "create src schema",
+     "expect_rc": 0,
+     "sql": "CREATE DATABASE IF NOT EXISTS src"
+    },
+    {
+     "name": "drop stale source",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t"
+    },
+    {
+     "name": "drop stale destination",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS golden.t2",
+     "verify": [
+      {
+       "assert": "src.t absent before audit",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+      },
+      {
+       "assert": "golden.t2 absent before audit",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2'"
+      }
+     ]
+    },
+    {
+     "name": "drop stale src.t2",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t2",
+     "verify": [
+      {
+       "assert": "src.t2 absent before audit",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t2'"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 4,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "statement_sql": [
+     "CREATE TABLE src.t (id INT PRIMARY KEY);",
+     "RENAME TABLE src.t TO t2;",
+     "ALTER TABLE t2 ADD COLUMN c INT;",
+     "CREATE INDEX idx_c ON t2(c);"
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create src.t",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+    },
+    {
+     "assert": "audit did not create golden.t2",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2'"
+    },
+    {
+     "assert": "audit session database is golden",
+     "use_database": true,
+     "expect": "golden",
+     "sql": "SELECT DATABASE()"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies create",
+     "expect_rc": 0,
+     "sql": "CREATE TABLE src.t (id INT PRIMARY KEY)"
+    },
+    {
+     "name": "driver applies rename",
+     "expect_rc": 0,
+     "sql": "RENAME TABLE src.t TO t2"
+    },
+    {
+     "name": "driver applies add column",
+     "expect_rc": 0,
+     "sql": "ALTER TABLE t2 ADD COLUMN c INT"
+    },
+    {
+     "name": "driver applies create index",
+     "expect_rc": 0,
+     "sql": "CREATE INDEX idx_c ON t2(c)"
+    }
+   ],
+   "structure": [
+    {
+     "assert": "src.t gone after rename",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+    },
+    {
+     "assert": "golden.t2 exists after rename",
+     "expect": "1",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2'"
+    },
+    {
+     "assert": "unqualified destination did not land in src",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t2'"
+    },
+    {
+     "assert": "column c has type int",
+     "expect": "int",
+     "sql": "SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2' AND COLUMN_NAME='c'"
+    },
+    {
+     "assert": "idx_c contains exactly c",
+     "expect": "c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2' AND INDEX_NAME='idx_c'"
+    },
+    {
+     "assert": "primary key contains exactly id",
+     "expect": "id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2' AND INDEX_NAME='PRIMARY'"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop stale src.t2",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t2"
+    },
+    {
+     "name": "drop renamed table",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS golden.t2",
+     "verify": [
+      {
+       "assert": "no residual golden.t2",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2'"
+      }
+     ]
+    },
+    {
+     "name": "drop stale source",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t",
+     "verify": [
+      {
+       "assert": "no residual src.t",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+      }
+     ]
+    },
+    {
+     "name": "drop src schema",
+     "expect_rc": 0,
+     "sql": "DROP DATABASE IF EXISTS src",
+     "verify": [
+      {
+       "assert": "no residual src schema",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='src'"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-mysql80-rename-qualified",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE src.t (id INT PRIMARY KEY); RENAME TABLE src.t TO dst.t2; ALTER TABLE dst.t2 ADD COLUMN c INT; CREATE INDEX idx_c ON dst.t2(c);",
+   "policy": "t05-first-path-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "create src schema",
+     "expect_rc": 0,
+     "sql": "CREATE DATABASE IF NOT EXISTS src"
+    },
+    {
+     "name": "create dst schema",
+     "expect_rc": 0,
+     "sql": "CREATE DATABASE IF NOT EXISTS dst"
+    },
+    {
+     "name": "drop stale source",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t"
+    },
+    {
+     "name": "drop stale destination",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS dst.t2",
+     "verify": [
+      {
+       "assert": "src.t absent before audit",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+      },
+      {
+       "assert": "dst.t2 absent before audit",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 4,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "statement_sql": [
+     "CREATE TABLE src.t (id INT PRIMARY KEY);",
+     "RENAME TABLE src.t TO dst.t2;",
+     "ALTER TABLE dst.t2 ADD COLUMN c INT;",
+     "CREATE INDEX idx_c ON dst.t2(c);"
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create src.t",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+    },
+    {
+     "assert": "audit did not create dst.t2",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies create",
+     "expect_rc": 0,
+     "sql": "CREATE TABLE src.t (id INT PRIMARY KEY)"
+    },
+    {
+     "name": "driver applies rename",
+     "expect_rc": 0,
+     "sql": "RENAME TABLE src.t TO dst.t2"
+    },
+    {
+     "name": "driver applies add column",
+     "expect_rc": 0,
+     "sql": "ALTER TABLE dst.t2 ADD COLUMN c INT"
+    },
+    {
+     "name": "driver applies create index",
+     "expect_rc": 0,
+     "sql": "CREATE INDEX idx_c ON dst.t2(c)"
+    }
+   ],
+   "structure": [
+    {
+     "assert": "src.t gone after rename",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+    },
+    {
+     "assert": "dst.t2 exists after rename",
+     "expect": "1",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+    },
+    {
+     "assert": "column c has type int",
+     "expect": "int",
+     "sql": "SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2' AND COLUMN_NAME='c'"
+    },
+    {
+     "assert": "idx_c contains exactly c",
+     "expect": "c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2' AND INDEX_NAME='idx_c'"
+    },
+    {
+     "assert": "primary key contains exactly id",
+     "expect": "id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2' AND INDEX_NAME='PRIMARY'"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop renamed table",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS dst.t2",
+     "verify": [
+      {
+       "assert": "no residual dst.t2",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+      }
+     ]
+    },
+    {
+     "name": "drop stale source",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t",
+     "verify": [
+      {
+       "assert": "no residual src.t",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+      }
+     ]
+    },
+    {
+     "name": "drop src schema",
+     "expect_rc": 0,
+     "sql": "DROP DATABASE IF EXISTS src",
+     "verify": [
+      {
+       "assert": "no residual src schema",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='src'"
+      }
+     ]
+    },
+    {
+     "name": "drop dst schema",
+     "expect_rc": 0,
+     "sql": "DROP DATABASE IF EXISTS dst",
+     "verify": [
+      {
+       "assert": "no residual dst schema",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='dst'"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-mysql80-rename-alter",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE src.t (id INT PRIMARY KEY); ALTER TABLE src.t RENAME TO dst.t2; ALTER TABLE dst.t2 ADD COLUMN c INT; CREATE INDEX idx_c ON dst.t2(c);",
+   "policy": "t05-first-path-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "create src schema",
+     "expect_rc": 0,
+     "sql": "CREATE DATABASE IF NOT EXISTS src"
+    },
+    {
+     "name": "create dst schema",
+     "expect_rc": 0,
+     "sql": "CREATE DATABASE IF NOT EXISTS dst"
+    },
+    {
+     "name": "drop stale source",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t"
+    },
+    {
+     "name": "drop stale destination",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS dst.t2",
+     "verify": [
+      {
+       "assert": "src.t absent before audit",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+      },
+      {
+       "assert": "dst.t2 absent before audit",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 4,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "statement_sql": [
+     "CREATE TABLE src.t (id INT PRIMARY KEY);",
+     "ALTER TABLE src.t RENAME TO dst.t2;",
+     "ALTER TABLE dst.t2 ADD COLUMN c INT;",
+     "CREATE INDEX idx_c ON dst.t2(c);"
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create src.t",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+    },
+    {
+     "assert": "audit did not create dst.t2",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies create",
+     "expect_rc": 0,
+     "sql": "CREATE TABLE src.t (id INT PRIMARY KEY)"
+    },
+    {
+     "name": "driver applies rename",
+     "expect_rc": 0,
+     "sql": "ALTER TABLE src.t RENAME TO dst.t2"
+    },
+    {
+     "name": "driver applies add column",
+     "expect_rc": 0,
+     "sql": "ALTER TABLE dst.t2 ADD COLUMN c INT"
+    },
+    {
+     "name": "driver applies create index",
+     "expect_rc": 0,
+     "sql": "CREATE INDEX idx_c ON dst.t2(c)"
+    }
+   ],
+   "structure": [
+    {
+     "assert": "src.t gone after rename",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+    },
+    {
+     "assert": "dst.t2 exists after rename",
+     "expect": "1",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+    },
+    {
+     "assert": "column c has type int",
+     "expect": "int",
+     "sql": "SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2' AND COLUMN_NAME='c'"
+    },
+    {
+     "assert": "idx_c contains exactly c",
+     "expect": "c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2' AND INDEX_NAME='idx_c'"
+    },
+    {
+     "assert": "primary key contains exactly id",
+     "expect": "id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2' AND INDEX_NAME='PRIMARY'"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop renamed table",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS dst.t2",
+     "verify": [
+      {
+       "assert": "no residual dst.t2",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+      }
+     ]
+    },
+    {
+     "name": "drop stale source",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t",
+     "verify": [
+      {
+       "assert": "no residual src.t",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+      }
+     ]
+    },
+    {
+     "name": "drop src schema",
+     "expect_rc": 0,
+     "sql": "DROP DATABASE IF EXISTS src",
+     "verify": [
+      {
+       "assert": "no residual src schema",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='src'"
+      }
+     ]
+    },
+    {
+     "name": "drop dst schema",
+     "expect_rc": 0,
+     "sql": "DROP DATABASE IF EXISTS dst",
+     "verify": [
+      {
+       "assert": "no residual dst schema",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='dst'"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-mysql80-rename-unqualified",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE src.t (id INT PRIMARY KEY); RENAME TABLE src.t TO t2; ALTER TABLE t2 ADD COLUMN c INT; CREATE INDEX idx_c ON t2(c);",
+   "policy": "t05-first-path-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "create src schema",
+     "expect_rc": 0,
+     "sql": "CREATE DATABASE IF NOT EXISTS src"
+    },
+    {
+     "name": "drop stale source",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t"
+    },
+    {
+     "name": "drop stale destination",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS golden.t2",
+     "verify": [
+      {
+       "assert": "src.t absent before audit",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+      },
+      {
+       "assert": "golden.t2 absent before audit",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2'"
+      }
+     ]
+    },
+    {
+     "name": "drop stale src.t2",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t2",
+     "verify": [
+      {
+       "assert": "src.t2 absent before audit",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t2'"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 4,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "statement_sql": [
+     "CREATE TABLE src.t (id INT PRIMARY KEY);",
+     "RENAME TABLE src.t TO t2;",
+     "ALTER TABLE t2 ADD COLUMN c INT;",
+     "CREATE INDEX idx_c ON t2(c);"
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create src.t",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+    },
+    {
+     "assert": "audit did not create golden.t2",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2'"
+    },
+    {
+     "assert": "audit session database is golden",
+     "use_database": true,
+     "expect": "golden",
+     "sql": "SELECT DATABASE()"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies create",
+     "expect_rc": 0,
+     "sql": "CREATE TABLE src.t (id INT PRIMARY KEY)"
+    },
+    {
+     "name": "driver applies rename",
+     "expect_rc": 0,
+     "sql": "RENAME TABLE src.t TO t2"
+    },
+    {
+     "name": "driver applies add column",
+     "expect_rc": 0,
+     "sql": "ALTER TABLE t2 ADD COLUMN c INT"
+    },
+    {
+     "name": "driver applies create index",
+     "expect_rc": 0,
+     "sql": "CREATE INDEX idx_c ON t2(c)"
+    }
+   ],
+   "structure": [
+    {
+     "assert": "src.t gone after rename",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+    },
+    {
+     "assert": "golden.t2 exists after rename",
+     "expect": "1",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2'"
+    },
+    {
+     "assert": "unqualified destination did not land in src",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t2'"
+    },
+    {
+     "assert": "column c has type int",
+     "expect": "int",
+     "sql": "SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2' AND COLUMN_NAME='c'"
+    },
+    {
+     "assert": "idx_c contains exactly c",
+     "expect": "c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2' AND INDEX_NAME='idx_c'"
+    },
+    {
+     "assert": "primary key contains exactly id",
+     "expect": "id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2' AND INDEX_NAME='PRIMARY'"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop stale src.t2",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t2"
+    },
+    {
+     "name": "drop renamed table",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS golden.t2",
+     "verify": [
+      {
+       "assert": "no residual golden.t2",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2'"
+      }
+     ]
+    },
+    {
+     "name": "drop stale source",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t",
+     "verify": [
+      {
+       "assert": "no residual src.t",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+      }
+     ]
+    },
+    {
+     "name": "drop src schema",
+     "expect_rc": 0,
+     "sql": "DROP DATABASE IF EXISTS src",
+     "verify": [
+      {
+       "assert": "no residual src schema",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='src'"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-mysql84-rename-qualified",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE src.t (id INT PRIMARY KEY); RENAME TABLE src.t TO dst.t2; ALTER TABLE dst.t2 ADD COLUMN c INT; CREATE INDEX idx_c ON dst.t2(c);",
+   "policy": "t05-first-path-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "create src schema",
+     "expect_rc": 0,
+     "sql": "CREATE DATABASE IF NOT EXISTS src"
+    },
+    {
+     "name": "create dst schema",
+     "expect_rc": 0,
+     "sql": "CREATE DATABASE IF NOT EXISTS dst"
+    },
+    {
+     "name": "drop stale source",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t"
+    },
+    {
+     "name": "drop stale destination",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS dst.t2",
+     "verify": [
+      {
+       "assert": "src.t absent before audit",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+      },
+      {
+       "assert": "dst.t2 absent before audit",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 4,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "statement_sql": [
+     "CREATE TABLE src.t (id INT PRIMARY KEY);",
+     "RENAME TABLE src.t TO dst.t2;",
+     "ALTER TABLE dst.t2 ADD COLUMN c INT;",
+     "CREATE INDEX idx_c ON dst.t2(c);"
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create src.t",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+    },
+    {
+     "assert": "audit did not create dst.t2",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies create",
+     "expect_rc": 0,
+     "sql": "CREATE TABLE src.t (id INT PRIMARY KEY)"
+    },
+    {
+     "name": "driver applies rename",
+     "expect_rc": 0,
+     "sql": "RENAME TABLE src.t TO dst.t2"
+    },
+    {
+     "name": "driver applies add column",
+     "expect_rc": 0,
+     "sql": "ALTER TABLE dst.t2 ADD COLUMN c INT"
+    },
+    {
+     "name": "driver applies create index",
+     "expect_rc": 0,
+     "sql": "CREATE INDEX idx_c ON dst.t2(c)"
+    }
+   ],
+   "structure": [
+    {
+     "assert": "src.t gone after rename",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+    },
+    {
+     "assert": "dst.t2 exists after rename",
+     "expect": "1",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+    },
+    {
+     "assert": "column c has type int",
+     "expect": "int",
+     "sql": "SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2' AND COLUMN_NAME='c'"
+    },
+    {
+     "assert": "idx_c contains exactly c",
+     "expect": "c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2' AND INDEX_NAME='idx_c'"
+    },
+    {
+     "assert": "primary key contains exactly id",
+     "expect": "id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2' AND INDEX_NAME='PRIMARY'"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop renamed table",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS dst.t2",
+     "verify": [
+      {
+       "assert": "no residual dst.t2",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+      }
+     ]
+    },
+    {
+     "name": "drop stale source",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t",
+     "verify": [
+      {
+       "assert": "no residual src.t",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+      }
+     ]
+    },
+    {
+     "name": "drop src schema",
+     "expect_rc": 0,
+     "sql": "DROP DATABASE IF EXISTS src",
+     "verify": [
+      {
+       "assert": "no residual src schema",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='src'"
+      }
+     ]
+    },
+    {
+     "name": "drop dst schema",
+     "expect_rc": 0,
+     "sql": "DROP DATABASE IF EXISTS dst",
+     "verify": [
+      {
+       "assert": "no residual dst schema",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='dst'"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-mysql84-rename-alter",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE src.t (id INT PRIMARY KEY); ALTER TABLE src.t RENAME TO dst.t2; ALTER TABLE dst.t2 ADD COLUMN c INT; CREATE INDEX idx_c ON dst.t2(c);",
+   "policy": "t05-first-path-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "create src schema",
+     "expect_rc": 0,
+     "sql": "CREATE DATABASE IF NOT EXISTS src"
+    },
+    {
+     "name": "create dst schema",
+     "expect_rc": 0,
+     "sql": "CREATE DATABASE IF NOT EXISTS dst"
+    },
+    {
+     "name": "drop stale source",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t"
+    },
+    {
+     "name": "drop stale destination",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS dst.t2",
+     "verify": [
+      {
+       "assert": "src.t absent before audit",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+      },
+      {
+       "assert": "dst.t2 absent before audit",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 4,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "statement_sql": [
+     "CREATE TABLE src.t (id INT PRIMARY KEY);",
+     "ALTER TABLE src.t RENAME TO dst.t2;",
+     "ALTER TABLE dst.t2 ADD COLUMN c INT;",
+     "CREATE INDEX idx_c ON dst.t2(c);"
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create src.t",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+    },
+    {
+     "assert": "audit did not create dst.t2",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies create",
+     "expect_rc": 0,
+     "sql": "CREATE TABLE src.t (id INT PRIMARY KEY)"
+    },
+    {
+     "name": "driver applies rename",
+     "expect_rc": 0,
+     "sql": "ALTER TABLE src.t RENAME TO dst.t2"
+    },
+    {
+     "name": "driver applies add column",
+     "expect_rc": 0,
+     "sql": "ALTER TABLE dst.t2 ADD COLUMN c INT"
+    },
+    {
+     "name": "driver applies create index",
+     "expect_rc": 0,
+     "sql": "CREATE INDEX idx_c ON dst.t2(c)"
+    }
+   ],
+   "structure": [
+    {
+     "assert": "src.t gone after rename",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+    },
+    {
+     "assert": "dst.t2 exists after rename",
+     "expect": "1",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+    },
+    {
+     "assert": "column c has type int",
+     "expect": "int",
+     "sql": "SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2' AND COLUMN_NAME='c'"
+    },
+    {
+     "assert": "idx_c contains exactly c",
+     "expect": "c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2' AND INDEX_NAME='idx_c'"
+    },
+    {
+     "assert": "primary key contains exactly id",
+     "expect": "id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2' AND INDEX_NAME='PRIMARY'"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop renamed table",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS dst.t2",
+     "verify": [
+      {
+       "assert": "no residual dst.t2",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+      }
+     ]
+    },
+    {
+     "name": "drop stale source",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t",
+     "verify": [
+      {
+       "assert": "no residual src.t",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+      }
+     ]
+    },
+    {
+     "name": "drop src schema",
+     "expect_rc": 0,
+     "sql": "DROP DATABASE IF EXISTS src",
+     "verify": [
+      {
+       "assert": "no residual src schema",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='src'"
+      }
+     ]
+    },
+    {
+     "name": "drop dst schema",
+     "expect_rc": 0,
+     "sql": "DROP DATABASE IF EXISTS dst",
+     "verify": [
+      {
+       "assert": "no residual dst schema",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='dst'"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-mysql84-rename-unqualified",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE src.t (id INT PRIMARY KEY); RENAME TABLE src.t TO t2; ALTER TABLE t2 ADD COLUMN c INT; CREATE INDEX idx_c ON t2(c);",
+   "policy": "t05-first-path-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "create src schema",
+     "expect_rc": 0,
+     "sql": "CREATE DATABASE IF NOT EXISTS src"
+    },
+    {
+     "name": "drop stale source",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t"
+    },
+    {
+     "name": "drop stale destination",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS golden.t2",
+     "verify": [
+      {
+       "assert": "src.t absent before audit",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+      },
+      {
+       "assert": "golden.t2 absent before audit",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2'"
+      }
+     ]
+    },
+    {
+     "name": "drop stale src.t2",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t2",
+     "verify": [
+      {
+       "assert": "src.t2 absent before audit",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t2'"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 4,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "statement_sql": [
+     "CREATE TABLE src.t (id INT PRIMARY KEY);",
+     "RENAME TABLE src.t TO t2;",
+     "ALTER TABLE t2 ADD COLUMN c INT;",
+     "CREATE INDEX idx_c ON t2(c);"
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create src.t",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+    },
+    {
+     "assert": "audit did not create golden.t2",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2'"
+    },
+    {
+     "assert": "audit session database is golden",
+     "use_database": true,
+     "expect": "golden",
+     "sql": "SELECT DATABASE()"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies create",
+     "expect_rc": 0,
+     "sql": "CREATE TABLE src.t (id INT PRIMARY KEY)"
+    },
+    {
+     "name": "driver applies rename",
+     "expect_rc": 0,
+     "sql": "RENAME TABLE src.t TO t2"
+    },
+    {
+     "name": "driver applies add column",
+     "expect_rc": 0,
+     "sql": "ALTER TABLE t2 ADD COLUMN c INT"
+    },
+    {
+     "name": "driver applies create index",
+     "expect_rc": 0,
+     "sql": "CREATE INDEX idx_c ON t2(c)"
+    }
+   ],
+   "structure": [
+    {
+     "assert": "src.t gone after rename",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+    },
+    {
+     "assert": "golden.t2 exists after rename",
+     "expect": "1",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2'"
+    },
+    {
+     "assert": "unqualified destination did not land in src",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t2'"
+    },
+    {
+     "assert": "column c has type int",
+     "expect": "int",
+     "sql": "SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2' AND COLUMN_NAME='c'"
+    },
+    {
+     "assert": "idx_c contains exactly c",
+     "expect": "c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2' AND INDEX_NAME='idx_c'"
+    },
+    {
+     "assert": "primary key contains exactly id",
+     "expect": "id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2' AND INDEX_NAME='PRIMARY'"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop stale src.t2",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t2"
+    },
+    {
+     "name": "drop renamed table",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS golden.t2",
+     "verify": [
+      {
+       "assert": "no residual golden.t2",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2'"
+      }
+     ]
+    },
+    {
+     "name": "drop stale source",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t",
+     "verify": [
+      {
+       "assert": "no residual src.t",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+      }
+     ]
+    },
+    {
+     "name": "drop src schema",
+     "expect_rc": 0,
+     "sql": "DROP DATABASE IF EXISTS src",
+     "verify": [
+      {
+       "assert": "no residual src schema",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='src'"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-tidb85-rename-qualified",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE src.t (id INT PRIMARY KEY); RENAME TABLE src.t TO dst.t2; ALTER TABLE dst.t2 ADD COLUMN c INT; CREATE INDEX idx_c ON dst.t2(c);",
+   "policy": "t05-first-path-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "create src schema",
+     "expect_rc": 0,
+     "sql": "CREATE DATABASE IF NOT EXISTS src"
+    },
+    {
+     "name": "create dst schema",
+     "expect_rc": 0,
+     "sql": "CREATE DATABASE IF NOT EXISTS dst"
+    },
+    {
+     "name": "drop stale source",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t"
+    },
+    {
+     "name": "drop stale destination",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS dst.t2",
+     "verify": [
+      {
+       "assert": "src.t absent before audit",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+      },
+      {
+       "assert": "dst.t2 absent before audit",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 4,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "statement_sql": [
+     "CREATE TABLE src.t (id INT PRIMARY KEY);",
+     "RENAME TABLE src.t TO dst.t2;",
+     "ALTER TABLE dst.t2 ADD COLUMN c INT;",
+     "CREATE INDEX idx_c ON dst.t2(c);"
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create src.t",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+    },
+    {
+     "assert": "audit did not create dst.t2",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies create",
+     "expect_rc": 0,
+     "sql": "CREATE TABLE src.t (id INT PRIMARY KEY)"
+    },
+    {
+     "name": "driver applies rename",
+     "expect_rc": 0,
+     "sql": "RENAME TABLE src.t TO dst.t2"
+    },
+    {
+     "name": "driver applies add column",
+     "expect_rc": 0,
+     "sql": "ALTER TABLE dst.t2 ADD COLUMN c INT"
+    },
+    {
+     "name": "driver applies create index",
+     "expect_rc": 0,
+     "sql": "CREATE INDEX idx_c ON dst.t2(c)"
+    }
+   ],
+   "structure": [
+    {
+     "assert": "src.t gone after rename",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+    },
+    {
+     "assert": "dst.t2 exists after rename",
+     "expect": "1",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+    },
+    {
+     "assert": "column c has type int",
+     "expect": "int",
+     "sql": "SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2' AND COLUMN_NAME='c'"
+    },
+    {
+     "assert": "idx_c contains exactly c",
+     "expect": "c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2' AND INDEX_NAME='idx_c'"
+    },
+    {
+     "assert": "primary key contains exactly id",
+     "expect": "id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2' AND INDEX_NAME='PRIMARY'"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop renamed table",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS dst.t2",
+     "verify": [
+      {
+       "assert": "no residual dst.t2",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+      }
+     ]
+    },
+    {
+     "name": "drop stale source",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t",
+     "verify": [
+      {
+       "assert": "no residual src.t",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+      }
+     ]
+    },
+    {
+     "name": "drop src schema",
+     "expect_rc": 0,
+     "sql": "DROP DATABASE IF EXISTS src",
+     "verify": [
+      {
+       "assert": "no residual src schema",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='src'"
+      }
+     ]
+    },
+    {
+     "name": "drop dst schema",
+     "expect_rc": 0,
+     "sql": "DROP DATABASE IF EXISTS dst",
+     "verify": [
+      {
+       "assert": "no residual dst schema",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='dst'"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-tidb85-rename-alter",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE src.t (id INT PRIMARY KEY); ALTER TABLE src.t RENAME TO dst.t2; ALTER TABLE dst.t2 ADD COLUMN c INT; CREATE INDEX idx_c ON dst.t2(c);",
+   "policy": "t05-first-path-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "create src schema",
+     "expect_rc": 0,
+     "sql": "CREATE DATABASE IF NOT EXISTS src"
+    },
+    {
+     "name": "create dst schema",
+     "expect_rc": 0,
+     "sql": "CREATE DATABASE IF NOT EXISTS dst"
+    },
+    {
+     "name": "drop stale source",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t"
+    },
+    {
+     "name": "drop stale destination",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS dst.t2",
+     "verify": [
+      {
+       "assert": "src.t absent before audit",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+      },
+      {
+       "assert": "dst.t2 absent before audit",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 4,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "statement_sql": [
+     "CREATE TABLE src.t (id INT PRIMARY KEY);",
+     "ALTER TABLE src.t RENAME TO dst.t2;",
+     "ALTER TABLE dst.t2 ADD COLUMN c INT;",
+     "CREATE INDEX idx_c ON dst.t2(c);"
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create src.t",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+    },
+    {
+     "assert": "audit did not create dst.t2",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies create",
+     "expect_rc": 0,
+     "sql": "CREATE TABLE src.t (id INT PRIMARY KEY)"
+    },
+    {
+     "name": "driver applies rename",
+     "expect_rc": 0,
+     "sql": "ALTER TABLE src.t RENAME TO dst.t2"
+    },
+    {
+     "name": "driver applies add column",
+     "expect_rc": 0,
+     "sql": "ALTER TABLE dst.t2 ADD COLUMN c INT"
+    },
+    {
+     "name": "driver applies create index",
+     "expect_rc": 0,
+     "sql": "CREATE INDEX idx_c ON dst.t2(c)"
+    }
+   ],
+   "structure": [
+    {
+     "assert": "src.t gone after rename",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+    },
+    {
+     "assert": "dst.t2 exists after rename",
+     "expect": "1",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+    },
+    {
+     "assert": "column c has type int",
+     "expect": "int",
+     "sql": "SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2' AND COLUMN_NAME='c'"
+    },
+    {
+     "assert": "idx_c contains exactly c",
+     "expect": "c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2' AND INDEX_NAME='idx_c'"
+    },
+    {
+     "assert": "primary key contains exactly id",
+     "expect": "id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2' AND INDEX_NAME='PRIMARY'"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop renamed table",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS dst.t2",
+     "verify": [
+      {
+       "assert": "no residual dst.t2",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"
+      }
+     ]
+    },
+    {
+     "name": "drop stale source",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t",
+     "verify": [
+      {
+       "assert": "no residual src.t",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+      }
+     ]
+    },
+    {
+     "name": "drop src schema",
+     "expect_rc": 0,
+     "sql": "DROP DATABASE IF EXISTS src",
+     "verify": [
+      {
+       "assert": "no residual src schema",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='src'"
+      }
+     ]
+    },
+    {
+     "name": "drop dst schema",
+     "expect_rc": 0,
+     "sql": "DROP DATABASE IF EXISTS dst",
+     "verify": [
+      {
+       "assert": "no residual dst schema",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='dst'"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-tidb85-rename-unqualified",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE src.t (id INT PRIMARY KEY); RENAME TABLE src.t TO t2; ALTER TABLE t2 ADD COLUMN c INT; CREATE INDEX idx_c ON t2(c);",
+   "policy": "t05-first-path-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "create src schema",
+     "expect_rc": 0,
+     "sql": "CREATE DATABASE IF NOT EXISTS src"
+    },
+    {
+     "name": "drop stale source",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t"
+    },
+    {
+     "name": "drop stale destination",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS golden.t2",
+     "verify": [
+      {
+       "assert": "src.t absent before audit",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+      },
+      {
+       "assert": "golden.t2 absent before audit",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2'"
+      }
+     ]
+    },
+    {
+     "name": "drop stale src.t2",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t2",
+     "verify": [
+      {
+       "assert": "src.t2 absent before audit",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t2'"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 4,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "statement_sql": [
+     "CREATE TABLE src.t (id INT PRIMARY KEY);",
+     "RENAME TABLE src.t TO t2;",
+     "ALTER TABLE t2 ADD COLUMN c INT;",
+     "CREATE INDEX idx_c ON t2(c);"
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create src.t",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+    },
+    {
+     "assert": "audit did not create golden.t2",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2'"
+    },
+    {
+     "assert": "audit session database is golden",
+     "use_database": true,
+     "expect": "golden",
+     "sql": "SELECT DATABASE()"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies create",
+     "expect_rc": 0,
+     "sql": "CREATE TABLE src.t (id INT PRIMARY KEY)"
+    },
+    {
+     "name": "driver applies rename",
+     "expect_rc": 0,
+     "sql": "RENAME TABLE src.t TO t2"
+    },
+    {
+     "name": "driver applies add column",
+     "expect_rc": 0,
+     "sql": "ALTER TABLE t2 ADD COLUMN c INT"
+    },
+    {
+     "name": "driver applies create index",
+     "expect_rc": 0,
+     "sql": "CREATE INDEX idx_c ON t2(c)"
+    }
+   ],
+   "structure": [
+    {
+     "assert": "src.t gone after rename",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+    },
+    {
+     "assert": "golden.t2 exists after rename",
+     "expect": "1",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2'"
+    },
+    {
+     "assert": "unqualified destination did not land in src",
+     "expect": "0",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t2'"
+    },
+    {
+     "assert": "column c has type int",
+     "expect": "int",
+     "sql": "SELECT DATA_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2' AND COLUMN_NAME='c'"
+    },
+    {
+     "assert": "idx_c contains exactly c",
+     "expect": "c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2' AND INDEX_NAME='idx_c'"
+    },
+    {
+     "assert": "primary key contains exactly id",
+     "expect": "id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2' AND INDEX_NAME='PRIMARY'"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop stale src.t2",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t2"
+    },
+    {
+     "name": "drop renamed table",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS golden.t2",
+     "verify": [
+      {
+       "assert": "no residual golden.t2",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2'"
+      }
+     ]
+    },
+    {
+     "name": "drop stale source",
+     "expect_rc": 0,
+     "sql": "DROP TABLE IF EXISTS src.t",
+     "verify": [
+      {
+       "assert": "no residual src.t",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"
+      }
+     ]
+    },
+    {
+     "name": "drop src schema",
+     "expect_rc": 0,
+     "sql": "DROP DATABASE IF EXISTS src",
+     "verify": [
+      {
+       "assert": "no residual src schema",
+       "expect": "0",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='src'"
+      }
+     ]
+    }
+   ]
   }
  ],
  "error_cases": [
@@ -5966,6 +8200,18 @@
   "T05.meta.t05-tidb85-repeat-add-column",
   "T05.meta.t05-tidb85-index-absent-table",
   "T05.meta.t05-tidb85-unaudited-invalidation",
-  "T05.clierr.t05-conn-refused"
+  "T05.clierr.t05-conn-refused",
+  "T05.meta.t05-mysql57-rename-qualified",
+  "T05.meta.t05-mysql57-rename-alter",
+  "T05.meta.t05-mysql57-rename-unqualified",
+  "T05.meta.t05-mysql80-rename-qualified",
+  "T05.meta.t05-mysql80-rename-alter",
+  "T05.meta.t05-mysql80-rename-unqualified",
+  "T05.meta.t05-mysql84-rename-qualified",
+  "T05.meta.t05-mysql84-rename-alter",
+  "T05.meta.t05-mysql84-rename-unqualified",
+  "T05.meta.t05-tidb85-rename-qualified",
+  "T05.meta.t05-tidb85-rename-alter",
+  "T05.meta.t05-tidb85-rename-unqualified"
  ]
 }

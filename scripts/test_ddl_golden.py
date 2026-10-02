@@ -922,6 +922,14 @@ def main():
         T05SQL = "CREATE TABLE t (id INT PRIMARY KEY); ALTER TABLE t ADD COLUMN c INT; CREATE INDEX idx_c ON t (c);"
         T05_MISS = "CREATE TABLE t (id INT PRIMARY KEY); CREATE INDEX idx_c ON t (missing_c);"
         T05_EXEC = "CREATE TABLE t (id INT PRIMARY KEY); EXECUTE stmt; CREATE INDEX ix ON t (id);"
+        # T05-A2: the single-pair RENAME path carries two oracle families on
+        # top of the first-path oracle — per-statement raw SQL pins keep the
+        # rename bound to its position, and structure answers pin which
+        # schema owns the destination.
+        T05_RENAME = ("CREATE TABLE src.t (id INT PRIMARY KEY); RENAME TABLE src.t TO dst.t2;"
+                      " ALTER TABLE dst.t2 ADD COLUMN c INT; CREATE INDEX idx_c ON dst.t2(c);")
+        T05_RENAME_UNQ = ("CREATE TABLE src.t (id INT PRIMARY KEY); RENAME TABLE src.t TO t2;"
+                          " ALTER TABLE t2 ADD COLUMN c INT; CREATE INDEX idx_c ON t2(c);")
         RID5 = "ddl.fake.one"
 
         mt5 = copy.deepcopy(MANIFEST)
@@ -1004,9 +1012,88 @@ def main():
                                  "expect": "0"}],
                 "teardown": [{"name": "drop fixture", "expect_rc": 0, "sql": "DROP TABLE IF EXISTS t"}],
             },
+            {
+                "id": "t05-rename", "anchor": "mysqlX", "dialect": "mysql",
+                "sql": T05_RENAME, "policy": "t05-first-path",
+                "connect": {"host": "127.0.0.1", "port": 23384, "user": "root",
+                            "password_env": "DS_PW", "password": "root", "schema": "golden"},
+                "setup": [
+                    {"name": "create src schema", "expect_rc": 0, "sql": "CREATE DATABASE IF NOT EXISTS src"},
+                    {"name": "create dst schema", "expect_rc": 0, "sql": "CREATE DATABASE IF NOT EXISTS dst"},
+                    {"name": "drop stale destination", "expect_rc": 0, "sql": "DROP TABLE IF EXISTS dst.t2",
+                     "verify": [{"assert": "dst.t2 absent before audit",
+                                 "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'",
+                                 "expect": "0"}]},
+                ],
+                "expect": {"exit": 0, "verdict": "pass", "statements": 4, "findings": 0,
+                           "diagnostics": 0, "unsupported": 0, "coverage": "complete",
+                           "statement_coverage": ["complete"] * 4,
+                           "statement_sql": [s.strip() + ";" for s in T05_RENAME.split(";") if s.strip()],
+                           "evidence_gaps": 0, "fail_on_triggered": False},
+                "post_verify": [
+                    {"assert": "audit did not create src.t",
+                     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'",
+                     "expect": "0"},
+                    {"assert": "audit did not create dst.t2",
+                     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'",
+                     "expect": "0"}],
+                "execute": [
+                    {"name": "driver applies create", "expect_rc": 0, "sql": "CREATE TABLE src.t (id INT PRIMARY KEY)"},
+                    {"name": "driver applies rename", "expect_rc": 0, "sql": "RENAME TABLE src.t TO dst.t2"},
+                    {"name": "driver applies add column", "expect_rc": 0, "sql": "ALTER TABLE dst.t2 ADD COLUMN c INT"},
+                    {"name": "driver applies create index", "expect_rc": 0, "sql": "CREATE INDEX idx_c ON dst.t2(c)"},
+                ],
+                "structure": [
+                    {"assert": "src.t gone after rename", "expect": "0",
+                     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"},
+                    {"assert": "dst.t2 exists after rename", "expect": "1",
+                     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"},
+                    {"assert": "idx_c contains exactly c", "expect": "c",
+                     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2' AND INDEX_NAME='idx_c'"},
+                ],
+                "teardown": [{"name": "drop fixture", "expect_rc": 0, "sql": "DROP TABLE IF EXISTS dst.t2",
+                              "verify": [{"assert": "no residual dst.t2",
+                                          "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'",
+                                          "expect": "0"}]}],
+            },
+            {
+                "id": "t05-rename-unqualified", "anchor": "mysqlX", "dialect": "mysql",
+                "sql": T05_RENAME_UNQ, "policy": "t05-first-path",
+                "connect": {"host": "127.0.0.1", "port": 23384, "user": "root",
+                            "password_env": "DS_PW", "password": "root", "schema": "golden"},
+                "setup": [{"name": "ensure endpoints absent", "expect_rc": 0, "sql": "DROP TABLE IF EXISTS src.t",
+                           "verify": [{"assert": "golden.t2 absent before audit",
+                                       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2'",
+                                       "expect": "0"}]}],
+                "expect": {"exit": 0, "verdict": "pass", "statements": 4, "findings": 0,
+                           "diagnostics": 0, "unsupported": 0, "coverage": "complete",
+                           "statement_coverage": ["complete"] * 4,
+                           "statement_sql": [s.strip() + ";" for s in T05_RENAME_UNQ.split(";") if s.strip()],
+                           "evidence_gaps": 0, "fail_on_triggered": False},
+                "post_verify": [
+                    {"assert": "audit session database is golden", "use_database": True,
+                     "sql": "SELECT DATABASE()", "expect": "golden"},
+                    {"assert": "audit did not create golden.t2",
+                     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2'",
+                     "expect": "0"}],
+                "execute": [
+                    {"name": "driver applies create", "expect_rc": 0, "sql": "CREATE TABLE src.t (id INT PRIMARY KEY)"},
+                    {"name": "driver applies rename", "expect_rc": 0, "sql": "RENAME TABLE src.t TO t2"},
+                    {"name": "driver applies add column", "expect_rc": 0, "sql": "ALTER TABLE t2 ADD COLUMN c INT"},
+                    {"name": "driver applies create index", "expect_rc": 0, "sql": "CREATE INDEX idx_c ON t2(c)"},
+                ],
+                "structure": [
+                    {"assert": "unqualified destination did not land in src", "expect": "0",
+                     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t2'"},
+                    {"assert": "golden.t2 exists after rename", "expect": "1",
+                     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2'"},
+                ],
+                "teardown": [{"name": "drop fixture", "expect_rc": 0, "sql": "DROP TABLE IF EXISTS golden.t2"}],
+            },
         ]
         mt5["required_case_ids"] = list(mt5["required_case_ids"]) + [
-            "TX.meta.t05-first", "TX.meta.t05-missing-col", "TX.meta.t05-exec"]
+            "TX.meta.t05-first", "TX.meta.t05-missing-col", "TX.meta.t05-exec",
+            "TX.meta.t05-rename", "TX.meta.t05-rename-unqualified"]
 
         t05_enable = {RID5: {"enabled": True, "level": "blocker", "params": {"required": True}}}
         t05_policy = tmp / "t05-policy.yaml"
@@ -1146,6 +1233,99 @@ def main():
                                  "rc": 0, "output": "0", "stderr": ""}],
                 "teardown": [{"name": "drop fixture", "sql": "DROP TABLE IF EXISTS t", "rc": 0, "stderr": ""}],
             }
+            rename_spec = mt5["metadata_cases"][3]
+            rename_parsed = {"verdict": "pass", "coverage": {"status": "complete"},
+                             "statements": [
+                                 {"index": 0, "raw_sql": "CREATE TABLE src.t (id INT PRIMARY KEY);",
+                                  "findings": [], "coverage": {"status": "complete"}},
+                                 {"index": 1, "raw_sql": "RENAME TABLE src.t TO dst.t2;",
+                                  "findings": [], "coverage": {"status": "complete"}},
+                                 {"index": 2, "raw_sql": "ALTER TABLE dst.t2 ADD COLUMN c INT;",
+                                  "findings": [], "coverage": {"status": "complete"}},
+                                 {"index": 3, "raw_sql": "CREATE INDEX idx_c ON dst.t2(c);",
+                                  "findings": [], "coverage": {"status": "complete"}}],
+                             "global_findings": [], "diagnostics": [], "unsupported": [],
+                             "fail_on_triggered": False}
+            rename_actual = {
+                "setup": [
+                    {"name": "create src schema", "sql": "CREATE DATABASE IF NOT EXISTS src",
+                     "rc": 0, "stdout": "", "stderr": ""},
+                    {"name": "create dst schema", "sql": "CREATE DATABASE IF NOT EXISTS dst",
+                     "rc": 0, "stdout": "", "stderr": ""},
+                    {"name": "drop stale destination", "sql": "DROP TABLE IF EXISTS dst.t2",
+                     "rc": 0, "stdout": "", "stderr": "",
+                     "verify": [{"assert": "dst.t2 absent before audit",
+                                 "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'",
+                                 "rc": 0, "output": "0", "stderr": ""}]}],
+                "post_verify": [
+                    {"assert": "audit did not create src.t",
+                     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'",
+                     "rc": 0, "output": "0", "stderr": ""},
+                    {"assert": "audit did not create dst.t2",
+                     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'",
+                     "rc": 0, "output": "0", "stderr": ""}],
+                "execute": [
+                    {"name": "driver applies create", "sql": "CREATE TABLE src.t (id INT PRIMARY KEY)",
+                     "rc": 0, "stdout": "", "stderr": ""},
+                    {"name": "driver applies rename", "sql": "RENAME TABLE src.t TO dst.t2",
+                     "rc": 0, "stdout": "", "stderr": ""},
+                    {"name": "driver applies add column", "sql": "ALTER TABLE dst.t2 ADD COLUMN c INT",
+                     "rc": 0, "stdout": "", "stderr": ""},
+                    {"name": "driver applies create index", "sql": "CREATE INDEX idx_c ON dst.t2(c)",
+                     "rc": 0, "stdout": "", "stderr": ""}],
+                "structure": [
+                    {"assert": "src.t gone after rename", "rc": 0, "output": "0", "stderr": "",
+                     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t'"},
+                    {"assert": "dst.t2 exists after rename", "rc": 0, "output": "1", "stderr": "",
+                     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'"},
+                    {"assert": "idx_c contains exactly c", "rc": 0, "output": "c", "stderr": "",
+                     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2' AND INDEX_NAME='idx_c'"}],
+                "teardown": [{"name": "drop fixture", "sql": "DROP TABLE IF EXISTS dst.t2", "rc": 0, "stderr": "",
+                              "verify": [{"assert": "no residual dst.t2",
+                                          "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='dst' AND TABLE_NAME='t2'",
+                                          "rc": 0, "output": "0", "stderr": ""}]}],
+            }
+            unq_spec = mt5["metadata_cases"][4]
+            unq_parsed = {"verdict": "pass", "coverage": {"status": "complete"},
+                          "statements": [
+                              {"index": 0, "raw_sql": "CREATE TABLE src.t (id INT PRIMARY KEY);",
+                               "findings": [], "coverage": {"status": "complete"}},
+                              {"index": 1, "raw_sql": "RENAME TABLE src.t TO t2;",
+                               "findings": [], "coverage": {"status": "complete"}},
+                              {"index": 2, "raw_sql": "ALTER TABLE t2 ADD COLUMN c INT;",
+                               "findings": [], "coverage": {"status": "complete"}},
+                              {"index": 3, "raw_sql": "CREATE INDEX idx_c ON t2(c);",
+                               "findings": [], "coverage": {"status": "complete"}}],
+                          "global_findings": [], "diagnostics": [], "unsupported": [],
+                          "fail_on_triggered": False}
+            unq_actual = {
+                "setup": [{"name": "ensure endpoints absent", "sql": "DROP TABLE IF EXISTS src.t",
+                           "rc": 0, "stdout": "", "stderr": "",
+                           "verify": [{"assert": "golden.t2 absent before audit",
+                                       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2'",
+                                       "rc": 0, "output": "0", "stderr": ""}]}],
+                "post_verify": [
+                    {"assert": "audit session database is golden",
+                     "sql": "SELECT DATABASE()", "rc": 0, "output": "golden", "stderr": ""},
+                    {"assert": "audit did not create golden.t2",
+                     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2'",
+                     "rc": 0, "output": "0", "stderr": ""}],
+                "execute": [
+                    {"name": "driver applies create", "sql": "CREATE TABLE src.t (id INT PRIMARY KEY)",
+                     "rc": 0, "stdout": "", "stderr": ""},
+                    {"name": "driver applies rename", "sql": "RENAME TABLE src.t TO t2",
+                     "rc": 0, "stdout": "", "stderr": ""},
+                    {"name": "driver applies add column", "sql": "ALTER TABLE t2 ADD COLUMN c INT",
+                     "rc": 0, "stdout": "", "stderr": ""},
+                    {"name": "driver applies create index", "sql": "CREATE INDEX idx_c ON t2(c)",
+                     "rc": 0, "stdout": "", "stderr": ""}],
+                "structure": [
+                    {"assert": "unqualified destination did not land in src", "rc": 0, "output": "0", "stderr": "",
+                     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='src' AND TABLE_NAME='t2'"},
+                    {"assert": "golden.t2 exists after rename", "rc": 0, "output": "1", "stderr": "",
+                     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t2'"}],
+                "teardown": [{"name": "drop fixture", "sql": "DROP TABLE IF EXISTS golden.t2", "rc": 0, "stderr": ""}],
+            }
             a["cases"] = list(a["cases"]) + [
                 t05_meta_record("TX.meta.t05-first", "t05-first", T05SQL, first_spec["expect"],
                                 first_parsed, first_actual),
@@ -1153,10 +1333,15 @@ def main():
                                 miss_spec["expect"], miss_parsed, miss_actual),
                 t05_meta_record("TX.meta.t05-exec", "t05-exec", T05_EXEC, exec_spec["expect"],
                                 exec_parsed, exec_actual),
+                t05_meta_record("TX.meta.t05-rename", "t05-rename", T05_RENAME, rename_spec["expect"],
+                                rename_parsed, rename_actual),
+                t05_meta_record("TX.meta.t05-rename-unqualified", "t05-rename-unqualified", T05_RENAME_UNQ,
+                                unq_spec["expect"], unq_parsed, unq_actual),
             ]
             a["required_case_ids"] = list(dict.fromkeys(
                 list(a["required_case_ids"]) + ["TX.meta.t05-first", "TX.meta.t05-missing-col",
-                                                "TX.meta.t05-exec"]))
+                                                "TX.meta.t05-exec", "TX.meta.t05-rename",
+                                                "TX.meta.t05-rename-unqualified"]))
             a["executed_count"] = len(a["cases"])
             return a
 
@@ -1259,6 +1444,83 @@ def main():
             "enable": {"ddl.fake.two": {"enabled": True, "level": "blocker", "params": {}}}}
         results.append(check("t05 profile name colliding with default rejected",
                              t05_artifact(), "collides", manifest=m_collision))
+
+        # ------------------------------------------------------------------
+        # T05-A2 rename-path mutations. The artifact must prove the audited
+        # rename moved identity — source emptied, destination owned, members
+        # intact — through manifest-derived raw SQL pins and structure
+        # answers, never through self-reported expected/parsed/ok fields.
+        #
+        # Mutation: the rename statement deleted outright — statement count
+        # and per-position raw SQL pins both break.
+        a = t05_artifact()
+        case = t05_case(a, "TX.meta.t05-rename")
+        parsed = copy.deepcopy(case["actual"]["parsed"])
+        del parsed["statements"][1]
+        parsed["statements"][1]["index"] = 1
+        parsed["statements"][2]["index"] = 2
+        case["actual"]["stdout"] = json.dumps(parsed)
+        case["actual"]["parsed"] = parsed
+        results.append(check("t05 rename statement dropped rejected", a, "statements", manifest=mt5))
+
+        # Mutation: the rename replaced by a different statement at the same
+        # index — statement_sql pins the identity, not the position.
+        a = t05_artifact()
+        case = t05_case(a, "TX.meta.t05-rename")
+        parsed = copy.deepcopy(case["actual"]["parsed"])
+        parsed["statements"][1]["raw_sql"] = "ALTER TABLE src.t ADD COLUMN c INT;"
+        case["actual"]["stdout"] = json.dumps(parsed)
+        case["actual"]["parsed"] = parsed
+        results.append(check("t05 rename rebound at index rejected", a, "raw SQL", manifest=mt5))
+
+        # Mutation: the old source still reported as present after execution —
+        # the structure oracle must catch a rename that never happened.
+        a = t05_artifact()
+        t05_case(a, "TX.meta.t05-rename")["actual"]["structure"][0]["output"] = "1"
+        results.append(check("t05 rename old source still present rejected", a, "structure", manifest=mt5))
+
+        # Mutation: destination/schema answers swapped — dst.t2 existence
+        # rewritten to absent while the record claims pass.
+        a = t05_artifact()
+        t05_case(a, "TX.meta.t05-rename")["actual"]["structure"][1]["output"] = "0"
+        results.append(check("t05 rename destination existence flipped rejected", a, "structure", manifest=mt5))
+
+        # Mutation: the destination's member check rewritten — idx_c claims
+        # to contain the wrong columns after migration.
+        a = t05_artifact()
+        t05_case(a, "TX.meta.t05-rename")["actual"]["structure"][2]["output"] = "id"
+        results.append(check("t05 rename destination members wrong rejected", a, "structure", manifest=mt5))
+
+        # Mutation: the destination's pre-audit absence precondition dropped —
+        # without it a present+present rename cannot be told from migration.
+        a = t05_artifact()
+        t05_case(a, "TX.meta.t05-rename")["actual"]["setup"][2]["verify"] = []
+        results.append(check("t05 rename destination precondition dropped rejected", a, "verify count", manifest=mt5))
+
+        # Mutation: the driver rename step failed while the record claims
+        # pass — execute rc is pinned against manifest expect_rc.
+        a = t05_artifact()
+        t05_case(a, "TX.meta.t05-rename")["actual"]["execute"][1]["rc"] = 1
+        results.append(check("t05 rename execute failure as pass rejected", a, "execute", manifest=mt5))
+
+        # Mutation: the unqualified destination claimed to land in the source
+        # schema — the src.t2 absence oracle must catch it.
+        a = t05_artifact()
+        t05_case(a, "TX.meta.t05-rename-unqualified")["actual"]["structure"][0]["output"] = "1"
+        results.append(check("t05 unqualified destination in src rejected", a, "structure", manifest=mt5))
+
+        # Mutation: the recorded session database rewritten — DATABASE() must
+        # equal the request schema the unqualified destination resolved into.
+        a = t05_artifact()
+        t05_case(a, "TX.meta.t05-rename-unqualified")["actual"]["post_verify"][0]["output"] = "src"
+        results.append(check("t05 unqualified session database flipped rejected", a, "post_verify", manifest=mt5))
+
+        # Mutation: the required rename case removed entirely — required ids
+        # must match the executed denominator exactly.
+        a = t05_artifact()
+        a["cases"] = [c for c in a["cases"] if c["case_id"] != "TX.meta.t05-rename"]
+        a["executed_count"] = len(a["cases"])
+        results.append(check("t05 required rename case removed rejected", a, "not executed", manifest=mt5))
 
     failures = results.count(False)
     print(f"contract cases={len(results)} failures={failures}")

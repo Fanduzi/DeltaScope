@@ -217,7 +217,9 @@ func enrichOrderedStatements(ctx context.Context, dialect spec.Dialect, request 
 			}
 		}
 
-		state.apply(statement)
+		if err := state.apply(ctx, statement); err != nil {
+			return nil, err
+		}
 	}
 
 	return enriched, nil

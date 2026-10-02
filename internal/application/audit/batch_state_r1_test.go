@@ -110,10 +110,11 @@ func TestBatchStateR1MixedQualifiedAndUnqualified(t *testing.T) {
 	}
 }
 
-// C1: a cross-schema RENAME invalidates both ends under their own schemas;
-// an unqualified destination lands in the request schema, never inherits
-// the source's qualifier.
-func TestBatchStateR1CrossSchemaRenameInvalidatesBothEnds(t *testing.T) {
+// C1+A2: a cross-schema RENAME migrates under each end's own schema — the
+// source becomes a settled absent fact and the destination carries the
+// derived shape. Each endpoint is read exactly once and a stale read under
+// either name must never resurrect post-rename facts.
+func TestBatchStateR1CrossSchemaRenameMigrates(t *testing.T) {
 	t.Parallel()
 	provider := &t05AbsentProvider{}
 	result, err := AuditSQL(context.Background(), Request{
@@ -127,21 +128,20 @@ func TestBatchStateR1CrossSchemaRenameInvalidatesBothEnds(t *testing.T) {
 	if err != nil {
 		t.Fatalf("audit: %v", err)
 	}
-	for i := 2; i <= 3; i++ {
-		if len(result.Statements[i].Findings) != 0 {
-			t.Fatalf("statement %d on a renamed end must not produce findings, got %+v", i, result.Statements[i].Findings)
-		}
-		gaps := t05GapsByRule(result, i, t05RuleAlterRequire)
-		if len(gaps) != 1 || gaps[0].ReasonCode != "unknown_table_state" {
-			t.Fatalf("statement %d must report unknown_table_state, got %+v", i, result.Statements[i].EvidenceGaps)
-		}
+	// The freed source name is confirmed absent — a deterministic finding,
+	// not an unknown-state gap.
+	findings := t05FindingsByRule(result, 2, t05RuleAlterRequire)
+	if len(findings) != 1 || findings[0].Metadata["exists"] != false {
+		t.Fatalf("statement 2 must report a confirmed-absent finding, got %+v", result.Statements[2].Findings)
 	}
-	// src.t was read once before the rename; both ends are tombstoned
-	// afterwards, so the provider is never re-asked — a stale read under
-	// either name must not resurrect post-rename facts.
+	// The destination runs on the migrated shape — clean and complete.
+	if len(result.Statements[3].Findings) != 0 || len(result.Statements[3].EvidenceGaps) != 0 {
+		t.Fatalf("statement 3 on the migrated destination must be clean, findings=%+v gaps=%+v",
+			result.Statements[3].Findings, result.Statements[3].EvidenceGaps)
+	}
 	sort.Strings(provider.calls)
-	if strings.Join(provider.calls, ",") != "src.t" {
-		t.Fatalf("provider must be read once for src.t and never re-asked, got %#v", provider.calls)
+	if strings.Join(provider.calls, ",") != "dst.t2,src.t" {
+		t.Fatalf("each rename endpoint must be read once and never re-asked, got %#v", provider.calls)
 	}
 }
 

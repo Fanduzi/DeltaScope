@@ -1,12 +1,13 @@
 // Package audit orchestrates audit use cases at the application layer.
 // input: ordered statements, optional metadata provider, and parse-failure positions for one audit request
 // output: request-local ordered table facts (unknown / known-absent / known-present, per-collection member knowledge) feeding per-statement pre-state snapshots
-// pos: prospective schema-state ownership for the first migration path — the effective (dialect, schema, table) identity drives provider reads, keys, writes, and invalidation; unsupported or executable-but-unmodeled effects settle before kind dispatch; deterministic conditional transitions update derived facts; unaudited, unbound, or contaminated operations invalidate them
+// pos: prospective schema-state ownership for the first migration path — the effective (dialect, schema, table) identity drives provider reads, keys, writes, and invalidation; unsupported or executable-but-unmodeled effects settle before kind dispatch; deterministic conditional transitions update derived facts, including the bounded single-pair RENAME identity migration onto a known-absent destination; unaudited, unbound, or contaminated operations invalidate them
 // note: if this file changes, update this header and module README.md.
 package audit
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -211,19 +212,21 @@ func projectEntry(key batchTableKey, entry *batchTableEntry) *spec.TableSnapshot
 // settled before kind dispatch so an EXECUTE, admin statement, or unbound
 // side effect can never pass through as a no-op: bound table targets
 // invalidate, bound schema scopes invalidate the scope, and an unresolvable
-// effect contaminates the batch. After that gate only the three frozen
-// transitions derive structure — a fully audited plain CREATE TABLE, an
-// ALTER made of exactly one plain ADD COLUMN, and a fully audited standalone
-// CREATE INDEX — plus stat-clearing TRUNCATE/DML pass-through. Everything
-// else (DROP TABLE, multi-action ALTER, unaudited aspects, RENAME TABLE)
-// invalidates its bound targets because the real effect is not modeled
-// honestly. A statement whose structural premise is already known-broken
-// (duplicate plain ADD, index on a confirmed-absent table) invalidates its
-// target rather than fabricating the success shape. Contaminated batches
-// derive nothing.
-func (s *batchState) apply(statement spec.Statement) {
+// effect contaminates the batch. After that gate only the frozen transitions
+// derive structure — a fully audited plain CREATE TABLE, an ALTER made of
+// exactly one plain ADD COLUMN, a fully audited standalone CREATE INDEX, and
+// a single-pair RENAME bounded by the frozen endpoint-existence table — plus
+// stat-clearing TRUNCATE/DML pass-through. Everything else (DROP TABLE,
+// multi-action ALTER, unaudited aspects, multi-pair RENAME) invalidates its
+// bound targets because the real effect is not modeled honestly. A statement
+// whose structural premise is already known-broken (duplicate plain ADD,
+// index on a confirmed-absent table) invalidates its target rather than
+// fabricating the success shape. Contaminated batches derive nothing.
+// The destination read inside renamePair may fail; provider errors propagate
+// before any post-state is published.
+func (s *batchState) apply(ctx context.Context, statement spec.Statement) error {
 	if s.contaminated {
-		return
+		return nil
 	}
 	if statement.Unsupported != nil {
 		// A recognized-but-unsupported statement has no bounded effect. Bound
@@ -232,38 +235,41 @@ func (s *batchState) apply(statement spec.Statement) {
 		// pass through as a no-op and let stale facts satisfy later checks.
 		if targets := boundTargets(statement); len(targets) > 0 {
 			s.invalidateAll(targets)
-			return
+			return nil
 		}
 		if scope := schemaScopeName(statement.DDL); scope != "" {
 			s.invalidateSchema(scope)
-			return
+			return nil
 		}
 		s.contaminated = true
-		return
+		return nil
 	}
 	if statement.Kind != spec.KindDDL || statement.DDL == nil {
 		s.applyDMLMutation(statement)
-		return
+		return nil
 	}
 	ddl := statement.DDL
 	switch ddl.Operation {
 	case spec.DDLOperationCreateTable:
 		s.applyCreateTable(statement)
 	case spec.DDLOperationAlterTable:
-		s.applyAlterTable(statement)
+		return s.applyAlterTable(ctx, statement)
 	case spec.DDLOperationCreateIndex:
 		s.applyCreateIndex(statement)
 	case spec.DDLOperationTruncateTable:
 		s.applyTruncateTable(statement)
+	case spec.DDLOperationRenameTable:
+		return s.applyRenameTable(ctx, statement)
 	default:
 		// No modeled transition: schema-scoped operations invalidate their
 		// scope, table-bound operations invalidate their targets.
 		if scope := schemaScopeName(ddl); scope != "" {
 			s.invalidateSchema(scope)
-			return
+			return nil
 		}
 		s.invalidateAll(ddl.TableTargets())
 	}
+	return nil
 }
 
 // boundTargets returns the table identities a statement's effect is bound to,
@@ -431,25 +437,35 @@ func derivedCreateShape(schema, table string, ddl *spec.DDL) *spec.TableSnapshot
 	return snapshot
 }
 
-// applyAlterTable models the single frozen transition: a fully audited ALTER
-// made of exactly one plain ADD COLUMN. Anything else — multiple actions,
+// applyAlterTable models the frozen transitions a fully audited ALTER can
+// carry: exactly one plain ADD COLUMN, or exactly one RENAME TO handled by
+// the shared rename pair migration. Anything else — multiple actions,
 // position/scalar-conditioned adds, or any other audited action — has no
 // modeled post-state this slice, so its bound targets invalidate rather than
 // fabricating a success shape (a duplicate add inside a multi-action ALTER
 // must never produce a definite column set). Premise-broken adds — a
 // duplicate column without IF NOT EXISTS, or any add on a confirmed-absent
 // table — invalidate instead of fabricating a success structure.
-func (s *batchState) applyAlterTable(statement spec.Statement) {
+func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Statement) error {
 	ddl := statement.DDL
 	targets := ddl.TableTargets()
 	if !fullyAuditedStatement(s.dialect, statement) || len(ddl.Alter) != 1 || len(targets) == 0 {
 		s.invalidateAll(targets)
-		return
+		return nil
 	}
 	alter := &ddl.Alter[0]
+	if alter.Action == "rename_table" {
+		// ALTER TABLE x RENAME TO y carries the pair positionally: the
+		// altered subject is Targets[0], the destination Targets[1].
+		if len(targets) != 2 {
+			s.invalidateAll(targets)
+			return nil
+		}
+		return s.applyRenamePair(ctx, targets[0], targets[1])
+	}
 	if alter.Action != "add_columns" || alter.Column == nil || alter.Column.Definition == nil {
 		s.invalidateAll(targets)
-		return
+		return nil
 	}
 	key := s.keyFor(s.schema, targets[0])
 	entry := s.entries[key]
@@ -466,12 +482,12 @@ func (s *batchState) applyAlterTable(statement spec.Statement) {
 		if entry.shape.FindColumn(def.Name) != nil {
 			if alter.Options["if_not_exists"] == "true" {
 				// IF NOT EXISTS on an existing column is a no-op.
-				return
+				return nil
 			}
 			// Duplicate plain ADD can never succeed — do not fabricate the
 			// added column, invalidate the table instead.
 			s.invalidateKey(key)
-			return
+			return nil
 		}
 		shape := cloneTableSnapshot(entry.shape)
 		shape.Columns = append(shape.Columns, cloneColumn(*def))
@@ -479,6 +495,97 @@ func (s *batchState) applyAlterTable(statement spec.Statement) {
 	}
 	// present-incomplete stays incomplete: the conditional add proves the
 	// column exists, but the shape model cannot express a partial column set.
+	return nil
+}
+
+// applyRenameTable dispatches a standalone RENAME TABLE. Only a single
+// bounded pair enters migration; multi-pair forms invalidate every endpoint
+// because partial success is not modeled.
+func (s *batchState) applyRenameTable(ctx context.Context, statement spec.Statement) error {
+	ddl := statement.DDL
+	targets := ddl.TableTargets()
+	if !fullyAuditedStatement(s.dialect, statement) || len(ddl.Alter) != 1 || len(targets) != 2 {
+		s.invalidateAll(targets)
+		return nil
+	}
+	// Cross-check the positional pair against the alter payload's own
+	// old/new identity options so the two normalized views cannot diverge.
+	alter := ddl.Alter[0]
+	source, destination := targets[0], targets[1]
+	if alter.Action != "rename_table" ||
+		alter.Options["old_table"] != source.Name || alter.Options["old_schema"] != source.Schema ||
+		alter.Options["new_table"] != destination.Name || alter.Options["new_schema"] != destination.Schema {
+		s.invalidateAll(targets)
+		return nil
+	}
+	return s.applyRenamePair(ctx, source, destination)
+}
+
+// applyRenamePair applies the frozen endpoint-existence table for one
+// bounded rename pair. The destination resolves through the shared once-per-
+// key seam — a cached answer (including an earlier tombstone) is reused, an
+// invalidated schema answers unknown without a provider call, and a provider
+// error propagates before either endpoint's post-state is published.
+// Migration runs only on the one proven cell — known-present source onto a
+// known-absent destination carrying a movable member set: the destination
+// receives a fresh deep-copied shape under its own identity and the source
+// becomes a settled known-absent entry. Every other cell tombstones both
+// ends; unknown inputs never fabricate absent or present facts.
+func (s *batchState) applyRenamePair(ctx context.Context, source, destination spec.Table) error {
+	sourceKey := s.keyFor(s.schema, source)
+	destinationKey := s.keyFor(s.schema, destination)
+	if sourceKey == destinationKey {
+		// The endpoints are not distinguishable identities (same key under
+		// the effective schema) — conservatively invalidate rather than run
+		// a write-delete-write migration.
+		s.invalidateKey(sourceKey)
+		return nil
+	}
+	sourceEntry, err := s.resolve(ctx, sourceKey, s.effectiveSchema(s.schema, source), source.Name)
+	if err != nil {
+		return fmt.Errorf("load table snapshot for %s: %w", source.Name, err)
+	}
+	destinationEntry, err := s.resolve(ctx, destinationKey, s.effectiveSchema(s.schema, destination), destination.Name)
+	if err != nil {
+		return fmt.Errorf("load table snapshot for %s: %w", destination.Name, err)
+	}
+	if sourceEntry.state == tablePresent && destinationEntry.state == tableAbsent && renameShapeMovable(sourceEntry.shape) {
+		destinationSchema := s.effectiveSchema(s.schema, destination)
+		var migrated *spec.TableSnapshot
+		if sourceEntry.shape != nil {
+			migrated = cloneTableSnapshot(sourceEntry.shape)
+			migrated.Schema = destinationSchema
+			migrated.Table = &spec.Table{Schema: destinationSchema, Name: destination.Name}
+		}
+		s.entries[destinationKey] = &batchTableEntry{
+			state:         tablePresent,
+			shape:         migrated,
+			displaySchema: destinationSchema,
+			displayTable:  destination.Name,
+		}
+		s.entries[sourceKey] = &batchTableEntry{
+			state:         tableAbsent,
+			displaySchema: s.effectiveSchema(s.schema, source),
+			displayTable:  source.Name,
+		}
+		return nil
+	}
+	s.invalidateKey(sourceKey)
+	s.invalidateKey(destinationKey)
+	return nil
+}
+
+// renameShapeMovable reports whether a known-present shape carries only
+// members this slice transports verbatim. A nil shape (present-incomplete)
+// moves as-is; a known shape with recorded constraints does not — MySQL can
+// rebind generated FK/CHECK constraint identities during RENAME, so such a
+// table invalidates the pair instead of copying names that may be wrong.
+// Unknown member flags are not constraints and always migrate.
+func renameShapeMovable(shape *spec.TableSnapshot) bool {
+	if shape == nil {
+		return true
+	}
+	return len(shape.Constraints) == 0
 }
 
 // applyCreateIndex appends a fully audited standalone CREATE INDEX to a
