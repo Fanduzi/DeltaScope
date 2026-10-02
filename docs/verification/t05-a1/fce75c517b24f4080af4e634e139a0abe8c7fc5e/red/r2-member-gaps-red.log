@@ -1,0 +1,23 @@
+--- FAIL: TestBatchStateR2UnknownTableStateMemberGapFacts (0.00s)
+    --- FAIL: TestBatchStateR2UnknownTableStateMemberGapFacts/drop_index (0.01s)
+        batch_state_r2_test.go:131: ddl.alter.drop_index.exists.require must report one unknown_table_state gap, got []
+    --- FAIL: TestBatchStateR2UnknownTableStateMemberGapFacts/drop_column (0.01s)
+        batch_state_r2_test.go:131: ddl.alter.drop_column.exists.require must report one unknown_table_state gap, got []
+--- FAIL: TestBatchStateR2UnknownMemberCollectionsEmitGaps (0.00s)
+    --- FAIL: TestBatchStateR2UnknownMemberCollectionsEmitGaps/modify_column (0.01s)
+        batch_state_r2_test.go:76: ddl.alter.modify_column.exists.require must report exactly one unknown_table_state gap, got []
+    --- FAIL: TestBatchStateR2UnknownMemberCollectionsEmitGaps/drop_column (0.01s)
+        batch_state_r2_test.go:76: ddl.alter.drop_column.exists.require must report exactly one unknown_table_state gap, got []
+    --- FAIL: TestBatchStateR2UnknownMemberCollectionsEmitGaps/add_index_forbid (0.01s)
+        batch_state_r2_test.go:76: ddl.alter.add_index.exists.forbid must report exactly one unknown_table_state gap, got []
+    --- FAIL: TestBatchStateR2UnknownMemberCollectionsEmitGaps/rename_index (0.01s)
+        batch_state_r2_test.go:76: ddl.alter.rename_index.exists.require must report exactly one unknown_table_state gap, got []
+    --- FAIL: TestBatchStateR2UnknownMemberCollectionsEmitGaps/change_column (0.01s)
+        batch_state_r2_test.go:76: ddl.alter.change_column.exists.require must report exactly one unknown_table_state gap, got []
+    --- FAIL: TestBatchStateR2UnknownMemberCollectionsEmitGaps/drop_index (0.01s)
+        batch_state_r2_test.go:76: ddl.alter.drop_index.exists.require must report exactly one unknown_table_state gap, got []
+    --- FAIL: TestBatchStateR2UnknownMemberCollectionsEmitGaps/rename_column (0.01s)
+        batch_state_r2_test.go:76: ddl.alter.rename_column.exists.require must report exactly one unknown_table_state gap, got []
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.626s
+FAIL

@@ -1,0 +1,8 @@
+--- FAIL: TestBatchStatePostgreSQLResultContractKeepsLegacyShape (0.00s)
+    --- FAIL: TestBatchStatePostgreSQLResultContractKeepsLegacyShape/schema-only_request_emits_no_new_gaps (0.01s)
+        batch_state_postgresql_tag_test.go:146: PostgreSQL schema-only statement 0 must not report gaps, got [{RuleID:ddl.table.exists.create.forbid ReasonCode:unknown_table_state RequiredFacts:[target_table.existence]}]
+    --- FAIL: TestBatchStatePostgreSQLResultContractKeepsLegacyShape/no_request_metadata_emits_no_new_gaps (0.01s)
+        batch_state_postgresql_tag_test.go:122: PostgreSQL statement 0 must not report ordered-state gaps, got [{RuleID:ddl.table.exists.create.forbid ReasonCode:unknown_table_state RequiredFacts:[target_table.existence]}]
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.573s
+FAIL

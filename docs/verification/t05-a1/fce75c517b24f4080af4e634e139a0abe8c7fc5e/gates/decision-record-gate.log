@@ -1,0 +1,2 @@
+./scripts/check_decision_record.sh main...HEAD
+decision-record-gate: docs/decisions/*.md present in diff, PASS

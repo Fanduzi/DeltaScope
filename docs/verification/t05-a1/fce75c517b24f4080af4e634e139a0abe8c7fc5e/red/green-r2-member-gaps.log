@@ -1,0 +1,58 @@
+=== RUN   TestBatchStateR2UnknownMemberCollectionsEmitGaps
+=== PAUSE TestBatchStateR2UnknownMemberCollectionsEmitGaps
+=== RUN   TestBatchStateR2UnknownTableStateMemberGapFacts
+=== PAUSE TestBatchStateR2UnknownTableStateMemberGapFacts
+=== RUN   TestBatchStateR2KnownIndexSetKeepsRealAnswers
+=== PAUSE TestBatchStateR2KnownIndexSetKeepsRealAnswers
+=== CONT  TestBatchStateR2UnknownMemberCollectionsEmitGaps
+=== CONT  TestBatchStateR2KnownIndexSetKeepsRealAnswers
+=== RUN   TestBatchStateR2KnownIndexSetKeepsRealAnswers/known_empty_produces_finding
+=== CONT  TestBatchStateR2UnknownTableStateMemberGapFacts
+=== RUN   TestBatchStateR2UnknownMemberCollectionsEmitGaps/drop_index
+=== PAUSE TestBatchStateR2KnownIndexSetKeepsRealAnswers/known_empty_produces_finding
+=== RUN   TestBatchStateR2UnknownTableStateMemberGapFacts/drop_index
+=== PAUSE TestBatchStateR2UnknownTableStateMemberGapFacts/drop_index
+=== RUN   TestBatchStateR2KnownIndexSetKeepsRealAnswers/known_member_clean
+=== PAUSE TestBatchStateR2UnknownMemberCollectionsEmitGaps/drop_index
+=== RUN   TestBatchStateR2UnknownTableStateMemberGapFacts/drop_column
+=== PAUSE TestBatchStateR2KnownIndexSetKeepsRealAnswers/known_member_clean
+=== CONT  TestBatchStateR2KnownIndexSetKeepsRealAnswers/known_empty_produces_finding
+=== RUN   TestBatchStateR2UnknownMemberCollectionsEmitGaps/rename_index
+=== PAUSE TestBatchStateR2UnknownMemberCollectionsEmitGaps/rename_index
+=== PAUSE TestBatchStateR2UnknownTableStateMemberGapFacts/drop_column
+=== CONT  TestBatchStateR2KnownIndexSetKeepsRealAnswers/known_member_clean
+=== RUN   TestBatchStateR2UnknownMemberCollectionsEmitGaps/add_index_forbid
+=== PAUSE TestBatchStateR2UnknownMemberCollectionsEmitGaps/add_index_forbid
+=== CONT  TestBatchStateR2UnknownTableStateMemberGapFacts/drop_index
+=== CONT  TestBatchStateR2UnknownTableStateMemberGapFacts/drop_column
+=== RUN   TestBatchStateR2UnknownMemberCollectionsEmitGaps/drop_column
+=== PAUSE TestBatchStateR2UnknownMemberCollectionsEmitGaps/drop_column
+=== RUN   TestBatchStateR2UnknownMemberCollectionsEmitGaps/modify_column
+=== PAUSE TestBatchStateR2UnknownMemberCollectionsEmitGaps/modify_column
+=== RUN   TestBatchStateR2UnknownMemberCollectionsEmitGaps/change_column
+=== PAUSE TestBatchStateR2UnknownMemberCollectionsEmitGaps/change_column
+=== RUN   TestBatchStateR2UnknownMemberCollectionsEmitGaps/rename_column
+=== PAUSE TestBatchStateR2UnknownMemberCollectionsEmitGaps/rename_column
+=== CONT  TestBatchStateR2UnknownMemberCollectionsEmitGaps/drop_index
+=== CONT  TestBatchStateR2UnknownMemberCollectionsEmitGaps/modify_column
+=== CONT  TestBatchStateR2UnknownMemberCollectionsEmitGaps/add_index_forbid
+=== CONT  TestBatchStateR2UnknownMemberCollectionsEmitGaps/drop_column
+=== CONT  TestBatchStateR2UnknownMemberCollectionsEmitGaps/rename_column
+=== CONT  TestBatchStateR2UnknownMemberCollectionsEmitGaps/change_column
+=== CONT  TestBatchStateR2UnknownMemberCollectionsEmitGaps/rename_index
+--- PASS: TestBatchStateR2UnknownTableStateMemberGapFacts (0.00s)
+    --- PASS: TestBatchStateR2UnknownTableStateMemberGapFacts/drop_column (0.01s)
+    --- PASS: TestBatchStateR2UnknownTableStateMemberGapFacts/drop_index (0.01s)
+--- PASS: TestBatchStateR2KnownIndexSetKeepsRealAnswers (0.00s)
+    --- PASS: TestBatchStateR2KnownIndexSetKeepsRealAnswers/known_empty_produces_finding (0.01s)
+    --- PASS: TestBatchStateR2KnownIndexSetKeepsRealAnswers/known_member_clean (0.01s)
+--- PASS: TestBatchStateR2UnknownMemberCollectionsEmitGaps (0.00s)
+    --- PASS: TestBatchStateR2UnknownMemberCollectionsEmitGaps/drop_column (0.01s)
+    --- PASS: TestBatchStateR2UnknownMemberCollectionsEmitGaps/rename_index (0.01s)
+    --- PASS: TestBatchStateR2UnknownMemberCollectionsEmitGaps/change_column (0.01s)
+    --- PASS: TestBatchStateR2UnknownMemberCollectionsEmitGaps/rename_column (0.01s)
+    --- PASS: TestBatchStateR2UnknownMemberCollectionsEmitGaps/drop_index (0.01s)
+    --- PASS: TestBatchStateR2UnknownMemberCollectionsEmitGaps/modify_column (0.01s)
+    --- PASS: TestBatchStateR2UnknownMemberCollectionsEmitGaps/add_index_forbid (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.308s

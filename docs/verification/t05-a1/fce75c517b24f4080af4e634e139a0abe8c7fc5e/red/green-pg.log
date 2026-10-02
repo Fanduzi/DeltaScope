@@ -1,0 +1,26 @@
+=== RUN   TestBatchStatePostgreSQLSchemaWithoutProviderStaysOnLegacyPath
+=== PAUSE TestBatchStatePostgreSQLSchemaWithoutProviderStaysOnLegacyPath
+=== RUN   TestBatchStatePostgreSQLProviderStaysOnLegacyPath
+=== PAUSE TestBatchStatePostgreSQLProviderStaysOnLegacyPath
+=== RUN   TestBatchStatePostgreSQLResultContractKeepsLegacyShape
+=== PAUSE TestBatchStatePostgreSQLResultContractKeepsLegacyShape
+=== CONT  TestBatchStatePostgreSQLSchemaWithoutProviderStaysOnLegacyPath
+=== CONT  TestBatchStatePostgreSQLProviderStaysOnLegacyPath
+=== CONT  TestBatchStatePostgreSQLResultContractKeepsLegacyShape
+=== RUN   TestBatchStatePostgreSQLResultContractKeepsLegacyShape/no_request_metadata_emits_no_new_gaps
+=== PAUSE TestBatchStatePostgreSQLResultContractKeepsLegacyShape/no_request_metadata_emits_no_new_gaps
+=== RUN   TestBatchStatePostgreSQLResultContractKeepsLegacyShape/schema-only_request_emits_no_new_gaps
+=== PAUSE TestBatchStatePostgreSQLResultContractKeepsLegacyShape/schema-only_request_emits_no_new_gaps
+=== RUN   TestBatchStatePostgreSQLResultContractKeepsLegacyShape/provider-backed_findings_stay_intact
+=== PAUSE TestBatchStatePostgreSQLResultContractKeepsLegacyShape/provider-backed_findings_stay_intact
+=== CONT  TestBatchStatePostgreSQLResultContractKeepsLegacyShape/no_request_metadata_emits_no_new_gaps
+=== CONT  TestBatchStatePostgreSQLResultContractKeepsLegacyShape/provider-backed_findings_stay_intact
+=== CONT  TestBatchStatePostgreSQLResultContractKeepsLegacyShape/schema-only_request_emits_no_new_gaps
+--- PASS: TestBatchStatePostgreSQLSchemaWithoutProviderStaysOnLegacyPath (0.00s)
+--- PASS: TestBatchStatePostgreSQLProviderStaysOnLegacyPath (0.00s)
+--- PASS: TestBatchStatePostgreSQLResultContractKeepsLegacyShape (0.00s)
+    --- PASS: TestBatchStatePostgreSQLResultContractKeepsLegacyShape/schema-only_request_emits_no_new_gaps (0.00s)
+    --- PASS: TestBatchStatePostgreSQLResultContractKeepsLegacyShape/no_request_metadata_emits_no_new_gaps (0.00s)
+    --- PASS: TestBatchStatePostgreSQLResultContractKeepsLegacyShape/provider-backed_findings_stay_intact (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.379s

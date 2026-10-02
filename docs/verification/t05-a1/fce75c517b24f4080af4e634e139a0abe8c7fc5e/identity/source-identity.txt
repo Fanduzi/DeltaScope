@@ -1,0 +1,38 @@
+== source identity ==
+code_head_sha=fce75c517b24f4080af4e634e139a0abe8c7fc5e
+review_base=17ea296960687cc86dcdc30151bdf41fb3d632ce
+r1_head=ef8cdade4a3d7ee96c46330aa38c20a0adfb79ee
+milestone_base=71aeaca7cbc2620f74d60ace7581d8f1543d563f
+branch=milestone/mysql-tidb-ddl-completion
+remote_review_branch=origin/workfree
+
+== git status at evidence assembly (main worktree) ==
+?? .agents/
+?? .debug-journal.md
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? docs/quality/architecture-review-2026-08-11.html
+
+== diff scope r1_head..code_head ==
+docs/decisions/2026-10-02-ddl-ordered-schema-state-first-path.md
+docs/reference/audit-capability-matrix.md
+docs/reference/audit-capability-matrix.zh-CN.md
+docs/reference/config.md
+docs/reference/rules.md
+docs/reference/rules.zh-CN.md
+internal/application/audit/README.md
+internal/application/audit/batch_state_postgresql_tag_test.go
+internal/application/audit/batch_state_r2_test.go
+internal/domain/policy/README.md
+internal/domain/rule/ddl/README.md
+internal/domain/rule/ddl/metadata_rules.go
+
+== manifest / fixture digests ==
+edfe9baff96809dc1a4bd767b2cc062b3f7bb995d5ad8efef1f12db29af61bb7  testdata/ddl-golden/T05.json
+53ba4e251afcb1b5e2c7f61fe5b78eb922d682b0a5478c153a340951ad80a48e  testdata/ddl-golden/anchors-baseline.json
+9b6e594fc1647b48898314ab2d8b6aeafa4a115ce37b904ad8f00044abf05c99  scripts/ddl_golden.py
+bc0b21c97403a839959a01c03ac587520d150052676a85e1e4e5283b434bb839  scripts/test_ddl_golden.py
+
+== build ==
+go version go1.26.1 darwin/arm64
