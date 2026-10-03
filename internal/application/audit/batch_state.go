@@ -1,7 +1,7 @@
 // Package audit orchestrates audit use cases at the application layer.
-// input: ordered statements, optional metadata provider, and parse-failure positions for one audit request
+// input: request context, ordered statements, optional metadata provider, and parse-failure positions for one audit request
 // output: request-local ordered table facts (unknown / known-absent / known-present, per-collection member knowledge) feeding per-statement pre-state snapshots
-// pos: prospective schema-state ownership for the first migration path — the effective (dialect, schema, table) identity drives provider reads, keys, writes, and invalidation; unsupported or executable-but-unmodeled effects settle before kind dispatch; deterministic conditional transitions update derived facts, including the bounded single-pair RENAME identity migration onto a known-absent destination; unaudited, unbound, or contaminated operations invalidate them
+// pos: prospective schema-state ownership for the first migration path — the effective (dialect, schema, table) identity drives provider reads, keys, writes, and invalidation; unsupported or executable-but-unmodeled effects settle before kind dispatch; deterministic conditional transitions update derived facts, including the bounded single-pair RENAME identity migration onto a known-absent destination that tombstones loaded dependents referencing either endpoint and checks cancellation before publishing endpoint/dependent effects; unaudited, unbound, or contaminated operations invalidate them
 // note: if this file changes, update this header and module README.md.
 package audit
 
@@ -532,12 +532,22 @@ func (s *batchState) applyRenameTable(ctx context.Context, statement spec.Statem
 // becomes a settled known-absent entry. Every other cell tombstones both
 // ends; unknown inputs never fabricate absent or present facts.
 func (s *batchState) applyRenamePair(ctx context.Context, source, destination spec.Table) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	sourceKey := s.keyFor(s.schema, source)
 	destinationKey := s.keyFor(s.schema, destination)
 	if sourceKey == destinationKey {
 		// The endpoints are not distinguishable identities (same key under
 		// the effective schema) — conservatively invalidate rather than run
 		// a write-delete-write migration.
+		dependentKeys := s.renameDependentKeys(sourceKey, destinationKey)
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		for _, key := range dependentKeys {
+			s.invalidateKey(key)
+		}
 		s.invalidateKey(sourceKey)
 		return nil
 	}
@@ -549,14 +559,22 @@ func (s *batchState) applyRenamePair(ctx context.Context, source, destination sp
 	if err != nil {
 		return fmt.Errorf("load table snapshot for %s: %w", destination.Name, err)
 	}
-	if sourceEntry.state == tablePresent && destinationEntry.state == tableAbsent && renameShapeMovable(sourceEntry.shape) {
-		destinationSchema := s.effectiveSchema(s.schema, destination)
-		var migrated *spec.TableSnapshot
-		if sourceEntry.shape != nil {
-			migrated = cloneTableSnapshot(sourceEntry.shape)
-			migrated.Schema = destinationSchema
-			migrated.Table = &spec.Table{Schema: destinationSchema, Name: destination.Name}
-		}
+	dependentKeys := s.renameDependentKeys(sourceKey, destinationKey)
+	movable := sourceEntry.state == tablePresent && destinationEntry.state == tableAbsent && renameShapeMovable(sourceEntry.shape)
+	destinationSchema := s.effectiveSchema(s.schema, destination)
+	var migrated *spec.TableSnapshot
+	if movable && sourceEntry.shape != nil {
+		migrated = cloneTableSnapshot(sourceEntry.shape)
+		migrated.Schema = destinationSchema
+		migrated.Table = &spec.Table{Schema: destinationSchema, Name: destination.Name}
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	for _, key := range dependentKeys {
+		s.invalidateKey(key)
+	}
+	if movable {
 		s.entries[destinationKey] = &batchTableEntry{
 			state:         tablePresent,
 			shape:         migrated,
@@ -575,17 +593,46 @@ func (s *batchState) applyRenamePair(ctx context.Context, source, destination sp
 	return nil
 }
 
+func (s *batchState) renameDependentKeys(sourceKey, destinationKey batchTableKey) []batchTableKey {
+	var dependents []batchTableKey
+	for key, entry := range s.entries {
+		if key == sourceKey || key == destinationKey {
+			continue
+		}
+		if entry == nil || entry.state != tablePresent || entry.shape == nil {
+			continue
+		}
+		for _, constraint := range entry.shape.Constraints {
+			if strings.TrimSpace(constraint.ReferencedTable) == "" {
+				continue
+			}
+			referenced := spec.Table{Schema: constraint.ReferencedSchema, Name: constraint.ReferencedTable}
+			referenceKey := s.keyFor(key.schema, referenced)
+			if referenceKey == sourceKey || referenceKey == destinationKey {
+				dependents = append(dependents, key)
+				break
+			}
+		}
+	}
+	return dependents
+}
+
 // renameShapeMovable reports whether a known-present shape carries only
 // members this slice transports verbatim. A nil shape (present-incomplete)
-// moves as-is; a known shape with recorded constraints does not — MySQL can
-// rebind generated FK/CHECK constraint identities during RENAME, so such a
-// table invalidates the pair instead of copying names that may be wrong.
+// moves as-is; a supplied primary_key constraint repeats the PrimaryKey fact
+// and also moves, while any other recorded constraint does not — MySQL can
+// rebind generated FK/CHECK identities during RENAME, so invalidation wins.
 // Unknown member flags are not constraints and always migrate.
 func renameShapeMovable(shape *spec.TableSnapshot) bool {
 	if shape == nil {
 		return true
 	}
-	return len(shape.Constraints) == 0
+	for _, constraint := range shape.Constraints {
+		if constraint.Type != "primary_key" {
+			return false
+		}
+	}
+	return true
 }
 
 // applyCreateIndex appends a fully audited standalone CREATE INDEX to a

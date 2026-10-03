@@ -58,22 +58,49 @@ say nothing about permission, lock, or concurrent-failure branches.
    before any post-state is published, so the source is never first marked
    absent and the error is never downgraded to an evidence gap. Both
    endpoints are still read at most once per request; later statements see
-   the migrated derived state and the old name is never reloaded.
-4. **Members move verbatim; constraints are the deliberate boundary.**
-   Migration deep-copies the shape: ordinary columns, the primary key,
-   ordinary indexes, recorded statistics, and every `*Unknown` collection
-   flag keep their exact knowledge state under the destination identity.
-   Known constraints are **not** copied — MySQL can rebind generated
-   foreign-key and CHECK constraint names during RENAME, so a source shape
-   carrying a non-empty constraint set invalidates both endpoints instead of
-   transporting possibly-stale names. Unknown constraint collections retain
-   their unknown marker; they are not upgraded to complete.
-5. **Unqualified destinations resolve to the request schema.** The
+   the migrated derived state and the old name is never reloaded. Context
+   cancellation is checked at the rename boundary and again at the final
+   pre-publication check after the required reads complete — an observed
+   cancellation aborts the transition's effects. There is no guarantee
+   against cancellation arriving after that final check: the ordered state
+   takes no transaction lock and performs no rollback. A provider failure
+   preserves its wrapped error identity rather than collapsing into
+   cancellation.
+4. **Members move verbatim; non-PK constraints are the deliberate
+   boundary.** Migration deep-copies the shape: ordinary columns, the
+   primary key, ordinary indexes, recorded statistics, and every `*Unknown`
+   collection flag keep their exact knowledge state under the destination
+   identity. A normalized `primary_key` constraint member is the same fact
+   the `PrimaryKey` field carries, so an ordinary primary key moves whether
+   it arrives as the field or as a `Constraints` payload member. Other
+   recorded constraints are **not** copied — MySQL can rebind generated
+   foreign-key and CHECK constraint identities during RENAME, so a source
+   shape carrying any supplied non-PK constraint (CHECK, foreign key, or an
+   unrecognized kind) invalidates both endpoints instead of transporting
+   possibly-stale names. Unknown collections retain their unknown markers;
+   supplied members never upgrade flags, and no constraint name is
+   rewritten.
+5. **Loaded dependents referencing either endpoint tombstone with the
+   pair.** Related state is identified only inside the request-local
+   entries already loaded by the batch: an entry whose supplied constraint
+   references resolve to the source or destination key conservatively
+   invalidates to a whole-entry `unknown` tombstone on either branch —
+   migration or endpoint rejection. An explicit `referenced_schema` wins;
+   an unqualified reference is read under the owning entry's schema, never
+   the request schema or the other endpoint's. There is no provider
+   discovery, dependency graph, or reference rewriting: dependents are
+   selected read-only before publication and are tombstoned together with
+   the endpoints only after the required endpoint reads have succeeded and
+   the final cancellation check has passed. That check is a gate, not an
+   atomicity promise — a cancellation landing after it behaves like any
+   post-transition interruption. Earlier projections and provider objects
+   keep their original names; unrelated tables keep their facts.
+6. **Unqualified destinations resolve to the request schema.** The
    normalized pair keeps the destination qualifier as written; an
    unqualified destination is bound by the same effective-schema rule as
    every other target — the request schema, never the source qualifier
    (verified on all four anchors: MySQL 5.7/8.0/8.4, TiDB 8.5).
-6. **No new RENAME prerequisite rule.** The ordered state records what is
+7. **No new RENAME prerequisite rule.** The ordered state records what is
    provable; it does not audit whether the rename *should* run. The existing
    policy surface (`ddl.rename_table.notice`, `ddl.alter.rename_table.forbid`
    on the ALTER form) is unchanged, and a zero-finding rename is not a claim
@@ -110,7 +137,11 @@ say nothing about permission, lock, or concurrent-failure branches.
   read ledger (`src.t` once, `dst.t2` once, no re-reads), destination
   provider-error propagation, contamination survival, multi-pair and mixed
   ALTER invalidation, constraint-boundary invalidation, PK/statistics
-  transport, snapshot immutability, and policy-blocker orthogonality.
+  transport, snapshot immutability, and policy-blocker orthogonality; A2-R1
+  adds the loaded-dependent reference matrix (explicit-schema and
+  owner-schema unqualified resolution, destination-reference and
+  non-movable cells), ordinary-PK constraint payload equivalence, and the
+  pre-/mid-read cancellation publication boundaries.
 - `testdata/ddl-golden/T05.json` adds 12 metadata cases — each anchor runs
   the qualified RENAME, the `ALTER ... RENAME TO` form, and the unqualified
   destination path with `DATABASE()=golden` recorded — through the six-phase
