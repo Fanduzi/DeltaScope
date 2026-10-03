@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: synthetic ddl-golden artifacts and manifests built in a temp directory
-# output: contract evidence that the artifact validator rejects fabricated or incomplete proof
+# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3 mutation coverage
 # pos: offline negative tests for scripts/ddl_golden.py validation (no Docker required)
 # note: if this file changes, update this header and module README.md.
 """Validator contract tests for scripts/ddl_golden.py.
@@ -17,6 +17,7 @@ import json
 import pathlib
 import sys
 import tempfile
+from unittest import mock
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import ddl_golden  # noqa: E402
@@ -1522,9 +1523,244 @@ def main():
         a["executed_count"] = len(a["cases"])
         results.append(check("t05 required rename case removed rejected", a, "not executed", manifest=mt5))
 
+        results.extend(a3_contract_tests(tmp))
+
     failures = results.count(False)
     print(f"contract cases={len(results)} failures={failures}")
     return 1 if failures else 0
+
+
+def a3_contract_tests(tmp):
+    source = json.loads((ddl_golden.MANIFEST_DIR / "T05.json").read_text())
+    profile = "t05-drop-recreate-isolated"
+    manifest = copy.deepcopy(MANIFEST)
+    manifest.update(task_id="T05", anchors=copy.deepcopy(source["anchors"]),
+                    policy={"profiles": {profile: copy.deepcopy(source["policy"]["profiles"][profile])}},
+                    metadata_cases=[copy.deepcopy(s) for s in source["metadata_cases"] if s["id"].startswith("t05-a3-")],
+                    cli_cases=[copy.deepcopy(s) for s in source["cli_cases"] if s["id"].startswith("t05-a3-")])
+    baseline = ddl_golden.load_baseline()
+    directory = tmp / "a3"
+    directory.mkdir()
+    artifact = make_artifact(directory)
+    binary = directory / "deltascope"
+    ids = sorted(manifest["policy"]["profiles"][profile]["enable"])
+    catalog = json.dumps({"rules": [{"rule_id": rid} for rid in ids]})
+    binary.write_text("#!/bin/sh\nprintf '%s' '" + catalog + "'\n")
+    artifact["cli"]["sha256"] = ddl_golden.sha256_file(binary)
+    policies = ddl_golden.make_policies(str(binary), directory, manifest)
+    artifact.update(task_id="T05", policies=list(policies.values()), policy_profile=policies["all-rules-disabled"])
+    templates = copy.deepcopy(artifact["cases"][:2])
+    artifact["cases"] = []
+    for key, anchor in manifest["anchors"].items():
+        database = {"product": anchor["product"], "image": anchor["image"],
+                    "image_digest": anchor["image"].split(":")[0] + "@sha256:stub",
+                    "container": anchor["container"], "reachable": True, "version": anchor["version_contains"]}
+        for suffix, template in zip(("ddl", "syntax_negative"), templates):
+            case = copy.deepcopy(template)
+            case.update(case_id=f"T05.db.{key}.{suffix}", anchor=key)
+            if suffix == "ddl":
+                case["actual"]["database"] = database
+            artifact["cases"].append(case)
+
+    def query_records(queries):
+        return [{"assert": q["assert"], "sql": q["sql"], "rc": 0, "output": q["expect"], "stderr": ""} for q in queries]
+
+    def step_records(steps):
+        return [{"name": s["name"], "sql": s["sql"], "rc": s.get("expect_rc", 0),
+                 "stdout": " ".join(s.get("stdout_contains", [])), "stderr": " ".join(s.get("stderr_contains", [])),
+                 "verify": query_records(s.get("verify", []))} for s in steps]
+
+    for kind, specs in (("meta", manifest["metadata_cases"]), ("cli", manifest["cli_cases"])):
+        for spec in specs:
+            expected = spec["expect"]
+            statements = [{"index": i, "raw_sql": sql, "coverage": {"status": expected["statement_coverage"][i]},
+                           "findings": [], "evidence_gaps": []} for i, sql in enumerate(expected["statement_sql"])]
+            for entry in expected.get("finding_entries", []):
+                statements[entry["index"]]["findings"].append({
+                    "statement_index": entry["index"], "rule_id": entry["rule_id"], "level": entry["level"],
+                    "metadata": copy.deepcopy(expected["finding_metadata"][0]["metadata"])})
+            for entry in expected.get("evidence_gap_entries", []):
+                statements[entry["index"]]["evidence_gaps"].append({k: v for k, v in entry.items() if k != "index"})
+            parsed = {"verdict": expected["verdict"], "coverage": {"status": expected["coverage"]},
+                      "statements": statements, "global_findings": [], "diagnostics": [], "unsupported": [],
+                      "fail_on_triggered": expected["fail_on_triggered"], "rule_summary": {"loaded": 5}}
+            command = [str(binary), "audit", "--dialect", spec["dialect"], "--sql", spec["sql"],
+                       "--config", policies[profile]["path"], "--format", "json"]
+            case = {"case_id": f"T05.{kind}.{spec['id']}", "kind": "cli_metadata" if kind == "meta" else "cli_audit",
+                    "cli_case": spec["id"], "dialect": spec["dialect"], "input_sql": spec["sql"],
+                    "policy_profile": profile, "policy_path": policies[profile]["path"], "command": command,
+                    "expected": copy.deepcopy(expected),
+                    "actual": {"exit": expected["exit"], "stdout": json.dumps(parsed), "stderr": "", "parsed": parsed},
+                    "assertions": [{"name": "synthetic control", "ok": True, "detail": "offline validator fixture"}], "status": "pass"}
+            if kind == "meta":
+                anchor = manifest["anchors"][spec["anchor"]]
+                case["anchor"] = spec["anchor"]
+                case["connect"] = {k: v for k, v in spec["connect"].items() if k != "password"}
+                for field in ("host", "port", "user", "password_env", "schema"):
+                    if field in spec["connect"]:
+                        command += ["--" + field.replace("_", "-"), str(spec["connect"][field])]
+                case["actual"]["database"] = {"product": anchor["product"], "image": anchor["image"],
+                    "image_digest": anchor["image"].split(":")[0] + "@sha256:stub",
+                    "container": anchor["container"], "reachable": True, "version": anchor["version_contains"]}
+                for field in ("setup", "execute", "teardown"):
+                    case["actual"][field] = step_records(spec[field])
+                for field in ("post_verify", "structure"):
+                    case["actual"][field] = query_records(spec[field])
+            command += spec["args"]
+            artifact["cases"].append(case)
+    manifest["required_case_ids"] = [c["case_id"] for c in artifact["cases"]]
+    artifact["required_case_ids"] = list(manifest["required_case_ids"])
+    artifact["executed_count"] = len(artifact["cases"])
+    results = []
+
+    def run(name, modified, needle="", changed_manifest=None):
+        failures = ddl_golden.validate_artifact(modified, changed_manifest or manifest, baseline=baseline)
+        ok = any(needle in f for f in failures) if needle else not failures
+        print(("PASS " if ok else "FAIL ") + name)
+        if not ok:
+            print(f"  expected={needle!r} actual={failures}")
+        results.append(ok)
+
+    def fresh(suffix="mysql84-drop-recreate"):
+        candidate = copy.deepcopy(artifact)
+        case = next(c for c in candidate["cases"] if c.get("cli_case") == "t05-a3-" + suffix)
+        return candidate, case
+
+    def update_stdout(case):
+        case["actual"]["stdout"] = json.dumps(case["actual"]["parsed"])
+
+    run("a3 valid synthetic control", artifact)
+    a, c = fresh()
+    del c["actual"]["parsed"]["statements"][1]
+    update_stdout(c)
+    run("a3 missing DROP statement rejected", a, "statements")
+    a, c = fresh()
+    c["actual"]["parsed"]["statements"][1]["raw_sql"] = "SELECT 1;"
+    update_stdout(c)
+    run("a3 same-length DROP replacement rejected", a, "raw SQL")
+    a, c = fresh()
+    del c["actual"]["execute"][1]
+    run("a3 missing DROP execute rejected", a, "execute")
+    a, c = fresh()
+    c["actual"]["execute"][1]["rc"] = 1
+    run("a3 failed DROP claiming pass rejected", a, "execute")
+    a, c = fresh()
+    c["actual"]["execute"][1]["verify"] = []
+    run("a3 missing intermediate verify rejected", a, "verify count")
+    for field, value, needle in (("output", "1", "output mismatch"), ("rc", 1, "output mismatch"),
+                                  ("sql", "SELECT 0", "identity mismatch"), ("assert", "other", "identity mismatch")):
+        a, c = fresh()
+        c["actual"]["execute"][1]["verify"][0][field] = value
+        run("a3 intermediate verify " + field + " mutation rejected", a, needle)
+    a, c = fresh()
+    c["actual"]["execute"][2]["verify"] = c["actual"]["execute"][1].pop("verify")
+    run("a3 intermediate verify moved after recreate rejected", a, "verify count")
+    for index in (1, 2, 3, 4, 5):
+        a, c = fresh()
+        c["actual"]["structure"][index]["output"] = "old_c"
+        run(f"a3 stale structure oracle {index} rejected", a, "structure")
+    a, c = fresh("mysql84-drop-recreate-old-column")
+    c["actual"]["parsed"]["statements"][5]["findings"] = []
+    c["actual"]["parsed"]["verdict"] = "pass"
+    update_stdout(c)
+    run("a3 missing old-column blocker rejected", a, "findings")
+    a, c = fresh("mysql84-drop-recreate-old-column")
+    c["actual"]["parsed"]["statements"][5]["findings"][0]["metadata"]["column"] = "id"
+    update_stdout(c)
+    run("a3 old-column blocker identity rejected", a, "finding metadata")
+    a, c = fresh("mysql84-drop-recreate-old-column")
+    finding = c["actual"]["parsed"]["statements"][5]["findings"].pop()
+    finding["statement_index"] = 2
+    c["actual"]["parsed"]["statements"][2]["findings"].append(finding)
+    update_stdout(c)
+    run("a3 old-column blocker wrong statement rejected", a, "finding entries")
+    a, c = fresh("mysql84-drop-recreate-old-column")
+    finding = c["actual"]["parsed"]["statements"][5]["findings"].pop()
+    c["actual"]["parsed"]["statements"][2]["findings"].append(finding)
+    update_stdout(c)
+    run("a3 nested finding owner mismatch rejected", a, "finding statement ownership")
+    a, c = fresh("mysql84-drop-recreate-old-column")
+    finding = c["actual"]["parsed"]["statements"][5]["findings"].pop()
+    c["actual"]["parsed"]["global_findings"].append(finding)
+    update_stdout(c)
+    run("a3 statement finding moved to global rejected", a, "finding statement ownership")
+    a, c = fresh("mysql-drop-unknown")
+    c["actual"]["parsed"]["statements"][0]["evidence_gaps"] = []
+    c["actual"]["parsed"]["statements"][0]["coverage"]["status"] = "complete"
+    c["actual"]["parsed"]["coverage"]["status"] = "complete"
+    update_stdout(c)
+    run("a3 unknown DROP gap deleted rejected", a, "gap")
+    a, c = fresh("mysql84-drop-if-exists-absent")
+    c["actual"]["parsed"]["statements"][0]["findings"] = []
+    c["actual"]["parsed"]["verdict"] = "pass"
+    c["actual"]["exit"] = 0
+    update_stdout(c)
+    run("a3 driver success cannot erase policy blocker", a, "findings")
+    a, c = fresh("mysql84-drop-absent")
+    c["actual"]["execute"][0]["stderr"] = "ERROR 1045 Access denied"
+    run("a3 permission error cannot replace unknown-table error", a, "stderr marker")
+    a, c = fresh("tidb85-drop-if-exists-absent")
+    c["actual"]["execute"][0]["stdout"] = ""
+    run("a3 missing same-call IF EXISTS note rejected", a, "stdout marker")
+    a, c = fresh()
+    artifact_id = c["case_id"]
+    a["cases"] = [item for item in a["cases"] if item["case_id"] != artifact_id]
+    a["executed_count"] -= 1
+    run("a3 required case missing rejected", a, "not executed")
+    m = copy.deepcopy(manifest)
+    m["metadata_cases"] = [s for s in m["metadata_cases"] if s["id"] != c["cli_case"]]
+    m["required_case_ids"].remove(artifact_id)
+    a["required_case_ids"].remove(artifact_id)
+    run("a3 manifest and artifact shrunk together rejected", a, "T05-A3", m)
+    a, c = fresh()
+    m = copy.deepcopy(manifest)
+    next(s for s in m["metadata_cases"] if s["id"] == c["cli_case"])["execute"][1]["verify"] = []
+    c["actual"]["execute"][1]["verify"] = []
+    run("a3 intermediate oracle removed on both sides rejected", a, "T05-A3", m)
+    a, c = fresh()
+    m = copy.deepcopy(manifest)
+    next(s for s in m["metadata_cases"] if s["id"] == c["cli_case"])["policy"] = "all-rules-disabled"
+    c["policy_profile"] = "all-rules-disabled"
+    run("a3 wrong profile cannot substitute five-rule policy", a, "T05-A3", m)
+    a, c = fresh()
+    m = copy.deepcopy(manifest)
+    del m["policy"]["profiles"][profile]["enable"]["ddl.table.drop.exists.require"]
+    run("a3 DROP rule missing from profile rejected", a, "T05-A3", m)
+    a, c = fresh()
+    c["actual"]["parsed"]["rule_summary"]["loaded"] = 4
+    update_stdout(c)
+    run("a3 four loaded rules rejected", a, "loaded rule count")
+    a, c = fresh()
+    spec = next(s for s in manifest["metadata_cases"] if s["id"] == c["cli_case"])
+    calls = []
+    present = False
+    table_query = spec["execute"][1]["verify"][0]["sql"]
+    answers = {q["sql"]: q["expect"] for q in spec["structure"]}
+
+    def database_call(anchor, sql, database=None, silent=True):
+        nonlocal present
+        calls.append(sql)
+        if sql == "SELECT VERSION()":
+            return 0, "8.4.10", ""
+        if sql.startswith("DROP TABLE"):
+            present = False
+        elif sql.startswith("CREATE TABLE"):
+            present = True
+        if sql == table_query:
+            return 0, "1" if present else "0", ""
+        return 0, answers.get(sql, ""), ""
+
+    with mock.patch.object(ddl_golden, "mysql_exec", side_effect=database_call), \
+            mock.patch.object(ddl_golden, "image_digest", return_value="mysql@sha256:stub"), \
+            mock.patch.object(ddl_golden, "run_cmd", return_value=(0, c["actual"]["stdout"], "")):
+        recorded = ddl_golden.execute_metadata_case(manifest, "mysql84", str(binary), policies, spec)
+    drop_position = calls.index("DROP TABLE t")
+    immediate = calls[drop_position + 1:drop_position + 3] == [table_query, "CREATE TABLE t (id INT PRIMARY KEY)"]
+    print(("PASS " if immediate else "FAIL ") + "a3 runner queries absence before recreating")
+    results.append(immediate)
+    a["cases"][a["cases"].index(c)] = recorded
+    run("a3 runner-produced synthetic case validates", a)
+    return results
 
 
 if __name__ == "__main__":

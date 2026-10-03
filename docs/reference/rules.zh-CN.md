@@ -409,7 +409,7 @@ rules:
 
 ### 存在性检查规则（12 条 — 元数据支撑）
 
-这些规则验证 DDL 语句引用的对象在请求内有序 schema 视图中确实存在（或确实不存在）：配置了元数据时取实时表快照，否则对 MySQL 与 TiDB 使用同一审计批次内先前语句派生的状态。`ddl.table.exists.alter.require`、`ddl.table.exists.create.forbid`、全部列/索引成员存在性规则（`add`/`drop`/`modify`/`change`/`rename` 列与 `add`/`drop`/`rename` 索引）、`ddl.alter.drop_primary_key.exists.require` 与 `ddl.create_index.columns.exists.require` 在 MySQL/TiDB 上状态无法确定时产生 `unknown_table_state` 证据缺口；其余规则在无可用状态时仍静默跳过。该缺口投影从不适用于 PostgreSQL——它保留既有 finding/跳过契约。
+这些规则验证 DDL 语句引用的对象在请求内有序 schema 视图中确实存在（或确实不存在）：配置了元数据时取实时表快照，否则对 MySQL 与 TiDB 使用同一审计批次内先前语句派生的状态。`ddl.table.exists.alter.require`、`ddl.table.exists.create.forbid`、全部列/索引成员存在性规则（`add`/`drop`/`modify`/`change`/`rename` 列与 `add`/`drop`/`rename` 索引）、`ddl.alter.drop_primary_key.exists.require`、`ddl.create_index.columns.exists.require` 与 `ddl.table.drop.exists.require` 在 MySQL/TiDB 上状态无法确定时产生 `unknown_table_state` 证据缺口；其余规则在无可用状态时仍静默跳过。该缺口投影从不适用于 PostgreSQL——它保留既有 finding/跳过契约。
 
 | 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
 |---------|------|:--------:|:--------------:|
@@ -431,6 +431,8 @@ rules:
 ## DDL：对象生命周期规则（8 条）
 
 这些规则约束 `DROP TABLE` 和 `TRUNCATE TABLE` 操作。
+
+在 MySQL/TiDB 上，启用的 DROP 存在性规则遇到未知目标状态时产生一个 `unknown_table_state` 缺口，所需事实为 `target_table.existence`。已确认不存在的目标仍产生原有 blocker，包括 `IF EXISTS`：这是严格政策，不是数据库执行失败预测。符合模板的单表 DROP 为后续 CREATE 保留确定缺席；多目标形式仍保守失效。PostgreSQL 与 TRUNCATE 的缺口行为不变。
 
 | 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
 |---------|------|:--------:|:--------------:|

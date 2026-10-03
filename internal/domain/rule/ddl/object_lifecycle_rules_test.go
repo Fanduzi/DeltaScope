@@ -1,7 +1,7 @@
 // Package ddl verifies DDL object lifecycle governance rules.
 // input: parser-neutral create-view, drop-table, and truncate-table statement specs
 // output: coverage for object lifecycle forbids, metadata-backed existence checks, and adaptive-hash cautions
-// pos: DDL lifecycle rule test coverage for remaining matrix gaps
+// pos: DDL lifecycle rule test coverage for remaining matrix gaps plus the drop-existence evidence-gap reporter guards
 // note: if this file changes, update this header and module README.md.
 package ddl
 
@@ -176,5 +176,69 @@ func TestLifecycleRowCountRules(t *testing.T) {
 	}
 	if len(findings) != 1 {
 		t.Fatalf("expected one drop row-count finding, got %d", len(findings))
+	}
+}
+
+func TestDropTableExistenceRuleEvidenceGaps(t *testing.T) {
+	t.Parallel()
+	dropRule, err := newTableOperationExistenceRule(ruleIDTableDropExistsRequire, spec.DDLOperationDropTable, "drop table", rule.LevelBlocker, policy.RulePolicy{
+		Enabled: true,
+	})
+	if err != nil {
+		t.Fatalf("new drop-table existence rule: %v", err)
+	}
+	reporter, ok := dropRule.(rule.EvidenceReporter)
+	if !ok {
+		t.Fatal("drop-table existence rule must implement rule.EvidenceReporter")
+	}
+	dropStatement := func(dialect spec.Dialect, snapshot *spec.TableSnapshot) spec.Statement {
+		statement := spec.Statement{
+			Dialect: dialect,
+			Kind:    spec.KindDDL,
+			DDL:     &spec.DDL{Operation: spec.DDLOperationDropTable, Table: &spec.Table{Name: "t"}},
+		}
+		if snapshot != nil {
+			statement.Metadata = &spec.Metadata{TargetTable: snapshot}
+		}
+		return statement
+	}
+	for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
+		gaps := reporter.EvidenceGaps(dropStatement(dialect, nil))
+		if len(gaps) != 1 || gaps[0].ReasonCode != "unknown_table_state" || len(gaps[0].RequiredFacts) != 1 || gaps[0].RequiredFacts[0] != "target_table.existence" {
+			t.Fatalf("unknown %s drop must report the frozen existence gap, got %+v", dialect, gaps)
+		}
+	}
+	if gaps := reporter.EvidenceGaps(dropStatement(spec.DialectMySQL, &spec.TableSnapshot{Exists: true, Table: &spec.Table{Name: "t"}})); len(gaps) != 0 {
+		t.Fatalf("present drop target must not gap, got %+v", gaps)
+	}
+	if gaps := reporter.EvidenceGaps(dropStatement(spec.DialectMySQL, &spec.TableSnapshot{Exists: false, Table: &spec.Table{Name: "t"}})); len(gaps) != 0 {
+		t.Fatalf("known-absent drop target keeps its blocker instead of a gap, got %+v", gaps)
+	}
+	if gaps := reporter.EvidenceGaps(dropStatement(spec.DialectPostgreSQL, nil)); len(gaps) != 0 {
+		t.Fatalf("the drop gap must never leak to PostgreSQL, got %+v", gaps)
+	}
+	if gaps := reporter.EvidenceGaps(spec.Statement{
+		Dialect: spec.DialectMySQL,
+		Kind:    spec.KindDDL,
+		DDL:     &spec.DDL{Operation: spec.DDLOperationCreateTable, Table: &spec.Table{Name: "t"}},
+	}); len(gaps) != 0 {
+		t.Fatalf("non-applicable statement must not gap, got %+v", gaps)
+	}
+	truncateRule, err := newTableOperationExistenceRule(ruleIDTableTruncateExistsRequire, spec.DDLOperationTruncateTable, "truncate table", rule.LevelBlocker, policy.RulePolicy{
+		Enabled: true,
+	})
+	if err != nil {
+		t.Fatalf("new truncate existence rule: %v", err)
+	}
+	truncateReporter, ok := truncateRule.(rule.EvidenceReporter)
+	if !ok {
+		t.Fatal("truncate existence rule shares the type but must not emit this gap")
+	}
+	if gaps := truncateReporter.EvidenceGaps(spec.Statement{
+		Dialect: spec.DialectMySQL,
+		Kind:    spec.KindDDL,
+		DDL:     &spec.DDL{Operation: spec.DDLOperationTruncateTable, Table: &spec.Table{Name: "t"}},
+	}); len(gaps) != 0 {
+		t.Fatalf("truncate must not inherit the drop gap, got %+v", gaps)
 	}
 }

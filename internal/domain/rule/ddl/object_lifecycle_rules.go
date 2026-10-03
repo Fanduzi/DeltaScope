@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: create-view, drop-table, and truncate-table statement specs plus optional metadata facts
-// output: lifecycle-governance findings for object creation, drop, truncate, existence, and adaptive-hash cautions
+// output: lifecycle-governance findings and the drop-existence unknown-state evidence gap for object creation, drop, truncate, existence, and adaptive-hash cautions
 // pos: DDL rule implementations for object lifecycle gaps outside create/alter table structure checks
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -107,6 +107,19 @@ func (r tableOperationExistenceRule) Evaluate(ctx context.Context, statement spe
 			"exists":    false,
 		},
 	}}, nil
+}
+
+func (r tableOperationExistenceRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
+	if r.ruleID != ruleIDTableDropExistsRequire || r.operation != spec.DDLOperationDropTable || !orderedGapDialect(statement.Dialect) || !r.AppliesTo(statement) {
+		return nil
+	}
+	if snapshot, ok := targetTableSnapshot(statement); ok && snapshot != nil {
+		return nil
+	}
+	return []rule.EvidenceGap{{
+		ReasonCode:    gapReasonUnknownTableState,
+		RequiredFacts: []string{"target_table.existence"},
+	}}
 }
 
 type adaptiveHashLifecycleRule struct {

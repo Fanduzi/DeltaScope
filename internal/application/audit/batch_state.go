@@ -1,7 +1,7 @@
 // Package audit orchestrates audit use cases at the application layer.
 // input: request context, ordered statements, optional metadata provider, and parse-failure positions for one audit request
 // output: request-local ordered table facts (unknown / known-absent / known-present, per-collection member knowledge) feeding per-statement pre-state snapshots
-// pos: prospective schema-state ownership for the first migration path — the effective (dialect, schema, table) identity drives provider reads, keys, writes, and invalidation; unsupported or executable-but-unmodeled effects settle before kind dispatch; deterministic conditional transitions update derived facts, including the bounded single-pair RENAME identity migration onto a known-absent destination that tombstones loaded dependents referencing either endpoint and checks cancellation before publishing endpoint/dependent effects; unaudited, unbound, or contaminated operations invalidate them
+// pos: prospective schema-state ownership for the first migration path — the effective (dialect, schema, table) identity drives provider reads, keys, writes, and invalidation; unsupported or executable-but-unmodeled effects settle before kind dispatch; deterministic conditional transitions update derived facts, including the bounded single-pair RENAME identity migration onto a known-absent destination and a bounded single-target DROP identity retirement, each tombstoning loaded dependents referencing the touched identities and checking cancellation before publishing effects; unaudited, unbound, or contaminated operations invalidate them
 // note: if this file changes, update this header and module README.md.
 package audit
 
@@ -215,10 +215,11 @@ func projectEntry(key batchTableKey, entry *batchTableEntry) *spec.TableSnapshot
 // effect contaminates the batch. After that gate only the frozen transitions
 // derive structure — a fully audited plain CREATE TABLE, an ALTER made of
 // exactly one plain ADD COLUMN, a fully audited standalone CREATE INDEX, and
-// a single-pair RENAME bounded by the frozen endpoint-existence table — plus
-// stat-clearing TRUNCATE/DML pass-through. Everything else (DROP TABLE,
-// multi-action ALTER, unaudited aspects, multi-pair RENAME) invalidates its
-// bound targets because the real effect is not modeled honestly. A statement
+// a single-pair RENAME bounded by the frozen endpoint-existence table, and a
+// single-target DROP bounded by the frozen drop state table — plus
+// stat-clearing TRUNCATE/DML pass-through. Everything else (multi-action
+// ALTER, unaudited aspects, multi-pair or multi-target effects) invalidates
+// its bound targets because the real effect is not modeled honestly. A statement
 // whose structural premise is already known-broken (duplicate plain ADD,
 // index on a confirmed-absent table) invalidates its target rather than
 // fabricating the success shape. Contaminated batches derive nothing.
@@ -227,6 +228,9 @@ func projectEntry(key batchTableKey, entry *batchTableEntry) *spec.TableSnapshot
 func (s *batchState) apply(ctx context.Context, statement spec.Statement) error {
 	if s.contaminated {
 		return nil
+	}
+	if statement.DDL != nil && statement.DDL.Operation == spec.DDLOperationDropTable {
+		return s.applyDropTable(ctx, statement)
 	}
 	if statement.Unsupported != nil {
 		// A recognized-but-unsupported statement has no bounded effect. Bound
@@ -594,9 +598,13 @@ func (s *batchState) applyRenamePair(ctx context.Context, source, destination sp
 }
 
 func (s *batchState) renameDependentKeys(sourceKey, destinationKey batchTableKey) []batchTableKey {
+	return s.referencingEntryKeys(map[batchTableKey]struct{}{sourceKey: {}, destinationKey: {}})
+}
+
+func (s *batchState) referencingEntryKeys(targets map[batchTableKey]struct{}) []batchTableKey {
 	var dependents []batchTableKey
 	for key, entry := range s.entries {
-		if key == sourceKey || key == destinationKey {
+		if _, isTarget := targets[key]; isTarget {
 			continue
 		}
 		if entry == nil || entry.state != tablePresent || entry.shape == nil {
@@ -608,13 +616,62 @@ func (s *batchState) renameDependentKeys(sourceKey, destinationKey batchTableKey
 			}
 			referenced := spec.Table{Schema: constraint.ReferencedSchema, Name: constraint.ReferencedTable}
 			referenceKey := s.keyFor(key.schema, referenced)
-			if referenceKey == sourceKey || referenceKey == destinationKey {
+			if _, hit := targets[referenceKey]; hit {
 				dependents = append(dependents, key)
 				break
 			}
 		}
 	}
 	return dependents
+}
+
+func (s *batchState) applyDropTable(ctx context.Context, statement spec.Statement) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	ddl := statement.DDL
+	targets := ddl.TableTargets()
+	keys := make(map[batchTableKey]struct{}, len(targets)+1)
+	unbound := len(targets) == 0
+	for _, target := range targets {
+		if strings.TrimSpace(target.Name) == "" {
+			unbound = true
+			continue
+		}
+		keys[s.keyFor(s.schema, target)] = struct{}{}
+	}
+	if ddl.Table != nil && strings.TrimSpace(ddl.Table.Name) != "" {
+		keys[s.keyFor(s.schema, *ddl.Table)] = struct{}{}
+	}
+	dependentKeys := s.referencingEntryKeys(keys)
+	precise := orderedStateDialect(s.dialect) && statement.Kind == spec.KindDDL && !unbound && len(targets) == 1 && ddl.Table != nil && strings.TrimSpace(ddl.Table.Name) != "" && ddl.TemporaryScope == "" && ddl.OmittedTargets == 0 && fullyAuditedStatement(s.dialect, statement)
+	var absent *batchTableEntry
+	var targetKey batchTableKey
+	if precise {
+		targetKey = s.keyFor(s.schema, targets[0])
+		precise = targetKey == s.keyFor(s.schema, *ddl.Table)
+		entry := s.entries[targetKey]
+		if precise && entry != nil && (entry.state == tablePresent || (entry.state == tableAbsent && ddl.Options["if_exists"] == "true")) {
+			absent = &batchTableEntry{state: tableAbsent, displaySchema: s.effectiveSchema(s.schema, targets[0]), displayTable: targets[0].Name}
+		}
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if unbound {
+		s.contaminated = true
+		return nil
+	}
+	for _, key := range dependentKeys {
+		s.invalidateKey(key)
+	}
+	for key := range keys {
+		s.invalidateKey(key)
+	}
+	if absent != nil {
+		s.entries[targetKey] = absent
+	}
+	return nil
 }
 
 // renameShapeMovable reports whether a known-present shape carries only

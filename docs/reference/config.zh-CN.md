@@ -2827,9 +2827,7 @@ rules:
 
 ### `ddl.table.drop.exists.require`
 
-当目标表不存在时，禁止执行 `DROP TABLE`（需元数据感知模式）。
-
-> **需要元数据感知模式。** 离线审计时本规则不生效（no-op）。
+要求目标表存在，包括 `DROP TABLE IF EXISTS`。已确认不存在时保留原有 blocker。在 MySQL/TiDB 上，未知目标（包括无 provider 的离线审计）产生一个 `unknown_table_state` 证据缺口，`required_facts: [target_table.existence]`；不制造缺表 finding。缺口使 coverage 为 unverified，并将 verdict 下限设为 review。PostgreSQL 保留既有行为，不新增参数或 opt-in。
 
 - **默认**：已启用，级别 `blocker`
 - **参数**：无

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: task manifest testdata/ddl-golden/<TASK>.json, docker/ddl-golden-compose.yaml, freshly built deltascope CLI
-# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest
+# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest, including synchronous execute verification and the frozen T05-A3 oracle
 # pos: DDL golden-path runner and artifact validator behind `make ddl-golden TASK=Txx ARTIFACT_DIR=...`
 # note: if this file changes, update this header and module README.md.
 """DeltaScope DDL golden-path runner (milestone T02/#81, T04/#83).
@@ -432,6 +432,16 @@ def cli_case_expect_checks(parsed, rc, expect):
         ("no diagnostics", parsed is not None and len(diagnostics) == expect["diagnostics"], f"diagnostics={diagnostics!r}"),
         ("no unsupported", parsed is not None and len(unsupported) == expect["unsupported"], f"unsupported={unsupported!r}"),
     ]
+    if "rule_summary_loaded" in expect:
+        got = ((parsed or {}).get("rule_summary") or {}).get("loaded")
+        checks.append(("loaded rule count", got == expect["rule_summary_loaded"], f"loaded={got!r}"))
+    if "statement_indices" in expect:
+        got = [s.get("index", 0) for s in statements]
+        checks.append(("statement indices", got == expect["statement_indices"], f"indices={got!r}"))
+        owned = not ((parsed or {}).get("global_findings") or []) and all(
+            f.get("statement_index", 0) == i
+            for i, statement in enumerate(statements) for f in statement.get("findings", []))
+        checks.append(("finding statement ownership", owned, "findings must belong to their enclosing statement"))
     if "coverage" in expect:
         got = (parsed or {}).get("coverage", {}).get("status")
         checks.append(("aggregate coverage", parsed is not None and got == expect["coverage"], f"coverage={got!r}"))
@@ -860,6 +870,20 @@ def execute_metadata_case(manifest, anchor_key, binary, policies, spec):
             "ok": erc == step.get("expect_rc", 0),
             "detail": f"rc={erc} expected={step.get('expect_rc', 0)} stderr={eerr.strip()!r}",
         })
+        for marker in step.get("stderr_contains") or []:
+            case["assertions"].append({"name": f"execute {step['name']} stderr marker",
+                                       "ok": marker in eerr, "detail": marker})
+        for marker in step.get("stdout_contains") or []:
+            case["assertions"].append({"name": f"execute {step['name']} stdout marker",
+                                       "ok": marker in eout, "detail": marker})
+        for verify in step.get("verify") or []:
+            vrc, vout, verr = mysql_exec(anchor, verify["sql"], database=anchor["database"] if verify.get("use_database") else None, silent=True)
+            record.setdefault("verify", []).append({"assert": verify["assert"], "sql": verify["sql"], "rc": vrc, "output": vout.strip(), "stderr": verr.strip()})
+            case["assertions"].append({
+                "name": f"execute {step['name']}: {verify['assert']}",
+                "ok": vrc == 0 and vout.strip() == verify["expect"],
+                "detail": f"rc={vrc} output={vout.strip()!r} expected={verify['expect']!r}",
+            })
 
     # Structure oracle: after the driver applies the audited statements the
     # resulting schema must match the frozen expectation exactly — column
@@ -1296,6 +1320,122 @@ def cli_case_spec_for(manifest, case):
     return None
 
 
+def t05_a3_contract():
+    profile = "t05-drop-recreate-isolated"
+    drop_rule = "ddl.table.drop.exists.require"
+    index_rule = "ddl.create_index.columns.exists.require"
+    enable = {rid: {"enabled": True, "level": "blocker", "params": {}}
+              for rid in ("ddl.table.exists.create.forbid", drop_rule,
+                          "ddl.table.exists.alter.require", "ddl.alter.add_column.exists.forbid", index_rule)}
+    enable[index_rule]["params"] = {"required": True}
+    table_query = "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'"
+
+    def verify(label, sql, expect):
+        return {"assert": label, "sql": sql, "expect": expect}
+
+    def expectation(sqls, verdict="pass", finding=None, gap=False):
+        result = {"exit": 0 if verdict == "pass" else 1, "verdict": verdict,
+                  "statements": len(sqls), "findings": int(finding is not None),
+                  "diagnostics": 0, "unsupported": 0,
+                  "coverage": "unverified" if gap else "complete",
+                  "statement_coverage": ["unverified" if gap else "complete"] * len(sqls),
+                  "statement_sql": [sql + ";" for sql in sqls],
+                  "evidence_gaps": int(gap), "fail_on_triggered": verdict != "pass",
+                  "rule_summary_loaded": 5, "statement_indices": list(range(len(sqls)))}
+        if finding is not None:
+            idx, rid, metadata = finding
+            result["finding_entries"] = [{"index": idx, "rule_id": rid, "level": "blocker"}]
+            result["finding_metadata"] = [{"index": idx, "rule_id": rid, "metadata": metadata}]
+        if gap:
+            result["evidence_gap_entries"] = [{"index": 0, "rule_id": drop_rule,
+                                               "reason_code": "unknown_table_state",
+                                               "required_facts": ["target_table.existence"]}]
+        return result
+
+    metadata_cases, cli_cases = [], []
+    for anchor, port in (("mysql57", 23357), ("mysql80", 23380), ("mysql84", 23384), ("tidb85", 24000)):
+        dialect = "tidb" if anchor == "tidb85" else "mysql"
+        modes = ["drop-recreate", "drop-if-exists-recreate"]
+        if anchor in ("mysql84", "tidb85"):
+            modes += ["drop-absent", "drop-if-exists-absent", "drop-recreate-old-column"]
+        for mode in modes:
+            drop = "DROP TABLE IF EXISTS t" if "if-exists" in mode else "DROP TABLE t"
+            absent = mode.endswith("absent")
+            old_column = mode.endswith("old-column")
+            sqls = [drop] if absent else ["CREATE TABLE t (old_c INT PRIMARY KEY)", drop,
+                      "CREATE TABLE t (id INT PRIMARY KEY)", "ALTER TABLE t ADD COLUMN c INT",
+                      "CREATE INDEX idx_c ON t(c)"]
+            if old_column:
+                sqls.append("CREATE INDEX ix_old ON t(old_c)")
+            finding = None
+            if absent:
+                finding = (0, drop_rule, {"table": "t", "operation": "drop_table", "exists": False})
+            elif old_column:
+                finding = (5, index_rule, {"schema": "golden", "table": "t", "index": "ix_old", "column": "old_c", "exists": False})
+            connect = {"host": "127.0.0.1", "port": port, "user": "root", "schema": "golden"}
+            if dialect == "mysql":
+                connect.update(password_env="DS_T05_GOLDEN_PW", password="root")
+            case = {"id": f"t05-a3-{anchor}-{mode}", "anchor": anchor, "dialect": dialect,
+                    "sql": " ".join(sql + ";" for sql in sqls), "policy": profile,
+                    "args": ["--fail-on", "warning"], "connect": connect,
+                    "setup": [{"name": "ensure t absent", "sql": "DROP TABLE IF EXISTS t", "expect_rc": 0,
+                               "verify": [verify("t absent before audit", table_query, "0")]}],
+                    "expect": expectation(sqls, "reject" if finding else "pass", finding),
+                    "post_verify": [verify("audit did not create t", table_query, "0")],
+                    "execute": [{"name": f"driver statement {i}", "sql": sql, "expect_rc": 0}
+                                for i, sql in enumerate(sqls)],
+                    "structure": [],
+                    "teardown": [{"name": "drop fixture", "sql": "DROP TABLE IF EXISTS t", "expect_rc": 0,
+                                  "verify": [verify("no residual t", table_query, "0")]}]}
+            if absent:
+                step = case["execute"][0]
+                if "if-exists" in mode:
+                    step["sql"] += "; SHOW WARNINGS;"
+                    step["stdout_contains"] = ["Note", "1051", "golden.t"]
+                else:
+                    step["expect_rc"] = 1
+                    step["stderr_contains"] = ["ERROR 1051", "golden.t"]
+                step["verify"] = [verify("t remains absent", table_query, "0")]
+            else:
+                case["execute"][1]["verify"] = [verify("t absent between DROP and CREATE", table_query, "0")]
+                case["structure"] = [
+                    verify("new t exists", table_query, "1"),
+                    verify("new columns exactly id and c", "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'", "id:int,c:int"),
+                    verify("old_c is absent", "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='old_c'", "0"),
+                    verify("new primary key exactly id", "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'", "id"),
+                    verify("new idx_c exactly c", "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_c'", "c"),
+                    verify("only the two new indexes", "SELECT COUNT(DISTINCT INDEX_NAME) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'", "2")]
+                if old_column:
+                    case["execute"][-1].update(expect_rc=1, stderr_contains=["ERROR 1072", "old_c"])
+            metadata_cases.append(case)
+    for dialect in ("mysql", "tidb"):
+        for conditional in (False, True):
+            sql = "DROP TABLE IF EXISTS t" if conditional else "DROP TABLE t"
+            mode = "drop-if-exists-unknown" if conditional else "drop-unknown"
+            cli_cases.append({"id": f"t05-a3-{dialect}-{mode}", "dialect": dialect,
+                              "sql": sql + ";", "policy": profile, "args": ["--fail-on", "warning"],
+                              "expect": expectation([sql], "review", gap=True)})
+    return profile, {"enable": enable}, metadata_cases, cli_cases
+
+
+def t05_a3_manifest_failures(manifest):
+    if manifest.get("task_id") != "T05":
+        return []
+    profile, policy, metadata_cases, cli_cases = t05_a3_contract()
+    failures = []
+    if ((manifest.get("policy") or {}).get("profiles") or {}).get(profile) != policy:
+        failures.append("T05-A3 frozen five-rule profile missing or changed")
+    required = manifest.get("required_case_ids") or []
+    for field, specs, kind in (("metadata_cases", metadata_cases, "meta"), ("cli_cases", cli_cases, "cli")):
+        for wanted in specs:
+            matches = [s for s in manifest.get(field, []) if s.get("id") == wanted["id"]]
+            if len(matches) != 1 or matches[0] != wanted:
+                failures.append(f"T05-A3 frozen oracle changed or missing: {wanted['id']}")
+            if f"T05.{kind}.{wanted['id']}" not in required:
+                failures.append(f"T05-A3 required case missing: {wanted['id']}")
+    return failures
+
+
 def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
     """Re-check an emitted artifact. Returns a list of failure strings."""
     failures = []
@@ -1308,6 +1448,7 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
 
     if baseline:
         failures.extend(baseline_manifest_failures(manifest, baseline))
+    failures.extend(t05_a3_manifest_failures(manifest))
 
     if artifact.get("external_blocker"):
         failures.append(f"external blocker recorded: {artifact['external_blocker']}")
@@ -1634,6 +1775,21 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
                     failures.append(f"case {case_id}: execute step {mstep['name']} identity mismatch")
                 if step.get("rc") != mstep.get("expect_rc", 0):
                     failures.append(f"case {case_id}: execute step {mstep['name']} rc {step.get('rc')} != expected {mstep.get('expect_rc', 0)}")
+                for field in ("stderr", "stdout"):
+                    for marker in mstep.get(field + "_contains") or []:
+                        if marker not in (step.get(field) or ""):
+                            failures.append(f"case {case_id}: execute {mstep['name']} missing {field} marker {marker!r}")
+                verifies = step.get("verify") or []
+                if len(verifies) != len(mstep.get("verify") or []):
+                    failures.append(f"case {case_id}: execute {mstep['name']} verify count mismatch")
+                for j, mverify in enumerate(mstep.get("verify") or []):
+                    if j >= len(verifies):
+                        break
+                    verify = verifies[j]
+                    if verify.get("assert") != mverify["assert"] or verify.get("sql") != mverify["sql"]:
+                        failures.append(f"case {case_id}: execute verify {j} identity mismatch")
+                    if verify.get("rc") != 0 or verify.get("output") != mverify["expect"]:
+                        failures.append(f"case {case_id}: execute verify {mverify['assert']} output mismatch")
             structures = actual.get("structure") or []
             manifest_structure = spec.get("structure") or []
             if len(structures) != len(manifest_structure):

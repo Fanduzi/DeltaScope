@@ -50,6 +50,37 @@
       }
      }
     }
+   },
+   "t05-drop-recreate-isolated": {
+    "enable": {
+     "ddl.table.exists.create.forbid": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {}
+     },
+     "ddl.table.drop.exists.require": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {}
+     },
+     "ddl.table.exists.alter.require": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {}
+     },
+     "ddl.alter.add_column.exists.forbid": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {}
+     },
+     "ddl.create_index.columns.exists.require": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "required": true
+      }
+     }
+    }
    }
   }
  },
@@ -4817,6 +4848,170 @@
      "CREATE INDEX idx_c ON t (c);"
     ]
    }
+  },
+  {
+   "id": "t05-a3-mysql-drop-unknown",
+   "dialect": "mysql",
+   "sql": "DROP TABLE t;",
+   "policy": "t05-drop-recreate-isolated",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "statement_sql": [
+     "DROP TABLE t;"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 5,
+    "statement_indices": [
+     0
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.drop.exists.require",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.existence"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "t05-a3-mysql-drop-if-exists-unknown",
+   "dialect": "mysql",
+   "sql": "DROP TABLE IF EXISTS t;",
+   "policy": "t05-drop-recreate-isolated",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "statement_sql": [
+     "DROP TABLE IF EXISTS t;"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 5,
+    "statement_indices": [
+     0
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.drop.exists.require",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.existence"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "t05-a3-tidb-drop-unknown",
+   "dialect": "tidb",
+   "sql": "DROP TABLE t;",
+   "policy": "t05-drop-recreate-isolated",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "statement_sql": [
+     "DROP TABLE t;"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 5,
+    "statement_indices": [
+     0
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.drop.exists.require",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.existence"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "t05-a3-tidb-drop-if-exists-unknown",
+   "dialect": "tidb",
+   "sql": "DROP TABLE IF EXISTS t;",
+   "policy": "t05-drop-recreate-isolated",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "statement_sql": [
+     "DROP TABLE IF EXISTS t;"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 5,
+    "statement_indices": [
+     0
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.drop.exists.require",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.existence"
+      ]
+     }
+    ]
+   }
   }
  ],
  "metadata_cases": [
@@ -8017,6 +8212,2040 @@
      ]
     }
    ]
+  },
+  {
+   "id": "t05-a3-mysql57-drop-recreate",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (old_c INT PRIMARY KEY); DROP TABLE t; CREATE TABLE t (id INT PRIMARY KEY); ALTER TABLE t ADD COLUMN c INT; CREATE INDEX idx_c ON t(c);",
+   "policy": "t05-drop-recreate-isolated",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 5,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (old_c INT PRIMARY KEY);",
+     "DROP TABLE t;",
+     "CREATE TABLE t (id INT PRIMARY KEY);",
+     "ALTER TABLE t ADD COLUMN c INT;",
+     "CREATE INDEX idx_c ON t(c);"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 5,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3,
+     4
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (old_c INT PRIMARY KEY)",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "DROP TABLE t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent between DROP and CREATE",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY)",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 3",
+     "sql": "ALTER TABLE t ADD COLUMN c INT",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 4",
+     "sql": "CREATE INDEX idx_c ON t(c)",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "new t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "new columns exactly id and c",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int,c:int"
+    },
+    {
+     "assert": "old_c is absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='old_c'",
+     "expect": "0"
+    },
+    {
+     "assert": "new primary key exactly id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "new idx_c exactly c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_c'",
+     "expect": "c"
+    },
+    {
+     "assert": "only the two new indexes",
+     "sql": "SELECT COUNT(DISTINCT INDEX_NAME) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "2"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a3-mysql57-drop-if-exists-recreate",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (old_c INT PRIMARY KEY); DROP TABLE IF EXISTS t; CREATE TABLE t (id INT PRIMARY KEY); ALTER TABLE t ADD COLUMN c INT; CREATE INDEX idx_c ON t(c);",
+   "policy": "t05-drop-recreate-isolated",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 5,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (old_c INT PRIMARY KEY);",
+     "DROP TABLE IF EXISTS t;",
+     "CREATE TABLE t (id INT PRIMARY KEY);",
+     "ALTER TABLE t ADD COLUMN c INT;",
+     "CREATE INDEX idx_c ON t(c);"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 5,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3,
+     4
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (old_c INT PRIMARY KEY)",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent between DROP and CREATE",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY)",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 3",
+     "sql": "ALTER TABLE t ADD COLUMN c INT",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 4",
+     "sql": "CREATE INDEX idx_c ON t(c)",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "new t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "new columns exactly id and c",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int,c:int"
+    },
+    {
+     "assert": "old_c is absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='old_c'",
+     "expect": "0"
+    },
+    {
+     "assert": "new primary key exactly id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "new idx_c exactly c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_c'",
+     "expect": "c"
+    },
+    {
+     "assert": "only the two new indexes",
+     "sql": "SELECT COUNT(DISTINCT INDEX_NAME) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "2"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a3-mysql80-drop-recreate",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (old_c INT PRIMARY KEY); DROP TABLE t; CREATE TABLE t (id INT PRIMARY KEY); ALTER TABLE t ADD COLUMN c INT; CREATE INDEX idx_c ON t(c);",
+   "policy": "t05-drop-recreate-isolated",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 5,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (old_c INT PRIMARY KEY);",
+     "DROP TABLE t;",
+     "CREATE TABLE t (id INT PRIMARY KEY);",
+     "ALTER TABLE t ADD COLUMN c INT;",
+     "CREATE INDEX idx_c ON t(c);"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 5,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3,
+     4
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (old_c INT PRIMARY KEY)",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "DROP TABLE t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent between DROP and CREATE",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY)",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 3",
+     "sql": "ALTER TABLE t ADD COLUMN c INT",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 4",
+     "sql": "CREATE INDEX idx_c ON t(c)",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "new t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "new columns exactly id and c",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int,c:int"
+    },
+    {
+     "assert": "old_c is absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='old_c'",
+     "expect": "0"
+    },
+    {
+     "assert": "new primary key exactly id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "new idx_c exactly c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_c'",
+     "expect": "c"
+    },
+    {
+     "assert": "only the two new indexes",
+     "sql": "SELECT COUNT(DISTINCT INDEX_NAME) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "2"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a3-mysql80-drop-if-exists-recreate",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (old_c INT PRIMARY KEY); DROP TABLE IF EXISTS t; CREATE TABLE t (id INT PRIMARY KEY); ALTER TABLE t ADD COLUMN c INT; CREATE INDEX idx_c ON t(c);",
+   "policy": "t05-drop-recreate-isolated",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 5,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (old_c INT PRIMARY KEY);",
+     "DROP TABLE IF EXISTS t;",
+     "CREATE TABLE t (id INT PRIMARY KEY);",
+     "ALTER TABLE t ADD COLUMN c INT;",
+     "CREATE INDEX idx_c ON t(c);"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 5,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3,
+     4
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (old_c INT PRIMARY KEY)",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent between DROP and CREATE",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY)",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 3",
+     "sql": "ALTER TABLE t ADD COLUMN c INT",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 4",
+     "sql": "CREATE INDEX idx_c ON t(c)",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "new t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "new columns exactly id and c",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int,c:int"
+    },
+    {
+     "assert": "old_c is absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='old_c'",
+     "expect": "0"
+    },
+    {
+     "assert": "new primary key exactly id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "new idx_c exactly c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_c'",
+     "expect": "c"
+    },
+    {
+     "assert": "only the two new indexes",
+     "sql": "SELECT COUNT(DISTINCT INDEX_NAME) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "2"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a3-mysql84-drop-recreate",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (old_c INT PRIMARY KEY); DROP TABLE t; CREATE TABLE t (id INT PRIMARY KEY); ALTER TABLE t ADD COLUMN c INT; CREATE INDEX idx_c ON t(c);",
+   "policy": "t05-drop-recreate-isolated",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 5,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (old_c INT PRIMARY KEY);",
+     "DROP TABLE t;",
+     "CREATE TABLE t (id INT PRIMARY KEY);",
+     "ALTER TABLE t ADD COLUMN c INT;",
+     "CREATE INDEX idx_c ON t(c);"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 5,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3,
+     4
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (old_c INT PRIMARY KEY)",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "DROP TABLE t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent between DROP and CREATE",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY)",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 3",
+     "sql": "ALTER TABLE t ADD COLUMN c INT",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 4",
+     "sql": "CREATE INDEX idx_c ON t(c)",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "new t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "new columns exactly id and c",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int,c:int"
+    },
+    {
+     "assert": "old_c is absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='old_c'",
+     "expect": "0"
+    },
+    {
+     "assert": "new primary key exactly id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "new idx_c exactly c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_c'",
+     "expect": "c"
+    },
+    {
+     "assert": "only the two new indexes",
+     "sql": "SELECT COUNT(DISTINCT INDEX_NAME) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "2"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a3-mysql84-drop-if-exists-recreate",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (old_c INT PRIMARY KEY); DROP TABLE IF EXISTS t; CREATE TABLE t (id INT PRIMARY KEY); ALTER TABLE t ADD COLUMN c INT; CREATE INDEX idx_c ON t(c);",
+   "policy": "t05-drop-recreate-isolated",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 5,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (old_c INT PRIMARY KEY);",
+     "DROP TABLE IF EXISTS t;",
+     "CREATE TABLE t (id INT PRIMARY KEY);",
+     "ALTER TABLE t ADD COLUMN c INT;",
+     "CREATE INDEX idx_c ON t(c);"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 5,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3,
+     4
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (old_c INT PRIMARY KEY)",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent between DROP and CREATE",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY)",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 3",
+     "sql": "ALTER TABLE t ADD COLUMN c INT",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 4",
+     "sql": "CREATE INDEX idx_c ON t(c)",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "new t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "new columns exactly id and c",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int,c:int"
+    },
+    {
+     "assert": "old_c is absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='old_c'",
+     "expect": "0"
+    },
+    {
+     "assert": "new primary key exactly id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "new idx_c exactly c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_c'",
+     "expect": "c"
+    },
+    {
+     "assert": "only the two new indexes",
+     "sql": "SELECT COUNT(DISTINCT INDEX_NAME) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "2"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a3-mysql84-drop-absent",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "DROP TABLE t;",
+   "policy": "t05-drop-recreate-isolated",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "DROP TABLE t;"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 5,
+    "statement_indices": [
+     0
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.drop.exists.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.drop.exists.require",
+      "metadata": {
+       "table": "t",
+       "operation": "drop_table",
+       "exists": false
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "DROP TABLE t",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1051",
+      "golden.t"
+     ],
+     "verify": [
+      {
+       "assert": "t remains absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "structure": [],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a3-mysql84-drop-if-exists-absent",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "DROP TABLE IF EXISTS t;",
+   "policy": "t05-drop-recreate-isolated",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "DROP TABLE IF EXISTS t;"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 5,
+    "statement_indices": [
+     0
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.drop.exists.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.drop.exists.require",
+      "metadata": {
+       "table": "t",
+       "operation": "drop_table",
+       "exists": false
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "DROP TABLE IF EXISTS t; SHOW WARNINGS;",
+     "expect_rc": 0,
+     "stdout_contains": [
+      "Note",
+      "1051",
+      "golden.t"
+     ],
+     "verify": [
+      {
+       "assert": "t remains absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "structure": [],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a3-mysql84-drop-recreate-old-column",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (old_c INT PRIMARY KEY); DROP TABLE t; CREATE TABLE t (id INT PRIMARY KEY); ALTER TABLE t ADD COLUMN c INT; CREATE INDEX idx_c ON t(c); CREATE INDEX ix_old ON t(old_c);",
+   "policy": "t05-drop-recreate-isolated",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 6,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (old_c INT PRIMARY KEY);",
+     "DROP TABLE t;",
+     "CREATE TABLE t (id INT PRIMARY KEY);",
+     "ALTER TABLE t ADD COLUMN c INT;",
+     "CREATE INDEX idx_c ON t(c);",
+     "CREATE INDEX ix_old ON t(old_c);"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 5,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "finding_entries": [
+     {
+      "index": 5,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 5,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "metadata": {
+       "schema": "golden",
+       "table": "t",
+       "index": "ix_old",
+       "column": "old_c",
+       "exists": false
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (old_c INT PRIMARY KEY)",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "DROP TABLE t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent between DROP and CREATE",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY)",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 3",
+     "sql": "ALTER TABLE t ADD COLUMN c INT",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 4",
+     "sql": "CREATE INDEX idx_c ON t(c)",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 5",
+     "sql": "CREATE INDEX ix_old ON t(old_c)",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1072",
+      "old_c"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "new t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "new columns exactly id and c",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int,c:int"
+    },
+    {
+     "assert": "old_c is absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='old_c'",
+     "expect": "0"
+    },
+    {
+     "assert": "new primary key exactly id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "new idx_c exactly c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_c'",
+     "expect": "c"
+    },
+    {
+     "assert": "only the two new indexes",
+     "sql": "SELECT COUNT(DISTINCT INDEX_NAME) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "2"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a3-tidb85-drop-recreate",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (old_c INT PRIMARY KEY); DROP TABLE t; CREATE TABLE t (id INT PRIMARY KEY); ALTER TABLE t ADD COLUMN c INT; CREATE INDEX idx_c ON t(c);",
+   "policy": "t05-drop-recreate-isolated",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 5,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (old_c INT PRIMARY KEY);",
+     "DROP TABLE t;",
+     "CREATE TABLE t (id INT PRIMARY KEY);",
+     "ALTER TABLE t ADD COLUMN c INT;",
+     "CREATE INDEX idx_c ON t(c);"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 5,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3,
+     4
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (old_c INT PRIMARY KEY)",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "DROP TABLE t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent between DROP and CREATE",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY)",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 3",
+     "sql": "ALTER TABLE t ADD COLUMN c INT",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 4",
+     "sql": "CREATE INDEX idx_c ON t(c)",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "new t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "new columns exactly id and c",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int,c:int"
+    },
+    {
+     "assert": "old_c is absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='old_c'",
+     "expect": "0"
+    },
+    {
+     "assert": "new primary key exactly id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "new idx_c exactly c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_c'",
+     "expect": "c"
+    },
+    {
+     "assert": "only the two new indexes",
+     "sql": "SELECT COUNT(DISTINCT INDEX_NAME) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "2"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a3-tidb85-drop-if-exists-recreate",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (old_c INT PRIMARY KEY); DROP TABLE IF EXISTS t; CREATE TABLE t (id INT PRIMARY KEY); ALTER TABLE t ADD COLUMN c INT; CREATE INDEX idx_c ON t(c);",
+   "policy": "t05-drop-recreate-isolated",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 5,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (old_c INT PRIMARY KEY);",
+     "DROP TABLE IF EXISTS t;",
+     "CREATE TABLE t (id INT PRIMARY KEY);",
+     "ALTER TABLE t ADD COLUMN c INT;",
+     "CREATE INDEX idx_c ON t(c);"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 5,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3,
+     4
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (old_c INT PRIMARY KEY)",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent between DROP and CREATE",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY)",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 3",
+     "sql": "ALTER TABLE t ADD COLUMN c INT",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 4",
+     "sql": "CREATE INDEX idx_c ON t(c)",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "new t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "new columns exactly id and c",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int,c:int"
+    },
+    {
+     "assert": "old_c is absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='old_c'",
+     "expect": "0"
+    },
+    {
+     "assert": "new primary key exactly id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "new idx_c exactly c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_c'",
+     "expect": "c"
+    },
+    {
+     "assert": "only the two new indexes",
+     "sql": "SELECT COUNT(DISTINCT INDEX_NAME) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "2"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a3-tidb85-drop-absent",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "DROP TABLE t;",
+   "policy": "t05-drop-recreate-isolated",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "DROP TABLE t;"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 5,
+    "statement_indices": [
+     0
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.drop.exists.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.drop.exists.require",
+      "metadata": {
+       "table": "t",
+       "operation": "drop_table",
+       "exists": false
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "DROP TABLE t",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1051",
+      "golden.t"
+     ],
+     "verify": [
+      {
+       "assert": "t remains absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "structure": [],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a3-tidb85-drop-if-exists-absent",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "DROP TABLE IF EXISTS t;",
+   "policy": "t05-drop-recreate-isolated",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "DROP TABLE IF EXISTS t;"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 5,
+    "statement_indices": [
+     0
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.drop.exists.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.drop.exists.require",
+      "metadata": {
+       "table": "t",
+       "operation": "drop_table",
+       "exists": false
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "DROP TABLE IF EXISTS t; SHOW WARNINGS;",
+     "expect_rc": 0,
+     "stdout_contains": [
+      "Note",
+      "1051",
+      "golden.t"
+     ],
+     "verify": [
+      {
+       "assert": "t remains absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "structure": [],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a3-tidb85-drop-recreate-old-column",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (old_c INT PRIMARY KEY); DROP TABLE t; CREATE TABLE t (id INT PRIMARY KEY); ALTER TABLE t ADD COLUMN c INT; CREATE INDEX idx_c ON t(c); CREATE INDEX ix_old ON t(old_c);",
+   "policy": "t05-drop-recreate-isolated",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 6,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (old_c INT PRIMARY KEY);",
+     "DROP TABLE t;",
+     "CREATE TABLE t (id INT PRIMARY KEY);",
+     "ALTER TABLE t ADD COLUMN c INT;",
+     "CREATE INDEX idx_c ON t(c);",
+     "CREATE INDEX ix_old ON t(old_c);"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 5,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "finding_entries": [
+     {
+      "index": 5,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 5,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "metadata": {
+       "schema": "golden",
+       "table": "t",
+       "index": "ix_old",
+       "column": "old_c",
+       "exists": false
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (old_c INT PRIMARY KEY)",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "DROP TABLE t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent between DROP and CREATE",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY)",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 3",
+     "sql": "ALTER TABLE t ADD COLUMN c INT",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 4",
+     "sql": "CREATE INDEX idx_c ON t(c)",
+     "expect_rc": 0
+    },
+    {
+     "name": "driver statement 5",
+     "sql": "CREATE INDEX ix_old ON t(old_c)",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1072",
+      "old_c"
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "new t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "new columns exactly id and c",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int,c:int"
+    },
+    {
+     "assert": "old_c is absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='old_c'",
+     "expect": "0"
+    },
+    {
+     "assert": "new primary key exactly id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "new idx_c exactly c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_c'",
+     "expect": "c"
+    },
+    {
+     "assert": "only the two new indexes",
+     "sql": "SELECT COUNT(DISTINCT INDEX_NAME) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "2"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
   }
  ],
  "error_cases": [
@@ -8212,6 +10441,24 @@
   "T05.meta.t05-mysql84-rename-unqualified",
   "T05.meta.t05-tidb85-rename-qualified",
   "T05.meta.t05-tidb85-rename-alter",
-  "T05.meta.t05-tidb85-rename-unqualified"
+  "T05.meta.t05-tidb85-rename-unqualified",
+  "T05.meta.t05-a3-mysql57-drop-recreate",
+  "T05.meta.t05-a3-mysql57-drop-if-exists-recreate",
+  "T05.meta.t05-a3-mysql80-drop-recreate",
+  "T05.meta.t05-a3-mysql80-drop-if-exists-recreate",
+  "T05.meta.t05-a3-mysql84-drop-recreate",
+  "T05.meta.t05-a3-mysql84-drop-if-exists-recreate",
+  "T05.meta.t05-a3-mysql84-drop-absent",
+  "T05.meta.t05-a3-mysql84-drop-if-exists-absent",
+  "T05.meta.t05-a3-mysql84-drop-recreate-old-column",
+  "T05.meta.t05-a3-tidb85-drop-recreate",
+  "T05.meta.t05-a3-tidb85-drop-if-exists-recreate",
+  "T05.meta.t05-a3-tidb85-drop-absent",
+  "T05.meta.t05-a3-tidb85-drop-if-exists-absent",
+  "T05.meta.t05-a3-tidb85-drop-recreate-old-column",
+  "T05.cli.t05-a3-mysql-drop-unknown",
+  "T05.cli.t05-a3-mysql-drop-if-exists-unknown",
+  "T05.cli.t05-a3-tidb-drop-unknown",
+  "T05.cli.t05-a3-tidb-drop-if-exists-unknown"
  ]
 }

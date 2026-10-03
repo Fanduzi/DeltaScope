@@ -2479,8 +2479,8 @@ they consume the provider snapshot; offline, MySQL/TiDB batches derive state fro
 statements in the same audit. On MySQL/TiDB, the table-existence rules
 (`ddl.table.exists.alter.require`, `ddl.table.exists.create.forbid`), every column/index
 member-existence rule (`add`/`drop`/`modify`/`change`/`rename` column and `add`/`drop`/`rename`
-index), `ddl.alter.drop_primary_key.exists.require`, and
-`ddl.create_index.columns.exists.require` emit `unknown_table_state`
+index), `ddl.alter.drop_primary_key.exists.require`,
+`ddl.create_index.columns.exists.require`, and `ddl.table.drop.exists.require` emit `unknown_table_state`
 evidence gaps (coverage `unverified`) when that state cannot
 prove the premise; the remaining rules still silently no-op without usable state. The new
 gap projection never applies to PostgreSQL — it keeps its legacy finding/skip contract.
@@ -2757,9 +2757,7 @@ rules:
 
 #### ddl.table.drop.exists.require
 
-> **Metadata-aware mode only.**
-
-Fails when `DROP TABLE` (without `IF EXISTS`) targets a table that does not exist.
+Requires the target to exist, including for `DROP TABLE IF EXISTS`. A confirmed-absent target retains the original blocker. On MySQL/TiDB, an unknown target produces one `unknown_table_state` evidence gap with `required_facts: [target_table.existence]`, including offline audits without a provider; it is not a missing-table finding. The gap yields unverified coverage and a review floor. PostgreSQL keeps its legacy behavior. No new parameter or opt-in is required.
 
 **Default:** `enabled: true`, `level: blocker`
 

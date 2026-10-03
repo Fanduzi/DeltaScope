@@ -416,8 +416,9 @@ already exist) in the request-local ordered schema view: a live table snapshot w
 is configured, or a state derived from earlier statements in the same audit batch for MySQL
 and TiDB. On MySQL/TiDB the table-existence rules (`exists.alter`, `exists.create`), every
 column/index member-existence rule (`add`/`drop`/`modify`/`change`/`rename` column and
-`add`/`drop`/`rename` index), `ddl.alter.drop_primary_key.exists.require`, and
-`ddl.create_index.columns.exists.require` emit `unknown_table_state` evidence gaps when
+`add`/`drop`/`rename` index), `ddl.alter.drop_primary_key.exists.require`,
+`ddl.create_index.columns.exists.require`, and `ddl.table.drop.exists.require` emit
+`unknown_table_state` evidence gaps when
 that state cannot be established; the remaining rules are still silently skipped without
 usable state. The gap projection never applies to PostgreSQL — it keeps its legacy
 finding/skip contract.
@@ -442,6 +443,8 @@ finding/skip contract.
 ## DDL: Object Lifecycle Rules (8 rules)
 
 These rules govern `DROP TABLE` and `TRUNCATE TABLE` operations.
+
+On MySQL/TiDB, the enabled DROP existence rule emits one `unknown_table_state` gap requiring `target_table.existence` when the target state is unknown. A confirmed-absent target still produces the original blocker, including with `IF EXISTS`: this is strict policy, not a prediction of database execution failure. Conditional single-table DROP preserves absence for a following CREATE; multi-target forms remain conservative. PostgreSQL and TRUNCATE gap behavior is unchanged.
 
 | Rule ID | Description | Default Level | Metadata Required |
 |---------|-------------|:-------------:|:-----------------:|
