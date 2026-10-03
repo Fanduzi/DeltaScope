@@ -1,0 +1,2 @@
+2026-10-03T14:28:29Z
+argv: gofmt -l internal/application/audit/batch_state.go internal/application/audit/batch_state_a3_test.go internal/application/audit/batch_state_a3_postgresql_tag_test.go internal/domain/rule/ddl/object_lifecycle_rules.go internal/domain/rule/ddl/object_lifecycle_rules_test.go internal/interfaces/cli/audit_ordered_drop_a3_test.go internal/interfaces/http/audit_ordered_drop_a3_test.go internal/interfaces/mcp/audit_ordered_drop_a3_test.go pkg/deltascope/audit_ordered_drop_a3_test.go

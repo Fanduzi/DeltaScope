@@ -1,0 +1,32 @@
+$ go test ./internal/application/audit -run ^TestBatchStateA3 -count=1 -v
+=== RUN   TestBatchStateA3DropRecreate
+=== PAUSE TestBatchStateA3DropRecreate
+=== CONT  TestBatchStateA3DropRecreate
+=== RUN   TestBatchStateA3DropRecreate/mysql/plain
+=== PAUSE TestBatchStateA3DropRecreate/mysql/plain
+=== RUN   TestBatchStateA3DropRecreate/mysql/if_exists
+=== PAUSE TestBatchStateA3DropRecreate/mysql/if_exists
+=== RUN   TestBatchStateA3DropRecreate/tidb/plain
+=== PAUSE TestBatchStateA3DropRecreate/tidb/plain
+=== RUN   TestBatchStateA3DropRecreate/tidb/if_exists
+=== PAUSE TestBatchStateA3DropRecreate/tidb/if_exists
+=== CONT  TestBatchStateA3DropRecreate/mysql/plain
+=== CONT  TestBatchStateA3DropRecreate/tidb/plain
+=== CONT  TestBatchStateA3DropRecreate/mysql/if_exists
+=== CONT  TestBatchStateA3DropRecreate/tidb/if_exists
+    batch_state_a3_test.go:105: statement 2 must have no evidence gaps, got [{RuleID:ddl.table.exists.create.forbid ReasonCode:unknown_table_state RequiredFacts:[target_table.existence]}]
+=== NAME  TestBatchStateA3DropRecreate/mysql/if_exists
+    batch_state_a3_test.go:105: statement 2 must have no evidence gaps, got [{RuleID:ddl.table.exists.create.forbid ReasonCode:unknown_table_state RequiredFacts:[target_table.existence]}]
+=== NAME  TestBatchStateA3DropRecreate/tidb/plain
+    batch_state_a3_test.go:105: statement 2 must have no evidence gaps, got [{RuleID:ddl.table.exists.create.forbid ReasonCode:unknown_table_state RequiredFacts:[target_table.existence]}]
+=== NAME  TestBatchStateA3DropRecreate/mysql/plain
+    batch_state_a3_test.go:105: statement 2 must have no evidence gaps, got [{RuleID:ddl.table.exists.create.forbid ReasonCode:unknown_table_state RequiredFacts:[target_table.existence]}]
+--- FAIL: TestBatchStateA3DropRecreate (0.00s)
+    --- FAIL: TestBatchStateA3DropRecreate/tidb/if_exists (0.01s)
+    --- FAIL: TestBatchStateA3DropRecreate/mysql/if_exists (0.01s)
+    --- FAIL: TestBatchStateA3DropRecreate/mysql/plain (0.01s)
+    --- FAIL: TestBatchStateA3DropRecreate/tidb/plain (0.01s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.609s
+FAIL
+rc=1

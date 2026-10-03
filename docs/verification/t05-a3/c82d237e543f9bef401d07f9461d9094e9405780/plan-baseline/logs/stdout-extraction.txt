@@ -1,0 +1,1 @@
+audit-*.stdout.json are losslessly extracted from the captured audit-*.out wrapper: first argv line and last rc line are separated into corresponding argv.txt and rc.txt. Original .out and .err files are preserved. No subprocess was rerun.

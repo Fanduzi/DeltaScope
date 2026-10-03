@@ -1,0 +1,7 @@
+$ docker exec ... -e "SELECT column_name, column_type, column_key FROM information_schema.columns WHERE table_schema='golden' AND table_name='t' ORDER BY ordinal_position; SELECT index_name,column_name,seq_in_index FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t' ORDER BY index_name,seq_in_index; SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t' AND column_name='old_c';"
+id	int	PRI
+c	int	MUL
+idx_c	c	1
+PRIMARY	id	1
+0
+rc=0

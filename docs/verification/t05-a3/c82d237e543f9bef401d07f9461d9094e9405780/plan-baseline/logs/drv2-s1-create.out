@@ -1,0 +1,2 @@
+$ docker exec -e MYSQL_PWD=$DS_T05_A3_GOLDEN_PW deltascope-ddl-golden-mysql84 mysql --batch --skip-column-names -uroot --database=golden -e "CREATE TABLE t (old_c INT PRIMARY KEY);"
+rc=0

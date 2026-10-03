@@ -1,0 +1,230 @@
+{
+  "case_id": "T04.cli.t04b-tidb85-proven-blocker",
+  "kind": "cli_audit",
+  "cli_case": "t04b-tidb85-proven-blocker",
+  "dialect": "tidb",
+  "input_sql": "CREATE TABLE t (c VARCHAR(3200) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB;",
+  "policy_profile": "t04b-key-length-isolated",
+  "policy_path": "/private/tmp/ds-t05-a3-final.2K4NKO/regressions/T04/golden-policy-t04b-key-length-isolated.yaml",
+  "command": [
+    "/private/tmp/ds-t05-a3-final.2K4NKO/regressions/T04/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "CREATE TABLE t (c VARCHAR(3200) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB;",
+    "--config",
+    "/private/tmp/ds-t05-a3-final.2K4NKO/regressions/T04/golden-policy-t04b-key-length-isolated.yaml",
+    "--format",
+    "json",
+    "--target-version",
+    "8.5.0",
+    "--fail-on",
+    "none"
+  ],
+  "expected": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.index.key_length.max_bytes.require",
+        "level": "blocker"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 0,
+        "rule_id": "ddl.index.key_length.max_bytes.require",
+        "metadata": {
+          "limit": 12288
+        }
+      }
+    ],
+    "fail_on_triggered": false,
+    "version": {
+      "product": "tidb",
+      "version": "8.5.0",
+      "source": "target",
+      "validated_range": true
+    }
+  },
+  "actual": {
+    "exit": 0,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t (c VARCHAR(3200) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB;\",\"normalized_sql\":\"CREATE TABLE t (c VARCHAR(3200) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB\",\"findings\":[{\"rule_id\":\"ddl.index.key_length.max_bytes.require\",\"level\":\"blocker\",\"message\":\"index \\\"idx_c\\\" estimated key length exceeds 12288 bytes (12802)\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"reduce indexed column lengths, add explicit prefix lengths, or review large-prefix compatibility explicitly\",\"metadata\":{\"charset\":\"utf8mb4\",\"columns\":[\"c\"],\"estimated_bytes\":12802,\"index\":\"idx_c\",\"limit\":12288,\"table\":\"t\"},\"explanation\":{\"summary\":\"Require DDL index key length max bytes require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"reduce indexed column lengths, add explicit prefix lengths, or review large-prefix compatibility explicitly\",\"metadata\":{\"status\":\"limited\",\"note\":\"Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"target\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"tidb\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t (c VARCHAR(3200) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB;",
+          "normalized_sql": "CREATE TABLE t (c VARCHAR(3200) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB",
+          "findings": [
+            {
+              "rule_id": "ddl.index.key_length.max_bytes.require",
+              "level": "blocker",
+              "message": "index \"idx_c\" estimated key length exceeds 12288 bytes (12802)",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "reduce indexed column lengths, add explicit prefix lengths, or review large-prefix compatibility explicitly",
+              "metadata": {
+                "charset": "utf8mb4",
+                "columns": [
+                  "c"
+                ],
+                "estimated_bytes": 12802,
+                "index": "idx_c",
+                "limit": 12288,
+                "table": "t"
+              },
+              "explanation": {
+                "summary": "Require DDL index key length max bytes require",
+                "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+                "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                "suggestion": "reduce indexed column lengths, add explicit prefix lengths, or review large-prefix compatibility explicitly",
+                "metadata": {
+                  "status": "limited",
+                  "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
+                }
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "target",
+        "validated_range": true
+      },
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "offline",
+        "dialect": "tidb",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": "8.5.0",
+      "target_canonical": "8.5.0",
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "target",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.index.key_length.max_bytes.require', 'blocker')] expected=[(0, 'ddl.index.key_length.max_bytes.require', 'blocker')]"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.index.key_length.max_bytes.require')",
+      "ok": true,
+      "detail": "findings=[{'charset': 'utf8mb4', 'columns': ['c'], 'estimated_bytes': 12802, 'index': 'idx_c', 'limit': 12288, 'table': 't'}] expected_subset={'limit': 12288}"
+    },
+    {
+      "name": "fail_on_triggered",
+      "ok": true,
+      "detail": "fail_on_triggered=False"
+    },
+    {
+      "name": "version identity",
+      "ok": true,
+      "detail": "version={'product': 'tidb', 'version': '8.5.0', 'major': 8, 'minor': 5, 'patch': 0, 'source': 'target', 'validated_range': True} expected={'product': 'tidb', 'version': '8.5.0', 'source': 'target', 'validated_range': True}"
+    }
+  ],
+  "status": "pass"
+}

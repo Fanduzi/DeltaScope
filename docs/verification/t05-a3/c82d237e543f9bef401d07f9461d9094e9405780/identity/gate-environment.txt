@@ -1,0 +1,11 @@
+cwd=/Users/fan/GolangProjects/DeltaScope
+head=c82d237e543f9bef401d07f9461d9094e9405780
+branch=milestone/mysql-tidb-ddl-completion
+utc=2026-10-03T14:26:25Z
+proof=/tmp/ds-t05-a3-final.2K4NKO
+?? .agents/
+?? .debug-journal.md
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? docs/quality/architecture-review-2026-08-11.html

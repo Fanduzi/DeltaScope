@@ -1,0 +1,23 @@
+=== RUN   TestBatchStateA3PostgreSQLDropKeepsLegacyContract
+=== PAUSE TestBatchStateA3PostgreSQLDropKeepsLegacyContract
+=== CONT  TestBatchStateA3PostgreSQLDropKeepsLegacyContract
+=== RUN   TestBatchStateA3PostgreSQLDropKeepsLegacyContract/no_request_metadata_emits_no_new_gaps
+=== PAUSE TestBatchStateA3PostgreSQLDropKeepsLegacyContract/no_request_metadata_emits_no_new_gaps
+=== RUN   TestBatchStateA3PostgreSQLDropKeepsLegacyContract/schema-only_request_emits_no_new_gaps
+=== PAUSE TestBatchStateA3PostgreSQLDropKeepsLegacyContract/schema-only_request_emits_no_new_gaps
+=== RUN   TestBatchStateA3PostgreSQLDropKeepsLegacyContract/provider-absent_strict_blocker_DROP_TABLE_gone;
+=== PAUSE TestBatchStateA3PostgreSQLDropKeepsLegacyContract/provider-absent_strict_blocker_DROP_TABLE_gone;
+=== RUN   TestBatchStateA3PostgreSQLDropKeepsLegacyContract/provider-absent_strict_blocker_DROP_TABLE_IF_EXISTS_gone;
+=== PAUSE TestBatchStateA3PostgreSQLDropKeepsLegacyContract/provider-absent_strict_blocker_DROP_TABLE_IF_EXISTS_gone;
+=== CONT  TestBatchStateA3PostgreSQLDropKeepsLegacyContract/no_request_metadata_emits_no_new_gaps
+=== CONT  TestBatchStateA3PostgreSQLDropKeepsLegacyContract/schema-only_request_emits_no_new_gaps
+=== CONT  TestBatchStateA3PostgreSQLDropKeepsLegacyContract/provider-absent_strict_blocker_DROP_TABLE_gone;
+=== CONT  TestBatchStateA3PostgreSQLDropKeepsLegacyContract/provider-absent_strict_blocker_DROP_TABLE_IF_EXISTS_gone;
+--- PASS: TestBatchStateA3PostgreSQLDropKeepsLegacyContract (0.00s)
+    --- PASS: TestBatchStateA3PostgreSQLDropKeepsLegacyContract/no_request_metadata_emits_no_new_gaps (0.03s)
+    --- PASS: TestBatchStateA3PostgreSQLDropKeepsLegacyContract/schema-only_request_emits_no_new_gaps (0.03s)
+    --- PASS: TestBatchStateA3PostgreSQLDropKeepsLegacyContract/provider-absent_strict_blocker_DROP_TABLE_gone; (0.03s)
+    --- PASS: TestBatchStateA3PostgreSQLDropKeepsLegacyContract/provider-absent_strict_blocker_DROP_TABLE_IF_EXISTS_gone; (0.03s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	1.678s
+rc=0

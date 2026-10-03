@@ -1,0 +1,36 @@
+T05-A3 Staged Diff Review (read-only)
+Base: 49a0f5bce25a72f71c1171ac0bee9bb5d86d963b
+Scope: 24 files, +4684/-28 staged; zero unstaged code modifications.
+Reviewer role: separate read-only review phase (not a second implementation pass or external acceptance). Accepted A1/A2 behavior not reopened.
+
+=== Standards ===
+Verdict: PASS — no documented-standard violations found.
+
+L3 headers: every changed/new Go file was read and carries updated input/output/pos/note headers; pos lines describe the new drop path. The earlier dirty-tree checker returned rc=0 for tracked changes; its implementation does not collect untracked files, so that earlier run alone does not prove the new-file headers. All new files are included in the staged candidate reviewed here and in the later exact-tree staged replay gate. Disposition: no root-README change needed — no new/moved modules, exports, or dependencies; only file-row additions inside existing module README tables.
+
+Module READMEs: every module touched (internal/application/audit, internal/domain/rule/ddl, pkg/deltascope, interfaces cli/http/mcp, scripts) gained matching rows describing new/changed files per the AGENTS.md same-change rule.
+
+Decision record: docs/decisions/2026-10-03-ddl-drop-recreate-state.md is present, lead-authored, and correctly documents the frozen state table, strict-IF-EXISTS policy vs execution legality, loaded-dependent rules, cancellation boundary, and deferred scope — satisfying the decision-record discipline for a public-contract boundary.
+
+Smell pass: applyDropTable follows the file's existing apply-path conventions (entry ctx check, collect-then-write, commit ctx check). referencingEntryKeys extraction removes real duplication between rename and drop rather than adding speculative generality; renameDependentKeys remains a justified compatibility wrapper. Table-driven tests, shared t05* helpers, and adapter-local policy fixtures follow repo convention. No Feature Envy/Data Clump/Shotgun Surgery findings; naming is consistent with A2 vocabulary. Comment volume matches surrounding style; no comment explains the diff itself.
+
+=== Spec ===
+Verdict: PASS — all §1–§6 requirements verified against the frozen workorder.
+
+- Dispatch before unsupported: applyDropTable is invoked after the contaminated early return and before the statement.Unsupported branch (batch_state.go:232).
+- Precise raw-target cardinality: len(targets)==1 on TableTargets() before key dedup; duplicate raw targets stay conservative. Confirmed by code and the t,t test.
+- Unknown remains unknown: precise publish only for tablePresent or tableAbsent+if_exists; every other cell tombstones via invalidateKey.
+- Strict IF EXISTS blocker retained: Evaluate untouched; absent+IF EXISTS still yields the blocker (PG and unit tests pin it).
+- Gap only for the correct ID/op/dialect: EvidenceGaps is gated on drop.exists.require + DDLOperationDropTable + orderedGapDialect + AppliesTo; suppressed by an attached snapshot.
+- Key/dependent union before writes: referencingEntryKeys(keys) is collected before any invalidate; a target referencing another target is caught pre-write.
+- Explicit vs owner schema: explicit ReferencedSchema wins; unqualified resolves via keyFor(owner entry schema).
+- No provider reread/stale structures: applyDropTable performs no provider call; tombstones retained, never deleted; absent entry carries identity only.
+- Cancellation + real error preservation: ctx.Err() at entry and at the pre-publication commit point; provider errors propagate through preState with wrapped identity.
+- Golden contract: t05_a3_contract yields the frozen five-rule profile, 14 metadata + 4 cli cases = 18 fixed; staged T05.json has 185 unique required ids, original 167 preserved; execute.verify runs synchronously inside the execute loop (mock-call-order test proves DROP→verify→CREATE); paired manifest/artifact deletion rejected by t05_a3_manifest_failures + case-count checks; stderr/stdout markers distinguish policy rejection from native 1051/1072.
+- Docs: rules/config EN+zh-CN updated with the exact instructed wording; scripts README covers setup/execute/teardown, synchronous verify, 18+167, and the A3 mutations.
+
+=== Remaining findings ===
+P1/P2: none. Optional-only suggestions (not unmet requirements): none that change risk meaningfully — the internal-seam EXECUTE/TEMPORARY pins are documented necessities since AuditSQL rejects both as unsupported.
+
+=== Request-specific precommit blockers ===
+None found. Staged tree contains the three accepted test corrections (verified in index blobs). Full Golden/gates are intentionally deferred to post-commit per the plan; the pre-commit dirty-tree artifact (/tmp/ds-t05-a3-pre.QjHWik, 185/185, 2882 assertions, rc=0) and validator suite (131/0) were already lead-validated. No fixture or environment action required for commit.

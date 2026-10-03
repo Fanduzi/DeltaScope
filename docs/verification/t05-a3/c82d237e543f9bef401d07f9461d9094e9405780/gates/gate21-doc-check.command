@@ -1,0 +1,32 @@
+cwd=/tmp/ds-t05-a3-final.2K4NKO/doc-check
+utc-start=2026-10-03T14:35:29Z
+argv: bash /Users/fan/.agents/skills/check-three-level-doc/scripts/check_three_level_doc.sh --staged
+code-under-test=c82d237e543f9bef401d07f9461d9094e9405780
+checkout-head=49a0f5bce25a72f71c1171ac0bee9bb5d86d963b
+staged-paths:
+  docs/decisions/2026-10-03-ddl-drop-recreate-state.md
+  docs/reference/config.md
+  docs/reference/config.zh-CN.md
+  docs/reference/rules.md
+  docs/reference/rules.zh-CN.md
+  internal/application/audit/README.md
+  internal/application/audit/batch_state.go
+  internal/application/audit/batch_state_a3_postgresql_tag_test.go
+  internal/application/audit/batch_state_a3_test.go
+  internal/domain/rule/ddl/README.md
+  internal/domain/rule/ddl/object_lifecycle_rules.go
+  internal/domain/rule/ddl/object_lifecycle_rules_test.go
+  internal/interfaces/cli/README.md
+  internal/interfaces/cli/audit_ordered_drop_a3_test.go
+  internal/interfaces/http/README.md
+  internal/interfaces/http/audit_ordered_drop_a3_test.go
+  internal/interfaces/mcp/README.md
+  internal/interfaces/mcp/audit_ordered_drop_a3_test.go
+  pkg/deltascope/README.md
+  pkg/deltascope/audit_ordered_drop_a3_test.go
+  scripts/README.md
+  scripts/ddl_golden.py
+  scripts/test_ddl_golden.py
+  testdata/ddl-golden/T05.json
+write-tree=583a4e087e23571ea02e08a57228d6c1e893951c
+utc-end=2026-10-03T14:35:45Z

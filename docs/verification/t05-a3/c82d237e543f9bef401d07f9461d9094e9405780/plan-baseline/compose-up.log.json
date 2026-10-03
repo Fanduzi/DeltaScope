@@ -1,0 +1,6 @@
+{
+  "original_name": "compose-up.log",
+  "encoding": "utf-8",
+  "sha256": "036bfefef461240744425399e60f1306d95032bb6dbf07a3081abfe57e554efc",
+  "raw": "$ docker compose -p deltascope-ddl-golden -f docker/ddl-golden-compose.yaml up -d mysql84\n Network deltascope-ddl-golden_default Creating \n Network deltascope-ddl-golden_default Creating \n Network deltascope-ddl-golden_default Created \n Network deltascope-ddl-golden_default Created \n Container deltascope-ddl-golden-mysql84 Creating \n Container deltascope-ddl-golden-mysql84 Created \n Container deltascope-ddl-golden-mysql84 Starting \n Container deltascope-ddl-golden-mysql84 Started \nrc=0\n"
+}

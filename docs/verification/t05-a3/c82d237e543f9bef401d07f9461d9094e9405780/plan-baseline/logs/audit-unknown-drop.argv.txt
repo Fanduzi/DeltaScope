@@ -1,0 +1,1 @@
+/tmp/ds-t05-a3-plan.tC4HJ6/deltascope audit --dialect mysql --config /tmp/ds-t05-a3-plan.tC4HJ6/policy.yaml --format json --fail-on warning --host 127.0.0.1 --port 23384 --user root --password-env DS_T05_A3_GOLDEN_PW --schema golden --sql "CREATE TABLE t (old_c INT PRIMARY KEY); DROP TABLE t; DROP TABLE t;"

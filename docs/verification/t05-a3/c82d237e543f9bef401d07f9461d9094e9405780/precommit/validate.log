@@ -1,0 +1,4 @@
+timestamp_utc=2026-10-03T14:08:07Z
+$ python3 scripts/ddl_golden.py validate --artifact /tmp/ds-t05-a3-pre.QjHWik/T05/artifact.json
+[ddl-golden] artifact valid
+rc=0

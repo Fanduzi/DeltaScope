@@ -1,0 +1,2 @@
+$ go build -o /tmp/ds-t05-a3-plan.tC4HJ6/deltascope ./cmd/deltascope
+rc=0

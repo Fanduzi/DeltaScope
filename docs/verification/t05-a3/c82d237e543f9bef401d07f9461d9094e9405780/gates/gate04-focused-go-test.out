@@ -1,0 +1,444 @@
+=== RUN   TestBatchStateA3DropRecreate
+=== PAUSE TestBatchStateA3DropRecreate
+=== RUN   TestBatchStateA3DropPreStateMatrix
+=== PAUSE TestBatchStateA3DropPreStateMatrix
+=== RUN   TestBatchStateA3TombstoneThenIfExistsDrop
+=== PAUSE TestBatchStateA3TombstoneThenIfExistsDrop
+=== RUN   TestBatchStateA3AuditSurfacePollution
+=== PAUSE TestBatchStateA3AuditSurfacePollution
+=== RUN   TestBatchStateA3DropStateTable
+=== PAUSE TestBatchStateA3DropStateTable
+=== RUN   TestBatchStateA3OldColumnIndexNegative
+=== PAUSE TestBatchStateA3OldColumnIndexNegative
+=== RUN   TestBatchStateA3OldShapeNotInherited
+=== PAUSE TestBatchStateA3OldShapeNotInherited
+=== RUN   TestBatchStateA3LoadedDependentInvalidates
+=== PAUSE TestBatchStateA3LoadedDependentInvalidates
+=== RUN   TestBatchStateA3NonPreciseForms
+=== PAUSE TestBatchStateA3NonPreciseForms
+=== RUN   TestBatchStateA3DispatchGuards
+=== PAUSE TestBatchStateA3DispatchGuards
+=== RUN   TestBatchStateA3TruncateUnchanged
+=== PAUSE TestBatchStateA3TruncateUnchanged
+=== RUN   TestBatchStateA3IdentitySeparation
+=== PAUSE TestBatchStateA3IdentitySeparation
+=== RUN   TestBatchStateA3CancellationAndProviderError
+=== PAUSE TestBatchStateA3CancellationAndProviderError
+=== RUN   TestBatchStateA3DropForbidOrthogonal
+=== PAUSE TestBatchStateA3DropForbidOrthogonal
+=== RUN   TestBatchStateA3IndependentAuditCalls
+=== PAUSE TestBatchStateA3IndependentAuditCalls
+=== CONT  TestBatchStateA3DropRecreate
+=== RUN   TestBatchStateA3DropRecreate/mysql/plain
+=== CONT  TestBatchStateA3NonPreciseForms
+=== CONT  TestBatchStateA3OldShapeNotInherited
+=== CONT  TestBatchStateA3CancellationAndProviderError
+=== RUN   TestBatchStateA3NonPreciseForms/multi_target_invalidates_every_key
+=== CONT  TestBatchStateA3IdentitySeparation
+=== RUN   TestBatchStateA3CancellationAndProviderError/pre_canceled_apply_publishes_nothing_DROP_TABLE_t;
+=== CONT  TestBatchStateA3DropForbidOrthogonal
+=== CONT  TestBatchStateA3DispatchGuards
+=== RUN   TestBatchStateA3DispatchGuards/unsupported_marker_stays_conservative
+=== PAUSE TestBatchStateA3DispatchGuards/unsupported_marker_stays_conservative
+=== RUN   TestBatchStateA3DispatchGuards/mismatched_primary_and_targets_stays_conservative
+=== CONT  TestBatchStateA3TruncateUnchanged
+=== RUN   TestBatchStateA3TruncateUnchanged/mysql
+=== CONT  TestBatchStateA3IndependentAuditCalls
+=== CONT  TestBatchStateA3LoadedDependentInvalidates
+=== PAUSE TestBatchStateA3DropRecreate/mysql/plain
+=== RUN   TestBatchStateA3IdentitySeparation/qualified_schema_separation
+=== CONT  TestBatchStateA3TombstoneThenIfExistsDrop
+=== CONT  TestBatchStateA3AuditSurfacePollution
+=== PAUSE TestBatchStateA3CancellationAndProviderError/pre_canceled_apply_publishes_nothing_DROP_TABLE_t;
+=== PAUSE TestBatchStateA3NonPreciseForms/multi_target_invalidates_every_key
+=== PAUSE TestBatchStateA3DispatchGuards/mismatched_primary_and_targets_stays_conservative
+=== RUN   TestBatchStateA3LoadedDependentInvalidates/explicit_target_schema
+=== PAUSE TestBatchStateA3IdentitySeparation/qualified_schema_separation
+=== PAUSE TestBatchStateA3TruncateUnchanged/mysql
+=== PAUSE TestBatchStateA3LoadedDependentInvalidates/explicit_target_schema
+=== RUN   TestBatchStateA3DropRecreate/mysql/if_exists
+=== RUN   TestBatchStateA3LoadedDependentInvalidates/unqualified_owner_schema_match
+=== PAUSE TestBatchStateA3DropRecreate/mysql/if_exists
+=== RUN   TestBatchStateA3DropRecreate/tidb/plain
+=== RUN   TestBatchStateA3AuditSurfacePollution/parse_failure_prefix
+=== RUN   TestBatchStateA3NonPreciseForms/duplicate_raw_target_is_not_precise
+=== PAUSE TestBatchStateA3AuditSurfacePollution/parse_failure_prefix
+=== PAUSE TestBatchStateA3NonPreciseForms/duplicate_raw_target_is_not_precise
+=== RUN   TestBatchStateA3DispatchGuards/omitted_targets_stays_conservative
+=== RUN   TestBatchStateA3IdentitySeparation/dotted_identifier_stays_whole
+=== PAUSE TestBatchStateA3IdentitySeparation/dotted_identifier_stays_whole
+=== RUN   TestBatchStateA3TruncateUnchanged/tidb
+=== RUN   TestBatchStateA3NonPreciseForms/temporary_drop_invalidates_without_absence
+=== RUN   TestBatchStateA3AuditSurfacePollution/execute_prefix
+=== PAUSE TestBatchStateA3TruncateUnchanged/tidb
+=== PAUSE TestBatchStateA3LoadedDependentInvalidates/unqualified_owner_schema_match
+=== PAUSE TestBatchStateA3DropRecreate/tidb/plain
+=== CONT  TestBatchStateA3OldColumnIndexNegative
+=== RUN   TestBatchStateA3CancellationAndProviderError/pre_canceled_apply_publishes_nothing_DROP_TABLE_IF_EXISTS_t;
+=== PAUSE TestBatchStateA3DispatchGuards/omitted_targets_stays_conservative
+=== RUN   TestBatchStateA3LoadedDependentInvalidates/unqualified_owner_schema_miss
+=== PAUSE TestBatchStateA3CancellationAndProviderError/pre_canceled_apply_publishes_nothing_DROP_TABLE_IF_EXISTS_t;
+=== PAUSE TestBatchStateA3LoadedDependentInvalidates/unqualified_owner_schema_miss
+=== CONT  TestBatchStateA3DropPreStateMatrix
+=== PAUSE TestBatchStateA3AuditSurfacePollution/execute_prefix
+=== CONT  TestBatchStateA3DropStateTable
+=== RUN   TestBatchStateA3OldColumnIndexNegative/mysql
+=== PAUSE TestBatchStateA3OldColumnIndexNegative/mysql
+=== CONT  TestBatchStateA3IdentitySeparation/qualified_schema_separation
+=== RUN   TestBatchStateA3DropRecreate/tidb/if_exists
+=== PAUSE TestBatchStateA3DropRecreate/tidb/if_exists
+=== PAUSE TestBatchStateA3NonPreciseForms/temporary_drop_invalidates_without_absence
+=== CONT  TestBatchStateA3IdentitySeparation/dotted_identifier_stays_whole
+=== RUN   TestBatchStateA3CancellationAndProviderError/mid_read_cancellation_aborts_publication
+=== PAUSE TestBatchStateA3CancellationAndProviderError/mid_read_cancellation_aborts_publication
+=== RUN   TestBatchStateA3CancellationAndProviderError/mid_read_cancellation_keeps_cached_state
+=== PAUSE TestBatchStateA3CancellationAndProviderError/mid_read_cancellation_keeps_cached_state
+=== RUN   TestBatchStateA3CancellationAndProviderError/provider_error_keeps_identity_over_cancellation
+=== PAUSE TestBatchStateA3CancellationAndProviderError/provider_error_keeps_identity_over_cancellation
+=== RUN   TestBatchStateA3CancellationAndProviderError/provider_error_propagates_from_pre_state
+=== PAUSE TestBatchStateA3CancellationAndProviderError/provider_error_propagates_from_pre_state
+=== CONT  TestBatchStateA3TruncateUnchanged/mysql
+=== RUN   TestBatchStateA3LoadedDependentInvalidates/other_schema_same_name
+=== RUN   TestBatchStateA3DropPreStateMatrix/mysql/plain/present_complete
+=== PAUSE TestBatchStateA3DropPreStateMatrix/mysql/plain/present_complete
+=== RUN   TestBatchStateA3DropStateTable/present_complete
+=== PAUSE TestBatchStateA3DropStateTable/present_complete
+=== RUN   TestBatchStateA3DropStateTable/present_partial
+=== PAUSE TestBatchStateA3DropStateTable/present_partial
+=== RUN   TestBatchStateA3DropStateTable/absent_plain_then_recreate
+=== PAUSE TestBatchStateA3DropStateTable/absent_plain_then_recreate
+=== RUN   TestBatchStateA3DropStateTable/absent_if_exists_then_recreate
+=== PAUSE TestBatchStateA3DropStateTable/absent_if_exists_then_recreate
+=== RUN   TestBatchStateA3DropStateTable/unknown_plain
+=== PAUSE TestBatchStateA3LoadedDependentInvalidates/other_schema_same_name
+=== PAUSE TestBatchStateA3DropStateTable/unknown_plain
+=== RUN   TestBatchStateA3LoadedDependentInvalidates/conservative_branch_still_tombstones
+=== PAUSE TestBatchStateA3LoadedDependentInvalidates/conservative_branch_still_tombstones
+=== RUN   TestBatchStateA3LoadedDependentInvalidates/recreate_does_not_restore
+=== PAUSE TestBatchStateA3LoadedDependentInvalidates/recreate_does_not_restore
+=== RUN   TestBatchStateA3LoadedDependentInvalidates/multi_target_union
+=== PAUSE TestBatchStateA3LoadedDependentInvalidates/multi_target_union
+=== RUN   TestBatchStateA3LoadedDependentInvalidates/target_referencing_target
+=== PAUSE TestBatchStateA3LoadedDependentInvalidates/target_referencing_target
+=== CONT  TestBatchStateA3TruncateUnchanged/tidb
+=== CONT  TestBatchStateA3DispatchGuards/unsupported_marker_stays_conservative
+=== CONT  TestBatchStateA3DispatchGuards/omitted_targets_stays_conservative
+=== CONT  TestBatchStateA3DispatchGuards/mismatched_primary_and_targets_stays_conservative
+=== CONT  TestBatchStateA3AuditSurfacePollution/parse_failure_prefix
+=== RUN   TestBatchStateA3OldColumnIndexNegative/tidb
+--- PASS: TestBatchStateA3OldShapeNotInherited (0.00s)
+=== RUN   TestBatchStateA3NonPreciseForms/execute_contamination_suppresses_derivation
+=== PAUSE TestBatchStateA3NonPreciseForms/execute_contamination_suppresses_derivation
+=== RUN   TestBatchStateA3NonPreciseForms/schema_invalidation_survives
+=== PAUSE TestBatchStateA3NonPreciseForms/schema_invalidation_survives
+=== RUN   TestBatchStateA3NonPreciseForms/unbound_drop_contaminates
+=== PAUSE TestBatchStateA3NonPreciseForms/unbound_drop_contaminates
+--- PASS: TestBatchStateA3DispatchGuards (0.00s)
+    --- PASS: TestBatchStateA3DispatchGuards/unsupported_marker_stays_conservative (0.00s)
+    --- PASS: TestBatchStateA3DispatchGuards/omitted_targets_stays_conservative (0.00s)
+    --- PASS: TestBatchStateA3DispatchGuards/mismatched_primary_and_targets_stays_conservative (0.00s)
+=== RUN   TestBatchStateA3DropPreStateMatrix/mysql/plain/present_partial
+=== PAUSE TestBatchStateA3DropPreStateMatrix/mysql/plain/present_partial
+=== RUN   TestBatchStateA3DropPreStateMatrix/mysql/plain/absent
+=== PAUSE TestBatchStateA3DropPreStateMatrix/mysql/plain/absent
+=== RUN   TestBatchStateA3DropPreStateMatrix/mysql/plain/unknown
+=== PAUSE TestBatchStateA3DropPreStateMatrix/mysql/plain/unknown
+=== RUN   TestBatchStateA3DropPreStateMatrix/mysql/if_exists/present_complete
+=== PAUSE TestBatchStateA3DropPreStateMatrix/mysql/if_exists/present_complete
+=== RUN   TestBatchStateA3DropPreStateMatrix/mysql/if_exists/present_partial
+=== PAUSE TestBatchStateA3DropPreStateMatrix/mysql/if_exists/present_partial
+=== RUN   TestBatchStateA3DropPreStateMatrix/mysql/if_exists/absent
+=== RUN   TestBatchStateA3DropStateTable/unknown_if_exists
+=== CONT  TestBatchStateA3AuditSurfacePollution/execute_prefix
+=== PAUSE TestBatchStateA3DropStateTable/unknown_if_exists
+=== RUN   TestBatchStateA3DropStateTable/repeated_drop_third_blocker
+=== PAUSE TestBatchStateA3DropStateTable/repeated_drop_third_blocker
+=== RUN   TestBatchStateA3DropStateTable/gap_disabled_stays_complete
+=== PAUSE TestBatchStateA3DropStateTable/gap_disabled_stays_complete
+=== RUN   TestBatchStateA3DropStateTable/unknown_then_recreate
+=== PAUSE TestBatchStateA3DropStateTable/unknown_then_recreate
+=== CONT  TestBatchStateA3DropRecreate/mysql/plain
+=== PAUSE TestBatchStateA3OldColumnIndexNegative/tidb
+=== CONT  TestBatchStateA3DropRecreate/tidb/plain
+=== PAUSE TestBatchStateA3DropPreStateMatrix/mysql/if_exists/absent
+=== RUN   TestBatchStateA3DropPreStateMatrix/mysql/if_exists/unknown
+=== PAUSE TestBatchStateA3DropPreStateMatrix/mysql/if_exists/unknown
+=== RUN   TestBatchStateA3DropPreStateMatrix/tidb/plain/present_complete
+=== PAUSE TestBatchStateA3DropPreStateMatrix/tidb/plain/present_complete
+=== RUN   TestBatchStateA3DropPreStateMatrix/tidb/plain/present_partial
+=== PAUSE TestBatchStateA3DropPreStateMatrix/tidb/plain/present_partial
+=== RUN   TestBatchStateA3DropPreStateMatrix/tidb/plain/absent
+=== PAUSE TestBatchStateA3DropPreStateMatrix/tidb/plain/absent
+=== RUN   TestBatchStateA3DropPreStateMatrix/tidb/plain/unknown
+=== PAUSE TestBatchStateA3DropPreStateMatrix/tidb/plain/unknown
+=== RUN   TestBatchStateA3DropPreStateMatrix/tidb/if_exists/present_complete
+=== PAUSE TestBatchStateA3DropPreStateMatrix/tidb/if_exists/present_complete
+=== RUN   TestBatchStateA3DropPreStateMatrix/tidb/if_exists/present_partial
+=== PAUSE TestBatchStateA3DropPreStateMatrix/tidb/if_exists/present_partial
+=== RUN   TestBatchStateA3DropPreStateMatrix/tidb/if_exists/absent
+=== PAUSE TestBatchStateA3DropPreStateMatrix/tidb/if_exists/absent
+=== RUN   TestBatchStateA3DropPreStateMatrix/tidb/if_exists/unknown
+=== PAUSE TestBatchStateA3DropPreStateMatrix/tidb/if_exists/unknown
+=== CONT  TestBatchStateA3DropRecreate/tidb/if_exists
+--- PASS: TestBatchStateA3TombstoneThenIfExistsDrop (0.01s)
+=== CONT  TestBatchStateA3DropRecreate/mysql/if_exists
+=== CONT  TestBatchStateA3CancellationAndProviderError/pre_canceled_apply_publishes_nothing_DROP_TABLE_t;
+=== CONT  TestBatchStateA3CancellationAndProviderError/provider_error_propagates_from_pre_state
+=== CONT  TestBatchStateA3CancellationAndProviderError/mid_read_cancellation_keeps_cached_state
+=== CONT  TestBatchStateA3CancellationAndProviderError/mid_read_cancellation_aborts_publication
+=== CONT  TestBatchStateA3CancellationAndProviderError/provider_error_keeps_identity_over_cancellation
+=== CONT  TestBatchStateA3CancellationAndProviderError/pre_canceled_apply_publishes_nothing_DROP_TABLE_IF_EXISTS_t;
+=== CONT  TestBatchStateA3LoadedDependentInvalidates/explicit_target_schema
+=== CONT  TestBatchStateA3LoadedDependentInvalidates/target_referencing_target
+--- PASS: TestBatchStateA3DropForbidOrthogonal (0.02s)
+=== CONT  TestBatchStateA3LoadedDependentInvalidates/multi_target_union
+=== CONT  TestBatchStateA3LoadedDependentInvalidates/recreate_does_not_restore
+=== CONT  TestBatchStateA3LoadedDependentInvalidates/conservative_branch_still_tombstones
+--- PASS: TestBatchStateA3IdentitySeparation (0.00s)
+    --- PASS: TestBatchStateA3IdentitySeparation/dotted_identifier_stays_whole (0.01s)
+    --- PASS: TestBatchStateA3IdentitySeparation/qualified_schema_separation (0.02s)
+=== CONT  TestBatchStateA3LoadedDependentInvalidates/other_schema_same_name
+--- PASS: TestBatchStateA3AuditSurfacePollution (0.00s)
+    --- PASS: TestBatchStateA3AuditSurfacePollution/parse_failure_prefix (0.01s)
+    --- PASS: TestBatchStateA3AuditSurfacePollution/execute_prefix (0.01s)
+=== CONT  TestBatchStateA3LoadedDependentInvalidates/unqualified_owner_schema_miss
+=== CONT  TestBatchStateA3LoadedDependentInvalidates/unqualified_owner_schema_match
+--- PASS: TestBatchStateA3TruncateUnchanged (0.00s)
+    --- PASS: TestBatchStateA3TruncateUnchanged/mysql (0.02s)
+    --- PASS: TestBatchStateA3TruncateUnchanged/tidb (0.02s)
+=== CONT  TestBatchStateA3NonPreciseForms/multi_target_invalidates_every_key
+=== CONT  TestBatchStateA3NonPreciseForms/unbound_drop_contaminates
+=== CONT  TestBatchStateA3NonPreciseForms/schema_invalidation_survives
+--- PASS: TestBatchStateA3CancellationAndProviderError (0.00s)
+    --- PASS: TestBatchStateA3CancellationAndProviderError/pre_canceled_apply_publishes_nothing_DROP_TABLE_t; (0.00s)
+    --- PASS: TestBatchStateA3CancellationAndProviderError/mid_read_cancellation_keeps_cached_state (0.00s)
+    --- PASS: TestBatchStateA3CancellationAndProviderError/mid_read_cancellation_aborts_publication (0.00s)
+    --- PASS: TestBatchStateA3CancellationAndProviderError/provider_error_keeps_identity_over_cancellation (0.00s)
+    --- PASS: TestBatchStateA3CancellationAndProviderError/pre_canceled_apply_publishes_nothing_DROP_TABLE_IF_EXISTS_t; (0.00s)
+    --- PASS: TestBatchStateA3CancellationAndProviderError/provider_error_propagates_from_pre_state (0.01s)
+=== CONT  TestBatchStateA3NonPreciseForms/execute_contamination_suppresses_derivation
+=== CONT  TestBatchStateA3NonPreciseForms/temporary_drop_invalidates_without_absence
+=== CONT  TestBatchStateA3NonPreciseForms/duplicate_raw_target_is_not_precise
+=== CONT  TestBatchStateA3DropStateTable/present_complete
+=== CONT  TestBatchStateA3DropStateTable/unknown_if_exists
+=== CONT  TestBatchStateA3DropStateTable/unknown_then_recreate
+--- PASS: TestBatchStateA3IndependentAuditCalls (0.03s)
+=== CONT  TestBatchStateA3DropStateTable/gap_disabled_stays_complete
+--- PASS: TestBatchStateA3DropRecreate (0.00s)
+    --- PASS: TestBatchStateA3DropRecreate/mysql/plain (0.01s)
+    --- PASS: TestBatchStateA3DropRecreate/tidb/if_exists (0.01s)
+    --- PASS: TestBatchStateA3DropRecreate/tidb/plain (0.01s)
+    --- PASS: TestBatchStateA3DropRecreate/mysql/if_exists (0.02s)
+=== CONT  TestBatchStateA3DropStateTable/repeated_drop_third_blocker
+=== CONT  TestBatchStateA3DropStateTable/unknown_plain
+=== CONT  TestBatchStateA3DropStateTable/absent_if_exists_then_recreate
+=== CONT  TestBatchStateA3DropStateTable/absent_plain_then_recreate
+=== CONT  TestBatchStateA3DropStateTable/present_partial
+=== CONT  TestBatchStateA3OldColumnIndexNegative/mysql
+--- PASS: TestBatchStateA3LoadedDependentInvalidates (0.00s)
+    --- PASS: TestBatchStateA3LoadedDependentInvalidates/target_referencing_target (0.01s)
+    --- PASS: TestBatchStateA3LoadedDependentInvalidates/unqualified_owner_schema_miss (0.01s)
+    --- PASS: TestBatchStateA3LoadedDependentInvalidates/explicit_target_schema (0.01s)
+    --- PASS: TestBatchStateA3LoadedDependentInvalidates/unqualified_owner_schema_match (0.01s)
+    --- PASS: TestBatchStateA3LoadedDependentInvalidates/recreate_does_not_restore (0.01s)
+    --- PASS: TestBatchStateA3LoadedDependentInvalidates/multi_target_union (0.02s)
+    --- PASS: TestBatchStateA3LoadedDependentInvalidates/other_schema_same_name (0.02s)
+    --- PASS: TestBatchStateA3LoadedDependentInvalidates/conservative_branch_still_tombstones (0.02s)
+=== CONT  TestBatchStateA3OldColumnIndexNegative/tidb
+=== CONT  TestBatchStateA3DropPreStateMatrix/mysql/plain/present_complete
+=== CONT  TestBatchStateA3DropPreStateMatrix/tidb/plain/present_partial
+=== CONT  TestBatchStateA3DropPreStateMatrix/tidb/if_exists/present_partial
+=== CONT  TestBatchStateA3DropPreStateMatrix/tidb/if_exists/unknown
+=== CONT  TestBatchStateA3DropPreStateMatrix/tidb/if_exists/absent
+=== CONT  TestBatchStateA3DropPreStateMatrix/mysql/if_exists/present_partial
+=== CONT  TestBatchStateA3DropPreStateMatrix/tidb/plain/present_complete
+=== CONT  TestBatchStateA3DropPreStateMatrix/mysql/if_exists/unknown
+=== CONT  TestBatchStateA3DropPreStateMatrix/mysql/if_exists/absent
+=== CONT  TestBatchStateA3DropPreStateMatrix/tidb/plain/unknown
+=== CONT  TestBatchStateA3DropPreStateMatrix/tidb/if_exists/present_complete
+=== CONT  TestBatchStateA3DropPreStateMatrix/tidb/plain/absent
+=== CONT  TestBatchStateA3DropPreStateMatrix/mysql/plain/unknown
+=== CONT  TestBatchStateA3DropPreStateMatrix/mysql/if_exists/present_complete
+=== CONT  TestBatchStateA3DropPreStateMatrix/mysql/plain/absent
+=== CONT  TestBatchStateA3DropPreStateMatrix/mysql/plain/present_partial
+--- PASS: TestBatchStateA3DropPreStateMatrix (0.01s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/mysql/plain/present_complete (0.00s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/tidb/plain/present_partial (0.00s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/tidb/if_exists/present_partial (0.00s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/tidb/if_exists/unknown (0.00s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/tidb/if_exists/absent (0.00s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/mysql/if_exists/present_partial (0.00s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/tidb/plain/present_complete (0.00s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/mysql/if_exists/unknown (0.00s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/mysql/if_exists/absent (0.00s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/tidb/plain/unknown (0.00s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/tidb/if_exists/present_complete (0.00s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/tidb/plain/absent (0.00s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/mysql/plain/unknown (0.00s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/mysql/if_exists/present_complete (0.00s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/mysql/plain/absent (0.00s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/mysql/plain/present_partial (0.00s)
+--- PASS: TestBatchStateA3NonPreciseForms (0.00s)
+    --- PASS: TestBatchStateA3NonPreciseForms/unbound_drop_contaminates (0.00s)
+    --- PASS: TestBatchStateA3NonPreciseForms/execute_contamination_suppresses_derivation (0.00s)
+    --- PASS: TestBatchStateA3NonPreciseForms/temporary_drop_invalidates_without_absence (0.00s)
+    --- PASS: TestBatchStateA3NonPreciseForms/multi_target_invalidates_every_key (0.01s)
+    --- PASS: TestBatchStateA3NonPreciseForms/schema_invalidation_survives (0.01s)
+    --- PASS: TestBatchStateA3NonPreciseForms/duplicate_raw_target_is_not_precise (0.01s)
+--- PASS: TestBatchStateA3DropStateTable (0.00s)
+    --- PASS: TestBatchStateA3DropStateTable/unknown_if_exists (0.01s)
+    --- PASS: TestBatchStateA3DropStateTable/present_complete (0.01s)
+    --- PASS: TestBatchStateA3DropStateTable/unknown_then_recreate (0.01s)
+    --- PASS: TestBatchStateA3DropStateTable/repeated_drop_third_blocker (0.01s)
+    --- PASS: TestBatchStateA3DropStateTable/unknown_plain (0.01s)
+    --- PASS: TestBatchStateA3DropStateTable/gap_disabled_stays_complete (0.01s)
+    --- PASS: TestBatchStateA3DropStateTable/absent_if_exists_then_recreate (0.01s)
+    --- PASS: TestBatchStateA3DropStateTable/present_partial (0.01s)
+    --- PASS: TestBatchStateA3DropStateTable/absent_plain_then_recreate (0.01s)
+--- PASS: TestBatchStateA3OldColumnIndexNegative (0.00s)
+    --- PASS: TestBatchStateA3OldColumnIndexNegative/mysql (0.01s)
+    --- PASS: TestBatchStateA3OldColumnIndexNegative/tidb (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.572s
+=== RUN   TestDropTableExistenceRuleEvidenceGaps
+=== PAUSE TestDropTableExistenceRuleEvidenceGaps
+=== CONT  TestDropTableExistenceRuleEvidenceGaps
+--- PASS: TestDropTableExistenceRuleEvidenceGaps (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	0.954s
+=== RUN   TestAuditT05A3DropRecreateFirstPath
+=== PAUSE TestAuditT05A3DropRecreateFirstPath
+=== RUN   TestAuditT05A3IsolatedUnknownDropGap
+=== PAUSE TestAuditT05A3IsolatedUnknownDropGap
+=== CONT  TestAuditT05A3DropRecreateFirstPath
+=== CONT  TestAuditT05A3IsolatedUnknownDropGap
+=== RUN   TestAuditT05A3DropRecreateFirstPath/mysql
+=== RUN   TestAuditT05A3IsolatedUnknownDropGap/mysql_DROP_TABLE_t;
+=== PAUSE TestAuditT05A3IsolatedUnknownDropGap/mysql_DROP_TABLE_t;
+=== RUN   TestAuditT05A3IsolatedUnknownDropGap/mysql_DROP_TABLE_IF_EXISTS_t;
+=== PAUSE TestAuditT05A3IsolatedUnknownDropGap/mysql_DROP_TABLE_IF_EXISTS_t;
+=== RUN   TestAuditT05A3IsolatedUnknownDropGap/tidb_DROP_TABLE_t;
+=== PAUSE TestAuditT05A3IsolatedUnknownDropGap/tidb_DROP_TABLE_t;
+=== RUN   TestAuditT05A3IsolatedUnknownDropGap/tidb_DROP_TABLE_IF_EXISTS_t;
+=== PAUSE TestAuditT05A3IsolatedUnknownDropGap/tidb_DROP_TABLE_IF_EXISTS_t;
+=== CONT  TestAuditT05A3IsolatedUnknownDropGap/mysql_DROP_TABLE_t;
+=== CONT  TestAuditT05A3IsolatedUnknownDropGap/tidb_DROP_TABLE_t;
+=== PAUSE TestAuditT05A3DropRecreateFirstPath/mysql
+=== CONT  TestAuditT05A3IsolatedUnknownDropGap/tidb_DROP_TABLE_IF_EXISTS_t;
+=== CONT  TestAuditT05A3IsolatedUnknownDropGap/mysql_DROP_TABLE_IF_EXISTS_t;
+=== RUN   TestAuditT05A3DropRecreateFirstPath/tidb
+=== PAUSE TestAuditT05A3DropRecreateFirstPath/tidb
+=== CONT  TestAuditT05A3DropRecreateFirstPath/mysql
+=== CONT  TestAuditT05A3DropRecreateFirstPath/tidb
+--- PASS: TestAuditT05A3IsolatedUnknownDropGap (0.00s)
+    --- PASS: TestAuditT05A3IsolatedUnknownDropGap/mysql_DROP_TABLE_t; (0.01s)
+    --- PASS: TestAuditT05A3IsolatedUnknownDropGap/tidb_DROP_TABLE_IF_EXISTS_t; (0.01s)
+    --- PASS: TestAuditT05A3IsolatedUnknownDropGap/tidb_DROP_TABLE_t; (0.01s)
+    --- PASS: TestAuditT05A3IsolatedUnknownDropGap/mysql_DROP_TABLE_IF_EXISTS_t; (0.01s)
+--- PASS: TestAuditT05A3DropRecreateFirstPath (0.00s)
+    --- PASS: TestAuditT05A3DropRecreateFirstPath/mysql (0.01s)
+    --- PASS: TestAuditT05A3DropRecreateFirstPath/tidb (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	1.428s
+=== RUN   TestAuditCommandT05A3DropGapFailOnMatrix
+=== RUN   TestAuditCommandT05A3DropGapFailOnMatrix/mysql_DROP_TABLE_t;_fail-on-warning
+=== RUN   TestAuditCommandT05A3DropGapFailOnMatrix/mysql_DROP_TABLE_t;_fail-on-notice
+=== RUN   TestAuditCommandT05A3DropGapFailOnMatrix/mysql_DROP_TABLE_t;_fail-on-blocker
+=== RUN   TestAuditCommandT05A3DropGapFailOnMatrix/mysql_DROP_TABLE_t;_fail-on-none
+=== RUN   TestAuditCommandT05A3DropGapFailOnMatrix/mysql_DROP_TABLE_IF_EXISTS_t;_fail-on-warning
+=== RUN   TestAuditCommandT05A3DropGapFailOnMatrix/mysql_DROP_TABLE_IF_EXISTS_t;_fail-on-notice
+=== RUN   TestAuditCommandT05A3DropGapFailOnMatrix/mysql_DROP_TABLE_IF_EXISTS_t;_fail-on-blocker
+=== RUN   TestAuditCommandT05A3DropGapFailOnMatrix/mysql_DROP_TABLE_IF_EXISTS_t;_fail-on-none
+=== RUN   TestAuditCommandT05A3DropGapFailOnMatrix/tidb_DROP_TABLE_t;_fail-on-warning
+=== RUN   TestAuditCommandT05A3DropGapFailOnMatrix/tidb_DROP_TABLE_t;_fail-on-notice
+=== RUN   TestAuditCommandT05A3DropGapFailOnMatrix/tidb_DROP_TABLE_t;_fail-on-blocker
+=== RUN   TestAuditCommandT05A3DropGapFailOnMatrix/tidb_DROP_TABLE_t;_fail-on-none
+=== RUN   TestAuditCommandT05A3DropGapFailOnMatrix/tidb_DROP_TABLE_IF_EXISTS_t;_fail-on-warning
+=== RUN   TestAuditCommandT05A3DropGapFailOnMatrix/tidb_DROP_TABLE_IF_EXISTS_t;_fail-on-notice
+=== RUN   TestAuditCommandT05A3DropGapFailOnMatrix/tidb_DROP_TABLE_IF_EXISTS_t;_fail-on-blocker
+=== RUN   TestAuditCommandT05A3DropGapFailOnMatrix/tidb_DROP_TABLE_IF_EXISTS_t;_fail-on-none
+--- PASS: TestAuditCommandT05A3DropGapFailOnMatrix (0.03s)
+    --- PASS: TestAuditCommandT05A3DropGapFailOnMatrix/mysql_DROP_TABLE_t;_fail-on-warning (0.00s)
+    --- PASS: TestAuditCommandT05A3DropGapFailOnMatrix/mysql_DROP_TABLE_t;_fail-on-notice (0.00s)
+    --- PASS: TestAuditCommandT05A3DropGapFailOnMatrix/mysql_DROP_TABLE_t;_fail-on-blocker (0.00s)
+    --- PASS: TestAuditCommandT05A3DropGapFailOnMatrix/mysql_DROP_TABLE_t;_fail-on-none (0.00s)
+    --- PASS: TestAuditCommandT05A3DropGapFailOnMatrix/mysql_DROP_TABLE_IF_EXISTS_t;_fail-on-warning (0.00s)
+    --- PASS: TestAuditCommandT05A3DropGapFailOnMatrix/mysql_DROP_TABLE_IF_EXISTS_t;_fail-on-notice (0.00s)
+    --- PASS: TestAuditCommandT05A3DropGapFailOnMatrix/mysql_DROP_TABLE_IF_EXISTS_t;_fail-on-blocker (0.00s)
+    --- PASS: TestAuditCommandT05A3DropGapFailOnMatrix/mysql_DROP_TABLE_IF_EXISTS_t;_fail-on-none (0.00s)
+    --- PASS: TestAuditCommandT05A3DropGapFailOnMatrix/tidb_DROP_TABLE_t;_fail-on-warning (0.00s)
+    --- PASS: TestAuditCommandT05A3DropGapFailOnMatrix/tidb_DROP_TABLE_t;_fail-on-notice (0.00s)
+    --- PASS: TestAuditCommandT05A3DropGapFailOnMatrix/tidb_DROP_TABLE_t;_fail-on-blocker (0.00s)
+    --- PASS: TestAuditCommandT05A3DropGapFailOnMatrix/tidb_DROP_TABLE_t;_fail-on-none (0.00s)
+    --- PASS: TestAuditCommandT05A3DropGapFailOnMatrix/tidb_DROP_TABLE_IF_EXISTS_t;_fail-on-warning (0.00s)
+    --- PASS: TestAuditCommandT05A3DropGapFailOnMatrix/tidb_DROP_TABLE_IF_EXISTS_t;_fail-on-notice (0.00s)
+    --- PASS: TestAuditCommandT05A3DropGapFailOnMatrix/tidb_DROP_TABLE_IF_EXISTS_t;_fail-on-blocker (0.00s)
+    --- PASS: TestAuditCommandT05A3DropGapFailOnMatrix/tidb_DROP_TABLE_IF_EXISTS_t;_fail-on-none (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/cli	1.978s
+=== RUN   TestHandlerT05A3DropRecreateFirstPath
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /healthz                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func1 (8 handlers)
+[GIN-debug] GET    /readyz                   --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func2 (8 handlers)
+[GIN-debug] GET    /version                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func3 (8 handlers)
+[GIN-debug] GET    /v1/rules                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func4 (8 handlers)
+[GIN-debug] GET    /v1/rules/:rule_id        --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func5 (8 handlers)
+[GIN-debug] GET    /v1/capabilities          --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func6 (8 handlers)
+[GIN-debug] POST   /v1/audit                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func7 (8 handlers)
+[GIN-debug] POST   /v1/query-access/analyze  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func8 (8 handlers)
+[GIN-debug] GET    /metrics                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.WrapH.func13 (8 handlers)
+2026/10/03 22:27:34 {"timestamp":"2026-10-03T14:27:34Z","level":"info","msg":"http request","method":"POST","path":"/v1/audit","status":200,"duration_ms":3,"request_id":"req-9bf9a5158fbd4b4e36707752"}
+--- PASS: TestHandlerT05A3DropRecreateFirstPath (0.01s)
+=== RUN   TestHandlerT05A3IsolatedDropGap
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /healthz                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func1 (8 handlers)
+[GIN-debug] GET    /readyz                   --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func2 (8 handlers)
+[GIN-debug] GET    /version                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func3 (8 handlers)
+[GIN-debug] GET    /v1/rules                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func4 (8 handlers)
+[GIN-debug] GET    /v1/rules/:rule_id        --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func5 (8 handlers)
+[GIN-debug] GET    /v1/capabilities          --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func6 (8 handlers)
+[GIN-debug] POST   /v1/audit                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func7 (8 handlers)
+[GIN-debug] POST   /v1/query-access/analyze  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func8 (8 handlers)
+[GIN-debug] GET    /metrics                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.WrapH.func13 (8 handlers)
+2026/10/03 22:27:34 {"timestamp":"2026-10-03T14:27:34Z","level":"info","msg":"http request","method":"POST","path":"/v1/audit","status":200,"duration_ms":2,"request_id":"req-e23dc98c4159ebca84f0957d"}
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /healthz                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func1 (8 handlers)
+[GIN-debug] GET    /readyz                   --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func2 (8 handlers)
+[GIN-debug] GET    /version                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func3 (8 handlers)
+[GIN-debug] GET    /v1/rules                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func4 (8 handlers)
+[GIN-debug] GET    /v1/rules/:rule_id        --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func5 (8 handlers)
+[GIN-debug] GET    /v1/capabilities          --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func6 (8 handlers)
+[GIN-debug] POST   /v1/audit                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func7 (8 handlers)
+[GIN-debug] POST   /v1/query-access/analyze  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func8 (8 handlers)
+[GIN-debug] GET    /metrics                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.WrapH.func13 (8 handlers)
+2026/10/03 22:27:34 {"timestamp":"2026-10-03T14:27:34Z","level":"info","msg":"http request","method":"POST","path":"/v1/audit","status":200,"duration_ms":2,"request_id":"req-3dec0b4fcab32476651ab406"}
+--- PASS: TestHandlerT05A3IsolatedDropGap (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/http	2.351s
+=== RUN   TestAuditSQLT05A3DropRecreateFirstPath
+=== PAUSE TestAuditSQLT05A3DropRecreateFirstPath
+=== RUN   TestAuditSQLT05A3IsolatedDropGap
+=== PAUSE TestAuditSQLT05A3IsolatedDropGap
+=== CONT  TestAuditSQLT05A3DropRecreateFirstPath
+=== CONT  TestAuditSQLT05A3IsolatedDropGap
+=== RUN   TestAuditSQLT05A3IsolatedDropGap/DROP_TABLE_t;
+=== PAUSE TestAuditSQLT05A3IsolatedDropGap/DROP_TABLE_t;
+=== RUN   TestAuditSQLT05A3IsolatedDropGap/DROP_TABLE_IF_EXISTS_t;
+=== PAUSE TestAuditSQLT05A3IsolatedDropGap/DROP_TABLE_IF_EXISTS_t;
+=== CONT  TestAuditSQLT05A3IsolatedDropGap/DROP_TABLE_t;
+=== CONT  TestAuditSQLT05A3IsolatedDropGap/DROP_TABLE_IF_EXISTS_t;
+--- PASS: TestAuditSQLT05A3IsolatedDropGap (0.00s)
+    --- PASS: TestAuditSQLT05A3IsolatedDropGap/DROP_TABLE_t; (0.01s)
+    --- PASS: TestAuditSQLT05A3IsolatedDropGap/DROP_TABLE_IF_EXISTS_t; (0.01s)
+--- PASS: TestAuditSQLT05A3DropRecreateFirstPath (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/mcp	1.714s

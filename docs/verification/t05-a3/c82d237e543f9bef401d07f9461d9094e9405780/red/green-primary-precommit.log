@@ -1,0 +1,24 @@
+$ go test ./internal/application/audit -run ^TestBatchStateA3 -count=1 -v
+=== RUN   TestBatchStateA3DropRecreate
+=== PAUSE TestBatchStateA3DropRecreate
+=== CONT  TestBatchStateA3DropRecreate
+=== RUN   TestBatchStateA3DropRecreate/mysql/plain
+=== PAUSE TestBatchStateA3DropRecreate/mysql/plain
+=== RUN   TestBatchStateA3DropRecreate/mysql/if_exists
+=== PAUSE TestBatchStateA3DropRecreate/mysql/if_exists
+=== RUN   TestBatchStateA3DropRecreate/tidb/plain
+=== PAUSE TestBatchStateA3DropRecreate/tidb/plain
+=== RUN   TestBatchStateA3DropRecreate/tidb/if_exists
+=== PAUSE TestBatchStateA3DropRecreate/tidb/if_exists
+=== CONT  TestBatchStateA3DropRecreate/mysql/plain
+=== CONT  TestBatchStateA3DropRecreate/tidb/plain
+=== CONT  TestBatchStateA3DropRecreate/mysql/if_exists
+=== CONT  TestBatchStateA3DropRecreate/tidb/if_exists
+--- PASS: TestBatchStateA3DropRecreate (0.00s)
+    --- PASS: TestBatchStateA3DropRecreate/mysql/if_exists (0.01s)
+    --- PASS: TestBatchStateA3DropRecreate/mysql/plain (0.01s)
+    --- PASS: TestBatchStateA3DropRecreate/tidb/if_exists (0.01s)
+    --- PASS: TestBatchStateA3DropRecreate/tidb/plain (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.608s
+rc=0

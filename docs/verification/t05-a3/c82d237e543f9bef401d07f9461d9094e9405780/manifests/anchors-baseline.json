@@ -1,0 +1,26 @@
+{
+  "description": "Locked four-version database baseline for the mysql-tidb-ddl-completion milestone (issue #79). Independent of per-task manifests: every ddl-golden run must cover these anchors and CLI dialects regardless of what a task manifest declares. Editing this file shrinks the milestone denominator and must be a visible review diff.",
+  "required_anchors": {
+    "mysql57": {
+      "product": "mysql",
+      "version_contains": "5.7.44",
+      "image": "mysql:5.7.44"
+    },
+    "mysql80": {
+      "product": "mysql",
+      "version_contains": "8.0.46",
+      "image": "mysql:8.0.46"
+    },
+    "mysql84": {
+      "product": "mysql",
+      "version_contains": "8.4.10",
+      "image": "mysql:8.4.10"
+    },
+    "tidb85": {
+      "product": "tidb",
+      "version_contains": "v8.5.0",
+      "image": "pingcap/tidb:v8.5.0"
+    }
+  },
+  "required_cli_dialects": ["mysql", "tidb"]
+}

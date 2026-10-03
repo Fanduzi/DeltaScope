@@ -1,0 +1,384 @@
+{
+  "case_id": "T05.meta.t05-tidb85-unaudited-invalidation",
+  "kind": "cli_metadata",
+  "cli_case": "t05-tidb85-unaudited-invalidation",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "CREATE TABLE t (id INT PRIMARY KEY); CREATE TABLE u (id INT PRIMARY KEY); ALTER TABLE t ADD COLUMN g INT GENERATED ALWAYS AS (id+1) STORED; ALTER TABLE t ADD COLUMN c INT; ALTER TABLE u ADD COLUMN c INT;",
+  "policy_profile": "t05-first-path-isolated",
+  "policy_path": "/private/tmp/ds-t05-a3-final.2K4NKO/golden/T05/golden-policy-t05-first-path-isolated.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 5,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+      "complete",
+      "complete",
+      "incomplete",
+      "unverified",
+      "complete"
+    ],
+    "evidence_gaps": 2,
+    "evidence_gap_entries": [
+      {
+        "index": 3,
+        "rule_id": "ddl.table.exists.alter.require",
+        "reason_code": "unknown_table_state",
+        "required_facts": [
+          "target_table.existence"
+        ]
+      },
+      {
+        "index": 3,
+        "rule_id": "ddl.alter.add_column.exists.forbid",
+        "reason_code": "unknown_table_state",
+        "required_facts": [
+          "target_table.columns",
+          "target_table.existence"
+        ]
+      }
+    ],
+    "unsupported_entries": [
+      {
+        "index": 2,
+        "feature": "alter_table.add_columns.column.generated",
+        "reason": "parsed by the shared parser but not covered by audited semantics"
+      }
+    ],
+    "fail_on_triggered": false
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [
+      {
+        "name": "ensure t absent",
+        "sql": "DROP TABLE IF EXISTS t",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "ensure u absent",
+        "sql": "DROP TABLE IF EXISTS u",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit did not create t",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "0",
+        "stderr": ""
+      },
+      {
+        "assert": "audit did not create u",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='u'",
+        "rc": 0,
+        "output": "0",
+        "stderr": ""
+      }
+    ],
+    "execute": [],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "drop fixtures",
+        "sql": "DROP TABLE IF EXISTS t, u",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"incomplete\"},\"summary\":{\"statements\":5,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t (id INT PRIMARY KEY);\",\"normalized_sql\":\"CREATE TABLE t (id INT PRIMARY KEY)\",\"coverage\":{\"status\":\"complete\"}},{\"index\":1,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE u (id INT PRIMARY KEY);\",\"normalized_sql\":\"CREATE TABLE u (id INT PRIMARY KEY)\",\"coverage\":{\"status\":\"complete\"}},{\"index\":2,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t ADD COLUMN g INT GENERATED ALWAYS AS (id+1) STORED;\",\"normalized_sql\":\"ALTER TABLE t ADD COLUMN g INT GENERATED ALWAYS AS (id+1) STORED\",\"coverage\":{\"status\":\"incomplete\"}},{\"index\":3,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t ADD COLUMN c INT;\",\"normalized_sql\":\"ALTER TABLE t ADD COLUMN c INT\",\"evidence_gaps\":[{\"rule_id\":\"ddl.table.exists.alter.require\",\"reason_code\":\"unknown_table_state\",\"required_facts\":[\"target_table.existence\"]},{\"rule_id\":\"ddl.alter.add_column.exists.forbid\",\"reason_code\":\"unknown_table_state\",\"required_facts\":[\"target_table.columns\",\"target_table.existence\"]}],\"coverage\":{\"status\":\"unverified\"}},{\"index\":4,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE u ADD COLUMN c INT;\",\"normalized_sql\":\"ALTER TABLE u ADD COLUMN c INT\",\"coverage\":{\"status\":\"complete\"}}],\"unsupported\":[{\"index\":2,\"feature\":\"alter_table.add_columns.column.generated\",\"sql\":\"ALTER TABLE t ADD COLUMN g INT GENERATED ALWAYS AS (id+1) STORED;\",\"reason\":\"parsed by the shared parser but not covered by audited semantics\",\"metadata\":{\"aspect\":\"column\"}}],\"diagnostics\":[{\"classification\":\"unsupported_statement\",\"reason\":\"DeltaScope recognized this statement or feature but does not audit it yet\",\"action_hint\":\"treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release\",\"audited\":false,\"dialect\":\"tidb\"}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":4,\"applicable\":3,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "incomplete"
+      },
+      "summary": {
+        "statements": 5,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t (id INT PRIMARY KEY);",
+          "normalized_sql": "CREATE TABLE t (id INT PRIMARY KEY)",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 1,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE u (id INT PRIMARY KEY);",
+          "normalized_sql": "CREATE TABLE u (id INT PRIMARY KEY)",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 2,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t ADD COLUMN g INT GENERATED ALWAYS AS (id+1) STORED;",
+          "normalized_sql": "ALTER TABLE t ADD COLUMN g INT GENERATED ALWAYS AS (id+1) STORED",
+          "coverage": {
+            "status": "incomplete"
+          }
+        },
+        {
+          "index": 3,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t ADD COLUMN c INT;",
+          "normalized_sql": "ALTER TABLE t ADD COLUMN c INT",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.table.exists.alter.require",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "target_table.existence"
+              ]
+            },
+            {
+              "rule_id": "ddl.alter.add_column.exists.forbid",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "target_table.columns",
+                "target_table.existence"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        },
+        {
+          "index": 4,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE u ADD COLUMN c INT;",
+          "normalized_sql": "ALTER TABLE u ADD COLUMN c INT",
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "unsupported": [
+        {
+          "index": 2,
+          "feature": "alter_table.add_columns.column.generated",
+          "sql": "ALTER TABLE t ADD COLUMN g INT GENERATED ALWAYS AS (id+1) STORED;",
+          "reason": "parsed by the shared parser but not covered by audited semantics",
+          "metadata": {
+            "aspect": "column"
+          }
+        }
+      ],
+      "diagnostics": [
+        {
+          "classification": "unsupported_statement",
+          "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+          "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+          "audited": false,
+          "dialect": "tidb"
+        }
+      ],
+      "version": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 4,
+        "applicable": 3,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "tidb",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "setup ensure t absent return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup ensure u absent return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=5 expected=5"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[{'classification': 'unsupported_statement', 'reason': 'DeltaScope recognized this statement or feature but does not audit it yet', 'action_hint': 'treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release', 'audited': False, 'dialect': 'tidb'}]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[{'index': 2, 'feature': 'alter_table.add_columns.column.generated', 'sql': 'ALTER TABLE t ADD COLUMN g INT GENERATED ALWAYS AS (id+1) STORED;', 'reason': 'parsed by the shared parser but not covered by audited semantics', 'metadata': {'aspect': 'column'}}]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='incomplete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete', 'complete', 'incomplete', 'unverified', 'complete']"
+    },
+    {
+      "name": "unsupported entries",
+      "ok": true,
+      "detail": "entries=[(2, 'alter_table.add_columns.column.generated', 'parsed by the shared parser but not covered by audited semantics')] expected=[(2, 'alter_table.add_columns.column.generated', 'parsed by the shared parser but not covered by audited semantics')]"
+    },
+    {
+      "name": "unsupported sql identity index=2",
+      "ok": true,
+      "detail": "sql='ALTER TABLE t ADD COLUMN g INT GENERATED ALWAYS AS (id+1) STORED;' expected='ALTER TABLE t ADD COLUMN g INT GENERATED ALWAYS AS (id+1) STORED;'"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=2"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[(3, 'ddl.alter.add_column.exists.forbid', 'unknown_table_state'), (3, 'ddl.table.exists.alter.require', 'unknown_table_state')] expected=[(3, 'ddl.alter.add_column.exists.forbid', 'unknown_table_state'), (3, 'ddl.table.exists.alter.require', 'unknown_table_state')]"
+    },
+    {
+      "name": "evidence gap required_facts (3, 'ddl.table.exists.alter.require', 'unknown_table_state')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.table.exists.alter.require', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.existence']}, {'rule_id': 'ddl.alter.add_column.exists.forbid', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.columns', 'target_table.existence']}] expected_facts=['target_table.existence']"
+    },
+    {
+      "name": "evidence gap required_facts (3, 'ddl.alter.add_column.exists.forbid', 'unknown_table_state')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.table.exists.alter.require', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.existence']}, {'rule_id': 'ddl.alter.add_column.exists.forbid', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.columns', 'target_table.existence']}] expected_facts=['target_table.columns', 'target_table.existence']"
+    },
+    {
+      "name": "no gap encoded as finding",
+      "ok": true,
+      "detail": "findings carrying gap shape=[]"
+    },
+    {
+      "name": "fail_on_triggered",
+      "ok": true,
+      "detail": "fail_on_triggered=False"
+    },
+    {
+      "name": "post-verify audit did not create t",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "post-verify audit did not create u",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "teardown drop fixtures return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ds-t05-a3-final.2K4NKO/golden/T05/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "CREATE TABLE t (id INT PRIMARY KEY); CREATE TABLE u (id INT PRIMARY KEY); ALTER TABLE t ADD COLUMN g INT GENERATED ALWAYS AS (id+1) STORED; ALTER TABLE t ADD COLUMN c INT; ALTER TABLE u ADD COLUMN c INT;",
+    "--config",
+    "/private/tmp/ds-t05-a3-final.2K4NKO/golden/T05/golden-policy-t05-first-path-isolated.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "golden"
+  ]
+}

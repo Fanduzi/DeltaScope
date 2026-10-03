@@ -1,0 +1,25 @@
+artifact_dir=/tmp/ds-t05-a3-pre.QjHWik
+timestamp_utc=2026-10-03T14:07:14Z
+49a0f5bce25a72f71c1171ac0bee9bb5d86d963b
+ M internal/application/audit/README.md
+ M internal/application/audit/batch_state.go
+ M internal/domain/rule/ddl/README.md
+ M internal/domain/rule/ddl/object_lifecycle_rules.go
+ M internal/domain/rule/ddl/object_lifecycle_rules_test.go
+ M scripts/ddl_golden.py
+ M scripts/test_ddl_golden.py
+ M testdata/ddl-golden/T05.json
+?? .agents/
+?? .debug-journal.md
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? docs/decisions/2026-10-03-ddl-drop-recreate-state.md
+?? docs/quality/architecture-review-2026-08-11.html
+?? internal/application/audit/batch_state_a3_test.go
+$ make ddl-golden TASK=T05 ARTIFACT_DIR=/tmp/ds-t05-a3-pre.QjHWik
+python3 ./scripts/ddl_golden.py run --task "T05" --artifact-dir "/tmp/ds-t05-a3-pre.QjHWik"
+[ddl-golden] task=T05 head=49a0f5bce25a cases=185 passed=185 assertions=2882
+[ddl-golden] artifact=/private/tmp/ds-t05-a3-pre.QjHWik/T05/artifact.json
+[ddl-golden] PASS
+rc=0

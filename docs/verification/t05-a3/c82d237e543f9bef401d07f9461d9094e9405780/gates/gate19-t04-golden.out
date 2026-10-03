@@ -1,0 +1,4 @@
+python3 ./scripts/ddl_golden.py run --task "T04" --artifact-dir "/tmp/ds-t05-a3-final.2K4NKO/regressions"
+[ddl-golden] task=T04 head=c82d237e543f cases=163 passed=163 assertions=1899
+[ddl-golden] artifact=/private/tmp/ds-t05-a3-final.2K4NKO/regressions/T04/artifact.json
+[ddl-golden] PASS

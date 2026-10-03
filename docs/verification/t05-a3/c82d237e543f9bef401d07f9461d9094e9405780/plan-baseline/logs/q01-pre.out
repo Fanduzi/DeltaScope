@@ -1,0 +1,4 @@
+$ docker exec -e MYSQL_PWD=$DS_T05_A3_GOLDEN_PW deltascope-ddl-golden-mysql84 mysql --batch --skip-column-names -uroot --database=golden -e "SELECT VERSION(), DATABASE(), @@sql_mode, @@default_storage_engine, @@foreign_key_checks; SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t';"
+8.4.10	golden	ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION	InnoDB	1
+0
+rc=0

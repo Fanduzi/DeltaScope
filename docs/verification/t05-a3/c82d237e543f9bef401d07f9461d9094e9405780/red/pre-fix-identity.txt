@@ -1,0 +1,7 @@
+head=49a0f5bce25a72f71c1171ac0bee9bb5d86d963b
+?? .agents/
+?? .debug-journal.md
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? docs/quality/architecture-review-2026-08-11.html

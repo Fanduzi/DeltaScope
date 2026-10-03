@@ -1,0 +1,304 @@
+{
+  "case_id": "T04.meta.t04b-mysql57-observed",
+  "kind": "cli_metadata",
+  "cli_case": "t04b-mysql57-observed",
+  "anchor": "mysql57",
+  "dialect": "mysql",
+  "input_sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=COMPACT;",
+  "policy_profile": "t04b-key-length-isolated",
+  "policy_path": "/private/tmp/ds-t05-a3-final.2K4NKO/regressions/T04/golden-policy-t04b-key-length-isolated.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T04_GOLDEN_PW"
+  },
+  "expected": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.index.key_length.max_bytes.require",
+        "level": "blocker"
+      }
+    ],
+    "version": {
+      "product": "mysql",
+      "version": "5.7.44",
+      "source": "observed",
+      "validated_range": true
+    },
+    "finding_metadata": [
+      {
+        "index": 0,
+        "rule_id": "ddl.index.key_length.max_bytes.require",
+        "metadata": {
+          "limit": 767
+        }
+      }
+    ]
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:5.7.44",
+      "image_digest": "mysql@sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb",
+      "container": "deltascope-ddl-golden-mysql57",
+      "reachable": true,
+      "version": "5.7.44"
+    },
+    "setup": [
+      {
+        "name": "create fixture",
+        "sql": "CREATE TABLE IF NOT EXISTS t (c VARCHAR(10) NOT NULL)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "verify": [
+          {
+            "assert": "fixture column is varchar(10)",
+            "sql": "SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+            "rc": 0,
+            "output": "varchar(10)",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ]
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit did not execute the submitted CREATE TABLE",
+        "sql": "SELECT COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+        "rc": 0,
+        "output": "varchar(10)",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      }
+    ],
+    "execute": [],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "drop fixture",
+        "sql": "DROP TABLE IF EXISTS t",
+        "rc": 0,
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      }
+    ],
+    "exit": 0,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=COMPACT;\",\"normalized_sql\":\"CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=COMPACT\",\"findings\":[{\"rule_id\":\"ddl.index.key_length.max_bytes.require\",\"level\":\"blocker\",\"message\":\"index \\\"idx_c\\\" estimated key length exceeds 767 bytes (1022)\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"reduce indexed column lengths, add explicit prefix lengths, or review large-prefix compatibility explicitly\",\"metadata\":{\"charset\":\"latin1\",\"columns\":[\"c\"],\"estimated_bytes\":1022,\"index\":\"idx_c\",\"limit\":767,\"table\":\"t\"},\"explanation\":{\"summary\":\"Require DDL index key length max bytes require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"reduce indexed column lengths, add explicit prefix lengths, or review large-prefix compatibility explicitly\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"5.7.44\",\"major\":5,\"minor\":7,\"patch\":44,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=COMPACT;",
+          "normalized_sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=COMPACT",
+          "findings": [
+            {
+              "rule_id": "ddl.index.key_length.max_bytes.require",
+              "level": "blocker",
+              "message": "index \"idx_c\" estimated key length exceeds 767 bytes (1022)",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "reduce indexed column lengths, add explicit prefix lengths, or review large-prefix compatibility explicitly",
+              "metadata": {
+                "charset": "latin1",
+                "columns": [
+                  "c"
+                ],
+                "estimated_bytes": 1022,
+                "index": "idx_c",
+                "limit": 767,
+                "table": "t"
+              },
+              "explanation": {
+                "summary": "Require DDL index key length max bytes require",
+                "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+                "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                "suggestion": "reduce indexed column lengths, add explicit prefix lengths, or review large-prefix compatibility explicitly",
+                "metadata": {
+                  "status": "available",
+                  "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                }
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "5.7.44",
+        "major": 5,
+        "minor": 7,
+        "patch": 44,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "5.7.44",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "5.7.44"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "5.7.44",
+        "major": 5,
+        "minor": 7,
+        "patch": 44,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='5.7.44' expected_contains='5.7.44'"
+    },
+    {
+      "name": "setup create fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "setup create fixture: fixture column is varchar(10)",
+      "ok": true,
+      "detail": "rc=0 output='varchar(10)' expected='varchar(10)'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.index.key_length.max_bytes.require', 'blocker')] expected=[(0, 'ddl.index.key_length.max_bytes.require', 'blocker')]"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.index.key_length.max_bytes.require')",
+      "ok": true,
+      "detail": "findings=[{'charset': 'latin1', 'columns': ['c'], 'estimated_bytes': 1022, 'index': 'idx_c', 'limit': 767, 'table': 't'}] expected_subset={'limit': 767}"
+    },
+    {
+      "name": "version identity",
+      "ok": true,
+      "detail": "version={'product': 'mysql', 'version': '5.7.44', 'major': 5, 'minor': 7, 'patch': 44, 'source': 'observed', 'validated_range': True} expected={'product': 'mysql', 'version': '5.7.44', 'source': 'observed', 'validated_range': True}"
+    },
+    {
+      "name": "post-verify audit did not execute the submitted CREATE TABLE",
+      "ok": true,
+      "detail": "rc=0 output='varchar(10)' expected='varchar(10)'"
+    },
+    {
+      "name": "teardown drop fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ds-t05-a3-final.2K4NKO/regressions/T04/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=COMPACT;",
+    "--config",
+    "/private/tmp/ds-t05-a3-final.2K4NKO/regressions/T04/golden-policy-t04b-key-length-isolated.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23357",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T04_GOLDEN_PW",
+    "--schema",
+    "golden",
+    "--fail-on",
+    "none"
+  ]
+}

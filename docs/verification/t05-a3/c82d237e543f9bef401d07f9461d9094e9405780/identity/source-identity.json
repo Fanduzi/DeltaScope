@@ -1,0 +1,23 @@
+{
+  "task_base": "49a0f5bce25a72f71c1171ac0bee9bb5d86d963b",
+  "code_head": "c82d237e543f9bef401d07f9461d9094e9405780",
+  "branch": "milestone/mysql-tidb-ddl-completion",
+  "origin_main_observed": "9a28cc99c38770e6e40738515994f864166419f9",
+  "code_tree": "583a4e087e23571ea02e08a57228d6c1e893951c",
+  "binary_sha256": "d1ed4cf416fca7e38b11662890b6d593f239649d4892962684badbe2b702468d",
+  "hashes": {
+    "testdata/ddl-golden/T05.json": "73d3b696c88b902800461bca3e9abf3ee417351b330cde4eba38894da8a8032f",
+    "scripts/ddl_golden.py": "b1202e617bf128c2ad37af09d80708b5f5d053868723cd7bca2c93a2cd7cb40c",
+    "scripts/test_ddl_golden.py": "0daa4a1e13bb2549333630cb2ac940c996e87ccf9a79891dbb2a165434175b8f"
+  },
+  "T05_cases": 185,
+  "T05_assertions": 2900,
+  "validator_cases": 131,
+  "validator_failures": 0,
+  "regressions": {"T02": {"cases": 10, "assertions": 57}, "T03": {"cases": 118, "assertions": 1395}, "T04": {"cases": 163, "assertions": 1899}},
+  "preexisting_untracked": [".agents/", ".debug-journal.md", ".opencode/", ".pi-subagents/", ".qoder/", "docs/quality/architecture-review-2026-08-11.html"],
+  "proof_dir": "/tmp/ds-t05-a3-final.2K4NKO",
+  "doc_check_worktree": "/tmp/ds-t05-a3-final.2K4NKO/doc-check",
+  "binary_hash_verification": "Lead independently recomputed SHA-256 of each of the four local executed binaries and matched the corresponding artifact. No claim of reviewer-side binary execution.",
+  "gate_source_status": "Tracked tree clean at the exact code SHA; the six preexisting untracked paths remained unchanged."
+}
