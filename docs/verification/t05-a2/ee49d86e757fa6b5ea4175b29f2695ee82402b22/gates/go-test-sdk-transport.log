@@ -1,0 +1,5 @@
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.441s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/cli	1.103s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/http	1.420s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/mcp	0.883s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/metadata	0.958s

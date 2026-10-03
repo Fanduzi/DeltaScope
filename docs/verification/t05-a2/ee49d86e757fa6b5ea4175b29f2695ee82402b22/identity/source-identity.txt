@@ -1,0 +1,25 @@
+code_head=ee49d86e757fa6b5ea4175b29f2695ee82402b22
+code_branch=milestone/mysql-tidb-ddl-completion
+review_base=6e060624ecdff3133e8e2c98c484f10e21efcb0b
+a2_code_base=6e060624ecdff3133e8e2c98c484f10e21efcb0b
+a2_evidence_head=c38536e9b5d65e4792ea6cd29bb93428e41687b3
+worktree_status:
+?? .agents/
+?? .debug-journal.md
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? docs/quality/architecture-review-2026-08-11.html
+?? docs/verification/t05-a2/ee49d86e757fa6b5ea4175b29f2695ee82402b22/
+go_version=go version go1.26.1 darwin/arm64
+manifest_sha256=e7a076377d870969f8f917c02f40241995cc5e986403177bd7fdd4b988b3e3c7
+runner_sha256=b92ed8e21bee8440cff742486be9e98b46aa7fc23421cbdcb952f8c00dbf1ae6
+validator_test_sha256=ef9e57f56610a49c1686354452d14fdc6c0ff850cb84501997bfa12829673e42
+diff_scope_vs_c38536e:
+docs/decisions/2026-10-20-ddl-rename-table-identity-migration.md
+internal/application/audit/README.md
+internal/application/audit/batch_state.go
+internal/application/audit/batch_state_a2_test.go
+artifact_head_sha=ee49d86e757fa6b5ea4175b29f2695ee82402b22
+binary_sha256=3694ab0af9bf39fe21a523f13792f493678e6cf578aa91d19224e4cd573af4f1
+untracked_preexisting: .agents/ .debug-journal.md .opencode/ .pi-subagents/ .qoder/ docs/quality/architecture-review-2026-08-11.html (pre-existing environment files, not part of delivery)

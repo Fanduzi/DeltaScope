@@ -1,0 +1,293 @@
+{
+  "case_id": "T05.meta.t05-tidb85-index-missing-column",
+  "kind": "cli_metadata",
+  "cli_case": "t05-tidb85-index-missing-column",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "CREATE TABLE t (id INT PRIMARY KEY); CREATE INDEX idx_c ON t (missing_c);",
+  "policy_profile": "t05-first-path-isolated",
+  "policy_path": "/private/tmp/ds-t05-a2-r1-final.cFu0od/golden/T05/golden-policy-t05-first-path-isolated.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 2,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete",
+      "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "finding_entries": [
+      {
+        "index": 1,
+        "rule_id": "ddl.create_index.columns.exists.require",
+        "level": "blocker"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 1,
+        "rule_id": "ddl.create_index.columns.exists.require",
+        "metadata": {
+          "table": "t",
+          "index": "idx_c",
+          "column": "missing_c",
+          "exists": false
+        }
+      }
+    ]
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [
+      {
+        "name": "ensure t absent",
+        "sql": "DROP TABLE IF EXISTS t",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit did not create t",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "0",
+        "stderr": ""
+      }
+    ],
+    "execute": [],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "drop fixture",
+        "sql": "DROP TABLE IF EXISTS t",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":2,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t (id INT PRIMARY KEY);\",\"normalized_sql\":\"CREATE TABLE t (id INT PRIMARY KEY)\",\"coverage\":{\"status\":\"complete\"}},{\"index\":1,\"kind\":\"ddl\",\"raw_sql\":\"CREATE INDEX idx_c ON t (missing_c);\",\"normalized_sql\":\"CREATE INDEX idx_c ON t (missing_c)\",\"findings\":[{\"rule_id\":\"ddl.create_index.columns.exists.require\",\"level\":\"blocker\",\"message\":\"column \\\"missing_c\\\" referenced by index \\\"idx_c\\\" does not exist on table \\\"t\\\"\",\"statement_index\":1,\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":38},\"suggestion\":\"fix the index column list or create the missing column before adding the index\",\"metadata\":{\"column\":\"missing_c\",\"exists\":false,\"index\":\"idx_c\",\"schema\":\"golden\",\"table\":\"t\"},\"explanation\":{\"summary\":\"Require DDL create index columns exists require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"fix the index column list or create the missing column before adding the index\"}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":4,\"applicable\":2,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 2,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t (id INT PRIMARY KEY);",
+          "normalized_sql": "CREATE TABLE t (id INT PRIMARY KEY)",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 1,
+          "kind": "ddl",
+          "raw_sql": "CREATE INDEX idx_c ON t (missing_c);",
+          "normalized_sql": "CREATE INDEX idx_c ON t (missing_c)",
+          "findings": [
+            {
+              "rule_id": "ddl.create_index.columns.exists.require",
+              "level": "blocker",
+              "message": "column \"missing_c\" referenced by index \"idx_c\" does not exist on table \"t\"",
+              "statement_index": 1,
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 38
+              },
+              "suggestion": "fix the index column list or create the missing column before adding the index",
+              "metadata": {
+                "column": "missing_c",
+                "exists": false,
+                "index": "idx_c",
+                "schema": "golden",
+                "table": "t"
+              },
+              "explanation": {
+                "summary": "Require DDL create index columns exists require",
+                "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "fix the index column list or create the missing column before adding the index"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 4,
+        "applicable": 2,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "tidb",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "setup ensure t absent return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=2 expected=2"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete', 'complete']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(1, 'ddl.create_index.columns.exists.require', 'blocker')] expected=[(1, 'ddl.create_index.columns.exists.require', 'blocker')]"
+    },
+    {
+      "name": "finding metadata (1, 'ddl.create_index.columns.exists.require')",
+      "ok": true,
+      "detail": "findings=[{'column': 'missing_c', 'exists': False, 'index': 'idx_c', 'schema': 'golden', 'table': 't'}] expected_subset={'table': 't', 'index': 'idx_c', 'column': 'missing_c', 'exists': False}"
+    },
+    {
+      "name": "fail_on_triggered",
+      "ok": true,
+      "detail": "fail_on_triggered=True"
+    },
+    {
+      "name": "post-verify audit did not create t",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "teardown drop fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ds-t05-a2-r1-final.cFu0od/golden/T05/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "CREATE TABLE t (id INT PRIMARY KEY); CREATE INDEX idx_c ON t (missing_c);",
+    "--config",
+    "/private/tmp/ds-t05-a2-r1-final.cFu0od/golden/T05/golden-policy-t05-first-path-isolated.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "golden"
+  ]
+}

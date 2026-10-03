@@ -1,0 +1,60 @@
+=== RUN   TestBatchStateA2R1LoadedDependentInvalidates/explicit_other-schema_same-name_reference_stays_known/alter_rename_to
+=== RUN   TestBatchStateA2R1LoadedDependentInvalidates/explicit_src_reference_under_aux_owner/alter_rename_to
+=== RUN   TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_constraint_payload/rename_table
+=== RUN   TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_under_aux_owner_stays_local/alter_rename_to
+=== RUN   TestBatchStateA2R1RenameObservesCancellation/cancel_inside_destination_read_publishes_nothing/alter_rename_to
+=== RUN   TestBatchStateA2R1RenameObservesCancellation/provider_error_keeps_its_identity_over_cancellation/alter_rename_to
+--- PASS: TestBatchStateA2R1LoadedDependentInvalidates (0.00s)
+    --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/destination_reference_invalidates_on_non-move_cell (0.00s)
+        --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/destination_reference_invalidates_on_non-move_cell/rename_table (0.00s)
+        --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/destination_reference_invalidates_on_non-move_cell/alter_rename_to (0.00s)
+    --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_with_check_source (0.00s)
+        --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_with_check_source/rename_table (0.00s)
+        --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_with_check_source/alter_rename_to (0.00s)
+    --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_under_src_owner (0.00s)
+        --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_under_src_owner/rename_table (0.00s)
+        --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_under_src_owner/alter_rename_to (0.00s)
+    --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/explicit_other-schema_same-name_reference_stays_known (0.00s)
+        --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/explicit_other-schema_same-name_reference_stays_known/rename_table (0.00s)
+        --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/explicit_other-schema_same-name_reference_stays_known/alter_rename_to (0.00s)
+    --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/explicit_src_reference_with_check_source (0.00s)
+        --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/explicit_src_reference_with_check_source/rename_table (0.00s)
+        --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/explicit_src_reference_with_check_source/alter_rename_to (0.00s)
+    --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/explicit_src_reference_under_aux_owner (0.00s)
+        --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/explicit_src_reference_under_aux_owner/rename_table (0.00s)
+        --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/explicit_src_reference_under_aux_owner/alter_rename_to (0.00s)
+    --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_under_aux_owner_stays_local (0.00s)
+        --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_under_aux_owner_stays_local/rename_table (0.00s)
+        --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_under_aux_owner_stays_local/alter_rename_to (0.00s)
+=== RUN   TestBatchStateA2R1RenameObservesCancellation/enrichment_propagates_mid-read_cancellation/alter_rename_to
+--- PASS: TestBatchStateA2R1RenameObservesCancellation (0.01s)
+    --- PASS: TestBatchStateA2R1RenameObservesCancellation/pre-cancelled_context_publishes_nothing/rename_table (0.00s)
+    --- PASS: TestBatchStateA2R1RenameObservesCancellation/cancel_inside_destination_read_publishes_nothing/rename_table (0.00s)
+    --- PASS: TestBatchStateA2R1RenameObservesCancellation/provider_error_keeps_its_identity_over_cancellation/rename_table (0.00s)
+    --- PASS: TestBatchStateA2R1RenameObservesCancellation/enrichment_propagates_mid-read_cancellation/rename_table (0.00s)
+    --- PASS: TestBatchStateA2R1RenameObservesCancellation/pre-cancelled_context_publishes_nothing/alter_rename_to (0.00s)
+    --- PASS: TestBatchStateA2R1RenameObservesCancellation/cancel_inside_destination_read_publishes_nothing/alter_rename_to (0.00s)
+    --- PASS: TestBatchStateA2R1RenameObservesCancellation/provider_error_keeps_its_identity_over_cancellation/alter_rename_to (0.00s)
+    --- PASS: TestBatchStateA2R1RenameObservesCancellation/enrichment_propagates_mid-read_cancellation/alter_rename_to (0.00s)
+=== RUN   TestBatchStateA2R1LoadedDependentKeepsPublicGapContract/alter_rename_to
+=== RUN   TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_field_only/alter_rename_to
+=== RUN   TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_constraint_payload/alter_rename_to
+--- PASS: TestBatchStateA2R1LoadedDependentKeepsPublicGapContract (0.02s)
+    --- PASS: TestBatchStateA2R1LoadedDependentKeepsPublicGapContract/rename_table (0.01s)
+    --- PASS: TestBatchStateA2R1LoadedDependentKeepsPublicGapContract/alter_rename_to (0.01s)
+--- PASS: TestBatchStateA2R1PrimaryKeyPayloadMigrates (0.00s)
+    --- PASS: TestBatchStateA2R1PrimaryKeyPayloadMigrates/foreign_key_on_the_source_keeps_both_ends_unknown (0.00s)
+    --- PASS: TestBatchStateA2R1PrimaryKeyPayloadMigrates/partial_knowledge_keeps_unknown_flags_and_statistics (0.00s)
+        --- PASS: TestBatchStateA2R1PrimaryKeyPayloadMigrates/partial_knowledge_keeps_unknown_flags_and_statistics/rename_table (0.00s)
+        --- PASS: TestBatchStateA2R1PrimaryKeyPayloadMigrates/partial_knowledge_keeps_unknown_flags_and_statistics/alter_rename_to (0.00s)
+    --- PASS: TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_payload_keeps_unknown_member_flags (0.00s)
+        --- PASS: TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_payload_keeps_unknown_member_flags/rename_table (0.00s)
+        --- PASS: TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_payload_keeps_unknown_member_flags/alter_rename_to (0.00s)
+    --- PASS: TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_field_only (0.01s)
+        --- PASS: TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_field_only/rename_table (0.01s)
+        --- PASS: TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_field_only/alter_rename_to (0.01s)
+    --- PASS: TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_constraint_payload (0.01s)
+        --- PASS: TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_constraint_payload/rename_table (0.01s)
+        --- PASS: TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_constraint_payload/alter_rename_to (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.582s
