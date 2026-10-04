@@ -4,7 +4,7 @@ Date: 2026-10-04
 Status: Accepted
 Related milestone/version: mysql-tidb-ddl-completion (#79, T05-A4 under #84)
 Related decisions: `2026-10-02-ddl-ordered-schema-state-first-path.md`, `2026-10-03-ddl-drop-recreate-state.md`, `2026-10-20-ddl-rename-table-identity-migration.md`
-Related tests: `internal/application/audit/batch_state_a4_test.go`, `internal/application/audit/batch_state_a4_matrix_test.go`, `internal/application/audit/batch_state_modify.go`, `testdata/ddl-golden/T05.json`, `scripts/test_ddl_golden.py`
+Related tests: `internal/application/audit/batch_state_a4_test.go`, `internal/application/audit/batch_state_a4_matrix_test.go`, `internal/application/audit/batch_state_a4_r1_test.go`, `internal/application/audit/batch_state_modify.go`, `testdata/ddl-golden/T05.json`, `scripts/test_ddl_golden.py`
 Related docs: `internal/application/audit/README.md`
 
 ## Context
@@ -98,6 +98,16 @@ attribute replacement, primary-key nullability, and one offline narrow plus one
 offline wide case. Each metadata case confirms `t` is absent before and after
 the product audit, then has an independent driver query the column after every
 MODIFY. The validator recomputes those oracles from the manifest and raw stdout.
+
+## Amendment (T05-A4-R1)
+
+Three boundaries of the original decision were not met by the first publication.
+
+The affected set is collected from the immutable pre-state before the statement chooses replacement or invalidation. Every non-precise branch, including a conditional, positional, or multi-action MODIFY, drops already-loaded dependents that reference the named column. A withheld column set still keeps the target's other known members. A self-foreign-key is unsafe when either its local columns or its referenced columns involve the column. `UnmodeledParts` and `UnmodeledReferencedParts` keep a non-empty name list from proving that a constraint is unrelated. A complete list that excludes the column, and a same-named table in another schema, stay. Unloaded tables are not discovered.
+
+An inline `PRIMARY KEY` is `AlterColumnChange.DeclaresPrimaryKey`, set by the parser when the new definition writes that option. `PRIMARY KEY`, `PRIMARY KEY NOT NULL`, `NOT NULL PRIMARY KEY`, and `PRIMARY KEY NULL` are outside the ordinary template. The post-state is conservative invalidation, not a known-absent primary key, and this slice still does not implement add-primary-key. Ordinary `NOT NULL` without `PRIMARY KEY` stays inside the template. The fact is `json:"-"` and does not change the public result schema.
+
+On TiDB 8.5, a known integer primary key whose signedness changes is not a precise successor. The signedness finding still describes the pre-state. `INT PRIMARY KEY` to `BIGINT` remains a published widening, as does the same signedness change on MySQL and on a TiDB column that is not a known primary key. This follows the release-8.5 MODIFY compatibility note (verified 2026-10-04): `INT PRIMARY KEY` to `INT UNSIGNED` is `ERROR 8200`, and `INT PRIMARY KEY` to `BIGINT` is allowed. No reorg implementation is added. The original 18 manifest cases stay. `t05-a4-tidb85-pk-unsigned` adds the native refusal on the existing tidb85 anchor: the driver records `ERROR 8200` for the signedness statement and does not send the following statement to the server.
 
 ## Deferred Scope
 

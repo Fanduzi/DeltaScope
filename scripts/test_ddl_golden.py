@@ -1840,6 +1840,18 @@ def a3_contract_tests(tmp):
     a, c = a4("mysql84-pk-not-null")
     c["actual"]["execute"][1]["verify"][0]["output"] = "bigint:YES"
     run("a4 primary key not-null oracle lost rejected", a, "output mismatch")
+    a, c = a4("tidb85-pk-unsigned")
+    c["actual"]["execute"][1]["stderr"] = ""
+    run("a4 tidb primary-key signedness marker dropped rejected", a, "missing stderr marker")
+    a, c = a4("tidb85-pk-unsigned")
+    c["actual"]["execute"][1]["rc"] = 0
+    run("a4 tidb primary-key signedness recorded as success rejected", a, "rc ")
+    a, c = a4("tidb85-pk-unsigned")
+    c["actual"]["parsed"]["statements"][2]["evidence_gaps"] = []
+    c["actual"]["parsed"]["statements"][2]["coverage"]["status"] = "complete"
+    c["actual"]["parsed"]["coverage"]["status"] = "complete"
+    update_stdout(c)
+    run("a4 tidb primary-key signedness successor gap deleted rejected", a, "gap")
     a, c = a4()
     artifact_id = c["case_id"]
     a["cases"] = [item for item in a["cases"] if item["case_id"] != artifact_id]

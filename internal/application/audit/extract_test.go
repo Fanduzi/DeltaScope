@@ -7,6 +7,8 @@ package audit
 
 import (
 	"context"
+	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -135,7 +137,61 @@ func TestExtractModifyColumnCapturesExplicitNullabilityAcrossMySQLAndTiDB(t *tes
 			if alter.Column.Change == nil || !alter.Column.Change.TouchesNullability {
 				t.Fatalf("expected explicit nullability fact, got %#v", alter.Column.Change)
 			}
+			if alter.Column.Change.DeclaresPrimaryKey {
+				t.Fatalf("explicit nullability must not declare a primary key, got %#v", alter.Column.Change)
+			}
 		})
+	}
+}
+
+func TestExtractModifyColumnRecordsInlinePrimaryKeyPresence(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name string
+		sql  string
+		want bool
+	}{
+		{name: "primary key", sql: "ALTER TABLE t MODIFY COLUMN c INT PRIMARY KEY", want: true},
+		{name: "primary key not null", sql: "ALTER TABLE t MODIFY COLUMN c INT PRIMARY KEY NOT NULL", want: true},
+		{name: "not null primary key", sql: "ALTER TABLE t MODIFY COLUMN c INT NOT NULL PRIMARY KEY", want: true},
+		{name: "primary key null", sql: "ALTER TABLE t MODIFY COLUMN c INT PRIMARY KEY NULL", want: true},
+		{name: "not null", sql: "ALTER TABLE t MODIFY COLUMN c INT NOT NULL", want: false},
+		{name: "bare type", sql: "ALTER TABLE t MODIFY COLUMN c INT", want: false},
+	}
+	for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
+		dialect := dialect
+		for _, tc := range cases {
+			tc := tc
+			t.Run(string(dialect)+" "+tc.name, func(t *testing.T) {
+				t.Parallel()
+				parsed, err := Parse(context.Background(), tc.sql, dialect)
+				if err != nil {
+					t.Fatalf("parse: %v", err)
+				}
+				statements, err := Extract(context.Background(), parsed)
+				if err != nil {
+					t.Fatalf("extract: %v", err)
+				}
+				alter := statements[0].DDL.Alter[0]
+				if alter.Column == nil {
+					t.Fatalf("expected a column definition, got %#v", alter)
+				}
+				got := alter.Column.Change != nil && alter.Column.Change.DeclaresPrimaryKey
+				if got != tc.want {
+					t.Fatalf("DeclaresPrimaryKey = %t, want %t for %s (%#v)", got, tc.want, tc.sql, alter.Column.Change)
+				}
+				if alter.Column.Change == nil {
+					return
+				}
+				body, err := json.Marshal(alter.Column.Change)
+				if err != nil {
+					t.Fatalf("marshal: %v", err)
+				}
+				if strings.Contains(string(body), "PrimaryKey") || strings.Contains(string(body), "declares_primary_key") {
+					t.Fatalf("public JSON %s leaked the primary-key presence fact", body)
+				}
+			})
+		}
 	}
 }
 

@@ -1,7 +1,7 @@
 // Package audit orchestrates audit use cases at the application layer.
 // input: request context, ordered statements, optional metadata provider, and parse-failure positions for one audit request
 // output: request-local ordered table facts (unknown / known-absent / known-present, per-collection member knowledge) feeding per-statement pre-state snapshots
-// pos: prospective schema-state ownership for the first migration path — the effective (dialect, schema, table) identity drives provider reads, keys, writes, and invalidation; unsupported or executable-but-unmodeled effects settle before kind dispatch; deterministic conditional transitions update derived facts, including the bounded single-pair RENAME identity migration onto a known-absent destination, a bounded single-target DROP identity retirement, and an ordinary single-column MODIFY definition replacement, each tombstoning loaded dependents that the transition cannot keep and checking cancellation before publishing effects; unaudited, unbound, or contaminated operations invalidate them
+// pos: prospective schema-state ownership for the first migration path — the effective (dialect, schema, table) identity drives provider reads, keys, writes, and invalidation; unsupported or executable-but-unmodeled effects settle before kind dispatch; deterministic conditional transitions update derived facts, including the bounded single-pair RENAME identity migration onto a known-absent destination, a bounded single-target DROP identity retirement, and an ordinary single-column MODIFY definition replacement, each tombstoning loaded dependents that the transition cannot keep, including dependents of a non-precise MODIFY, and checking cancellation before publishing effects; unaudited, unbound, or contaminated operations invalidate them
 // note: if this file changes, update this header and module README.md.
 package audit
 
@@ -220,8 +220,9 @@ func projectEntry(key batchTableKey, entry *batchTableEntry) *spec.TableSnapshot
 // endpoint-existence table, and a single-target DROP bounded by the frozen
 // drop state table — plus stat-clearing TRUNCATE/DML pass-through. Everything
 // else (multi-action ALTER, unaudited aspects, multi-pair or multi-target
-// effects) invalidates
-// its bound targets because the real effect is not modeled honestly. A statement
+// effects) invalidates its bound targets because the real effect is not
+// modeled honestly. A non-template MODIFY also drops already-loaded
+// dependents of the named column. A statement
 // whose structural premise is already known-broken (duplicate plain ADD,
 // index on a confirmed-absent table) invalidates its target rather than
 // fabricating the success shape. Contaminated batches derive nothing.
@@ -456,6 +457,13 @@ func derivedCreateShape(schema, table string, ddl *spec.DDL) *spec.TableSnapshot
 func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Statement) error {
 	ddl := statement.DDL
 	targets := ddl.TableTargets()
+	// A non-template MODIFY still names a column. Route it through the shared
+	// affected-set publication so an already-loaded dependent is not left behind
+	// when the statement itself cannot be a precise replacement.
+	if modify := firstModifyAlter(ddl); modify != nil && len(targets) > 0 &&
+		(!fullyAuditedStatement(s.dialect, statement) || len(ddl.Alter) != 1) {
+		return s.applyModifyColumn(ctx, statement, modify, targets)
+	}
 	if !fullyAuditedStatement(s.dialect, statement) || len(ddl.Alter) != 1 || len(targets) == 0 {
 		s.invalidateAll(targets)
 		return nil

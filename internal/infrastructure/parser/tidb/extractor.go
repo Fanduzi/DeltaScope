@@ -1,6 +1,6 @@
 // Package tidbparser extracts parser-neutral statements from TiDB AST nodes.
 // input: TiDB parser statement nodes and parser-neutral dialect metadata
-// output: extractor-backed parsed statements for the application layer, including MutationTargets and mutation-target-only DML tables, normalized ALTER index/constraint actions, multi-target DDL Targets for DROP/RENAME/ALTER-rename, temporary-table scope facts, typed and unextracted column-option facts, primary-key metadata, and if_exists/if_not_exists option markers for conditional-existence derivation
+// output: extractor-backed parsed statements for the application layer, including MutationTargets and mutation-target-only DML tables, normalized ALTER index/constraint actions, multi-target DDL Targets for DROP/RENAME/ALTER-rename, temporary-table scope facts, typed and unextracted column-option facts, primary-key metadata, inline PRIMARY KEY presence on column-change facts, and if_exists/if_not_exists option markers for conditional-existence derivation
 // pos: infrastructure extraction adapter between TiDB AST and domain spec
 // note: if this file changes, update this header and module README.md.
 package tidbparser
@@ -1227,9 +1227,11 @@ func alterColumnChangeFacts(col *ast.ColumnDef) *spec.AlterColumnChange {
 			change.TouchesDefault = true
 		case ast.ColumnOptionAutoIncrement:
 			change.TouchesAutoIncrement = true
+		case ast.ColumnOptionPrimaryKey:
+			change.DeclaresPrimaryKey = true
 		}
 	}
-	if !change.TouchesNullability && !change.TouchesDefault && !change.TouchesAutoIncrement {
+	if !change.TouchesNullability && !change.TouchesDefault && !change.TouchesAutoIncrement && !change.DeclaresPrimaryKey {
 		return nil
 	}
 	return change

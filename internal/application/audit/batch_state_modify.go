@@ -1,11 +1,14 @@
 // Package audit derives the conditional post-state of one ordinary MODIFY.
-// input: one fully audited single-action ALTER TABLE MODIFY COLUMN, the
-// request-local table entry captured before the statement, and loaded
-// constraint facts already present in this batch
-// output: an in-place column replacement, or a conservative invalidation
-// when the frozen template or a loaded dependency cannot be updated
-// pos: T05-A4 state supply for ordinary VARCHAR and integer MODIFY; it does
-// not change compatibility-rule meaning and does not read the provider again
+// input: one ALTER TABLE MODIFY COLUMN, the immutable request-local entries
+// captured before the statement, and loaded constraint facts already present
+// in this batch
+// output: an in-place column replacement, or one conservative invalidation of
+// the target and the already-loaded dependents that reference its column
+// pos: T05-A4 state supply for ordinary VARCHAR and integer MODIFY; a
+// non-precise branch still drops those dependents, an inline PRIMARY KEY is
+// read from the parser presence fact, and a TiDB known-primary-key signedness
+// change stays conservative. It does not change compatibility-rule meaning
+// and does not read the provider again
 // note: if this file changes, update this header and module README.md.
 package audit
 
@@ -52,37 +55,46 @@ func (s *batchState) applyModifyColumn(ctx context.Context, statement spec.State
 }
 
 func (s *batchState) prepareModifyColumn(statement spec.Statement, alter *spec.Alter, targets []spec.Table) modifyPublication {
-	if !modifyColumnTemplate(s, statement, alter, targets) {
-		return modifyPublication{invalidate: s.keysFor(targets)}
+	var key batchTableKey
+	if len(targets) > 0 {
+		key = s.keyFor(s.schema, targets[0])
 	}
-	target := targets[0]
-	key := s.keyFor(s.schema, target)
+	// Dependents come from the immutable pre-state before any replace-or-
+	// invalidate decision. A later return must not skip them.
+	dependents := s.modifyDependentKeys(key, modifyColumnNames(statement.DDL, alter))
+	invalidate := func(includeTarget bool) modifyPublication {
+		keys := append([]batchTableKey{}, dependents...)
+		if includeTarget {
+			keys = append(keys, key)
+		}
+		return modifyPublication{invalidate: keys}
+	}
+	if !modifyColumnTemplate(s, statement, alter, targets) {
+		return invalidate(len(targets) > 0)
+	}
 	entry := s.entries[key]
 	if entry == nil || entry.state == tableUnknown || entry.state == tableAbsent {
-		return modifyPublication{invalidate: []batchTableKey{key}}
+		return invalidate(true)
 	}
+	// A withheld column set is not a one-column table. Keep the target's other
+	// known members, and still drop loaded dependents of the named column.
 	if entry.shape == nil || entry.shape.Columns == nil {
-		return modifyPublication{}
+		return invalidate(false)
 	}
 	index := modifyColumnIndex(entry.shape.Columns, alter.Name)
 	if index < 0 {
-		return modifyPublication{invalidate: []batchTableKey{key}}
+		return invalidate(true)
 	}
 	source := entry.shape.Columns[index]
 	definition := alter.Column.Definition
-	if !modifyTypeTemplate(source, *definition) || modifyDeclaresExtraMember(alter, *definition) {
-		return modifyPublication{invalidate: []batchTableKey{key}}
-	}
 	inPK, pkKnown := primaryKeyMembership(entry.shape, source.Name)
-	if !pkKnown && !modifyExplicitNotNull(alter, *definition) {
-		return modifyPublication{invalidate: []batchTableKey{key}}
-	}
-	if inPK && modifyExplicitNull(alter, *definition) {
-		return modifyPublication{invalidate: []batchTableKey{key}}
-	}
-	children := s.modifyChildKeys(key, source.Name)
-	if modifyLocalUnsafe(entry.shape, source.Name) {
-		return modifyPublication{invalidate: append(children, key)}
+	if !modifyTypeTemplate(source, *definition) ||
+		modifyDeclaresExtraMember(alter, *definition) ||
+		modifyTiDBPrimaryKeySignedness(s.dialect, inPK, source, *definition) ||
+		(!pkKnown && !modifyExplicitNotNull(alter, *definition)) ||
+		(inPK && modifyExplicitNull(alter, *definition)) ||
+		modifyLocalUnsafe(entry.shape, source.Name) {
+		return invalidate(true)
 	}
 	next := cloneColumn(*definition)
 	if inPK {
@@ -93,7 +105,7 @@ func (s *batchState) prepareModifyColumn(statement spec.Statement, alter *spec.A
 	shape.Columns[index] = next
 	clearModifyAffectedStats(shape)
 	return modifyPublication{
-		invalidate: children,
+		invalidate: dependents,
 		replaceKey: key,
 		replace: &batchTableEntry{
 			state:         tablePresent,
@@ -104,12 +116,46 @@ func (s *batchState) prepareModifyColumn(statement spec.Statement, alter *spec.A
 	}
 }
 
-func (s *batchState) keysFor(targets []spec.Table) []batchTableKey {
-	keys := make([]batchTableKey, 0, len(targets))
-	for _, target := range targets {
-		keys = append(keys, s.keyFor(s.schema, target))
+// firstModifyAlter returns the first MODIFY action. A statement with several
+// actions is still not a success template; the caller uses it only to reach
+// the shared affected-set publication.
+func firstModifyAlter(ddl *spec.DDL) *spec.Alter {
+	if ddl == nil {
+		return nil
 	}
-	return keys
+	for i := range ddl.Alter {
+		if ddl.Alter[i].Action == "modify_column" {
+			return &ddl.Alter[i]
+		}
+	}
+	return nil
+}
+
+func modifyColumnNames(ddl *spec.DDL, alter *spec.Alter) []string {
+	var names []string
+	if ddl != nil {
+		for i := range ddl.Alter {
+			item := &ddl.Alter[i]
+			if item.Action != "modify_column" {
+				continue
+			}
+			if name := strings.TrimSpace(item.Name); name != "" {
+				names = append(names, name)
+				continue
+			}
+			if item.Column != nil && item.Column.Definition != nil {
+				if name := strings.TrimSpace(item.Column.Definition.Name); name != "" {
+					names = append(names, name)
+				}
+			}
+		}
+	}
+	if len(names) == 0 && alter != nil && alter.Column != nil && alter.Column.Definition != nil {
+		if name := strings.TrimSpace(alter.Column.Definition.Name); name != "" {
+			names = append(names, name)
+		}
+	}
+	return names
 }
 
 // modifyColumnTemplate reports whether this single MODIFY is the frozen
@@ -117,7 +163,10 @@ func (s *batchState) keysFor(targets []spec.Table) []batchTableKey {
 // conditional or positional modifier, and a complete new column definition.
 func modifyColumnTemplate(s *batchState, statement spec.Statement, alter *spec.Alter, targets []spec.Table) bool {
 	ddl := statement.DDL
-	if ddl == nil || ddl.Table == nil || len(targets) != 1 || alter == nil {
+	if ddl == nil || ddl.Table == nil || len(ddl.Alter) != 1 || len(targets) != 1 || alter == nil {
+		return false
+	}
+	if !fullyAuditedStatement(s.dialect, statement) {
 		return false
 	}
 	if s.keyFor(s.schema, targets[0]) != s.keyFor(s.schema, *ddl.Table) {
@@ -184,8 +233,9 @@ func modifyBaseType(column spec.Column) string {
 }
 
 // modifyDeclaresExtraMember rejects a new declaration that adds a primary
-// key, AUTO_INCREMENT, identity, or another unaudited column member. An
-// inline PRIMARY KEY sets NotNull without TouchesNullability.
+// key, AUTO_INCREMENT, identity, or another unaudited column member. Inline
+// PRIMARY KEY is the parser-owned DeclaresPrimaryKey fact, not a combination
+// of NotNull and TouchesNullability.
 func modifyDeclaresExtraMember(alter *spec.Alter, definition spec.Column) bool {
 	if definition.AutoIncrement || definition.AutoRandom || definition.IsIdentity || strings.TrimSpace(definition.GeneratedWhen) != "" {
 		return true
@@ -193,7 +243,25 @@ func modifyDeclaresExtraMember(alter *spec.Alter, definition spec.Column) bool {
 	if len(definition.UnextractedOptions) > 0 {
 		return true
 	}
-	return definition.NotNull && !modifyTouchesNullability(alter)
+	return modifyDeclaresPrimaryKey(alter)
+}
+
+func modifyDeclaresPrimaryKey(alter *spec.Alter) bool {
+	return alter != nil && alter.Column != nil && alter.Column.Change != nil && alter.Column.Change.DeclaresPrimaryKey
+}
+
+// modifyTiDBPrimaryKeySignedness reports the TiDB 8.5 primary-key boundary
+// documented as ERROR 8200: changing signedness of a known primary-key integer
+// is not a meta-only MODIFY. INT to BIGINT, and the same change on MySQL or
+// on a non-key column, stays inside the ordinary integer template.
+func modifyTiDBPrimaryKeySignedness(dialect spec.Dialect, inPK bool, source, target spec.Column) bool {
+	if dialect != spec.DialectTiDB || !inPK {
+		return false
+	}
+	if ordinaryModifyClass(source) != "integer" || ordinaryModifyClass(target) != "integer" {
+		return false
+	}
+	return source.Unsigned != target.Unsigned
 }
 
 func modifyTouchesNullability(alter *spec.Alter) bool {
@@ -297,7 +365,10 @@ func modifyLocalUnsafe(shape *spec.TableSnapshot, columnName string) bool {
 		if primaryKeyConstraint(constraint.Type) {
 			continue
 		}
-		if !columnListProvesUnrelated(constraint.Columns, columnName) {
+		if !columnListProvesUnrelated(constraint.Columns, columnName, constraint.UnmodeledParts) {
+			return true
+		}
+		if modifyReferencesOwnColumn(shape, constraint, columnName) {
 			return true
 		}
 	}
@@ -310,6 +381,23 @@ func modifyLocalUnsafe(shape *spec.TableSnapshot, columnName string) bool {
 		}
 	}
 	return false
+}
+
+// modifyReferencesOwnColumn reports a self-foreign-key whose referenced side
+// names this column. The local column list can exclude the column and still
+// leave the reference unrecomputable.
+func modifyReferencesOwnColumn(shape *spec.TableSnapshot, constraint spec.Constraint, columnName string) bool {
+	if shape == nil || shape.Table == nil || strings.TrimSpace(constraint.ReferencedTable) == "" {
+		return false
+	}
+	if !strings.EqualFold(constraint.ReferencedTable, shape.Table.Name) {
+		return false
+	}
+	if refSchema := strings.TrimSpace(constraint.ReferencedSchema); refSchema != "" &&
+		strings.TrimSpace(shape.Schema) != "" && !strings.EqualFold(refSchema, shape.Schema) {
+		return false
+	}
+	return !columnListProvesUnrelated(constraint.ReferencedColumns, columnName, constraint.UnmodeledReferencedParts)
 }
 
 func modifyColumnGenerated(column spec.Column) bool {
@@ -329,13 +417,13 @@ func modifyIndexUnsafe(index spec.Index, columnName string) bool {
 	if index.HasExpressionKeys || index.ExpressionCount > 0 {
 		return true
 	}
-	if len(index.IncludedColumns) > 0 && !columnListProvesUnrelated(index.IncludedColumns, columnName) {
+	if len(index.IncludedColumns) > 0 && !columnListProvesUnrelated(index.IncludedColumns, columnName, 0) {
 		return true
 	}
 	if !modifyIndexSpecial(index) {
 		return false
 	}
-	return !columnListProvesUnrelated(index.Columns, columnName)
+	return !columnListProvesUnrelated(index.Columns, columnName, 0)
 }
 
 func modifyIndexSpecial(index spec.Index) bool {
@@ -346,32 +434,43 @@ func modifyIndexSpecial(index spec.Index) bool {
 	return index.PrefixParts > 0 || index.HasPredicate || index.DescParts > 0 || index.Global || len(index.UnmodeledOptions) > 0
 }
 
-// modifyChildKeys collects loaded tables whose foreign key references the
-// column. An empty or incomplete referenced-column list cannot prove the
-// child is unrelated. Explicit schema wins; an unqualified reference uses
-// the owning entry's schema.
-func (s *batchState) modifyChildKeys(target batchTableKey, columnName string) []batchTableKey {
-	var children []batchTableKey
+// modifyDependentKeys collects loaded tables whose foreign key references one
+// of the modified columns. The target itself is not included: a self-reference
+// is decided with the target. An empty list or a list with unmodeled parts
+// cannot prove the child is unrelated. Explicit schema wins; an unqualified
+// reference uses the owning entry's schema. Entries not yet loaded are ignored.
+func (s *batchState) modifyDependentKeys(target batchTableKey, columnNames []string) []batchTableKey {
+	if len(columnNames) == 0 {
+		return nil
+	}
+	var dependents []batchTableKey
 	for key, entry := range s.entries {
 		if key == target || entry == nil || entry.state != tablePresent || entry.shape == nil {
 			continue
 		}
-		for _, constraint := range entry.shape.Constraints {
-			if strings.TrimSpace(constraint.ReferencedTable) == "" {
-				continue
-			}
-			referenced := spec.Table{Schema: constraint.ReferencedSchema, Name: constraint.ReferencedTable}
-			if s.keyFor(key.schema, referenced) != target {
-				continue
-			}
-			if columnListProvesUnrelated(constraint.ReferencedColumns, columnName) {
-				continue
-			}
-			children = append(children, key)
-			break
+		if modifyEntryReferences(s, key, entry, target, columnNames) {
+			dependents = append(dependents, key)
 		}
 	}
-	return children
+	return dependents
+}
+
+func modifyEntryReferences(s *batchState, key batchTableKey, entry *batchTableEntry, target batchTableKey, columnNames []string) bool {
+	for _, constraint := range entry.shape.Constraints {
+		if strings.TrimSpace(constraint.ReferencedTable) == "" {
+			continue
+		}
+		referenced := spec.Table{Schema: constraint.ReferencedSchema, Name: constraint.ReferencedTable}
+		if s.keyFor(key.schema, referenced) != target {
+			continue
+		}
+		for _, name := range columnNames {
+			if !columnListProvesUnrelated(constraint.ReferencedColumns, name, constraint.UnmodeledReferencedParts) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func modifyColumnIndex(columns []spec.Column, name string) int {
@@ -392,10 +491,11 @@ func columnListContains(columns []string, name string) bool {
 	return false
 }
 
-// columnListProvesUnrelated is true only when every entry is a non-empty
-// name and none of them is the modified column.
-func columnListProvesUnrelated(columns []string, name string) bool {
-	if len(columns) == 0 {
+// columnListProvesUnrelated is true only when the list is complete, every
+// entry is a non-empty name, and none of them is the modified column.
+// Unmodeled key parts mean the stored names are not the whole key.
+func columnListProvesUnrelated(columns []string, name string, unmodeled int) bool {
+	if unmodeled > 0 || len(columns) == 0 {
 		return false
 	}
 	for _, column := range columns {

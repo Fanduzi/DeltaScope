@@ -337,6 +337,10 @@ type AlterColumnChange struct {
 	TouchesNullability   bool `json:"touches_nullability,omitempty"`
 	TouchesDefault       bool `json:"touches_default,omitempty"`
 	TouchesAutoIncrement bool `json:"touches_auto_increment,omitempty"`
+	// DeclaresPrimaryKey records that this column definition itself writes
+	// PRIMARY KEY. It is parser-owned presence, not an added-primary-key
+	// post-state, and it stays out of public JSON.
+	DeclaresPrimaryKey bool `json:"-"`
 }
 
 // AlterColumn describes a column-focused alter payload.

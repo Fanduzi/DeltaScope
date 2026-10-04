@@ -1419,9 +1419,10 @@ def t05_a3_contract():
 
 
 def t05_a4_contract():
-    """Frozen T05-A4 ordinary MODIFY oracle. The 18 cases and their expects are
+    """Frozen T05-A4 MODIFY oracle. The 19 cases and their expects are
     independent of the manifest, so shrinking the manifest and artifact together
-    still fails."""
+    still fails. Eighteen are the original ordinary replacement paths. The
+    tidb85 primary-key signedness case records the native refusal."""
     profile = "t05-a4-modify-isolated"
     compat = "ddl.alter.modify_column.compatibility.require"
     create_rule = "ddl.table.exists.create.forbid"
@@ -1442,6 +1443,8 @@ def t05_a4_contract():
                  "FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'")
     id_query = ("SELECT CONCAT(DATA_TYPE,':',IS_NULLABLE) FROM information_schema.COLUMNS "
                 "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='id'")
+    id_signed_query = ("SELECT CONCAT(DATA_TYPE,':',IF(COLUMN_TYPE LIKE '%unsigned%','unsigned','signed'),':',IS_NULLABLE) "
+                       "FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='id'")
     plain_query = ("SELECT CONCAT(DATA_TYPE,':',IS_NULLABLE) FROM information_schema.COLUMNS "
                    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'")
 
@@ -1576,6 +1579,40 @@ def t05_a4_contract():
                     verify("columns stay id then c", columns_query, "id:bigint,c:int"),
                     verify("primary key stays id", pk_query, "id"),
                     verify("id remains not null bigint", id_query, "bigint:NO")]))
+        if anchor == "tidb85":
+            # The third statement is a product-audit successor only. The driver
+            # stops after the documented ERROR 8200 and does not send it.
+            neg_sqls = ["CREATE TABLE t (id INT PRIMARY KEY)",
+                        "ALTER TABLE t MODIFY COLUMN id INT UNSIGNED",
+                        "ALTER TABLE t MODIFY COLUMN id BIGINT UNSIGNED"]
+            neg_meta = {"action": "modify_column", "table": "t", "name": "id", "column_name": "id",
+                        "source_unsigned": False, "target_unsigned": True}
+            neg_expect = expectation(
+                neg_sqls, "reject", "unverified", ["complete", "complete", "unverified"], findings=1,
+                gap_entries=[
+                    {"index": 2, "rule_id": compat, "reason_code": "missing_source_column",
+                     "required_facts": ["source_column.definition"]},
+                    {"index": 2, "rule_id": "ddl.table.exists.alter.require",
+                     "reason_code": "unknown_table_state", "required_facts": ["target_table.existence"]},
+                    {"index": 2, "rule_id": "ddl.alter.modify_column.exists.require",
+                     "reason_code": "unknown_table_state",
+                     "required_facts": ["target_table.columns", "target_table.existence"]},
+                ],
+                finding_entries=[{"index": 1, "rule_id": compat, "level": "blocker"}],
+                finding_metadata=[{"index": 1, "rule_id": compat, "metadata": neg_meta}])
+            neg_execute = [
+                {"name": "driver statement 0", "sql": neg_sqls[0], "expect_rc": 0,
+                 "verify": [verify("id starts signed not null", id_signed_query, "int:signed:NO")]},
+                {"name": "driver statement 1", "sql": neg_sqls[1], "expect_rc": 1,
+                 "stderr_contains": ["ERROR 8200", "column has primary key flag"],
+                 "verify": [verify("rejected signedness change leaves signed int", id_signed_query, "int:signed:NO"),
+                            verify("primary key stays id after rejection", pk_query, "id")]}]
+            metadata_cases.append(metadata_case(
+                "t05-a4-tidb85-pk-unsigned", anchor, port, dialect, neg_sqls, neg_expect, neg_execute, [
+                    verify("t exists", table_query, "1"),
+                    verify("column stays id", columns_query, "id:int"),
+                    verify("primary key stays id", pk_query, "id"),
+                    verify("id stays signed not null", id_signed_query, "int:signed:NO")]))
     cli_cases = []
     gap = [{"index": 0, "rule_id": create_rule, "reason_code": "unknown_table_state",
             "required_facts": ["target_table.existence"]}]

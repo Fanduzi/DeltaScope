@@ -110,7 +110,7 @@
    }
   }
  },
- "description": "T05-A1 (issue #84) ordered schema-state contract: the t05-first-path-isolated profile enables exactly four blocker rules (ddl.table.exists.create.forbid, ddl.table.exists.alter.require, ddl.alter.add_column.exists.forbid, and the new ddl.create_index.columns.exists.require). Metadata cases on mysql84 and tidb85 prove the request-local ordered-state path: CREATE/ADD/CREATE INDEX derive conditional post-state, a repeated ADD fires the duplicate blocker, a missing index column produces a per-column blocker, a confirmed-absent index target reports one table_not_found blocker, and an unaudited generated-column ALTER invalidates only its own table so later statements report unknown_table_state gaps while an unrelated table still derives cleanly. Offline cli_cases pin the same contract without a provider. The locked four-anchor db baseline and the inherited CLI denominator are preserved verbatim. T05-A4 adds the t05-a4-modify-isolated four-rule profile and 18 ordinary MODIFY cases (203 required ids) without changing the original 185 cases.",
+ "description": "T05-A1 (issue #84) ordered schema-state contract: the t05-first-path-isolated profile enables exactly four blocker rules (ddl.table.exists.create.forbid, ddl.table.exists.alter.require, ddl.alter.add_column.exists.forbid, and the new ddl.create_index.columns.exists.require). Metadata cases on mysql84 and tidb85 prove the request-local ordered-state path: CREATE/ADD/CREATE INDEX derive conditional post-state, a repeated ADD fires the duplicate blocker, a missing index column produces a per-column blocker, a confirmed-absent index target reports one table_not_found blocker, and an unaudited generated-column ALTER invalidates only its own table so later statements report unknown_table_state gaps while an unrelated table still derives cleanly. Offline cli_cases pin the same contract without a provider. The locked four-anchor db baseline and the inherited CLI denominator are preserved verbatim. T05-A4 adds the t05-a4-modify-isolated four-rule profile and 19 MODIFY cases (204 required ids), including the tidb85 primary-key signedness negative, without changing the original 185 cases.",
  "anchors": {
   "mysql57": {
    "service": "mysql57",
@@ -12945,6 +12945,190 @@
      ]
     }
    ]
+  },
+  {
+   "id": "t05-a4-tidb85-pk-unsigned",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY); ALTER TABLE t MODIFY COLUMN id INT UNSIGNED; ALTER TABLE t MODIFY COLUMN id BIGINT UNSIGNED;",
+   "policy": "t05-a4-modify-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 3,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "unverified"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY);",
+     "ALTER TABLE t MODIFY COLUMN id INT UNSIGNED;",
+     "ALTER TABLE t MODIFY COLUMN id BIGINT UNSIGNED;"
+    ],
+    "evidence_gaps": 3,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 4,
+    "statement_indices": [
+     0,
+     1,
+     2
+    ],
+    "finding_entries": [
+     {
+      "index": 1,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 1,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "metadata": {
+       "action": "modify_column",
+       "table": "t",
+       "name": "id",
+       "column_name": "id",
+       "source_unsigned": false,
+       "target_unsigned": true
+      }
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 2,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "reason_code": "missing_source_column",
+      "required_facts": [
+       "source_column.definition"
+      ]
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.table.exists.alter.require",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.existence"
+      ]
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.alter.modify_column.exists.require",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.columns",
+       "target_table.existence"
+      ]
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "id starts signed not null",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IF(COLUMN_TYPE LIKE '%unsigned%','unsigned','signed'),':',IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='id'",
+       "expect": "int:signed:NO"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "ALTER TABLE t MODIFY COLUMN id INT UNSIGNED",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 8200",
+      "column has primary key flag"
+     ],
+     "verify": [
+      {
+       "assert": "rejected signedness change leaves signed int",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IF(COLUMN_TYPE LIKE '%unsigned%','unsigned','signed'),':',IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='id'",
+       "expect": "int:signed:NO"
+      },
+      {
+       "assert": "primary key stays id after rejection",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      }
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column stays id",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int"
+    },
+    {
+     "assert": "primary key stays id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "id stays signed not null",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IF(COLUMN_TYPE LIKE '%unsigned%','unsigned','signed'),':',IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='id'",
+     "expect": "int:signed:NO"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
   }
  ],
  "error_cases": [
@@ -13175,6 +13359,7 @@
   "T05.meta.t05-a4-tidb85-wide-then-25",
   "T05.meta.t05-a4-tidb85-omit-integer",
   "T05.meta.t05-a4-tidb85-pk-not-null",
+  "T05.meta.t05-a4-tidb85-pk-unsigned",
   "T05.cli.t05-a4-mysql-narrow-offline",
   "T05.cli.t05-a4-tidb-wide-offline"
  ]
