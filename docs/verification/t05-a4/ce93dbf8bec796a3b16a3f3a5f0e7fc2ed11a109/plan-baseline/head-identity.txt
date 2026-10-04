@@ -1,0 +1,3 @@
+200163813a330d775a0d6e2e526c0650318a2035
+c82d237e543f9bef401d07f9461d9094e9405780
+docs(verification): bind T05-A3 gates and fixture evidence to c82d237 (#84)

@@ -1,0 +1,11 @@
+command: /tmp/ds-t05-a4-golden-ce93dbf/T05/bin/deltascope version
+deltascope v0.511.2-0.20261004025102-ce93dbf8bec7+dirty (mysql, tidb)
+go version -m:
+mod github.com/Fanduzi/DeltaScope v0.511.2-0.20261004025102-ce93dbf8bec7+dirty
+build vcs.revision=ce93dbf8bec796a3b16a3f3a5f0e7fc2ed11a109
+build vcs.time=2026-10-04T02:51:02Z
+build vcs.modified=true
+
+The version command also prints an ASCII banner. Those banner lines end in
+spaces, so they are not copied here. The version line and the vcs lines above
+are the command's identity output.

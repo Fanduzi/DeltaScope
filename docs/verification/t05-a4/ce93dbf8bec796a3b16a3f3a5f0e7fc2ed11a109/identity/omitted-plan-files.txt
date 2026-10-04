@@ -1,0 +1,4 @@
+omitted from plan-baseline: built binary and upstream manual HTML copies
+8d1a184b73e349d0387f3a5715244a06ef7f1a361bec573b7038906aaaa7b8af  /tmp/ds-t05-a4-plan.VqtNCg/deltascope
+8a0dabeaa86042986160bd5fe44ce0efda2b51108c02a26235bcc771bbfde91d  /tmp/ds-t05-a4-plan.VqtNCg/docs/alter-table.html
+13043bcd1c41d0b9084fc9f035257946321a6578bf97f8565ed6d0d16d13f32b  /tmp/ds-t05-a4-plan.VqtNCg/docs/create-table.html

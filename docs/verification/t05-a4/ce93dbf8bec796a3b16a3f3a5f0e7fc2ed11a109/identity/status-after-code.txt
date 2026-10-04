@@ -1,0 +1,18 @@
+code_sha=ce93dbf8bec796a3b16a3f3a5f0e7fc2ed11a109
+task_base=200163813a330d775a0d6e2e526c0650318a2035
+branch=milestone/mysql-tidb-ddl-completion
+origin_main=9a28cc99c38770e6e40738515994f864166419f9
+origin_workfree_before_evidence_commit=200163813a330d775a0d6e2e526c0650318a2035
+
+# git status --porcelain immediately after the code commit, before this
+# evidence directory existed. Tracked tree was clean. These six paths
+# were already untracked and were not staged.
+?? .agents/
+?? .debug-journal.md
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? docs/quality/architecture-review-2026-08-11.html
+
+# git diff --stat at that moment was empty. The built CLI still reported
+# vcs.modified=true. See identity/binary-version.txt.

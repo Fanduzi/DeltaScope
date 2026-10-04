@@ -1,0 +1,1 @@
+DROP TABLE t05a4_int

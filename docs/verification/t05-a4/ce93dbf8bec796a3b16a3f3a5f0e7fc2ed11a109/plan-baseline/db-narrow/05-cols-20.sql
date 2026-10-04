@@ -1,0 +1,1 @@
+SELECT column_name, column_type, character_set_name, collation_name, is_nullable, column_default, extra, column_comment FROM information_schema.columns WHERE table_schema='golden' AND table_name='t' ORDER BY ordinal_position

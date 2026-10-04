@@ -1,0 +1,17 @@
+Replay worktree: /tmp/ds-t05-a4-doccheck
+Detached at 200163813a330d775a0d6e2e526c0650318a2035, then
+`git checkout ce93dbf8bec796a3b16a3f3a5f0e7fc2ed11a109 -- .`
+staged the 21-file task diff. The checker ran with --staged from that worktree.
+
+[three-level-doc][L1] reminder: module docs changed, confirm whether root README.md needs update
+[three-level-doc] OK
+exit 0
+
+Root README.md and README_ZH.md were not changed. This slice does not add a
+module, a public export, or a user-facing command. The ordered-state behavior
+is recorded in the application and rule module READMEs and in
+docs/decisions/2026-10-04-ddl-modify-column-state.md.
+
+A first checker invocation from the main worktree after the code commit printed
+`[three-level-doc] no changed files` because that tree was clean. That run is
+not the check of the task diff.

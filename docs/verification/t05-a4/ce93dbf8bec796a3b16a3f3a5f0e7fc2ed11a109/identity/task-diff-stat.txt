@@ -1,0 +1,22 @@
+ .../2026-10-04-ddl-modify-column-state.md          |  115 +
+ internal/application/audit/README.md               |    6 +-
+ internal/application/audit/batch_state.go          |   34 +-
+ internal/application/audit/batch_state_a3_test.go  |    4 +-
+ .../audit/batch_state_a4_matrix_test.go            |  543 ++++
+ .../audit/batch_state_a4_postgresql_tag_test.go    |   92 +
+ internal/application/audit/batch_state_a4_test.go  |  126 +
+ internal/application/audit/batch_state_modify.go   |  425 +++
+ internal/domain/rule/ddl/README.md                 |    2 +-
+ internal/interfaces/cli/README.md                  |    1 +
+ .../interfaces/cli/audit_ordered_modify_a4_test.go |  184 ++
+ internal/interfaces/http/README.md                 |    1 +
+ .../http/audit_ordered_modify_a4_test.go           |  194 ++
+ internal/interfaces/mcp/README.md                  |    1 +
+ .../interfaces/mcp/audit_ordered_modify_a4_test.go |  151 ++
+ pkg/deltascope/README.md                           |    1 +
+ pkg/deltascope/audit_ordered_modify_a4_test.go     |  217 ++
+ scripts/README.md                                  |    4 +-
+ scripts/ddl_golden.py                              |  200 +-
+ scripts/test_ddl_golden.py                         |  120 +-
+ testdata/ddl-golden/T05.json                       | 2721 +++++++++++++++++++-
+ 21 files changed, 5111 insertions(+), 31 deletions(-)

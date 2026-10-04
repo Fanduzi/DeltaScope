@@ -1,0 +1,1 @@
+SHOW CREATE TABLE t05a4_omit

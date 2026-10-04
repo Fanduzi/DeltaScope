@@ -1,0 +1,190 @@
+{
+  "case_id": "T05.cli.mysql-drop-user-multi",
+  "kind": "cli_audit",
+  "cli_case": "mysql-drop-user-multi",
+  "dialect": "mysql",
+  "input_sql": "DROP USER u1, u2;",
+  "policy_profile": "t04-modify-column-compat-isolated",
+  "policy_path": "/private/tmp/ds-t05-a4-golden-ce93dbf/T05/golden-policy.yaml",
+  "command": [
+    "/private/tmp/ds-t05-a4-golden-ce93dbf/T05/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "DROP USER u1, u2;",
+    "--config",
+    "/private/tmp/ds-t05-a4-golden-ce93dbf/T05/golden-policy.yaml",
+    "--format",
+    "json",
+    "--fail-on",
+    "none"
+  ],
+  "expected": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+      "incomplete"
+    ],
+    "statement_sql": [
+      "DROP USER u1, u2;"
+    ],
+    "unsupported_features": [
+      "drop_user.unaudited_targets"
+    ],
+    "unsupported_entries": [
+      {
+        "feature": "drop_user.unaudited_targets",
+        "reason": "parsed by the shared parser but not covered by audited semantics",
+        "metadata": {
+          "aspect": "targets",
+          "omitted": 1
+        }
+      }
+    ]
+  },
+  "actual": {
+    "exit": 1,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"incomplete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"DROP USER u1, u2;\",\"normalized_sql\":\"DROP USER u1, u2\",\"coverage\":{\"status\":\"incomplete\"}}],\"unsupported\":[{\"feature\":\"drop_user.unaudited_targets\",\"sql\":\"DROP USER u1, u2;\",\"reason\":\"parsed by the shared parser but not covered by audited semantics\",\"metadata\":{\"aspect\":\"targets\",\"omitted\":1}}],\"diagnostics\":[{\"classification\":\"unsupported_statement\",\"reason\":\"DeltaScope recognized this statement or feature but does not audit it yet\",\"action_hint\":\"treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release\",\"audited\":false,\"dialect\":\"mysql\"}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":0,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "incomplete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "DROP USER u1, u2;",
+          "normalized_sql": "DROP USER u1, u2",
+          "coverage": {
+            "status": "incomplete"
+          }
+        }
+      ],
+      "unsupported": [
+        {
+          "feature": "drop_user.unaudited_targets",
+          "sql": "DROP USER u1, u2;",
+          "reason": "parsed by the shared parser but not covered by audited semantics",
+          "metadata": {
+            "aspect": "targets",
+            "omitted": 1
+          }
+        }
+      ],
+      "diagnostics": [
+        {
+          "classification": "unsupported_statement",
+          "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+          "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+          "audited": false,
+          "dialect": "mysql"
+        }
+      ],
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 0,
+        "skipped": []
+      },
+      "context": {
+        "mode": "offline",
+        "dialect": "mysql",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[{'classification': 'unsupported_statement', 'reason': 'DeltaScope recognized this statement or feature but does not audit it yet', 'action_hint': 'treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release', 'audited': False, 'dialect': 'mysql'}]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[{'feature': 'drop_user.unaudited_targets', 'sql': 'DROP USER u1, u2;', 'reason': 'parsed by the shared parser but not covered by audited semantics', 'metadata': {'aspect': 'targets', 'omitted': 1}}]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='incomplete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['incomplete']"
+    },
+    {
+      "name": "unsupported features",
+      "ok": true,
+      "detail": "features=['drop_user.unaudited_targets'] expected=['drop_user.unaudited_targets']"
+    },
+    {
+      "name": "unsupported entries",
+      "ok": true,
+      "detail": "entries=[(0, 'drop_user.unaudited_targets', 'parsed by the shared parser but not covered by audited semantics')] expected=[(0, 'drop_user.unaudited_targets', 'parsed by the shared parser but not covered by audited semantics')]"
+    },
+    {
+      "name": "unsupported metadata (0, 'drop_user.unaudited_targets', 'parsed by the shared parser but not covered by audited semantics')",
+      "ok": true,
+      "detail": "entries=[{'feature': 'drop_user.unaudited_targets', 'sql': 'DROP USER u1, u2;', 'reason': 'parsed by the shared parser but not covered by audited semantics', 'metadata': {'aspect': 'targets', 'omitted': 1}}] expected_metadata={'aspect': 'targets', 'omitted': 1}"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['DROP USER u1, u2;'] expected=['DROP USER u1, u2;']"
+    },
+    {
+      "name": "unsupported sql identity index=0",
+      "ok": true,
+      "detail": "sql='DROP USER u1, u2;' expected='DROP USER u1, u2;'"
+    }
+  ],
+  "status": "pass"
+}

@@ -1,0 +1,12 @@
+build: CGO_ENABLED=0 go build -o /tmp/ds-t05-a4-plan.VqtNCg/deltascope ./cmd/deltascope
+catalog: /tmp/ds-t05-a4-plan.VqtNCg/deltascope rules list --format json
+    ____       ____        _____                     
+   / __ \___  / / /_____ _/ ___/_________  ____  ___ 
+  / / / / _ \/ / __/ __ `/\__ \/ ___/ __ \/ __ \/ _ \
+ / /_/ /  __/ / /_/ /_/ /___/ / /__/ /_/ / /_/ /  __/
+/_____/\___/_/\__/\__,_//____/\___/\____/ .___/\___/ 
+                                       /_/           
+deltascope v0.511.2-0.20261003144412-200163813a33+dirty (mysql, tidb)
+	build	vcs.revision=200163813a330d775a0d6e2e526c0650318a2035
+	build	vcs.time=2026-10-03T14:44:12Z
+	build	vcs.modified=true

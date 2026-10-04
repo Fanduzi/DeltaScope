@@ -1,0 +1,26 @@
+Implementer checklist for ce93dbf8bec796a3b16a3f3a5f0e7fc2ed11a109.
+This is not an independent reviewer verdict and does not accept T05-A4.
+
+Standards
+- gofmt -l on the changed Go files printed nothing.
+- The production change stays in internal/application/audit. internal/domain/rule/ddl/alter_compatibility_rules.go is not in the task diff.
+- Module READMEs for audit, cli, http, mcp, pkg/deltascope, scripts, and rule/ddl are in the same commit as the behavior they describe.
+- Three-level replay of the staged 21-file diff: OK, with the L1 reminder. Root READMEs were left unchanged on purpose.
+- Decision record docs/decisions/2026-10-04-ddl-modify-column-state.md is in the code commit. The task-range gate printed: docs/decisions/*.md present in diff, PASS.
+- make decision-record-gate (main...HEAD) printed: trigger paths hit but no trigger keywords in diff, PASS. git diff --name-only main...HEAD does list the decision files. The milestone diff is large enough that this machine's grep path inside the script did not take the "decision file present" branch. The task-range result is the one that shows the new record.
+- Commit message has no Co-authored-by trailer.
+- No new public field was added.
+
+Spec
+- Ordinary single-column VARCHAR and integer MODIFY publishes a replacement column. Unknown, absent, withheld column sets, and prior invalidation do not become a one-column present table.
+- The current statement keeps its own finding or gap. A later statement can use a sufficient new definition. Policy reject does not roll the definition back.
+- Existing primary-key membership forces NotNull=true unless the declaration explicitly changes nullability. Explicit NULL on a known primary key does not publish a nullable key. TouchesNullability is the existing parser fact. No new SQL regex.
+- Charset and collation are copied from the declaration. Table defaults apply only when both sides are omitted and the table options do not contradict. A one-sided declaration does not borrow the other side.
+- Loaded dependents that cannot be proved unrelated are invalidated with the target. Ordinary indexes keep their names. Cardinality is cleared. table_rows is not promoted to an exact count.
+- PostgreSQL still uses the request-scoped snapshot cache: one read of public.t, and the second statement's pre-state length stays 10.
+- Golden on this SHA: 203/203 cases, 3448 assertions, validator valid. The 18 new cases match the frozen lengths, exits, and finding placement, including TiDB INT-to-BIGINT primary-key continuity and the integer omit-attribute pair.
+- The accepted A3 tombstone test still expects one unknown_table_state gap. Its stimulus changed from MODIFY id BIGINT, which is now inside the integer template, to MODIFY id VARCHAR(20), which still invalidates. The expected gap did not change.
+
+Not in this slice
+- CHANGE COLUMN, RENAME COLUMN, DROP COLUMN, multi-action ALTER, cross-family conversions, DECIMAL, temporal defaults, generated or identity columns, and TiDB primary-key reorganization limits stay on the conservative path.
+- #79 and #84 stay open. The milestone is not merged.

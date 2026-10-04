@@ -1,0 +1,6 @@
+Table	Create Table
+t05a4_omit	CREATE TABLE `t05a4_omit` (
+  `id` int NOT NULL,
+  `c` varchar(20) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1

@@ -1,0 +1,27 @@
+/tmp/ds-t05-a4-plan.VqtNCg/deltascope
+audit
+--dialect
+mysql
+--sql
+CREATE TABLE t (
+  id INT PRIMARY KEY,
+  c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL
+);
+ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;
+ALTER TABLE t MODIFY COLUMN c VARCHAR(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;
+--config
+/tmp/ds-t05-a4-plan.VqtNCg/policy.yaml
+--format
+json
+--fail-on
+blocker
+--host
+127.0.0.1
+--port
+23384
+--user
+root
+--password-env
+DS_T05_A4_PW
+--schema
+golden

@@ -1,0 +1,202 @@
+{
+  "version_stdout": "VERSION()\n8.4.10",
+  "version_rc": "0",
+  "tables_before": "",
+  "tables_after": "",
+  "absent_before": "COUNT(*)\n0",
+  "absent_after_narrow_audit": "COUNT(*)\n0",
+  "absent_after_wide_audit": "COUNT(*)\n0",
+  "absent_final": "COUNT(*)\n0",
+  "audit_narrow": {
+    "rc": "0",
+    "stderr": "",
+    "verdict": "review",
+    "coverage": "unverified",
+    "summary": {
+      "statements": 3,
+      "blockers": 0,
+      "warnings": 0,
+      "notices": 0
+    },
+    "version": {
+      "product": "mysql",
+      "version": "8.4.10",
+      "major": 8,
+      "minor": 4,
+      "patch": 10,
+      "source": "observed",
+      "validated_range": true
+    },
+    "loaded": 4,
+    "unsupported": [],
+    "diagnostics": [],
+    "statements": [
+      {
+        "index": 0,
+        "coverage": "complete",
+        "findings": [],
+        "evidence_gaps": []
+      },
+      {
+        "index": 1,
+        "coverage": "complete",
+        "findings": [],
+        "evidence_gaps": []
+      },
+      {
+        "index": 2,
+        "coverage": "unverified",
+        "findings": [],
+        "evidence_gaps": [
+          {
+            "rule_id": "ddl.alter.modify_column.compatibility.require",
+            "reason_code": "missing_source_column",
+            "required_facts": [
+              "source_column.definition"
+            ]
+          },
+          {
+            "rule_id": "ddl.table.exists.alter.require",
+            "reason_code": "unknown_table_state",
+            "required_facts": [
+              "target_table.existence"
+            ]
+          },
+          {
+            "rule_id": "ddl.alter.modify_column.exists.require",
+            "reason_code": "unknown_table_state",
+            "required_facts": [
+              "target_table.columns",
+              "target_table.existence"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "audit_wide": {
+    "rc": "0",
+    "stderr": "",
+    "verdict": "review",
+    "coverage": "unverified",
+    "summary": {
+      "statements": 3,
+      "blockers": 0,
+      "warnings": 0,
+      "notices": 0
+    },
+    "version": {
+      "product": "mysql",
+      "version": "8.4.10",
+      "major": 8,
+      "minor": 4,
+      "patch": 10,
+      "source": "observed",
+      "validated_range": true
+    },
+    "loaded": 4,
+    "unsupported": [],
+    "diagnostics": [],
+    "statements": [
+      {
+        "index": 0,
+        "coverage": "complete",
+        "findings": [],
+        "evidence_gaps": []
+      },
+      {
+        "index": 1,
+        "coverage": "complete",
+        "findings": [],
+        "evidence_gaps": []
+      },
+      {
+        "index": 2,
+        "coverage": "unverified",
+        "findings": [],
+        "evidence_gaps": [
+          {
+            "rule_id": "ddl.alter.modify_column.compatibility.require",
+            "reason_code": "missing_source_column",
+            "required_facts": [
+              "source_column.definition"
+            ]
+          },
+          {
+            "rule_id": "ddl.table.exists.alter.require",
+            "reason_code": "unknown_table_state",
+            "required_facts": [
+              "target_table.existence"
+            ]
+          },
+          {
+            "rule_id": "ddl.alter.modify_column.exists.require",
+            "reason_code": "unknown_table_state",
+            "required_facts": [
+              "target_table.columns",
+              "target_table.existence"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "db_narrow_rc": {
+    "00-absent": "0",
+    "01-create": "0",
+    "02-cols-10": "0",
+    "03-show-10": "0",
+    "04-modify-20": "0",
+    "05-cols-20": "0",
+    "06-show-20": "0",
+    "07-modify-15": "0",
+    "08-cols-15": "0",
+    "09-show-15": "0",
+    "10-drop": "0",
+    "11-absent": "0"
+  },
+  "db_wide_rc": {
+    "00-absent": "0",
+    "01-create": "0",
+    "02-cols-10": "0",
+    "03-show-10": "0",
+    "04-modify-20": "0",
+    "05-cols-20": "0",
+    "06-show-20": "0",
+    "07-modify-30": "0",
+    "08-cols-30": "0",
+    "09-show-30": "0",
+    "10-drop": "0",
+    "11-absent": "0"
+  },
+  "db_omit_rc": {
+    "01-create": "0",
+    "02-show-before": "0",
+    "03-modify-omit": "0",
+    "04-cols-after": "0",
+    "05-cols-omit": "0",
+    "06-show-after": "0",
+    "07-int-create": "0",
+    "08-int-modify": "0",
+    "09-int-show": "0",
+    "10-drop-omit": "0",
+    "11-drop-int": "0"
+  },
+  "show_narrow_15": "Table\tCreate Table\nt\tCREATE TABLE `t` (\n  `id` int NOT NULL,\n  `c` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,\n  PRIMARY KEY (`id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n",
+  "show_wide_30": "Table\tCreate Table\nt\tCREATE TABLE `t` (\n  `id` int NOT NULL,\n  `c` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,\n  PRIMARY KEY (`id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n",
+  "cols_narrow": {
+    "10": "COLUMN_NAME\tCOLUMN_TYPE\tCHARACTER_SET_NAME\tCOLLATION_NAME\tIS_NULLABLE\tCOLUMN_DEFAULT\tEXTRA\tCOLUMN_COMMENT\nid\tint\tNULL\tNULL\tNO\tNULL\t\t\nc\tvarchar(10)\tutf8mb4\tutf8mb4_bin\tNO\tNULL\t\t\n",
+    "20": "COLUMN_NAME\tCOLUMN_TYPE\tCHARACTER_SET_NAME\tCOLLATION_NAME\tIS_NULLABLE\tCOLUMN_DEFAULT\tEXTRA\tCOLUMN_COMMENT\nid\tint\tNULL\tNULL\tNO\tNULL\t\t\nc\tvarchar(20)\tutf8mb4\tutf8mb4_bin\tNO\tNULL\t\t\n",
+    "15": "COLUMN_NAME\tCOLUMN_TYPE\tCHARACTER_SET_NAME\tCOLLATION_NAME\tIS_NULLABLE\tCOLUMN_DEFAULT\tEXTRA\tCOLUMN_COMMENT\nid\tint\tNULL\tNULL\tNO\tNULL\t\t\nc\tvarchar(15)\tutf8mb4\tutf8mb4_bin\tNO\tNULL\t\t\n"
+  },
+  "cols_wide": {
+    "10": "COLUMN_NAME\tCOLUMN_TYPE\tCHARACTER_SET_NAME\tCOLLATION_NAME\tIS_NULLABLE\tCOLUMN_DEFAULT\tEXTRA\tCOLUMN_COMMENT\nid\tint\tNULL\tNULL\tNO\tNULL\t\t\nc\tvarchar(10)\tutf8mb4\tutf8mb4_bin\tNO\tNULL\t\t\n",
+    "20": "COLUMN_NAME\tCOLUMN_TYPE\tCHARACTER_SET_NAME\tCOLLATION_NAME\tIS_NULLABLE\tCOLUMN_DEFAULT\tEXTRA\tCOLUMN_COMMENT\nid\tint\tNULL\tNULL\tNO\tNULL\t\t\nc\tvarchar(20)\tutf8mb4\tutf8mb4_bin\tNO\tNULL\t\t\n",
+    "30": "COLUMN_NAME\tCOLUMN_TYPE\tCHARACTER_SET_NAME\tCOLLATION_NAME\tIS_NULLABLE\tCOLUMN_DEFAULT\tEXTRA\tCOLUMN_COMMENT\nid\tint\tNULL\tNULL\tNO\tNULL\t\t\nc\tvarchar(30)\tutf8mb4\tutf8mb4_bin\tNO\tNULL\t\t\n"
+  },
+  "omit_show_after": "Table\tCreate Table\nt05a4_omit\tCREATE TABLE `t05a4_omit` (\n  `id` int NOT NULL,\n  `c` varchar(20) DEFAULT NULL,\n  PRIMARY KEY (`id`)\n) ENGINE=InnoDB DEFAULT CHARSET=latin1\n",
+  "omit_cols": "COLUMN_NAME\tCOLUMN_TYPE\tCHARACTER_SET_NAME\tCOLLATION_NAME\tIS_NULLABLE\tCOLUMN_DEFAULT\tEXTRA\tCOLUMN_COMMENT\nid\tint\tNULL\tNULL\tNO\tNULL\t\t\nc\tvarchar(20)\tlatin1\tlatin1_swedish_ci\tYES\tNULL\t\t\n",
+  "int_show": "Table\tCreate Table\nt05a4_int\tCREATE TABLE `t05a4_int` (\n  `id` int NOT NULL,\n  `n` int DEFAULT NULL,\n  PRIMARY KEY (`id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n",
+  "doc_alter_rc": "0",
+  "doc_create_rc": "0"
+}
