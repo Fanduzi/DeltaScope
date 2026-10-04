@@ -1,0 +1,9 @@
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	2.120s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	0.598s
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.549s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/cli	1.026s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/http	5.753s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/mcp	6.253s
+default_rc=0
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	7.350s
+pg_focus_rc=0

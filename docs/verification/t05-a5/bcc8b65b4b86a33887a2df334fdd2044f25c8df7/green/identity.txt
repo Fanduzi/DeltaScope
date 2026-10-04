@@ -1,0 +1,2 @@
+HEAD bcc8b65b4b86a33887a2df334fdd2044f25c8df7
+ARGV go test ./internal/application/audit/ ./internal/domain/rule/ddl/ -count=1 -v -run 'TestAuditSQLT05A5R1|TestColumnTargetExistsSameIdentityHasNoGap'

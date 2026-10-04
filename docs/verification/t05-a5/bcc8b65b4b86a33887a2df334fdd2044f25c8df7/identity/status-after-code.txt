@@ -1,0 +1,7 @@
+?? .agents/
+?? .debug-journal.md
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? docs/quality/architecture-review-2026-08-11.html
+?? docs/verification/t05-a5/bcc8b65b4b86a33887a2df334fdd2044f25c8df7/

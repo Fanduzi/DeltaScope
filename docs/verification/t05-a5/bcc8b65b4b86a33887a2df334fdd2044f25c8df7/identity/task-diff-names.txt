@@ -1,0 +1,7 @@
+docs/decisions/2026-10-21-ddl-change-rename-column-identity.md
+internal/application/audit/README.md
+internal/application/audit/batch_state_a5_r1_test.go
+internal/application/audit/batch_state_column_identity.go
+internal/domain/rule/ddl/README.md
+internal/domain/rule/ddl/column_identity_rules.go
+internal/domain/rule/ddl/column_identity_rules_test.go

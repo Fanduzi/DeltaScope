@@ -1,0 +1,11 @@
+artifact_head bcc8b65b4b86a33887a2df334fdd2044f25c8df7
+passed cases 231 executed 231 assertions 4484
+catalog=380
+all-rules-disabled: enabled=0 disabled=380 new_enabled=[]
+t04-modify-column-compat-isolated: enabled=1 disabled=379 new_enabled=[]
+t04b-key-length-isolated: enabled=1 disabled=379 new_enabled=[]
+t05-a4-modify-isolated: enabled=4 disabled=376 new_enabled=[]
+t05-drop-recreate-isolated: enabled=5 disabled=375 new_enabled=[]
+t05-first-path-isolated: enabled=4 disabled=376 new_enabled=[]
+t05-a5-column-identity-isolated: enabled=11 disabled=369 new_enabled=['ddl.alter.change_column.target.exists.forbid', 'ddl.alter.rename_column.target.exists.forbid', 'ddl.alter.rename_column.version.require']
+T02.json T03.json T04.json enable maps do not name the three destination/version rule IDs.

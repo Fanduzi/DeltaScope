@@ -1,0 +1,75 @@
+--- FAIL: TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot (0.00s)
+    --- FAIL: TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot/primary_key/tidb (0.01s)
+        batch_state_a5_r1_test.go:250: declaration kept a present table: &spec.Metadata{Schema:"golden", Instance:(*spec.InstanceFacts)(0xbe688cf62a0), Version:(*spec.VersionIdentity)(nil), TargetTable:(*spec.TableSnapshot)(0xbe688c59a80), Objects:[]spec.ObjectSnapshot(nil)}
+    --- FAIL: TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot/primary_key/mysql (0.01s)
+        batch_state_a5_r1_test.go:250: declaration kept a present table: &spec.Metadata{Schema:"golden", Instance:(*spec.InstanceFacts)(0xbe68872e360), Version:(*spec.VersionIdentity)(nil), TargetTable:(*spec.TableSnapshot)(0xbe688f12980), Objects:[]spec.ObjectSnapshot(nil)}
+    --- FAIL: TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot/auto_increment/mysql (0.01s)
+        batch_state_a5_r1_test.go:250: declaration kept a present table: &spec.Metadata{Schema:"golden", Instance:(*spec.InstanceFacts)(0xbe687f0a600), Version:(*spec.VersionIdentity)(nil), TargetTable:(*spec.TableSnapshot)(0xbe68870a100), Objects:[]spec.ObjectSnapshot(nil)}
+    --- FAIL: TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot/auto_increment/tidb (0.02s)
+        batch_state_a5_r1_test.go:250: declaration kept a present table: &spec.Metadata{Schema:"golden", Instance:(*spec.InstanceFacts)(0xbe6879b0ae0), Version:(*spec.VersionIdentity)(nil), TargetTable:(*spec.TableSnapshot)(0xbe6889b8180), Objects:[]spec.ObjectSnapshot(nil)}
+--- FAIL: TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent (0.00s)
+    --- FAIL: TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/change/nil/mysql (0.01s)
+        batch_state_a5_r1_test.go:137: known-empty flags changed: pkUnknown=false indexesUnknown=true constraintsUnknown=true pk=(*spec.Index)(nil)
+    --- FAIL: TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/rename/nil/mysql (0.01s)
+        batch_state_a5_r1_test.go:164: known-empty flags changed: pkUnknown=false indexesUnknown=true constraintsUnknown=true pk=(*spec.Index)(nil)
+    --- FAIL: TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/change/nil/tidb (0.01s)
+        batch_state_a5_r1_test.go:164: known-empty flags changed: pkUnknown=false indexesUnknown=true constraintsUnknown=true pk=(*spec.Index)(nil)
+    --- FAIL: TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/rename/nil/tidb (0.01s)
+        batch_state_a5_r1_test.go:137: known-empty flags changed: pkUnknown=false indexesUnknown=true constraintsUnknown=true pk=(*spec.Index)(nil)
+    --- FAIL: TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/rename/nil/tidb (0.01s)
+        batch_state_a5_r1_test.go:164: known-empty flags changed: pkUnknown=false indexesUnknown=true constraintsUnknown=true pk=(*spec.Index)(nil)
+    --- FAIL: TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/rename/nil/mysql (0.01s)
+        batch_state_a5_r1_test.go:137: known-empty flags changed: pkUnknown=false indexesUnknown=true constraintsUnknown=true pk=(*spec.Index)(nil)
+    --- FAIL: TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/change/nil/mysql (0.01s)
+        batch_state_a5_r1_test.go:164: known-empty flags changed: pkUnknown=false indexesUnknown=true constraintsUnknown=true pk=(*spec.Index)(nil)
+    --- FAIL: TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/change/nil/tidb (0.01s)
+        batch_state_a5_r1_test.go:137: known-empty flags changed: pkUnknown=false indexesUnknown=true constraintsUnknown=true pk=(*spec.Index)(nil)
+--- FAIL: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap (0.00s)
+    --- FAIL: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change/unknown/mysql (0.01s)
+        batch_state_a5_r1_test.go:303: same identity = findings []rule.Finding{} gaps []rule.EvidenceGap{rule.EvidenceGap{RuleID:"ddl.alter.change_column.target.exists.forbid", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"target_table.columns", "target_table.existence"}}}
+    --- FAIL: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename/unknown/mysql (0.01s)
+        batch_state_a5_r1_test.go:303: same identity = findings []rule.Finding{} gaps []rule.EvidenceGap{rule.EvidenceGap{RuleID:"ddl.alter.rename_column.target.exists.forbid", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"target_table.columns", "target_table.existence"}}}
+    --- FAIL: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change_case/unknown/tidb (0.01s)
+        batch_state_a5_r1_test.go:303: same identity = findings []rule.Finding{} gaps []rule.EvidenceGap{rule.EvidenceGap{RuleID:"ddl.alter.change_column.target.exists.forbid", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"target_table.columns", "target_table.existence"}}}
+    --- FAIL: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename/unknown/tidb (0.01s)
+        batch_state_a5_r1_test.go:303: same identity = findings []rule.Finding{} gaps []rule.EvidenceGap{rule.EvidenceGap{RuleID:"ddl.alter.rename_column.target.exists.forbid", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"target_table.columns", "target_table.existence"}}}
+    --- FAIL: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change_case/columns-nil/tidb (0.01s)
+        batch_state_a5_r1_test.go:303: same identity = findings []rule.Finding{} gaps []rule.EvidenceGap{rule.EvidenceGap{RuleID:"ddl.alter.change_column.target.exists.forbid", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"target_table.columns"}}}
+    --- FAIL: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename/columns-nil/tidb (0.01s)
+        batch_state_a5_r1_test.go:303: same identity = findings []rule.Finding{} gaps []rule.EvidenceGap{rule.EvidenceGap{RuleID:"ddl.alter.rename_column.target.exists.forbid", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"target_table.columns"}}}
+    --- FAIL: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename/columns-nil/mysql (0.01s)
+        batch_state_a5_r1_test.go:303: same identity = findings []rule.Finding{} gaps []rule.EvidenceGap{rule.EvidenceGap{RuleID:"ddl.alter.rename_column.target.exists.forbid", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"target_table.columns"}}}
+    --- FAIL: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/source_compatibility_and_version_stay_independent (0.01s)
+        batch_state_a5_r1_test.go:386: source existence = findings []rule.Finding(nil) gaps []rule.EvidenceGap{rule.EvidenceGap{RuleID:"ddl.alter.change_column.exists.require", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"target_table.columns"}}, rule.EvidenceGap{RuleID:"ddl.alter.change_column.target.exists.forbid", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"target_table.columns"}}}
+    --- FAIL: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change/columns-nil/mysql (0.01s)
+        batch_state_a5_r1_test.go:303: same identity = findings []rule.Finding{} gaps []rule.EvidenceGap{rule.EvidenceGap{RuleID:"ddl.alter.change_column.target.exists.forbid", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"target_table.columns"}}}
+    --- FAIL: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change/unknown/tidb (0.01s)
+        batch_state_a5_r1_test.go:303: same identity = findings []rule.Finding{} gaps []rule.EvidenceGap{rule.EvidenceGap{RuleID:"ddl.alter.change_column.target.exists.forbid", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"target_table.columns", "target_table.existence"}}}
+    --- FAIL: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename_case/columns-nil/tidb (0.01s)
+        batch_state_a5_r1_test.go:303: same identity = findings []rule.Finding{} gaps []rule.EvidenceGap{rule.EvidenceGap{RuleID:"ddl.alter.rename_column.target.exists.forbid", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"target_table.columns"}}}
+    --- FAIL: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change_case/columns-nil/mysql (0.01s)
+        batch_state_a5_r1_test.go:303: same identity = findings []rule.Finding{} gaps []rule.EvidenceGap{rule.EvidenceGap{RuleID:"ddl.alter.change_column.target.exists.forbid", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"target_table.columns"}}}
+    --- FAIL: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename_case/unknown/tidb (0.01s)
+        batch_state_a5_r1_test.go:303: same identity = findings []rule.Finding{} gaps []rule.EvidenceGap{rule.EvidenceGap{RuleID:"ddl.alter.rename_column.target.exists.forbid", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"target_table.columns", "target_table.existence"}}}
+    --- FAIL: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change/columns-nil/tidb (0.01s)
+        batch_state_a5_r1_test.go:303: same identity = findings []rule.Finding{} gaps []rule.EvidenceGap{rule.EvidenceGap{RuleID:"ddl.alter.change_column.target.exists.forbid", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"target_table.columns"}}}
+    --- FAIL: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename_case/unknown/mysql (0.01s)
+        batch_state_a5_r1_test.go:303: same identity = findings []rule.Finding{} gaps []rule.EvidenceGap{rule.EvidenceGap{RuleID:"ddl.alter.rename_column.target.exists.forbid", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"target_table.columns", "target_table.existence"}}}
+    --- FAIL: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change_case/unknown/mysql (0.01s)
+        batch_state_a5_r1_test.go:303: same identity = findings []rule.Finding{} gaps []rule.EvidenceGap{rule.EvidenceGap{RuleID:"ddl.alter.change_column.target.exists.forbid", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"target_table.columns", "target_table.existence"}}}
+    --- FAIL: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename_case/columns-nil/mysql (0.01s)
+        batch_state_a5_r1_test.go:303: same identity = findings []rule.Finding{} gaps []rule.EvidenceGap{rule.EvidenceGap{RuleID:"ddl.alter.rename_column.target.exists.forbid", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"target_table.columns"}}}
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	1.812s
+--- FAIL: TestColumnTargetExistsSameIdentityHasNoGap (0.00s)
+    --- FAIL: TestColumnTargetExistsSameIdentityHasNoGap/change_column/C/mysql (0.00s)
+        column_identity_rules_test.go:66: same identity gaps = []rule.EvidenceGap{rule.EvidenceGap{RuleID:"", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"target_table.columns", "target_table.existence"}}}
+    --- FAIL: TestColumnTargetExistsSameIdentityHasNoGap/rename_column/C/tidb (0.00s)
+        column_identity_rules_test.go:66: same identity gaps = []rule.EvidenceGap{rule.EvidenceGap{RuleID:"", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"target_table.columns", "target_table.existence"}}}
+    --- FAIL: TestColumnTargetExistsSameIdentityHasNoGap/change_column/C/tidb (0.00s)
+        column_identity_rules_test.go:66: same identity gaps = []rule.EvidenceGap{rule.EvidenceGap{RuleID:"", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"target_table.columns", "target_table.existence"}}}
+    --- FAIL: TestColumnTargetExistsSameIdentityHasNoGap/rename_column/C/mysql (0.00s)
+        column_identity_rules_test.go:66: same identity gaps = []rule.EvidenceGap{rule.EvidenceGap{RuleID:"", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"target_table.columns", "target_table.existence"}}}
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	0.997s
+FAIL

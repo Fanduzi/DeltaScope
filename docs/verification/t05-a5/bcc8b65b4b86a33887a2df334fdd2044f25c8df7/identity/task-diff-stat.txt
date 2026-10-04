@@ -1,0 +1,8 @@
+ ...2026-10-21-ddl-change-rename-column-identity.md |   7 +-
+ internal/application/audit/README.md               |   3 +-
+ .../application/audit/batch_state_a5_r1_test.go    | 411 +++++++++++++++++++++
+ .../audit/batch_state_column_identity.go           |  17 +-
+ internal/domain/rule/ddl/README.md                 |   3 +-
+ internal/domain/rule/ddl/column_identity_rules.go  |  14 +-
+ .../domain/rule/ddl/column_identity_rules_test.go  |  71 ++++
+ 7 files changed, 512 insertions(+), 14 deletions(-)

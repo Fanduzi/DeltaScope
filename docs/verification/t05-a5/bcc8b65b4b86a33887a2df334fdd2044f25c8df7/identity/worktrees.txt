@@ -1,0 +1,2 @@
+/Users/fan/GolangProjects/DeltaScope           bcc8b65b [milestone/mysql-tidb-ddl-completion]
+/private/tmp/ds-t05-a3-final.2K4NKO/doc-check  49a0f5bc (detached HEAD)

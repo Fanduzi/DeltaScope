@@ -1,0 +1,1 @@
+ARGV git diff --check ed022b60bc6ace836e41c55674d79e1311892ded..HEAD

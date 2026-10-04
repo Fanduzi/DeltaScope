@@ -1,0 +1,1 @@
+ARGV make ddl-golden TASK=T05 ARTIFACT_DIR=/tmp/ds-t05-a5-r1-golden-bcc8b65b4b86a33887a2df334fdd2044f25c8df7

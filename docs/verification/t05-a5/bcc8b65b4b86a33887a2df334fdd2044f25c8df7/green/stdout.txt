@@ -1,0 +1,252 @@
+=== RUN   TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent
+=== PAUSE TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent
+=== RUN   TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot
+=== PAUSE TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot
+=== RUN   TestAuditSQLT05A5R1SameIdentityTargetHasNoGap
+=== PAUSE TestAuditSQLT05A5R1SameIdentityTargetHasNoGap
+=== CONT  TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent
+=== RUN   TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/change/nil/mysql
+=== CONT  TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot
+=== CONT  TestAuditSQLT05A5R1SameIdentityTargetHasNoGap
+=== PAUSE TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/change/nil/mysql
+=== RUN   TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot/primary_key/mysql
+=== PAUSE TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot/primary_key/mysql
+=== RUN   TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/change/nil/tidb
+=== RUN   TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot/primary_key/tidb
+=== PAUSE TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/change/nil/tidb
+=== PAUSE TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot/primary_key/tidb
+=== RUN   TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change/unknown/mysql
+=== RUN   TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/change/empty/mysql
+=== PAUSE TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change/unknown/mysql
+=== PAUSE TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/change/empty/mysql
+=== RUN   TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot/auto_increment/mysql
+=== PAUSE TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot/auto_increment/mysql
+=== RUN   TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change/columns-nil/mysql
+=== RUN   TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot/auto_increment/tidb
+=== PAUSE TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change/columns-nil/mysql
+=== RUN   TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change/unknown/tidb
+=== PAUSE TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change/unknown/tidb
+=== RUN   TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change/columns-nil/tidb
+=== RUN   TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/change/empty/tidb
+=== PAUSE TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot/auto_increment/tidb
+=== PAUSE TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/change/empty/tidb
+=== PAUSE TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change/columns-nil/tidb
+=== RUN   TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot/ordinary_not_null/mysql
+=== PAUSE TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot/ordinary_not_null/mysql
+=== RUN   TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change_case/unknown/mysql
+=== RUN   TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot/ordinary_not_null/tidb
+=== PAUSE TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot/ordinary_not_null/tidb
+=== RUN   TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/rename/nil/mysql
+=== CONT  TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot/auto_increment/tidb
+=== CONT  TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot/ordinary_not_null/tidb
+=== PAUSE TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/rename/nil/mysql
+=== RUN   TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/rename/nil/tidb
+=== CONT  TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot/ordinary_not_null/mysql
+=== PAUSE TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change_case/unknown/mysql
+=== RUN   TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change_case/columns-nil/mysql
+=== CONT  TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot/auto_increment/mysql
+=== CONT  TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot/primary_key/mysql
+=== PAUSE TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/rename/nil/tidb
+=== CONT  TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot/primary_key/tidb
+=== PAUSE TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change_case/columns-nil/mysql
+=== RUN   TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/rename/empty/mysql
+=== PAUSE TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/rename/empty/mysql
+=== RUN   TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change_case/unknown/tidb
+=== PAUSE TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change_case/unknown/tidb
+=== RUN   TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/rename/empty/tidb
+=== PAUSE TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/rename/empty/tidb
+=== RUN   TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change_case/columns-nil/tidb
+=== PAUSE TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change_case/columns-nil/tidb
+=== RUN   TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename/unknown/mysql
+=== RUN   TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/change/nil/mysql
+=== PAUSE TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename/unknown/mysql
+=== PAUSE TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/change/nil/mysql
+=== RUN   TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename/columns-nil/mysql
+=== PAUSE TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename/columns-nil/mysql
+=== RUN   TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename/unknown/tidb
+=== RUN   TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/change/nil/tidb
+=== PAUSE TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename/unknown/tidb
+=== PAUSE TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/change/nil/tidb
+=== RUN   TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/change/empty/mysql
+=== RUN   TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename/columns-nil/tidb
+=== PAUSE TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename/columns-nil/tidb
+=== PAUSE TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/change/empty/mysql
+=== RUN   TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename_case/unknown/mysql
+=== PAUSE TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename_case/unknown/mysql
+=== RUN   TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/change/empty/tidb
+=== PAUSE TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/change/empty/tidb
+=== RUN   TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename_case/columns-nil/mysql
+=== PAUSE TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename_case/columns-nil/mysql
+=== RUN   TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/rename/nil/mysql
+=== PAUSE TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/rename/nil/mysql
+=== RUN   TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename_case/unknown/tidb
+=== PAUSE TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename_case/unknown/tidb
+=== RUN   TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename_case/columns-nil/tidb
+=== PAUSE TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename_case/columns-nil/tidb
+=== RUN   TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/different_name_still_gaps
+=== PAUSE TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/different_name_still_gaps
+=== RUN   TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/real_duplicate_still_conflicts
+=== PAUSE TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/real_duplicate_still_conflicts
+=== RUN   TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/confirmed_absent_adds_nothing
+=== RUN   TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/rename/nil/tidb
+=== PAUSE TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/rename/nil/tidb
+=== PAUSE TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/confirmed_absent_adds_nothing
+=== RUN   TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/rename/empty/mysql
+=== PAUSE TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/rename/empty/mysql
+=== RUN   TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/rename/empty/tidb
+=== RUN   TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/disabled_and_inapplicable_stay_silent
+=== PAUSE TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/disabled_and_inapplicable_stay_silent
+=== RUN   TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/source_compatibility_and_version_stay_independent
+=== PAUSE TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/source_compatibility_and_version_stay_independent
+=== CONT  TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change/unknown/mysql
+=== CONT  TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename/columns-nil/tidb
+=== CONT  TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/real_duplicate_still_conflicts
+=== CONT  TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/source_compatibility_and_version_stay_independent
+=== CONT  TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename/unknown/tidb
+=== PAUSE TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/rename/empty/tidb
+=== RUN   TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/real_duplicate_still_conflicts/mysql
+=== PAUSE TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/real_duplicate_still_conflicts/mysql
+=== RUN   TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/unknown_index_stays_unknown
+=== PAUSE TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/unknown_index_stays_unknown
+=== RUN   TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/real_duplicate_still_conflicts/tidb
+=== PAUSE TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/real_duplicate_still_conflicts/tidb
+=== CONT  TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename/columns-nil/mysql
+=== RUN   TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/unknown_constraint_stays_unknown
+=== PAUSE TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/unknown_constraint_stays_unknown
+=== RUN   TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/affected_member_is_cleared_and_unrelated_member_stays
+=== PAUSE TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/affected_member_is_cleared_and_unrelated_member_stays
+=== CONT  TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename/unknown/mysql
+=== CONT  TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change_case/columns-nil/tidb
+=== CONT  TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/disabled_and_inapplicable_stay_silent
+=== CONT  TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change_case/unknown/mysql
+=== CONT  TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change_case/unknown/tidb
+=== CONT  TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change_case/columns-nil/mysql
+=== CONT  TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/confirmed_absent_adds_nothing
+=== CONT  TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change/columns-nil/tidb
+=== RUN   TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/confirmed_absent_adds_nothing/mysql
+=== PAUSE TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/confirmed_absent_adds_nothing/mysql
+=== RUN   TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/confirmed_absent_adds_nothing/tidb
+=== PAUSE TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/confirmed_absent_adds_nothing/tidb
+=== CONT  TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change/unknown/tidb
+=== CONT  TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename_case/unknown/tidb
+--- PASS: TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot (0.00s)
+    --- PASS: TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot/primary_key/tidb (0.01s)
+    --- PASS: TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot/auto_increment/mysql (0.01s)
+    --- PASS: TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot/ordinary_not_null/mysql (0.01s)
+    --- PASS: TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot/auto_increment/tidb (0.01s)
+    --- PASS: TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot/ordinary_not_null/tidb (0.01s)
+    --- PASS: TestAuditSQLT05A5R1DeclarationGatePrecedesPartialSnapshot/primary_key/mysql (0.01s)
+=== CONT  TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change/columns-nil/mysql
+=== CONT  TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/different_name_still_gaps
+=== RUN   TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/different_name_still_gaps/mysql
+=== PAUSE TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/different_name_still_gaps/mysql
+=== RUN   TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/different_name_still_gaps/tidb
+=== PAUSE TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/different_name_still_gaps/tidb
+=== CONT  TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename_case/columns-nil/tidb
+=== CONT  TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename_case/unknown/mysql
+=== CONT  TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename_case/columns-nil/mysql
+=== CONT  TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/real_duplicate_still_conflicts/mysql
+=== CONT  TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/real_duplicate_still_conflicts/tidb
+=== CONT  TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/change/nil/mysql
+=== CONT  TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/affected_member_is_cleared_and_unrelated_member_stays
+=== CONT  TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/unknown_constraint_stays_unknown
+=== CONT  TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/unknown_index_stays_unknown
+=== CONT  TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/rename/empty/tidb
+=== CONT  TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/rename/empty/mysql
+=== CONT  TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/rename/nil/tidb
+=== CONT  TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/rename/nil/mysql
+=== CONT  TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/change/empty/tidb
+=== CONT  TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/change/empty/mysql
+=== CONT  TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/change/nil/tidb
+=== CONT  TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/change/nil/mysql
+=== CONT  TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/rename/empty/tidb
+=== CONT  TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/rename/empty/mysql
+=== CONT  TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/rename/nil/tidb
+=== CONT  TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/rename/nil/mysql
+=== CONT  TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/change/empty/tidb
+=== CONT  TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/change/empty/mysql
+=== CONT  TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/change/nil/tidb
+=== CONT  TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/confirmed_absent_adds_nothing/mysql
+=== CONT  TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/confirmed_absent_adds_nothing/tidb
+=== CONT  TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/different_name_still_gaps/mysql
+=== CONT  TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/different_name_still_gaps/tidb
+--- PASS: TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent (0.00s)
+    --- PASS: TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/affected_member_is_cleared_and_unrelated_member_stays (0.01s)
+    --- PASS: TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/unknown_constraint_stays_unknown (0.01s)
+    --- PASS: TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/change/nil/mysql (0.01s)
+    --- PASS: TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/rename/empty/mysql (0.01s)
+    --- PASS: TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/rename/empty/tidb (0.01s)
+    --- PASS: TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/unknown_index_stays_unknown (0.01s)
+    --- PASS: TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/rename/nil/tidb (0.01s)
+    --- PASS: TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/change/empty/tidb (0.01s)
+    --- PASS: TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/rename/nil/mysql (0.01s)
+    --- PASS: TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/change/empty/mysql (0.01s)
+    --- PASS: TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/change/nil/tidb (0.01s)
+    --- PASS: TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/pk/change/nil/mysql (0.01s)
+    --- PASS: TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/rename/nil/tidb (0.01s)
+    --- PASS: TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/rename/empty/mysql (0.01s)
+    --- PASS: TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/rename/empty/tidb (0.01s)
+    --- PASS: TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/change/empty/mysql (0.01s)
+    --- PASS: TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/rename/nil/mysql (0.01s)
+    --- PASS: TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/change/empty/tidb (0.01s)
+    --- PASS: TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent/change/nil/tidb (0.01s)
+--- PASS: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap (0.00s)
+    --- PASS: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename/unknown/mysql (0.01s)
+    --- PASS: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename/columns-nil/mysql (0.01s)
+    --- PASS: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename/unknown/tidb (0.01s)
+    --- PASS: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename/columns-nil/tidb (0.01s)
+    --- PASS: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change/unknown/mysql (0.01s)
+    --- PASS: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change_case/columns-nil/tidb (0.01s)
+    --- PASS: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change/columns-nil/mysql (0.01s)
+    --- PASS: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change_case/columns-nil/mysql (0.01s)
+    --- PASS: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename_case/unknown/tidb (0.01s)
+    --- PASS: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change_case/unknown/mysql (0.01s)
+    --- PASS: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change/unknown/tidb (0.01s)
+    --- PASS: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change_case/unknown/tidb (0.01s)
+    --- PASS: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/change/columns-nil/tidb (0.01s)
+    --- PASS: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename_case/columns-nil/tidb (0.01s)
+    --- PASS: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename_case/unknown/mysql (0.01s)
+    --- PASS: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/rename_case/columns-nil/mysql (0.01s)
+    --- PASS: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/real_duplicate_still_conflicts (0.00s)
+        --- PASS: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/real_duplicate_still_conflicts/mysql (0.01s)
+        --- PASS: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/real_duplicate_still_conflicts/tidb (0.01s)
+    --- PASS: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/source_compatibility_and_version_stay_independent (0.04s)
+    --- PASS: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/disabled_and_inapplicable_stay_silent (0.04s)
+    --- PASS: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/confirmed_absent_adds_nothing (0.00s)
+        --- PASS: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/confirmed_absent_adds_nothing/mysql (0.01s)
+        --- PASS: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/confirmed_absent_adds_nothing/tidb (0.01s)
+    --- PASS: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/different_name_still_gaps (0.00s)
+        --- PASS: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/different_name_still_gaps/tidb (0.01s)
+        --- PASS: TestAuditSQLT05A5R1SameIdentityTargetHasNoGap/different_name_still_gaps/mysql (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	1.090s
+=== RUN   TestColumnTargetExistsSameIdentityHasNoGap
+=== PAUSE TestColumnTargetExistsSameIdentityHasNoGap
+=== CONT  TestColumnTargetExistsSameIdentityHasNoGap
+=== RUN   TestColumnTargetExistsSameIdentityHasNoGap/change_column/C/mysql
+=== PAUSE TestColumnTargetExistsSameIdentityHasNoGap/change_column/C/mysql
+=== RUN   TestColumnTargetExistsSameIdentityHasNoGap/change_column/C/tidb
+=== PAUSE TestColumnTargetExistsSameIdentityHasNoGap/change_column/C/tidb
+=== RUN   TestColumnTargetExistsSameIdentityHasNoGap/rename_column/C/mysql
+=== PAUSE TestColumnTargetExistsSameIdentityHasNoGap/rename_column/C/mysql
+=== RUN   TestColumnTargetExistsSameIdentityHasNoGap/rename_column/C/tidb
+=== PAUSE TestColumnTargetExistsSameIdentityHasNoGap/rename_column/C/tidb
+=== RUN   TestColumnTargetExistsSameIdentityHasNoGap/change_column/c2/mysql
+=== PAUSE TestColumnTargetExistsSameIdentityHasNoGap/change_column/c2/mysql
+=== RUN   TestColumnTargetExistsSameIdentityHasNoGap/change_column/c2/tidb
+=== PAUSE TestColumnTargetExistsSameIdentityHasNoGap/change_column/c2/tidb
+=== CONT  TestColumnTargetExistsSameIdentityHasNoGap/change_column/C/mysql
+=== CONT  TestColumnTargetExistsSameIdentityHasNoGap/rename_column/C/mysql
+=== CONT  TestColumnTargetExistsSameIdentityHasNoGap/rename_column/C/tidb
+=== CONT  TestColumnTargetExistsSameIdentityHasNoGap/change_column/c2/tidb
+=== CONT  TestColumnTargetExistsSameIdentityHasNoGap/change_column/c2/mysql
+=== CONT  TestColumnTargetExistsSameIdentityHasNoGap/change_column/C/tidb
+--- PASS: TestColumnTargetExistsSameIdentityHasNoGap (0.00s)
+    --- PASS: TestColumnTargetExistsSameIdentityHasNoGap/change_column/C/mysql (0.00s)
+    --- PASS: TestColumnTargetExistsSameIdentityHasNoGap/rename_column/C/mysql (0.00s)
+    --- PASS: TestColumnTargetExistsSameIdentityHasNoGap/rename_column/C/tidb (0.00s)
+    --- PASS: TestColumnTargetExistsSameIdentityHasNoGap/change_column/c2/tidb (0.00s)
+    --- PASS: TestColumnTargetExistsSameIdentityHasNoGap/change_column/c2/mysql (0.00s)
+    --- PASS: TestColumnTargetExistsSameIdentityHasNoGap/change_column/C/tidb (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	0.541s
