@@ -1,0 +1,12 @@
+[
+  "/tmp/ds-t05-a5-plan/deltascope",
+  "audit",
+  "--dialect",
+  "mysql",
+  "--sql",
+  "ALTER TABLE t CHANGE COLUMN c c2 VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+  "--config",
+  "/tmp/ds-t05-a5-plan/policy-a5-isolated.yaml",
+  "--format",
+  "json"
+]

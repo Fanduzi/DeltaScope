@@ -1,0 +1,16 @@
+[
+  {
+    "step": 1,
+    "rc": 0,
+    "sql": "CREATE TABLE t (\n  id INT PRIMARY KEY,\n  c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,\n  INDEX idx_c (c)\n)",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "step": 2,
+    "rc": 0,
+    "sql": "ALTER TABLE t CHANGE COLUMN c c2 VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+    "stdout": "",
+    "stderr": ""
+  }
+]

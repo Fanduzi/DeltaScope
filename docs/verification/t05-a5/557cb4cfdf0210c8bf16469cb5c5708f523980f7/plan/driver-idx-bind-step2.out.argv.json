@@ -1,0 +1,14 @@
+[
+  "docker",
+  "exec",
+  "-e",
+  "MYSQL_PWD",
+  "deltascope-ddl-golden-mysql84",
+  "mysql",
+  "-uroot",
+  "--batch",
+  "--raw",
+  "golden",
+  "-e",
+  "ALTER TABLE t CHANGE COLUMN c c2 VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL"
+]

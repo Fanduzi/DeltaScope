@@ -1,0 +1,6 @@
+verdict=review coverage={'status': 'unverified'} summary={'statements': 1, 'blockers': 0, 'warnings': 0, 'notices': 0}
+loaded=8 applicable=2 skipped=0
+--- stmt 0 kind=ddl coverage={'status': 'unverified'}
+sql=ALTER TABLE t RENAME COLUMN c TO c2;
+gap {"rule_id": "ddl.table.exists.alter.require", "reason_code": "unknown_table_state", "required_facts": ["target_table.existence"]}
+gap {"rule_id": "ddl.alter.rename_column.exists.require", "reason_code": "unknown_table_state", "required_facts": ["target_table.columns", "target_table.existence"]}

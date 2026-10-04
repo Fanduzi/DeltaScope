@@ -1,0 +1,14 @@
+[
+  "docker",
+  "exec",
+  "-e",
+  "MYSQL_PWD",
+  "deltascope-ddl-golden-mysql84",
+  "mysql",
+  "-uroot",
+  "--batch",
+  "--raw",
+  "golden",
+  "-e",
+  "ALTER TABLE t RENAME COLUMN c TO c2"
+]

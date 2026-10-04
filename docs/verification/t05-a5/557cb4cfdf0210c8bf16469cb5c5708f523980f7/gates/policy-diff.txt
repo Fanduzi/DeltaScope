@@ -1,0 +1,13 @@
+artifact_head 557cb4cfdf0210c8bf16469cb5c5708f523980f7
+passed None cases 231 executed 231
+all-rules-disabled: catalog=380 enabled=0 disabled=380 new_enabled=[]
+t04-modify-column-compat-isolated: catalog=380 enabled=1 disabled=379 new_enabled=[]
+t04b-key-length-isolated: catalog=380 enabled=1 disabled=379 new_enabled=[]
+t05-a4-modify-isolated: catalog=380 enabled=4 disabled=376 new_enabled=[]
+t05-a5-column-identity-isolated: catalog=380 enabled=11 disabled=369 new_enabled=['ddl.alter.change_column.target.exists.forbid', 'ddl.alter.rename_column.target.exists.forbid', 'ddl.alter.rename_column.version.require']
+t05-drop-recreate-isolated: catalog=380 enabled=5 disabled=375 new_enabled=[]
+t05-first-path-isolated: catalog=380 enabled=4 disabled=376 new_enabled=[]
+T02.json task T02 new_in_enable [('default', [])]
+T03.json task T03 new_in_enable [('default', [])]
+T04.json task T04 new_in_enable [('default', []), ('t04b-key-length-isolated', [])]
+T05.json task T05 new_in_enable [('default', []), ('t04b-key-length-isolated', []), ('t05-first-path-isolated', []), ('t05-drop-recreate-isolated', []), ('t05-a4-modify-isolated', []), ('t05-a5-column-identity-isolated', ['ddl.alter.change_column.target.exists.forbid', 'ddl.alter.rename_column.target.exists.forbid', 'ddl.alter.rename_column.version.require'])]

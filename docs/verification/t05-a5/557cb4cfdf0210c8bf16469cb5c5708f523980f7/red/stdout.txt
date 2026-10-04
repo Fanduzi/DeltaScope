@@ -1,0 +1,8 @@
+--- FAIL: TestAuditSQLT05A5ChangeFirstPath (0.00s)
+    --- FAIL: TestAuditSQLT05A5ChangeFirstPath/mysql (0.01s)
+        batch_state_a5_test.go:54: statement 2 = index 2 coverage unverified findings []rule.Finding(nil) gaps []rule.EvidenceGap{rule.EvidenceGap{RuleID:"ddl.alter.modify_column.compatibility.require", ReasonCode:"missing_source_column", RequiredFacts:[]string{"source_column.definition"}}, rule.EvidenceGap{RuleID:"ddl.table.exists.alter.require", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"target_table.existence"}}, rule.EvidenceGap{RuleID:"ddl.alter.modify_column.exists.require", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"target_table.columns", "target_table.existence"}}}, want complete with none
+    --- FAIL: TestAuditSQLT05A5ChangeFirstPath/tidb (0.01s)
+        batch_state_a5_test.go:54: statement 2 = index 2 coverage unverified findings []rule.Finding(nil) gaps []rule.EvidenceGap{rule.EvidenceGap{RuleID:"ddl.alter.modify_column.compatibility.require", ReasonCode:"missing_source_column", RequiredFacts:[]string{"source_column.definition"}}, rule.EvidenceGap{RuleID:"ddl.table.exists.alter.require", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"target_table.existence"}}, rule.EvidenceGap{RuleID:"ddl.alter.modify_column.exists.require", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"target_table.columns", "target_table.existence"}}}, want complete with none
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.523s
+FAIL

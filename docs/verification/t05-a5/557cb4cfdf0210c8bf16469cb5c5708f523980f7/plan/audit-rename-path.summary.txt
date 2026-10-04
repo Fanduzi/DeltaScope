@@ -1,0 +1,16 @@
+verdict=review coverage={'status': 'unverified'} summary={'statements': 4, 'blockers': 0, 'warnings': 0, 'notices': 0}
+loaded=8 applicable=6 skipped=0
+--- stmt 0 kind=ddl coverage={'status': 'complete'}
+sql=CREATE TABLE t (   id INT PRIMARY KEY,   c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL );
+no findings and no gaps
+--- stmt 1 kind=ddl coverage={'status': 'complete'}
+sql=ALTER TABLE t RENAME COLUMN c TO c2;
+no findings and no gaps
+--- stmt 2 kind=ddl coverage={'status': 'unverified'}
+sql=ALTER TABLE t MODIFY COLUMN c2 VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;
+gap {"rule_id": "ddl.alter.modify_column.compatibility.require", "reason_code": "missing_source_column", "required_facts": ["source_column.definition"]}
+gap {"rule_id": "ddl.table.exists.alter.require", "reason_code": "unknown_table_state", "required_facts": ["target_table.existence"]}
+gap {"rule_id": "ddl.alter.modify_column.exists.require", "reason_code": "unknown_table_state", "required_facts": ["target_table.columns", "target_table.existence"]}
+--- stmt 3 kind=ddl coverage={'status': 'unverified'}
+sql=CREATE INDEX idx_c2 ON t(c2);
+gap {"rule_id": "ddl.create_index.columns.exists.require", "reason_code": "unknown_table_state", "required_facts": ["target_table.columns", "target_table.existence"]}

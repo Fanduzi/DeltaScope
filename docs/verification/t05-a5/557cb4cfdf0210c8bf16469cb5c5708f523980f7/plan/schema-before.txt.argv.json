@@ -1,0 +1,14 @@
+[
+  "docker",
+  "exec",
+  "-e",
+  "MYSQL_PWD",
+  "deltascope-ddl-golden-mysql84",
+  "mysql",
+  "-uroot",
+  "--batch",
+  "--raw",
+  "golden",
+  "-e",
+  "SELECT table_name FROM information_schema.tables WHERE table_schema='golden' ORDER BY table_name"
+]

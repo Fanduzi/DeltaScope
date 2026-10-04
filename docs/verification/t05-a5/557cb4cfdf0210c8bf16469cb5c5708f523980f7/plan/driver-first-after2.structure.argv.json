@@ -1,0 +1,14 @@
+[
+  "docker",
+  "exec",
+  "-e",
+  "MYSQL_PWD",
+  "deltascope-ddl-golden-mysql84",
+  "mysql",
+  "-uroot",
+  "--batch",
+  "--raw",
+  "golden",
+  "-e",
+  "\nSELECT 'COLUMN', COLUMN_NAME, ORDINAL_POSITION, COLUMN_TYPE, CHARACTER_MAXIMUM_LENGTH,\n       CHARACTER_SET_NAME, COLLATION_NAME, IS_NULLABLE, COLUMN_KEY\nFROM information_schema.COLUMNS\nWHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'\nORDER BY ORDINAL_POSITION;\nSELECT 'INDEX', INDEX_NAME, NON_UNIQUE, SEQ_IN_INDEX, COLUMN_NAME, IFNULL(SUB_PART,'')\nFROM information_schema.STATISTICS\nWHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'\nORDER BY INDEX_NAME, SEQ_IN_INDEX;\n"
+]

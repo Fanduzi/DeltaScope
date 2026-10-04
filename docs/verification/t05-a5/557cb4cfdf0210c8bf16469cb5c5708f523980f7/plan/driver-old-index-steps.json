@@ -1,0 +1,30 @@
+[
+  {
+    "step": 1,
+    "rc": 0,
+    "sql": "CREATE TABLE t (\n  id INT PRIMARY KEY,\n  c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL\n)",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "step": 2,
+    "rc": 0,
+    "sql": "ALTER TABLE t CHANGE COLUMN c c2 VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "step": 3,
+    "rc": 0,
+    "sql": "ALTER TABLE t MODIFY COLUMN c2 VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "step": 4,
+    "rc": 1,
+    "sql": "CREATE INDEX ix_old ON t(c)",
+    "stdout": "",
+    "stderr": "ERROR 1072 (42000) at line 1: Key column 'c' doesn't exist in table\n"
+  }
+]

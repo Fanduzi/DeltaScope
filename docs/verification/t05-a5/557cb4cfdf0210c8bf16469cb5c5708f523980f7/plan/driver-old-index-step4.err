@@ -1,0 +1,1 @@
+ERROR 1072 (42000) at line 1: Key column 'c' doesn't exist in table
