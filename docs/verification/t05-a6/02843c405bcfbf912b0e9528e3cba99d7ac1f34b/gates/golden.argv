@@ -1,0 +1,1 @@
+make ddl-golden TASK=T05 ARTIFACT_DIR=/tmp/ds-t05-a6-golden-02843c405bcfbf912b0e9528e3cba99d7ac1f34b-r2

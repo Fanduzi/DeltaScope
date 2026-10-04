@@ -1,0 +1,26 @@
+=== RUN   TestAuditSQLT05A6DropColumnFirstPath
+=== PAUSE TestAuditSQLT05A6DropColumnFirstPath
+=== RUN   TestAuditSQLT05A6DropColumnRemovedIndexNegative
+=== PAUSE TestAuditSQLT05A6DropColumnRemovedIndexNegative
+=== CONT  TestAuditSQLT05A6DropColumnFirstPath
+=== RUN   TestAuditSQLT05A6DropColumnFirstPath/mysql
+=== PAUSE TestAuditSQLT05A6DropColumnFirstPath/mysql
+=== RUN   TestAuditSQLT05A6DropColumnFirstPath/tidb
+=== PAUSE TestAuditSQLT05A6DropColumnFirstPath/tidb
+=== CONT  TestAuditSQLT05A6DropColumnFirstPath/mysql
+=== CONT  TestAuditSQLT05A6DropColumnRemovedIndexNegative
+=== CONT  TestAuditSQLT05A6DropColumnFirstPath/tidb
+=== RUN   TestAuditSQLT05A6DropColumnRemovedIndexNegative/mysql
+=== PAUSE TestAuditSQLT05A6DropColumnRemovedIndexNegative/mysql
+=== RUN   TestAuditSQLT05A6DropColumnRemovedIndexNegative/tidb
+=== PAUSE TestAuditSQLT05A6DropColumnRemovedIndexNegative/tidb
+=== CONT  TestAuditSQLT05A6DropColumnRemovedIndexNegative/mysql
+=== CONT  TestAuditSQLT05A6DropColumnRemovedIndexNegative/tidb
+--- PASS: TestAuditSQLT05A6DropColumnRemovedIndexNegative (0.00s)
+    --- PASS: TestAuditSQLT05A6DropColumnRemovedIndexNegative/mysql (0.01s)
+    --- PASS: TestAuditSQLT05A6DropColumnRemovedIndexNegative/tidb (0.01s)
+--- PASS: TestAuditSQLT05A6DropColumnFirstPath (0.00s)
+    --- PASS: TestAuditSQLT05A6DropColumnFirstPath/tidb (0.01s)
+    --- PASS: TestAuditSQLT05A6DropColumnFirstPath/mysql (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.616s

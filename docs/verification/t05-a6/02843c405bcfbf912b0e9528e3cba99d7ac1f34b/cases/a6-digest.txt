@@ -1,0 +1,17 @@
+cases=247 passed=247 required=247 head=02843c405bcfbf912b0e9528e3cba99d7ac1f34b
+T05.cli.t05-a6-mysql-drop-offline status=pass kind=cli_audit assertions=17 failed=0
+T05.cli.t05-a6-mysql-drop-old-index-offline status=pass kind=cli_audit assertions=19 failed=0
+T05.cli.t05-a6-tidb-drop-offline status=pass kind=cli_audit assertions=17 failed=0
+T05.cli.t05-a6-tidb-drop-old-index-offline status=pass kind=cli_audit assertions=19 failed=0
+T05.meta.t05-a6-mysql57-drop status=pass kind=cli_metadata assertions=43 failed=0
+T05.meta.t05-a6-mysql57-drop-old-index status=pass kind=cli_metadata assertions=50 failed=0
+T05.meta.t05-a6-mysql80-drop status=pass kind=cli_metadata assertions=43 failed=0
+T05.meta.t05-a6-mysql80-drop-old-index status=pass kind=cli_metadata assertions=50 failed=0
+T05.meta.t05-a6-mysql84-drop status=pass kind=cli_metadata assertions=43 failed=0
+T05.meta.t05-a6-mysql84-drop-old-index status=pass kind=cli_metadata assertions=50 failed=0
+T05.meta.t05-a6-tidb85-drop status=pass kind=cli_metadata assertions=43 failed=0
+T05.meta.t05-a6-tidb85-drop-old-index status=pass kind=cli_metadata assertions=50 failed=0
+T05.meta.t05-a6-mysql84-unrelated-index status=pass kind=cli_metadata assertions=49 failed=0
+T05.meta.t05-a6-mysql84-readd status=pass kind=cli_metadata assertions=48 failed=0
+T05.meta.t05-a6-tidb85-unrelated-index status=pass kind=cli_metadata assertions=49 failed=0
+T05.meta.t05-a6-tidb85-readd status=pass kind=cli_metadata assertions=48 failed=0

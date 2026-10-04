@@ -1,0 +1,3 @@
+	path	github.com/Fanduzi/DeltaScope/cmd/deltascope
+	build	vcs.revision=02843c405bcfbf912b0e9528e3cba99d7ac1f34b
+	build	vcs.modified=true

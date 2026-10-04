@@ -1,0 +1,1 @@
+go test ./internal/interfaces/http/ -count=1 -timeout 180s -run TestHandlerT05A6|TestHandlerT05A5|TestHandlerT05A4

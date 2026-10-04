@@ -1,0 +1,1 @@
+The 3.2MB artifact is not committed. Its commands name --password-env DS_T05_GOLDEN_PW and MySQL prints a password warning. The sha256 above is of that local file.

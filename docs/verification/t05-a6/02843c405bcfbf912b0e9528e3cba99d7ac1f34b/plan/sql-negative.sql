@@ -1,0 +1,8 @@
+CREATE TABLE t (
+  id INT PRIMARY KEY,
+  obsolete INT,
+  keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL
+);
+ALTER TABLE t DROP COLUMN obsolete;
+ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;
+CREATE INDEX ix_removed ON t(obsolete);

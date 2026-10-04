@@ -1,0 +1,11 @@
+profile enabled_count sha256
+all-rules-disabled 0 57e926645162cf32e47f91c9409b48374e85f8c571f801dc56728cb61859b250
+t04-modify-column-compat-isolated 1 6874b37c7315969d65aa5e6c8cb94b293a454487b4ca3828f4a2d7d409715794
+t04b-key-length-isolated 1 533ce28aa73e9b6bc4822f62888f97c55d6751b3e4cb7b7c3dda3ced68fc14a6
+t05-a4-modify-isolated 4 c0879f071a11a2dee53cfee32d08a715b3bb3bd1bd15e098b5a1b98338097cf9
+t05-a5-column-identity-isolated 11 b1111973f9d1299ff19ca37d30a115e850bfd90d97b92d65378da504fa6f1374
+t05-a6-drop-column-isolated 6 4c64a312dac2b31b2d412cdf10c2140983d8835027e30e46be7e6d5adaff268b
+t05-drop-recreate-isolated 5 ebba386df8c4d306a5368e695e5ac9fecb3f5658b35f52822738ed7ee6e1f2c8
+t05-first-path-isolated 4 276d3462a09095525a6fb52411da409f1d1fbd3f3c1101215c8fd4896f6bdf6a
+
+ddl.alter.drop_column.exists.require is enabled only by t05-a6-drop-column-isolated.

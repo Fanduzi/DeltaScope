@@ -1,0 +1,40 @@
+{
+  "catalog_rules": 380,
+  "enabled_rules": {
+    "ddl.table.exists.create.forbid": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {}
+    },
+    "ddl.table.exists.alter.require": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {}
+    },
+    "ddl.alter.drop_column.exists.require": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {}
+    },
+    "ddl.alter.modify_column.exists.require": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {}
+    },
+    "ddl.alter.modify_column.compatibility.require": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+        "required": true
+      }
+    },
+    "ddl.create_index.columns.exists.require": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+        "required": true
+      }
+    }
+  },
+  "disabled_rules": 374
+}

@@ -1,0 +1,1 @@
+go test -tags postgresql ./internal/application/audit/ -count=1 -timeout 180s -run TestBatchStateA6PostgreSQL|TestBatchStateA5PostgreSQL|TestBatchStateA4PostgreSQL

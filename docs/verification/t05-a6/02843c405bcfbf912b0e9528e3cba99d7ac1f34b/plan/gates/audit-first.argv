@@ -1,0 +1,29 @@
+/tmp/t05-a6-plan/bin/deltascope
+audit
+--dialect
+mysql
+--sql
+CREATE TABLE t (
+  id INT PRIMARY KEY,
+  obsolete INT,
+  keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL
+);
+ALTER TABLE t DROP COLUMN obsolete;
+ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;
+CREATE INDEX idx_keep ON t(keep_c);
+--config
+/tmp/t05-a6-plan/policy-a6-first-path.yaml
+--format
+json
+--host
+127.0.0.1
+--port
+23384
+--user
+root
+--password-env
+DS_T05_A6_PW
+--schema
+golden
+--fail-on
+warning

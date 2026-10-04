@@ -1,0 +1,24 @@
+ docs/decisions/2026-10-04-ddl-drop-column-state.md |   65 +
+ .../2026-10-04-ddl-modify-column-state.md          |   12 +-
+ ...2026-10-21-ddl-change-rename-column-identity.md |    2 +-
+ docs/reference/rules.md                            |    2 +
+ docs/reference/rules.zh-CN.md                      |    2 +
+ internal/application/audit/README.md               |    6 +-
+ internal/application/audit/batch_state.go          |   20 +-
+ .../audit/batch_state_a6_matrix_test.go            |  858 ++++++
+ .../audit/batch_state_a6_postgresql_tag_test.go    |  104 +
+ internal/application/audit/batch_state_a6_test.go  |  271 ++
+ .../application/audit/batch_state_drop_column.go   |  265 ++
+ internal/interfaces/cli/README.md                  |    1 +
+ .../cli/audit_ordered_drop_column_a6_test.go       |  164 ++
+ internal/interfaces/http/README.md                 |    1 +
+ .../http/audit_ordered_drop_column_a6_test.go      |  144 +
+ internal/interfaces/mcp/README.md                  |    1 +
+ .../mcp/audit_ordered_drop_column_a6_test.go       |  121 +
+ pkg/deltascope/README.md                           |    1 +
+ .../audit_ordered_drop_column_a6_test.go           |  121 +
+ scripts/README.md                                  |    4 +-
+ scripts/ddl_golden.py                              |  286 +-
+ scripts/test_ddl_golden.py                         |  118 +-
+ testdata/ddl-golden/T05.json                       | 3098 +++++++++++++++++++-
+ 23 files changed, 5649 insertions(+), 18 deletions(-)
