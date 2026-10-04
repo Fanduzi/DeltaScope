@@ -1,0 +1,170 @@
+{
+  "case_id": "T05.cli.tidb-alter-drop-check",
+  "kind": "cli_audit",
+  "cli_case": "tidb-alter-drop-check",
+  "dialect": "tidb",
+  "input_sql": "ALTER TABLE t DROP CHECK chk;",
+  "policy_profile": "t04-modify-column-compat-isolated",
+  "policy_path": "/private/tmp/ds-t05-a4-r2-golden-0cb6b7e38fc0063bb7f78dc2eb4db60e31528070/T05/golden-policy.yaml",
+  "command": [
+    "/private/tmp/ds-t05-a4-r2-golden-0cb6b7e38fc0063bb7f78dc2eb4db60e31528070/T05/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "ALTER TABLE t DROP CHECK chk;",
+    "--config",
+    "/private/tmp/ds-t05-a4-r2-golden-0cb6b7e38fc0063bb7f78dc2eb4db60e31528070/T05/golden-policy.yaml",
+    "--format",
+    "json",
+    "--fail-on",
+    "none"
+  ],
+  "expected": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+      "incomplete"
+    ],
+    "unsupported_features": [
+      "alter_table.drop_check"
+    ],
+    "statement_sql": [
+      "ALTER TABLE t DROP CHECK chk;"
+    ]
+  },
+  "actual": {
+    "exit": 1,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"incomplete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t DROP CHECK chk;\",\"normalized_sql\":\"ALTER TABLE t DROP CHECK chk\",\"coverage\":{\"status\":\"incomplete\"}}],\"unsupported\":[{\"feature\":\"alter_table.drop_check\",\"sql\":\"ALTER TABLE t DROP CHECK chk;\",\"reason\":\"parsed by the shared parser but not covered by audited semantics\",\"metadata\":{\"action\":\"drop_check\",\"aspect\":\"action\"}}],\"diagnostics\":[{\"classification\":\"unsupported_statement\",\"reason\":\"DeltaScope recognized this statement or feature but does not audit it yet\",\"action_hint\":\"treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release\",\"audited\":false,\"dialect\":\"tidb\"}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":0,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"tidb\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "incomplete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t DROP CHECK chk;",
+          "normalized_sql": "ALTER TABLE t DROP CHECK chk",
+          "coverage": {
+            "status": "incomplete"
+          }
+        }
+      ],
+      "unsupported": [
+        {
+          "feature": "alter_table.drop_check",
+          "sql": "ALTER TABLE t DROP CHECK chk;",
+          "reason": "parsed by the shared parser but not covered by audited semantics",
+          "metadata": {
+            "action": "drop_check",
+            "aspect": "action"
+          }
+        }
+      ],
+      "diagnostics": [
+        {
+          "classification": "unsupported_statement",
+          "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+          "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+          "audited": false,
+          "dialect": "tidb"
+        }
+      ],
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 0,
+        "skipped": []
+      },
+      "context": {
+        "mode": "offline",
+        "dialect": "tidb",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[{'classification': 'unsupported_statement', 'reason': 'DeltaScope recognized this statement or feature but does not audit it yet', 'action_hint': 'treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release', 'audited': False, 'dialect': 'tidb'}]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[{'feature': 'alter_table.drop_check', 'sql': 'ALTER TABLE t DROP CHECK chk;', 'reason': 'parsed by the shared parser but not covered by audited semantics', 'metadata': {'action': 'drop_check', 'aspect': 'action'}}]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='incomplete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['incomplete']"
+    },
+    {
+      "name": "unsupported features",
+      "ok": true,
+      "detail": "features=['alter_table.drop_check'] expected=['alter_table.drop_check']"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['ALTER TABLE t DROP CHECK chk;'] expected=['ALTER TABLE t DROP CHECK chk;']"
+    },
+    {
+      "name": "unsupported sql identity index=0",
+      "ok": true,
+      "detail": "sql='ALTER TABLE t DROP CHECK chk;' expected='ALTER TABLE t DROP CHECK chk;'"
+    }
+  ],
+  "status": "pass"
+}

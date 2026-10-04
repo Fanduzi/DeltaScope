@@ -1,0 +1,4 @@
+===== validate =====
+[ddl-golden] artifact valid
+RC validate 0
+GATE_FAIL=0

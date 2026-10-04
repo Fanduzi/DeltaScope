@@ -1,0 +1,6 @@
+===== golden =====
+python3 ./scripts/ddl_golden.py run --task "T05" --artifact-dir "/tmp/ds-t05-a4-r2-golden-0cb6b7e38fc0063bb7f78dc2eb4db60e31528070"
+[ddl-golden] task=T05 head=0cb6b7e38fc0 cases=204 passed=204 assertions=3486
+[ddl-golden] artifact=/private/tmp/ds-t05-a4-r2-golden-0cb6b7e38fc0063bb7f78dc2eb4db60e31528070/T05/artifact.json
+[ddl-golden] PASS
+RC golden 0

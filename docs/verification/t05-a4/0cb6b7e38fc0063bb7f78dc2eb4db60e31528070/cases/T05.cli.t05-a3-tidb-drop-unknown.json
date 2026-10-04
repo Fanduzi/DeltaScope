@@ -1,0 +1,202 @@
+{
+  "case_id": "T05.cli.t05-a3-tidb-drop-unknown",
+  "kind": "cli_audit",
+  "cli_case": "t05-a3-tidb-drop-unknown",
+  "dialect": "tidb",
+  "input_sql": "DROP TABLE t;",
+  "policy_profile": "t05-drop-recreate-isolated",
+  "policy_path": "/private/tmp/ds-t05-a4-r2-golden-0cb6b7e38fc0063bb7f78dc2eb4db60e31528070/T05/golden-policy-t05-drop-recreate-isolated.yaml",
+  "command": [
+    "/private/tmp/ds-t05-a4-r2-golden-0cb6b7e38fc0063bb7f78dc2eb4db60e31528070/T05/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "DROP TABLE t;",
+    "--config",
+    "/private/tmp/ds-t05-a4-r2-golden-0cb6b7e38fc0063bb7f78dc2eb4db60e31528070/T05/golden-policy-t05-drop-recreate-isolated.yaml",
+    "--format",
+    "json",
+    "--fail-on",
+    "warning"
+  ],
+  "expected": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+      "unverified"
+    ],
+    "statement_sql": [
+      "DROP TABLE t;"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 5,
+    "statement_indices": [
+      0
+    ],
+    "evidence_gap_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.table.drop.exists.require",
+        "reason_code": "unknown_table_state",
+        "required_facts": [
+          "target_table.existence"
+        ]
+      }
+    ]
+  },
+  "actual": {
+    "exit": 1,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"DROP TABLE t;\",\"normalized_sql\":\"DROP TABLE t\",\"evidence_gaps\":[{\"rule_id\":\"ddl.table.drop.exists.require\",\"reason_code\":\"unknown_table_state\",\"required_facts\":[\"target_table.existence\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":5,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"tidb\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "unverified"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "DROP TABLE t;",
+          "normalized_sql": "DROP TABLE t",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.table.drop.exists.require",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "target_table.existence"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        }
+      ],
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 5,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "offline",
+        "dialect": "tidb",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=5"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='unverified'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['unverified']"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['DROP TABLE t;'] expected=['DROP TABLE t;']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=1"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[(0, 'ddl.table.drop.exists.require', 'unknown_table_state')] expected=[(0, 'ddl.table.drop.exists.require', 'unknown_table_state')]"
+    },
+    {
+      "name": "evidence gap required_facts (0, 'ddl.table.drop.exists.require', 'unknown_table_state')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.table.drop.exists.require', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.existence']}] expected_facts=['target_table.existence']"
+    },
+    {
+      "name": "no gap encoded as finding",
+      "ok": true,
+      "detail": "findings carrying gap shape=[]"
+    },
+    {
+      "name": "fail_on_triggered",
+      "ok": true,
+      "detail": "fail_on_triggered=True"
+    }
+  ],
+  "status": "pass"
+}

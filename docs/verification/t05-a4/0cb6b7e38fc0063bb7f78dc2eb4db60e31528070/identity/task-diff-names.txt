@@ -1,0 +1,7 @@
+docs/decisions/2026-10-04-ddl-modify-column-state.md
+internal/application/audit/README.md
+internal/application/audit/batch_state.go
+internal/application/audit/batch_state_a4_r1_test.go
+internal/application/audit/batch_state_a4_r2_test.go
+internal/application/audit/batch_state_modify.go
+internal/domain/rule/ddl/README.md

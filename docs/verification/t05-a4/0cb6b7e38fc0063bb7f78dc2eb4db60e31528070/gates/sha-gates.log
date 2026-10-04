@@ -1,0 +1,253 @@
+HEAD 0cb6b7e38fc0063bb7f78dc2eb4db60e31528070
+PARENT 6a852d4f243a097454547a3ff853d3648c838b84
+ART /tmp/ds-t05-a4-r2-golden-0cb6b7e38fc0063bb7f78dc2eb4db60e31528070
+===== diff-check =====
+RC diff-check 0
+===== gofmt =====
+RC gofmt 0
+===== decision-task =====
+decision-record-gate: docs/decisions/*.md present in diff, PASS
+RC decision-task 0
+===== decision-main =====
+./scripts/check_decision_record.sh main...HEAD
+decision-record-gate: trigger paths hit but no trigger keywords in diff, PASS
+RC decision-main 0
+===== validator =====
+python3 ./scripts/test_ddl_golden.py
+PASS valid control artifact passes
+PASS missing required case rejected
+PASS zero cases rejected
+PASS unreachable required DB rejected
+PASS version mismatch rejected
+PASS missing image digest rejected
+PASS stale/missing binary rejected
+PASS binary sha mismatch rejected
+PASS hand-written PASS rejected
+PASS permission-error-as-negative rejected
+PASS residual containers rejected
+PASS shrunk denominator rejected
+PASS missing expected field rejected
+PASS deleted metadata query records rejected
+PASS failed metadata query rc rejected
+PASS non-JSON CLI stdout rejected
+PASS tampered expected+actual rejected
+PASS parsed disagreeing with stdout rejected
+PASS manifest anchors + artifact shrunk together rejected
+PASS required_case_ids + artifact cases shrunk together rejected
+PASS cli dialect removed from manifest+artifact rejected
+PASS cli_cases coverage+unsupported artifact passes
+PASS cli_cases coverage downgrade rejected
+PASS cli_cases wrong unsupported feature rejected
+PASS cli_cases paired unsupported entries pass
+PASS cli_cases swapped unsupported reasons rejected
+PASS cli_cases out-of-range unsupported index rejected
+PASS cli_cases metadata pins pass
+PASS cli_cases wrong metadata rejected
+PASS t04 evidence-gap artifact passes
+PASS t04 missing evidence gap rejected
+PASS t04 wrong gap rule_id rejected
+PASS t04 wrong required_facts rejected
+PASS t04 gap smuggled as finding rejected
+PASS t04 parsed-only gap removal rejected
+PASS t04 tampered post_verify rejected
+PASS t04 password in command rejected
+PASS t04 error-case exit mismatch rejected
+PASS t04 error-case missing stderr marker rejected
+PASS t04 policy sha mismatch rejected
+PASS t04 unknown policy profile rejected
+PASS t04 tampered enabled_rules rejected
+PASS t04 emptied policy rejected
+PASS t04 re-leveled policy rejected
+PASS t04 re-paramed policy rejected
+PASS t04 wrong --config profile rejected
+PASS t04 policy without sha256 rejected
+PASS t04 mismatched metadata port rejected
+PASS t04 mismatched metadata host rejected
+PASS t04 duplicate enabled rejected
+PASS t04 duplicate level rejected
+PASS t04 duplicate params block rejected
+PASS t04 duplicate param key rejected
+PASS t04 rule before rules header rejected
+PASS t04 duplicate rules header rejected
+PASS t04b version artifact passes
+PASS t04b tampered target_raw rejected
+PASS t04b tampered target_canonical rejected
+PASS t04b canonical inconsistent with raw rejected
+PASS t04b tidb compat prefix 8.0.11 rejected
+PASS t04b request/observed conflict as success rejected
+PASS t04b out-of-range recorded complete rejected
+PASS t04b missing version_evidence rejected
+PASS t04b removed --target-version argv rejected
+PASS t04b provider error laundered as gap result rejected
+PASS t04b-r1 deleted instance_facts rejected
+PASS t04b-r1 tampered max-index-length rejected
+PASS t04b-r1 emptied instance_facts rejected
+PASS t04b-r1 mismatch without observed banner rejected
+PASS t04b-r1 mismatch canonical prefix-taken rejected
+PASS t04b-r1 product mismatch as success rejected
+PASS t04b-r1 malformed target as connection failure rejected
+PASS t04b-r1 8.0.46 missing minor=0 rejected
+PASS t04b-r1 8.5.0 missing patch rejected
+PASS t04b-r1 component/canonical drift rejected
+PASS t05 ordered-state artifact passes
+PASS t05 deleted middle statement rejected
+PASS t05 missing-column negative as pass rejected
+PASS t05 dependent-after-unsupported as complete rejected
+PASS t05 finding moved to wrong statement rejected
+PASS t05 finding metadata column changed rejected
+PASS t05 audit-before query removed rejected
+PASS t05 audit-after query altered rejected
+PASS t05 structure query removed rejected
+PASS t05 structure answer altered rejected
+PASS t05 failed fixture execute as success rejected
+PASS t05 teardown residual verify removed rejected
+PASS t05 profile name colliding with default rejected
+PASS t05 rename statement dropped rejected
+PASS t05 rename rebound at index rejected
+PASS t05 rename old source still present rejected
+PASS t05 rename destination existence flipped rejected
+PASS t05 rename destination members wrong rejected
+PASS t05 rename destination precondition dropped rejected
+PASS t05 rename execute failure as pass rejected
+PASS t05 unqualified destination in src rejected
+PASS t05 unqualified session database flipped rejected
+PASS t05 required rename case removed rejected
+PASS a3 valid synthetic control
+PASS a3 missing DROP statement rejected
+PASS a3 same-length DROP replacement rejected
+PASS a3 missing DROP execute rejected
+PASS a3 failed DROP claiming pass rejected
+PASS a3 missing intermediate verify rejected
+PASS a3 intermediate verify output mutation rejected
+PASS a3 intermediate verify rc mutation rejected
+PASS a3 intermediate verify sql mutation rejected
+PASS a3 intermediate verify assert mutation rejected
+PASS a3 intermediate verify moved after recreate rejected
+PASS a3 stale structure oracle 1 rejected
+PASS a3 stale structure oracle 2 rejected
+PASS a3 stale structure oracle 3 rejected
+PASS a3 stale structure oracle 4 rejected
+PASS a3 stale structure oracle 5 rejected
+PASS a3 missing old-column blocker rejected
+PASS a3 old-column blocker identity rejected
+PASS a3 old-column blocker wrong statement rejected
+PASS a3 nested finding owner mismatch rejected
+PASS a3 statement finding moved to global rejected
+PASS a3 unknown DROP gap deleted rejected
+PASS a3 driver success cannot erase policy blocker
+PASS a3 permission error cannot replace unknown-table error
+PASS a3 missing same-call IF EXISTS note rejected
+PASS a3 required case missing rejected
+PASS a3 manifest and artifact shrunk together rejected
+PASS a3 intermediate oracle removed on both sides rejected
+PASS a3 wrong profile cannot substitute five-rule policy
+PASS a3 DROP rule missing from profile rejected
+PASS a3 four loaded rules rejected
+PASS a3 runner queries absence before recreating
+PASS a3 runner-produced synthetic case validates
+PASS a4 valid synthetic control
+PASS a4 intermediate VARCHAR(20) statement deleted rejected
+PASS a4 intermediate 20 rewritten as 10 rejected
+PASS a4 intermediate 20 column probe rewritten as 10 rejected
+PASS a4 fourth statement disagrees with the 15 post-state rejected
+PASS a4 fourth-path shrink source no longer 20 rejected
+PASS a4 widen-then-25 uses the old 20 instead of 30 rejected
+PASS a4 shrink finding on the wrong statement rejected
+PASS a4 shrink finding on the wrong column rejected
+PASS a4 source and target lengths swapped rejected
+PASS a4 policy reject recorded as a native driver error rejected
+PASS a4 offline create gap deleted rejected
+PASS a4 offline create gap forged rejected
+PASS a4 per-step verify deleted rejected
+PASS a4 per-step verify shifted rejected
+PASS a4 omitted default and comment left behind rejected
+PASS a4 primary key not-null oracle lost rejected
+PASS a4 tidb primary-key signedness marker dropped rejected
+PASS a4 tidb primary-key signedness recorded as success rejected
+PASS a4 tidb primary-key signedness successor gap deleted rejected
+PASS a4 manifest and artifact shrunk together rejected
+PASS a4 wrong profile cannot substitute four-rule policy
+PASS a4 compatibility rule removed from profile rejected
+PASS a4 loaded rule count other than 4 rejected
+contract cases=155 failures=0
+RC validator 0
+===== unit =====
+go test ./...
+?   	github.com/Fanduzi/DeltaScope/cmd/deltascope	[no test files]
+ok  	github.com/Fanduzi/DeltaScope/cmd/deltascope-mcp	0.577s
+ok  	github.com/Fanduzi/DeltaScope/cmd/deltascope-server	0.539s
+?   	github.com/Fanduzi/DeltaScope/internal/application	[no test files]
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	1.534s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/auditmeta	4.911s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/configlint	2.275s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/configstatus	2.731s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/connresolve	3.099s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/online	4.420s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/policy	3.961s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/queryaccess	1.903s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/rulepresence	3.537s
+?   	github.com/Fanduzi/DeltaScope/internal/domain	[no test files]
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/policy	1.369s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/queryaccess	5.147s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/report	5.145s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule	4.706s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/catalog	4.938s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	4.992s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/dml	4.983s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/spec	4.915s
+?   	github.com/Fanduzi/DeltaScope/internal/infrastructure	[no test files]
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/config/viper	4.952s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/logger	4.909s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql	4.920s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/postgresql	4.908s
+?   	github.com/Fanduzi/DeltaScope/internal/infrastructure/output	[no test files]
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/githubactions	4.799s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/githubsummary	4.774s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/gitlabcodequality	4.796s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/json	4.790s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/markdown	4.780s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/sarif	4.735s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/postgresql	4.754s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	4.870s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig	4.842s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/cli	5.241s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/http	5.279s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/mcp	5.407s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/metadata	5.287s
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	5.543s
+RC unit 0
+===== pg =====
+CGO_ENABLED=1 go test -tags postgresql -count=1 ./internal/infrastructure/parser/postgresql ./internal/application/audit ./internal/application/auditmeta ./internal/interfaces/cli ./internal/interfaces/http ./internal/interfaces/mcp ./pkg/deltascope
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/postgresql	0.498s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	1.297s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/auditmeta	1.149s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/cli	1.844s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/http	2.273s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/mcp	3.816s
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	2.872s
+RC pg 0
+===== corpus =====
+go test ./internal/application/audit -run 'TestSQLCorpusMySQLAndTiDB|TestSQLCorpusExpectedFilesAreWellFormed|TestSQLCorpusCoversSupportedRuleDialects' -count=1
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.350s
+RC corpus 0
+===== inventory =====
+go test ./internal/application/audit -run TestDDLInventoryContract -count=1
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.331s
+RC inventory 0
+===== catalog =====
+go test ./internal/application/audit -count=1 -tags postgresql -run TestDDLCoverageCatalog
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.489s
+RC catalog 0
+===== docs =====
+docs-examples: PASS
+RC docs 0
+===== golden =====
+python3 ./scripts/ddl_golden.py run --task "T05" --artifact-dir "/tmp/ds-t05-a4-r2-golden-0cb6b7e38fc0063bb7f78dc2eb4db60e31528070"
+[ddl-golden] task=T05 head=0cb6b7e38fc0 cases=204 passed=204 assertions=3486
+[ddl-golden] artifact=/private/tmp/ds-t05-a4-r2-golden-0cb6b7e38fc0063bb7f78dc2eb4db60e31528070/T05/artifact.json
+[ddl-golden] PASS
+RC golden 0
+===== validate =====
+[ddl-golden] artifact valid
+RC validate 0
+GATE_FAIL=0

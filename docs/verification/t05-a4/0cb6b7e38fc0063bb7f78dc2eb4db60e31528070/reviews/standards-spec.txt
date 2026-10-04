@@ -1,0 +1,20 @@
+T05-A4-R2 implementer checklist. This is not reviewer acceptance.
+
+Standards
+- Code commit 0cb6b7e38fc0063bb7f78dc2eb4db60e31528070 is on milestone/mysql-tidb-ddl-completion.
+- The commit message has no Co-authored-by trailer.
+- Task diff 6a852d4f...0cb6b7e3 is 7 files. Root README.md and README_ZH.md are unchanged.
+- The audit module README and the ddl rule README sentence that described the old column-scoped write set are in the same commit. The staged three-level check printed OK plus the L1 reminder.
+- Decision record amendment T05-A4-R2 is in that commit. Task-range check printed "docs/decisions/*.md present in diff, PASS". make decision-record-gate on main...HEAD printed the existing keyword note and exit 0.
+- Gates listed in README.md ran on 0cb6b7e3. T05 golden 204/204, 3486 assertions, validate artifact valid.
+- Validator contract cases=155 failures=0.
+- Evidence contains no binary and no new password. vcs.modified=true matches the six preexisting untracked paths.
+- Parser, coverage catalog, and golden runner were not edited, so T02/T03/T04 were not rerun.
+- No new delivery blocker in the source or the logs.
+
+Spec
+- A non-precise MODIFY, including MODIFY plus RENAME and MODIFY plus DROP COLUMN, tombstones every TableTargets identity and already-loaded dependents of those identities. An endpoint that was not loaded yet receives an unknown tombstone. A later statement does not reread the pre-batch provider.
+- A precise single-column MODIFY with a loaded foreign key that cannot be recomputed tombstones the known-complete target together with that dependent. A complete unrelated reference still publishes the new length.
+- Columns=nil still keeps the target's other known members. Inline PRIMARY KEY and TiDB primary-key signedness stay as closed in T05-A4-R1. The compatibility rule text was not edited.
+- The existing 204 T05 cases stayed in the same run. The new counterexamples were not added to the database matrix.
+- A4 stays not accepted. A1, A2, A3, #82, and #83 stay accepted. #79 and #84 stay open.

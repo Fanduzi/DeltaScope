@@ -1,0 +1,24 @@
+--- FAIL: TestAuditSQLT05A4R2CachedAbsentDestinationBecomesUnknown (0.01s)
+    batch_state_a4_r2_test.go:77: statement 2 findings = [{RuleID:ddl.table.exists.alter.require Level:blocker Message:table "u" does not exist in the target schema StatementIndex:2 StatementKind:ddl Location:0x52022f638090 Suggestion:create the table first or run the audit without metadata mode if live schema checks are unavailable Metadata:map[exists:false table:u] Explanation:0x52022feee0f0}], want none
+--- FAIL: TestAuditSQLT05A4R2DropColumnDropsReferencingChild (0.01s)
+    batch_state_a4_r2_test.go:120: ddl.table.exists.alter.require gaps = [], want one unknown_table_state gap
+--- FAIL: TestAuditSQLT05A4R2RelatedForeignKeyBlocksPreciseSuccessor (0.01s)
+    batch_state_a4_r2_test.go:139: ddl.table.exists.alter.require gaps = [], want one unknown_table_state gap
+--- FAIL: TestAuditSQLT05A4R2RenameInvalidatesBothEnds (0.01s)
+    batch_state_a4_r2_test.go:57: statement 1 findings = [{RuleID:ddl.table.exists.alter.require Level:blocker Message:table "u" does not exist in the target schema StatementIndex:1 StatementKind:ddl Location:0x52022f1c2600 Suggestion:create the table first or run the audit without metadata mode if live schema checks are unavailable Metadata:map[exists:false table:u] Explanation:0x52022f1e41e0}], want none
+--- FAIL: TestAuditSQLT05A4R2RenameDropsLoadedDependents (0.00s)
+    --- FAIL: TestAuditSQLT05A4R2RenameDropsLoadedDependents/destination_reference (0.01s)
+        batch_state_a4_r2_test.go:92: ddl.table.exists.alter.require gaps = [], want one unknown_table_state gap
+    --- FAIL: TestAuditSQLT05A4R2RenameDropsLoadedDependents/source_reference_to_a_column_the_modify_does_not_name (0.01s)
+        batch_state_a4_r2_test.go:104: ddl.table.exists.alter.require gaps = [], want one unknown_table_state gap
+--- FAIL: TestBatchStateA4R1AffectedSet (0.00s)
+    --- FAIL: TestBatchStateA4R1AffectedSet/related_foreign_key_invalidates_the_target_with_the_child (0.00s)
+        batch_state_a4_r1_test.go:113: pre-state = &{Schema:golden Instance:0x52022f37c300 Version:<nil> TargetTable:0x52022f88e600 Objects:[]}, want an unknown table
+    --- FAIL: TestBatchStateA4R1AffectedSet/empty_referenced_list_does_not_prove_unrelated (0.00s)
+        batch_state_a4_r1_test.go:233: pre-state = &{Schema:golden Instance:0x52022f79c660 Version:<nil> TargetTable:0x52022f5c2e80 Objects:[]}, want an unknown table
+    --- FAIL: TestBatchStateA4R1AffectedSet/unmodeled_referenced_parts_do_not_prove_unrelated (0.00s)
+        batch_state_a4_r1_test.go:196: pre-state = &{Schema:golden Instance:0x52022f79cc60 Version:<nil> TargetTable:0x52022f5c2080 Objects:[]}, want an unknown table
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.640s
+FAIL
+rc=1

@@ -1,0 +1,571 @@
+{
+  "case_id": "T05.meta.t05-a4-tidb85-pk-unsigned",
+  "kind": "cli_metadata",
+  "cli_case": "t05-a4-tidb85-pk-unsigned",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "CREATE TABLE t (id INT PRIMARY KEY); ALTER TABLE t MODIFY COLUMN id INT UNSIGNED; ALTER TABLE t MODIFY COLUMN id BIGINT UNSIGNED;",
+  "policy_profile": "t05-a4-modify-isolated",
+  "policy_path": "/private/tmp/ds-t05-a4-r2-golden-0cb6b7e38fc0063bb7f78dc2eb4db60e31528070/T05/golden-policy-t05-a4-modify-isolated.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 3,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+      "complete",
+      "complete",
+      "unverified"
+    ],
+    "statement_sql": [
+      "CREATE TABLE t (id INT PRIMARY KEY);",
+      "ALTER TABLE t MODIFY COLUMN id INT UNSIGNED;",
+      "ALTER TABLE t MODIFY COLUMN id BIGINT UNSIGNED;"
+    ],
+    "evidence_gaps": 3,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 4,
+    "statement_indices": [
+      0,
+      1,
+      2
+    ],
+    "finding_entries": [
+      {
+        "index": 1,
+        "rule_id": "ddl.alter.modify_column.compatibility.require",
+        "level": "blocker"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 1,
+        "rule_id": "ddl.alter.modify_column.compatibility.require",
+        "metadata": {
+          "action": "modify_column",
+          "table": "t",
+          "name": "id",
+          "column_name": "id",
+          "source_unsigned": false,
+          "target_unsigned": true
+        }
+      }
+    ],
+    "evidence_gap_entries": [
+      {
+        "index": 2,
+        "rule_id": "ddl.alter.modify_column.compatibility.require",
+        "reason_code": "missing_source_column",
+        "required_facts": [
+          "source_column.definition"
+        ]
+      },
+      {
+        "index": 2,
+        "rule_id": "ddl.table.exists.alter.require",
+        "reason_code": "unknown_table_state",
+        "required_facts": [
+          "target_table.existence"
+        ]
+      },
+      {
+        "index": 2,
+        "rule_id": "ddl.alter.modify_column.exists.require",
+        "reason_code": "unknown_table_state",
+        "required_facts": [
+          "target_table.columns",
+          "target_table.existence"
+        ]
+      }
+    ]
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [
+      {
+        "name": "ensure t absent",
+        "sql": "DROP TABLE IF EXISTS t",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "t absent before audit",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit did not create t",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "0",
+        "stderr": ""
+      }
+    ],
+    "execute": [
+      {
+        "name": "driver statement 0",
+        "sql": "CREATE TABLE t (id INT PRIMARY KEY)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "id starts signed not null",
+            "sql": "SELECT CONCAT(DATA_TYPE,':',IF(COLUMN_TYPE LIKE '%unsigned%','unsigned','signed'),':',IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='id'",
+            "rc": 0,
+            "output": "int:signed:NO",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "driver statement 1",
+        "sql": "ALTER TABLE t MODIFY COLUMN id INT UNSIGNED",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 8200 (HY000) at line 1: Unsupported modify column: this column has primary key flag",
+        "verify": [
+          {
+            "assert": "rejected signedness change leaves signed int",
+            "sql": "SELECT CONCAT(DATA_TYPE,':',IF(COLUMN_TYPE LIKE '%unsigned%','unsigned','signed'),':',IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='id'",
+            "rc": 0,
+            "output": "int:signed:NO",
+            "stderr": ""
+          },
+          {
+            "assert": "primary key stays id after rejection",
+            "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+            "rc": 0,
+            "output": "id",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "structure": [
+      {
+        "assert": "t exists",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "1",
+        "stderr": ""
+      },
+      {
+        "assert": "column stays id",
+        "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "id:int",
+        "stderr": ""
+      },
+      {
+        "assert": "primary key stays id",
+        "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+        "rc": 0,
+        "output": "id",
+        "stderr": ""
+      },
+      {
+        "assert": "id stays signed not null",
+        "sql": "SELECT CONCAT(DATA_TYPE,':',IF(COLUMN_TYPE LIKE '%unsigned%','unsigned','signed'),':',IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='id'",
+        "rc": 0,
+        "output": "int:signed:NO",
+        "stderr": ""
+      }
+    ],
+    "teardown": [
+      {
+        "name": "drop fixture",
+        "sql": "DROP TABLE IF EXISTS t",
+        "rc": 0,
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "no residual t",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":3,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t (id INT PRIMARY KEY);\",\"normalized_sql\":\"CREATE TABLE t (id INT PRIMARY KEY)\",\"coverage\":{\"status\":\"complete\"}},{\"index\":1,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t MODIFY COLUMN id INT UNSIGNED;\",\"normalized_sql\":\"ALTER TABLE t MODIFY COLUMN id INT UNSIGNED\",\"findings\":[{\"rule_id\":\"ddl.alter.modify_column.compatibility.require\",\"level\":\"blocker\",\"message\":\"column \\\"id\\\" changes unsigned mode from false to true\",\"statement_index\":1,\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":38},\"suggestion\":\"keep signedness unchanged unless the current data range is fully reviewed\",\"metadata\":{\"action\":\"modify_column\",\"column_name\":\"id\",\"name\":\"id\",\"source_unsigned\":false,\"table\":\"t\",\"target_unsigned\":true},\"explanation\":{\"summary\":\"Require DDL alter modify column compatibility require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"keep signedness unchanged unless the current data range is fully reviewed\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}},{\"index\":2,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t MODIFY COLUMN id BIGINT UNSIGNED;\",\"normalized_sql\":\"ALTER TABLE t MODIFY COLUMN id BIGINT UNSIGNED\",\"evidence_gaps\":[{\"rule_id\":\"ddl.alter.modify_column.compatibility.require\",\"reason_code\":\"missing_source_column\",\"required_facts\":[\"source_column.definition\"]},{\"rule_id\":\"ddl.table.exists.alter.require\",\"reason_code\":\"unknown_table_state\",\"required_facts\":[\"target_table.existence\"]},{\"rule_id\":\"ddl.alter.modify_column.exists.require\",\"reason_code\":\"unknown_table_state\",\"required_facts\":[\"target_table.columns\",\"target_table.existence\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":4,\"applicable\":4,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "unverified"
+      },
+      "summary": {
+        "statements": 3,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t (id INT PRIMARY KEY);",
+          "normalized_sql": "CREATE TABLE t (id INT PRIMARY KEY)",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 1,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t MODIFY COLUMN id INT UNSIGNED;",
+          "normalized_sql": "ALTER TABLE t MODIFY COLUMN id INT UNSIGNED",
+          "findings": [
+            {
+              "rule_id": "ddl.alter.modify_column.compatibility.require",
+              "level": "blocker",
+              "message": "column \"id\" changes unsigned mode from false to true",
+              "statement_index": 1,
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 38
+              },
+              "suggestion": "keep signedness unchanged unless the current data range is fully reviewed",
+              "metadata": {
+                "action": "modify_column",
+                "column_name": "id",
+                "name": "id",
+                "source_unsigned": false,
+                "table": "t",
+                "target_unsigned": true
+              },
+              "explanation": {
+                "summary": "Require DDL alter modify column compatibility require",
+                "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+                "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                "suggestion": "keep signedness unchanged unless the current data range is fully reviewed",
+                "metadata": {
+                  "status": "available",
+                  "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                }
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 2,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t MODIFY COLUMN id BIGINT UNSIGNED;",
+          "normalized_sql": "ALTER TABLE t MODIFY COLUMN id BIGINT UNSIGNED",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.alter.modify_column.compatibility.require",
+              "reason_code": "missing_source_column",
+              "required_facts": [
+                "source_column.definition"
+              ]
+            },
+            {
+              "rule_id": "ddl.table.exists.alter.require",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "target_table.existence"
+              ]
+            },
+            {
+              "rule_id": "ddl.alter.modify_column.exists.require",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "target_table.columns",
+                "target_table.existence"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        }
+      ],
+      "version": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 4,
+        "applicable": 4,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "tidb",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "setup ensure t absent return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup ensure t absent: t absent before audit",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=3 expected=3"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=4"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0, 1, 2]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='unverified'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete', 'complete', 'unverified']"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['CREATE TABLE t (id INT PRIMARY KEY);', 'ALTER TABLE t MODIFY COLUMN id INT UNSIGNED;', 'ALTER TABLE t MODIFY COLUMN id BIGINT UNSIGNED;'] expected=['CREATE TABLE t (id INT PRIMARY KEY);', 'ALTER TABLE t MODIFY COLUMN id INT UNSIGNED;', 'ALTER TABLE t MODIFY COLUMN id BIGINT UNSIGNED;']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=3"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[(2, 'ddl.alter.modify_column.compatibility.require', 'missing_source_column'), (2, 'ddl.alter.modify_column.exists.require', 'unknown_table_state'), (2, 'ddl.table.exists.alter.require', 'unknown_table_state')] expected=[(2, 'ddl.alter.modify_column.compatibility.require', 'missing_source_column'), (2, 'ddl.alter.modify_column.exists.require', 'unknown_table_state'), (2, 'ddl.table.exists.alter.require', 'unknown_table_state')]"
+    },
+    {
+      "name": "evidence gap required_facts (2, 'ddl.alter.modify_column.compatibility.require', 'missing_source_column')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.alter.modify_column.compatibility.require', 'reason_code': 'missing_source_column', 'required_facts': ['source_column.definition']}, {'rule_id': 'ddl.table.exists.alter.require', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.existence']}, {'rule_id': 'ddl.alter.modify_column.exists.require', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.columns', 'target_table.existence']}] expected_facts=['source_column.definition']"
+    },
+    {
+      "name": "evidence gap required_facts (2, 'ddl.table.exists.alter.require', 'unknown_table_state')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.alter.modify_column.compatibility.require', 'reason_code': 'missing_source_column', 'required_facts': ['source_column.definition']}, {'rule_id': 'ddl.table.exists.alter.require', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.existence']}, {'rule_id': 'ddl.alter.modify_column.exists.require', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.columns', 'target_table.existence']}] expected_facts=['target_table.existence']"
+    },
+    {
+      "name": "evidence gap required_facts (2, 'ddl.alter.modify_column.exists.require', 'unknown_table_state')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.alter.modify_column.compatibility.require', 'reason_code': 'missing_source_column', 'required_facts': ['source_column.definition']}, {'rule_id': 'ddl.table.exists.alter.require', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.existence']}, {'rule_id': 'ddl.alter.modify_column.exists.require', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.columns', 'target_table.existence']}] expected_facts=['target_table.columns', 'target_table.existence']"
+    },
+    {
+      "name": "no gap encoded as finding",
+      "ok": true,
+      "detail": "findings carrying gap shape=[]"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(1, 'ddl.alter.modify_column.compatibility.require', 'blocker')] expected=[(1, 'ddl.alter.modify_column.compatibility.require', 'blocker')]"
+    },
+    {
+      "name": "finding metadata (1, 'ddl.alter.modify_column.compatibility.require')",
+      "ok": true,
+      "detail": "findings=[{'action': 'modify_column', 'column_name': 'id', 'name': 'id', 'source_unsigned': False, 'table': 't', 'target_unsigned': True}] expected_subset={'action': 'modify_column', 'table': 't', 'name': 'id', 'column_name': 'id', 'source_unsigned': False, 'target_unsigned': True}"
+    },
+    {
+      "name": "fail_on_triggered",
+      "ok": true,
+      "detail": "fail_on_triggered=True"
+    },
+    {
+      "name": "post-verify audit did not create t",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute driver statement 0 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute driver statement 0: id starts signed not null",
+      "ok": true,
+      "detail": "rc=0 output='int:signed:NO' expected='int:signed:NO'"
+    },
+    {
+      "name": "execute driver statement 1 return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr='ERROR 8200 (HY000) at line 1: Unsupported modify column: this column has primary key flag'"
+    },
+    {
+      "name": "execute driver statement 1 stderr marker",
+      "ok": true,
+      "detail": "ERROR 8200"
+    },
+    {
+      "name": "execute driver statement 1 stderr marker",
+      "ok": true,
+      "detail": "column has primary key flag"
+    },
+    {
+      "name": "execute driver statement 1: rejected signedness change leaves signed int",
+      "ok": true,
+      "detail": "rc=0 output='int:signed:NO' expected='int:signed:NO'"
+    },
+    {
+      "name": "execute driver statement 1: primary key stays id after rejection",
+      "ok": true,
+      "detail": "rc=0 output='id' expected='id'"
+    },
+    {
+      "name": "structure t exists",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "structure column stays id",
+      "ok": true,
+      "detail": "rc=0 output='id:int' expected='id:int'"
+    },
+    {
+      "name": "structure primary key stays id",
+      "ok": true,
+      "detail": "rc=0 output='id' expected='id'"
+    },
+    {
+      "name": "structure id stays signed not null",
+      "ok": true,
+      "detail": "rc=0 output='int:signed:NO' expected='int:signed:NO'"
+    },
+    {
+      "name": "teardown drop fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop fixture: no residual t",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ds-t05-a4-r2-golden-0cb6b7e38fc0063bb7f78dc2eb4db60e31528070/T05/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "CREATE TABLE t (id INT PRIMARY KEY); ALTER TABLE t MODIFY COLUMN id INT UNSIGNED; ALTER TABLE t MODIFY COLUMN id BIGINT UNSIGNED;",
+    "--config",
+    "/private/tmp/ds-t05-a4-r2-golden-0cb6b7e38fc0063bb7f78dc2eb4db60e31528070/T05/golden-policy-t05-a4-modify-isolated.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "golden",
+    "--fail-on",
+    "blocker"
+  ]
+}

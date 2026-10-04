@@ -1,0 +1,8 @@
+ .../2026-10-04-ddl-modify-column-state.md          |   8 +-
+ internal/application/audit/README.md               |   7 +-
+ internal/application/audit/batch_state.go          |  14 +-
+ .../application/audit/batch_state_a4_r1_test.go    |  16 ++-
+ .../application/audit/batch_state_a4_r2_test.go    | 160 +++++++++++++++++++++
+ internal/application/audit/batch_state_modify.go   | 113 +++++++++++----
+ internal/domain/rule/ddl/README.md                 |   2 +-
+ 7 files changed, 277 insertions(+), 43 deletions(-)

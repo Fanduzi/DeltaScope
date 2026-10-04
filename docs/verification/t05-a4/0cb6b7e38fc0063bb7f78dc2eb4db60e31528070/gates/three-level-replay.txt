@@ -1,0 +1,5 @@
+[three-level-doc][L1] reminder: module docs changed, confirm whether root README.md needs update
+[three-level-doc] OK
+command: /Users/fan/.agents/skills/check-three-level-doc/scripts/check_three_level_doc.sh
+ran on the unstaged task diff immediately before commit 0cb6b7e38fc0063bb7f78dc2eb4db60e31528070
+root README.md and README_ZH.md were left unchanged
