@@ -1,6 +1,6 @@
 // Package audit orchestrates audit use cases at the application layer.
 // input: one fully parsed CHANGE COLUMN or RENAME COLUMN statement, the request-local pre-state, and the already-resolved version identity
-// output: one publication that either migrates the source column in place or tombstones the affected tables and loaded dependents
+// output: one publication that either migrates the source column in place or tombstones the affected tables and loaded dependents; a loaded empty member collection stays empty, and a CHANGE declaration outside the ordinary template tombstones before a withheld column set is kept
 // pos: T05-A5 column-identity transition beside the ordinary MODIFY replacement; it reuses A4 definition helpers and does not rewrite foreign keys
 // note: if this file changes, update this header and module README.md.
 package audit
@@ -62,6 +62,12 @@ func (s *batchState) prepareColumnIdentity(statement spec.Statement, alter *spec
 		return invalidate()
 	}
 	if entry.shape.Columns == nil {
+		// A declaration can be outside the ordinary template without the old
+		// column definition. That check has to win before this branch keeps a
+		// known-empty primary key or index set.
+		if alter.Action == "change_column" && alter.Column != nil && alter.Column.Definition != nil && modifyDeclaresExtraMember(alter, *alter.Column.Definition) {
+			return invalidate(primary)
+		}
 		shape := cloneTableSnapshot(entry.shape)
 		scrubColumnIdentityMembers(shape, oldName, newName)
 		return modifyPublication{
@@ -247,8 +253,9 @@ func rewriteColumnRefs(columns []string, oldName, newName string) []string {
 
 // scrubColumnIdentityMembers drops member payloads that still name the old or
 // new column, or that cannot prove they ignore both. Proven-unrelated members
-// stay. A nil collection stays nil and is marked unknown; it is not replaced
-// with a known empty list.
+// stay. A nil collection is left unchanged: Unknown=false is a loaded empty
+// set, and Unknown=true stays unknown. It is not replaced with a known empty
+// list, and a known absence is not marked unknown.
 func scrubColumnIdentityMembers(shape *spec.TableSnapshot, oldName, newName string) {
 	if shape.PrimaryKey != nil && !indexProvesUnrelated(*shape.PrimaryKey, oldName, newName) {
 		shape.PrimaryKey = nil
@@ -274,9 +281,6 @@ func indexProvesUnrelated(index spec.Index, oldName, newName string) bool {
 
 func scrubIndexList(indexes *[]spec.Index, unknown *bool, oldName, newName string) {
 	if indexes == nil || *indexes == nil {
-		if unknown != nil {
-			*unknown = true
-		}
 		return
 	}
 	kept := make([]spec.Index, 0, len(*indexes))
@@ -300,7 +304,6 @@ func scrubIndexList(indexes *[]spec.Index, unknown *bool, oldName, newName strin
 
 func scrubConstraintList(shape *spec.TableSnapshot, oldName, newName string) {
 	if shape.Constraints == nil {
-		shape.ConstraintsUnknown = true
 		return
 	}
 	kept := make([]spec.Constraint, 0, len(shape.Constraints))

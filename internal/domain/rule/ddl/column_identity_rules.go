@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: one unconditional CHANGE COLUMN or RENAME COLUMN statement plus the ordered table snapshot and the statement version identity
-// output: a target-name conflict blocker, or a RENAME COLUMN version blocker or evidence gap
+// output: a target-name conflict blocker, or a RENAME COLUMN version blocker or evidence gap; the same identity emits neither a finding nor a gap
 // pos: T05-A5 column-identity checks beside the existing source-existence rules; the version threshold is the shared spec function
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -73,8 +73,16 @@ func (r columnTargetExistsRule) EvidenceGaps(statement spec.Statement) []rule.Ev
 	if !orderedGapDialect(statement.Dialect) || !r.AppliesTo(statement) {
 		return nil
 	}
-	snapshot, ok := targetTableSnapshot(statement)
-	return memberExistenceGaps(snapshot, ok, "column")
+	alter, ok := singleColumnIdentityAlter(statement, r.action)
+	if !ok {
+		return nil
+	}
+	oldName, newName, namesOK := columnIdentityAlterNames(alter)
+	if !namesOK || strings.EqualFold(oldName, newName) {
+		return nil
+	}
+	snapshot, snapshotOK := targetTableSnapshot(statement)
+	return memberExistenceGaps(snapshot, snapshotOK, "column")
 }
 
 type renameColumnVersionRule struct {
