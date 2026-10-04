@@ -3,12 +3,15 @@
 // captured before the statement, and loaded constraint facts already present
 // in this batch
 // output: an in-place column replacement, or one conservative invalidation of
-// the target and the already-loaded dependents that reference its column
+// every table identity the statement touches and the already-loaded dependents
+// that reference those identities
 // pos: T05-A4 state supply for ordinary VARCHAR and integer MODIFY; a
-// non-precise branch still drops those dependents, an inline PRIMARY KEY is
-// read from the parser presence fact, and a TiDB known-primary-key signedness
-// change stays conservative. It does not change compatibility-rule meaning
-// and does not read the provider again
+// non-precise statement invalidates every table target and loaded dependents
+// of those identities, a precise replacement is withheld when a loaded foreign
+// key cannot be recomputed, an inline PRIMARY KEY is read from the parser
+// presence fact, and a TiDB known-primary-key signedness change stays
+// conservative. It does not change compatibility-rule meaning and does not
+// read the provider again
 // note: if this file changes, update this header and module README.md.
 package audit
 
@@ -21,7 +24,9 @@ import (
 
 // modifyPublication is the write set of one MODIFY, applied only after the
 // caller has rechecked cancellation. A replace and an invalidation are
-// alternatives for the target; children are invalidated together with it.
+// alternatives for a precise target. A loaded foreign key that cannot be
+// recomputed invalidates that target with the dependent. A non-precise
+// statement invalidates every table target instead of publishing a successor.
 type modifyPublication struct {
 	invalidate []batchTableKey
 	replaceKey batchTableKey
@@ -55,35 +60,42 @@ func (s *batchState) applyModifyColumn(ctx context.Context, statement spec.State
 }
 
 func (s *batchState) prepareModifyColumn(statement spec.Statement, alter *spec.Alter, targets []spec.Table) modifyPublication {
-	var key batchTableKey
-	if len(targets) > 0 {
-		key = s.keyFor(s.schema, targets[0])
+	// The write set is fixed from the immutable statement and pre-state before
+	// replacement is considered. A later return must not shrink it.
+	targetKeys := s.modifyTargetKeys(targets)
+	var primary batchTableKey
+	if len(targetKeys) > 0 {
+		primary = targetKeys[0]
 	}
-	// Dependents come from the immutable pre-state before any replace-or-
-	// invalidate decision. A later return must not skip them.
-	dependents := s.modifyDependentKeys(key, modifyColumnNames(statement.DDL, alter))
-	invalidate := func(includeTarget bool) modifyPublication {
+	precise := modifyColumnTemplate(s, statement, alter, targets)
+	var dependents []batchTableKey
+	if precise {
+		dependents = s.modifyDependentKeys(primary, modifyColumnNames(statement.DDL, alter))
+	} else {
+		// A refused template still touches every named table identity. Column
+		// names from the MODIFY action are not the whole statement.
+		dependents = s.modifyIdentityDependentKeys(targetKeys)
+	}
+	invalidate := func(extra ...batchTableKey) modifyPublication {
 		keys := append([]batchTableKey{}, dependents...)
-		if includeTarget {
-			keys = append(keys, key)
-		}
+		keys = append(keys, extra...)
 		return modifyPublication{invalidate: keys}
 	}
-	if !modifyColumnTemplate(s, statement, alter, targets) {
-		return invalidate(len(targets) > 0)
+	if !precise {
+		return invalidate(targetKeys...)
 	}
-	entry := s.entries[key]
+	entry := s.entries[primary]
 	if entry == nil || entry.state == tableUnknown || entry.state == tableAbsent {
-		return invalidate(true)
+		return invalidate(primary)
 	}
 	// A withheld column set is not a one-column table. Keep the target's other
 	// known members, and still drop loaded dependents of the named column.
 	if entry.shape == nil || entry.shape.Columns == nil {
-		return invalidate(false)
+		return invalidate()
 	}
 	index := modifyColumnIndex(entry.shape.Columns, alter.Name)
 	if index < 0 {
-		return invalidate(true)
+		return invalidate(primary)
 	}
 	source := entry.shape.Columns[index]
 	definition := alter.Column.Definition
@@ -93,8 +105,11 @@ func (s *batchState) prepareModifyColumn(statement spec.Statement, alter *spec.A
 		modifyTiDBPrimaryKeySignedness(s.dialect, inPK, source, *definition) ||
 		(!pkKnown && !modifyExplicitNotNull(alter, *definition)) ||
 		(inPK && modifyExplicitNull(alter, *definition)) ||
-		modifyLocalUnsafe(entry.shape, source.Name) {
-		return invalidate(true)
+		modifyLocalUnsafe(entry.shape, source.Name) ||
+		len(dependents) > 0 {
+		// A loaded foreign key that cannot be recomputed is not a precise
+		// successor. Invalidate the known-complete target with that dependent.
+		return invalidate(primary)
 	}
 	next := cloneColumn(*definition)
 	if inPK {
@@ -105,8 +120,7 @@ func (s *batchState) prepareModifyColumn(statement spec.Statement, alter *spec.A
 	shape.Columns[index] = next
 	clearModifyAffectedStats(shape)
 	return modifyPublication{
-		invalidate: dependents,
-		replaceKey: key,
+		replaceKey: primary,
 		replace: &batchTableEntry{
 			state:         tablePresent,
 			shape:         shape,
@@ -114,6 +128,17 @@ func (s *batchState) prepareModifyColumn(statement spec.Statement, alter *spec.A
 			displayTable:  entry.displayTable,
 		},
 	}
+}
+
+func (s *batchState) modifyTargetKeys(targets []spec.Table) []batchTableKey {
+	keys := make([]batchTableKey, 0, len(targets))
+	for _, target := range targets {
+		if strings.TrimSpace(target.Name) == "" {
+			continue
+		}
+		keys = append(keys, s.keyFor(s.schema, target))
+	}
+	return keys
 }
 
 // firstModifyAlter returns the first MODIFY action. A statement with several
@@ -439,6 +464,8 @@ func modifyIndexSpecial(index spec.Index) bool {
 // is decided with the target. An empty list or a list with unmodeled parts
 // cannot prove the child is unrelated. Explicit schema wins; an unqualified
 // reference uses the owning entry's schema. Entries not yet loaded are ignored.
+// A non-precise statement uses modifyIdentityDependentKeys instead, because
+// the MODIFY column list is not the statement's whole affected set.
 func (s *batchState) modifyDependentKeys(target batchTableKey, columnNames []string) []batchTableKey {
 	if len(columnNames) == 0 {
 		return nil
@@ -450,6 +477,38 @@ func (s *batchState) modifyDependentKeys(target batchTableKey, columnNames []str
 		}
 		if modifyEntryReferences(s, key, entry, target, columnNames) {
 			dependents = append(dependents, key)
+		}
+	}
+	return dependents
+}
+
+// modifyIdentityDependentKeys collects loaded tables whose foreign key
+// references any table identity in targets. It does not consult column lists:
+// a refused multi-action statement, including RENAME or DROP COLUMN, touches
+// the table identity itself. Targets are invalidated separately. Entries not
+// yet loaded are ignored.
+func (s *batchState) modifyIdentityDependentKeys(targets []batchTableKey) []batchTableKey {
+	if len(targets) == 0 {
+		return nil
+	}
+	targetSet := make(map[batchTableKey]struct{}, len(targets))
+	for _, key := range targets {
+		targetSet[key] = struct{}{}
+	}
+	var dependents []batchTableKey
+	for key, entry := range s.entries {
+		if _, isTarget := targetSet[key]; isTarget || entry == nil || entry.state != tablePresent || entry.shape == nil {
+			continue
+		}
+		for _, constraint := range entry.shape.Constraints {
+			if strings.TrimSpace(constraint.ReferencedTable) == "" {
+				continue
+			}
+			referenced := spec.Table{Schema: constraint.ReferencedSchema, Name: constraint.ReferencedTable}
+			if _, hit := targetSet[s.keyFor(key.schema, referenced)]; hit {
+				dependents = append(dependents, key)
+				break
+			}
 		}
 	}
 	return dependents

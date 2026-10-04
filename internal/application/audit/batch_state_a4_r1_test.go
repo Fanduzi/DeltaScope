@@ -105,11 +105,12 @@ func TestAuditSQLT05A4R1CrossFamilyDropsLoadedChild(t *testing.T) {
 func TestBatchStateA4R1AffectedSet(t *testing.T) {
 	t.Parallel()
 
-	t.Run("precise replacement still drops a related child", func(t *testing.T) {
+	t.Run("related foreign key invalidates the target with the child", func(t *testing.T) {
 		t.Parallel()
-		const sql = "CREATE INDEX warm ON aux.child(f);\nALTER TABLE golden.t MODIFY COLUMN c VARCHAR(20);\nCREATE INDEX after ON aux.child(f);"
+		const sql = "CREATE INDEX warm ON aux.child(f);\nALTER TABLE golden.t MODIFY COLUMN c VARCHAR(20);\nCREATE INDEX after ON aux.child(f);\nALTER TABLE golden.t ADD COLUMN x INT;"
 		enriched := enrichA3(t, sql, spec.DialectMySQL, t05A4R1Provider(t05A4R1Parent(), t05A4R1Child([]string{"c"}, 0)))
 		t05A4R1WantUnknown(t, enriched[2])
+		t05A4R1WantUnknown(t, enriched[3])
 	})
 
 	t.Run("conditional modify drops a loaded child", func(t *testing.T) {
@@ -189,9 +190,10 @@ func TestBatchStateA4R1AffectedSet(t *testing.T) {
 
 	t.Run("unmodeled referenced parts do not prove unrelated", func(t *testing.T) {
 		t.Parallel()
-		const sql = "CREATE INDEX warm ON aux.child(f);\nALTER TABLE golden.t MODIFY COLUMN c VARCHAR(20);\nCREATE INDEX after ON aux.child(f);"
+		const sql = "CREATE INDEX warm ON aux.child(f);\nALTER TABLE golden.t MODIFY COLUMN c VARCHAR(20);\nCREATE INDEX after ON aux.child(f);\nALTER TABLE golden.t ADD COLUMN x INT;"
 		enriched := enrichA3(t, sql, spec.DialectMySQL, t05A4R1Provider(t05A4R1Parent(), t05A4R1Child([]string{"id"}, 1)))
 		t05A4R1WantUnknown(t, enriched[2])
+		t05A4R1WantUnknown(t, enriched[3])
 	})
 
 	t.Run("unmodeled local parts do not prove unrelated", func(t *testing.T) {
@@ -212,19 +214,23 @@ func TestBatchStateA4R1AffectedSet(t *testing.T) {
 
 	t.Run("complete unrelated reference stays", func(t *testing.T) {
 		t.Parallel()
-		const sql = "CREATE INDEX warm ON aux.child(f);\nALTER TABLE golden.t MODIFY COLUMN c VARCHAR(20);\nCREATE INDEX after ON aux.child(f);"
+		const sql = "CREATE INDEX warm ON aux.child(f);\nALTER TABLE golden.t MODIFY COLUMN c VARCHAR(20);\nCREATE INDEX after ON aux.child(f);\nALTER TABLE golden.t MODIFY COLUMN c VARCHAR(15);"
 		enriched := enrichA3(t, sql, spec.DialectMySQL, t05A4R1Provider(t05A4R1Parent(), t05A4R1Child([]string{"id"}, 0)))
 		snapshot := enriched[2].Metadata.TargetTable
 		if snapshot == nil || !snapshot.Exists || snapshot.FindColumn("f") == nil {
 			t.Fatalf("unrelated child = %+v, want the loaded table", snapshot)
 		}
+		if got := t05A4Length(t, enriched[3], "c"); got != 20 {
+			t.Fatalf("precise successor length = %d, want 20", got)
+		}
 	})
 
 	t.Run("empty referenced list does not prove unrelated", func(t *testing.T) {
 		t.Parallel()
-		const sql = "CREATE INDEX warm ON aux.child(f);\nALTER TABLE golden.t MODIFY COLUMN c VARCHAR(20);\nCREATE INDEX after ON aux.child(f);"
+		const sql = "CREATE INDEX warm ON aux.child(f);\nALTER TABLE golden.t MODIFY COLUMN c VARCHAR(20);\nCREATE INDEX after ON aux.child(f);\nALTER TABLE golden.t ADD COLUMN x INT;"
 		enriched := enrichA3(t, sql, spec.DialectMySQL, t05A4R1Provider(t05A4R1Parent(), t05A4R1Child(nil, 0)))
 		t05A4R1WantUnknown(t, enriched[2])
+		t05A4R1WantUnknown(t, enriched[3])
 	})
 
 	t.Run("same table name in another schema stays", func(t *testing.T) {
