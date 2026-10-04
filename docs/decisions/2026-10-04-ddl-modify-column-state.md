@@ -111,7 +111,7 @@ On TiDB 8.5, a known integer primary key whose signedness changes is not a preci
 
 ## Amendment (T05-A4-R2)
 
-The affected-set sentence in the T05-A4-R1 amendment is corrected. A non-precise `MODIFY`, including a multi-action statement that also renames the table or drops another column, does not shrink its write set to the first table or to the names of the `MODIFY` columns. The publication is computed once from the immutable statement and the pre-state, then written once. Every `TableTargets` identity is tombstoned, including an endpoint that this request has not loaded yet, so a later statement cannot reread the pre-batch provider snapshot. Every already-loaded dependent whose foreign key references one of those identities is tombstoned with them. The statement does not receive a precise post-state. `DROP COLUMN` and multi-action success shapes stay unimplemented, and this slice does not scan the catalog for unloaded dependents.
+The affected-set sentence in the T05-A4-R1 amendment is corrected. A non-precise `MODIFY`, including a multi-action statement that also renames the table or drops another column, does not shrink its write set to the first table or to the names of the `MODIFY` columns. The publication is computed once from the immutable statement and the pre-state, then written once. Every `TableTargets` identity is tombstoned, including an endpoint that this request has not loaded yet, so a later statement cannot reread the pre-batch provider snapshot. Every already-loaded dependent whose foreign key references one of those identities is tombstoned with them. The statement does not receive a precise post-state. This amendment does not implement `DROP COLUMN` or multi-action success, and it does not scan the catalog for unloaded dependents. The later dependency-free single-action subset is recorded in `2026-10-04-ddl-drop-column-state.md`.
 
 A precise single-column `MODIFY` still uses column relevance. A complete referenced list that excludes the column, and a same-named table in another schema, stay, and the column is replaced. A loaded foreign key that cannot be recomputed, including an empty referenced list or unmodeled referenced parts, blocks that replacement: the known-complete target and those dependents become unknown together. A withheld column set still keeps the target's other known members. Inline `PRIMARY KEY` and TiDB primary-key signedness stay as amended in T05-A4-R1.
 
@@ -122,9 +122,13 @@ identity migration. See `2026-10-21-ddl-change-rename-column-identity.md`.
 That later record does not make every CHANGE form complete, and this MODIFY
 decision is unchanged.
 
-Still absent after that slice: `DROP COLUMN` precise post-state, cross-schema
-column move, multi-action success, foreign-key rewrite, catalog scan, prefix
-and expression index rewriting, runtime limits, and storage engines.
+T05-A6 publishes one dependency-free single-action `DROP COLUMN`. See
+`2026-10-04-ddl-drop-column-state.md`. Related members, multi-action success,
+and every other drop form stay later. This MODIFY decision is unchanged.
+
+Still absent after that slice: cross-schema column move, multi-action success,
+foreign-key rewrite, catalog scan, prefix and expression index rewriting,
+runtime limits, and storage engines.
 Cross-family conversion, decimal precision, temporal implicit defaults, and
 generated or identity columns stay outside the ordinary template. This record
 does not complete #84 or the milestone. A1, A2, and A3 stay accepted.

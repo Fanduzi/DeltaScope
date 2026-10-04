@@ -1,7 +1,7 @@
 // Package audit orchestrates audit use cases at the application layer.
 // input: request context, ordered statements, optional metadata provider, the request's already-resolved version identity, and parse-failure positions for one audit request
 // output: request-local ordered table facts (unknown / known-absent / known-present, per-collection member knowledge) feeding per-statement pre-state snapshots
-// pos: prospective schema-state ownership for the first migration path — the effective (dialect, schema, table) identity drives provider reads, keys, writes, and invalidation; unsupported or executable-but-unmodeled effects settle before kind dispatch; deterministic conditional transitions update derived facts, including the bounded single-pair RENAME identity migration onto a known-absent destination, a bounded single-target DROP identity retirement, an ordinary single-column MODIFY definition replacement, and a precise single CHANGE COLUMN or RENAME COLUMN identity migration, each tombstoning loaded dependents that the transition cannot keep; a non-precise MODIFY, CHANGE, or RENAME tombstones every named table identity and the loaded dependents of those identities, a precise replacement is withheld when a loaded foreign key cannot be recomputed, an unsupported RENAME version withholds publication, and cancellation is checked before publishing effects; unaudited, unbound, or contaminated operations invalidate them
+// pos: prospective schema-state ownership for the first migration path — the effective (dialect, schema, table) identity drives provider reads, keys, writes, and invalidation; unsupported or executable-but-unmodeled effects settle before kind dispatch; deterministic conditional transitions update derived facts, including the bounded single-pair RENAME identity migration onto a known-absent destination, a bounded single-target DROP identity retirement, an ordinary single-column MODIFY definition replacement, a precise single CHANGE COLUMN or RENAME COLUMN identity migration, and an ordinary dependency-free single-column DROP COLUMN that removes only that column, keeps unrelated members, and clears the accepted MODIFY statistic set; each tombstones loaded dependents that the transition cannot keep; a non-precise MODIFY, CHANGE, RENAME, or DROP COLUMN tombstones every named table identity and the loaded dependents of those identities, a precise replacement is withheld when a loaded foreign key cannot be recomputed, an unsupported RENAME version withholds publication, and cancellation is checked before publishing effects; unaudited, unbound, or contaminated operations invalidate them
 // note: if this file changes, update this header and module README.md.
 package audit
 
@@ -227,9 +227,10 @@ func projectEntry(key batchTableKey, entry *batchTableEntry) *spec.TableSnapshot
 // drop state table — plus stat-clearing TRUNCATE/DML pass-through. Everything
 // else (multi-action ALTER, unaudited aspects, multi-pair or multi-target
 // effects) invalidates its bound targets because the real effect is not
-// modeled honestly. A non-template MODIFY invalidates every named table
-// identity and already-loaded dependents of those identities. A precise
-// replacement is withheld when a loaded foreign key cannot be recomputed. A statement
+// modeled honestly. A non-template MODIFY or DROP COLUMN invalidates every
+// named table identity and already-loaded dependents of those identities. A
+// precise replacement is withheld when a loaded foreign key cannot be
+// recomputed. A dependency-free DROP COLUMN removes only that column. A statement
 // whose structural premise is already known-broken (duplicate plain ADD,
 // index on a confirmed-absent table) invalidates its target rather than
 // fabricating the success shape. Contaminated batches derive nothing.
@@ -247,6 +248,11 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 		// table targets invalidate; a bound schema scope invalidates the
 		// scope; an unresolvable scope contaminates the batch — it must not
 		// pass through as a no-op and let stale facts satisfy later checks.
+		// A DROP COLUMN inside that statement still uses the shared affected
+		// set, so a loaded dependent is not left behind by the generic path.
+		if dropColumnStatement(statement) {
+			return s.applyDropColumn(ctx, statement, firstDropColumnAlter(statement.DDL), statement.DDL.TableTargets())
+		}
 		if targets := boundTargets(statement); len(targets) > 0 {
 			s.invalidateAll(targets)
 			return nil
@@ -478,6 +484,12 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 	if ident := firstColumnIdentityAlter(ddl); ident != nil && len(targets) > 0 &&
 		(!fullyAuditedStatement(s.dialect, statement) || len(ddl.Alter) != 1) {
 		return s.applyColumnIdentity(ctx, statement, ident, targets)
+	}
+	// DROP COLUMN, including a precise single-column removal and a refused
+	// multi-action form, publishes through one affected set. The generic
+	// invalidate-all branch does not see loaded dependents.
+	if drop := firstDropColumnAlter(ddl); drop != nil {
+		return s.applyDropColumn(ctx, statement, drop, targets)
 	}
 	if !fullyAuditedStatement(s.dialect, statement) || len(ddl.Alter) != 1 || len(targets) == 0 {
 		s.invalidateAll(targets)

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: task manifest testdata/ddl-golden/<TASK>.json, docker/ddl-golden-compose.yaml, freshly built deltascope CLI
-# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest, including synchronous execute verification and the frozen T05-A3, T05-A4, and T05-A5 oracles
+# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest, including synchronous execute verification and the frozen T05-A3, T05-A4, T05-A5, and T05-A6 oracles
 # pos: DDL golden-path runner and artifact validator behind `make ddl-golden TASK=Txx ARTIFACT_DIR=...`
 # note: if this file changes, update this header and module README.md.
 """DeltaScope DDL golden-path runner (milestone T02/#81, T04/#83).
@@ -2017,6 +2017,289 @@ def t05_a5_manifest_failures(manifest):
     return failures
 
 
+def t05_a6_contract():
+    """Frozen T05-A6 dependency-free DROP COLUMN oracle. The 16 cases and their
+    expects are independent of the manifest. The profile is six existing blockers."""
+    profile = "t05-a6-drop-column-isolated"
+    create_rule = "ddl.table.exists.create.forbid"
+    alter_rule = "ddl.table.exists.alter.require"
+    drop_exists = "ddl.alter.drop_column.exists.require"
+    modify_exists = "ddl.alter.modify_column.exists.require"
+    modify_compat = "ddl.alter.modify_column.compatibility.require"
+    index_rule = "ddl.create_index.columns.exists.require"
+    enable = {rid: {"enabled": True, "level": "blocker", "params": {}} for rid in (
+        create_rule, alter_rule, drop_exists, modify_exists, modify_compat, index_rule)}
+    for rid in (modify_compat, index_rule):
+        enable[rid]["params"] = {"required": True}
+
+    table_query = "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'"
+    columns_query = ("SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') "
+                     "FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'")
+
+    def column_count(name):
+        return ("SELECT COUNT(*) FROM information_schema.COLUMNS "
+                f"WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='{name}'")
+
+    def varchar_query(name):
+        return ("SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',"
+                "IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) "
+                f"FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='{name}'")
+
+    def definition_query(name):
+        return ("SELECT CONCAT(DATA_TYPE,':',IF(COLUMN_TYPE LIKE '%unsigned%',1,0),':',"
+                "IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) "
+                f"FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='{name}'")
+
+    def index_query(name):
+        return ("SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS "
+                f"WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='{name}'")
+
+    def index_count(name):
+        return ("SELECT COUNT(*) FROM information_schema.STATISTICS "
+                f"WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='{name}'")
+
+    def verify(label, sql, expect):
+        return {"assert": label, "sql": sql, "expect": expect}
+
+    def varchar_text(length):
+        return f"varchar:{length}:utf8mb4:utf8mb4_bin:NO:<nil>:"
+
+    def expectation(sqls, verdict, coverage, statement_coverage, findings=0, gap_entries=None,
+                    finding_entries=None, finding_metadata=None):
+        result = {
+            "exit": 0 if verdict != "reject" else 1,
+            "verdict": verdict,
+            "statements": len(sqls),
+            "findings": findings,
+            "diagnostics": 0,
+            "unsupported": 0,
+            "coverage": coverage,
+            "statement_coverage": statement_coverage,
+            "statement_sql": [sql + ";" for sql in sqls],
+            "evidence_gaps": len(gap_entries or []),
+            "fail_on_triggered": verdict == "reject",
+            "rule_summary_loaded": 6,
+            "statement_indices": list(range(len(sqls))),
+        }
+        if finding_entries:
+            result["finding_entries"] = finding_entries
+        if finding_metadata:
+            result["finding_metadata"] = finding_metadata
+        if gap_entries:
+            result["evidence_gap_entries"] = gap_entries
+        return result
+
+    def absent_setup():
+        return [{"name": "ensure t absent", "sql": "DROP TABLE IF EXISTS t", "expect_rc": 0,
+                 "verify": [verify("t absent before audit", table_query, "0")]}]
+
+    def metadata_case(case_id, anchor, port, dialect, sqls, expect, execute, structure):
+        connect = {"host": "127.0.0.1", "port": port, "user": "root", "schema": "golden"}
+        if dialect == "mysql":
+            connect.update(password_env="DS_T05_GOLDEN_PW", password="root")
+        return {"id": case_id, "anchor": anchor, "dialect": dialect,
+                "sql": " ".join(sql + ";" for sql in sqls), "policy": profile,
+                "args": ["--fail-on", "blocker"], "connect": connect,
+                "setup": absent_setup(), "expect": expect,
+                "post_verify": [verify("audit did not create t", table_query, "0")],
+                "execute": execute, "structure": structure,
+                "teardown": [{"name": "drop fixture", "sql": "DROP TABLE IF EXISTS t", "expect_rc": 0,
+                              "verify": [verify("no residual t", table_query, "0")]}]}
+
+    keep10 = "keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL"
+    keep20 = "ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL"
+    drop_obsolete = "ALTER TABLE t DROP COLUMN obsolete"
+    create_plain = f"CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, {keep10})"
+    create_indexed = (f"CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, {keep10}, "
+                      "KEY idx_existing(keep_c), UNIQUE KEY uk_id_keep(id, keep_c))")
+    create_readd = ("CREATE TABLE t (id INT PRIMARY KEY, obsolete INT UNSIGNED NOT NULL DEFAULT 7 "
+                    f"COMMENT 'retired', {keep10})")
+    idx_keep = "CREATE INDEX idx_keep ON t(keep_c)"
+    idx_removed = "CREATE INDEX ix_removed ON t(obsolete)"
+    add_new = "ALTER TABLE t ADD COLUMN obsolete VARCHAR(12) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL"
+    modify_new = "ALTER TABLE t MODIFY COLUMN obsolete VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL"
+    idx_readded = "CREATE INDEX idx_readded ON t(obsolete)"
+    keep_def = varchar_query("keep_c")
+    obsolete_def = definition_query("obsolete")
+    obsolete_varchar = varchar_query("obsolete")
+
+    def base_steps(sqls, indexed=False, failing_index=False):
+        drop_verify = [
+            verify("columns are id then keep_c", columns_query, "id,keep_c"),
+            verify("obsolete absent after drop", column_count("obsolete"), "0"),
+            verify("keep_c stays length 10", keep_def, varchar_text(10)),
+            verify("primary key stays id", index_query("PRIMARY"), "id"),
+        ]
+        modify_verify = [
+            verify("keep_c length is 20", keep_def, varchar_text(20)),
+            verify("obsolete stays absent after modify", column_count("obsolete"), "0"),
+            verify("columns stay id then keep_c", columns_query, "id,keep_c"),
+            verify("primary key stays id after modify", index_query("PRIMARY"), "id"),
+        ]
+        if indexed:
+            drop_verify.extend([
+                verify("idx_existing stays keep_c", index_query("idx_existing"), "keep_c"),
+                verify("uk_id_keep stays id then keep_c", index_query("uk_id_keep"), "id,keep_c"),
+            ])
+            modify_verify.extend([
+                verify("idx_existing stays keep_c after modify", index_query("idx_existing"), "keep_c"),
+                verify("uk_id_keep stays id then keep_c after modify", index_query("uk_id_keep"), "id,keep_c"),
+            ])
+        steps = [
+            {"name": "driver statement 0", "sql": sqls[0], "expect_rc": 0, "verify": [
+                verify("columns are id, obsolete, keep_c", columns_query, "id,obsolete,keep_c"),
+                verify("keep_c starts at length 10", keep_def, varchar_text(10)),
+                verify("obsolete is present", column_count("obsolete"), "1"),
+                verify("primary key is id", index_query("PRIMARY"), "id")]},
+            {"name": "driver statement 1", "sql": sqls[1], "expect_rc": 0, "verify": drop_verify},
+            {"name": "driver statement 2", "sql": sqls[2], "expect_rc": 0, "verify": modify_verify},
+        ]
+        if failing_index:
+            steps.append({"name": "driver statement 3", "sql": sqls[3], "expect_rc": 1,
+                          "stderr_contains": ["ERROR 1072", "obsolete"], "verify": [
+                              verify("rejected index leaves obsolete absent", column_count("obsolete"), "0"),
+                              verify("rejected index leaves keep_c at length 20", keep_def, varchar_text(20)),
+                              verify("ix_removed was not created", index_count("ix_removed"), "0"),
+                              verify("columns stay id then keep_c after rejection", columns_query, "id,keep_c")]})
+        else:
+            steps.append({"name": "driver statement 3", "sql": sqls[3], "expect_rc": 0, "verify": [
+                verify("idx_keep references keep_c", index_query("idx_keep"), "keep_c")]})
+        return steps
+
+    def base_structure(index_name, indexed=False):
+        checks = [
+            verify("t exists", table_query, "1"),
+            verify("columns are id then keep_c", columns_query, "id,keep_c"),
+            verify("obsolete absent", column_count("obsolete"), "0"),
+            verify("keep_c length is 20", keep_def, varchar_text(20)),
+            verify("primary key stays id", index_query("PRIMARY"), "id"),
+        ]
+        if indexed:
+            checks.extend([
+                verify("idx_existing stays keep_c", index_query("idx_existing"), "keep_c"),
+                verify("uk_id_keep stays id then keep_c", index_query("uk_id_keep"), "id,keep_c"),
+            ])
+        if index_name == "idx_keep":
+            checks.append(verify("idx_keep references keep_c", index_query("idx_keep"), "keep_c"))
+        else:
+            checks.append(verify("ix_removed was not created", index_count("ix_removed"), "0"))
+        return checks
+
+    def old_index_expect(sqls, schema):
+        metadata = {"schema": schema, "table": "t", "index": "ix_removed", "column": "obsolete", "exists": False}
+        return expectation(
+            sqls, "reject", "complete", ["complete"] * 4, findings=1,
+            finding_entries=[{"index": 3, "rule_id": index_rule, "level": "blocker"}],
+            finding_metadata=[{"index": 3, "rule_id": index_rule, "metadata": metadata}])
+
+    def readd_steps(sqls):
+        return [
+            {"name": "driver statement 0", "sql": sqls[0], "expect_rc": 0, "verify": [
+                verify("columns are id, obsolete, keep_c", columns_query, "id,obsolete,keep_c"),
+                verify("obsolete starts unsigned with default 7", obsolete_def, "int:1:7:retired"),
+                verify("keep_c starts at length 10", keep_def, varchar_text(10)),
+                verify("primary key is id", index_query("PRIMARY"), "id")]},
+            {"name": "driver statement 1", "sql": sqls[1], "expect_rc": 0, "verify": [
+                verify("columns are id then keep_c", columns_query, "id,keep_c"),
+                verify("obsolete absent after drop", column_count("obsolete"), "0"),
+                verify("keep_c stays length 10", keep_def, varchar_text(10)),
+                verify("primary key stays id", index_query("PRIMARY"), "id")]},
+            {"name": "driver statement 2", "sql": sqls[2], "expect_rc": 0, "verify": [
+                verify("columns are id, keep_c, obsolete", columns_query, "id,keep_c,obsolete"),
+                verify("readded obsolete drops the old definition", obsolete_def, "varchar:0:<nil>:"),
+                verify("readded obsolete length is 12", obsolete_varchar, varchar_text(12)),
+                verify("keep_c stays length 10 after readd", keep_def, varchar_text(10))]},
+            {"name": "driver statement 3", "sql": sqls[3], "expect_rc": 0, "verify": [
+                verify("readded obsolete length is 20", obsolete_varchar, varchar_text(20)),
+                verify("readded obsolete keeps the new definition", obsolete_def, "varchar:0:<nil>:"),
+                verify("columns stay id, keep_c, obsolete", columns_query, "id,keep_c,obsolete")]},
+            {"name": "driver statement 4", "sql": sqls[4], "expect_rc": 0, "verify": [
+                verify("idx_readded references the new obsolete", index_query("idx_readded"), "obsolete")]},
+        ]
+
+    def readd_structure():
+        return [
+            verify("t exists", table_query, "1"),
+            verify("columns are id, keep_c, obsolete", columns_query, "id,keep_c,obsolete"),
+            verify("obsolete length is 20", obsolete_varchar, varchar_text(20)),
+            verify("obsolete keeps the new definition", obsolete_def, "varchar:0:<nil>:"),
+            verify("primary key stays id", index_query("PRIMARY"), "id"),
+            verify("idx_readded references obsolete", index_query("idx_readded"), "obsolete"),
+            verify("keep_c stays length 10", keep_def, varchar_text(10)),
+        ]
+
+    metadata_cases = []
+    for anchor, port in (("mysql57", 23357), ("mysql80", 23380), ("mysql84", 23384), ("tidb85", 24000)):
+        dialect = "tidb" if anchor == "tidb85" else "mysql"
+        positive = [create_plain, drop_obsolete, keep20, idx_keep]
+        metadata_cases.append(metadata_case(
+            f"t05-a6-{anchor}-drop", anchor, port, dialect, positive,
+            expectation(positive, "pass", "complete", ["complete"] * 4),
+            base_steps(positive), base_structure("idx_keep")))
+        negative = [create_plain, drop_obsolete, keep20, idx_removed]
+        metadata_cases.append(metadata_case(
+            f"t05-a6-{anchor}-drop-old-index", anchor, port, dialect, negative,
+            old_index_expect(negative, "golden"),
+            base_steps(negative, failing_index=True), base_structure("ix_removed")))
+    for anchor, port in (("mysql84", 23384), ("tidb85", 24000)):
+        dialect = "tidb" if anchor == "tidb85" else "mysql"
+        indexed = [create_indexed, drop_obsolete, keep20, idx_keep]
+        metadata_cases.append(metadata_case(
+            f"t05-a6-{anchor}-unrelated-index", anchor, port, dialect, indexed,
+            expectation(indexed, "pass", "complete", ["complete"] * 4),
+            base_steps(indexed, indexed=True), base_structure("idx_keep", indexed=True)))
+        readded = [create_readd, drop_obsolete, add_new, modify_new, idx_readded]
+        metadata_cases.append(metadata_case(
+            f"t05-a6-{anchor}-readd", anchor, port, dialect, readded,
+            expectation(readded, "pass", "complete", ["complete"] * 5),
+            readd_steps(readded), readd_structure()))
+
+    create_gap = {"index": 0, "rule_id": create_rule, "reason_code": "unknown_table_state",
+                  "required_facts": ["target_table.existence"]}
+    positive = [create_plain, drop_obsolete, keep20, idx_keep]
+    negative = [create_plain, drop_obsolete, keep20, idx_removed]
+    offline_meta = {"schema": "", "table": "t", "index": "ix_removed", "column": "obsolete", "exists": False}
+    offline_negative = expectation(
+        negative, "reject", "unverified", ["unverified", "complete", "complete", "complete"], findings=1,
+        gap_entries=[create_gap],
+        finding_entries=[{"index": 3, "rule_id": index_rule, "level": "blocker"}],
+        finding_metadata=[{"index": 3, "rule_id": index_rule, "metadata": offline_meta}])
+
+    def cli_case(case_id, dialect, sqls, expect):
+        return {"id": case_id, "dialect": dialect, "sql": " ".join(sql + ";" for sql in sqls),
+                "policy": profile, "args": ["--fail-on", "blocker"], "expect": expect}
+
+    cli_cases = [
+        cli_case("t05-a6-mysql-drop-offline", "mysql", positive,
+                 expectation(positive, "review", "unverified",
+                             ["unverified", "complete", "complete", "complete"], gap_entries=[create_gap])),
+        cli_case("t05-a6-mysql-drop-old-index-offline", "mysql", negative, offline_negative),
+        cli_case("t05-a6-tidb-drop-offline", "tidb", positive,
+                 expectation(positive, "review", "unverified",
+                             ["unverified", "complete", "complete", "complete"], gap_entries=[create_gap])),
+        cli_case("t05-a6-tidb-drop-old-index-offline", "tidb", negative, offline_negative),
+    ]
+    return profile, {"enable": enable}, metadata_cases, cli_cases
+
+
+def t05_a6_manifest_failures(manifest):
+    if manifest.get("task_id") != "T05":
+        return []
+    profile, policy, metadata_cases, cli_cases = t05_a6_contract()
+    failures = []
+    if ((manifest.get("policy") or {}).get("profiles") or {}).get(profile) != policy:
+        failures.append("T05-A6 frozen six-rule profile missing or changed")
+    required = manifest.get("required_case_ids") or []
+    for field, specs, kind in (("metadata_cases", metadata_cases, "meta"), ("cli_cases", cli_cases, "cli")):
+        for wanted in specs:
+            matches = [s for s in manifest.get(field, []) if s.get("id") == wanted["id"]]
+            if len(matches) != 1 or matches[0] != wanted:
+                failures.append(f"T05-A6 frozen oracle changed or missing: {wanted['id']}")
+            if f"T05.{kind}.{wanted['id']}" not in required:
+                failures.append(f"T05-A6 required case missing: {wanted['id']}")
+    return failures
+
+
 def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
     """Re-check an emitted artifact. Returns a list of failure strings."""
     failures = []
@@ -2032,6 +2315,7 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
     failures.extend(t05_a3_manifest_failures(manifest))
     failures.extend(t05_a4_manifest_failures(manifest))
     failures.extend(t05_a5_manifest_failures(manifest))
+    failures.extend(t05_a6_manifest_failures(manifest))
 
     if artifact.get("external_blocker"):
         failures.append(f"external blocker recorded: {artifact['external_blocker']}")

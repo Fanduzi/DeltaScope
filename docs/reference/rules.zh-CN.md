@@ -415,6 +415,8 @@ rules:
 
 `ddl.alter.rename_column.version.require` 按已解析版本检查 `RENAME COLUMN`。MySQL 8.0 系列中的 8.0.3 及以上、MySQL 8.4、TiDB 8.5 通过。MySQL 5.7 与 MySQL 8.0.0–8.0.2 是一条确定的版本不兼容 blocker：coverage 保持 `complete`，结论为 `reject`。版本缺失是 `missing_target_version` 缺口，不额外增加 finding。合法但不在已验证系列内的版本是 `target_version_out_of_validated_range` 缺口，不发布后态。`CHANGE COLUMN` 不继承这项检查。黄金 profile `t05-a5-column-identity-isolated` 启用原先八条有序状态 blocker 加上这三条，并关闭其余目录规则。它不改变既有规则的默认含义。
 
+在 MySQL 与 TiDB 上，一条普通的单动作 `DROP COLUMN` 会从同一请求的后续语句中去掉该列。前提是表已知存在、列集已知、删除后至少还剩一列，并且已加载的主键、索引、约束和同表其他列的表达式都能证明与该列无关。Unknown 为 false 的 nil 或空索引、空约束集合是已知空集。无关成员保留，包括 `PRIMARY(id)`。统计清理与一次普通 `MODIFY` 相同。之后同名 `ADD` 使用新定义。普通索引引用该列、成员集合未知、最后一列、`IF EXISTS`，或语句里还有其他动作时，命名表身份和已加载依赖一起失效。这一子集不删除或收缩索引，也不改写约束。PostgreSQL 仍使用原先的逐句快照。黄金 profile `t05-a6-drop-column-isolated` 启用六条既有 blocker，并关闭其余目录规则，不改变这些规则的默认含义。CLI 的 `--schema` 仍会进入元数据模式，所以离线 CLI 调用的请求 schema 为空。
+
 | 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
 |---------|------|:--------:|:--------------:|
 | `ddl.table.exists.alter.require` | ALTER TABLE 目标表必须存在 | blocker | **是** |

@@ -174,10 +174,48 @@
       }
      }
     }
+   },
+   "t05-a6-drop-column-isolated": {
+    "enable": {
+     "ddl.table.exists.create.forbid": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {}
+     },
+     "ddl.table.exists.alter.require": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {}
+     },
+     "ddl.alter.drop_column.exists.require": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {}
+     },
+     "ddl.alter.modify_column.exists.require": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {}
+     },
+     "ddl.alter.modify_column.compatibility.require": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "required": true
+      }
+     },
+     "ddl.create_index.columns.exists.require": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "required": true
+      }
+     }
+    }
    }
   }
  },
- "description": "T05-A1 (issue #84) ordered schema-state contract: the t05-first-path-isolated profile enables exactly four blocker rules (ddl.table.exists.create.forbid, ddl.table.exists.alter.require, ddl.alter.add_column.exists.forbid, and the new ddl.create_index.columns.exists.require). Metadata cases on mysql84 and tidb85 prove the request-local ordered-state path: CREATE/ADD/CREATE INDEX derive conditional post-state, a repeated ADD fires the duplicate blocker, a missing index column produces a per-column blocker, a confirmed-absent index target reports one table_not_found blocker, and an unaudited generated-column ALTER invalidates only its own table so later statements report unknown_table_state gaps while an unrelated table still derives cleanly. Offline cli_cases pin the same contract without a provider. The locked four-anchor db baseline and the inherited CLI denominator are preserved verbatim. T05-A4 adds the t05-a4-modify-isolated four-rule profile and 19 MODIFY cases (204 required ids), including the tidb85 primary-key signedness negative, without changing the original 185 cases. T05-A5 adds the t05-a5-column-identity-isolated eleven-rule profile and 27 CHANGE/RENAME cases (231 required ids). The profile keeps the original eight blockers and adds ddl.alter.change_column.target.exists.forbid, ddl.alter.rename_column.target.exists.forbid, and ddl.alter.rename_column.version.require. A known incompatible RENAME COLUMN version is a complete reject from that applicability check. A missing or out-of-range version stays an evidence gap and does not publish the new name.",
+ "description": "T05-A1 (issue #84) ordered schema-state contract: the t05-first-path-isolated profile enables exactly four blocker rules (ddl.table.exists.create.forbid, ddl.table.exists.alter.require, ddl.alter.add_column.exists.forbid, and the new ddl.create_index.columns.exists.require). Metadata cases on mysql84 and tidb85 prove the request-local ordered-state path: CREATE/ADD/CREATE INDEX derive conditional post-state, a repeated ADD fires the duplicate blocker, a missing index column produces a per-column blocker, a confirmed-absent index target reports one table_not_found blocker, and an unaudited generated-column ALTER invalidates only its own table so later statements report unknown_table_state gaps while an unrelated table still derives cleanly. Offline cli_cases pin the same contract without a provider. The locked four-anchor db baseline and the inherited CLI denominator are preserved verbatim. T05-A4 adds the t05-a4-modify-isolated four-rule profile and 19 MODIFY cases (204 required ids), including the tidb85 primary-key signedness negative, without changing the original 185 cases. T05-A5 adds the t05-a5-column-identity-isolated eleven-rule profile and 27 CHANGE/RENAME cases (231 required ids). The profile keeps the original eight blockers and adds ddl.alter.change_column.target.exists.forbid, ddl.alter.rename_column.target.exists.forbid, and ddl.alter.rename_column.version.require. A known incompatible RENAME COLUMN version is a complete reject from that applicability check. A missing or out-of-range version stays an evidence gap and does not publish the new name. T05-A6 adds the t05-a6-drop-column-isolated six-rule profile and 16 dependency-free DROP COLUMN cases (247 required ids). The profile enables the existing create, alter, drop-column existence, modify existence, modify compatibility, and create-index column blockers and disables every other catalog rule. A single ordinary column with no loaded dependency is removed in place. Related members, unknown collections, and multi-action statements stay conservative.",
  "anchors": {
   "mysql57": {
    "service": "mysql57",
@@ -5494,6 +5532,246 @@
      1,
      2,
      3
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.exists.create.forbid",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.existence"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "t05-a6-mysql-drop-offline",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t DROP COLUMN obsolete; ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; CREATE INDEX idx_keep ON t(keep_c);",
+   "policy": "t05-a6-drop-column-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 4,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+     "ALTER TABLE t DROP COLUMN obsolete;",
+     "ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "CREATE INDEX idx_keep ON t(keep_c);"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 6,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.exists.create.forbid",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.existence"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "t05-a6-mysql-drop-old-index-offline",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t DROP COLUMN obsolete; ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; CREATE INDEX ix_removed ON t(obsolete);",
+   "policy": "t05-a6-drop-column-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 4,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+     "ALTER TABLE t DROP COLUMN obsolete;",
+     "ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "CREATE INDEX ix_removed ON t(obsolete);"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 6,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "finding_entries": [
+     {
+      "index": 3,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 3,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "metadata": {
+       "schema": "",
+       "table": "t",
+       "index": "ix_removed",
+       "column": "obsolete",
+       "exists": false
+      }
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.exists.create.forbid",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.existence"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "t05-a6-tidb-drop-offline",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t DROP COLUMN obsolete; ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; CREATE INDEX idx_keep ON t(keep_c);",
+   "policy": "t05-a6-drop-column-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 4,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+     "ALTER TABLE t DROP COLUMN obsolete;",
+     "ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "CREATE INDEX idx_keep ON t(keep_c);"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 6,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.exists.create.forbid",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.existence"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "t05-a6-tidb-drop-old-index-offline",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t DROP COLUMN obsolete; ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; CREATE INDEX ix_removed ON t(obsolete);",
+   "policy": "t05-a6-drop-column-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 4,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+     "ALTER TABLE t DROP COLUMN obsolete;",
+     "ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "CREATE INDEX ix_removed ON t(obsolete);"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 6,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "finding_entries": [
+     {
+      "index": 3,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 3,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "metadata": {
+       "schema": "",
+       "table": "t",
+       "index": "ix_removed",
+       "column": "obsolete",
+       "exists": false
+      }
+     }
     ],
     "evidence_gap_entries": [
      {
@@ -17971,6 +18249,2806 @@
      ]
     }
    ]
+  },
+  {
+   "id": "t05-a6-mysql57-drop",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t DROP COLUMN obsolete; ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; CREATE INDEX idx_keep ON t(keep_c);",
+   "policy": "t05-a6-drop-column-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 4,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+     "ALTER TABLE t DROP COLUMN obsolete;",
+     "ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "CREATE INDEX idx_keep ON t(keep_c);"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 6,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "columns are id, obsolete, keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,obsolete,keep_c"
+      },
+      {
+       "assert": "keep_c starts at length 10",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "obsolete is present",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "1"
+      },
+      {
+       "assert": "primary key is id",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "ALTER TABLE t DROP COLUMN obsolete",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "columns are id then keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,keep_c"
+      },
+      {
+       "assert": "obsolete absent after drop",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "0"
+      },
+      {
+       "assert": "keep_c stays length 10",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "primary key stays id",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "keep_c length is 20",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "obsolete stays absent after modify",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "0"
+      },
+      {
+       "assert": "columns stay id then keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,keep_c"
+      },
+      {
+       "assert": "primary key stays id after modify",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 3",
+     "sql": "CREATE INDEX idx_keep ON t(keep_c)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "idx_keep references keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_keep'",
+       "expect": "keep_c"
+      }
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "columns are id then keep_c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id,keep_c"
+    },
+    {
+     "assert": "obsolete absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+     "expect": "0"
+    },
+    {
+     "assert": "keep_c length is 20",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+     "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+    },
+    {
+     "assert": "primary key stays id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "idx_keep references keep_c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_keep'",
+     "expect": "keep_c"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a6-mysql57-drop-old-index",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t DROP COLUMN obsolete; ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; CREATE INDEX ix_removed ON t(obsolete);",
+   "policy": "t05-a6-drop-column-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 4,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+     "ALTER TABLE t DROP COLUMN obsolete;",
+     "ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "CREATE INDEX ix_removed ON t(obsolete);"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 6,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "finding_entries": [
+     {
+      "index": 3,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 3,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "metadata": {
+       "schema": "golden",
+       "table": "t",
+       "index": "ix_removed",
+       "column": "obsolete",
+       "exists": false
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "columns are id, obsolete, keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,obsolete,keep_c"
+      },
+      {
+       "assert": "keep_c starts at length 10",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "obsolete is present",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "1"
+      },
+      {
+       "assert": "primary key is id",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "ALTER TABLE t DROP COLUMN obsolete",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "columns are id then keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,keep_c"
+      },
+      {
+       "assert": "obsolete absent after drop",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "0"
+      },
+      {
+       "assert": "keep_c stays length 10",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "primary key stays id",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "keep_c length is 20",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "obsolete stays absent after modify",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "0"
+      },
+      {
+       "assert": "columns stay id then keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,keep_c"
+      },
+      {
+       "assert": "primary key stays id after modify",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 3",
+     "sql": "CREATE INDEX ix_removed ON t(obsolete)",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1072",
+      "obsolete"
+     ],
+     "verify": [
+      {
+       "assert": "rejected index leaves obsolete absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "0"
+      },
+      {
+       "assert": "rejected index leaves keep_c at length 20",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "ix_removed was not created",
+       "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='ix_removed'",
+       "expect": "0"
+      },
+      {
+       "assert": "columns stay id then keep_c after rejection",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,keep_c"
+      }
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "columns are id then keep_c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id,keep_c"
+    },
+    {
+     "assert": "obsolete absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+     "expect": "0"
+    },
+    {
+     "assert": "keep_c length is 20",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+     "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+    },
+    {
+     "assert": "primary key stays id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "ix_removed was not created",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='ix_removed'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a6-mysql80-drop",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t DROP COLUMN obsolete; ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; CREATE INDEX idx_keep ON t(keep_c);",
+   "policy": "t05-a6-drop-column-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 4,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+     "ALTER TABLE t DROP COLUMN obsolete;",
+     "ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "CREATE INDEX idx_keep ON t(keep_c);"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 6,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "columns are id, obsolete, keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,obsolete,keep_c"
+      },
+      {
+       "assert": "keep_c starts at length 10",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "obsolete is present",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "1"
+      },
+      {
+       "assert": "primary key is id",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "ALTER TABLE t DROP COLUMN obsolete",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "columns are id then keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,keep_c"
+      },
+      {
+       "assert": "obsolete absent after drop",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "0"
+      },
+      {
+       "assert": "keep_c stays length 10",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "primary key stays id",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "keep_c length is 20",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "obsolete stays absent after modify",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "0"
+      },
+      {
+       "assert": "columns stay id then keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,keep_c"
+      },
+      {
+       "assert": "primary key stays id after modify",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 3",
+     "sql": "CREATE INDEX idx_keep ON t(keep_c)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "idx_keep references keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_keep'",
+       "expect": "keep_c"
+      }
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "columns are id then keep_c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id,keep_c"
+    },
+    {
+     "assert": "obsolete absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+     "expect": "0"
+    },
+    {
+     "assert": "keep_c length is 20",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+     "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+    },
+    {
+     "assert": "primary key stays id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "idx_keep references keep_c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_keep'",
+     "expect": "keep_c"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a6-mysql80-drop-old-index",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t DROP COLUMN obsolete; ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; CREATE INDEX ix_removed ON t(obsolete);",
+   "policy": "t05-a6-drop-column-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 4,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+     "ALTER TABLE t DROP COLUMN obsolete;",
+     "ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "CREATE INDEX ix_removed ON t(obsolete);"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 6,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "finding_entries": [
+     {
+      "index": 3,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 3,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "metadata": {
+       "schema": "golden",
+       "table": "t",
+       "index": "ix_removed",
+       "column": "obsolete",
+       "exists": false
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "columns are id, obsolete, keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,obsolete,keep_c"
+      },
+      {
+       "assert": "keep_c starts at length 10",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "obsolete is present",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "1"
+      },
+      {
+       "assert": "primary key is id",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "ALTER TABLE t DROP COLUMN obsolete",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "columns are id then keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,keep_c"
+      },
+      {
+       "assert": "obsolete absent after drop",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "0"
+      },
+      {
+       "assert": "keep_c stays length 10",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "primary key stays id",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "keep_c length is 20",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "obsolete stays absent after modify",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "0"
+      },
+      {
+       "assert": "columns stay id then keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,keep_c"
+      },
+      {
+       "assert": "primary key stays id after modify",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 3",
+     "sql": "CREATE INDEX ix_removed ON t(obsolete)",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1072",
+      "obsolete"
+     ],
+     "verify": [
+      {
+       "assert": "rejected index leaves obsolete absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "0"
+      },
+      {
+       "assert": "rejected index leaves keep_c at length 20",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "ix_removed was not created",
+       "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='ix_removed'",
+       "expect": "0"
+      },
+      {
+       "assert": "columns stay id then keep_c after rejection",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,keep_c"
+      }
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "columns are id then keep_c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id,keep_c"
+    },
+    {
+     "assert": "obsolete absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+     "expect": "0"
+    },
+    {
+     "assert": "keep_c length is 20",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+     "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+    },
+    {
+     "assert": "primary key stays id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "ix_removed was not created",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='ix_removed'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a6-mysql84-drop",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t DROP COLUMN obsolete; ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; CREATE INDEX idx_keep ON t(keep_c);",
+   "policy": "t05-a6-drop-column-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 4,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+     "ALTER TABLE t DROP COLUMN obsolete;",
+     "ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "CREATE INDEX idx_keep ON t(keep_c);"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 6,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "columns are id, obsolete, keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,obsolete,keep_c"
+      },
+      {
+       "assert": "keep_c starts at length 10",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "obsolete is present",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "1"
+      },
+      {
+       "assert": "primary key is id",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "ALTER TABLE t DROP COLUMN obsolete",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "columns are id then keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,keep_c"
+      },
+      {
+       "assert": "obsolete absent after drop",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "0"
+      },
+      {
+       "assert": "keep_c stays length 10",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "primary key stays id",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "keep_c length is 20",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "obsolete stays absent after modify",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "0"
+      },
+      {
+       "assert": "columns stay id then keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,keep_c"
+      },
+      {
+       "assert": "primary key stays id after modify",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 3",
+     "sql": "CREATE INDEX idx_keep ON t(keep_c)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "idx_keep references keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_keep'",
+       "expect": "keep_c"
+      }
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "columns are id then keep_c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id,keep_c"
+    },
+    {
+     "assert": "obsolete absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+     "expect": "0"
+    },
+    {
+     "assert": "keep_c length is 20",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+     "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+    },
+    {
+     "assert": "primary key stays id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "idx_keep references keep_c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_keep'",
+     "expect": "keep_c"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a6-mysql84-drop-old-index",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t DROP COLUMN obsolete; ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; CREATE INDEX ix_removed ON t(obsolete);",
+   "policy": "t05-a6-drop-column-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 4,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+     "ALTER TABLE t DROP COLUMN obsolete;",
+     "ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "CREATE INDEX ix_removed ON t(obsolete);"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 6,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "finding_entries": [
+     {
+      "index": 3,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 3,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "metadata": {
+       "schema": "golden",
+       "table": "t",
+       "index": "ix_removed",
+       "column": "obsolete",
+       "exists": false
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "columns are id, obsolete, keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,obsolete,keep_c"
+      },
+      {
+       "assert": "keep_c starts at length 10",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "obsolete is present",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "1"
+      },
+      {
+       "assert": "primary key is id",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "ALTER TABLE t DROP COLUMN obsolete",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "columns are id then keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,keep_c"
+      },
+      {
+       "assert": "obsolete absent after drop",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "0"
+      },
+      {
+       "assert": "keep_c stays length 10",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "primary key stays id",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "keep_c length is 20",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "obsolete stays absent after modify",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "0"
+      },
+      {
+       "assert": "columns stay id then keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,keep_c"
+      },
+      {
+       "assert": "primary key stays id after modify",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 3",
+     "sql": "CREATE INDEX ix_removed ON t(obsolete)",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1072",
+      "obsolete"
+     ],
+     "verify": [
+      {
+       "assert": "rejected index leaves obsolete absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "0"
+      },
+      {
+       "assert": "rejected index leaves keep_c at length 20",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "ix_removed was not created",
+       "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='ix_removed'",
+       "expect": "0"
+      },
+      {
+       "assert": "columns stay id then keep_c after rejection",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,keep_c"
+      }
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "columns are id then keep_c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id,keep_c"
+    },
+    {
+     "assert": "obsolete absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+     "expect": "0"
+    },
+    {
+     "assert": "keep_c length is 20",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+     "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+    },
+    {
+     "assert": "primary key stays id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "ix_removed was not created",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='ix_removed'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a6-tidb85-drop",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t DROP COLUMN obsolete; ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; CREATE INDEX idx_keep ON t(keep_c);",
+   "policy": "t05-a6-drop-column-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 4,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+     "ALTER TABLE t DROP COLUMN obsolete;",
+     "ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "CREATE INDEX idx_keep ON t(keep_c);"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 6,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "columns are id, obsolete, keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,obsolete,keep_c"
+      },
+      {
+       "assert": "keep_c starts at length 10",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "obsolete is present",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "1"
+      },
+      {
+       "assert": "primary key is id",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "ALTER TABLE t DROP COLUMN obsolete",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "columns are id then keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,keep_c"
+      },
+      {
+       "assert": "obsolete absent after drop",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "0"
+      },
+      {
+       "assert": "keep_c stays length 10",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "primary key stays id",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "keep_c length is 20",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "obsolete stays absent after modify",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "0"
+      },
+      {
+       "assert": "columns stay id then keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,keep_c"
+      },
+      {
+       "assert": "primary key stays id after modify",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 3",
+     "sql": "CREATE INDEX idx_keep ON t(keep_c)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "idx_keep references keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_keep'",
+       "expect": "keep_c"
+      }
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "columns are id then keep_c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id,keep_c"
+    },
+    {
+     "assert": "obsolete absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+     "expect": "0"
+    },
+    {
+     "assert": "keep_c length is 20",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+     "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+    },
+    {
+     "assert": "primary key stays id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "idx_keep references keep_c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_keep'",
+     "expect": "keep_c"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a6-tidb85-drop-old-index",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t DROP COLUMN obsolete; ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; CREATE INDEX ix_removed ON t(obsolete);",
+   "policy": "t05-a6-drop-column-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 4,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+     "ALTER TABLE t DROP COLUMN obsolete;",
+     "ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "CREATE INDEX ix_removed ON t(obsolete);"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 6,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "finding_entries": [
+     {
+      "index": 3,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 3,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "metadata": {
+       "schema": "golden",
+       "table": "t",
+       "index": "ix_removed",
+       "column": "obsolete",
+       "exists": false
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "columns are id, obsolete, keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,obsolete,keep_c"
+      },
+      {
+       "assert": "keep_c starts at length 10",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "obsolete is present",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "1"
+      },
+      {
+       "assert": "primary key is id",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "ALTER TABLE t DROP COLUMN obsolete",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "columns are id then keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,keep_c"
+      },
+      {
+       "assert": "obsolete absent after drop",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "0"
+      },
+      {
+       "assert": "keep_c stays length 10",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "primary key stays id",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "keep_c length is 20",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "obsolete stays absent after modify",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "0"
+      },
+      {
+       "assert": "columns stay id then keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,keep_c"
+      },
+      {
+       "assert": "primary key stays id after modify",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 3",
+     "sql": "CREATE INDEX ix_removed ON t(obsolete)",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1072",
+      "obsolete"
+     ],
+     "verify": [
+      {
+       "assert": "rejected index leaves obsolete absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "0"
+      },
+      {
+       "assert": "rejected index leaves keep_c at length 20",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "ix_removed was not created",
+       "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='ix_removed'",
+       "expect": "0"
+      },
+      {
+       "assert": "columns stay id then keep_c after rejection",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,keep_c"
+      }
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "columns are id then keep_c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id,keep_c"
+    },
+    {
+     "assert": "obsolete absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+     "expect": "0"
+    },
+    {
+     "assert": "keep_c length is 20",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+     "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+    },
+    {
+     "assert": "primary key stays id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "ix_removed was not created",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='ix_removed'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a6-mysql84-unrelated-index",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL, KEY idx_existing(keep_c), UNIQUE KEY uk_id_keep(id, keep_c)); ALTER TABLE t DROP COLUMN obsolete; ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; CREATE INDEX idx_keep ON t(keep_c);",
+   "policy": "t05-a6-drop-column-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 4,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL, KEY idx_existing(keep_c), UNIQUE KEY uk_id_keep(id, keep_c));",
+     "ALTER TABLE t DROP COLUMN obsolete;",
+     "ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "CREATE INDEX idx_keep ON t(keep_c);"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 6,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL, KEY idx_existing(keep_c), UNIQUE KEY uk_id_keep(id, keep_c))",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "columns are id, obsolete, keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,obsolete,keep_c"
+      },
+      {
+       "assert": "keep_c starts at length 10",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "obsolete is present",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "1"
+      },
+      {
+       "assert": "primary key is id",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "ALTER TABLE t DROP COLUMN obsolete",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "columns are id then keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,keep_c"
+      },
+      {
+       "assert": "obsolete absent after drop",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "0"
+      },
+      {
+       "assert": "keep_c stays length 10",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "primary key stays id",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      },
+      {
+       "assert": "idx_existing stays keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_existing'",
+       "expect": "keep_c"
+      },
+      {
+       "assert": "uk_id_keep stays id then keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='uk_id_keep'",
+       "expect": "id,keep_c"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "keep_c length is 20",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "obsolete stays absent after modify",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "0"
+      },
+      {
+       "assert": "columns stay id then keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,keep_c"
+      },
+      {
+       "assert": "primary key stays id after modify",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      },
+      {
+       "assert": "idx_existing stays keep_c after modify",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_existing'",
+       "expect": "keep_c"
+      },
+      {
+       "assert": "uk_id_keep stays id then keep_c after modify",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='uk_id_keep'",
+       "expect": "id,keep_c"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 3",
+     "sql": "CREATE INDEX idx_keep ON t(keep_c)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "idx_keep references keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_keep'",
+       "expect": "keep_c"
+      }
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "columns are id then keep_c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id,keep_c"
+    },
+    {
+     "assert": "obsolete absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+     "expect": "0"
+    },
+    {
+     "assert": "keep_c length is 20",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+     "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+    },
+    {
+     "assert": "primary key stays id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "idx_existing stays keep_c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_existing'",
+     "expect": "keep_c"
+    },
+    {
+     "assert": "uk_id_keep stays id then keep_c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='uk_id_keep'",
+     "expect": "id,keep_c"
+    },
+    {
+     "assert": "idx_keep references keep_c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_keep'",
+     "expect": "keep_c"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a6-mysql84-readd",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT UNSIGNED NOT NULL DEFAULT 7 COMMENT 'retired', keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t DROP COLUMN obsolete; ALTER TABLE t ADD COLUMN obsolete VARCHAR(12) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; ALTER TABLE t MODIFY COLUMN obsolete VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; CREATE INDEX idx_readded ON t(obsolete);",
+   "policy": "t05-a6-drop-column-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 5,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT UNSIGNED NOT NULL DEFAULT 7 COMMENT 'retired', keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+     "ALTER TABLE t DROP COLUMN obsolete;",
+     "ALTER TABLE t ADD COLUMN obsolete VARCHAR(12) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "ALTER TABLE t MODIFY COLUMN obsolete VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "CREATE INDEX idx_readded ON t(obsolete);"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 6,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3,
+     4
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT UNSIGNED NOT NULL DEFAULT 7 COMMENT 'retired', keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "columns are id, obsolete, keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,obsolete,keep_c"
+      },
+      {
+       "assert": "obsolete starts unsigned with default 7",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IF(COLUMN_TYPE LIKE '%unsigned%',1,0),':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "int:1:7:retired"
+      },
+      {
+       "assert": "keep_c starts at length 10",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "primary key is id",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "ALTER TABLE t DROP COLUMN obsolete",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "columns are id then keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,keep_c"
+      },
+      {
+       "assert": "obsolete absent after drop",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "0"
+      },
+      {
+       "assert": "keep_c stays length 10",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "primary key stays id",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "ALTER TABLE t ADD COLUMN obsolete VARCHAR(12) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "columns are id, keep_c, obsolete",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,keep_c,obsolete"
+      },
+      {
+       "assert": "readded obsolete drops the old definition",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IF(COLUMN_TYPE LIKE '%unsigned%',1,0),':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "varchar:0:<nil>:"
+      },
+      {
+       "assert": "readded obsolete length is 12",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "varchar:12:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "keep_c stays length 10 after readd",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 3",
+     "sql": "ALTER TABLE t MODIFY COLUMN obsolete VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "readded obsolete length is 20",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "readded obsolete keeps the new definition",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IF(COLUMN_TYPE LIKE '%unsigned%',1,0),':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "varchar:0:<nil>:"
+      },
+      {
+       "assert": "columns stay id, keep_c, obsolete",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,keep_c,obsolete"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 4",
+     "sql": "CREATE INDEX idx_readded ON t(obsolete)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "idx_readded references the new obsolete",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_readded'",
+       "expect": "obsolete"
+      }
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "columns are id, keep_c, obsolete",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id,keep_c,obsolete"
+    },
+    {
+     "assert": "obsolete length is 20",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+     "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+    },
+    {
+     "assert": "obsolete keeps the new definition",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IF(COLUMN_TYPE LIKE '%unsigned%',1,0),':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+     "expect": "varchar:0:<nil>:"
+    },
+    {
+     "assert": "primary key stays id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "idx_readded references obsolete",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_readded'",
+     "expect": "obsolete"
+    },
+    {
+     "assert": "keep_c stays length 10",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+     "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a6-tidb85-unrelated-index",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL, KEY idx_existing(keep_c), UNIQUE KEY uk_id_keep(id, keep_c)); ALTER TABLE t DROP COLUMN obsolete; ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; CREATE INDEX idx_keep ON t(keep_c);",
+   "policy": "t05-a6-drop-column-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 4,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL, KEY idx_existing(keep_c), UNIQUE KEY uk_id_keep(id, keep_c));",
+     "ALTER TABLE t DROP COLUMN obsolete;",
+     "ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "CREATE INDEX idx_keep ON t(keep_c);"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 6,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL, KEY idx_existing(keep_c), UNIQUE KEY uk_id_keep(id, keep_c))",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "columns are id, obsolete, keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,obsolete,keep_c"
+      },
+      {
+       "assert": "keep_c starts at length 10",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "obsolete is present",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "1"
+      },
+      {
+       "assert": "primary key is id",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "ALTER TABLE t DROP COLUMN obsolete",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "columns are id then keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,keep_c"
+      },
+      {
+       "assert": "obsolete absent after drop",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "0"
+      },
+      {
+       "assert": "keep_c stays length 10",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "primary key stays id",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      },
+      {
+       "assert": "idx_existing stays keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_existing'",
+       "expect": "keep_c"
+      },
+      {
+       "assert": "uk_id_keep stays id then keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='uk_id_keep'",
+       "expect": "id,keep_c"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "ALTER TABLE t MODIFY COLUMN keep_c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "keep_c length is 20",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "obsolete stays absent after modify",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "0"
+      },
+      {
+       "assert": "columns stay id then keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,keep_c"
+      },
+      {
+       "assert": "primary key stays id after modify",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      },
+      {
+       "assert": "idx_existing stays keep_c after modify",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_existing'",
+       "expect": "keep_c"
+      },
+      {
+       "assert": "uk_id_keep stays id then keep_c after modify",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='uk_id_keep'",
+       "expect": "id,keep_c"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 3",
+     "sql": "CREATE INDEX idx_keep ON t(keep_c)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "idx_keep references keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_keep'",
+       "expect": "keep_c"
+      }
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "columns are id then keep_c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id,keep_c"
+    },
+    {
+     "assert": "obsolete absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+     "expect": "0"
+    },
+    {
+     "assert": "keep_c length is 20",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+     "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+    },
+    {
+     "assert": "primary key stays id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "idx_existing stays keep_c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_existing'",
+     "expect": "keep_c"
+    },
+    {
+     "assert": "uk_id_keep stays id then keep_c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='uk_id_keep'",
+     "expect": "id,keep_c"
+    },
+    {
+     "assert": "idx_keep references keep_c",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_keep'",
+     "expect": "keep_c"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a6-tidb85-readd",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT UNSIGNED NOT NULL DEFAULT 7 COMMENT 'retired', keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t DROP COLUMN obsolete; ALTER TABLE t ADD COLUMN obsolete VARCHAR(12) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; ALTER TABLE t MODIFY COLUMN obsolete VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; CREATE INDEX idx_readded ON t(obsolete);",
+   "policy": "t05-a6-drop-column-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 5,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT UNSIGNED NOT NULL DEFAULT 7 COMMENT 'retired', keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+     "ALTER TABLE t DROP COLUMN obsolete;",
+     "ALTER TABLE t ADD COLUMN obsolete VARCHAR(12) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "ALTER TABLE t MODIFY COLUMN obsolete VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "CREATE INDEX idx_readded ON t(obsolete);"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 6,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3,
+     4
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT UNSIGNED NOT NULL DEFAULT 7 COMMENT 'retired', keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "columns are id, obsolete, keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,obsolete,keep_c"
+      },
+      {
+       "assert": "obsolete starts unsigned with default 7",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IF(COLUMN_TYPE LIKE '%unsigned%',1,0),':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "int:1:7:retired"
+      },
+      {
+       "assert": "keep_c starts at length 10",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "primary key is id",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "ALTER TABLE t DROP COLUMN obsolete",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "columns are id then keep_c",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,keep_c"
+      },
+      {
+       "assert": "obsolete absent after drop",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "0"
+      },
+      {
+       "assert": "keep_c stays length 10",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "primary key stays id",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+       "expect": "id"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "ALTER TABLE t ADD COLUMN obsolete VARCHAR(12) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "columns are id, keep_c, obsolete",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,keep_c,obsolete"
+      },
+      {
+       "assert": "readded obsolete drops the old definition",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IF(COLUMN_TYPE LIKE '%unsigned%',1,0),':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "varchar:0:<nil>:"
+      },
+      {
+       "assert": "readded obsolete length is 12",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "varchar:12:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "keep_c stays length 10 after readd",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 3",
+     "sql": "ALTER TABLE t MODIFY COLUMN obsolete VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "readded obsolete length is 20",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      },
+      {
+       "assert": "readded obsolete keeps the new definition",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IF(COLUMN_TYPE LIKE '%unsigned%',1,0),':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+       "expect": "varchar:0:<nil>:"
+      },
+      {
+       "assert": "columns stay id, keep_c, obsolete",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id,keep_c,obsolete"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 4",
+     "sql": "CREATE INDEX idx_readded ON t(obsolete)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "idx_readded references the new obsolete",
+       "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_readded'",
+       "expect": "obsolete"
+      }
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "columns are id, keep_c, obsolete",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id,keep_c,obsolete"
+    },
+    {
+     "assert": "obsolete length is 20",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+     "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+    },
+    {
+     "assert": "obsolete keeps the new definition",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IF(COLUMN_TYPE LIKE '%unsigned%',1,0),':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+     "expect": "varchar:0:<nil>:"
+    },
+    {
+     "assert": "primary key stays id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "idx_readded references obsolete",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_readded'",
+     "expect": "obsolete"
+    },
+    {
+     "assert": "keep_c stays length 10",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+     "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
   }
  ],
  "error_cases": [
@@ -18230,6 +21308,22 @@
   "T05.cli.t05-a5-mysql-rename-offline",
   "T05.cli.t05-a5-mysql-rename-offline-900",
   "T05.cli.t05-a5-mysql-change-offline",
-  "T05.cli.t05-a5-tidb-change-offline"
+  "T05.cli.t05-a5-tidb-change-offline",
+  "T05.meta.t05-a6-mysql57-drop",
+  "T05.meta.t05-a6-mysql57-drop-old-index",
+  "T05.meta.t05-a6-mysql80-drop",
+  "T05.meta.t05-a6-mysql80-drop-old-index",
+  "T05.meta.t05-a6-mysql84-drop",
+  "T05.meta.t05-a6-mysql84-drop-old-index",
+  "T05.meta.t05-a6-tidb85-drop",
+  "T05.meta.t05-a6-tidb85-drop-old-index",
+  "T05.meta.t05-a6-mysql84-unrelated-index",
+  "T05.meta.t05-a6-mysql84-readd",
+  "T05.meta.t05-a6-tidb85-unrelated-index",
+  "T05.meta.t05-a6-tidb85-readd",
+  "T05.cli.t05-a6-mysql-drop-offline",
+  "T05.cli.t05-a6-mysql-drop-old-index-offline",
+  "T05.cli.t05-a6-tidb-drop-offline",
+  "T05.cli.t05-a6-tidb-drop-old-index-offline"
  ]
 }

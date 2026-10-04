@@ -61,7 +61,7 @@ Consumers can rely on the three rule IDs, their default blocker level, and `requ
 
 ## Deferred / Out Of Scope
 
-This slice does not complete every CHANGE form. DROP COLUMN precise post-state, cross-schema column move, multi-action success, foreign-key rewrite, catalog scan, prefix and expression index rewriting, runtime limits, and storage engines stay unimplemented. Cross-family conversion, decimal precision, temporal implicit defaults, and generated or identity columns stay outside the ordinary template. No 8.0.2 or 8.0.3 database is added. The 8.0.3 boundary is the release note plus the pure function and real `target_version` audits. This slice does not complete #84 or the milestone. A1 through A4 stay accepted.
+This slice does not complete every CHANGE form. T05-A6 later publishes only the dependency-free single-action DROP COLUMN subset; related drop-column members, multi-action success, cross-schema column move, foreign-key rewrite, catalog scan, prefix and expression index rewriting, runtime limits, and storage engines stay unimplemented. Cross-family conversion, decimal precision, temporal implicit defaults, and generated or identity columns stay outside the ordinary template. No 8.0.2 or 8.0.3 database is added. The 8.0.3 boundary is the release note plus the pure function and real `target_version` audits. This slice does not complete #84 or the milestone. A1 through A4 stay accepted.
 
 ## Verification Evidence
 

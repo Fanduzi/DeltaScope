@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: synthetic ddl-golden artifacts and manifests built in a temp directory
-# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3, T05-A4, and T05-A5 mutation coverage
+# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3, T05-A4, T05-A5, and T05-A6 mutation coverage
 # pos: offline negative tests for scripts/ddl_golden.py validation (no Docker required)
 # note: if this file changes, update this header and module README.md.
 """Validator contract tests for scripts/ddl_golden.py.
@@ -1535,15 +1535,17 @@ def a3_contract_tests(tmp):
     profile = "t05-drop-recreate-isolated"
     a4_profile = "t05-a4-modify-isolated"
     a5_profile = "t05-a5-column-identity-isolated"
+    a6_profile = "t05-a6-drop-column-isolated"
     manifest = copy.deepcopy(MANIFEST)
     manifest.update(task_id="T05", anchors=copy.deepcopy(source["anchors"]),
                     policy={"profiles": {
                         profile: copy.deepcopy(source["policy"]["profiles"][profile]),
                         a4_profile: copy.deepcopy(source["policy"]["profiles"][a4_profile]),
                         a5_profile: copy.deepcopy(source["policy"]["profiles"][a5_profile]),
+                        a6_profile: copy.deepcopy(source["policy"]["profiles"][a6_profile]),
                     }},
-                    metadata_cases=[copy.deepcopy(s) for s in source["metadata_cases"] if s["id"].startswith(("t05-a3-", "t05-a4-", "t05-a5-"))],
-                    cli_cases=[copy.deepcopy(s) for s in source["cli_cases"] if s["id"].startswith(("t05-a3-", "t05-a4-", "t05-a5-"))])
+                    metadata_cases=[copy.deepcopy(s) for s in source["metadata_cases"] if s["id"].startswith(("t05-a3-", "t05-a4-", "t05-a5-", "t05-a6-"))],
+                    cli_cases=[copy.deepcopy(s) for s in source["cli_cases"] if s["id"].startswith(("t05-a3-", "t05-a4-", "t05-a5-", "t05-a6-"))])
     baseline = ddl_golden.load_baseline()
     directory = tmp / "a3"
     directory.mkdir()
@@ -1979,6 +1981,116 @@ def a3_contract_tests(tmp):
     c["actual"]["parsed"]["rule_summary"]["loaded"] = 8
     update_stdout(c)
     run("a5 loaded rule count other than 11 rejected", a, "loaded rule count")
+
+    def a6(suffix="mysql84-drop"):
+        candidate = copy.deepcopy(artifact)
+        case = next(item for item in candidate["cases"] if item.get("cli_case") == "t05-a6-" + suffix)
+        return candidate, case
+
+    run("a6 valid synthetic control", artifact)
+    a, c = a6()
+    del c["actual"]["parsed"]["statements"][1]
+    update_stdout(c)
+    run("a6 DROP statement deleted rejected", a, "statements")
+    a, c = a6()
+    c["actual"]["parsed"]["statements"][1]["raw_sql"] = "SELECT 1;"
+    update_stdout(c)
+    run("a6 DROP statement replaced rejected", a, "raw SQL")
+    a, c = a6()
+    c["actual"]["execute"][1]["sql"] = c["actual"]["execute"][0]["sql"]
+    run("a6 DROP statement shifted rejected", a, "identity mismatch")
+    a, c = a6()
+    del c["actual"]["execute"][1]
+    run("a6 DROP execute step deleted rejected", a, "execute")
+    a, c = a6()
+    c["actual"]["execute"][1]["rc"] = 1
+    run("a6 failed DROP claiming pass rejected", a, "execute")
+    a, c = a6()
+    c["actual"]["execute"][1]["verify"] = []
+    run("a6 missing immediate DROP verify rejected", a, "verify count")
+    a, c = a6()
+    c["actual"]["execute"][2]["verify"] = c["actual"]["execute"][1].pop("verify")
+    run("a6 DROP verify moved after MODIFY rejected", a, "verify count")
+    a, c = a6()
+    c["actual"]["execute"][1]["verify"][0]["output"] = "id,obsolete,keep_c"
+    run("a6 obsolete still present rejected", a, "output mismatch")
+    a, c = a6()
+    c["actual"]["execute"][1]["verify"][0]["output"] = "id"
+    run("a6 keep_c lost rejected", a, "output mismatch")
+    a, c = a6()
+    c["actual"]["execute"][1]["verify"][0]["output"] = "keep_c,id"
+    run("a6 column order reversed rejected", a, "output mismatch")
+    a, c = a6()
+    c["actual"]["execute"][1]["verify"][2]["output"] = c["actual"]["execute"][1]["verify"][2]["output"].replace(":10:", ":20:", 1)
+    run("a6 length 10 recorded as 20 rejected", a, "output mismatch")
+    a, c = a6()
+    c["actual"]["execute"][2]["verify"][0]["output"] = c["actual"]["execute"][2]["verify"][0]["output"].replace(":20:", ":10:", 1)
+    run("a6 length 20 recorded as 10 rejected", a, "output mismatch")
+    a, c = a6()
+    c["actual"]["execute"][1]["verify"][3]["output"] = "keep_c"
+    run("a6 primary key lost rejected", a, "output mismatch")
+    a, c = a6("mysql84-unrelated-index")
+    c["actual"]["execute"][1]["verify"][4]["output"] = ""
+    run("a6 unrelated index lost rejected", a, "output mismatch")
+    a, c = a6("mysql84-unrelated-index")
+    c["actual"]["execute"][1]["verify"][5]["output"] = "keep_c,id"
+    run("a6 unrelated key order reversed rejected", a, "output mismatch")
+    a, c = a6("mysql84-readd")
+    c["actual"]["execute"][2]["verify"][1]["output"] = "int:1:7:retired"
+    run("a6 readd reused the old definition rejected", a, "output mismatch")
+    a, c = a6("mysql84-drop-old-index")
+    c["actual"]["parsed"]["statements"][3]["findings"] = []
+    c["actual"]["parsed"]["verdict"] = "pass"
+    c["actual"]["exit"] = 0
+    update_stdout(c)
+    run("a6 old-column finding missing rejected", a, "findings")
+    a, c = a6("mysql84-drop-old-index")
+    finding = c["actual"]["parsed"]["statements"][3]["findings"].pop()
+    finding["statement_index"] = 0
+    c["actual"]["parsed"]["statements"][0]["findings"].append(finding)
+    update_stdout(c)
+    run("a6 old-column finding on the wrong statement rejected", a, "finding entries")
+    a, c = a6("mysql84-drop-old-index")
+    c["actual"]["parsed"]["statements"][3]["findings"][0]["metadata"]["column"] = "keep_c"
+    update_stdout(c)
+    run("a6 old-column finding names the wrong column rejected", a, "finding metadata")
+    a, c = a6("mysql84-drop-old-index")
+    c["actual"]["execute"][3]["stderr"] = "ERROR 1045 Access denied"
+    run("a6 old-column negative disguised as a permission error rejected", a, "missing stderr marker")
+    a, c = a6("mysql-drop-offline")
+    c["actual"]["parsed"]["statements"][0]["evidence_gaps"] = []
+    c["actual"]["parsed"]["statements"][0]["coverage"]["status"] = "complete"
+    c["actual"]["parsed"]["coverage"]["status"] = "complete"
+    update_stdout(c)
+    run("a6 offline CREATE gap deleted rejected", a, "gap")
+    for rule_id, label in (
+        ("ddl.alter.drop_column.exists.require", "drop existence"),
+        ("ddl.alter.modify_column.compatibility.require", "compatibility"),
+        ("ddl.create_index.columns.exists.require", "index column"),
+    ):
+        a, c = a6()
+        m = copy.deepcopy(manifest)
+        del m["policy"]["profiles"][a6_profile]["enable"][rule_id]
+        run(f"a6 profile dropped the {label} rule rejected", a, "T05-A6", m)
+    a, c = a6()
+    artifact_id = c["case_id"]
+    a["cases"] = [item for item in a["cases"] if item["case_id"] != artifact_id]
+    a["executed_count"] -= 1
+    m = copy.deepcopy(manifest)
+    m["metadata_cases"] = [s for s in m["metadata_cases"] if s["id"] != c["cli_case"]]
+    m["required_case_ids"].remove(artifact_id)
+    a["required_case_ids"].remove(artifact_id)
+    run("a6 manifest and artifact shrunk together rejected", a, "T05-A6", m)
+    a, c = a6()
+    m = copy.deepcopy(manifest)
+    spec = next(s for s in m["metadata_cases"] if s["id"] == c["cli_case"])
+    spec["execute"][1]["verify"] = [item for item in spec["execute"][1]["verify"] if item["assert"] != "obsolete absent after drop"]
+    c["actual"]["execute"][1]["verify"] = [item for item in c["actual"]["execute"][1]["verify"] if item["assert"] != "obsolete absent after drop"]
+    run("a6 manifest and artifact dropped the intermediate oracle rejected", a, "T05-A6", m)
+    a, c = a6()
+    c["actual"]["parsed"]["rule_summary"]["loaded"] = 5
+    update_stdout(c)
+    run("a6 loaded rule count other than 6 rejected", a, "loaded rule count")
     return results
 
 
