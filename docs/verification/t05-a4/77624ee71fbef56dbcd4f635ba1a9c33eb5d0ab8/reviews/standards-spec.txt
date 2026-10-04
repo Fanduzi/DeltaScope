@@ -1,0 +1,19 @@
+T05-A4-R1 implementer checklist. This is not reviewer acceptance.
+
+Standards
+- Code commit 77624ee71fbef56dbcd4f635ba1a9c33eb5d0ab8 is on milestone/mysql-tidb-ddl-completion.
+- The commit message has no Co-authored-by trailer.
+- Task diff c3358968...77624ee is 15 files. Root README.md and README_ZH.md are unchanged. DeclaresPrimaryKey is json:"-" and is not a public result field.
+- Module READMEs for audit, spec, tidb parser, ddl rules, and scripts are in the same commit. The staged three-level check printed OK plus the L1 reminder.
+- Decision record amendment is in that commit. Task-range check printed "docs/decisions/*.md present in diff, PASS". make decision-record-gate on main...HEAD printed the existing keyword note and exit 0.
+- Gates listed in README.md ran on 77624ee. T05 golden 204/204, 3486 assertions, validate artifact valid. T03 golden 118/118, 1395 assertions, validate artifact valid.
+- Validator contract cases=155 failures=0. The three new mutations pin the tidb85 signedness marker, the native return code, and the successor gap.
+- Evidence contains no binary, no new password, and no upstream manual HTML. vcs.modified=true matches the six preexisting untracked paths.
+- No new delivery blocker in the source or the logs.
+
+Spec
+- R1. When golden.t.c cannot be replaced, an already-loaded aux.child that references c is invalidated with it. The later ADD COLUMN on that child takes the existing unknown_table_state gap. Complete unrelated lists and a same-named table in another schema stay. Unloaded children are not discovered. Self-reference and UnmodeledParts / UnmodeledReferencedParts are covered by TestBatchStateA4R1AffectedSet and TestAuditSQLT05A4R1CrossFamilyDropsLoadedChild.
+- R2. PRIMARY KEY, PRIMARY KEY NOT NULL, NOT NULL PRIMARY KEY, and PRIMARY KEY NULL stay out of the ordinary template. The next DROP PRIMARY KEY has no missing-primary-key finding and has the existing unknown_table_state gap. Ordinary NOT NULL without PRIMARY KEY still publishes. The fact is AlterColumnChange.DeclaresPrimaryKey.
+- R3. On tidb85 8.5.0, INT PRIMARY KEY to INT UNSIGNED keeps the signedness finding and does not publish a successor. The driver recorded ERROR 8200 and left id signed. INT PRIMARY KEY to BIGINT remains the existing passing golden case. The compatibility rule text was not edited.
+- The original 185 T05 cases and the 18 ordinary MODIFY cases remain in the manifest.
+- A4 stays not accepted. A1, A2, A3, #82, and #83 stay accepted. #79 and #84 stay open.

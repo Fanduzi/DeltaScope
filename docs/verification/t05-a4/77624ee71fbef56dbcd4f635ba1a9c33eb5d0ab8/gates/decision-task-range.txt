@@ -1,0 +1,2 @@
+decision-record-gate: docs/decisions/*.md present in diff, PASS
+range: c33589688584ae11c12d9c34c85e05401d899d38...77624ee71fbef56dbcd4f635ba1a9c33eb5d0ab8

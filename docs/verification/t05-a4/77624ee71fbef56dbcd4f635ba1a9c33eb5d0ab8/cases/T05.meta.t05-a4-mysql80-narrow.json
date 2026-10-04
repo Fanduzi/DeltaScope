@@ -1,0 +1,502 @@
+{
+  "case_id": "T05.meta.t05-a4-mysql80-narrow",
+  "kind": "cli_metadata",
+  "cli_case": "t05-a4-mysql80-narrow",
+  "anchor": "mysql80",
+  "dialect": "mysql",
+  "input_sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; ALTER TABLE t MODIFY COLUMN c VARCHAR(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+  "policy_profile": "t05-a4-modify-isolated",
+  "policy_path": "/private/tmp/ds-t05-a4-r1-golden-77624ee/T05/golden-policy-t05-a4-modify-isolated.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 3,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete",
+      "complete",
+      "complete"
+    ],
+    "statement_sql": [
+      "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+      "ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+      "ALTER TABLE t MODIFY COLUMN c VARCHAR(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 4,
+    "statement_indices": [
+      0,
+      1,
+      2
+    ],
+    "finding_entries": [
+      {
+        "index": 2,
+        "rule_id": "ddl.alter.modify_column.compatibility.require",
+        "level": "blocker"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 2,
+        "rule_id": "ddl.alter.modify_column.compatibility.require",
+        "metadata": {
+          "action": "modify_column",
+          "table": "t",
+          "name": "c",
+          "column_name": "c",
+          "source_length": 20,
+          "target_length": 15
+        }
+      }
+    ]
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:8.0.46",
+      "image_digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+      "container": "deltascope-ddl-golden-mysql80",
+      "reachable": true,
+      "version": "8.0.46"
+    },
+    "setup": [
+      {
+        "name": "ensure t absent",
+        "sql": "DROP TABLE IF EXISTS t",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "verify": [
+          {
+            "assert": "t absent before audit",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ]
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit did not create t",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "0",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      }
+    ],
+    "execute": [
+      {
+        "name": "driver statement 0",
+        "sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "verify": [
+          {
+            "assert": "definition after statement 0",
+            "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+            "rc": 0,
+            "output": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ]
+      },
+      {
+        "name": "driver statement 1",
+        "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "verify": [
+          {
+            "assert": "definition after statement 1",
+            "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+            "rc": 0,
+            "output": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ]
+      },
+      {
+        "name": "driver statement 2",
+        "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "verify": [
+          {
+            "assert": "definition after statement 2",
+            "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+            "rc": 0,
+            "output": "varchar:15:utf8mb4:utf8mb4_bin:NO:<nil>:",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ]
+      }
+    ],
+    "structure": [
+      {
+        "assert": "t exists",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "1",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "columns stay id then c",
+        "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "id:int,c:varchar",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "primary key stays id",
+        "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+        "rc": 0,
+        "output": "id",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "final c definition",
+        "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+        "rc": 0,
+        "output": "varchar:15:utf8mb4:utf8mb4_bin:NO:<nil>:",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      }
+    ],
+    "teardown": [
+      {
+        "name": "drop fixture",
+        "sql": "DROP TABLE IF EXISTS t",
+        "rc": 0,
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "verify": [
+          {
+            "assert": "no residual t",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ]
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":3,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);\",\"normalized_sql\":\"CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)\",\"coverage\":{\"status\":\"complete\"}},{\"index\":1,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;\",\"normalized_sql\":\"ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL\",\"coverage\":{\"status\":\"complete\"}},{\"index\":2,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t MODIFY COLUMN c VARCHAR(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;\",\"normalized_sql\":\"ALTER TABLE t MODIFY COLUMN c VARCHAR(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL\",\"findings\":[{\"rule_id\":\"ddl.alter.modify_column.compatibility.require\",\"level\":\"blocker\",\"message\":\"column \\\"c\\\" shrinks string length from 20 to 15\",\"statement_index\":2,\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":198},\"suggestion\":\"keep the new length at or above the current size or validate existing data before shrinking\",\"metadata\":{\"action\":\"modify_column\",\"column_name\":\"c\",\"name\":\"c\",\"source_length\":20,\"table\":\"t\",\"target_length\":15},\"explanation\":{\"summary\":\"Require DDL alter modify column compatibility require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"keep the new length at or above the current size or validate existing data before shrinking\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.0.46\",\"major\":8,\"minor\":0,\"patch\":46,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":4,\"applicable\":4,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 3,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+          "normalized_sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 1,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+          "normalized_sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 2,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+          "normalized_sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+          "findings": [
+            {
+              "rule_id": "ddl.alter.modify_column.compatibility.require",
+              "level": "blocker",
+              "message": "column \"c\" shrinks string length from 20 to 15",
+              "statement_index": 2,
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 198
+              },
+              "suggestion": "keep the new length at or above the current size or validate existing data before shrinking",
+              "metadata": {
+                "action": "modify_column",
+                "column_name": "c",
+                "name": "c",
+                "source_length": 20,
+                "table": "t",
+                "target_length": 15
+              },
+              "explanation": {
+                "summary": "Require DDL alter modify column compatibility require",
+                "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+                "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                "suggestion": "keep the new length at or above the current size or validate existing data before shrinking",
+                "metadata": {
+                  "status": "available",
+                  "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                }
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 4,
+        "applicable": 4,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.46",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "8.0.46"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.46' expected_contains='8.0.46'"
+    },
+    {
+      "name": "setup ensure t absent return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "setup ensure t absent: t absent before audit",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=3 expected=3"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=4"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0, 1, 2]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete', 'complete', 'complete']"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);', 'ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;', 'ALTER TABLE t MODIFY COLUMN c VARCHAR(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;'] expected=['CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);', 'ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;', 'ALTER TABLE t MODIFY COLUMN c VARCHAR(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(2, 'ddl.alter.modify_column.compatibility.require', 'blocker')] expected=[(2, 'ddl.alter.modify_column.compatibility.require', 'blocker')]"
+    },
+    {
+      "name": "finding metadata (2, 'ddl.alter.modify_column.compatibility.require')",
+      "ok": true,
+      "detail": "findings=[{'action': 'modify_column', 'column_name': 'c', 'name': 'c', 'source_length': 20, 'table': 't', 'target_length': 15}] expected_subset={'action': 'modify_column', 'table': 't', 'name': 'c', 'column_name': 'c', 'source_length': 20, 'target_length': 15}"
+    },
+    {
+      "name": "fail_on_triggered",
+      "ok": true,
+      "detail": "fail_on_triggered=True"
+    },
+    {
+      "name": "post-verify audit did not create t",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute driver statement 0 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "execute driver statement 0: definition after statement 0",
+      "ok": true,
+      "detail": "rc=0 output='varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:' expected='varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:'"
+    },
+    {
+      "name": "execute driver statement 1 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "execute driver statement 1: definition after statement 1",
+      "ok": true,
+      "detail": "rc=0 output='varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:' expected='varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:'"
+    },
+    {
+      "name": "execute driver statement 2 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "execute driver statement 2: definition after statement 2",
+      "ok": true,
+      "detail": "rc=0 output='varchar:15:utf8mb4:utf8mb4_bin:NO:<nil>:' expected='varchar:15:utf8mb4:utf8mb4_bin:NO:<nil>:'"
+    },
+    {
+      "name": "structure t exists",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "structure columns stay id then c",
+      "ok": true,
+      "detail": "rc=0 output='id:int,c:varchar' expected='id:int,c:varchar'"
+    },
+    {
+      "name": "structure primary key stays id",
+      "ok": true,
+      "detail": "rc=0 output='id' expected='id'"
+    },
+    {
+      "name": "structure final c definition",
+      "ok": true,
+      "detail": "rc=0 output='varchar:15:utf8mb4:utf8mb4_bin:NO:<nil>:' expected='varchar:15:utf8mb4:utf8mb4_bin:NO:<nil>:'"
+    },
+    {
+      "name": "teardown drop fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "teardown drop fixture: no residual t",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ds-t05-a4-r1-golden-77624ee/T05/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; ALTER TABLE t MODIFY COLUMN c VARCHAR(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+    "--config",
+    "/private/tmp/ds-t05-a4-r1-golden-77624ee/T05/golden-policy-t05-a4-modify-isolated.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23380",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T05_GOLDEN_PW",
+    "--schema",
+    "golden",
+    "--fail-on",
+    "blocker"
+  ]
+}

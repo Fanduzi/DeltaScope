@@ -1,0 +1,129 @@
+{
+  "case_id": "T05.cli.mysql-create-procedure-parser-error",
+  "kind": "cli_audit",
+  "cli_case": "mysql-create-procedure-parser-error",
+  "dialect": "mysql",
+  "input_sql": "CREATE PROCEDURE p() BEGIN SELECT 1; END;",
+  "policy_profile": "t04-modify-column-compat-isolated",
+  "policy_path": "/private/tmp/ds-t05-a4-r1-golden-77624ee/T05/golden-policy.yaml",
+  "command": [
+    "/private/tmp/ds-t05-a4-r1-golden-77624ee/T05/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "CREATE PROCEDURE p() BEGIN SELECT 1; END;",
+    "--config",
+    "/private/tmp/ds-t05-a4-r1-golden-77624ee/T05/golden-policy.yaml",
+    "--format",
+    "json"
+  ],
+  "expected": {
+    "exit": 2,
+    "verdict": "",
+    "statements": 0,
+    "findings": 0,
+    "diagnostics": 2,
+    "unsupported": 0,
+    "coverage": "incomplete",
+    "statement_coverage": []
+  },
+  "actual": {
+    "exit": 2,
+    "stdout": "{\"verdict\":\"\",\"coverage\":{\"status\":\"incomplete\"},\"summary\":{\"statements\":0,\"blockers\":0,\"warnings\":0,\"notices\":0},\"diagnostics\":[{\"classification\":\"parser_error\",\"reason\":\"statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred\",\"action_hint\":\"verify the selected dialect and syntax, split multi-statement input if needed, or upgrade DeltaScope when parser support becomes available\",\"audited\":false,\"dialect\":\"mysql\",\"line\":1,\"column\":1},{\"classification\":\"parser_error\",\"reason\":\"statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred\",\"action_hint\":\"verify the selected dialect and syntax, split multi-statement input if needed, or upgrade DeltaScope when parser support becomes available\",\"audited\":false,\"dialect\":\"mysql\",\"line\":1,\"column\":38}],\"fail_on_triggered\":false,\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred\n",
+    "parsed": {
+      "verdict": "",
+      "coverage": {
+        "status": "incomplete"
+      },
+      "summary": {
+        "statements": 0,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "diagnostics": [
+        {
+          "classification": "parser_error",
+          "reason": "statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred",
+          "action_hint": "verify the selected dialect and syntax, split multi-statement input if needed, or upgrade DeltaScope when parser support becomes available",
+          "audited": false,
+          "dialect": "mysql",
+          "line": 1,
+          "column": 1
+        },
+        {
+          "classification": "parser_error",
+          "reason": "statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred",
+          "action_hint": "verify the selected dialect and syntax, split multi-statement input if needed, or upgrade DeltaScope when parser support becomes available",
+          "audited": false,
+          "dialect": "mysql",
+          "line": 1,
+          "column": 38
+        }
+      ],
+      "fail_on_triggered": false,
+      "context": {
+        "mode": "offline",
+        "dialect": "mysql",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=2 expected=2"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict=''"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=0 expected=0"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[{'classification': 'parser_error', 'reason': 'statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred', 'action_hint': 'verify the selected dialect and syntax, split multi-statement input if needed, or upgrade DeltaScope when parser support becomes available', 'audited': False, 'dialect': 'mysql', 'line': 1, 'column': 1}, {'classification': 'parser_error', 'reason': 'statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred', 'action_hint': 'verify the selected dialect and syntax, split multi-statement input if needed, or upgrade DeltaScope when parser support becomes available', 'audited': False, 'dialect': 'mysql', 'line': 1, 'column': 38}]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='incomplete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=[]"
+    }
+  ],
+  "status": "pass"
+}

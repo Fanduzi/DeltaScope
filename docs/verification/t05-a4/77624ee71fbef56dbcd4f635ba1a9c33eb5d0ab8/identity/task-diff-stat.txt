@@ -1,0 +1,16 @@
+ .../2026-10-04-ddl-modify-column-state.md          |  12 +-
+ internal/application/audit/README.md               |   5 +-
+ internal/application/audit/batch_state.go          |  14 +-
+ .../application/audit/batch_state_a4_r1_test.go    | 362 +++++++++++++++++++++
+ internal/application/audit/batch_state_modify.go   | 222 +++++++++----
+ internal/application/audit/extract_test.go         |  56 ++++
+ internal/domain/rule/ddl/README.md                 |   2 +-
+ internal/domain/spec/README.md                     |   1 +
+ internal/domain/spec/ddl.go                        |   4 +
+ internal/infrastructure/parser/tidb/README.md      |   2 +-
+ internal/infrastructure/parser/tidb/extractor.go   |   6 +-
+ scripts/README.md                                  |   4 +-
+ scripts/ddl_golden.py                              |  41 ++-
+ scripts/test_ddl_golden.py                         |  12 +
+ testdata/ddl-golden/T05.json                       | 187 ++++++++++-
+ 15 files changed, 854 insertions(+), 76 deletions(-)

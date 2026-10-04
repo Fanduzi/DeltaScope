@@ -1,0 +1,4 @@
+[three-level-doc][L1] reminder: module docs changed, confirm whether root README.md needs update
+[three-level-doc] OK
+command: check_three_level_doc.sh --staged on the 15-file code diff before commit 77624ee
+root README.md and README_ZH.md were left unchanged

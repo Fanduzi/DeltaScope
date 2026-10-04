@@ -1,0 +1,45 @@
+--- FAIL: TestAuditSQLT05A4R1TiDBPrimaryKeySignednessStaysConservative (0.02s)
+    batch_state_a4_r1_test.go:326: third statement gaps = [], want unknown_table_state
+--- FAIL: TestAuditSQLT05A4R1CrossFamilyDropsLoadedChild (0.02s)
+    batch_state_a4_r1_test.go:92: add column gaps = [], want one unknown_table_state gap
+--- FAIL: TestBatchStateA4R1AffectedSet (0.00s)
+    --- FAIL: TestBatchStateA4R1AffectedSet/unknown_primary-key_membership_drops_a_loaded_reference (0.00s)
+        batch_state_a4_r1_test.go:170: pre-state = &{Schema:golden Instance:0x60d51252240 Version:<nil> TargetTable:0x60d514de800 Objects:[]}, want an unknown table
+    --- FAIL: TestBatchStateA4R1AffectedSet/explicit_null_on_a_known_primary_key_drops_a_loaded_reference (0.00s)
+        batch_state_a4_r1_test.go:160: pre-state = &{Schema:golden Instance:0x60d51318420 Version:<nil> TargetTable:0x60d51472800 Objects:[]}, want an unknown table
+    --- FAIL: TestBatchStateA4R1AffectedSet/withheld_columns_keep_the_target_and_drop_the_child (0.00s)
+        batch_state_a4_r1_test.go:142: pre-state = &{Schema:golden Instance:0x60d513b4480 Version:<nil> TargetTable:0x60d51472d00 Objects:[]}, want an unknown table
+    --- FAIL: TestBatchStateA4R1AffectedSet/confirmed-absent_column_drops_a_loaded_reference (0.00s)
+        batch_state_a4_r1_test.go:153: pre-state = &{Schema:golden Instance:0x60d51318660 Version:<nil> TargetTable:0x60d51792780 Objects:[]}, want an unknown table
+    --- FAIL: TestBatchStateA4R1AffectedSet/unmodeled_referenced_parts_do_not_prove_unrelated (0.00s)
+        batch_state_a4_r1_test.go:194: pre-state = &{Schema:golden Instance:0x60d51252240 Version:<nil> TargetTable:0x60d514de400 Objects:[]}, want an unknown table
+    --- FAIL: TestBatchStateA4R1AffectedSet/unmodeled_local_parts_do_not_prove_unrelated (0.00s)
+        batch_state_a4_r1_test.go:210: pre-state = &{Schema:golden Instance:0x60d518dc240 Version:<nil> TargetTable:0x60d51792280 Objects:[]}, want an unknown table
+    --- FAIL: TestBatchStateA4R1AffectedSet/conditional_modify_drops_a_loaded_child (0.00s)
+        batch_state_a4_r1_test.go:119: pre-state = &{Schema:golden Instance:0x60d518dc4e0 Version:<nil> TargetTable:0x60d51793b00 Objects:[]}, want an unknown table
+    --- FAIL: TestBatchStateA4R1AffectedSet/position_modify_drops_a_loaded_child (0.00s)
+        batch_state_a4_r1_test.go:126: pre-state = &{Schema:golden Instance:0x60d512e4240 Version:<nil> TargetTable:0x60d51472580 Objects:[]}, want an unknown table
+    --- FAIL: TestBatchStateA4R1AffectedSet/multi-action_modify_drops_a_loaded_child (0.00s)
+        batch_state_a4_r1_test.go:133: pre-state = &{Schema:golden Instance:0x60d512525a0 Version:<nil> TargetTable:0x60d514deb80 Objects:[]}, want an unknown table
+    --- FAIL: TestBatchStateA4R1AffectedSet/self_reference_on_the_referenced_side_invalidates_the_target (0.01s)
+        batch_state_a4_r1_test.go:184: add after self-reference = [], want unknown_table_state
+--- FAIL: TestAuditSQLT05A4R1InlinePrimaryKeyStaysOutOfTemplate (0.00s)
+    --- FAIL: TestAuditSQLT05A4R1InlinePrimaryKeyStaysOutOfTemplate/ALTER_TABLE_t_MODIFY_COLUMN_c_INT_PRIMARY_KEY_NULL (0.00s)
+        --- FAIL: TestAuditSQLT05A4R1InlinePrimaryKeyStaysOutOfTemplate/ALTER_TABLE_t_MODIFY_COLUMN_c_INT_PRIMARY_KEY_NULL/mysql (0.01s)
+            batch_state_a4_r1_test.go:274: drop primary key findings = [{RuleID:ddl.alter.drop_primary_key.exists.require Level:blocker Message:primary key does not exist on table "t" StatementIndex:2 StatementKind:ddl Location:0x60d51ca4180 Suggestion:remove the drop primary key action or refresh metadata before auditing this change Metadata:map[action:drop_primary_key exists:false table:t] Explanation:0x60d519a2190}], want none
+        --- FAIL: TestAuditSQLT05A4R1InlinePrimaryKeyStaysOutOfTemplate/ALTER_TABLE_t_MODIFY_COLUMN_c_INT_PRIMARY_KEY_NULL/tidb (0.01s)
+            batch_state_a4_r1_test.go:274: drop primary key findings = [{RuleID:ddl.alter.drop_primary_key.exists.require Level:blocker Message:primary key does not exist on table "t" StatementIndex:2 StatementKind:ddl Location:0x60d51a98120 Suggestion:remove the drop primary key action or refresh metadata before auditing this change Metadata:map[action:drop_primary_key exists:false table:t] Explanation:0x60d51234410}], want none
+    --- FAIL: TestAuditSQLT05A4R1InlinePrimaryKeyStaysOutOfTemplate/ALTER_TABLE_t_MODIFY_COLUMN_c_INT_PRIMARY_KEY_NOT_NULL (0.00s)
+        --- FAIL: TestAuditSQLT05A4R1InlinePrimaryKeyStaysOutOfTemplate/ALTER_TABLE_t_MODIFY_COLUMN_c_INT_PRIMARY_KEY_NOT_NULL/mysql (0.01s)
+            batch_state_a4_r1_test.go:274: drop primary key findings = [{RuleID:ddl.alter.drop_primary_key.exists.require Level:blocker Message:primary key does not exist on table "t" StatementIndex:2 StatementKind:ddl Location:0x60d512121d0 Suggestion:remove the drop primary key action or refresh metadata before auditing this change Metadata:map[action:drop_primary_key exists:false table:t] Explanation:0x60d516d0190}], want none
+        --- FAIL: TestAuditSQLT05A4R1InlinePrimaryKeyStaysOutOfTemplate/ALTER_TABLE_t_MODIFY_COLUMN_c_INT_PRIMARY_KEY_NOT_NULL/tidb (0.01s)
+            batch_state_a4_r1_test.go:274: drop primary key findings = [{RuleID:ddl.alter.drop_primary_key.exists.require Level:blocker Message:primary key does not exist on table "t" StatementIndex:2 StatementKind:ddl Location:0x60d5211c1d0 Suggestion:remove the drop primary key action or refresh metadata before auditing this change Metadata:map[action:drop_primary_key exists:false table:t] Explanation:0x60d51ca20f0}], want none
+    --- FAIL: TestAuditSQLT05A4R1InlinePrimaryKeyStaysOutOfTemplate/ALTER_TABLE_t_MODIFY_COLUMN_c_INT_NOT_NULL_PRIMARY_KEY (0.00s)
+        --- FAIL: TestAuditSQLT05A4R1InlinePrimaryKeyStaysOutOfTemplate/ALTER_TABLE_t_MODIFY_COLUMN_c_INT_NOT_NULL_PRIMARY_KEY/tidb (0.01s)
+            batch_state_a4_r1_test.go:274: drop primary key findings = [{RuleID:ddl.alter.drop_primary_key.exists.require Level:blocker Message:primary key does not exist on table "t" StatementIndex:2 StatementKind:ddl Location:0x60d517e44a0 Suggestion:remove the drop primary key action or refresh metadata before auditing this change Metadata:map[action:drop_primary_key exists:false table:t] Explanation:0x60d516c0320}], want none
+        --- FAIL: TestAuditSQLT05A4R1InlinePrimaryKeyStaysOutOfTemplate/ALTER_TABLE_t_MODIFY_COLUMN_c_INT_NOT_NULL_PRIMARY_KEY/mysql (0.01s)
+            batch_state_a4_r1_test.go:274: drop primary key findings = [{RuleID:ddl.alter.drop_primary_key.exists.require Level:blocker Message:primary key does not exist on table "t" StatementIndex:2 StatementKind:ddl Location:0x60d5190c120 Suggestion:remove the drop primary key action or refresh metadata before auditing this change Metadata:map[action:drop_primary_key exists:false table:t] Explanation:0x60d51fd40f0}], want none
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.678s
+FAIL
+rc=1
