@@ -407,9 +407,13 @@ rules:
 | `ddl.alter.change_column.explicit_auto_increment_change.forbid` | CHANGE COLUMN 不得添加或删除 AUTO_INCREMENT | blocker | **是** |
 | `ddl.alter.table_option.compatibility.require` | 表选项变更必须与当前表选项兼容 | warning | **是** |
 
-### 存在性检查规则（12 条 — 元数据支撑）
+### 存在性与列身份规则（15 条 — 元数据支撑）
 
-这些规则验证 DDL 语句引用的对象在请求内有序 schema 视图中确实存在（或确实不存在）：配置了元数据时取实时表快照，否则对 MySQL 与 TiDB 使用同一审计批次内先前语句派生的状态。`ddl.table.exists.alter.require`、`ddl.table.exists.create.forbid`、全部列/索引成员存在性规则（`add`/`drop`/`modify`/`change`/`rename` 列与 `add`/`drop`/`rename` 索引）、`ddl.alter.drop_primary_key.exists.require`、`ddl.create_index.columns.exists.require` 与 `ddl.table.drop.exists.require` 在 MySQL/TiDB 上状态无法确定时产生 `unknown_table_state` 证据缺口；其余规则在无可用状态时仍静默跳过。该缺口投影从不适用于 PostgreSQL——它保留既有 finding/跳过契约。
+这些规则验证 DDL 语句引用的对象在请求内有序 schema 视图中确实存在（或确实不存在）：配置了元数据时取实时表快照，否则对 MySQL 与 TiDB 使用同一审计批次内先前语句派生的状态。`ddl.table.exists.alter.require`、`ddl.table.exists.create.forbid`、全部列/索引成员存在性规则（`add`/`drop`/`modify`/`change`/`rename` 列与 `add`/`drop`/`rename` 索引）、CHANGE 与 RENAME 的目的名规则、`ddl.alter.drop_primary_key.exists.require`、`ddl.create_index.columns.exists.require` 与 `ddl.table.drop.exists.require` 在 MySQL/TiDB 上状态无法确定时产生 `unknown_table_state` 证据缺口；其余规则在无可用状态时仍静默跳过。该缺口投影从不适用于 PostgreSQL——它保留既有 finding/跳过契约。
+
+`ddl.alter.change_column.target.exists.forbid` 与 `ddl.alter.rename_column.target.exists.forbid` 在新名属于另一列时各报告一条 blocker。旧名与新名是同一身份时不是自冲突。列集合未知时仍是既有 `unknown_table_state` 缺口，不把新名说成空闲。关闭这两条规则也不会让有序状态发布已知重名。
+
+`ddl.alter.rename_column.version.require` 按已解析版本检查 `RENAME COLUMN`。MySQL 8.0 系列中的 8.0.3 及以上、MySQL 8.4、TiDB 8.5 通过。MySQL 5.7 与 MySQL 8.0.0–8.0.2 是一条确定的版本不兼容 blocker：coverage 保持 `complete`，结论为 `reject`。版本缺失是 `missing_target_version` 缺口，不额外增加 finding。合法但不在已验证系列内的版本是 `target_version_out_of_validated_range` 缺口，不发布后态。`CHANGE COLUMN` 不继承这项检查。黄金 profile `t05-a5-column-identity-isolated` 启用原先八条有序状态 blocker 加上这三条，并关闭其余目录规则。它不改变既有规则的默认含义。
 
 | 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
 |---------|------|:--------:|:--------------:|
@@ -419,7 +423,10 @@ rules:
 | `ddl.alter.drop_column.exists.require` | DROP COLUMN 目标列必须存在 | blocker | **是** |
 | `ddl.alter.modify_column.exists.require` | MODIFY COLUMN 目标列必须存在 | blocker | **是** |
 | `ddl.alter.change_column.exists.require` | CHANGE COLUMN 源列必须存在 | blocker | **是** |
+| `ddl.alter.change_column.target.exists.forbid` | CHANGE COLUMN 新名不得属于另一列 | blocker | **是** |
 | `ddl.alter.rename_column.exists.require` | RENAME COLUMN 源列必须存在 | blocker | **是** |
+| `ddl.alter.rename_column.target.exists.forbid` | RENAME COLUMN 新名不得属于另一列 | blocker | **是** |
+| `ddl.alter.rename_column.version.require` | RENAME COLUMN 需要 MySQL 8.0.3+（8.0 系列）、MySQL 8.4 或 TiDB 8.5；已知更早的 MySQL 版本是一条 blocker | blocker | **是** |
 | `ddl.alter.add_index.exists.forbid` | ADD INDEX 名称必须尚不存在 | blocker | **是** |
 | `ddl.alter.drop_index.exists.require` | DROP INDEX 目标索引必须存在 | blocker | **是** |
 | `ddl.alter.rename_index.exists.require` | RENAME INDEX 源索引必须存在 | blocker | **是** |
@@ -985,7 +992,10 @@ unknown-prior-state advisory 会在元数据可用时消费实时状态，因此
 | `ddl.alter.drop_column.exists.require` |
 | `ddl.alter.modify_column.exists.require` |
 | `ddl.alter.change_column.exists.require` |
+| `ddl.alter.change_column.target.exists.forbid` |
 | `ddl.alter.rename_column.exists.require` |
+| `ddl.alter.rename_column.target.exists.forbid` |
+| `ddl.alter.rename_column.version.require` |
 | `ddl.alter.add_index.exists.forbid` |
 | `ddl.alter.drop_index.exists.require` |
 | `ddl.alter.rename_index.exists.require` |

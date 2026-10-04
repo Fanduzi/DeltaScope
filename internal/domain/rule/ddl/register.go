@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: domain policy values and a shared rule registry
-// output: deterministic registration of shipped create-table and alter-table DDL rule batches
+// output: deterministic registration of shipped create-table and alter-table DDL rule batches, including the column-identity destination and RENAME version rules
 // pos: DDL rule assembly entrypoint for application wiring
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -389,9 +389,16 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDAlterChangeColumnExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAlterObjectExistenceRule(ruleIDAlterChangeColumnExistsRequire, []string{"change_column"}, "column", false, rule.LevelBlocker, cfg, alterObjectName, snapshotHasColumn)
 		}},
+		{ruleID: ruleIDAlterChangeColumnTargetExistsForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newColumnTargetExistsRule(ruleIDAlterChangeColumnTargetExistsForbid, "change_column", rule.LevelBlocker, cfg)
+		}},
 		{ruleID: ruleIDAlterRenameColumnExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAlterObjectExistenceRule(ruleIDAlterRenameColumnExistsRequire, []string{"rename_column"}, "column", false, rule.LevelBlocker, cfg, alterObjectName, snapshotHasColumn)
 		}},
+		{ruleID: ruleIDAlterRenameColumnTargetExistsForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newColumnTargetExistsRule(ruleIDAlterRenameColumnTargetExistsForbid, "rename_column", rule.LevelBlocker, cfg)
+		}},
+		{ruleID: ruleIDAlterRenameColumnVersionRequire, construct: newRenameColumnVersionRule},
 		{ruleID: ruleIDAlterAddIndexExistsForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAlterObjectExistenceRule(ruleIDAlterAddIndexExistsForbid, []string{"add_constraint", "add_index"}, "index", true, rule.LevelBlocker, cfg, alterObjectName, snapshotHasIndex)
 		}},

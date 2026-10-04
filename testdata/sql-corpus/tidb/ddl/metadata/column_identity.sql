@@ -1,0 +1,2 @@
+ALTER TABLE ident_change CHANGE COLUMN c c2 INT;
+ALTER TABLE ident_rename RENAME COLUMN c TO c2;

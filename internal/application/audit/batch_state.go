@@ -1,7 +1,7 @@
 // Package audit orchestrates audit use cases at the application layer.
-// input: request context, ordered statements, optional metadata provider, and parse-failure positions for one audit request
+// input: request context, ordered statements, optional metadata provider, the request's already-resolved version identity, and parse-failure positions for one audit request
 // output: request-local ordered table facts (unknown / known-absent / known-present, per-collection member knowledge) feeding per-statement pre-state snapshots
-// pos: prospective schema-state ownership for the first migration path — the effective (dialect, schema, table) identity drives provider reads, keys, writes, and invalidation; unsupported or executable-but-unmodeled effects settle before kind dispatch; deterministic conditional transitions update derived facts, including the bounded single-pair RENAME identity migration onto a known-absent destination, a bounded single-target DROP identity retirement, and an ordinary single-column MODIFY definition replacement, each tombstoning loaded dependents that the transition cannot keep; a non-precise MODIFY tombstones every named table identity and the loaded dependents of those identities, a precise replacement is withheld when a loaded foreign key cannot be recomputed, and cancellation is checked before publishing effects; unaudited, unbound, or contaminated operations invalidate them
+// pos: prospective schema-state ownership for the first migration path — the effective (dialect, schema, table) identity drives provider reads, keys, writes, and invalidation; unsupported or executable-but-unmodeled effects settle before kind dispatch; deterministic conditional transitions update derived facts, including the bounded single-pair RENAME identity migration onto a known-absent destination, a bounded single-target DROP identity retirement, an ordinary single-column MODIFY definition replacement, and a precise single CHANGE COLUMN or RENAME COLUMN identity migration, each tombstoning loaded dependents that the transition cannot keep; a non-precise MODIFY, CHANGE, or RENAME tombstones every named table identity and the loaded dependents of those identities, a precise replacement is withheld when a loaded foreign key cannot be recomputed, an unsupported RENAME version withholds publication, and cancellation is checked before publishing effects; unaudited, unbound, or contaminated operations invalidate them
 // note: if this file changes, update this header and module README.md.
 package audit
 
@@ -72,6 +72,12 @@ type batchState struct {
 	// in-batch statement — a later provider read under them would return
 	// stale pre-batch facts, so resolve must answer unknown instead.
 	invalidatedSchemas map[string]struct{}
+	// resolvedVersion is the request's already-parsed version fact. Rules read
+	// the same fact from statement metadata. apply still receives the original
+	// statement, so RENAME COLUMN applicability reads this copy. Nil means the
+	// request has no verified version. Online enrichment stores the observed
+	// identity and does not fall back to a caller target.
+	resolvedVersion *spec.VersionIdentity
 }
 
 func newBatchState(dialect spec.Dialect, schema string, provider MetadataProvider) *batchState {
@@ -466,6 +472,13 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 		(!fullyAuditedStatement(s.dialect, statement) || len(ddl.Alter) != 1) {
 		return s.applyModifyColumn(ctx, statement, modify, targets)
 	}
+	// A non-template CHANGE or RENAME COLUMN is not a success shape. Route it
+	// through the shared publication so every named table identity and every
+	// already-loaded identity dependent is tombstoned together.
+	if ident := firstColumnIdentityAlter(ddl); ident != nil && len(targets) > 0 &&
+		(!fullyAuditedStatement(s.dialect, statement) || len(ddl.Alter) != 1) {
+		return s.applyColumnIdentity(ctx, statement, ident, targets)
+	}
 	if !fullyAuditedStatement(s.dialect, statement) || len(ddl.Alter) != 1 || len(targets) == 0 {
 		s.invalidateAll(targets)
 		return nil
@@ -482,6 +495,9 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 	}
 	if alter.Action == "modify_column" {
 		return s.applyModifyColumn(ctx, statement, alter, targets)
+	}
+	if alter.Action == "change_column" || alter.Action == "rename_column" {
+		return s.applyColumnIdentity(ctx, statement, alter, targets)
 	}
 	if alter.Action != "add_columns" || alter.Column == nil || alter.Column.Definition == nil {
 		s.invalidateAll(targets)

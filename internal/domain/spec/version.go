@@ -4,7 +4,9 @@
 //
 //	the shared ValidateTargetVersion transport preflight, observed-banner canonicalization
 //	deriving product from the banner itself (including the TiDB compatibility prefix), the
-//	milestone-validated product/version series, and always-serialized numeric components
+//	milestone-validated product/version series, RenameColumnVersionSupport,
+//	RenameColumnVersionSupportFor, RenameColumnMinimumSupportedVersion, and
+//	always-serialized numeric components
 //
 // pos: shared version fact model consumed by the application audit path and version-dependent rules
 // note: if this file changes, update this header and module README.md.
@@ -185,4 +187,68 @@ func atoiOrZero(raw string) int {
 		return 0
 	}
 	return value
+}
+
+const (
+	// RenameColumnMinimumSupportedVersion is the MySQL release that added
+	// RENAME COLUMN. It is the syntax introduction in 8.0.3, not the later
+	// INSTANT algorithm change.
+	RenameColumnMinimumSupportedVersion = "8.0.3"
+
+	renameColumnGapMissingVersion = "missing_target_version"
+	renameColumnGapOutOfRange     = "target_version_out_of_validated_range"
+	renameColumnFactVersion       = "target.version"
+	renameColumnFactValidated     = "target.version.validated_range"
+)
+
+// RenameColumnVersionSupport is the shared RENAME COLUMN applicability result.
+// Supported and Incompatible are mutually exclusive. A gap leaves both false:
+// the fact is missing or outside the validated series, so the check must not
+// invent a finding. A known incompatible version is a determined negative of
+// this check, not an unimplemented semantic and not a parser failure.
+type RenameColumnVersionSupport struct {
+	Supported    bool
+	Incompatible bool
+	GapReason    string
+	GapFacts     []string
+}
+
+// RenameColumnVersionSupportFor classifies whether one already-parsed version
+// identity can use RENAME COLUMN. MySQL 8.0.3+ inside 8.0, MySQL 8.4, and
+// TiDB 8.5 are supported. MySQL 5.7 and MySQL 8.0.0–8.0.2 are incompatible.
+// Nil, empty, or out-of-series identities are gaps. CHANGE COLUMN must not
+// consult this result.
+func RenameColumnVersionSupportFor(version *VersionIdentity) RenameColumnVersionSupport {
+	if version == nil || strings.TrimSpace(version.Product) == "" || strings.TrimSpace(version.Version) == "" {
+		return RenameColumnVersionSupport{
+			GapReason: renameColumnGapMissingVersion,
+			GapFacts:  []string{renameColumnFactVersion},
+		}
+	}
+	if !version.ValidatedRange {
+		return RenameColumnVersionSupport{
+			GapReason: renameColumnGapOutOfRange,
+			GapFacts:  []string{renameColumnFactValidated},
+		}
+	}
+	switch strings.ToLower(strings.TrimSpace(version.Product)) {
+	case VersionProductMySQL:
+		if version.Major == 8 && version.Minor == 4 {
+			return RenameColumnVersionSupport{Supported: true}
+		}
+		if version.Major == 8 && version.Minor == 0 && version.Patch >= 3 {
+			return RenameColumnVersionSupport{Supported: true}
+		}
+		if (version.Major == 5 && version.Minor == 7) || (version.Major == 8 && version.Minor == 0 && version.Patch < 3) {
+			return RenameColumnVersionSupport{Incompatible: true}
+		}
+	case VersionProductTiDB:
+		if version.Major == 8 && version.Minor == 5 {
+			return RenameColumnVersionSupport{Supported: true}
+		}
+	}
+	return RenameColumnVersionSupport{
+		GapReason: renameColumnGapOutOfRange,
+		GapFacts:  []string{renameColumnFactValidated},
+	}
 }

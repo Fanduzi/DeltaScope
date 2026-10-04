@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: synthetic ddl-golden artifacts and manifests built in a temp directory
-# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3 and T05-A4 mutation coverage
+# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3, T05-A4, and T05-A5 mutation coverage
 # pos: offline negative tests for scripts/ddl_golden.py validation (no Docker required)
 # note: if this file changes, update this header and module README.md.
 """Validator contract tests for scripts/ddl_golden.py.
@@ -1534,14 +1534,16 @@ def a3_contract_tests(tmp):
     source = json.loads((ddl_golden.MANIFEST_DIR / "T05.json").read_text())
     profile = "t05-drop-recreate-isolated"
     a4_profile = "t05-a4-modify-isolated"
+    a5_profile = "t05-a5-column-identity-isolated"
     manifest = copy.deepcopy(MANIFEST)
     manifest.update(task_id="T05", anchors=copy.deepcopy(source["anchors"]),
                     policy={"profiles": {
                         profile: copy.deepcopy(source["policy"]["profiles"][profile]),
                         a4_profile: copy.deepcopy(source["policy"]["profiles"][a4_profile]),
+                        a5_profile: copy.deepcopy(source["policy"]["profiles"][a5_profile]),
                     }},
-                    metadata_cases=[copy.deepcopy(s) for s in source["metadata_cases"] if s["id"].startswith(("t05-a3-", "t05-a4-"))],
-                    cli_cases=[copy.deepcopy(s) for s in source["cli_cases"] if s["id"].startswith(("t05-a3-", "t05-a4-"))])
+                    metadata_cases=[copy.deepcopy(s) for s in source["metadata_cases"] if s["id"].startswith(("t05-a3-", "t05-a4-", "t05-a5-"))],
+                    cli_cases=[copy.deepcopy(s) for s in source["cli_cases"] if s["id"].startswith(("t05-a3-", "t05-a4-", "t05-a5-"))])
     baseline = ddl_golden.load_baseline()
     directory = tmp / "a3"
     directory.mkdir()
@@ -1591,6 +1593,14 @@ def a3_contract_tests(tmp):
                       "statements": statements, "global_findings": [], "diagnostics": [], "unsupported": [],
                       "fail_on_triggered": expected["fail_on_triggered"],
                       "rule_summary": {"loaded": expected.get("rule_summary_loaded", 5)}}
+            target_raw = ddl_golden.spec_target_version_raw(spec)
+            if target_raw:
+                canonical = ddl_golden.canonical_target_version(target_raw)
+                major, minor, patch = (int(part) for part in canonical.split("."))
+                product = "tidb" if spec["dialect"] == "tidb" else "mysql"
+                validated = (product == "mysql" and (major, minor) in {(5, 7), (8, 0), (8, 4)}) or (product == "tidb" and (major, minor) == (8, 5))
+                parsed["version"] = {"product": product, "version": canonical, "major": major, "minor": minor,
+                                     "patch": patch, "source": "target", "validated_range": validated}
             case_profile = spec.get("policy") or profile
             command = [str(binary), "audit", "--dialect", spec["dialect"], "--sql", spec["sql"],
                        "--config", policies[case_profile]["path"], "--format", "json"]
@@ -1615,6 +1625,8 @@ def a3_contract_tests(tmp):
                 for field in ("post_verify", "structure"):
                     case["actual"][field] = query_records(spec[field])
             command += spec["args"]
+            if ddl_golden.spec_target_version_raw(spec):
+                case["actual"]["version_evidence"] = ddl_golden.version_evidence_record(spec, parsed)
             artifact["cases"].append(case)
     manifest["required_case_ids"] = [c["case_id"] for c in artifact["cases"]]
     artifact["required_case_ids"] = list(manifest["required_case_ids"])
@@ -1874,6 +1886,99 @@ def a3_contract_tests(tmp):
     c["actual"]["parsed"]["rule_summary"]["loaded"] = 5
     update_stdout(c)
     run("a4 loaded rule count other than 4 rejected", a, "loaded rule count")
+
+    def a5(suffix="mysql84-change"):
+        candidate = copy.deepcopy(artifact)
+        case = next(item for item in candidate["cases"] if item.get("cli_case") == "t05-a5-" + suffix)
+        return candidate, case
+
+    run("a5 valid synthetic control", artifact)
+    a, c = a5()
+    del c["actual"]["parsed"]["statements"][1]
+    update_stdout(c)
+    run("a5 rename statement deleted rejected", a, "statements")
+    a, c = a5()
+    c["actual"]["execute"][1]["sql"] = c["actual"]["execute"][0]["sql"]
+    run("a5 rename statement shifted rejected", a, "identity mismatch")
+    a, c = a5()
+    c["actual"]["execute"][1]["verify"][0]["output"] = "id,c"
+    run("a5 old column still present rejected", a, "output mismatch")
+    a, c = a5()
+    c["actual"]["execute"][1]["verify"][1]["output"] = c["actual"]["execute"][1]["verify"][1]["output"].replace(":10:", ":20:", 1)
+    run("a5 length after rename is not 10 rejected", a, "output mismatch")
+    a, c = a5()
+    c["actual"]["execute"][2]["verify"][0]["output"] = c["actual"]["execute"][2]["verify"][0]["output"].replace(":20:", ":10:", 1)
+    run("a5 length after modify is not 20 rejected", a, "output mismatch")
+    a, c = a5("mysql84-change-rebind")
+    c["actual"]["structure"][3]["output"] = "idx_c2"
+    run("a5 idx_c renamed instead of its columns rejected", a, "output 'idx_c2'")
+    a, c = a5("mysql84-change-rebind")
+    c["actual"]["execute"][1]["verify"][3]["output"] = "k,c2"
+    run("a5 composite key order reversed rejected", a, "output mismatch")
+    a, c = a5("mysql84-change-rebind")
+    c["actual"]["execute"][1]["verify"][4]["output"] = "int:YES"
+    run("a5 primary key not-null lost rejected", a, "output mismatch")
+    a, c = a5("mysql84-change-old-index")
+    c["actual"]["execute"][3]["stderr"] = "ERROR 1045 Access denied"
+    run("a5 old-name negative disguised as a permission error rejected", a, "missing stderr marker")
+    a, c = a5("mysql84-change-conflict")
+    c["actual"]["parsed"]["statements"][0]["findings"] = []
+    c["actual"]["parsed"]["verdict"] = "pass"
+    c["actual"]["exit"] = 0
+    update_stdout(c)
+    run("a5 conflict finding missing rejected", a, "findings")
+    a, c = a5("mysql84-change-conflict")
+    finding = c["actual"]["parsed"]["statements"][0]["findings"].pop()
+    c["actual"]["parsed"]["global_findings"].append(finding)
+    update_stdout(c)
+    run("a5 conflict finding on the wrong statement rejected", a, "finding statement ownership")
+    a, c = a5("mysql-rename-offline")
+    c["actual"]["parsed"]["statements"][1]["evidence_gaps"] = []
+    c["actual"]["parsed"]["statements"][1]["coverage"]["status"] = "complete"
+    c["actual"]["parsed"]["coverage"]["status"] = "complete"
+    update_stdout(c)
+    run("a5 missing version recorded as complete rejected", a, "gap")
+    a, c = a5("mysql-rename-offline-900")
+    c["actual"]["parsed"]["coverage"]["status"] = "complete"
+    for statement in c["actual"]["parsed"]["statements"]:
+        statement["coverage"]["status"] = "complete"
+        statement["evidence_gaps"] = []
+    update_stdout(c)
+    run("a5 out-of-range version recorded as complete rejected", a, "out-of-range version recorded as complete")
+    a, c = a5("mysql57-rename-version")
+    c["actual"]["parsed"]["statements"][0]["findings"] = []
+    c["actual"]["parsed"]["verdict"] = "pass"
+    c["actual"]["exit"] = 0
+    update_stdout(c)
+    run("a5 known 5.7 recorded as supported rejected", a, "findings")
+    a, c = a5("mysql57-rename-version")
+    c["actual"]["execute"][0]["stderr"] = c["actual"]["parsed"]["statements"][0]["findings"][0]["rule_id"]
+    run("a5 version blocker mixed into the native channel rejected", a, "missing stderr marker")
+    a, c = a5()
+    m = copy.deepcopy(manifest)
+    del m["policy"]["profiles"][a5_profile]["enable"]["ddl.alter.rename_column.version.require"]
+    run("a5 profile dropped the version rule rejected", a, "T05-A5", m)
+    a, c = a5()
+    m = copy.deepcopy(manifest)
+    del m["policy"]["profiles"][a5_profile]["enable"]["ddl.alter.change_column.target.exists.forbid"]
+    run("a5 profile dropped the change target rule rejected", a, "T05-A5", m)
+    a, c = a5()
+    m = copy.deepcopy(manifest)
+    del m["policy"]["profiles"][a5_profile]["enable"]["ddl.alter.rename_column.target.exists.forbid"]
+    run("a5 profile dropped the rename target rule rejected", a, "T05-A5", m)
+    a, c = a5()
+    artifact_id = c["case_id"]
+    a["cases"] = [item for item in a["cases"] if item["case_id"] != artifact_id]
+    a["executed_count"] -= 1
+    m = copy.deepcopy(manifest)
+    m["metadata_cases"] = [s for s in m["metadata_cases"] if s["id"] != c["cli_case"]]
+    m["required_case_ids"].remove(artifact_id)
+    a["required_case_ids"].remove(artifact_id)
+    run("a5 manifest and artifact shrunk together rejected", a, "T05-A5", m)
+    a, c = a5()
+    c["actual"]["parsed"]["rule_summary"]["loaded"] = 8
+    update_stdout(c)
+    run("a5 loaded rule count other than 11 rejected", a, "loaded rule count")
     return results
 
 

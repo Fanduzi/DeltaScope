@@ -2479,7 +2479,7 @@ they consume the provider snapshot; offline, MySQL/TiDB batches derive state fro
 statements in the same audit. On MySQL/TiDB, the table-existence rules
 (`ddl.table.exists.alter.require`, `ddl.table.exists.create.forbid`), every column/index
 member-existence rule (`add`/`drop`/`modify`/`change`/`rename` column and `add`/`drop`/`rename`
-index), `ddl.alter.drop_primary_key.exists.require`,
+index), the CHANGE and RENAME destination-name rules, `ddl.alter.drop_primary_key.exists.require`,
 `ddl.create_index.columns.exists.require`, and `ddl.table.drop.exists.require` emit `unknown_table_state`
 evidence gaps (coverage `unverified`) when that state cannot
 prove the premise; the remaining rules still silently no-op without usable state. The new
@@ -2601,6 +2601,25 @@ rules:
 
 ---
 
+#### ddl.alter.change_column.target.exists.forbid
+
+> **Metadata-aware mode only.**
+
+Fails when `CHANGE COLUMN` gives the column a new name that already belongs to another column. The same old and new name is not a conflict. An unknown column set emits `unknown_table_state` instead of treating the new name as free. Disabling this rule does not publish a known duplicate column.
+
+**Default:** `enabled: true`, `level: blocker`
+
+**Config example:**
+```yaml
+rules:
+  ddl.alter.change_column.target.exists.forbid:
+    enabled: true
+    level: blocker
+    params:    # no configurable parameters
+```
+
+---
+
 #### ddl.alter.rename_column.exists.require
 
 > **Metadata-aware mode only.**
@@ -2616,6 +2635,49 @@ rules:
     enabled: true
     level: blocker
     params:    # no configurable parameters
+```
+
+---
+
+#### ddl.alter.rename_column.target.exists.forbid
+
+> **Metadata-aware mode only.**
+
+Fails when `RENAME COLUMN` chooses a new name that already belongs to another column. The same old and new name is not a conflict. An unknown column set emits `unknown_table_state` instead of treating the new name as free. Disabling this rule does not publish a known duplicate column.
+
+**Default:** `enabled: true`, `level: blocker`
+
+**Config example:**
+```yaml
+rules:
+  ddl.alter.rename_column.target.exists.forbid:
+    enabled: true
+    level: blocker
+    params:    # no configurable parameters
+```
+
+---
+
+#### ddl.alter.rename_column.version.require
+
+> **Resolved target version.** The check uses the request's already-resolved version. Online, that version is the observed banner. Offline with no provider, it is `target_version`.
+
+Fails when `RENAME COLUMN` is known to be unavailable: MySQL 5.7, or MySQL 8.0.0 through 8.0.2. That result is one blocker, coverage stays `complete`, and the verdict is `reject`. MySQL 8.0.3 and later inside 8.0, MySQL 8.4, and TiDB 8.5 pass. A missing version emits `missing_target_version` and no finding. A legal version outside the validated series emits `target_version_out_of_validated_range` and no finding. `CHANGE COLUMN` is not subject to this rule. `required: false` removes this rule's finding and gap. Ordered state still withholds an unsupported rename.
+
+**Default:** `enabled: true`, `level: blocker`
+
+| Param | Type | Default | Meaning |
+|-------|------|---------|---------|
+| `required` | bool | `true` | When `false`, this rule does not apply |
+
+**Config example:**
+```yaml
+rules:
+  ddl.alter.rename_column.version.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
 ```
 
 ---

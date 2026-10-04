@@ -2675,6 +2675,26 @@ rules:
 
 ---
 
+### `ddl.alter.change_column.target.exists.forbid`
+
+当 `CHANGE COLUMN` 的新名已经属于另一列时，阻止该语句。旧名与新名相同不是冲突。列集合未知时产生 `unknown_table_state` 缺口，不把新名当成空闲。关闭本规则也不会发布已知重名。
+
+> **需要元数据感知模式。** 离线且无法确定列集合时，本规则报告证据缺口。
+
+- **默认**：已启用，级别 `blocker`
+- **参数**：无
+
+**YAML 配置示例：**
+```yaml
+rules:
+  ddl.alter.change_column.target.exists.forbid:
+    enabled: true
+    level: blocker
+    params:
+```
+
+---
+
 ### `ddl.alter.rename_column.exists.require`
 
 当要重命名的列不存在时，阻止 `ALTER TABLE ... RENAME COLUMN`。
@@ -2691,6 +2711,48 @@ rules:
     enabled: true
     level: blocker
     params:
+```
+
+---
+
+### `ddl.alter.rename_column.target.exists.forbid`
+
+当 `RENAME COLUMN` 的新名已经属于另一列时，阻止该语句。旧名与新名相同不是冲突。列集合未知时产生 `unknown_table_state` 缺口，不把新名当成空闲。关闭本规则也不会发布已知重名。
+
+> **需要元数据感知模式。** 离线且无法确定列集合时，本规则报告证据缺口。
+
+- **默认**：已启用，级别 `blocker`
+- **参数**：无
+
+**YAML 配置示例：**
+```yaml
+rules:
+  ddl.alter.rename_column.target.exists.forbid:
+    enabled: true
+    level: blocker
+    params:
+```
+
+---
+
+### `ddl.alter.rename_column.version.require`
+
+检查 `RENAME COLUMN` 对已解析目标版本是否适用。MySQL 5.7 以及 MySQL 8.0.0 至 8.0.2 是一条确定的不兼容 blocker，coverage 保持 `complete`，结论为 `reject`。MySQL 8.0 系列中的 8.0.3 及以上、MySQL 8.4 与 TiDB 8.5 通过。版本缺失产生 `missing_target_version` 缺口且不增加 finding。合法但不在已验证系列内的版本产生 `target_version_out_of_validated_range` 缺口且不发布后态。`CHANGE COLUMN` 不受本规则约束。`required: false` 只去掉本规则的 finding 和缺口，有序状态仍不发布不支持的重命名。在线以观察到的版本为准；无 provider 的离线审计使用 `target_version`。
+
+- **默认**：已启用，级别 `blocker`
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `required` | `bool` | `true` | 设为 `false` 则本规则不适用 |
+
+**YAML 配置示例：**
+```yaml
+rules:
+  ddl.alter.rename_column.version.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
 ```
 
 ---

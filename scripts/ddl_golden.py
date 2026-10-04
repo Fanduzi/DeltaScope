@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: task manifest testdata/ddl-golden/<TASK>.json, docker/ddl-golden-compose.yaml, freshly built deltascope CLI
-# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest, including synchronous execute verification and the frozen T05-A3 and T05-A4 oracles
+# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest, including synchronous execute verification and the frozen T05-A3, T05-A4, and T05-A5 oracles
 # pos: DDL golden-path runner and artifact validator behind `make ddl-golden TASK=Txx ARTIFACT_DIR=...`
 # note: if this file changes, update this header and module README.md.
 """DeltaScope DDL golden-path runner (milestone T02/#81, T04/#83).
@@ -1670,6 +1670,353 @@ def t05_a4_manifest_failures(manifest):
     return failures
 
 
+def t05_a5_contract():
+    """Frozen T05-A5 column-identity oracle. The 27 cases and their expects are
+    independent of the manifest. The profile is the original eight blockers
+    plus the two destination-name checks and the RENAME COLUMN version check."""
+    profile = "t05-a5-column-identity-isolated"
+    create_rule = "ddl.table.exists.create.forbid"
+    alter_rule = "ddl.table.exists.alter.require"
+    change_exists = "ddl.alter.change_column.exists.require"
+    change_compat = "ddl.alter.change_column.compatibility.require"
+    rename_exists = "ddl.alter.rename_column.exists.require"
+    modify_exists = "ddl.alter.modify_column.exists.require"
+    modify_compat = "ddl.alter.modify_column.compatibility.require"
+    index_rule = "ddl.create_index.columns.exists.require"
+    change_target = "ddl.alter.change_column.target.exists.forbid"
+    rename_target = "ddl.alter.rename_column.target.exists.forbid"
+    rename_version = "ddl.alter.rename_column.version.require"
+    enable = {rid: {"enabled": True, "level": "blocker", "params": {}} for rid in (
+        create_rule, alter_rule, change_exists, change_compat, rename_exists,
+        modify_exists, modify_compat, index_rule, change_target, rename_target, rename_version)}
+    for rid in (change_compat, modify_compat, index_rule, rename_version):
+        enable[rid]["params"] = {"required": True}
+
+    table_query = "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'"
+    columns_query = ("SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') "
+                     "FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'")
+
+    def column_count(name):
+        return ("SELECT COUNT(*) FROM information_schema.COLUMNS "
+                f"WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='{name}'")
+
+    def varchar_query(name):
+        return ("SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',"
+                "IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) "
+                f"FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='{name}'")
+
+    def int_query(name):
+        return ("SELECT CONCAT(DATA_TYPE,':',IS_NULLABLE) FROM information_schema.COLUMNS "
+                f"WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='{name}'")
+
+    def index_query(name):
+        return ("SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS "
+                f"WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='{name}'")
+
+    def index_count(name):
+        return ("SELECT COUNT(*) FROM information_schema.STATISTICS "
+                f"WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='{name}'")
+
+    def verify(label, sql, expect):
+        return {"assert": label, "sql": sql, "expect": expect}
+
+    def varchar_text(length):
+        return f"varchar:{length}:utf8mb4:utf8mb4_bin:NO:<nil>:"
+
+    def expectation(sqls, verdict, coverage, statement_coverage, findings=0, gap_entries=None,
+                    finding_entries=None, finding_metadata=None):
+        result = {
+            "exit": 0 if verdict != "reject" else 1,
+            "verdict": verdict,
+            "statements": len(sqls),
+            "findings": findings,
+            "diagnostics": 0,
+            "unsupported": 0,
+            "coverage": coverage,
+            "statement_coverage": statement_coverage,
+            "statement_sql": [sql + ";" for sql in sqls],
+            "evidence_gaps": len(gap_entries or []),
+            "fail_on_triggered": verdict == "reject",
+            "rule_summary_loaded": 11,
+            "statement_indices": list(range(len(sqls))),
+        }
+        if finding_entries:
+            result["finding_entries"] = finding_entries
+        if finding_metadata:
+            result["finding_metadata"] = finding_metadata
+        if gap_entries:
+            result["evidence_gap_entries"] = gap_entries
+        return result
+
+    def absent_setup():
+        return [{"name": "ensure t absent", "sql": "DROP TABLE IF EXISTS t", "expect_rc": 0,
+                 "verify": [verify("t absent before audit", table_query, "0")]}]
+
+    def metadata_case(case_id, anchor, port, dialect, sqls, expect, setup, execute, structure, post_verify):
+        connect = {"host": "127.0.0.1", "port": port, "user": "root", "schema": "golden"}
+        if dialect == "mysql":
+            connect.update(password_env="DS_T05_GOLDEN_PW", password="root")
+        return {"id": case_id, "anchor": anchor, "dialect": dialect,
+                "sql": " ".join(sql + ";" for sql in sqls), "policy": profile,
+                "args": ["--fail-on", "blocker"], "connect": connect,
+                "setup": setup, "expect": expect, "post_verify": post_verify,
+                "execute": execute, "structure": structure,
+                "teardown": [{"name": "drop fixture", "sql": "DROP TABLE IF EXISTS t", "expect_rc": 0,
+                              "verify": [verify("no residual t", table_query, "0")]}]}
+
+    create = "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)"
+    change = "ALTER TABLE t CHANGE COLUMN c c2 VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL"
+    rename = "ALTER TABLE t RENAME COLUMN c TO c2"
+    modify = "ALTER TABLE t MODIFY COLUMN c2 VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL"
+    idx_new = "CREATE INDEX idx_c2 ON t(c2)"
+    idx_old = "CREATE INDEX ix_old ON t(c)"
+
+    def core(second, index_sql):
+        return [create, second, modify, index_sql]
+
+    def varchar_steps(sqls, failing_index=False):
+        c_def = varchar_query("c")
+        c2_def = varchar_query("c2")
+        steps = [
+            {"name": "driver statement 0", "sql": sqls[0], "expect_rc": 0, "verify": [
+                verify("columns are id then c", columns_query, "id,c"),
+                verify("c starts at length 10", c_def, varchar_text(10)),
+                verify("c2 absent before the rename", column_count("c2"), "0")]},
+            {"name": "driver statement 1", "sql": sqls[1], "expect_rc": 0, "verify": [
+                verify("columns are id then c2", columns_query, "id,c2"),
+                verify("c2 length is 10", c2_def, varchar_text(10)),
+                verify("c absent after the rename", column_count("c"), "0")]},
+            {"name": "driver statement 2", "sql": sqls[2], "expect_rc": 0, "verify": [
+                verify("c2 length is 20", c2_def, varchar_text(20)),
+                verify("c stays absent after modify", column_count("c"), "0")]},
+        ]
+        if failing_index:
+            steps.append({"name": "driver statement 3", "sql": sqls[3], "expect_rc": 1,
+                          "stderr_contains": ["ERROR 1072"], "verify": [
+                              verify("rejected index leaves c absent", column_count("c"), "0"),
+                              verify("rejected index leaves c2 at length 20", c2_def, varchar_text(20))]})
+        else:
+            steps.append({"name": "driver statement 3", "sql": sqls[3], "expect_rc": 0, "verify": [
+                verify("idx_c2 references c2", index_query("idx_c2"), "c2")]})
+        return steps
+
+    def varchar_structure(index_name):
+        checks = [
+            verify("t exists", table_query, "1"),
+            verify("columns are id then c2", columns_query, "id,c2"),
+            verify("c absent", column_count("c"), "0"),
+            verify("c2 length is 20", varchar_query("c2"), varchar_text(20)),
+            verify("primary key stays id", index_query("PRIMARY"), "id"),
+        ]
+        if index_name == "idx_c2":
+            checks.append(verify("idx_c2 references c2", index_query("idx_c2"), "c2"))
+        else:
+            checks.append(verify("ix_old was not created", index_count("ix_old"), "0"))
+        return checks
+
+    def old_index_expect(sqls):
+        metadata = {"table": "t", "index": "ix_old", "column": "c", "exists": False}
+        return expectation(
+            sqls, "reject", "complete", ["complete"] * 4, findings=1,
+            finding_entries=[{"index": 3, "rule_id": index_rule, "level": "blocker"}],
+            finding_metadata=[{"index": 3, "rule_id": index_rule, "metadata": metadata}])
+
+    def rebind_steps(sqls):
+        return [
+            {"name": "driver statement 0", "sql": sqls[0], "expect_rc": 0, "verify": [
+                verify("columns are c then k", columns_query, "c,k"),
+                verify("primary key is c", index_query("PRIMARY"), "c"),
+                verify("idx_c references c", index_query("idx_c"), "c"),
+                verify("uk_c_k references c then k", index_query("uk_c_k"), "c,k"),
+                verify("c is not null", int_query("c"), "int:NO"),
+                verify("k stays nullable", int_query("k"), "int:YES")]},
+            {"name": "driver statement 1", "sql": sqls[1], "expect_rc": 0, "verify": [
+                verify("columns are c2 then k", columns_query, "c2,k"),
+                verify("primary key moved to c2", index_query("PRIMARY"), "c2"),
+                verify("idx_c name stays and references c2", index_query("idx_c"), "c2"),
+                verify("uk_c_k keeps c2 then k", index_query("uk_c_k"), "c2,k"),
+                verify("c2 stays not null", int_query("c2"), "int:NO"),
+                verify("old c is gone", column_count("c"), "0"),
+                verify("k is unchanged", int_query("k"), "int:YES")]},
+            {"name": "driver statement 2", "sql": sqls[2], "expect_rc": 0, "verify": [
+                verify("c2 widened and stays not null", int_query("c2"), "bigint:NO")]},
+            {"name": "driver statement 3", "sql": sqls[3], "expect_rc": 0, "verify": [
+                verify("ix_new references c2", index_query("ix_new"), "c2")]},
+        ]
+
+    def rebind_structure():
+        return [
+            verify("t exists", table_query, "1"),
+            verify("columns are c2 then k", columns_query, "c2,k"),
+            verify("primary key is c2", index_query("PRIMARY"), "c2"),
+            verify("idx_c still named idx_c and references c2", index_query("idx_c"), "c2"),
+            verify("uk_c_k keeps order c2,k", index_query("uk_c_k"), "c2,k"),
+            verify("c2 is not null bigint", int_query("c2"), "bigint:NO"),
+            verify("k stays nullable int", int_query("k"), "int:YES"),
+            verify("ix_new references c2", index_query("ix_new"), "c2"),
+            verify("old c is absent", column_count("c"), "0"),
+        ]
+
+    def conflict_case(case_id, anchor, port, dialect, sql, rule_id, action):
+        sqls = [sql]
+        metadata = {"table": "t", "action": action, "source_column": "c", "target_column": "c2", "exists": True}
+        expect = expectation(
+            sqls, "reject", "complete", ["complete"], findings=1,
+            finding_entries=[{"index": 0, "rule_id": rule_id, "level": "blocker"}],
+            finding_metadata=[{"index": 0, "rule_id": rule_id, "metadata": metadata}])
+        setup = [
+            {"name": "drop t", "sql": "DROP TABLE IF EXISTS t", "expect_rc": 0},
+            {"name": "create both columns", "sql": "CREATE TABLE t (c INT, c2 INT)", "expect_rc": 0,
+             "verify": [verify("both columns exist before audit", columns_query, "c,c2")]},
+        ]
+        execute = [{"name": "driver statement 0", "sql": sql, "expect_rc": 1,
+                    "stderr_contains": ["ERROR 1060", "Duplicate column"],
+                    "verify": [verify("rejected rename leaves both columns", columns_query, "c,c2")]}]
+        structure = [
+            verify("t still exists", table_query, "1"),
+            verify("columns stay c then c2", columns_query, "c,c2"),
+            verify("c remains", column_count("c"), "1"),
+            verify("c2 remains", column_count("c2"), "1"),
+        ]
+        return metadata_case(case_id, anchor, port, dialect, sqls, expect, setup, execute, structure,
+                             [verify("audit did not rename a column", columns_query, "c,c2")])
+
+    metadata_cases = []
+    for anchor, port in (("mysql57", 23357), ("mysql80", 23380), ("mysql84", 23384), ("tidb85", 24000)):
+        dialect = "tidb" if anchor == "tidb85" else "mysql"
+        changed = core(change, idx_new)
+        metadata_cases.append(metadata_case(
+            f"t05-a5-{anchor}-change", anchor, port, dialect, changed,
+            expectation(changed, "pass", "complete", ["complete"] * 4),
+            absent_setup(), varchar_steps(changed), varchar_structure("idx_c2"),
+            [verify("audit did not create t", table_query, "0")]))
+        old = core(change, idx_old)
+        metadata_cases.append(metadata_case(
+            f"t05-a5-{anchor}-change-old-index", anchor, port, dialect, old, old_index_expect(old),
+            absent_setup(), varchar_steps(old, failing_index=True), varchar_structure("ix_old"),
+            [verify("audit did not create t", table_query, "0")]))
+    for anchor, port in (("mysql80", 23380), ("mysql84", 23384), ("tidb85", 24000)):
+        dialect = "tidb" if anchor == "tidb85" else "mysql"
+        renamed = core(rename, idx_new)
+        metadata_cases.append(metadata_case(
+            f"t05-a5-{anchor}-rename", anchor, port, dialect, renamed,
+            expectation(renamed, "pass", "complete", ["complete"] * 4),
+            absent_setup(), varchar_steps(renamed), varchar_structure("idx_c2"),
+            [verify("audit did not create t", table_query, "0")]))
+        old = core(rename, idx_old)
+        metadata_cases.append(metadata_case(
+            f"t05-a5-{anchor}-rename-old-index", anchor, port, dialect, old, old_index_expect(old),
+            absent_setup(), varchar_steps(old, failing_index=True), varchar_structure("ix_old"),
+            [verify("audit did not create t", table_query, "0")]))
+    for anchor, port in (("mysql84", 23384), ("tidb85", 24000)):
+        dialect = "tidb" if anchor == "tidb85" else "mysql"
+        for action, second in (("change", "ALTER TABLE t CHANGE COLUMN c c2 INT"),
+                               ("rename", "ALTER TABLE t RENAME COLUMN c TO c2")):
+            sqls = [
+                "CREATE TABLE t (c INT PRIMARY KEY, k INT, KEY idx_c(c), UNIQUE KEY uk_c_k(c, k))",
+                second,
+                "ALTER TABLE t MODIFY COLUMN c2 BIGINT NOT NULL",
+                "CREATE INDEX ix_new ON t(c2)",
+            ]
+            metadata_cases.append(metadata_case(
+                f"t05-a5-{anchor}-{action}-rebind", anchor, port, dialect, sqls,
+                expectation(sqls, "pass", "complete", ["complete"] * 4),
+                absent_setup(), rebind_steps(sqls), rebind_structure(),
+                [verify("audit did not create t", table_query, "0")]))
+        metadata_cases.append(conflict_case(
+            f"t05-a5-{anchor}-change-conflict", anchor, port, dialect,
+            "ALTER TABLE t CHANGE COLUMN c c2 INT", change_target, "change_column"))
+        metadata_cases.append(conflict_case(
+            f"t05-a5-{anchor}-rename-conflict", anchor, port, dialect,
+            "ALTER TABLE t RENAME COLUMN c TO c2", rename_target, "rename_column"))
+
+    version_sqls = ["ALTER TABLE t RENAME COLUMN c TO c2"]
+    version_meta = {"action": "rename_column", "product": "mysql", "target_version": "5.7.44",
+                    "minimum_supported_version": "8.0.3"}
+    version_expect = expectation(
+        version_sqls, "reject", "complete", ["complete"], findings=1,
+        finding_entries=[{"index": 0, "rule_id": rename_version, "level": "blocker"}],
+        finding_metadata=[{"index": 0, "rule_id": rename_version, "metadata": version_meta}])
+    version_setup = [
+        {"name": "drop t", "sql": "DROP TABLE IF EXISTS t", "expect_rc": 0},
+        {"name": "create source column", "sql": "CREATE TABLE t (c INT)", "expect_rc": 0,
+         "verify": [verify("c exists before audit", int_query("c"), "int:YES")]},
+    ]
+    version_execute = [{"name": "driver statement 0", "sql": version_sqls[0], "expect_rc": 1,
+                        "stderr_contains": ["ERROR 1064"], "verify": [
+                            verify("native rejection leaves c", int_query("c"), "int:YES"),
+                            verify("native rejection does not create c2", column_count("c2"), "0")]}]
+    metadata_cases.append(metadata_case(
+        "t05-a5-mysql57-rename-version", "mysql57", 23357, "mysql", version_sqls, version_expect,
+        version_setup, version_execute, [
+            verify("t still exists", table_query, "1"),
+            verify("column stays c", columns_query, "c"),
+            verify("c2 was not created", column_count("c2"), "0"),
+        ], [verify("audit did not rename c", columns_query, "c")]))
+
+    create_gap = {"index": 0, "rule_id": create_rule, "reason_code": "unknown_table_state",
+                  "required_facts": ["target_table.existence"]}
+
+    def offline_rename(reason, facts):
+        return [
+            create_gap,
+            {"index": 1, "rule_id": rename_version, "reason_code": reason, "required_facts": [facts]},
+            {"index": 2, "rule_id": modify_compat, "reason_code": "missing_source_column",
+             "required_facts": ["source_column.definition"]},
+            {"index": 2, "rule_id": alter_rule, "reason_code": "unknown_table_state",
+             "required_facts": ["target_table.existence"]},
+            {"index": 2, "rule_id": modify_exists, "reason_code": "unknown_table_state",
+             "required_facts": ["target_table.columns", "target_table.existence"]},
+            {"index": 3, "rule_id": index_rule, "reason_code": "unknown_table_state",
+             "required_facts": ["target_table.columns", "target_table.existence"]},
+        ]
+
+    renamed = core(rename, idx_new)
+    changed = core(change, idx_new)
+    cli_cases = [
+        {"id": "t05-a5-mysql-rename-offline", "dialect": "mysql",
+         "sql": " ".join(sql + ";" for sql in renamed), "policy": profile,
+         "args": ["--fail-on", "blocker"],
+         "expect": expectation(renamed, "review", "unverified", ["unverified"] * 4,
+                               gap_entries=offline_rename("missing_target_version", "target.version"))},
+        {"id": "t05-a5-mysql-rename-offline-900", "dialect": "mysql",
+         "sql": " ".join(sql + ";" for sql in renamed), "policy": profile,
+         "args": ["--fail-on", "blocker", "--target-version", "9.0.0"],
+         "expect": expectation(renamed, "review", "unverified", ["unverified"] * 4,
+                               gap_entries=offline_rename("target_version_out_of_validated_range",
+                                                          "target.version.validated_range"))},
+        {"id": "t05-a5-mysql-change-offline", "dialect": "mysql",
+         "sql": " ".join(sql + ";" for sql in changed), "policy": profile,
+         "args": ["--fail-on", "blocker"],
+         "expect": expectation(changed, "review", "unverified",
+                               ["unverified", "complete", "complete", "complete"], gap_entries=[create_gap])},
+        {"id": "t05-a5-tidb-change-offline", "dialect": "tidb",
+         "sql": " ".join(sql + ";" for sql in changed), "policy": profile,
+         "args": ["--fail-on", "blocker"],
+         "expect": expectation(changed, "review", "unverified",
+                               ["unverified", "complete", "complete", "complete"], gap_entries=[create_gap])},
+    ]
+    return profile, {"enable": enable}, metadata_cases, cli_cases
+
+
+def t05_a5_manifest_failures(manifest):
+    if manifest.get("task_id") != "T05":
+        return []
+    profile, policy, metadata_cases, cli_cases = t05_a5_contract()
+    failures = []
+    if ((manifest.get("policy") or {}).get("profiles") or {}).get(profile) != policy:
+        failures.append("T05-A5 frozen eleven-rule profile missing or changed")
+    required = manifest.get("required_case_ids") or []
+    for field, specs, kind in (("metadata_cases", metadata_cases, "meta"), ("cli_cases", cli_cases, "cli")):
+        for wanted in specs:
+            matches = [s for s in manifest.get(field, []) if s.get("id") == wanted["id"]]
+            if len(matches) != 1 or matches[0] != wanted:
+                failures.append(f"T05-A5 frozen oracle changed or missing: {wanted['id']}")
+            if f"T05.{kind}.{wanted['id']}" not in required:
+                failures.append(f"T05-A5 required case missing: {wanted['id']}")
+    return failures
+
+
 def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
     """Re-check an emitted artifact. Returns a list of failure strings."""
     failures = []
@@ -1684,6 +2031,7 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
         failures.extend(baseline_manifest_failures(manifest, baseline))
     failures.extend(t05_a3_manifest_failures(manifest))
     failures.extend(t05_a4_manifest_failures(manifest))
+    failures.extend(t05_a5_manifest_failures(manifest))
 
     if artifact.get("external_blocker"):
         failures.append(f"external blocker recorded: {artifact['external_blocker']}")

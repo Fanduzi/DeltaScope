@@ -9,8 +9,9 @@ Normalized statement specifications used as the stable input for rule evaluation
 | statement.go | Defines the top-level normalized statement model and parser-neutral extraction interface |
 | statement_test.go | Verifies typed statement metadata behavior |
 | metadata.go | Defines optional schema context, instance facts, target-table snapshots, object-level validation snapshots, and lookup helpers for metadata-aware auditing |
-| version.go | Defines the shared parser-neutral `VersionIdentity` fact (numeric components always serialize, including zero), strict `[v]MAJOR.MINOR.PATCH` target_version parsing plus the shared `ValidateTargetVersion` transport preflight, provider-banner observed canonicalization where the product is derived from the banner itself (including the TiDB compatibility prefix, never from the request dialect), and the milestone-validated product/version series |
+| version.go | Defines the shared parser-neutral `VersionIdentity` fact (numeric components always serialize, including zero), strict `[v]MAJOR.MINOR.PATCH` target_version parsing plus the shared `ValidateTargetVersion` transport preflight, provider-banner observed canonicalization where the product is derived from the banner itself (including the TiDB compatibility prefix, never from the request dialect), the milestone-validated product/version series, and `RenameColumnVersionSupport`, `RenameColumnVersionSupportFor`, and `RenameColumnMinimumSupportedVersion` for the RENAME COLUMN 8.0.3 applicability check |
 | version_test.go | Verifies target_version grammar acceptance/rejection, canonicalization, TiDB observed-banner resolution, product derivation independent of caller dialect, zero-component JSON serialization, `ValidateTargetVersion` preflight semantics, and validated-series classification |
+| version_rename_column_test.go | Verifies RENAME COLUMN support, known MySQL incompatibility, and missing or out-of-series version gaps |
 | ddl.go | Defines DDL-oriented specification types, including explicit DDL operations, richer column facts, typed index metadata, multi-target `Targets` plus `TableTargets()` fallback, create-table/object-lifecycle shape flags, declared-constraint alter payloads, and parsed-but-unmodeled option name evidence (`UnextractedOptions`) plus `OmittedTargets` for collapsed multi-object target lists for offline and metadata-aware DDL rules |
 | dml_impact.go | Defines shared DML impact estimation enums and payload types reused across audit layers |
 | dml.go | Defines DML-oriented specification types, including operation metadata, mentioned tables, MutationTargets, and MutationTargetTables() fallback to Tables |
@@ -29,6 +30,7 @@ Normalized statement specifications used as the stable input for rule evaluation
   Now carries `Objects []ObjectSnapshot` for non-table object validation and a `Version *VersionIdentity` fact for version-dependent rules
 - `VersionIdentity`
 - `ParseTargetVersion`, `ParseObservedVersion`, `ValidateTargetVersion`, `ErrInvalidTargetVersion`
+- `RenameColumnVersionSupport`, `RenameColumnVersionSupportFor`, `RenameColumnMinimumSupportedVersion`
 - `InstanceFacts` (explicit known-bit pairs: `InnoDBPageSizeKnown`/`InnoDBPageSizeBytes`, `InnoDBLargePrefixKnown`/`InnoDBLargePrefixOn`, `TiDBMaxIndexLengthKnown`/`TiDBMaxIndexLengthBytes` — a zero or absent value stays unknown rather than defaulting)
 - `TableSnapshot`
 - `ObjectSnapshot`

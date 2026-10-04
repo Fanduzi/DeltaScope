@@ -117,10 +117,17 @@ A precise single-column `MODIFY` still uses column relevance. A complete referen
 
 ## Deferred Scope
 
-No `CHANGE COLUMN`, `RENAME COLUMN`, `DROP COLUMN`, multi-action ALTER,
-cross-family conversion, decimal precision, temporal implicit defaults,
-generated or identity columns, or prefix-length rewriting. This slice does not
-complete #84 or the milestone. A1, A2, and A3 stay accepted.
+T05-A5 publishes a limited single-action `CHANGE COLUMN` and `RENAME COLUMN`
+identity migration. See `2026-10-21-ddl-change-rename-column-identity.md`.
+That later record does not make every CHANGE form complete, and this MODIFY
+decision is unchanged.
+
+Still absent after that slice: `DROP COLUMN` precise post-state, cross-schema
+column move, multi-action success, foreign-key rewrite, catalog scan, prefix
+and expression index rewriting, runtime limits, and storage engines.
+Cross-family conversion, decimal precision, temporal implicit defaults, and
+generated or identity columns stay outside the ordinary template. This record
+does not complete #84 or the milestone. A1, A2, and A3 stay accepted.
 
 ## References
 

@@ -32,6 +32,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | postgresql_privilege_rules.go | Implements PostgreSQL-only table privilege rules: grant-table notice, grant-table all-privileges warn, revoke-table notice, revoke-table cascade warn |
 | postgresql_privilege_rules_test.go | Verifies PG table privilege rules with positive, negative, cross-dialect, deferred-form, registration, and defaults coverage |
 | metadata_rules.go | Implements metadata-backed table, column, index, and primary-key existence rules plus the standalone `CREATE INDEX` column-existence rule; the existence rules declare `unknown_table_state` / `table_not_found` evidence on MySQL/TiDB when the ordered schema state cannot prove a premise — member rules share one knowledge premise between Evaluate and EvidenceGaps so an unknown collection never reads as checked — with `required_facts` ordered `target_table.columns` before `target_table.existence` for column members, `target_table.existence` before `target_table.indexes` for index members, and `target_table.primary_key` for primary-key facts; the gap projection never applies to PostgreSQL |
+| column_identity_rules.go | Implements the shared CHANGE and RENAME destination-name blockers and the RENAME COLUMN version blocker: a new name that belongs to another column is one finding, the same identity is not a self-conflict, an unknown column set keeps `unknown_table_state`, and a known incompatible MySQL version is one complete blocker while a missing or out-of-series version is only the existing version gap |
 | object_lifecycle_rules.go | Implements create-view, drop-table, truncate-table, metadata-backed lifecycle existence, and adaptive-hash caution rules; the drop-table existence rule additionally declares the `unknown_table_state` evidence gap with `required_facts` `[target_table.existence]` only when its applicable MySQL/TiDB statement carries no target-table snapshot from the ordered state — confirmed-present and confirmed-absent projections keep their Evaluate path — while the truncate rule sharing the same type never emits it |
 | merge_alter_rules.go | Implements global merge-alter governance across statement batches |
 | denylist_rules.go | Implements DDL table denylist checks that evaluate every normalized `TableTargets()` entry (multi-target DROP, RENAME source/destination pairs, ALTER rename destinations) against protected schemas or tables, resolving explicit target schema before metadata schema and deduplicating findings per resolved `(schema, table)` identity so dotted qualified names do not merge |
@@ -220,7 +221,10 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.alter.drop_column.exists.require`
 - `ddl.alter.modify_column.exists.require`
 - `ddl.alter.change_column.exists.require`
+- `ddl.alter.change_column.target.exists.forbid`
 - `ddl.alter.rename_column.exists.require`
+- `ddl.alter.rename_column.target.exists.forbid`
+- `ddl.alter.rename_column.version.require`
 - `ddl.alter.add_index.exists.forbid`
 - `ddl.alter.drop_index.exists.require`
 - `ddl.alter.rename_index.exists.require`

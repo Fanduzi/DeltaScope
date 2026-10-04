@@ -42,7 +42,9 @@ func TestDefaultMetadataExistenceRulesStayEnabled(t *testing.T) {
 		"ddl.alter.drop_column.exists.require",
 		"ddl.alter.modify_column.exists.require",
 		"ddl.alter.change_column.exists.require",
+		"ddl.alter.change_column.target.exists.forbid",
 		"ddl.alter.rename_column.exists.require",
+		"ddl.alter.rename_column.target.exists.forbid",
 		"ddl.alter.add_index.exists.forbid",
 		"ddl.alter.drop_index.exists.require",
 		"ddl.alter.rename_index.exists.require",
@@ -59,6 +61,17 @@ func TestDefaultMetadataExistenceRulesStayEnabled(t *testing.T) {
 		if !ruleCfg.Enabled {
 			t.Fatalf("expected %s to stay enabled in the default policy", ruleID)
 		}
+	}
+}
+
+func TestDefaultRenameColumnVersionRuleStaysRequired(t *testing.T) {
+	t.Parallel()
+	ruleCfg, ok := Default().Rules["ddl.alter.rename_column.version.require"]
+	if !ok {
+		t.Fatal("missing default rename column version rule")
+	}
+	if !ruleCfg.Enabled || ruleCfg.Level != "blocker" || ruleCfg.Params["required"] != true {
+		t.Fatalf("version rule = enabled %v level %s params %#v", ruleCfg.Enabled, ruleCfg.Level, ruleCfg.Params)
 	}
 }
 

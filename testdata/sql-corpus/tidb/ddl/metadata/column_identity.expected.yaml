@@ -1,0 +1,26 @@
+name: column_identity
+dialect: tidb
+category: ddl
+expect:
+  parse_ok: true
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.alter.change_column.target.exists.forbid
+      - ddl.alter.rename_column.target.exists.forbid
+metadata:
+  schema: app
+  instance:
+    version: 8.0.11-TiDB-v8.5.0
+  tables:
+    ident_change:
+      exists: true
+      columns:
+        - {name: c, type: int}
+        - {name: c2, type: int}
+    ident_rename:
+      exists: true
+      columns:
+        - {name: c, type: int}
+        - {name: c2, type: int}

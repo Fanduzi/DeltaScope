@@ -1,7 +1,7 @@
 // Package audit orchestrates audit use cases at the application layer.
 // input: optional metadata providers, parsed statement MutationTargets, the validated target_version for observed-identity reconciliation, and parse-failure positions that contaminate later derived state
-// output: metadata-enriched statements with resolved target schemas, per-statement pre-state snapshots from the request-local ordered batch state (provider facts or in-batch derivations for MySQL/TiDB — PostgreSQL keeps its original enrichment in every request shape), and a canonical Version identity for rules that can use live instance or schema facts
-// pos: application-layer bridge between provider-backed metadata and domain statements, owning the ordered schema-state seam (batch_state.go) and the effective-identity resolver (explicit qualifiers win over the request schema)
+// output: metadata-enriched statements with resolved target schemas, per-statement pre-state snapshots from the request-local ordered batch state (provider facts or in-batch derivations for MySQL/TiDB — PostgreSQL keeps its original enrichment in every request shape), a canonical Version identity for rules that can use live instance or schema facts, and that same resolved version stored on the batch state
+// pos: application-layer bridge between provider-backed metadata and domain statements, owning the ordered schema-state seam (batch_state.go) and the effective-identity resolver (explicit qualifiers win over the request schema); the ordered state reads the resolved version passed here and does not assume the original statement already carries Metadata.Version
 // note: if this file changes, update this header and module README.md.
 package audit
 
@@ -167,6 +167,7 @@ func enrichOrderedStatements(ctx context.Context, dialect spec.Dialect, request 
 		provider = request.Provider
 	}
 	state := newBatchState(dialect, requestSchema, provider)
+	state.resolvedVersion = resolvedVersion
 	enriched := make([]spec.Statement, len(statements))
 	// Object lookups resolve at most once per distinct (schema, type, name,
 	// qualifiers) identity per request — the same object is never re-asked.

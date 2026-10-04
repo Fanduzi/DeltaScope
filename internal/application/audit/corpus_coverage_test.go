@@ -1,6 +1,6 @@
 // Package audit verifies SQL corpus coverage for default policy rules.
 // input: checked-in SQL corpus expectations and default policy rule identifiers
-// output: dialect coverage guarantees for supported and non-deferred default rules
+// output: dialect coverage guarantees for supported and non-deferred default rules, with RENAME COLUMN version applicability limited to MySQL and the two destination-name rules limited to the MySQL family
 // pos: application audit corpus inventory and coverage test seam
 // note: if this file changes, update this header and module README.md.
 package audit
@@ -50,6 +50,10 @@ func corpusRuleDialectTargets(ruleID string) []string {
 	case "ddl.create_procedure.notice", "ddl.drop_procedure.notice", "ddl.table.create_as.forbid":
 		// TiDB marks CREATE/DROP PROCEDURE and CREATE TABLE AS SELECT as vendor
 		// boundaries, so these rules can only fire under MySQL.
+		return []string{"mysql"}
+	case "ddl.alter.rename_column.version.require":
+		// TiDB 8.5 accepts RENAME COLUMN, so the incompatible finding is a
+		// MySQL applicability result. TiDB never emits it.
 		return []string{"mysql"}
 	}
 	if strings.HasPrefix(ruleID, "ddl.pg.") || isPostgreSQLOnlyRule(ruleID) {
@@ -167,6 +171,8 @@ func isMySQLFamilyOnlyRule(ruleID string) bool {
 		"ddl.alter.change_column.compatibility.require",
 		"ddl.alter.modify_column.exists.require",
 		"ddl.alter.change_column.exists.require",
+		"ddl.alter.change_column.target.exists.forbid",
+		"ddl.alter.rename_column.target.exists.forbid",
 		"ddl.alter.table_option.compatibility.require",
 		"ddl.alter.modify_column.explicit_nullability_change.forbid",
 		"ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory",

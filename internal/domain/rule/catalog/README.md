@@ -6,7 +6,7 @@ Explanation-oriented metadata for shipped DeltaScope rules, with discoverability
 
 | File | Responsibility |
 |------|---------------|
-| catalog.go | Builds stable catalog entries from shipped defaults plus default-disabled opt-in rules, explanation templates, and discoverability metadata for CLI discovery, including dialect and metadata-aware scope for the MODIFY nullability fallback advisory |
+| catalog.go | Builds stable catalog entries from shipped defaults plus default-disabled opt-in rules, explanation templates, and discoverability metadata for CLI discovery, including dialect and metadata-aware scope for the MODIFY nullability fallback advisory and for the CHANGE and RENAME destination-name and RENAME COLUMN version rules |
 | query.go | Structured query core: Query/Result types, Validate, QueryEntries with dialect/level/kind/category/search/limit filters |
 | catalog_test.go | Verifies catalog completeness, lookup stability, and metadata-aware flags |
 | catalog_discoverability_test.go | Verifies rule discoverability contract: completeness, field validity, deterministic ordering, dialect/category coverage, drift prevention |
