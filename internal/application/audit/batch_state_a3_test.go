@@ -198,7 +198,9 @@ func TestBatchStateA3DropPreStateMatrix(t *testing.T) {
 func TestBatchStateA3TombstoneThenIfExistsDrop(t *testing.T) {
 	t.Parallel()
 	provider := &t05PresentProvider{snapshots: map[string]*spec.TableSnapshot{"golden.t": presentTable("golden", "t", "id")}}
-	result := t05A3Audit(t, "ALTER TABLE t MODIFY COLUMN id BIGINT; DROP TABLE IF EXISTS t; CREATE INDEX ix ON t(id);", spec.DialectMySQL, provider, t05A3FiveRulePolicy(t))
+	// BIGINT stays inside the ordinary integer MODIFY template, so it no longer
+	// tombstones a known column. A cross-family change still does.
+	result := t05A3Audit(t, "ALTER TABLE t MODIFY COLUMN id VARCHAR(20); DROP TABLE IF EXISTS t; CREATE INDEX ix ON t(id);", spec.DialectMySQL, provider, t05A3FiveRulePolicy(t))
 	t05A3DropGap(t, result, 1)
 	t05A2R1AssertUnknownGap(t, t05GapsByRule(result, 2, t05RuleCreateIndexColumns), []string{"target_table.columns", "target_table.existence"})
 	if len(provider.calls) != 1 || provider.calls[0] != "golden.t" {

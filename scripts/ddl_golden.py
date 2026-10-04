@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: task manifest testdata/ddl-golden/<TASK>.json, docker/ddl-golden-compose.yaml, freshly built deltascope CLI
-# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest, including synchronous execute verification and the frozen T05-A3 oracle
+# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest, including synchronous execute verification and the frozen T05-A3 and T05-A4 oracles
 # pos: DDL golden-path runner and artifact validator behind `make ddl-golden TASK=Txx ARTIFACT_DIR=...`
 # note: if this file changes, update this header and module README.md.
 """DeltaScope DDL golden-path runner (milestone T02/#81, T04/#83).
@@ -1418,6 +1418,185 @@ def t05_a3_contract():
     return profile, {"enable": enable}, metadata_cases, cli_cases
 
 
+def t05_a4_contract():
+    """Frozen T05-A4 ordinary MODIFY oracle. The 18 cases and their expects are
+    independent of the manifest, so shrinking the manifest and artifact together
+    still fails."""
+    profile = "t05-a4-modify-isolated"
+    compat = "ddl.alter.modify_column.compatibility.require"
+    create_rule = "ddl.table.exists.create.forbid"
+    enable = {rid: {"enabled": True, "level": "blocker", "params": {}}
+              for rid in (create_rule, "ddl.table.exists.alter.require",
+                          "ddl.alter.modify_column.exists.require", compat)}
+    enable[compat]["params"] = {"required": True}
+    table_query = "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'"
+    columns_query = ("SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') "
+                     "FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'")
+    pk_query = ("SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS "
+                "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'")
+    varchar_query = ("SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',"
+                     "IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) "
+                     "FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'")
+    int_query = ("SELECT CONCAT(DATA_TYPE,':',IF(COLUMN_TYPE LIKE '%unsigned%','unsigned','signed'),':',IS_NULLABLE,':',"
+                 "IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) "
+                 "FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'")
+    id_query = ("SELECT CONCAT(DATA_TYPE,':',IS_NULLABLE) FROM information_schema.COLUMNS "
+                "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='id'")
+    plain_query = ("SELECT CONCAT(DATA_TYPE,':',IS_NULLABLE) FROM information_schema.COLUMNS "
+                   "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'")
+
+    def verify(label, sql, expect):
+        return {"assert": label, "sql": sql, "expect": expect}
+
+    def varchar_text(length):
+        return f"varchar:{length}:utf8mb4:utf8mb4_bin:NO:<nil>:"
+
+    def varchar_sqls(lengths):
+        sqls = [f"CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR({lengths[0]}) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)"]
+        sqls.extend(
+            f"ALTER TABLE t MODIFY COLUMN c VARCHAR({length}) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL"
+            for length in lengths[1:])
+        return sqls
+
+    def expectation(sqls, verdict, coverage, statement_coverage, findings=0, gap_entries=None,
+                    finding_entries=None, finding_metadata=None):
+        result = {
+            "exit": 0 if verdict != "reject" else 1,
+            "verdict": verdict,
+            "statements": len(sqls),
+            "findings": findings,
+            "diagnostics": 0,
+            "unsupported": 0,
+            "coverage": coverage,
+            "statement_coverage": statement_coverage,
+            "statement_sql": [sql + ";" for sql in sqls],
+            "evidence_gaps": len(gap_entries or []),
+            "fail_on_triggered": verdict == "reject",
+            "rule_summary_loaded": 4,
+            "statement_indices": list(range(len(sqls))),
+        }
+        if finding_entries:
+            result["finding_entries"] = finding_entries
+        if finding_metadata:
+            result["finding_metadata"] = finding_metadata
+        if gap_entries:
+            result["evidence_gap_entries"] = gap_entries
+        return result
+
+    def shrink(index, source, target):
+        metadata = {"action": "modify_column", "table": "t", "name": "c", "column_name": "c",
+                    "source_length": source, "target_length": target}
+        return ([{"index": index, "rule_id": compat, "level": "blocker"}],
+                [{"index": index, "rule_id": compat, "metadata": metadata}])
+
+    def attribute(index, metadata):
+        payload = {"action": "modify_column", "table": "t", "name": "c", "column_name": "c"}
+        payload.update(metadata)
+        return ({"index": index, "rule_id": compat, "level": "blocker"},
+                {"index": index, "rule_id": compat, "metadata": payload})
+
+    def lifecycle(sqls, lengths, query, values, verdict, finding=None):
+        complete = ["complete"] * len(sqls)
+        kwargs = {}
+        if finding:
+            kwargs["finding_entries"], kwargs["finding_metadata"] = finding
+            kwargs["findings"] = len(kwargs["finding_entries"])
+        return expectation(sqls, verdict, "complete", complete, **kwargs), [
+            {"name": f"driver statement {i}", "sql": sql, "expect_rc": 0,
+             "verify": [verify(f"definition after statement {i}", query, values[i])]}
+            for i, sql in enumerate(sqls)]
+
+    def metadata_case(case_id, anchor, port, dialect, sqls, expect, execute, structure):
+        connect = {"host": "127.0.0.1", "port": port, "user": "root", "schema": "golden"}
+        if dialect == "mysql":
+            connect.update(password_env="DS_T05_GOLDEN_PW", password="root")
+        return {"id": case_id, "anchor": anchor, "dialect": dialect,
+                "sql": " ".join(sql + ";" for sql in sqls), "policy": profile,
+                "args": ["--fail-on", "blocker"], "connect": connect,
+                "setup": [{"name": "ensure t absent", "sql": "DROP TABLE IF EXISTS t", "expect_rc": 0,
+                           "verify": [verify("t absent before audit", table_query, "0")]}],
+                "expect": expect,
+                "post_verify": [verify("audit did not create t", table_query, "0")],
+                "execute": execute, "structure": structure,
+                "teardown": [{"name": "drop fixture", "sql": "DROP TABLE IF EXISTS t", "expect_rc": 0,
+                              "verify": [verify("no residual t", table_query, "0")]}]}
+
+    def varchar_case(anchor, port, dialect, suffix, lengths, verdict, finding, columns):
+        sqls = varchar_sqls(lengths)
+        expect, execute = lifecycle(sqls, lengths, varchar_query, [varchar_text(n) for n in lengths], verdict, finding)
+        structure = [
+            verify("t exists", table_query, "1"),
+            verify("columns stay id then c", columns_query, columns),
+            verify("primary key stays id", pk_query, "id"),
+            verify("final c definition", varchar_query, varchar_text(lengths[-1]))]
+        return metadata_case(f"t05-a4-{anchor}-{suffix}", anchor, port, dialect, sqls, expect, execute, structure)
+
+    metadata_cases = []
+    for anchor, port in (("mysql57", 23357), ("mysql80", 23380), ("mysql84", 23384), ("tidb85", 24000)):
+        dialect = "tidb" if anchor == "tidb85" else "mysql"
+        metadata_cases.append(varchar_case(
+            anchor, port, dialect, "narrow", [10, 20, 15], "reject", shrink(2, 20, 15), "id:int,c:varchar"))
+        metadata_cases.append(varchar_case(
+            anchor, port, dialect, "wide", [10, 20, 30], "pass", None, "id:int,c:varchar"))
+        if anchor in ("mysql84", "tidb85"):
+            metadata_cases.append(varchar_case(
+                anchor, port, dialect, "narrow-then-18", [10, 20, 15, 18], "reject", shrink(2, 20, 15), "id:int,c:varchar"))
+            metadata_cases.append(varchar_case(
+                anchor, port, dialect, "wide-then-25", [10, 20, 30, 25], "reject", shrink(3, 30, 25), "id:int,c:varchar"))
+            omit_sqls = ["CREATE TABLE t (id INT PRIMARY KEY, c INT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'old')",
+                         "ALTER TABLE t MODIFY COLUMN c INT",
+                         "ALTER TABLE t MODIFY COLUMN c INT NOT NULL"]
+            signed, signed_meta = attribute(1, {"source_unsigned": True, "target_unsigned": False})
+            nullability, null_meta = attribute(2, {"source_not_null": False, "target_not_null": True})
+            omit_expect, omit_execute = lifecycle(
+                omit_sqls, None, int_query,
+                ["int:unsigned:NO:1:old", "int:signed:YES:<nil>:", "int:signed:NO:<nil>:"],
+                "reject", ([signed, nullability], [signed_meta, null_meta]))
+            metadata_cases.append(metadata_case(
+                f"t05-a4-{anchor}-omit-integer", anchor, port, dialect, omit_sqls, omit_expect, omit_execute, [
+                    verify("t exists", table_query, "1"),
+                    verify("columns stay id then c", columns_query, "id:int,c:int"),
+                    verify("primary key stays id", pk_query, "id"),
+                    verify("c lost unsigned default and comment", int_query, "int:signed:NO:<nil>:")]))
+            pk_sqls = ["CREATE TABLE t (id INT PRIMARY KEY, c INT)",
+                       "ALTER TABLE t MODIFY COLUMN id BIGINT",
+                       "ALTER TABLE t MODIFY COLUMN id BIGINT NOT NULL"]
+            pk_expect = expectation(pk_sqls, "pass", "complete", ["complete"] * 3)
+            pk_execute = [
+                {"name": "driver statement 0", "sql": pk_sqls[0], "expect_rc": 0,
+                 "verify": [verify("id starts not null", id_query, "int:NO")]},
+                {"name": "driver statement 1", "sql": pk_sqls[1], "expect_rc": 0,
+                 "verify": [verify("widened primary key stays not null", id_query, "bigint:NO")]},
+                {"name": "driver statement 2", "sql": pk_sqls[2], "expect_rc": 0,
+                 "verify": [verify("explicit not null primary key stays not null", id_query, "bigint:NO"),
+                            verify("unmodified c stays nullable int", plain_query, "int:YES")]}]
+            metadata_cases.append(metadata_case(
+                f"t05-a4-{anchor}-pk-not-null", anchor, port, dialect, pk_sqls, pk_expect, pk_execute, [
+                    verify("t exists", table_query, "1"),
+                    verify("columns stay id then c", columns_query, "id:bigint,c:int"),
+                    verify("primary key stays id", pk_query, "id"),
+                    verify("id remains not null bigint", id_query, "bigint:NO")]))
+    cli_cases = []
+    gap = [{"index": 0, "rule_id": create_rule, "reason_code": "unknown_table_state",
+            "required_facts": ["target_table.existence"]}]
+    narrow = varchar_sqls([10, 20, 15])
+    wide = varchar_sqls([10, 20, 30])
+    narrow_entries, narrow_meta = shrink(2, 20, 15)
+    cli_cases.append({"id": "t05-a4-mysql-narrow-offline", "dialect": "mysql",
+                      "sql": " ".join(sql + ";" for sql in narrow), "policy": profile,
+                      "args": ["--fail-on", "blocker"],
+                      "expect": expectation(narrow, "reject", "unverified",
+                                           ["unverified", "complete", "complete"], findings=1,
+                                           gap_entries=gap, finding_entries=narrow_entries,
+                                           finding_metadata=narrow_meta)})
+    cli_cases.append({"id": "t05-a4-tidb-wide-offline", "dialect": "tidb",
+                      "sql": " ".join(sql + ";" for sql in wide), "policy": profile,
+                      "args": ["--fail-on", "blocker"],
+                      "expect": expectation(wide, "review", "unverified",
+                                           ["unverified", "complete", "complete"], gap_entries=gap)})
+    return profile, {"enable": enable}, metadata_cases, cli_cases
+
+
 def t05_a3_manifest_failures(manifest):
     if manifest.get("task_id") != "T05":
         return []
@@ -1436,6 +1615,24 @@ def t05_a3_manifest_failures(manifest):
     return failures
 
 
+def t05_a4_manifest_failures(manifest):
+    if manifest.get("task_id") != "T05":
+        return []
+    profile, policy, metadata_cases, cli_cases = t05_a4_contract()
+    failures = []
+    if ((manifest.get("policy") or {}).get("profiles") or {}).get(profile) != policy:
+        failures.append("T05-A4 frozen four-rule profile missing or changed")
+    required = manifest.get("required_case_ids") or []
+    for field, specs, kind in (("metadata_cases", metadata_cases, "meta"), ("cli_cases", cli_cases, "cli")):
+        for wanted in specs:
+            matches = [s for s in manifest.get(field, []) if s.get("id") == wanted["id"]]
+            if len(matches) != 1 or matches[0] != wanted:
+                failures.append(f"T05-A4 frozen oracle changed or missing: {wanted['id']}")
+            if f"T05.{kind}.{wanted['id']}" not in required:
+                failures.append(f"T05-A4 required case missing: {wanted['id']}")
+    return failures
+
+
 def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
     """Re-check an emitted artifact. Returns a list of failure strings."""
     failures = []
@@ -1449,6 +1646,7 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
     if baseline:
         failures.extend(baseline_manifest_failures(manifest, baseline))
     failures.extend(t05_a3_manifest_failures(manifest))
+    failures.extend(t05_a4_manifest_failures(manifest))
 
     if artifact.get("external_blocker"):
         failures.append(f"external blocker recorded: {artifact['external_blocker']}")

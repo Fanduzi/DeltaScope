@@ -1,7 +1,7 @@
 // Package audit orchestrates audit use cases at the application layer.
 // input: request context, ordered statements, optional metadata provider, and parse-failure positions for one audit request
 // output: request-local ordered table facts (unknown / known-absent / known-present, per-collection member knowledge) feeding per-statement pre-state snapshots
-// pos: prospective schema-state ownership for the first migration path — the effective (dialect, schema, table) identity drives provider reads, keys, writes, and invalidation; unsupported or executable-but-unmodeled effects settle before kind dispatch; deterministic conditional transitions update derived facts, including the bounded single-pair RENAME identity migration onto a known-absent destination and a bounded single-target DROP identity retirement, each tombstoning loaded dependents referencing the touched identities and checking cancellation before publishing effects; unaudited, unbound, or contaminated operations invalidate them
+// pos: prospective schema-state ownership for the first migration path — the effective (dialect, schema, table) identity drives provider reads, keys, writes, and invalidation; unsupported or executable-but-unmodeled effects settle before kind dispatch; deterministic conditional transitions update derived facts, including the bounded single-pair RENAME identity migration onto a known-absent destination, a bounded single-target DROP identity retirement, and an ordinary single-column MODIFY definition replacement, each tombstoning loaded dependents that the transition cannot keep and checking cancellation before publishing effects; unaudited, unbound, or contaminated operations invalidate them
 // note: if this file changes, update this header and module README.md.
 package audit
 
@@ -214,11 +214,13 @@ func projectEntry(key batchTableKey, entry *batchTableEntry) *spec.TableSnapshot
 // invalidate, bound schema scopes invalidate the scope, and an unresolvable
 // effect contaminates the batch. After that gate only the frozen transitions
 // derive structure — a fully audited plain CREATE TABLE, an ALTER made of
-// exactly one plain ADD COLUMN, a fully audited standalone CREATE INDEX, and
-// a single-pair RENAME bounded by the frozen endpoint-existence table, and a
-// single-target DROP bounded by the frozen drop state table — plus
-// stat-clearing TRUNCATE/DML pass-through. Everything else (multi-action
-// ALTER, unaudited aspects, multi-pair or multi-target effects) invalidates
+// exactly one plain ADD COLUMN, an ALTER made of exactly one ordinary
+// single-column MODIFY inside the frozen type template, a fully audited
+// standalone CREATE INDEX, and a single-pair RENAME bounded by the frozen
+// endpoint-existence table, and a single-target DROP bounded by the frozen
+// drop state table — plus stat-clearing TRUNCATE/DML pass-through. Everything
+// else (multi-action ALTER, unaudited aspects, multi-pair or multi-target
+// effects) invalidates
 // its bound targets because the real effect is not modeled honestly. A statement
 // whose structural premise is already known-broken (duplicate plain ADD,
 // index on a confirmed-absent table) invalidates its target rather than
@@ -442,14 +444,15 @@ func derivedCreateShape(schema, table string, ddl *spec.DDL) *spec.TableSnapshot
 }
 
 // applyAlterTable models the frozen transitions a fully audited ALTER can
-// carry: exactly one plain ADD COLUMN, or exactly one RENAME TO handled by
-// the shared rename pair migration. Anything else — multiple actions,
-// position/scalar-conditioned adds, or any other audited action — has no
-// modeled post-state this slice, so its bound targets invalidate rather than
-// fabricating a success shape (a duplicate add inside a multi-action ALTER
-// must never produce a definite column set). Premise-broken adds — a
-// duplicate column without IF NOT EXISTS, or any add on a confirmed-absent
-// table — invalidate instead of fabricating a success structure.
+// carry: exactly one plain ADD COLUMN, exactly one ordinary single-column
+// MODIFY, or exactly one RENAME TO handled by the shared rename pair
+// migration. Anything else — multiple actions, position/scalar-conditioned
+// adds, or any other audited action — has no modeled post-state, so its
+// bound targets invalidate rather than fabricating a success shape (a
+// duplicate add inside a multi-action ALTER must never produce a definite
+// column set). Premise-broken adds — a duplicate column without IF NOT
+// EXISTS, or any add on a confirmed-absent table — invalidate instead of
+// fabricating a success structure. MODIFY never restores an unknown table.
 func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Statement) error {
 	ddl := statement.DDL
 	targets := ddl.TableTargets()
@@ -466,6 +469,9 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 			return nil
 		}
 		return s.applyRenamePair(ctx, targets[0], targets[1])
+	}
+	if alter.Action == "modify_column" {
+		return s.applyModifyColumn(ctx, statement, alter, targets)
 	}
 	if alter.Action != "add_columns" || alter.Column == nil || alter.Column.Definition == nil {
 		s.invalidateAll(targets)

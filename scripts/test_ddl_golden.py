@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: synthetic ddl-golden artifacts and manifests built in a temp directory
-# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3 mutation coverage
+# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3 and T05-A4 mutation coverage
 # pos: offline negative tests for scripts/ddl_golden.py validation (no Docker required)
 # note: if this file changes, update this header and module README.md.
 """Validator contract tests for scripts/ddl_golden.py.
@@ -1533,17 +1533,21 @@ def main():
 def a3_contract_tests(tmp):
     source = json.loads((ddl_golden.MANIFEST_DIR / "T05.json").read_text())
     profile = "t05-drop-recreate-isolated"
+    a4_profile = "t05-a4-modify-isolated"
     manifest = copy.deepcopy(MANIFEST)
     manifest.update(task_id="T05", anchors=copy.deepcopy(source["anchors"]),
-                    policy={"profiles": {profile: copy.deepcopy(source["policy"]["profiles"][profile])}},
-                    metadata_cases=[copy.deepcopy(s) for s in source["metadata_cases"] if s["id"].startswith("t05-a3-")],
-                    cli_cases=[copy.deepcopy(s) for s in source["cli_cases"] if s["id"].startswith("t05-a3-")])
+                    policy={"profiles": {
+                        profile: copy.deepcopy(source["policy"]["profiles"][profile]),
+                        a4_profile: copy.deepcopy(source["policy"]["profiles"][a4_profile]),
+                    }},
+                    metadata_cases=[copy.deepcopy(s) for s in source["metadata_cases"] if s["id"].startswith(("t05-a3-", "t05-a4-"))],
+                    cli_cases=[copy.deepcopy(s) for s in source["cli_cases"] if s["id"].startswith(("t05-a3-", "t05-a4-"))])
     baseline = ddl_golden.load_baseline()
     directory = tmp / "a3"
     directory.mkdir()
     artifact = make_artifact(directory)
     binary = directory / "deltascope"
-    ids = sorted(manifest["policy"]["profiles"][profile]["enable"])
+    ids = sorted({rid for spec in manifest["policy"]["profiles"].values() for rid in spec["enable"]})
     catalog = json.dumps({"rules": [{"rule_id": rid} for rid in ids]})
     binary.write_text("#!/bin/sh\nprintf '%s' '" + catalog + "'\n")
     artifact["cli"]["sha256"] = ddl_golden.sha256_file(binary)
@@ -1575,20 +1579,24 @@ def a3_contract_tests(tmp):
             expected = spec["expect"]
             statements = [{"index": i, "raw_sql": sql, "coverage": {"status": expected["statement_coverage"][i]},
                            "findings": [], "evidence_gaps": []} for i, sql in enumerate(expected["statement_sql"])]
+            finding_metadata = {(entry["index"], entry["rule_id"]): entry["metadata"]
+                                for entry in expected.get("finding_metadata", [])}
             for entry in expected.get("finding_entries", []):
                 statements[entry["index"]]["findings"].append({
                     "statement_index": entry["index"], "rule_id": entry["rule_id"], "level": entry["level"],
-                    "metadata": copy.deepcopy(expected["finding_metadata"][0]["metadata"])})
+                    "metadata": copy.deepcopy(finding_metadata.get((entry["index"], entry["rule_id"]), {}))})
             for entry in expected.get("evidence_gap_entries", []):
                 statements[entry["index"]]["evidence_gaps"].append({k: v for k, v in entry.items() if k != "index"})
             parsed = {"verdict": expected["verdict"], "coverage": {"status": expected["coverage"]},
                       "statements": statements, "global_findings": [], "diagnostics": [], "unsupported": [],
-                      "fail_on_triggered": expected["fail_on_triggered"], "rule_summary": {"loaded": 5}}
+                      "fail_on_triggered": expected["fail_on_triggered"],
+                      "rule_summary": {"loaded": expected.get("rule_summary_loaded", 5)}}
+            case_profile = spec.get("policy") or profile
             command = [str(binary), "audit", "--dialect", spec["dialect"], "--sql", spec["sql"],
-                       "--config", policies[profile]["path"], "--format", "json"]
+                       "--config", policies[case_profile]["path"], "--format", "json"]
             case = {"case_id": f"T05.{kind}.{spec['id']}", "kind": "cli_metadata" if kind == "meta" else "cli_audit",
                     "cli_case": spec["id"], "dialect": spec["dialect"], "input_sql": spec["sql"],
-                    "policy_profile": profile, "policy_path": policies[profile]["path"], "command": command,
+                    "policy_profile": case_profile, "policy_path": policies[case_profile]["path"], "command": command,
                     "expected": copy.deepcopy(expected),
                     "actual": {"exit": expected["exit"], "stdout": json.dumps(parsed), "stderr": "", "parsed": parsed},
                     "assertions": [{"name": "synthetic control", "ok": True, "detail": "offline validator fixture"}], "status": "pass"}
@@ -1760,6 +1768,100 @@ def a3_contract_tests(tmp):
     results.append(immediate)
     a["cases"][a["cases"].index(c)] = recorded
     run("a3 runner-produced synthetic case validates", a)
+
+    def a4(suffix="mysql84-narrow"):
+        candidate = copy.deepcopy(artifact)
+        case = next(item for item in candidate["cases"] if item.get("cli_case") == "t05-a4-" + suffix)
+        return candidate, case
+
+    run("a4 valid synthetic control", artifact)
+    a, c = a4()
+    del c["actual"]["parsed"]["statements"][1]
+    update_stdout(c)
+    run("a4 intermediate VARCHAR(20) statement deleted rejected", a, "statements")
+    a, c = a4()
+    c["actual"]["parsed"]["statements"][1]["raw_sql"] = c["actual"]["parsed"]["statements"][1]["raw_sql"].replace("VARCHAR(20)", "VARCHAR(10)")
+    update_stdout(c)
+    run("a4 intermediate 20 rewritten as 10 rejected", a, "raw SQL")
+    a, c = a4()
+    c["actual"]["execute"][1]["verify"][0]["output"] = c["actual"]["execute"][1]["verify"][0]["output"].replace(":20:", ":10:", 1)
+    run("a4 intermediate 20 column probe rewritten as 10 rejected", a, "output mismatch")
+    a, c = a4("mysql84-narrow-then-18")
+    c["actual"]["execute"][2]["verify"][0]["output"] = c["actual"]["execute"][2]["verify"][0]["output"].replace(":15:", ":10:", 1)
+    run("a4 fourth statement disagrees with the 15 post-state rejected", a, "output mismatch")
+    a, c = a4("mysql84-narrow-then-18")
+    c["actual"]["parsed"]["statements"][2]["findings"][0]["metadata"]["source_length"] = 10
+    update_stdout(c)
+    run("a4 fourth-path shrink source no longer 20 rejected", a, "finding metadata")
+    a, c = a4("mysql84-wide-then-25")
+    c["actual"]["parsed"]["statements"][3]["findings"][0]["metadata"]["source_length"] = 20
+    update_stdout(c)
+    run("a4 widen-then-25 uses the old 20 instead of 30 rejected", a, "finding metadata")
+    a, c = a4()
+    finding = c["actual"]["parsed"]["statements"][2]["findings"].pop()
+    finding["statement_index"] = 1
+    c["actual"]["parsed"]["statements"][1]["findings"].append(finding)
+    update_stdout(c)
+    run("a4 shrink finding on the wrong statement rejected", a, "finding entries")
+    a, c = a4()
+    metadata = c["actual"]["parsed"]["statements"][2]["findings"][0]["metadata"]
+    metadata["name"] = "id"
+    metadata["column_name"] = "id"
+    update_stdout(c)
+    run("a4 shrink finding on the wrong column rejected", a, "finding metadata")
+    a, c = a4()
+    metadata = c["actual"]["parsed"]["statements"][2]["findings"][0]["metadata"]
+    metadata["source_length"], metadata["target_length"] = metadata["target_length"], metadata["source_length"]
+    update_stdout(c)
+    run("a4 source and target lengths swapped rejected", a, "finding metadata")
+    a, c = a4()
+    c["actual"]["execute"][2]["rc"] = 1
+    c["actual"]["execute"][2]["stderr"] = "ERROR 1265 Data truncated"
+    run("a4 policy reject recorded as a native driver error rejected", a, "execute")
+    a, c = a4("mysql-narrow-offline")
+    c["actual"]["parsed"]["statements"][0]["evidence_gaps"] = []
+    c["actual"]["parsed"]["statements"][0]["coverage"]["status"] = "complete"
+    c["actual"]["parsed"]["coverage"]["status"] = "complete"
+    update_stdout(c)
+    run("a4 offline create gap deleted rejected", a, "gap")
+    a, c = a4("mysql-narrow-offline")
+    c["actual"]["parsed"]["statements"][0]["evidence_gaps"][0]["reason_code"] = "missing_source_column"
+    update_stdout(c)
+    run("a4 offline create gap forged rejected", a, "gap")
+    a, c = a4()
+    c["actual"]["execute"][1]["verify"] = []
+    run("a4 per-step verify deleted rejected", a, "verify count")
+    a, c = a4()
+    c["actual"]["execute"][2]["verify"] = c["actual"]["execute"][1].pop("verify")
+    run("a4 per-step verify shifted rejected", a, "verify count")
+    a, c = a4("mysql84-omit-integer")
+    c["actual"]["execute"][1]["verify"][0]["output"] = "int:signed:YES:1:old"
+    run("a4 omitted default and comment left behind rejected", a, "output mismatch")
+    a, c = a4("mysql84-pk-not-null")
+    c["actual"]["execute"][1]["verify"][0]["output"] = "bigint:YES"
+    run("a4 primary key not-null oracle lost rejected", a, "output mismatch")
+    a, c = a4()
+    artifact_id = c["case_id"]
+    a["cases"] = [item for item in a["cases"] if item["case_id"] != artifact_id]
+    a["executed_count"] -= 1
+    m = copy.deepcopy(manifest)
+    m["metadata_cases"] = [s for s in m["metadata_cases"] if s["id"] != c["cli_case"]]
+    m["required_case_ids"].remove(artifact_id)
+    a["required_case_ids"].remove(artifact_id)
+    run("a4 manifest and artifact shrunk together rejected", a, "T05-A4", m)
+    a, c = a4()
+    m = copy.deepcopy(manifest)
+    next(s for s in m["metadata_cases"] if s["id"] == c["cli_case"])["policy"] = "all-rules-disabled"
+    c["policy_profile"] = "all-rules-disabled"
+    run("a4 wrong profile cannot substitute four-rule policy", a, "T05-A4", m)
+    a, c = a4()
+    m = copy.deepcopy(manifest)
+    del m["policy"]["profiles"]["t05-a4-modify-isolated"]["enable"]["ddl.alter.modify_column.compatibility.require"]
+    run("a4 compatibility rule removed from profile rejected", a, "T05-A4", m)
+    a, c = a4()
+    c["actual"]["parsed"]["rule_summary"]["loaded"] = 5
+    update_stdout(c)
+    run("a4 loaded rule count other than 4 rejected", a, "loaded rule count")
     return results
 
 

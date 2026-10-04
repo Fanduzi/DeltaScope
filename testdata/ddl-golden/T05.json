@@ -81,10 +81,36 @@
       }
      }
     }
+   },
+   "t05-a4-modify-isolated": {
+    "enable": {
+     "ddl.table.exists.create.forbid": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {}
+     },
+     "ddl.table.exists.alter.require": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {}
+     },
+     "ddl.alter.modify_column.exists.require": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {}
+     },
+     "ddl.alter.modify_column.compatibility.require": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "required": true
+      }
+     }
+    }
    }
   }
  },
- "description": "T05-A1 (issue #84) ordered schema-state contract: the t05-first-path-isolated profile enables exactly four blocker rules (ddl.table.exists.create.forbid, ddl.table.exists.alter.require, ddl.alter.add_column.exists.forbid, and the new ddl.create_index.columns.exists.require). Metadata cases on mysql84 and tidb85 prove the request-local ordered-state path: CREATE/ADD/CREATE INDEX derive conditional post-state, a repeated ADD fires the duplicate blocker, a missing index column produces a per-column blocker, a confirmed-absent index target reports one table_not_found blocker, and an unaudited generated-column ALTER invalidates only its own table so later statements report unknown_table_state gaps while an unrelated table still derives cleanly. Offline cli_cases pin the same contract without a provider. The locked four-anchor db baseline and the inherited CLI denominator are preserved verbatim.",
+ "description": "T05-A1 (issue #84) ordered schema-state contract: the t05-first-path-isolated profile enables exactly four blocker rules (ddl.table.exists.create.forbid, ddl.table.exists.alter.require, ddl.alter.add_column.exists.forbid, and the new ddl.create_index.columns.exists.require). Metadata cases on mysql84 and tidb85 prove the request-local ordered-state path: CREATE/ADD/CREATE INDEX derive conditional post-state, a repeated ADD fires the duplicate blocker, a missing index column produces a per-column blocker, a confirmed-absent index target reports one table_not_found blocker, and an unaudited generated-column ALTER invalidates only its own table so later statements report unknown_table_state gaps while an unrelated table still derives cleanly. Offline cli_cases pin the same contract without a provider. The locked four-anchor db baseline and the inherited CLI denominator are preserved verbatim. T05-A4 adds the t05-a4-modify-isolated four-rule profile and 18 ordinary MODIFY cases (203 required ids) without changing the original 185 cases.",
  "anchors": {
   "mysql57": {
    "service": "mysql57",
@@ -5005,6 +5031,121 @@
      {
       "index": 0,
       "rule_id": "ddl.table.drop.exists.require",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.existence"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "t05-a4-mysql-narrow-offline",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; ALTER TABLE t MODIFY COLUMN c VARCHAR(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+   "policy": "t05-a4-modify-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 3,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 4,
+    "statement_indices": [
+     0,
+     1,
+     2
+    ],
+    "finding_entries": [
+     {
+      "index": 2,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 2,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "metadata": {
+       "action": "modify_column",
+       "table": "t",
+       "name": "c",
+       "column_name": "c",
+       "source_length": 20,
+       "target_length": 15
+      }
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.exists.create.forbid",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.existence"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "t05-a4-tidb-wide-offline",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; ALTER TABLE t MODIFY COLUMN c VARCHAR(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+   "policy": "t05-a4-modify-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 3,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 4,
+    "statement_indices": [
+     0,
+     1,
+     2
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.exists.create.forbid",
       "reason_code": "unknown_table_state",
       "required_facts": [
        "target_table.existence"
@@ -10246,6 +10387,2564 @@
      ]
     }
    ]
+  },
+  {
+   "id": "t05-a4-mysql57-narrow",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; ALTER TABLE t MODIFY COLUMN c VARCHAR(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+   "policy": "t05-a4-modify-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 3,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 4,
+    "statement_indices": [
+     0,
+     1,
+     2
+    ],
+    "finding_entries": [
+     {
+      "index": 2,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 2,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "metadata": {
+       "action": "modify_column",
+       "table": "t",
+       "name": "c",
+       "column_name": "c",
+       "source_length": 20,
+       "target_length": 15
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 0",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 1",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 2",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:15:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "columns stay id then c",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int,c:varchar"
+    },
+    {
+     "assert": "primary key stays id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "final c definition",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "varchar:15:utf8mb4:utf8mb4_bin:NO:<nil>:"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a4-mysql57-wide",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; ALTER TABLE t MODIFY COLUMN c VARCHAR(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+   "policy": "t05-a4-modify-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 3,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 4,
+    "statement_indices": [
+     0,
+     1,
+     2
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 0",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 1",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 2",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:30:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "columns stay id then c",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int,c:varchar"
+    },
+    {
+     "assert": "primary key stays id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "final c definition",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "varchar:30:utf8mb4:utf8mb4_bin:NO:<nil>:"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a4-mysql80-narrow",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; ALTER TABLE t MODIFY COLUMN c VARCHAR(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+   "policy": "t05-a4-modify-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 3,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 4,
+    "statement_indices": [
+     0,
+     1,
+     2
+    ],
+    "finding_entries": [
+     {
+      "index": 2,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 2,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "metadata": {
+       "action": "modify_column",
+       "table": "t",
+       "name": "c",
+       "column_name": "c",
+       "source_length": 20,
+       "target_length": 15
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 0",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 1",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 2",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:15:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "columns stay id then c",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int,c:varchar"
+    },
+    {
+     "assert": "primary key stays id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "final c definition",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "varchar:15:utf8mb4:utf8mb4_bin:NO:<nil>:"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a4-mysql80-wide",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; ALTER TABLE t MODIFY COLUMN c VARCHAR(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+   "policy": "t05-a4-modify-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 3,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 4,
+    "statement_indices": [
+     0,
+     1,
+     2
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 0",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 1",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 2",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:30:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "columns stay id then c",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int,c:varchar"
+    },
+    {
+     "assert": "primary key stays id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "final c definition",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "varchar:30:utf8mb4:utf8mb4_bin:NO:<nil>:"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a4-mysql84-narrow",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; ALTER TABLE t MODIFY COLUMN c VARCHAR(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+   "policy": "t05-a4-modify-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 3,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 4,
+    "statement_indices": [
+     0,
+     1,
+     2
+    ],
+    "finding_entries": [
+     {
+      "index": 2,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 2,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "metadata": {
+       "action": "modify_column",
+       "table": "t",
+       "name": "c",
+       "column_name": "c",
+       "source_length": 20,
+       "target_length": 15
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 0",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 1",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 2",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:15:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "columns stay id then c",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int,c:varchar"
+    },
+    {
+     "assert": "primary key stays id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "final c definition",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "varchar:15:utf8mb4:utf8mb4_bin:NO:<nil>:"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a4-mysql84-wide",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; ALTER TABLE t MODIFY COLUMN c VARCHAR(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+   "policy": "t05-a4-modify-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 3,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 4,
+    "statement_indices": [
+     0,
+     1,
+     2
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 0",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 1",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 2",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:30:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "columns stay id then c",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int,c:varchar"
+    },
+    {
+     "assert": "primary key stays id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "final c definition",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "varchar:30:utf8mb4:utf8mb4_bin:NO:<nil>:"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a4-mysql84-narrow-then-18",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; ALTER TABLE t MODIFY COLUMN c VARCHAR(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; ALTER TABLE t MODIFY COLUMN c VARCHAR(18) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+   "policy": "t05-a4-modify-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 4,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(18) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 4,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "finding_entries": [
+     {
+      "index": 2,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 2,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "metadata": {
+       "action": "modify_column",
+       "table": "t",
+       "name": "c",
+       "column_name": "c",
+       "source_length": 20,
+       "target_length": 15
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 0",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 1",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 2",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:15:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 3",
+     "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(18) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 3",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:18:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "columns stay id then c",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int,c:varchar"
+    },
+    {
+     "assert": "primary key stays id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "final c definition",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "varchar:18:utf8mb4:utf8mb4_bin:NO:<nil>:"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a4-mysql84-wide-then-25",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; ALTER TABLE t MODIFY COLUMN c VARCHAR(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; ALTER TABLE t MODIFY COLUMN c VARCHAR(25) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+   "policy": "t05-a4-modify-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 4,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(25) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 4,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "finding_entries": [
+     {
+      "index": 3,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 3,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "metadata": {
+       "action": "modify_column",
+       "table": "t",
+       "name": "c",
+       "column_name": "c",
+       "source_length": 30,
+       "target_length": 25
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 0",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 1",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 2",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:30:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 3",
+     "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(25) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 3",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:25:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "columns stay id then c",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int,c:varchar"
+    },
+    {
+     "assert": "primary key stays id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "final c definition",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "varchar:25:utf8mb4:utf8mb4_bin:NO:<nil>:"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a4-mysql84-omit-integer",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, c INT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'old'); ALTER TABLE t MODIFY COLUMN c INT; ALTER TABLE t MODIFY COLUMN c INT NOT NULL;",
+   "policy": "t05-a4-modify-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 3,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, c INT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'old');",
+     "ALTER TABLE t MODIFY COLUMN c INT;",
+     "ALTER TABLE t MODIFY COLUMN c INT NOT NULL;"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 4,
+    "statement_indices": [
+     0,
+     1,
+     2
+    ],
+    "finding_entries": [
+     {
+      "index": 1,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "level": "blocker"
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 1,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "metadata": {
+       "action": "modify_column",
+       "table": "t",
+       "name": "c",
+       "column_name": "c",
+       "source_unsigned": true,
+       "target_unsigned": false
+      }
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "metadata": {
+       "action": "modify_column",
+       "table": "t",
+       "name": "c",
+       "column_name": "c",
+       "source_not_null": false,
+       "target_not_null": true
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, c INT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'old')",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 0",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IF(COLUMN_TYPE LIKE '%unsigned%','unsigned','signed'),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "int:unsigned:NO:1:old"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "ALTER TABLE t MODIFY COLUMN c INT",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 1",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IF(COLUMN_TYPE LIKE '%unsigned%','unsigned','signed'),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "int:signed:YES:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "ALTER TABLE t MODIFY COLUMN c INT NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 2",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IF(COLUMN_TYPE LIKE '%unsigned%','unsigned','signed'),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "int:signed:NO:<nil>:"
+      }
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "columns stay id then c",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int,c:int"
+    },
+    {
+     "assert": "primary key stays id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "c lost unsigned default and comment",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IF(COLUMN_TYPE LIKE '%unsigned%','unsigned','signed'),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "int:signed:NO:<nil>:"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a4-mysql84-pk-not-null",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, c INT); ALTER TABLE t MODIFY COLUMN id BIGINT; ALTER TABLE t MODIFY COLUMN id BIGINT NOT NULL;",
+   "policy": "t05-a4-modify-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW",
+    "password": "root"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 3,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, c INT);",
+     "ALTER TABLE t MODIFY COLUMN id BIGINT;",
+     "ALTER TABLE t MODIFY COLUMN id BIGINT NOT NULL;"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 4,
+    "statement_indices": [
+     0,
+     1,
+     2
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, c INT)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "id starts not null",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='id'",
+       "expect": "int:NO"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "ALTER TABLE t MODIFY COLUMN id BIGINT",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "widened primary key stays not null",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='id'",
+       "expect": "bigint:NO"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "ALTER TABLE t MODIFY COLUMN id BIGINT NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "explicit not null primary key stays not null",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='id'",
+       "expect": "bigint:NO"
+      },
+      {
+       "assert": "unmodified c stays nullable int",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "int:YES"
+      }
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "columns stay id then c",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:bigint,c:int"
+    },
+    {
+     "assert": "primary key stays id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "id remains not null bigint",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='id'",
+     "expect": "bigint:NO"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a4-tidb85-narrow",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; ALTER TABLE t MODIFY COLUMN c VARCHAR(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+   "policy": "t05-a4-modify-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 3,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 4,
+    "statement_indices": [
+     0,
+     1,
+     2
+    ],
+    "finding_entries": [
+     {
+      "index": 2,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 2,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "metadata": {
+       "action": "modify_column",
+       "table": "t",
+       "name": "c",
+       "column_name": "c",
+       "source_length": 20,
+       "target_length": 15
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 0",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 1",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 2",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:15:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "columns stay id then c",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int,c:varchar"
+    },
+    {
+     "assert": "primary key stays id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "final c definition",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "varchar:15:utf8mb4:utf8mb4_bin:NO:<nil>:"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a4-tidb85-wide",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; ALTER TABLE t MODIFY COLUMN c VARCHAR(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+   "policy": "t05-a4-modify-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 3,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 4,
+    "statement_indices": [
+     0,
+     1,
+     2
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 0",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 1",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 2",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:30:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "columns stay id then c",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int,c:varchar"
+    },
+    {
+     "assert": "primary key stays id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "final c definition",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "varchar:30:utf8mb4:utf8mb4_bin:NO:<nil>:"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a4-tidb85-narrow-then-18",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; ALTER TABLE t MODIFY COLUMN c VARCHAR(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; ALTER TABLE t MODIFY COLUMN c VARCHAR(18) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+   "policy": "t05-a4-modify-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 4,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(18) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 4,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "finding_entries": [
+     {
+      "index": 2,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 2,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "metadata": {
+       "action": "modify_column",
+       "table": "t",
+       "name": "c",
+       "column_name": "c",
+       "source_length": 20,
+       "target_length": 15
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 0",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 1",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 2",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:15:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 3",
+     "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(18) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 3",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:18:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "columns stay id then c",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int,c:varchar"
+    },
+    {
+     "assert": "primary key stays id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "final c definition",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "varchar:18:utf8mb4:utf8mb4_bin:NO:<nil>:"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a4-tidb85-wide-then-25",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; ALTER TABLE t MODIFY COLUMN c VARCHAR(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; ALTER TABLE t MODIFY COLUMN c VARCHAR(25) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+   "policy": "t05-a4-modify-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 4,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+     "ALTER TABLE t MODIFY COLUMN c VARCHAR(25) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 4,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "finding_entries": [
+     {
+      "index": 3,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 3,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "metadata": {
+       "action": "modify_column",
+       "table": "t",
+       "name": "c",
+       "column_name": "c",
+       "source_length": 30,
+       "target_length": 25
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 0",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 1",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 2",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:30:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 3",
+     "sql": "ALTER TABLE t MODIFY COLUMN c VARCHAR(25) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 3",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "varchar:25:utf8mb4:utf8mb4_bin:NO:<nil>:"
+      }
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "columns stay id then c",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int,c:varchar"
+    },
+    {
+     "assert": "primary key stays id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "final c definition",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "varchar:25:utf8mb4:utf8mb4_bin:NO:<nil>:"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a4-tidb85-omit-integer",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, c INT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'old'); ALTER TABLE t MODIFY COLUMN c INT; ALTER TABLE t MODIFY COLUMN c INT NOT NULL;",
+   "policy": "t05-a4-modify-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 3,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, c INT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'old');",
+     "ALTER TABLE t MODIFY COLUMN c INT;",
+     "ALTER TABLE t MODIFY COLUMN c INT NOT NULL;"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 4,
+    "statement_indices": [
+     0,
+     1,
+     2
+    ],
+    "finding_entries": [
+     {
+      "index": 1,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "level": "blocker"
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 1,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "metadata": {
+       "action": "modify_column",
+       "table": "t",
+       "name": "c",
+       "column_name": "c",
+       "source_unsigned": true,
+       "target_unsigned": false
+      }
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "metadata": {
+       "action": "modify_column",
+       "table": "t",
+       "name": "c",
+       "column_name": "c",
+       "source_not_null": false,
+       "target_not_null": true
+      }
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, c INT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'old')",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 0",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IF(COLUMN_TYPE LIKE '%unsigned%','unsigned','signed'),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "int:unsigned:NO:1:old"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "ALTER TABLE t MODIFY COLUMN c INT",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 1",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IF(COLUMN_TYPE LIKE '%unsigned%','unsigned','signed'),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "int:signed:YES:<nil>:"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "ALTER TABLE t MODIFY COLUMN c INT NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "definition after statement 2",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IF(COLUMN_TYPE LIKE '%unsigned%','unsigned','signed'),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "int:signed:NO:<nil>:"
+      }
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "columns stay id then c",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int,c:int"
+    },
+    {
+     "assert": "primary key stays id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "c lost unsigned default and comment",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IF(COLUMN_TYPE LIKE '%unsigned%','unsigned','signed'),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "int:signed:NO:<nil>:"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t05-a4-tidb85-pk-not-null",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, c INT); ALTER TABLE t MODIFY COLUMN id BIGINT; ALTER TABLE t MODIFY COLUMN id BIGINT NOT NULL;",
+   "policy": "t05-a4-modify-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 3,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, c INT);",
+     "ALTER TABLE t MODIFY COLUMN id BIGINT;",
+     "ALTER TABLE t MODIFY COLUMN id BIGINT NOT NULL;"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 4,
+    "statement_indices": [
+     0,
+     1,
+     2
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver statement 0",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, c INT)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "id starts not null",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='id'",
+       "expect": "int:NO"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 1",
+     "sql": "ALTER TABLE t MODIFY COLUMN id BIGINT",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "widened primary key stays not null",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='id'",
+       "expect": "bigint:NO"
+      }
+     ]
+    },
+    {
+     "name": "driver statement 2",
+     "sql": "ALTER TABLE t MODIFY COLUMN id BIGINT NOT NULL",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "explicit not null primary key stays not null",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='id'",
+       "expect": "bigint:NO"
+      },
+      {
+       "assert": "unmodified c stays nullable int",
+       "sql": "SELECT CONCAT(DATA_TYPE,':',IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+       "expect": "int:YES"
+      }
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "t exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "columns stay id then c",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:bigint,c:int"
+    },
+    {
+     "assert": "primary key stays id",
+     "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "id"
+    },
+    {
+     "assert": "id remains not null bigint",
+     "sql": "SELECT CONCAT(DATA_TYPE,':',IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='id'",
+     "expect": "bigint:NO"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
   }
  ],
  "error_cases": [
@@ -10459,6 +13158,24 @@
   "T05.cli.t05-a3-mysql-drop-unknown",
   "T05.cli.t05-a3-mysql-drop-if-exists-unknown",
   "T05.cli.t05-a3-tidb-drop-unknown",
-  "T05.cli.t05-a3-tidb-drop-if-exists-unknown"
+  "T05.cli.t05-a3-tidb-drop-if-exists-unknown",
+  "T05.meta.t05-a4-mysql57-narrow",
+  "T05.meta.t05-a4-mysql57-wide",
+  "T05.meta.t05-a4-mysql80-narrow",
+  "T05.meta.t05-a4-mysql80-wide",
+  "T05.meta.t05-a4-mysql84-narrow",
+  "T05.meta.t05-a4-mysql84-wide",
+  "T05.meta.t05-a4-mysql84-narrow-then-18",
+  "T05.meta.t05-a4-mysql84-wide-then-25",
+  "T05.meta.t05-a4-mysql84-omit-integer",
+  "T05.meta.t05-a4-mysql84-pk-not-null",
+  "T05.meta.t05-a4-tidb85-narrow",
+  "T05.meta.t05-a4-tidb85-wide",
+  "T05.meta.t05-a4-tidb85-narrow-then-18",
+  "T05.meta.t05-a4-tidb85-wide-then-25",
+  "T05.meta.t05-a4-tidb85-omit-integer",
+  "T05.meta.t05-a4-tidb85-pk-not-null",
+  "T05.cli.t05-a4-mysql-narrow-offline",
+  "T05.cli.t05-a4-tidb-wide-offline"
  ]
 }
