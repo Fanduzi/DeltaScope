@@ -1,0 +1,11 @@
+{
+  "cwd": "/Users/fan/GolangProjects/DeltaScope",
+  "argv": [
+    "git",
+    "rev-parse",
+    "HEAD"
+  ],
+  "environment_overrides": {},
+  "returncode": 0,
+  "tested_head": "affad1b1ae72fd0a910286499e14b8ae2e98a5f5"
+}

@@ -1,0 +1,12 @@
+=== RUN   TestT05A8ProcedureFirstPath
+=== RUN   TestT05A8ProcedureFirstPath/tidb/create
+=== RUN   TestT05A8ProcedureFirstPath/tidb/drop
+=== RUN   TestT05A8ProcedureFirstPath/mysql/create
+=== RUN   TestT05A8ProcedureFirstPath/mysql/drop
+--- PASS: TestT05A8ProcedureFirstPath (0.03s)
+    --- PASS: TestT05A8ProcedureFirstPath/tidb/create (0.01s)
+    --- PASS: TestT05A8ProcedureFirstPath/tidb/drop (0.00s)
+    --- PASS: TestT05A8ProcedureFirstPath/mysql/create (0.01s)
+    --- PASS: TestT05A8ProcedureFirstPath/mysql/drop (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.800s

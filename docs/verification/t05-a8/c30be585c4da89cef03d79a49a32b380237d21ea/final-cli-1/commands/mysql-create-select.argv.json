@@ -1,0 +1,14 @@
+[
+  "/private/tmp/ds-t05-a8.7jDPXi/final-cli-1/deltascope",
+  "audit",
+  "--sql",
+  "CREATE TABLE t (id INT PRIMARY KEY);\nCREATE PROCEDURE p() SELECT 1;\nALTER TABLE t ADD COLUMN c INT;\nCREATE INDEX idx_c ON t(c);\n",
+  "--config",
+  "/private/tmp/ds-t05-a8.7jDPXi/final-cli-1/four-rule-policy.yaml",
+  "--dialect",
+  "mysql",
+  "--format",
+  "json",
+  "--fail-on",
+  "none"
+]

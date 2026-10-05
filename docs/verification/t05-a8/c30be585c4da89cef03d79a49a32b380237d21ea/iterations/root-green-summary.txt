@@ -1,0 +1,52 @@
+PRE-COMMIT affad1b1 + current diff — T05-A8 minimal implementation
+
+t05a8 rc=0: 5 PASS lines (4 subtests + parent), 0 FAIL
+guard rc=0: T05A7 top-level matches=94, OnlineFirstPath matches=12, 0 FAIL
+red test byte check: cmp vs captured baseline identical
+gofmt batch_state.go: clean
+
+git status:
+ M internal/application/audit/README.md
+ M internal/application/audit/batch_state.go
+?? .agents/skills/humanizer-zh/.gitignore
+?? .agents/skills/humanizer-zh/LICENSE
+?? .agents/skills/humanizer-zh/README.md
+?? .agents/skills/humanizer-zh/SKILL.md
+?? .debug-journal.md
+?? .opencode/opencode.json
+?? .pi-subagents/artifacts/0cf8f1ff_reviewer_0_input.md
+?? .pi-subagents/artifacts/0cf8f1ff_reviewer_0_meta.json
+?? .pi-subagents/artifacts/0cf8f1ff_reviewer_0_output.md
+?? .pi-subagents/artifacts/0cf8f1ff_reviewer_0_transcript.jsonl
+?? .pi-subagents/artifacts/118515c0_reviewer_0_input.md
+?? .pi-subagents/artifacts/118515c0_reviewer_0_meta.json
+?? .pi-subagents/artifacts/118515c0_reviewer_0_output.md
+?? .pi-subagents/artifacts/118515c0_reviewer_0_transcript.jsonl
+?? .pi-subagents/artifacts/4728b029_reviewer_0_input.md
+?? .pi-subagents/artifacts/4728b029_reviewer_0_meta.json
+?? .pi-subagents/artifacts/4728b029_reviewer_0_output.md
+?? .pi-subagents/artifacts/4728b029_reviewer_0_transcript.jsonl
+?? .pi-subagents/artifacts/d7b00c17_reviewer_0_input.md
+?? .pi-subagents/artifacts/d7b00c17_reviewer_0_meta.json
+?? .pi-subagents/artifacts/d7b00c17_reviewer_0_output.md
+?? .pi-subagents/artifacts/d7b00c17_reviewer_0_transcript.jsonl
+?? .pi-subagents/artifacts/e13bd577_reviewer_0_input.md
+?? .pi-subagents/artifacts/e13bd577_reviewer_0_meta.json
+?? .pi-subagents/artifacts/e13bd577_reviewer_0_output.md
+?? .pi-subagents/artifacts/e13bd577_reviewer_0_transcript.jsonl
+?? .pi-subagents/artifacts/f5fb5df3_scout_0_input.md
+?? .pi-subagents/artifacts/f5fb5df3_scout_0_meta.json
+?? .pi-subagents/artifacts/f5fb5df3_scout_0_output.md
+?? .pi-subagents/artifacts/f5fb5df3_scout_0_transcript.jsonl
+?? .pi-subagents/artifacts/outputs/f5fb5df3/context.md
+?? .pi-subagents/missions/1d69075e-21e6-47d9-b20d-2d106ef68d5a.json
+?? .pi-subagents/missions/5db21d19-f6ed-421a-99ad-210facafb9e0.json
+?? .pi-subagents/missions/85f83c30-10f1-4426-9f56-5dbbfea75828.json
+?? .pi-subagents/missions/913aaf7a-3485-46d6-9190-6e49a6d76327.json
+?? .pi-subagents/missions/920ada6b-2aa6-4793-9c55-5a7e8986e474.json
+?? .pi-subagents/missions/a8912fa2-849d-4eda-baef-65004edddd35.json
+?? .pi-subagents/missions/b6f3d52e-0880-45f7-9f6b-ebbb2c88c455.json
+?? .pi-subagents/missions/c6dcd355-d545-457b-a278-b15f9ef9d6c6.json
+?? .qoder/settings.local.json
+?? docs/quality/architecture-review-2026-08-11.html
+?? internal/application/audit/batch_state_a8_first_path_test.go

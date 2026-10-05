@@ -1,0 +1,14 @@
+ README.md                                          |    2 +
+ README_ZH.md                                       |    2 +
+ ...26-10-05-ddl-procedure-outer-state-isolation.md |   49 +
+ docs/reference/audit-capability-matrix.md          |   21 +-
+ internal/application/audit/README.md               |    5 +-
+ internal/application/audit/batch_state.go          |   18 +-
+ .../audit/batch_state_a8_first_path_test.go        |  148 ++
+ .../audit/batch_state_a8_postgresql_tag_test.go    |   52 +
+ internal/application/audit/batch_state_a8_test.go  | 1482 ++++++++++++++++++++
+ internal/interfaces/http/README.md                 |    1 +
+ .../http/audit_procedure_state_a8_test.go          |  199 +++
+ pkg/deltascope/README.md                           |    1 +
+ pkg/deltascope/audit_procedure_state_a8_test.go    |  154 ++
+ 13 files changed, 2131 insertions(+), 3 deletions(-)

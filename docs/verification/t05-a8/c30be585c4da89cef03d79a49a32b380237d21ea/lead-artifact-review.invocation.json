@@ -1,0 +1,21 @@
+{
+  "scope": "Implementer self-check of frozen A8 originals, not a product rerun or independent Reviewer acceptance",
+  "tested_code_sha": "c30be585c4da89cef03d79a49a32b380237d21ea",
+  "baseline_sha": "affad1b1ae72fd0a910286499e14b8ae2e98a5f5",
+  "cwd": "/Users/fan/GolangProjects/DeltaScope",
+  "argv": [
+    "python3",
+    "/tmp/ds-t05-a8.7jDPXi/verify_artifacts.py",
+    "--proof-root",
+    "/tmp/ds-t05-a8.7jDPXi",
+    "--baseline-dir",
+    "/tmp/ds-t05-a8-plan.Bo8bDt",
+    "--code-sha",
+    "c30be585c4da89cef03d79a49a32b380237d21ea",
+    "--output",
+    "/tmp/ds-t05-a8.7jDPXi/lead-artifact-review.json"
+  ],
+  "environment_overrides": {"PYTHONDONTWRITEBYTECODE": "1"},
+  "returncode": 0,
+  "result": "lead-artifact-review.json"
+}

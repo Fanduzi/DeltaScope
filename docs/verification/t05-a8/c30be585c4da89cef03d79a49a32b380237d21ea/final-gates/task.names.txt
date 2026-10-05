@@ -1,0 +1,13 @@
+M	README.md
+M	README_ZH.md
+A	docs/decisions/2026-10-05-ddl-procedure-outer-state-isolation.md
+M	docs/reference/audit-capability-matrix.md
+M	internal/application/audit/README.md
+M	internal/application/audit/batch_state.go
+A	internal/application/audit/batch_state_a8_first_path_test.go
+A	internal/application/audit/batch_state_a8_postgresql_tag_test.go
+A	internal/application/audit/batch_state_a8_test.go
+M	internal/interfaces/http/README.md
+A	internal/interfaces/http/audit_procedure_state_a8_test.go
+M	pkg/deltascope/README.md
+A	pkg/deltascope/audit_procedure_state_a8_test.go

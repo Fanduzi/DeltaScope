@@ -1,0 +1,25 @@
+{
+  "argv": [
+    "/private/tmp/ds-t05-a8.7jDPXi/final-cli-1/deltascope",
+    "audit",
+    "--sql",
+    "CREATE TABLE t (id INT PRIMARY KEY);\nCREATE PROCEDURE p() DELETE FROM t;\nALTER TABLE t ADD COLUMN c INT;\nCREATE INDEX idx_c ON t(c);\n",
+    "--config",
+    "/private/tmp/ds-t05-a8.7jDPXi/final-cli-1/four-rule-policy.yaml",
+    "--dialect",
+    "tidb",
+    "--format",
+    "json",
+    "--fail-on",
+    "none"
+  ],
+  "cwd": "/Users/fan/GolangProjects/DeltaScope",
+  "environment_overrides": {},
+  "tested_code_sha": "c30be585c4da89cef03d79a49a32b380237d21ea",
+  "returncode": 1,
+  "expected_returncode": 1,
+  "started_utc": "2026-10-05T14:34:30.943821+00:00",
+  "finished_utc": "2026-10-05T14:34:30.958253+00:00",
+  "stdout": "cli/tidb-create-delete.stdout.json",
+  "stderr": "commands/tidb-create-delete.stderr.txt"
+}

@@ -1,0 +1,6 @@
+[
+  "git",
+  "log",
+  "-2",
+  "--format=%H%nparents: %P%n%s"
+]

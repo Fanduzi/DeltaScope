@@ -1,0 +1,8 @@
+[
+  "go",
+  "build",
+  "-mod=readonly",
+  "-o",
+  "/private/tmp/ds-t05-a8.7jDPXi/final-cli-1/deltascope",
+  "./cmd/deltascope"
+]

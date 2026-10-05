@@ -1,0 +1,2268 @@
+diff --git a/README.md b/README.md
+index 7288f95d..7b6f2c1d 100644
+--- a/README.md
++++ b/README.md
+@@ -169,6 +169,8 @@ Example JSON shape:
+ 
+ MySQL/TiDB requests have a fixed quota of **1024 top-level normalized statements** for ordered enrichment and subsequent rule evaluation. Statement 1024 is processed normally; statement 1025 and every later statement remain in the result with `coverage.status=incomplete` and one `unsupported` entry whose feature is `audit.resource_limit`. This is not a policy rule and cannot be disabled: the partial result has at least `review` (a prior `reject` stays), with the existing unsupported error channel (application/SDK `ErrUnsupportedStatement`, CLI exit 1 even with `--fail-on none`, HTTP 400, MCP `isError=true`). A genuine parser failure still takes precedence, including CLI exit 2. The check runs **after parsing/extraction**; it does not bound SQL size, parsing depth, elapsed time, memory, or OOM risk. Input parsing, normalization, and retained result storage can still grow with input. PostgreSQL is unchanged. Splitting a migration into requests is not automatically equivalent: earlier derived schema facts are not carried across requests. See the [ordered-audit quota contract](docs/reference/audit-capability-matrix.md#ordered-audit-statement-quota-mysqltidb).
+ 
++Recognized MySQL/TiDB `CREATE PROCEDURE` and `DROP PROCEDURE` statements preserve outer migration table facts: defining a body does not execute its SQL, and deleting a procedure does not drop a same-named table. This only skips outer table-state mutation, not the procedure's own audit. MySQL CREATE keeps its unaudited body/parameter evidence; TiDB CREATE/DROP keep their vendor boundary; MySQL DROP keeps its existing complete classification. Earlier contamination and resource limits are not cleared, and each procedure still consumes one statement slot. This does not audit procedure bodies, simulate procedure objects or calls, or add stored-procedure support to TiDB. See [procedure lifecycle isolation](docs/reference/audit-capability-matrix.md#procedure-lifecycle-and-outer-table-state-mysqltidb).
++
+ Version-dependent checks (currently `ddl.index.key_length.max_bytes.require`) resolve their bound from a canonical version fact plus known-bit instance facts. Supply it offline with `--target-version [v]MAJOR.MINOR.PATCH` — the result then carries a top-level `version` block (`product`, canonical `version`, `source`, `validated_range`). Online the observed server identity is authoritative and its product is read from the banner itself: a matching `--target-version` proceeds, a version or product mismatch is an input error (SDK typed error, CLI exit 2, HTTP 400, MCP `isError=true`), and the raw server banner is never projected into output. When a version or instance fact that could change the outcome is missing (e.g. an unobserved `innodb_page_size` or TiDB `max-index-length`), the rule reports a bounded `evidence_gaps` entry instead of assuming a default; validated series are MySQL 5.7.x/8.0.x/8.4.x and TiDB 8.5.x.
+ 
+ Audit a TiDB statement:
+diff --git a/README_ZH.md b/README_ZH.md
+index c4972b0e..3710dce3 100644
+--- a/README_ZH.md
++++ b/README_ZH.md
+@@ -169,6 +169,8 @@ deltascope audit \
+ 
+ MySQL/TiDB 每个请求的有序 enrichment 及后续规则评估固定限额为 **1024 条顶层、已归一化 statement**。第 1024 条正常处理；第 1025 条及所有后句仍保留在结果中，标记 `coverage.status=incomplete`，并各有一个 feature 为 `audit.resource_limit` 的 `unsupported` 条目。这不是可关闭的 policy rule：部分结果至少为 `review`（此前的 `reject` 保留），沿用既有 unsupported 错误通道（application/SDK `ErrUnsupportedStatement`、CLI 即使 `--fail-on none` 也退出 1、HTTP 400、MCP `isError=true`）。真正的 parser failure 仍优先，包括 CLI 退出 2。检查位于 **parse/extract 之后**，不限制 SQL 大小、解析深度、运行时长或内存，也不是 OOM 防护；解析、归一化输入和结果保存仍可随输入增长。PostgreSQL 路径不变。将迁移拆成多个请求并不天然等价，因为前序推导出的表结构不会跨请求保留。详见[有序审计额度合同](docs/reference/audit-capability-matrix.md#ordered-audit-statement-quota-mysqltidb)。
+ 
++已识别的 MySQL/TiDB `CREATE PROCEDURE`、`DROP PROCEDURE` 保留外层迁移的表事实：定义过程不会执行体内 SQL，删除过程也不会删除同名表。这里只跳过外层表状态变更，不跳过过程自身的审计。MySQL CREATE 保留 body/参数未审计证据，TiDB CREATE/DROP 保留 vendor boundary，MySQL DROP 保留既有 complete 分类。前序污染和资源阻断不会被清除，过程仍占一个顶层 statement 名额。这不表示过程体已审计，不模拟过程对象或调用，也不表示 TiDB 已支持存储过程。详见[过程生命周期与外层表状态](docs/reference/audit-capability-matrix.md#procedure-lifecycle-and-outer-table-state-mysqltidb)。
++
+ 版本依赖检查（当前为 `ddl.index.key_length.max_bytes.require`）从规范化版本事实与带已知位的实例事实解析边界。离线审计可用 `--target-version [v]MAJOR.MINOR.PATCH` 提供该事实——结果携带顶层 `version` 块（`product`、规范化 `version`、`source`、`validated_range`）。在线审计时观测到的服务器身份为准，其产品由 banner 自身推导：`--target-version` 与观测值相等则继续，版本或产品不等则是输入错误（SDK typed error、CLI 退出码 2、HTTP 400、MCP `isError=true`），原始服务器 banner 不会出现在输出中。当可能改变结果的版本或实例事实缺失时（例如未观测到的 `innodb_page_size` 或 TiDB `max-index-length`），规则报告有界 `evidence_gaps`，绝不按默认值处理；已验证系列为 MySQL 5.7.x/8.0.x/8.4.x 与 TiDB 8.5.x。
+ 
+ 审核 TiDB 语句：
+diff --git a/docs/decisions/2026-10-05-ddl-procedure-outer-state-isolation.md b/docs/decisions/2026-10-05-ddl-procedure-outer-state-isolation.md
+new file mode 100644
+index 00000000..807a40b7
+--- /dev/null
++++ b/docs/decisions/2026-10-05-ddl-procedure-outer-state-isolation.md
+@@ -0,0 +1,49 @@
++# Decision: Isolate PROCEDURE lifecycle from outer prospective table state
++
++Date: 2026-10-05
++Status: Frozen A8 design; implementation awaits independent review
++Related issues: [#79](https://github.com/Fanduzi/DeltaScope/issues/79), [T05/#84](https://github.com/Fanduzi/DeltaScope/issues/84)
++Related commits: the A8 code commit containing this record; its separately committed evidence identifies the full tested code SHA.
++
++## Context
++
++The shared parser already maps `*ast.ProcedureInfo` and `*ast.DropProcedureStmt` to `DDLOperationCreateProcedure` and `DDLOperationDropProcedure`. The extracted payload identifies a procedure through ObjectName/ObjectType; CREATE additionally preserves body and parameter presence. It has no outer Table/Targets/DML payload. The AST's use of TableName to represent the procedure name does not make that name a mutation target table.
++
++TiDB keeps a vendor-unsupported marker for both forms. Previously, the generic unsupported branch in `batchState.apply` found neither a table target nor a schema scope and contaminated the batch. A CREATE-table prefix consequently lost usable facts for later ADD/INDEX checks, even though defining a procedure does not run its body and dropping a procedure does not drop a table. MySQL CREATE's body aspect and MySQL DROP did not take that statement-unsupported branch.
++
++Coverage of a procedure's semantics and its effect on outer table state are separate questions. Preserving table facts must not erase the statement's own unsupported evidence or claim that its definition succeeds on the selected database.
++
++## Decision
++
++Add one private predicate in `internal/application/audit/batch_state.go`, used after the existing contaminated check and before generic unsupported handling. It matches only MySQL/TiDB KindDDL statements with a nonnil DDL, exactly CreateProcedure or DropProcedure operation, nil ResourceLimit/DML/Table and zero Targets. Operation identity is the parser-owned fact already normalized into spec; RawSQL, NormalizedSQL, Warnings, Unsupported.Feature and ObjectName do not grant the exception. Neither `fullyAuditedStatement` nor `Unsupported == nil` is a premise.
++
++The matched branch skips only table-state mutation and returns `ctx.Err()`. It writes no entries, invalidated schemas or contamination flags, performs no table lookup for the procedure name, and does not traverse or execute the body. Existing table facts, row statistics, per-member unknown flags, provider-owned values and earlier projections stay intact, including when a procedure and table have the same name or the body names another schema. Unexpected table/DML payloads fall back to the original conservative dispatch without redefining that path.
++
++Enrichment, object lookup/cache, impact and rule/coverage/result consumers remain in their existing order. MySQL lifecycle rules still run when enabled; TiDB vendor statements retain their existing evaluation skip. The procedure is not removed from the statement list or promoted to complete by this state-only exception.
++
++## Priority and public contract
++
++A7 context/admission runs before apply. Procedures consume a normal top-level slot; no quota refund or new configuration exists. A resource-blocked procedure keeps its old vendor/aspect evidence plus the resource entry and never reaches this exception. Prior global contamination, schema invalidation and table tombstones cannot be cleared or repaired through a provider reread. Parser failures, actual provider/connection errors and cancellation retain their original identities and precedence; an uncalled blocked provider cannot manufacture an error.
++
++Under the isolated four blockers (`ddl.table.exists.create.forbid`, `ddl.table.exists.alter.require`, `ddl.alter.add_column.exists.forbid`, `ddl.create_index.columns.exists.require` with required=true), all four simple first-path statements have zero findings. The ADD and INDEX read `t(id)` and `t(id,c)` respectively, are complete and gap-free, and the final admitted state contains idx_c(c). A known-absent provider is read once for golden.t, never for golden.p or a same-named procedure; offline the first CREATE keeps exactly its existing existence gap.
++
++MySQL CREATE retains its body/parameter unaudited evidence. TiDB CREATE/DROP retain their vendor feature/reason/metadata. These return partial review/incomplete results plus ErrUnsupportedStatement, CLI exit 1 even at none, HTTP 400 and MCP isError=true. MySQL DROP has no new unsupported marker: with known-absent table metadata the simple batch is pass/complete with nil error; offline it is review/unverified with the original CREATE gap, CLI exit 0 at none, HTTP 200 and MCP isError=false. Existing warning-equivalent gap thresholds and earlier reject outcomes stay unchanged.
++
++No public output field, diagnostic category, feature/reason, rule or transport policy is added. Statement identity, source location and the existing unsupported.sql/raw_sql association are retained; no new reason/metadata copies body, credentials or error text.
++
++## Deferred scope and validation boundary
++
++This is not a whole-SQL no-op or a simulation of procedure existence, creation success, permissions or calls. FUNCTION/TRIGGER/EVENT/ALTER PROCEDURE, CALL/EXECUTE/DO/BINLOG/execution-capable EXPLAIN and unknown ASTs are not whitelisted. Stored-body static analysis remains T27 work; parser, splitter, spec, coverage and A1–A7 state templates are unchanged. PostgreSQL keeps its existing path.
++
++Planner explicitly fixed new unified Golden cases at zero: no manifest/runner/validator changes, databases or new four-version procedure execution experiments; no rerun of the accepted 247-case Golden, 204-case validator or A7 1024/1025 CLI proof. This is a scoped verification decision because A8 changes outer-state dispatch for already-recognized forms, not syntax, database execution capability or supported versions.
++
++Evidence ownership remains distinct:
++- The A8 plan's six original short CLI runs are baseline evidence at affad1b1ae72fd0a910286499e14b8ae2e98a5f5, not final-code proof.
++- `batch_state_a8_first_path_test.go` supplies the compilable real parser/AuditSQL TiDB CREATE/DROP red-to-green regression and MySQL controls.
++- `batch_state_a8_test.go` covers the six-group shared contract: metadata premises, immediate state/provider/pre-state equality, namespace and write-body controls, exact whitelist negatives, unknown execution, contamination and 1/2/3/4 quotas, errors and existing consumers.
++- `batch_state_a8_postgresql_tag_test.go` keeps a result-level PG lifecycle control; SDK/HTTP `audit_procedure_state_a8_test.go` exercise unsupported versus ordinary success routes.
++- Final-code evidence under `docs/verification/t05-a8/` records the six fixed short CLI invocations, their literal oracle, original JSON/SQL/policy/catalog/argv/stderr/rc and build identity, plus full Go/PG/corpus/inventory/catalog/docs/decision gates, A7/A8 focus, formatting and actual task-range documentation checks. Pre-commit work and the later evidence commit are not tested-code identity.
++
++Versioned sources: [MySQL 8.4 stored routine syntax](https://dev.mysql.com/doc/refman/8.4/en/stored-routines-syntax.html), [MySQL 8.4 DROP PROCEDURE](https://docs.oracle.com/cd/E17952_01/mysql-8.4-en/drop-procedure.html), [TiDB release-8.5 compatibility](https://raw.githubusercontent.com/pingcap/docs/release-8.5/mysql-compatibility.md). These retain the product difference; no TiDB procedure support is claimed.
++
++A1–A7 and #82/#83 remain accepted. A8 implementation checks are not independent acceptance, and do not close #84/#79 or the milestone. Delivery stops for Reviewer reconciliation.
+diff --git a/docs/reference/audit-capability-matrix.md b/docs/reference/audit-capability-matrix.md
+index d83755bc..451014fb 100644
+--- a/docs/reference/audit-capability-matrix.md
++++ b/docs/reference/audit-capability-matrix.md
+@@ -34,7 +34,26 @@ With only resource exhaustion, the result is `review`/`incomplete`; an admitted-
+ 
+ This is a Planner-selected engineering quota, not a database limit or a measured safety threshold. It does not bound parsing depth, a single SQL statement's size, wall-clock time, memory, or OOM risk: parsing, normalization, and retained result storage may still grow. The HTTP 1 MiB body limit, parser/splitter, connection and cancellation contracts are unchanged. Splitting a batch may lose preceding Prospective Schema State and change the audit semantics; it is not an unconditional remedy.
+ 
+-See [the decision record](../decisions/2026-10-05-ddl-ordered-audit-resource-limit.md). This boundary does not implement PROCEDURE definition/deletion isolation or complete T05/#84.
++See [the decision record](../decisions/2026-10-05-ddl-ordered-audit-resource-limit.md). Procedure lifecycle isolation is described separately below; the quota itself does not complete T05/#84.
++
++## Procedure Lifecycle and Outer Table State (MySQL/TiDB)
++
++Recognized `CREATE PROCEDURE` and `DROP PROCEDURE` are neutral only with respect to outer Prospective Schema State. Creating a definition does not execute its body; deleting a procedure does not delete a same-named table. The shared state dispatcher uses only the two existing normalized operation enums, on MySQL/TiDB DDL with no ResourceLimit, DML, Table or Targets payload. It does not infer identity from SQL, an unsupported feature string or a name, and does not require the statement's own coverage to be complete. Unexpected table/DML payloads remain on the old conservative path.
++
++For `CREATE TABLE t → PROCEDURE → ADD c → CREATE INDEX idx_c(c)` under the four-rule isolated profile, the last two statements use pre-states `t(id)` and `t(id,c)` and complete without findings or gaps. With provider-confirmed table absence, the first CREATE is complete; offline its original `unknown_table_state` existence gap remains. Process bodies are not additional outer statements and do not clear table statistics or member knowledge.
++
++| Procedure statement | Its own coverage/evidence | Batch with known-absent table provider | Offline batch |
++|---|---|---|---|
++| MySQL CREATE, SELECT or DELETE body | incomplete, original `create_procedure.body` (plus parameter evidence when present) | review/incomplete, unsupported error | review/incomplete, unsupported error |
++| TiDB CREATE | incomplete, original `create_procedure` vendor boundary | review/incomplete, unsupported error | review/incomplete, unsupported error |
++| MySQL DROP | complete, no new unsupported | pass/complete, nil error | review/unverified, nil error |
++| TiDB DROP | incomplete, original `drop_procedure` vendor boundary | review/incomplete, unsupported error | review/incomplete, unsupported error |
++
++This table assumes those simple statements, the four isolated blockers, and no independent error or budget cutoff. Existing findings and an earlier reject remain authoritative. Unsupported results retain the existing partial-result contract: application/SDK `ErrUnsupportedStatement`, CLI exit 1 even with `--fail-on none`, HTTP 400 and MCP `isError=true`. MySQL DROP's offline gap-only result keeps CLI exit 0 at none, HTTP 200 and MCP `isError=false`; warning/notice thresholds retain the existing gap weight. Existing `unsupported[].sql` stays equal to its statement's raw SQL; no new body or error text is copied into reason/metadata.
++
++The exception never clears contamination, schema invalidation or unknown tombstones, never restores provider certainty, and does not bypass the A7 quota: every procedure still consumes one top-level slot, and blocked successors stay blocked. The new early return checks cancellation. Existing metadata/object lookup, lifecycle rules, coverage projection, parser/provider errors and PostgreSQL behavior remain unchanged. `EXECUTE`, `DO`, `BINLOG`, execution-capable EXPLAIN, calls, unknown ASTs and other stored-object families are not added to the whitelist.
++
++This is not a whole-statement no-op, a promise that a procedure exists or can execute, or an implementation of body analysis. Static procedure/function bodies remain T27 work; no CALL simulation or new syntax/version support is introduced. See [the A8 decision record](../decisions/2026-10-05-ddl-procedure-outer-state-isolation.md).
+ 
+ ---
+ 
+diff --git a/internal/application/audit/README.md b/internal/application/audit/README.md
+index b5b0549b..89177070 100644
+--- a/internal/application/audit/README.md
++++ b/internal/application/audit/README.md
+@@ -47,7 +47,7 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
+ | service_unsupported_verdict_floor_postgresql_tag_test.go | Verifies the application unsupported-statement review floor for PostgreSQL `SELECT 1`, mixed audited siblings, unchanged `review`/`reject`, and metadata-aware inheritance |
+ | corpus_coverage_test.go | Verifies every non-deferred shipped rule has corpus coverage for its supported dialect targets, including MySQL/TiDB-only metadata rules |
+ | metadata.go | Defines the optional metadata-provider, index-owner resolver, plan estimator, and object-resolver seams, then attaches resolved target schema, instance, Mutation Target, non-table object snapshots, and the canonical `Metadata.Version` identity (target fact offline, observed fact online — the observed product is derived from the provider banner itself and never overwritten by the request dialect) to statements before evaluation. For MySQL/TiDB it drives `batchState` so each admitted statement's table snapshot is the ordered pre-state, and stores that same already-resolved version on the batch state; non-table object resolutions are cached once per request. The `batchState.enrichStatements` production loop enforces the ordered-state admission budget before any target resolution, pre-state read, object lookup, or `state.apply`: retained statements past the limit carry a nonserialized `spec.AuditResourceLimit` marker, cleared metadata (except the already-resolved version) and DML impact conclusions, contaminate the ongoing state, and never touch provider reads or prefix pre-state snapshots |
+-| batch_state.go | Request-local ordered schema-state machine for MySQL/TiDB keyed by the effective (dialect, schema, table) identity — an explicit qualifier always wins over the request schema for provider reads, keys, writes, and invalidation: lazily resolves and caches one provider snapshot per identity, projects immutable per-statement pre-states (per-collection unknown markers preserve partially known members), derives conditional post-states for the frozen success templates (fully audited CREATE TABLE / exactly-one plain ADD COLUMN / exactly-one ordinary single-column MODIFY of a VARCHAR or integer column, excluding an inline PRIMARY KEY declaration and a TiDB known-primary-key signedness change; a non-precise MODIFY tombstones every named table identity and already-loaded dependents of those identities, and a precise replacement is withheld when a loaded foreign key cannot be recomputed / a precise single CHANGE COLUMN or RENAME COLUMN that migrates the source column in place when the destination name is free, using the MODIFY definition replacement for CHANGE and an identity-only copy for RENAME, while an unsupported RENAME version, a destination conflict, a confirmed-absent source, or a non-precise statement tombstones the affected identities and loaded dependents / standalone CREATE INDEX / a bounded single-pair RENAME onto a known-absent destination with columns, primary key, indexes, statistics, and unknown flags moved verbatim while loaded dependents referencing either endpoint tombstone, unqualified references read under the owning entry's schema / a bounded single-target DROP that retires its own confirmed identity to known-absent — `IF EXISTS` also over a known absence — while loaded dependents referencing the dropped identities tombstone) plus TRUNCATE/DML stat clearing, settles unsupported or executable-but-unmodelled effects before kind dispatch (bound tables invalidate, bound schema scopes invalidate, unbound effects contaminate), invalidates entries on broken premises or unaudited mutations including non-precise or multi-target drops, propagates provider errors before publishing post-state (the rename, drop, MODIFY, and column-identity paths check context cancellation before publication), and contaminates later state after parse failures. The request's already-resolved version is stored on the batch state for the RENAME COLUMN gate. An ordinary dependency-free single-column DROP COLUMN removes only that column, keeps unrelated known members, and clears the accepted MODIFY statistic set; a non-precise DROP COLUMN tombstones every named identity and its loaded dependents |
++| batch_state.go | Request-local ordered schema-state machine for MySQL/TiDB keyed by the effective (dialect, schema, table) identity — an explicit qualifier always wins over the request schema for provider reads, keys, writes, and invalidation: lazily resolves and caches one provider snapshot per identity, projects immutable per-statement pre-states (per-collection unknown markers preserve partially known members), derives conditional post-states for the frozen success templates (fully audited CREATE TABLE / exactly-one plain ADD COLUMN / exactly-one ordinary single-column MODIFY of a VARCHAR or integer column, excluding an inline PRIMARY KEY declaration and a TiDB known-primary-key signedness change; a non-precise MODIFY tombstones every named table identity and already-loaded dependents of those identities, and a precise replacement is withheld when a loaded foreign key cannot be recomputed / a precise single CHANGE COLUMN or RENAME COLUMN that migrates the source column in place when the destination name is free, using the MODIFY definition replacement for CHANGE and an identity-only copy for RENAME, while an unsupported RENAME version, a destination conflict, a confirmed-absent source, or a non-precise statement tombstones the affected identities and loaded dependents / standalone CREATE INDEX / a bounded single-pair RENAME onto a known-absent destination with columns, primary key, indexes, statistics, and unknown flags moved verbatim while loaded dependents referencing either endpoint tombstone, unqualified references read under the owning entry's schema / a bounded single-target DROP that retires its own confirmed identity to known-absent — `IF EXISTS` also over a known absence — while loaded dependents referencing the dropped identities tombstone) plus TRUNCATE/DML stat clearing, settles unsupported or executable-but-unmodelled effects before kind dispatch (bound tables invalidate, bound schema scopes invalidate, unbound effects contaminate), invalidates entries on broken premises or unaudited mutations including non-precise or multi-target drops, propagates provider errors before publishing post-state (the rename, drop, MODIFY, and column-identity paths check context cancellation before publication), and contaminates later state after parse failures. The request's already-resolved version is stored on the batch state for the RENAME COLUMN gate. An ordinary dependency-free single-column DROP COLUMN removes only that column, keeps unrelated known members, and clears the accepted MODIFY statistic set; a non-precise DROP COLUMN tombstones every named identity and its loaded dependents, and a narrowly typed recognized CREATE/DROP PROCEDURE (no bound table target, no DML payload) preserves outer table facts while keeping the statement's own audit evidence |
+ | batch_state_modify.go | Prepares and publishes the T05-A4 ordinary single-column MODIFY post-state from one statement-wide affected set computed before any write: a non-precise statement, including multi-action RENAME or DROP COLUMN, tombstones every named table identity (loaded or not) and already-loaded dependents of those identities; a precise replacement of a known VARCHAR or integer column stays when no loaded foreign key needs recomputation, keeps implicit NOT NULL for a known primary-key member, and applies the table-default charset only when the new declaration omits both charset and collation; a known-complete target with a loaded foreign key that cannot be recomputed is tombstoned with that dependent instead of publishing the new definition; conservative invalidation also covers a confirmed-absent column, a withheld column set (the target's other known members stay), a declaration outside the type template, a definition that writes PRIMARY KEY (`DeclaresPrimaryKey`), a TiDB known primary key that changes signedness, or a loaded CHECK, self-reference, generated column, or special index that cannot be proved unrelated |
+ | batch_state_column_identity.go | Publishes the T05-A5 single-action CHANGE COLUMN or RENAME COLUMN post-state: CHANGE reuses the ordinary definition replacement and stat clearing; RENAME copies the source column and changes only its name; ordinary primary-key, secondary, and unique index column lists follow the new name; a withheld column set keeps a loaded empty index, constraint, or primary-key collection (nil or empty, Unknown=false) and marks a collection unknown only when a payload cannot be kept or it was already unknown; a CHANGE declaration that adds a primary key or another extra member tombstones before that partial snapshot is kept; an unsupported RENAME version, a destination conflict, a confirmed-absent source, or an unsafe loaded dependent tombstones the target with that dependent |
+ | batch_state_test.go | Verifies the T05-A1 ordered-state matrix: sequential CREATE→ADD→INDEX derivation for MySQL and TiDB, once-per-request provider reads, derived-shape create_index column checks, absent-table `table_not_found`, duplicate-ADD and unaudited-mutation invalidation scoped per table, policy blockers preserving deterministic transitions, provider shapes that withhold the column set yielding `unknown_table_state` gaps, TRUNCATE statistics clearing, provider-error propagation, parse-failure contamination, single-pair RENAME migration onto a known-absent destination, the notice-enabled compat control, provider-snapshot and earlier-metadata immutability, and the offline first-path gap profile |
+@@ -75,6 +75,9 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
+ | resource_limit_public_test.go | Verifies the public `AuditSQL` default ordered-state budget: a 1025-statement MySQL/TiDB batch retains every statement, blocks index 1024 with one `audit.resource_limit` unsupported entry carrying the exact six-key metadata map, keeps its identity with incomplete coverage and no findings/gaps/impact, and returns `ErrUnsupportedStatement` |
+ | resource_limit_matrix_test.go | Verifies the shared T05-A7 matrix: all-off and reject-prefix policy behavior, provider/planner/index-owner/object call-stop ledgers, rule and global-rule consumer subsets, parser/provider/cancellation error priorities, vendor/aspect evidence preservation and pointer identity, blocked-CREATE non-publication with stale-conclusion clearing, no-leak JSON projection, normalized counting, original-unsupported slot consumption, and sequential/concurrent request isolation |
+ | resource_limit_postgresql_tag_test.go | Verifies the PostgreSQL budget bypass under `-tags postgresql`: a 1025-statement batch stays identical between `AuditSQL` and a zero-quota `auditWithLimits` across no/schema/provider/legacy-metadata request shapes, retains every statement complete with no resource entries or unexpected gaps, and keeps provider snapshots and direct enrichment free of derived columns |
++| batch_state_a8_first_path_test.go | Verifies the T05-A8 procedure outer-state first path through the real parser and AuditSQL: recognized CREATE/DROP PROCEDURE boundaries keep their own audit evidence while outer table facts survive — followers stay complete with exact pre-state snapshots, the derived table shape and once-only provider read are preserved, and MySQL DROP stays a supported non-boundary control |
++| batch_state_a8_test.go | Verifies the rest of the T05-A8 procedure matrix: provider/offline metadata premises, seeded entry/display/unknown-flag and provider-snapshot literal preservation across six procedure variants including name-t and cross-schema bodies, JSON-serialized procedure-payload immutability, the typed whitelist predicate and its negatives with bound-target invalidation and an independent tombstone control, EXECUTE/schema-drop pollution isolation, a preexisting reject preserved across the procedure, the 1–4 budget ladder with ordinal blocked indexes and final-state columns, parser/provider/cancellation error channels with coordinate-bound diagnostics, the cached schema-object resolver, the params fixture, lifecycle notice controls, and rule/global consumer visibility |
++| batch_state_a8_postgresql_tag_test.go | Verifies the PostgreSQL procedure control under `-tags postgresql`: CREATE/DROP PROCEDURE keep their legacy `ddl.pg.*` notices, pass/complete results, and nil errors, and never enter the ordered-state procedure branch |
+ | diagnostics.go | Defines diagnostic evidence constants (classification aliases `spec.DiagnosticParserError`, reason, action_hint, guidance codes, evidence refs) and helpers for constructing parser-error and unsupported statement diagnostics with optional guidance classification |
+ | ddl_coverage_catalog_query.go | Defines CatalogEntry, CatalogQuery, CatalogResult, LoadEmbeddedCatalog, LoadCatalogFile, LoadCatalog, QueryCatalog, and Validate for reading the generated (embedded) DDL coverage catalog and filtering it without invoking the audit engine |
+ | catalogdata/ddl-coverage-catalog.json | Generated catalog copy compiled into release binaries; kept byte-identical to docs/reference/ddl-coverage-catalog.json |
+diff --git a/internal/application/audit/batch_state.go b/internal/application/audit/batch_state.go
+index 984ba674..179c8231 100644
+--- a/internal/application/audit/batch_state.go
++++ b/internal/application/audit/batch_state.go
+@@ -1,7 +1,7 @@
+ // Package audit orchestrates audit use cases at the application layer.
+ // input: request context, ordered statements, optional metadata provider, the request's already-resolved version identity, and parse-failure positions for one audit request
+ // output: request-local ordered table facts (unknown / known-absent / known-present, per-collection member knowledge) feeding per-statement pre-state snapshots
+-// pos: prospective schema-state ownership for the first migration path — the effective (dialect, schema, table) identity drives provider reads, keys, writes, and invalidation; unsupported or executable-but-unmodeled effects settle before kind dispatch; deterministic conditional transitions update derived facts, including the bounded single-pair RENAME identity migration onto a known-absent destination, a bounded single-target DROP identity retirement, an ordinary single-column MODIFY definition replacement, a precise single CHANGE COLUMN or RENAME COLUMN identity migration, and an ordinary dependency-free single-column DROP COLUMN that removes only that column, keeps unrelated members, and clears the accepted MODIFY statistic set; each tombstones loaded dependents that the transition cannot keep; a non-precise MODIFY, CHANGE, RENAME, or DROP COLUMN tombstones every named table identity and the loaded dependents of those identities, a precise replacement is withheld when a loaded foreign key cannot be recomputed, an unsupported RENAME version withholds publication, and cancellation is checked before publishing effects; unaudited, unbound, or contaminated operations invalidate them
++// pos: prospective schema-state ownership for the first migration path — the effective (dialect, schema, table) identity drives provider reads, keys, writes, and invalidation; unsupported or executable-but-unmodeled effects settle before kind dispatch; deterministic conditional transitions update derived facts, including the bounded single-pair RENAME identity migration onto a known-absent destination, a bounded single-target DROP identity retirement, an ordinary single-column MODIFY definition replacement, a precise single CHANGE COLUMN or RENAME COLUMN identity migration, and an ordinary dependency-free single-column DROP COLUMN that removes only that column, keeps unrelated members, and clears the accepted MODIFY statistic set; each tombstones loaded dependents that the transition cannot keep; a non-precise MODIFY, CHANGE, RENAME, or DROP COLUMN tombstones every named table identity and the loaded dependents of those identities, a precise replacement is withheld when a loaded foreign key cannot be recomputed, an unsupported RENAME version withholds publication, and cancellation is checked before publishing effects; unaudited, unbound, or contaminated operations invalidate them; recognized CREATE/DROP PROCEDURE statements preserve outer table facts while keeping their own audit evidence
+ // note: if this file changes, update this header and module README.md.
+ package audit
+ 
+@@ -240,6 +240,9 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error
+ 	if s.contaminated {
+ 		return nil
+ 	}
++	if procedureLifecyclePreservesTableState(statement) {
++		return ctx.Err()
++	}
+ 	if statement.DDL != nil && statement.DDL.Operation == spec.DDLOperationDropTable {
+ 		return s.applyDropTable(ctx, statement)
+ 	}
+@@ -292,6 +295,19 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error
+ 	return nil
+ }
+ 
++func procedureLifecyclePreservesTableState(statement spec.Statement) bool {
++	if !orderedStateDialect(statement.Dialect) || statement.Kind != spec.KindDDL || statement.DDL == nil ||
++		statement.ResourceLimit != nil || statement.DML != nil || statement.DDL.Table != nil || len(statement.DDL.Targets) != 0 {
++		return false
++	}
++	switch statement.DDL.Operation {
++	case spec.DDLOperationCreateProcedure, spec.DDLOperationDropProcedure:
++		return true
++	default:
++		return false
++	}
++}
++
+ // boundTargets returns the table identities a statement's effect is bound to,
+ // whichever payload carries them — DDL targets, or DML mutation targets for
+ // execution-capable non-DDL statements.
+diff --git a/internal/application/audit/batch_state_a8_first_path_test.go b/internal/application/audit/batch_state_a8_first_path_test.go
+new file mode 100644
+index 00000000..6a3ee48b
+--- /dev/null
++++ b/internal/application/audit/batch_state_a8_first_path_test.go
+@@ -0,0 +1,148 @@
++// Package audit verifies the T05-A8 procedure outer-state first path.
++// input: real MySQL/TiDB CREATE or DROP PROCEDURE migration batches with known-absent table metadata
++// output: retained procedure boundaries, complete followers, exact table pre-states, and once-only table lookup assertions
++// pos: public application and production enrichment regression for procedure lifecycle isolation
++// note: if this file changes, update this header and module README.md.
++package audit
++
++import (
++	"context"
++	"errors"
++	"reflect"
++	"strings"
++	"testing"
++
++	"github.com/Fanduzi/DeltaScope/internal/domain/report"
++	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
++)
++
++func t05A8Input(procedure string) string {
++	return "CREATE TABLE t (id INT PRIMARY KEY);\n" + procedure + "\nALTER TABLE t ADD COLUMN c INT;\nCREATE INDEX idx_c ON t(c);"
++}
++
++func TestT05A8ProcedureFirstPath(t *testing.T) {
++	for _, dialect := range []spec.Dialect{spec.DialectTiDB, spec.DialectMySQL} {
++		for _, tc := range []struct {
++			name, sql string
++			create    bool
++		}{
++			{"create", "CREATE PROCEDURE p() SELECT 1;", true},
++			{"drop", "DROP PROCEDURE p;", false},
++		} {
++			t.Run(string(dialect)+"/"+tc.name, func(t *testing.T) {
++				ctx := context.Background()
++				sql := t05A8Input(tc.sql)
++				provider := &t05AbsentProvider{}
++				result, err := AuditSQL(ctx, Request{SQL: sql, Dialect: dialect, Schema: "golden", ConfigPath: t05A7FourRulePolicy(t), MetadataProvider: provider})
++				boundary := dialect == spec.DialectTiDB || tc.create
++				if boundary {
++					if !errors.Is(err, ErrUnsupportedStatement) {
++						t.Fatalf("error = %v, want ErrUnsupportedStatement", err)
++					}
++					if result.Verdict != report.VerdictReview || result.Coverage.Status != report.CoverageIncomplete {
++						t.Errorf("aggregate = %s/%s, want review/incomplete", result.Verdict, result.Coverage.Status)
++					}
++				} else if err != nil || result.Verdict != report.VerdictPass || result.Coverage.Status != report.CoverageComplete {
++					t.Errorf("MySQL DROP = %s/%s error %v, want pass/complete nil", result.Verdict, result.Coverage.Status, err)
++				}
++				if len(result.Statements) != 4 {
++					t.Fatalf("statements = %d, want 4", len(result.Statements))
++				}
++				for i, statement := range result.Statements {
++					if statement.Index != i || statement.Kind != "ddl" || statement.RawSQL != strings.Split(sql, "\n")[i] || statement.NormalizedSQL != strings.TrimSuffix(statement.RawSQL, ";") {
++						t.Errorf("statement %d identity = %+v", i, statement)
++					}
++					wantCoverage := report.CoverageComplete
++					if i == 1 && boundary {
++						wantCoverage = report.CoverageIncomplete
++					}
++					if statement.Coverage.Status != wantCoverage || len(statement.Findings) != 0 || len(statement.EvidenceGaps) != 0 || statement.Impact != nil {
++						t.Errorf("statement %d = %s findings=%+v gaps=%+v impact=%+v, want %s with no findings/gaps/impact", i, statement.Coverage.Status, statement.Findings, statement.EvidenceGaps, statement.Impact, wantCoverage)
++					}
++				}
++				wantUnsupported := 0
++				if boundary {
++					wantUnsupported = 1
++				}
++				if len(result.Unsupported) != wantUnsupported {
++					t.Fatalf("unsupported = %+v, want %d entries", result.Unsupported, wantUnsupported)
++				}
++				if boundary {
++					feature, reason := "create_procedure.body", spec.UnsupportedUnauditedReason
++					var metadata map[string]any = map[string]any{"aspect": "option"}
++					if dialect == spec.DialectTiDB {
++						feature, reason, metadata = "create_procedure", spec.UnsupportedVendorBoundaryReason, map[string]any{"boundary": "vendor"}
++						if !tc.create {
++							feature = "drop_procedure"
++						}
++					}
++					item := result.Unsupported[0]
++					if item.Index != 1 || item.Feature != feature || item.Reason != reason || item.SQL != result.Statements[1].RawSQL || !reflect.DeepEqual(item.Metadata, metadata) {
++						t.Errorf("procedure boundary = %+v", item)
++					}
++				}
++				if !reflect.DeepEqual(provider.calls, []string{"golden.t"}) {
++					t.Errorf("provider reads = %v, want only golden.t once", provider.calls)
++				}
++				if len(result.GlobalFindings) != 0 || result.RuleSummary == nil || result.RuleSummary.Loaded != 4 {
++					t.Errorf("global=%+v rules=%+v", result.GlobalFindings, result.RuleSummary)
++				}
++
++				parsed, parseErr := Parse(ctx, sql, dialect)
++				if parseErr != nil {
++					t.Fatal(parseErr)
++				}
++				statements, extractErr := Extract(ctx, parsed)
++				if extractErr != nil {
++					t.Fatal(extractErr)
++				}
++				if len(statements) != 4 {
++					t.Fatalf("extracted = %d, want 4", len(statements))
++				}
++				for i, statement := range statements {
++					if statement.Line != i+1 || statement.Column != 1 {
++						t.Errorf("statement %d location = %d:%d", i, statement.Line, statement.Column)
++					}
++				}
++				innerProvider := &t05AbsentProvider{}
++				state := newBatchState(dialect, "golden", innerProvider)
++				facts, _ := innerProvider.LoadInstanceFacts(ctx, dialect, "golden")
++				enriched, enrichErr := state.enrichStatements(ctx, &MetadataRequest{Schema: "golden", Provider: innerProvider}, statements, parsed.failures, facts, auditLimits{orderedStatements: 4})
++				if enrichErr != nil {
++					t.Fatal(enrichErr)
++				}
++				for i, want := range map[int][]string{2: {"id"}, 3: {"id", "c"}} {
++					var snapshot *spec.TableSnapshot
++					if enriched[i].Metadata != nil {
++						snapshot = enriched[i].Metadata.TargetTable
++					}
++					if got := t05A6ColumnNames(snapshot); !reflect.DeepEqual(got, want) {
++						t.Errorf("statement %d pre-state columns = %v, want %v", i, got, want)
++					}
++				}
++				if state.contaminated {
++					t.Error("procedure lifecycle contaminated outer state")
++				}
++				entry := state.entries[state.keyFor("golden", spec.Table{Name: "t"})]
++				if entry == nil || entry.shape == nil {
++					t.Fatal("missing outer table state")
++				}
++				if got := t05A6ColumnNames(entry.shape); !reflect.DeepEqual(got, []string{"id", "c"}) {
++					t.Errorf("final columns = %v, want [id c]", got)
++				}
++				found := false
++				for _, index := range entry.shape.Indexes {
++					if index.Name == "idx_c" && reflect.DeepEqual(index.Columns, []string{"c"}) {
++						found = true
++					}
++				}
++				if !found {
++					t.Error("missing derived idx_c(c)")
++				}
++				if len(state.entries) != 1 || !reflect.DeepEqual(innerProvider.calls, []string{"golden.t"}) {
++					t.Errorf("entries=%+v reads=%v, want only golden.t", state.entries, innerProvider.calls)
++				}
++			})
++		}
++	}
++}
+diff --git a/internal/application/audit/batch_state_a8_postgresql_tag_test.go b/internal/application/audit/batch_state_a8_postgresql_tag_test.go
+new file mode 100644
+index 00000000..c5b39c40
+--- /dev/null
++++ b/internal/application/audit/batch_state_a8_postgresql_tag_test.go
+@@ -0,0 +1,52 @@
++//go:build postgresql
++
++// Package audit verifies the T05-A8 PostgreSQL procedure lifecycle control.
++// input: a real PostgreSQL CREATE/DROP PROCEDURE batch through AuditSQL with the isolated pg lifecycle policy
++// output: unchanged legacy per-statement notices and no ordered-state procedure boundary
++// pos: tagged regression control proving the MySQL/TiDB procedure table-state branch never fires for PostgreSQL
++// note: if this file changes, update this header and module README.md.
++package audit
++
++import (
++	"context"
++	"testing"
++
++	"github.com/Fanduzi/DeltaScope/internal/domain/report"
++	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
++	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
++)
++
++func TestT05A8PostgreSQLProcedureControl(t *testing.T) {
++	for _, tc := range []struct {
++		name, sql, ruleID string
++	}{
++		{"create", "CREATE PROCEDURE reset_counter() LANGUAGE plpgsql AS $$ BEGIN NULL; END $$;", "ddl.pg.create_procedure.notice"},
++		{"drop", "DROP PROCEDURE reset_counter();", "ddl.pg.drop_procedure.advisory"},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			policy := t05PolicyPathConfigured(t, map[string]t05RuleConfig{tc.ruleID: {level: "notice"}})
++			result, err := AuditSQL(context.Background(), Request{
++				SQL: tc.sql, Dialect: spec.DialectPostgreSQL, ConfigPath: policy,
++			})
++			if err != nil {
++				t.Fatalf("audit: %v", err)
++			}
++			if len(result.Statements) != 1 {
++				t.Fatalf("statements = %d, want 1", len(result.Statements))
++			}
++			statement := result.Statements[0]
++			if statement.Kind != "ddl" || statement.Coverage.Status != report.CoverageComplete || len(statement.EvidenceGaps) != 0 {
++				t.Fatalf("statement = %+v, want one complete ddl", statement)
++			}
++			if result.Verdict != report.VerdictPass || result.Coverage.Status != report.CoverageComplete {
++				t.Fatalf("aggregate = %s/%s, want pass/complete", result.Verdict, result.Coverage.Status)
++			}
++			if len(result.Unsupported) != 0 {
++				t.Fatalf("unsupported = %+v, want none", result.Unsupported)
++			}
++			if len(statement.Findings) != 1 || statement.Findings[0].RuleID != tc.ruleID || statement.Findings[0].Level != rule.LevelNotice {
++				t.Fatalf("findings = %+v, want exactly one %s notice", statement.Findings, tc.ruleID)
++			}
++		})
++	}
++}
+diff --git a/internal/application/audit/batch_state_a8_test.go b/internal/application/audit/batch_state_a8_test.go
+new file mode 100644
+index 00000000..78512210
+--- /dev/null
++++ b/internal/application/audit/batch_state_a8_test.go
+@@ -0,0 +1,1482 @@
++// Package audit verifies the T05-A8 procedure outer-state regression groups.
++// input: real MySQL/TiDB CREATE/DROP PROCEDURE batches against known-absent, seeded, failing, and recording providers
++// output: metadata premises, definition identity/preservation, whitelist scope, contamination/budget, and error/consumer assertions
++// pos: application-level regression matrix for procedure lifecycle table-state isolation
++// note: if this file changes, update this header and module README.md.
++package audit
++
++import (
++	"bytes"
++	"context"
++	"encoding/json"
++	"errors"
++	"fmt"
++	"reflect"
++	"strings"
++	"testing"
++
++	"github.com/Fanduzi/DeltaScope/internal/domain/report"
++	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
++	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
++)
++
++type t05A8Provider struct {
++	snapshots   map[string]*spec.TableSnapshot
++	events      []string
++	instanceErr error
++	snapshotErr error
++	failTable   string
++	onInstance  func()
++}
++
++func (p *t05A8Provider) LoadInstanceFacts(context.Context, spec.Dialect, string) (*spec.InstanceFacts, error) {
++	p.events = append(p.events, "instance")
++	if p.onInstance != nil {
++		p.onInstance()
++	}
++	if p.instanceErr != nil {
++		return nil, p.instanceErr
++	}
++	return &spec.InstanceFacts{}, nil
++}
++
++func (p *t05A8Provider) LoadTableSnapshot(_ context.Context, _ spec.Dialect, schema, table string) (*spec.TableSnapshot, error) {
++	key := schema + "." + table
++	p.events = append(p.events, "snapshot:"+key)
++	if p.snapshotErr != nil && (p.failTable == "" || p.failTable == key) {
++		return nil, p.snapshotErr
++	}
++	if snapshot, ok := p.snapshots[key]; ok {
++		return snapshot, nil
++	}
++	return absentTable(schema, table), nil
++}
++
++func (p *t05A8Provider) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
++	p.events = append(p.events, "object:"+req.Type+":"+req.Schema+"."+req.Name)
++	return &spec.ObjectSnapshot{Schema: req.Schema, Type: req.Type, Name: req.Name, Status: spec.MetadataStatusConfirmed, Exists: true}, nil
++}
++
++func (p *t05A8Provider) LoadPlanEstimate(_ context.Context, statement spec.Statement) (*spec.ImpactEstimate, error) {
++	p.events = append(p.events, "plan:"+strings.TrimSpace(statement.RawSQL))
++	return &spec.ImpactEstimate{Source: spec.ImpactSourcePlan}, nil
++}
++
++var t05A8GapCreate = rule.EvidenceGap{
++	RuleID:        "ddl.table.exists.create.forbid",
++	ReasonCode:    "unknown_table_state",
++	RequiredFacts: []string{"target_table.existence"},
++}
++
++var t05A8GapFollowers = map[int][]rule.EvidenceGap{
++	2: {
++		{RuleID: "ddl.table.exists.alter.require", ReasonCode: "unknown_table_state", RequiredFacts: []string{"target_table.existence"}},
++		{RuleID: "ddl.alter.add_column.exists.forbid", ReasonCode: "unknown_table_state", RequiredFacts: []string{"target_table.columns", "target_table.existence"}},
++	},
++	3: {
++		{RuleID: "ddl.create_index.columns.exists.require", ReasonCode: "unknown_table_state", RequiredFacts: []string{"target_table.columns", "target_table.existence"}},
++	},
++}
++
++func t05A8Boundary(dialect spec.Dialect, create bool) bool {
++	return dialect == spec.DialectTiDB || create
++}
++
++func t05A8Unsupported(dialect spec.Dialect, create bool) (feature, reason string, metadata map[string]any) {
++	feature, reason = "create_procedure.body", spec.UnsupportedUnauditedReason
++	metadata = map[string]any{"aspect": "option"}
++	if dialect == spec.DialectTiDB {
++		feature, reason, metadata = "create_procedure", spec.UnsupportedVendorBoundaryReason, map[string]any{"boundary": "vendor"}
++		if !create {
++			feature = "drop_procedure"
++		}
++	}
++	return feature, reason, metadata
++}
++
++func t05A8AssertIdentities(t *testing.T, result report.Result, sql string) {
++	t.Helper()
++	lines := strings.Split(sql, "\n")
++	if len(result.Statements) != len(lines) {
++		t.Fatalf("statements = %d, want %d", len(result.Statements), len(lines))
++	}
++	for i, statement := range result.Statements {
++		if statement.Index != i || statement.Kind != "ddl" || statement.RawSQL != lines[i] ||
++			statement.NormalizedSQL != strings.TrimSuffix(lines[i], ";") {
++			t.Fatalf("statement %d identity = %+v", i, statement)
++		}
++	}
++}
++
++func t05A8AssertBoundaryItem(t *testing.T, result report.Result, dialect spec.Dialect, create bool, index, statementIndex int) {
++	t.Helper()
++	feature, reason, metadata := t05A8Unsupported(dialect, create)
++	item := result.Unsupported[index]
++	if item.Index != statementIndex || item.Feature != feature || item.Reason != reason ||
++		item.SQL != result.Statements[statementIndex].RawSQL || !reflect.DeepEqual(item.Metadata, metadata) {
++		t.Fatalf("procedure boundary = %+v, want feature=%s reason=%s metadata=%v index=%d", item, feature, reason, metadata, statementIndex)
++	}
++}
++
++func TestT05A8MetadataPremises(t *testing.T) {
++	procedures := []struct {
++		name, sql string
++		create    bool
++	}{
++		{"create_select", "CREATE PROCEDURE p() SELECT 1;", true},
++		{"drop", "DROP PROCEDURE p;", false},
++		{"create_delete", "CREATE PROCEDURE p() DELETE FROM t;", true},
++	}
++	for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
++		for _, tc := range procedures {
++			for _, online := range []bool{true, false} {
++				name := "offline"
++				if online {
++					name = "provider"
++				}
++				t.Run(string(dialect)+"/"+tc.name+"/"+name, func(t *testing.T) {
++					ctx := context.Background()
++					sql := t05A8Input(tc.sql)
++					provider := &t05A8Provider{}
++					request := Request{SQL: sql, Dialect: dialect, Schema: "golden", ConfigPath: t05A7FourRulePolicy(t)}
++					if online {
++						request.MetadataProvider = provider
++					}
++					result, err := AuditSQL(ctx, request)
++					boundary := t05A8Boundary(dialect, tc.create)
++					if boundary {
++						if !errors.Is(err, ErrUnsupportedStatement) {
++							t.Fatalf("error = %v, want ErrUnsupportedStatement", err)
++						}
++						if result.Verdict != report.VerdictReview || result.Coverage.Status != report.CoverageIncomplete {
++							t.Errorf("aggregate = %s/%s, want review/incomplete", result.Verdict, result.Coverage.Status)
++						}
++					} else {
++						if err != nil {
++							t.Fatalf("MySQL DROP error = %v, want nil", err)
++						}
++						wantVerdict, wantCoverage := report.VerdictPass, report.CoverageComplete
++						if !online {
++							wantVerdict, wantCoverage = report.VerdictReview, report.CoverageUnverified
++						}
++						if result.Verdict != wantVerdict || result.Coverage.Status != wantCoverage {
++							t.Errorf("aggregate = %s/%s, want %s/%s", result.Verdict, result.Coverage.Status, wantVerdict, wantCoverage)
++						}
++					}
++					t05A8AssertIdentities(t, result, sql)
++					for i, statement := range result.Statements {
++						wantCoverage := report.CoverageComplete
++						if i == 0 && !online {
++							wantCoverage = report.CoverageUnverified
++						}
++						if i == 1 && boundary {
++							wantCoverage = report.CoverageIncomplete
++						}
++						var wantGaps []rule.EvidenceGap
++						if i == 0 && !online {
++							wantGaps = []rule.EvidenceGap{t05A8GapCreate}
++						}
++						if statement.Coverage.Status != wantCoverage || len(statement.Findings) != 0 ||
++							!reflect.DeepEqual(statement.EvidenceGaps, wantGaps) || statement.Impact != nil {
++							t.Errorf("statement %d = %s findings=%+v gaps=%+v impact=%+v, want %s gaps=%v no findings/impact",
++								i, statement.Coverage.Status, statement.Findings, statement.EvidenceGaps, statement.Impact, wantCoverage, wantGaps)
++						}
++					}
++					wantUnsupported := 0
++					if boundary {
++						wantUnsupported = 1
++					}
++					if len(result.Unsupported) != wantUnsupported {
++						t.Fatalf("unsupported = %+v, want %d entries", result.Unsupported, wantUnsupported)
++					}
++					if boundary {
++						t05A8AssertBoundaryItem(t, result, dialect, tc.create, 0, 1)
++					}
++					if online && !reflect.DeepEqual(provider.events, []string{"instance", "snapshot:golden.t"}) {
++						t.Errorf("provider events = %v, want [instance snapshot:golden.t]", provider.events)
++					}
++					if len(result.GlobalFindings) != 0 || result.RuleSummary == nil ||
++						result.RuleSummary.Loaded != 4 || result.RuleSummary.Applicable != 4 {
++						t.Errorf("global=%+v rules=%+v", result.GlobalFindings, result.RuleSummary)
++					}
++
++					parsed, parseErr := Parse(ctx, sql, dialect)
++					if parseErr != nil {
++						t.Fatal(parseErr)
++					}
++					statements, extractErr := Extract(ctx, parsed)
++					if extractErr != nil {
++						t.Fatal(extractErr)
++					}
++					if len(statements) != 4 {
++						t.Fatalf("extracted = %d, want 4", len(statements))
++					}
++					for i, statement := range statements {
++						if statement.Line != i+1 || statement.Column != 1 {
++							t.Errorf("statement %d location = %d:%d", i, statement.Line, statement.Column)
++						}
++					}
++				})
++			}
++		}
++	}
++}
++
++func t05A8SeedSnapshots() map[string]*spec.TableSnapshot {
++	cardinality := int64(37)
++	return map[string]*spec.TableSnapshot{
++		"golden.t": {
++			Schema:     "golden",
++			Exists:     true,
++			Table:      &spec.Table{Schema: "golden", Name: "t"},
++			Columns:    []spec.Column{{Name: "id", Type: "int"}, {Name: "c", Type: "int"}},
++			PrimaryKey: &spec.Index{Name: "PRIMARY", Columns: []string{"id"}, Kind: spec.IndexKindPrimary},
++			Indexes: []spec.Index{
++				{Name: "ix_seed", Columns: []string{"c"}, Kind: spec.IndexKindSecondary, Cardinality: &cardinality},
++			},
++			Options:            map[string]string{"table_rows": "123", "auto_increment": "456"},
++			ConstraintsUnknown: true,
++		},
++		"other.u": {
++			Schema:            "other",
++			Exists:            true,
++			Table:             &spec.Table{Schema: "other", Name: "u"},
++			Columns:           []spec.Column{{Name: "id", Type: "int"}},
++			Options:           map[string]string{"table_rows": "789"},
++			PrimaryKeyUnknown: true,
++			IndexesUnknown:    true,
++			Constraints:       []spec.Constraint{},
++		},
++	}
++}
++
++func t05A8SnapshotEntries(state *batchState) map[batchTableKey]batchTableEntry {
++	out := make(map[batchTableKey]batchTableEntry, len(state.entries))
++	for key, entry := range state.entries {
++		copied := *entry
++		if entry.shape != nil {
++			copied.shape = cloneTableSnapshot(entry.shape)
++		}
++		out[key] = copied
++	}
++	return out
++}
++
++func t05A8AssertEntriesEqual(t *testing.T, before map[batchTableKey]batchTableEntry, state *batchState) {
++	t.Helper()
++	if len(state.entries) != len(before) {
++		t.Fatalf("entries count = %d, want %d: %+v", len(state.entries), len(before), state.entries)
++	}
++	for key, want := range before {
++		got, ok := state.entries[key]
++		if !ok {
++			t.Fatalf("entry %v removed", key)
++		}
++		if got.state != want.state || got.displaySchema != want.displaySchema || got.displayTable != want.displayTable ||
++			!reflect.DeepEqual(got.shape, want.shape) {
++			t.Fatalf("entry %v = %+v, want %+v", key, *got, want)
++		}
++	}
++}
++
++func TestT05A8DefinitionsAndIdentity(t *testing.T) {
++	variants := []struct{ name, procedure string }{
++		{"create_select", "CREATE PROCEDURE p() SELECT 1;"},
++		{"create_delete_t", "CREATE PROCEDURE p() DELETE FROM t;"},
++		{"create_delete_other_u", "CREATE PROCEDURE p() DELETE FROM other.u;"},
++		{"create_named_t", "CREATE PROCEDURE t() SELECT 1;"},
++		{"drop_p", "DROP PROCEDURE p;"},
++		{"drop_named_t", "DROP PROCEDURE t;"},
++	}
++	for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
++		for _, tc := range variants {
++			t.Run(string(dialect)+"/"+tc.name, func(t *testing.T) {
++				ctx := context.Background()
++				expectedSnapshots := t05A8SeedSnapshots()
++				provider := &t05A8Provider{snapshots: t05A8SeedSnapshots()}
++				state := newBatchState(dialect, "golden", provider)
++
++				earlierT, err := state.preState(ctx, "golden", spec.Table{Name: "t"})
++				if err != nil {
++					t.Fatal(err)
++				}
++				earlierU, err := state.preState(ctx, "other", spec.Table{Name: "u"})
++				if err != nil {
++					t.Fatal(err)
++				}
++				if !reflect.DeepEqual(provider.events, []string{"snapshot:golden.t", "snapshot:other.u"}) {
++					t.Fatalf("seed events = %v, want two snapshot reads", provider.events)
++				}
++				if earlierT.Options["table_rows"] != "123" || earlierT.Options["auto_increment"] != "456" ||
++					len(earlierT.Indexes) != 1 || earlierT.Indexes[0].Cardinality == nil || *earlierT.Indexes[0].Cardinality != 37 ||
++					!earlierT.ConstraintsUnknown || earlierT.Constraints != nil {
++					t.Fatalf("golden.t projection = %+v, want literal seeded members", earlierT)
++				}
++				if !earlierU.PrimaryKeyUnknown || earlierU.PrimaryKey != nil ||
++					!earlierU.IndexesUnknown || earlierU.Indexes != nil ||
++					earlierU.ConstraintsUnknown || len(earlierU.Constraints) != 0 ||
++					earlierU.Options["table_rows"] != "789" {
++					t.Fatalf("other.u projection = %+v, want literal seeded members", earlierU)
++				}
++				if !reflect.DeepEqual(earlierT, provider.snapshots["golden.t"]) ||
++					!reflect.DeepEqual(earlierU, provider.snapshots["other.u"]) {
++					t.Fatal("projections diverge from provider originals")
++				}
++				state.invalidatedSchemas["retired"] = struct{}{}
++				beforeEntries := t05A8SnapshotEntries(state)
++				beforeSchemas := map[string]struct{}{}
++				for scope := range state.invalidatedSchemas {
++					beforeSchemas[scope] = struct{}{}
++				}
++				if len(beforeSchemas) != 1 {
++					t.Fatalf("seeded schemas = %v, want only retired", beforeSchemas)
++				}
++				if state.contaminated {
++					t.Fatal("precondition: state already contaminated")
++				}
++
++				parsed, parseErr := Parse(ctx, t05A8Input(tc.procedure), dialect)
++				if parseErr != nil {
++					t.Fatal(parseErr)
++				}
++				extracted, extractErr := Extract(ctx, parsed)
++				if extractErr != nil {
++					t.Fatal(extractErr)
++				}
++				procedure := extracted[1]
++				procedureBytes, marshalErr := json.Marshal(procedure)
++				if marshalErr != nil {
++					t.Fatal(marshalErr)
++				}
++				var expectedStatement spec.Statement
++				if unmarshalErr := json.Unmarshal(procedureBytes, &expectedStatement); unmarshalErr != nil {
++					t.Fatal(unmarshalErr)
++				}
++				var unsupportedPtr *spec.UnsupportedDetail
++				var unsupportedCopy spec.UnsupportedDetail
++				if procedure.Unsupported != nil {
++					unsupportedPtr = procedure.Unsupported
++					unsupportedCopy = *procedure.Unsupported
++				}
++				enriched, enrichErr := state.enrichStatements(ctx, &MetadataRequest{Schema: "golden", Provider: provider},
++					extracted[1:2], parsed.failures, &spec.InstanceFacts{}, auditLimits{orderedStatements: 1})
++				if enrichErr != nil {
++					t.Fatal(enrichErr)
++				}
++				if len(enriched) != 1 {
++					t.Fatalf("enriched = %d, want 1", len(enriched))
++				}
++
++				if state.contaminated {
++					t.Error("procedure lifecycle contaminated outer state")
++				}
++				t05A8AssertEntriesEqual(t, beforeEntries, state)
++				if !reflect.DeepEqual(state.invalidatedSchemas, beforeSchemas) {
++					t.Errorf("invalidatedSchemas = %v, want unchanged %v", state.invalidatedSchemas, beforeSchemas)
++				}
++				if key := state.keyFor("golden", spec.Table{Name: "p"}); state.entries[key] != nil {
++					t.Errorf("procedure name created table entry %v", key)
++				}
++				if key := state.keyFor("golden", spec.Table{Name: "t"}); state.entries[key] == nil {
++					t.Error("golden.t entry removed")
++				}
++				if key := state.keyFor("other", spec.Table{Name: "u"}); state.entries[key] == nil {
++					t.Error("other.u entry removed")
++				}
++				if !reflect.DeepEqual(provider.events, []string{"snapshot:golden.t", "snapshot:other.u"}) {
++					t.Errorf("provider events after procedure = %v, want unchanged seed reads", provider.events)
++				}
++				if !reflect.DeepEqual(provider.snapshots, expectedSnapshots) {
++					t.Error("provider-owned snapshots mutated")
++				}
++				if !reflect.DeepEqual(earlierT, expectedSnapshots["golden.t"]) || !reflect.DeepEqual(earlierU, expectedSnapshots["other.u"]) {
++					t.Error("earlier pre-state projections diverged from expected literals")
++				}
++				if earlierT.Options["table_rows"] != "123" || earlierT.Options["auto_increment"] != "456" ||
++					*earlierT.Indexes[0].Cardinality != 37 ||
++					!earlierT.ConstraintsUnknown || earlierT.PrimaryKeyUnknown || earlierT.IndexesUnknown ||
++					!earlierU.PrimaryKeyUnknown || !earlierU.IndexesUnknown || earlierU.ConstraintsUnknown ||
++					earlierU.Options["table_rows"] != "789" {
++					t.Errorf("post-procedure literals changed: t=%+v u=%+v", earlierT, earlierU)
++				}
++				if afterBytes, marshalErr := json.Marshal(extracted[1]); marshalErr != nil || !bytes.Equal(afterBytes, procedureBytes) {
++					t.Errorf("extracted procedure mutated by enrichment: %v", marshalErr)
++				}
++				if extracted[1].ResourceLimit != nil {
++					t.Error("procedure gained a resource-limit marker")
++				}
++				if unsupportedPtr != nil && (enriched[0].Unsupported != unsupportedPtr || !reflect.DeepEqual(*enriched[0].Unsupported, unsupportedCopy)) {
++					t.Errorf("procedure unsupported identity = %+v, want original pointer/value", enriched[0].Unsupported)
++				}
++				got := enriched[0]
++				if got.Kind != expectedStatement.Kind || got.Dialect != expectedStatement.Dialect ||
++					got.RawSQL != expectedStatement.RawSQL || got.NormalizedSQL != expectedStatement.NormalizedSQL ||
++					got.Line != expectedStatement.Line || got.Column != expectedStatement.Column ||
++					!reflect.DeepEqual(got.Warnings, expectedStatement.Warnings) ||
++					!reflect.DeepEqual(got.DDL, expectedStatement.DDL) ||
++					!reflect.DeepEqual(got.Unsupported, expectedStatement.Unsupported) {
++					t.Errorf("enriched procedure = %+v, want original fields %+v", got, expectedStatement)
++				}
++
++				attached := attachImpactEstimatesWithPlanner(ctx, provider, enriched)
++				if !reflect.DeepEqual(provider.events, []string{"snapshot:golden.t", "snapshot:other.u"}) {
++					t.Errorf("planner touched provider: %v", provider.events)
++				}
++				if attached[0].DML != nil || reportImpact(attached[0]) != nil {
++					t.Errorf("procedure gained dml/impact: %+v %+v", attached[0].DML, reportImpact(attached[0]))
++				}
++			})
++		}
++	}
++	for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
++		for _, tc := range []struct {
++			name, procedure string
++			create          bool
++		}{
++			{"create_named_t", "CREATE PROCEDURE t() SELECT 1;", true},
++			{"drop_named_t", "DROP PROCEDURE t;", false},
++		} {
++			t.Run(string(dialect)+"/audit/"+tc.name, func(t *testing.T) {
++				provider := &t05A8Provider{}
++				result, err := AuditSQL(context.Background(), Request{
++					SQL: t05A8Input(tc.procedure), Dialect: dialect, Schema: "golden",
++					ConfigPath: t05A7FourRulePolicy(t), MetadataProvider: provider,
++				})
++				boundary := t05A8Boundary(dialect, tc.create)
++				if boundary {
++					if !errors.Is(err, ErrUnsupportedStatement) {
++						t.Fatalf("error = %v, want ErrUnsupportedStatement", err)
++					}
++					if result.Verdict != report.VerdictReview || result.Coverage.Status != report.CoverageIncomplete {
++						t.Errorf("aggregate = %s/%s, want review/incomplete", result.Verdict, result.Coverage.Status)
++					}
++					if len(result.Unsupported) != 1 {
++						t.Fatalf("unsupported = %+v, want 1", result.Unsupported)
++					}
++					t05A8AssertBoundaryItem(t, result, dialect, tc.create, 0, 1)
++				} else if err != nil || result.Verdict != report.VerdictPass || result.Coverage.Status != report.CoverageComplete || len(result.Unsupported) != 0 {
++					t.Errorf("MySQL DROP = %s/%s unsupported=%v err=%v, want pass/complete none", result.Verdict, result.Coverage.Status, result.Unsupported, err)
++				}
++				for i, statement := range result.Statements {
++					if i == 1 {
++						continue
++					}
++					if statement.Coverage.Status != report.CoverageComplete || len(statement.EvidenceGaps) != 0 || len(statement.Findings) != 0 {
++						t.Errorf("follower %d = %s findings=%+v gaps=%+v, want complete and empty", i, statement.Coverage.Status, statement.Findings, statement.EvidenceGaps)
++					}
++				}
++				if !reflect.DeepEqual(provider.events, []string{"instance", "snapshot:golden.t"}) {
++					t.Errorf("provider events = %v, want one golden.t read and no procedure names", provider.events)
++				}
++			})
++		}
++	}
++}
++
++func t05A8ValidProcedure() spec.Statement {
++	return spec.Statement{
++		Kind:    spec.KindDDL,
++		Dialect: spec.DialectMySQL,
++		DDL:     &spec.DDL{Operation: spec.DDLOperationCreateProcedure},
++	}
++}
++
++func TestT05A8WhitelistAndExecution(t *testing.T) {
++	executables := []struct{ name, sql, feature string }{
++		{"execute", "EXECUTE stmt;", "execute_prepared"},
++		{"do", "DO 1;", "do"},
++	}
++	for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
++		for _, tc := range executables {
++			t.Run(string(dialect)+"/"+tc.name, func(t *testing.T) {
++				sql := t05A8Input(tc.sql)
++				provider := &t05A8Provider{}
++				result, err := AuditSQL(context.Background(), Request{
++					SQL: sql, Dialect: dialect, Schema: "golden",
++					ConfigPath: t05A7FourRulePolicy(t), MetadataProvider: provider,
++				})
++				if !errors.Is(err, ErrUnsupportedStatement) {
++					t.Fatalf("error = %v, want ErrUnsupportedStatement", err)
++				}
++				lines := strings.Split(sql, "\n")
++				if len(result.Statements) != len(lines) {
++					t.Fatalf("statements = %d, want %d", len(result.Statements), len(lines))
++				}
++				for i, statement := range result.Statements {
++					wantKind := "ddl"
++					if i == 1 {
++						wantKind = "unknown"
++					}
++					if statement.Index != i || statement.Kind != wantKind || statement.RawSQL != lines[i] ||
++						statement.NormalizedSQL != strings.TrimSuffix(lines[i], ";") {
++						t.Fatalf("statement %d identity = %+v", i, statement)
++					}
++					if len(statement.Findings) != 0 {
++						t.Errorf("statement %d findings = %+v, want none", i, statement.Findings)
++					}
++				}
++				first := result.Statements[0]
++				if first.Coverage.Status != report.CoverageComplete || len(first.EvidenceGaps) != 0 {
++					t.Errorf("first statement = %s gaps=%+v, want complete with none", first.Coverage.Status, first.EvidenceGaps)
++				}
++				blocked := result.Statements[1]
++				if blocked.Kind != "unknown" || blocked.Coverage.Status != report.CoverageIncomplete {
++					t.Errorf("executable = kind %s coverage %s, want unknown/incomplete", blocked.Kind, blocked.Coverage.Status)
++				}
++				for index, want := range t05A8GapFollowers {
++					got := result.Statements[index]
++					if got.Coverage.Status != report.CoverageUnverified || !reflect.DeepEqual(got.EvidenceGaps, want) {
++						t.Errorf("statement %d = %s gaps=%+v, want unverified %+v", index, got.Coverage.Status, got.EvidenceGaps, want)
++					}
++				}
++				if len(result.Unsupported) != 1 {
++					t.Fatalf("unsupported = %+v, want 1", result.Unsupported)
++				}
++				item := result.Unsupported[0]
++				if item.Index != 1 || item.Feature != tc.feature || item.Reason != spec.UnsupportedUnauditedReason || item.SQL != blocked.RawSQL {
++					t.Errorf("executable boundary = %+v, want feature=%s unaudited at index 1", item, tc.feature)
++				}
++				if !reflect.DeepEqual(provider.events, []string{"instance", "snapshot:golden.t"}) {
++					t.Errorf("provider events = %v, want [instance snapshot:golden.t]", provider.events)
++				}
++			})
++		}
++	}
++
++	t.Run("predicate_positive", func(t *testing.T) {
++		for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
++			for _, operation := range []spec.DDLOperation{spec.DDLOperationCreateProcedure, spec.DDLOperationDropProcedure} {
++				statement := t05A8ValidProcedure()
++				statement.Dialect = dialect
++				statement.DDL.Operation = operation
++				if !procedureLifecyclePreservesTableState(statement) {
++					t.Errorf("%s/%s: valid procedure not whitelisted", dialect, operation)
++				}
++			}
++		}
++		statement := t05A8ValidProcedure()
++		statement.RawSQL = "EXECUTE stmt;"
++		statement.NormalizedSQL = "arbitrary"
++		statement.Warnings = []string{"w"}
++		statement.Unsupported = &spec.UnsupportedDetail{Feature: "execute_prepared", Reason: spec.UnsupportedVendorBoundaryReason}
++		statement.DDL.ObjectName = "arbitrary_name"
++		statement.DDL.Options = map[string]string{"has_body": "true", "params": "true"}
++		if !procedureLifecyclePreservesTableState(statement) {
++			t.Error("identity must come only from the typed operation, not names/features/body aspects")
++		}
++		statement.DDL.Targets = []spec.Table{}
++		if !procedureLifecyclePreservesTableState(statement) {
++			t.Error("empty-but-nonnil Targets must stay whitelisted")
++		}
++	})
++
++	negatives := []struct {
++		name   string
++		mutate func(*spec.Statement)
++	}{
++		{"dialect_postgresql", func(s *spec.Statement) { s.Dialect = spec.DialectPostgreSQL }},
++		{"dialect_unknown", func(s *spec.Statement) { s.Dialect = spec.DialectUnknown }},
++		{"kind_unknown", func(s *spec.Statement) { s.Kind = spec.KindUnknown }},
++		{"kind_dml", func(s *spec.Statement) { s.Kind = spec.KindDML }},
++		{"ddl_nil", func(s *spec.Statement) { s.DDL = nil }},
++		{"operation_unknown", func(s *spec.Statement) { s.DDL.Operation = spec.DDLOperationUnknown }},
++		{"create_function", func(s *spec.Statement) { s.DDL.Operation = spec.DDLOperationCreateFunction }},
++		{"drop_function", func(s *spec.Statement) { s.DDL.Operation = spec.DDLOperationDropFunction }},
++		{"create_trigger", func(s *spec.Statement) { s.DDL.Operation = spec.DDLOperationCreateTrigger }},
++		{"drop_trigger", func(s *spec.Statement) { s.DDL.Operation = spec.DDLOperationDropTrigger }},
++		{"create_event", func(s *spec.Statement) { s.DDL.Operation = spec.DDLOperation("create_event") }},
++		{"call", func(s *spec.Statement) { s.DDL.Operation = spec.DDLOperation("call") }},
++		{"alter_procedure", func(s *spec.Statement) { s.DDL.Operation = spec.DDLOperation("alter_procedure") }},
++		{"dml_nonnil", func(s *spec.Statement) { s.DML = &spec.DML{} }},
++		{"table_named", func(s *spec.Statement) { s.DDL.Table = &spec.Table{Name: "t"} }},
++		{"table_empty", func(s *spec.Statement) { s.DDL.Table = &spec.Table{} }},
++		{"targets_nonempty", func(s *spec.Statement) { s.DDL.Targets = []spec.Table{{Name: "t"}} }},
++		{"resource_limit", func(s *spec.Statement) { s.ResourceLimit = &spec.AuditResourceLimit{} }},
++		{"lookalike", func(s *spec.Statement) {
++			s.DDL.Operation = spec.DDLOperationCreateTable
++			s.RawSQL = "CREATE PROCEDURE p() SELECT 1;"
++			s.Unsupported = &spec.UnsupportedDetail{Feature: "create_procedure"}
++		}},
++	}
++	for _, tc := range negatives {
++		t.Run("predicate_negative/"+tc.name, func(t *testing.T) {
++			statement := t05A8ValidProcedure()
++			tc.mutate(&statement)
++			if procedureLifecyclePreservesTableState(statement) {
++				t.Errorf("mutation %s must not match the procedure whitelist", tc.name)
++			}
++		})
++	}
++
++	t.Run("bound_target_not_preserved", func(t *testing.T) {
++		ctx := context.Background()
++		provider := &t05A8Provider{snapshots: t05A8SeedSnapshots()}
++		state := newBatchState(spec.DialectMySQL, "golden", provider)
++		if _, err := state.preState(ctx, "golden", spec.Table{Name: "t"}); err != nil {
++			t.Fatal(err)
++		}
++		if _, err := state.preState(ctx, "other", spec.Table{Name: "u"}); err != nil {
++			t.Fatal(err)
++		}
++		before := t05A8SnapshotEntries(state)
++		statement := spec.Statement{
++			Kind:    spec.KindDDL,
++			Dialect: spec.DialectMySQL,
++			DDL:     &spec.DDL{Operation: spec.DDLOperationCreateProcedure, Table: &spec.Table{Name: "t"}},
++			Unsupported: &spec.UnsupportedDetail{
++				Feature: "create_procedure", Reason: spec.UnsupportedVendorBoundaryReason,
++			},
++		}
++		if procedureLifecyclePreservesTableState(statement) {
++			t.Fatal("table-bound procedure must not match the whitelist")
++		}
++		if err := state.apply(ctx, statement); err != nil {
++			t.Fatal(err)
++		}
++		tKey, uKey := state.keyFor("golden", spec.Table{Name: "t"}), state.keyFor("other", spec.Table{Name: "u"})
++		if got := state.entries[tKey]; got == nil || got.state != tableUnknown {
++			t.Errorf("bound target t = %+v, want tableUnknown after generic unsupported invalidation", got)
++		}
++		if got := state.entries[uKey]; got == nil || got.state != tablePresent || !reflect.DeepEqual(got.shape, before[uKey].shape) {
++			t.Errorf("unrelated u = %+v, want untouched present entry", got)
++		}
++		if state.contaminated {
++			t.Error("bound-target invalidation must not contaminate")
++		}
++		if !reflect.DeepEqual(provider.events, []string{"snapshot:golden.t", "snapshot:other.u"}) {
++			t.Errorf("provider events = %v, want unchanged seed reads", provider.events)
++		}
++	})
++}
++
++func TestT05A8ContaminationAndBudget(t *testing.T) {
++	pollutedSQL := "CREATE TABLE t (id INT PRIMARY KEY);\nEXECUTE stmt;\nCREATE PROCEDURE p() SELECT 1;\nALTER TABLE t ADD COLUMN c INT;\nCREATE INDEX idx_c ON t(c);"
++	for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
++		t.Run(string(dialect)+"/prior_pollution", func(t *testing.T) {
++			ctx := context.Background()
++			provider := &t05A8Provider{}
++			result, err := AuditSQL(ctx, Request{
++				SQL: pollutedSQL, Dialect: dialect, Schema: "golden",
++				ConfigPath: t05A7FourRulePolicy(t), MetadataProvider: provider,
++			})
++			if !errors.Is(err, ErrUnsupportedStatement) {
++				t.Fatalf("error = %v, want ErrUnsupportedStatement", err)
++			}
++			if len(result.Statements) != 5 {
++				t.Fatalf("statements = %d, want 5", len(result.Statements))
++			}
++			for index, want := range t05A8GapFollowers {
++				got := result.Statements[index+1]
++				if got.Coverage.Status != report.CoverageUnverified || !reflect.DeepEqual(got.EvidenceGaps, want) {
++					t.Errorf("statement %d = %s gaps=%+v, want unverified %+v", index+1, got.Coverage.Status, got.EvidenceGaps, want)
++				}
++			}
++			feature, reason, metadata := t05A8Unsupported(dialect, true)
++			foundProcedure := false
++			for _, item := range result.Unsupported {
++				if item.Feature == feature && item.Index == 2 {
++					if item.Reason != reason || !reflect.DeepEqual(item.Metadata, metadata) || item.SQL != result.Statements[2].RawSQL {
++						t.Errorf("procedure boundary = %+v, want %s/%s", item, feature, reason)
++					}
++					foundProcedure = true
++				}
++			}
++			if !foundProcedure {
++				t.Errorf("procedure boundary missing from %+v", result.Unsupported)
++			}
++			if !reflect.DeepEqual(provider.events, []string{"instance", "snapshot:golden.t"}) {
++				t.Errorf("provider events = %v, want [instance snapshot:golden.t]", provider.events)
++			}
++
++			parsed, parseErr := Parse(ctx, pollutedSQL, dialect)
++			if parseErr != nil {
++				t.Fatal(parseErr)
++			}
++			extracted, extractErr := Extract(ctx, parsed)
++			if extractErr != nil {
++				t.Fatal(extractErr)
++			}
++			inner := &t05A8Provider{}
++			state := newBatchState(dialect, "golden", inner)
++			facts, _ := inner.LoadInstanceFacts(ctx, dialect, "golden")
++			if _, enrichErr := state.enrichStatements(ctx, &MetadataRequest{Schema: "golden", Provider: inner},
++				extracted[:2], parsed.failures, facts, auditLimits{orderedStatements: 2}); enrichErr != nil {
++				t.Fatal(enrichErr)
++			}
++			if !state.contaminated {
++				t.Fatal("precondition: EXECUTE must contaminate")
++			}
++			beforeEntries := t05A8SnapshotEntries(state)
++			beforeSchemas := map[string]struct{}{}
++			for scope := range state.invalidatedSchemas {
++				beforeSchemas[scope] = struct{}{}
++			}
++			beforeEvents := append([]string(nil), inner.events...)
++			if _, enrichErr := state.enrichStatements(ctx, &MetadataRequest{Schema: "golden", Provider: inner},
++				extracted[2:3], parsed.failures, facts, auditLimits{orderedStatements: 1}); enrichErr != nil {
++				t.Fatal(enrichErr)
++			}
++			if !state.contaminated {
++				t.Error("procedure must not clear contamination")
++			}
++			t05A8AssertEntriesEqual(t, beforeEntries, state)
++			if !reflect.DeepEqual(state.invalidatedSchemas, beforeSchemas) || !reflect.DeepEqual(inner.events, beforeEvents) {
++				t.Error("procedure changed state or provider ledger under prior pollution")
++			}
++		})
++
++		t.Run(string(dialect)+"/schema_invalidation", func(t *testing.T) {
++			ctx := context.Background()
++			sql := "CREATE TABLE t (id INT PRIMARY KEY);\nDROP DATABASE golden;\nCREATE PROCEDURE p() SELECT 1;\nALTER TABLE t ADD COLUMN c INT;\nCREATE INDEX idx_c ON t(c);"
++			parsed, parseErr := Parse(ctx, sql, dialect)
++			if parseErr != nil {
++				t.Fatal(parseErr)
++			}
++			extracted, extractErr := Extract(ctx, parsed)
++			if extractErr != nil {
++				t.Fatal(extractErr)
++			}
++			provider := &t05A8Provider{}
++			state := newBatchState(dialect, "golden", provider)
++			facts, _ := provider.LoadInstanceFacts(ctx, dialect, "golden")
++			if _, enrichErr := state.enrichStatements(ctx, &MetadataRequest{Schema: "golden", Provider: provider},
++				extracted[:2], parsed.failures, facts, auditLimits{orderedStatements: 2}); enrichErr != nil {
++				t.Fatal(enrichErr)
++			}
++			if state.contaminated {
++				t.Fatal("schema invalidation must not contaminate")
++			}
++			if _, ok := state.invalidatedSchemas["golden"]; !ok {
++				t.Fatal("DROP DATABASE must record invalidated schema golden")
++			}
++			beforeEntries := t05A8SnapshotEntries(state)
++			beforeSchemas := map[string]struct{}{}
++			for scope := range state.invalidatedSchemas {
++				beforeSchemas[scope] = struct{}{}
++			}
++			beforeEvents := append([]string(nil), provider.events...)
++			if _, enrichErr := state.enrichStatements(ctx, &MetadataRequest{Schema: "golden", Provider: provider},
++				extracted[2:3], parsed.failures, facts, auditLimits{orderedStatements: 1}); enrichErr != nil {
++				t.Fatal(enrichErr)
++			}
++			t05A8AssertEntriesEqual(t, beforeEntries, state)
++			if !reflect.DeepEqual(state.invalidatedSchemas, beforeSchemas) {
++				t.Errorf("invalidatedSchemas = %v, want unchanged %v", state.invalidatedSchemas, beforeSchemas)
++			}
++			if !reflect.DeepEqual(provider.events, beforeEvents) {
++				t.Errorf("provider events = %v, want unchanged %v", provider.events, beforeEvents)
++			}
++			if snapshot, err := state.preState(ctx, "golden", spec.Table{Name: "t"}); err != nil || snapshot != nil {
++				t.Errorf("tombstoned t pre-state = %+v err %v, want nil", snapshot, err)
++			}
++			if snapshot, err := state.preState(ctx, "golden", spec.Table{Name: "u"}); err != nil || snapshot != nil {
++				t.Errorf("unrelated u under dropped schema = %+v err %v, want nil", snapshot, err)
++			}
++			if !reflect.DeepEqual(provider.events, beforeEvents) {
++				t.Errorf("provider events after reads = %v, want no reload %v", provider.events, beforeEvents)
++			}
++		})
++
++		t.Run(string(dialect)+"/tombstone_preserved", func(t *testing.T) {
++			ctx := context.Background()
++			provider := &t05A8Provider{snapshots: t05A8SeedSnapshots()}
++			state := newBatchState(dialect, "golden", provider)
++			if _, err := state.preState(ctx, "golden", spec.Table{Name: "t"}); err != nil {
++				t.Fatal(err)
++			}
++			if _, err := state.preState(ctx, "other", spec.Table{Name: "u"}); err != nil {
++				t.Fatal(err)
++			}
++			tKey := state.keyFor("golden", spec.Table{Name: "t"})
++			uKey := state.keyFor("other", spec.Table{Name: "u"})
++			if entry := state.entries[tKey]; entry == nil || entry.state != tablePresent {
++				t.Fatalf("seeded t entry = %+v, want present", entry)
++			}
++			state.invalidateKey(tKey)
++			if entry := state.entries[tKey]; entry == nil || entry.state != tableUnknown {
++				t.Fatalf("tombstoned t entry = %+v, want unknown", entry)
++			}
++			if state.contaminated || len(state.invalidatedSchemas) != 0 {
++				t.Fatal("precondition: tombstone must not contaminate or invalidate schemas")
++			}
++			beforeEntries := t05A8SnapshotEntries(state)
++			beforeSchemas := map[string]struct{}{}
++			for scope := range state.invalidatedSchemas {
++				beforeSchemas[scope] = struct{}{}
++			}
++			beforeEvents := append([]string(nil), provider.events...)
++			for _, procSQL := range []string{"CREATE PROCEDURE p() SELECT 1;", "DROP PROCEDURE p;"} {
++				parsed, parseErr := Parse(ctx, procSQL, dialect)
++				if parseErr != nil {
++					t.Fatal(parseErr)
++				}
++				extracted, extractErr := Extract(ctx, parsed)
++				if extractErr != nil {
++					t.Fatal(extractErr)
++				}
++				if _, enrichErr := state.enrichStatements(ctx, &MetadataRequest{Schema: "golden", Provider: provider},
++					extracted, parsed.failures, &spec.InstanceFacts{}, auditLimits{orderedStatements: 1}); enrichErr != nil {
++					t.Fatal(enrichErr)
++				}
++			}
++			if state.contaminated {
++				t.Error("procedure lifecycle must not contaminate")
++			}
++			t05A8AssertEntriesEqual(t, beforeEntries, state)
++			if !reflect.DeepEqual(state.invalidatedSchemas, beforeSchemas) {
++				t.Errorf("invalidatedSchemas = %v, want unchanged %v", state.invalidatedSchemas, beforeSchemas)
++			}
++			if entry := state.entries[tKey]; entry == nil || entry.state != tableUnknown {
++				t.Errorf("t entry = %+v, want still unknown", entry)
++			}
++			if entry := state.entries[uKey]; entry == nil || entry.state != tablePresent ||
++				!reflect.DeepEqual(entry.shape, beforeEntries[uKey].shape) {
++				t.Errorf("u entry = %+v, want untouched present", entry)
++			}
++			if snapshot, err := state.preState(ctx, "golden", spec.Table{Name: "t"}); err != nil || snapshot != nil {
++				t.Errorf("tombstoned t pre-state = %+v err %v, want nil", snapshot, err)
++			}
++			if !reflect.DeepEqual(provider.events, beforeEvents) {
++				t.Errorf("provider events = %v, want unchanged %v", provider.events, beforeEvents)
++			}
++		})
++	}
++
++	procedures := []struct {
++		name, sql string
++		create    bool
++	}{
++		{"create", "CREATE PROCEDURE p() SELECT 1;", true},
++		{"drop", "DROP PROCEDURE p;", false},
++	}
++	for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
++		for _, tc := range procedures {
++			t.Run(string(dialect)+"/budget/"+tc.name, func(t *testing.T) {
++				ctx := context.Background()
++				sql := t05A8Input(tc.sql)
++				lines := strings.Split(sql, "\n")
++				policy := t05A7FourRulePolicy(t)
++				control, controlErr := t05A7Audit(t, sql, dialect, &t05AbsentProvider{}, policy, 4)
++				boundary := t05A8Boundary(dialect, tc.create)
++				if boundary {
++					if !errors.Is(controlErr, ErrUnsupportedStatement) {
++						t.Fatalf("limit4 control error = %v, want ErrUnsupportedStatement", controlErr)
++					}
++					if control.Verdict != report.VerdictReview || control.Coverage.Status != report.CoverageIncomplete {
++						t.Fatalf("limit4 control = %s/%s, want review/incomplete", control.Verdict, control.Coverage.Status)
++					}
++				} else if controlErr != nil || control.Verdict != report.VerdictPass || control.Coverage.Status != report.CoverageComplete {
++					t.Fatalf("limit4 control = %s/%s err %v, want pass/complete nil", control.Verdict, control.Coverage.Status, controlErr)
++				}
++				wantLimit4Items := 0
++				if boundary {
++					wantLimit4Items = 1
++				}
++				if len(control.Unsupported) != wantLimit4Items {
++					t.Fatalf("limit4 unsupported = %+v, want %d", control.Unsupported, wantLimit4Items)
++				}
++
++				for _, limit := range []int{1, 2, 3, 4} {
++					t.Run(fmt.Sprintf("limit%d", limit), func(t *testing.T) {
++						provider := &t05AbsentProvider{}
++						result, err := t05A7Audit(t, sql, dialect, provider, policy, limit)
++						if len(result.Statements) != 4 {
++							t.Fatalf("statements = %d, want 4", len(result.Statements))
++						}
++						resources := t05A7ResourceEntries(result)
++						if len(resources) != 4-limit {
++							t.Fatalf("resource entries = %d, want %d: %+v", len(resources), 4-limit, resources)
++						}
++						for offset, item := range resources {
++							expectedIndex := limit + offset
++							t05A7AssertResourceEntry(t, item, result.Statements[expectedIndex], expectedIndex, limit)
++						}
++						for i := limit; i < 4; i++ {
++							t05A7AssertBlockedStatement(t, result.Statements[i], i, lines[i])
++						}
++						if limit < 4 {
++							if !errors.Is(err, ErrUnsupportedStatement) {
++								t.Fatalf("error = %v, want ErrUnsupportedStatement", err)
++							}
++							if result.Verdict != report.VerdictReview || result.Coverage.Status != report.CoverageIncomplete {
++								t.Errorf("limit%d aggregate = %s/%s, want review/incomplete", limit, result.Verdict, result.Coverage.Status)
++							}
++						} else if boundary && !errors.Is(err, ErrUnsupportedStatement) {
++							t.Fatalf("error = %v, want ErrUnsupportedStatement", err)
++						} else if !boundary && err != nil {
++							t.Fatalf("error = %v, want nil", err)
++						}
++						if !reflect.DeepEqual(result.Statements[:limit], control.Statements[:limit]) ||
++							!reflect.DeepEqual(result.GlobalFindings, control.GlobalFindings) {
++							t.Error("admitted prefix differs from independent limit4 control")
++						}
++						if !reflect.DeepEqual(provider.calls, []string{"golden.t"}) {
++							t.Errorf("outer provider reads = %v, want only golden.t", provider.calls)
++						}
++
++						wantFeatures := map[int][]string{1: {spec.AuditResourceLimitFeature}}
++						if tc.create {
++							wantFeatures[1] = []string{"create_procedure.body", spec.AuditResourceLimitFeature}
++							if dialect == spec.DialectTiDB {
++								wantFeatures[1] = []string{"create_procedure", "create_procedure.body", spec.AuditResourceLimitFeature}
++							}
++						} else if dialect == spec.DialectTiDB {
++							wantFeatures[1] = []string{"drop_procedure", spec.AuditResourceLimitFeature}
++						}
++						if limit > 1 {
++							feature, _, _ := t05A8Unsupported(dialect, tc.create)
++							if boundary {
++								wantFeatures[1] = []string{feature}
++							} else {
++								wantFeatures[1] = nil
++							}
++						}
++						var gotFeatures []string
++						for _, item := range result.Unsupported {
++							if item.Index == 1 {
++								gotFeatures = append(gotFeatures, item.Feature)
++							}
++						}
++						if !reflect.DeepEqual(gotFeatures, wantFeatures[1]) {
++							t.Errorf("index1 unsupported features = %v, want %v", gotFeatures, wantFeatures[1])
++						}
++
++						parsed, parseErr := Parse(ctx, sql, dialect)
++						if parseErr != nil {
++							t.Fatal(parseErr)
++						}
++						extracted, extractErr := Extract(ctx, parsed)
++						if extractErr != nil {
++							t.Fatal(extractErr)
++						}
++						inner := &t05A8Provider{}
++						state := newBatchState(dialect, "golden", inner)
++						facts, _ := inner.LoadInstanceFacts(ctx, dialect, "golden")
++						enriched, enrichErr := state.enrichStatements(ctx, &MetadataRequest{Schema: "golden", Provider: inner},
++							extracted, parsed.failures, facts, auditLimits{orderedStatements: limit})
++						if enrichErr != nil {
++							t.Fatal(enrichErr)
++						}
++						for i := limit; i < 4; i++ {
++							marker := enriched[i].ResourceLimit
++							if marker == nil || marker.Limit != limit || marker.Consumed != limit {
++								t.Errorf("enriched[%d].ResourceLimit = %+v, want limit=consumed=%d", i, marker, limit)
++							}
++						}
++						if state.contaminated != (limit < 4) {
++							t.Errorf("contaminated = %v, want %v", state.contaminated, limit < 4)
++						}
++						entry := state.entries[state.keyFor("golden", spec.Table{Name: "t"})]
++						if entry == nil || entry.shape == nil {
++							t.Fatal("missing outer table state")
++						}
++						wantColumns := []string{"id"}
++						if limit >= 3 {
++							wantColumns = []string{"id", "c"}
++						}
++						if got := t05A6ColumnNames(entry.shape); !reflect.DeepEqual(got, wantColumns) {
++							t.Errorf("final columns = %v, want %v", got, wantColumns)
++						}
++						wantIndex := limit >= 4
++						foundIndex := false
++						for _, index := range entry.shape.Indexes {
++							if index.Name == "idx_c" && reflect.DeepEqual(index.Columns, []string{"c"}) {
++								foundIndex = true
++							}
++						}
++						if foundIndex != wantIndex {
++							t.Errorf("idx_c(c) present = %v, want %v", foundIndex, wantIndex)
++						}
++						if !reflect.DeepEqual(inner.events, []string{"instance", "snapshot:golden.t"}) {
++							t.Errorf("provider events = %v, want [instance snapshot:golden.t]", inner.events)
++						}
++					})
++				}
++			})
++		}
++	}
++}
++
++func TestT05A8ErrorsAndConsumers(t *testing.T) {
++	for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
++		for _, tc := range []struct {
++			name        string
++			sql         string
++			invalidLine int
++			retained    []int
++		}{
++			{"failure_before", "CREATE TABLE t (id INT PRIMARY KEY);\nTHIS IS NOT SQL;\nCREATE PROCEDURE p() SELECT 1;\nALTER TABLE t ADD COLUMN c INT;\nCREATE INDEX idx_c ON t(c);", 2, []int{1, 3, 4, 5}},
++			{"failure_after", t05A8Input("CREATE PROCEDURE p() SELECT 1;") + "\nTHIS IS NOT SQL;", 5, []int{1, 2, 3, 4}},
++		} {
++			t.Run(string(dialect)+"/"+tc.name, func(t *testing.T) {
++				ctx := context.Background()
++				provider := &t05A8Provider{}
++				result, err := AuditSQL(ctx, Request{
++					SQL: tc.sql, Dialect: dialect, Schema: "golden",
++					ConfigPath: t05A7FourRulePolicy(t), MetadataProvider: provider,
++				})
++				if !errors.Is(err, errParserUnsupported) {
++					t.Fatalf("error = %v, want errParserUnsupported", err)
++				}
++				if errors.Is(err, ErrUnsupportedStatement) {
++					t.Fatal("parser failure must not surface as ErrUnsupportedStatement")
++				}
++				if len(result.Statements) != 4 {
++					t.Fatalf("statements = %d, want 4 retained", len(result.Statements))
++				}
++				var parserDiagnostics, unsupportedDiagnostics int
++				for _, diagnostic := range result.Diagnostics {
++					switch diagnostic.Classification {
++					case spec.DiagnosticParserError:
++						parserDiagnostics++
++						if diagnostic.Line != tc.invalidLine || diagnostic.Column != 1 {
++							t.Errorf("parser diagnostic = %d:%d, want %d:1", diagnostic.Line, diagnostic.Column, tc.invalidLine)
++						}
++					case DiagnosticUnsupportedStatement:
++						unsupportedDiagnostics++
++					}
++				}
++				if parserDiagnostics != 1 || unsupportedDiagnostics != 1 {
++					t.Errorf("diagnostics = %d parser + %d unsupported, want 1+1: %+v", parserDiagnostics, unsupportedDiagnostics, result.Diagnostics)
++				}
++				if len(result.Unsupported) != 1 {
++					t.Fatalf("unsupported = %+v, want exactly one procedure boundary", result.Unsupported)
++				}
++				t05A8AssertBoundaryItem(t, result, dialect, true, 0, 1)
++				for _, item := range result.Unsupported {
++					if item.Feature == spec.AuditResourceLimitFeature {
++						t.Error("parser failure must not fabricate a resource entry")
++					}
++				}
++
++				parsed, parseErr := Parse(ctx, tc.sql, dialect)
++				if parseErr == nil {
++					t.Fatal("expected a partial-parse error for the invalid line")
++				}
++				extracted, extractErr := Extract(ctx, parsed)
++				if extractErr != nil {
++					t.Fatal(extractErr)
++				}
++				var gotLines []int
++				for _, statement := range extracted {
++					gotLines = append(gotLines, statement.Line)
++					if statement.Column != 1 {
++						t.Errorf("statement column = %d, want 1", statement.Column)
++					}
++				}
++				if !reflect.DeepEqual(gotLines, tc.retained) {
++					t.Errorf("retained lines = %v, want %v", gotLines, tc.retained)
++				}
++
++				if tc.name == "failure_before" {
++					for index, want := range t05A8GapFollowers {
++						got := result.Statements[index]
++						if got.Coverage.Status != report.CoverageUnverified || !reflect.DeepEqual(got.EvidenceGaps, want) {
++							t.Errorf("statement %d = %s gaps=%+v, want unverified %+v", index, got.Coverage.Status, got.EvidenceGaps, want)
++						}
++					}
++				} else {
++					control, controlErr := AuditSQL(ctx, Request{
++						SQL: t05A8Input("CREATE PROCEDURE p() SELECT 1;"), Dialect: dialect, Schema: "golden",
++						ConfigPath: t05A7FourRulePolicy(t), MetadataProvider: &t05A8Provider{},
++					})
++					if !errors.Is(controlErr, ErrUnsupportedStatement) {
++						t.Fatalf("clean control error = %v, want ErrUnsupportedStatement", controlErr)
++					}
++					for i := range result.Statements {
++						if !reflect.DeepEqual(result.Statements[i], control.Statements[i]) {
++							t.Errorf("statement %d changed by trailing parser failure: %+v vs %+v", i, result.Statements[i], control.Statements[i])
++						}
++					}
++				}
++			})
++		}
++	}
++
++	t.Run("compound_parser_control_mysql", func(t *testing.T) {
++		result, err := AuditSQL(context.Background(), Request{
++			SQL: t05A8Input("CREATE PROCEDURE p() BEGIN SELECT 1; END;"), Dialect: spec.DialectMySQL, Schema: "golden",
++			ConfigPath: t05A7FourRulePolicy(t), MetadataProvider: &t05A8Provider{},
++		})
++		if !errors.Is(err, errParserUnsupported) {
++			t.Fatalf("error = %v, want errParserUnsupported", err)
++		}
++		for _, item := range result.Unsupported {
++			if strings.Contains(item.Feature, "procedure") {
++				t.Errorf("failed procedure text must not yield a procedure boundary: %+v", item)
++			}
++		}
++	})
++
++	t.Run("cancellation", func(t *testing.T) {
++		ctx := context.Background()
++		parsed, err := Parse(ctx, t05A8Input("CREATE PROCEDURE p() SELECT 1;"), spec.DialectMySQL)
++		if err != nil {
++			t.Fatal(err)
++		}
++		extracted, err := Extract(ctx, parsed)
++		if err != nil {
++			t.Fatal(err)
++		}
++		procedure := extracted[1]
++
++		for _, tc := range []struct {
++			name string
++			ctx  func() (context.Context, context.CancelFunc)
++		}{
++			{"already_canceled", func() (context.Context, context.CancelFunc) {
++				base, cancel := context.WithCancel(context.Background())
++				cancel()
++				return base, cancel
++			}},
++			{"cancel_on_first_check", func() (context.Context, context.CancelFunc) {
++				checking, cancel := t05A7CancelContext(1)
++				return checking, cancel
++			}},
++		} {
++			t.Run(tc.name, func(t *testing.T) {
++				provider := &t05A8Provider{snapshots: t05A8SeedSnapshots()}
++				state := newBatchState(spec.DialectMySQL, "golden", provider)
++				if _, err := state.preState(context.Background(), "golden", spec.Table{Name: "t"}); err != nil {
++					t.Fatal(err)
++				}
++				before := t05A8SnapshotEntries(state)
++				beforeEvents := append([]string(nil), provider.events...)
++				cancelCtx, cancel := tc.ctx()
++				t.Cleanup(cancel)
++				procedureBefore := procedure
++				if err := state.apply(cancelCtx, procedure); !errors.Is(err, context.Canceled) {
++					t.Fatalf("apply error = %v, want context.Canceled", err)
++				}
++				t05A8AssertEntriesEqual(t, before, state)
++				if state.contaminated {
++					t.Error("canceled apply must not contaminate")
++				}
++				if !reflect.DeepEqual(provider.events, beforeEvents) || !reflect.DeepEqual(procedure, procedureBefore) {
++					t.Error("canceled apply touched provider or statement")
++				}
++			})
++		}
++
++		t.Run("full_core_precanceled", func(t *testing.T) {
++			cancelCtx, cancel := context.WithCancel(context.Background())
++			cancel()
++			t.Cleanup(cancel)
++			provider := &t05A8Provider{}
++			_, err := auditWithLimits(cancelCtx, Request{
++				SQL: t05A8Input("CREATE PROCEDURE p() SELECT 1;"), Dialect: spec.DialectMySQL, Schema: "golden",
++				ConfigPath: t05A7FourRulePolicy(t), MetadataProvider: provider,
++			}, auditLimits{orderedStatements: 4})
++			if !errors.Is(err, context.Canceled) {
++				t.Fatalf("error = %v, want context.Canceled", err)
++			}
++			if len(provider.events) != 0 {
++				t.Errorf("provider events = %v, want none", provider.events)
++			}
++		})
++
++		t.Run("full_core_instance_cancel", func(t *testing.T) {
++			cancelCtx, cancel := context.WithCancel(context.Background())
++			t.Cleanup(cancel)
++			provider := &t05A8Provider{onInstance: cancel}
++			_, err := auditWithLimits(cancelCtx, Request{
++				SQL: t05A8Input("CREATE PROCEDURE p() SELECT 1;"), Dialect: spec.DialectMySQL, Schema: "golden",
++				ConfigPath: t05A7FourRulePolicy(t), MetadataProvider: provider,
++			}, auditLimits{orderedStatements: 4})
++			if !errors.Is(err, context.Canceled) {
++				t.Fatalf("error = %v, want context.Canceled", err)
++			}
++			if !reflect.DeepEqual(provider.events, []string{"instance"}) {
++				t.Errorf("provider events = %v, want [instance] only", provider.events)
++			}
++		})
++	})
++
++	t.Run("provider_errors", func(t *testing.T) {
++		sentinel := errors.New("t05a8 provider sentinel")
++		_, err := t05A7Audit(t, t05A8Input("CREATE PROCEDURE p() SELECT 1;"), spec.DialectMySQL,
++			&t05A8Provider{instanceErr: sentinel}, t05A7FourRulePolicy(t), 4)
++		if !errors.Is(err, sentinel) {
++			t.Fatalf("instance error = %v, want sentinel", err)
++		}
++		_, err = t05A7Audit(t, t05A8Input("CREATE PROCEDURE p() SELECT 1;"), spec.DialectMySQL,
++			&t05A8Provider{snapshotErr: sentinel, failTable: "golden.t"}, t05A7FourRulePolicy(t), 4)
++		if !errors.Is(err, sentinel) {
++			t.Fatalf("snapshot error = %v, want sentinel", err)
++		}
++		provider := &t05A8Provider{snapshotErr: sentinel, failTable: "golden.never_loaded"}
++		result, err := t05A7Audit(t,
++			"CREATE TABLE t (id INT PRIMARY KEY);\nCREATE PROCEDURE p() SELECT 1;\nALTER TABLE never_loaded ADD COLUMN c INT;\nCREATE INDEX idx_c ON t(c);",
++			spec.DialectMySQL, provider, t05A7FourRulePolicy(t), 1)
++		if !errors.Is(err, ErrUnsupportedStatement) || errors.Is(err, sentinel) {
++			t.Fatalf("blocked-suffix error = %v, want unsupported not the unread provider sentinel", err)
++		}
++		for _, event := range provider.events {
++			if event == "snapshot:golden.never_loaded" {
++				t.Errorf("blocked table was read: %v", provider.events)
++			}
++		}
++		if len(t05A7ResourceEntries(result)) != 3 {
++			t.Errorf("resource entries = %+v, want 3", result.Unsupported)
++		}
++	})
++
++	t.Run("reject_preserved", func(t *testing.T) {
++		for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
++			t.Run(string(dialect), func(t *testing.T) {
++				sql := "CREATE TABLE t (id INT PRIMARY KEY);\n" +
++					"ALTER TABLE t ADD COLUMN id INT;\n" +
++					"CREATE PROCEDURE p() SELECT 1;\n" +
++					"ALTER TABLE t ADD COLUMN c INT;\n" +
++					"CREATE INDEX idx_c ON t(c);"
++				provider := &t05AbsentProvider{}
++				result, err := AuditSQL(context.Background(), Request{
++					SQL: sql, Dialect: dialect, Schema: "golden",
++					ConfigPath: t05A7FourRulePolicy(t), MetadataProvider: provider,
++				})
++				if !errors.Is(err, ErrUnsupportedStatement) {
++					t.Fatalf("error = %v, want ErrUnsupportedStatement", err)
++				}
++				if result.Verdict != report.VerdictReject || result.Verdict == report.VerdictReview {
++					t.Fatalf("verdict = %s, want reject (never review)", result.Verdict)
++				}
++				if result.Coverage.Status != report.CoverageIncomplete {
++					t.Fatalf("coverage = %s, want incomplete", result.Coverage.Status)
++				}
++				if len(result.Statements) != 5 {
++					t.Fatalf("statements = %d, want 5", len(result.Statements))
++				}
++				duplicate := result.Statements[1]
++				if len(duplicate.Findings) != 1 {
++					t.Fatalf("duplicate-ADD findings = %+v, want exactly one blocker", duplicate.Findings)
++				}
++				finding := duplicate.Findings[0]
++				if finding.RuleID != "ddl.alter.add_column.exists.forbid" || finding.Level != rule.LevelBlocker ||
++					finding.Metadata["table"] != "t" || finding.Metadata["name"] != "id" {
++					t.Fatalf("duplicate-ADD finding = %+v, want exists.forbid blocker bound to t/id", finding)
++				}
++				if duplicate.Coverage.Status != report.CoverageComplete {
++					t.Errorf("duplicate-ADD coverage = %s, want complete", duplicate.Coverage.Status)
++				}
++				if len(result.Unsupported) != 1 {
++					t.Fatalf("unsupported = %+v, want one procedure boundary", result.Unsupported)
++				}
++				t05A8AssertBoundaryItem(t, result, dialect, true, 0, 2)
++				procedure := result.Statements[2]
++				if procedure.Coverage.Status != report.CoverageIncomplete || len(procedure.Findings) != 0 || len(procedure.EvidenceGaps) != 0 {
++					t.Fatalf("procedure = %s findings=%+v gaps=%+v, want incomplete with none", procedure.Coverage.Status, procedure.Findings, procedure.EvidenceGaps)
++				}
++				indexGap := []rule.EvidenceGap{{RuleID: "ddl.create_index.columns.exists.require", ReasonCode: "unknown_table_state", RequiredFacts: []string{"target_table.columns"}}}
++				for i, want := range map[int][]rule.EvidenceGap{3: t05A8GapFollowers[2], 4: indexGap} {
++					got := result.Statements[i]
++					if got.Coverage.Status != report.CoverageUnverified || !reflect.DeepEqual(got.EvidenceGaps, want) {
++						t.Errorf("statement %d = %s gaps=%+v, want unverified %+v", i, got.Coverage.Status, got.EvidenceGaps, want)
++					}
++				}
++				if !reflect.DeepEqual(provider.calls, []string{"golden.t"}) {
++					t.Errorf("provider reads = %v, want only golden.t once", provider.calls)
++				}
++			})
++		}
++	})
++
++	t.Run("object_resolver_cache", func(t *testing.T) {
++		ctx := context.Background()
++		sql := "CREATE DATABASE before_schema;\nCREATE PROCEDURE p() SELECT 1;\nCREATE DATABASE before_schema;"
++		for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
++			t.Run(string(dialect), func(t *testing.T) {
++				parsed, parseErr := Parse(ctx, sql, dialect)
++				if parseErr != nil {
++					t.Fatal(parseErr)
++				}
++				extracted, extractErr := Extract(ctx, parsed)
++				if extractErr != nil {
++					t.Fatal(extractErr)
++				}
++				if len(extracted) != 3 {
++					t.Fatalf("extracted = %d, want 3", len(extracted))
++				}
++				provider := &t05A8Provider{}
++				enriched, err := enrichStatementsWithMetadata(ctx, dialect,
++					&MetadataRequest{Schema: "golden", Provider: provider}, extracted, parsed.failures)
++				if err != nil {
++					t.Fatal(err)
++				}
++				if !reflect.DeepEqual(provider.events, []string{"instance", "object:schema:golden.before_schema"}) {
++					t.Fatalf("provider events = %v, want one cached schema lookup", provider.events)
++				}
++				want := []spec.ObjectSnapshot{{Schema: "golden", Type: "schema", Name: "before_schema", Status: spec.MetadataStatusConfirmed, Exists: true}}
++				if !reflect.DeepEqual(enriched[0].Metadata.Objects, want) ||
++					!reflect.DeepEqual(enriched[2].Metadata.Objects, want) {
++					t.Errorf("object projections = %+v / %+v, want %+v", enriched[0].Metadata.Objects, enriched[2].Metadata.Objects, want)
++				}
++				if len(enriched[1].Metadata.Objects) != 0 {
++					t.Errorf("procedure objects = %+v, want none", enriched[1].Metadata.Objects)
++				}
++			})
++		}
++	})
++
++	t.Run("params_fixture", func(t *testing.T) {
++		for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
++			t.Run(string(dialect), func(t *testing.T) {
++				provider := &t05A8Provider{}
++				result, err := AuditSQL(context.Background(), Request{
++					SQL: t05A8Input("CREATE PROCEDURE p(IN x INT) SELECT 1;"), Dialect: dialect, Schema: "golden",
++					ConfigPath: t05A7FourRulePolicy(t), MetadataProvider: provider,
++				})
++				if !errors.Is(err, ErrUnsupportedStatement) {
++					t.Fatalf("error = %v, want ErrUnsupportedStatement", err)
++				}
++				for i, statement := range result.Statements {
++					if i != 1 && (statement.Coverage.Status != report.CoverageComplete || len(statement.EvidenceGaps) != 0) {
++						t.Errorf("follower %d = %s gaps=%+v, want complete", i, statement.Coverage.Status, statement.EvidenceGaps)
++					}
++				}
++				if dialect == spec.DialectMySQL {
++					if len(result.Unsupported) != 2 {
++						t.Fatalf("unsupported = %+v, want exactly two entries", result.Unsupported)
++					}
++					features := map[string]spec.UnsupportedDetail{}
++					for _, item := range result.Unsupported {
++						features[item.Feature] = item
++					}
++					if len(features) != 2 {
++						t.Fatalf("unsupported = %+v, want exactly params+body", result.Unsupported)
++					}
++					for _, feature := range []string{"create_procedure.option.params", "create_procedure.body"} {
++						item, ok := features[feature]
++						if !ok || item.Reason != spec.UnsupportedUnauditedReason || item.Index != 1 ||
++							item.SQL != result.Statements[1].RawSQL || !reflect.DeepEqual(item.Metadata, map[string]any{"aspect": "option"}) {
++							t.Fatalf("aspect %s = %+v, want unaudited at index 1", feature, item)
++						}
++					}
++				} else {
++					if len(result.Unsupported) != 1 {
++						t.Fatalf("unsupported = %+v, want the single vendor projection", result.Unsupported)
++					}
++					t05A8AssertBoundaryItem(t, result, dialect, true, 0, 1)
++				}
++			})
++		}
++	})
++
++	t.Run("lifecycle_notice", func(t *testing.T) {
++		for _, tc := range []struct {
++			name, sql, ruleID string
++			create            bool
++		}{
++			{"create", "CREATE PROCEDURE p() SELECT 1;", "ddl.create_procedure.notice", true},
++			{"drop", "DROP PROCEDURE p;", "ddl.drop_procedure.notice", false},
++		} {
++			for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
++				t.Run(string(dialect)+"/"+tc.name, func(t *testing.T) {
++					policy := t05PolicyPathConfigured(t, map[string]t05RuleConfig{tc.ruleID: {level: "notice"}})
++					result, err := AuditSQL(context.Background(), Request{
++						SQL: tc.sql, Dialect: dialect, ConfigPath: policy, MetadataProvider: &t05A8Provider{},
++					})
++					if dialect == spec.DialectMySQL && !tc.create {
++						if err != nil {
++							t.Fatalf("mysql drop error = %v, want nil", err)
++						}
++						if len(result.Unsupported) != 0 || result.Coverage.Status != report.CoverageComplete || result.Verdict != report.VerdictPass {
++							t.Fatalf("mysql drop = %s/%s unsupported=%+v, want pass/complete none", result.Verdict, result.Coverage.Status, result.Unsupported)
++						}
++					} else {
++						if !errors.Is(err, ErrUnsupportedStatement) {
++							t.Fatalf("error = %v, want ErrUnsupportedStatement", err)
++						}
++						if result.Coverage.Status != report.CoverageIncomplete {
++							t.Fatalf("coverage = %s, want incomplete; vendor/aspect must not promote to complete", result.Coverage.Status)
++						}
++					}
++					if dialect == spec.DialectTiDB {
++						if len(result.Statements) != 1 || len(result.Statements[0].Findings) != 0 {
++							t.Fatalf("tidb findings = %+v, want none (vendor skip)", result.Statements)
++						}
++						if result.RuleSummary == nil || result.RuleSummary.Loaded != 1 || result.RuleSummary.Applicable != 0 {
++							t.Fatalf("tidb rule summary = %+v, want loaded=1 applicable=0", result.RuleSummary)
++						}
++						if len(result.Unsupported) != 1 {
++							t.Fatalf("tidb unsupported = %+v, want vendor entry", result.Unsupported)
++						}
++						t05A8AssertBoundaryItem(t, result, dialect, tc.create, 0, 0)
++						return
++					}
++					if len(result.Statements) != 1 {
++						t.Fatalf("statements = %d, want 1", len(result.Statements))
++					}
++					if len(result.Statements[0].Findings) != 1 || result.Statements[0].Findings[0].RuleID != tc.ruleID ||
++						result.Statements[0].Findings[0].Level != rule.LevelNotice {
++						t.Fatalf("findings = %+v, want exactly one %s notice", result.Statements[0].Findings, tc.ruleID)
++					}
++				})
++			}
++		}
++	})
++
++	t.Run("registry_consumers", func(t *testing.T) {
++		for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
++			for _, tc := range []struct {
++				name, sql string
++				create    bool
++			}{
++				{"create", "CREATE PROCEDURE p() SELECT 1;", true},
++				{"drop", "DROP PROCEDURE p;", false},
++			} {
++				t.Run(string(dialect)+"/"+tc.name, func(t *testing.T) {
++					ctx := context.Background()
++					parsed, err := Parse(ctx, t05A8Input(tc.sql), dialect)
++					if err != nil {
++						t.Fatal(err)
++					}
++					extracted, err := Extract(ctx, parsed)
++					if err != nil {
++						t.Fatal(err)
++					}
++					enriched, err := enrichStatementsWithMetadata(ctx, dialect,
++						&MetadataRequest{Schema: "golden", Provider: &t05A8Provider{}}, extracted[1:2], parsed.failures)
++					if err != nil {
++						t.Fatal(err)
++					}
++					statementSpy := &t05A7RuleSpy{id: "t05a8.spy.statement"}
++					globalSpy := &t05A7GlobalSpy{id: "t05a8.spy.global"}
++					registry := rule.NewRegistry()
++					if err := registry.RegisterStatement(statementSpy); err != nil {
++						t.Fatal(err)
++					}
++					if err := registry.RegisterGlobal(globalSpy); err != nil {
++						t.Fatal(err)
++					}
++					if _, err := EvaluateStatements(ctx, registry, enriched); err != nil {
++						t.Fatal(err)
++					}
++					raw := strings.TrimSpace(tc.sql)
++					if dialect == spec.DialectMySQL {
++						if !reflect.DeepEqual(statementSpy.applied, []string{raw}) ||
++							!reflect.DeepEqual(statementSpy.evaluated, []string{raw}) ||
++							!reflect.DeepEqual(statementSpy.gapsSeen, []string{raw}) {
++							t.Errorf("mysql procedure must reach statement rule consumers: applies=%v eval=%v gaps=%v",
++								statementSpy.applied, statementSpy.evaluated, statementSpy.gapsSeen)
++						}
++						if len(globalSpy.raws) != 1 || !reflect.DeepEqual(globalSpy.raws[0], []string{raw}) {
++							t.Errorf("mysql procedure must reach global rules: %v", globalSpy.raws)
++						}
++					} else {
++						if len(statementSpy.applied) != 0 || len(statementSpy.evaluated) != 0 || len(statementSpy.gapsSeen) != 0 {
++							t.Errorf("tidb vendor statement must stay skipped: applies=%v eval=%v gaps=%v",
++								statementSpy.applied, statementSpy.evaluated, statementSpy.gapsSeen)
++						}
++						for _, batch := range globalSpy.raws {
++							for _, seen := range batch {
++								if seen == raw {
++									t.Errorf("tidb vendor statement reached global input: %v", globalSpy.raws)
++								}
++							}
++						}
++					}
++				})
++			}
++		}
++	})
++}
+diff --git a/internal/interfaces/http/README.md b/internal/interfaces/http/README.md
+index 8d513577..e9ec4be7 100644
+--- a/internal/interfaces/http/README.md
++++ b/internal/interfaces/http/README.md
+@@ -20,6 +20,7 @@ HTTP exposes DeltaScope audit and metadata-aware review capabilities as a JSON s
+ | audit_ordered_modify_a4_test.go | Verifies the T05-A4 HTTP contract under the offline four-rule policy: `VARCHAR(10) → 20 → 15` returns 200/`reject`/`unverified` with the CREATE gap and one `source_length=20`/`target_length=15` blocker; `10 → 20 → 30` returns 200/`review`/`unverified` with derived-complete followers; an isolated unknown MODIFY returns 200 with existence and `missing_source_column` gaps and zero findings; empty SQL returns 400 `bad_request` |
+ | audit_ordered_drop_column_a6_test.go | Verifies the T05-A6 HTTP contract under the offline six-rule policy with schema golden: the first path returns 200/`review`/`unverified` with only the CREATE gap, and `ix_removed(obsolete)` returns 200/`reject` with one index-column blocker whose schema is golden |
+ | audit_resource_limit_a7_test.go | Verifies the T05-A7 HTTP contract: a 1025-statement MySQL `/v1/audit` request returns HTTP 400 with the existing error envelope and `unsupported_statement` diagnostic, the retained `review`/`incomplete` result keeping the first 1024 statements complete and one `audit.resource_limit` entry with ordered_state metadata |
++| audit_procedure_state_a8_test.go | Verifies the T05-A8 HTTP contract under the isolated four-rule policy at schema golden: a TiDB `CREATE PROCEDURE` `/v1/audit` request returns HTTP 400 `bad_request` with `review`/`incomplete` and one vendor boundary while a MySQL `DROP PROCEDURE` request returns HTTP 200 `review`/`unverified`, both keeping the four ddl identities, the exact first `unknown_table_state` gap, and complete followers |
+ | audit_version_t04b_test.go | Verifies issue #83 T04-B transport contract: `target_version` projects the canonical `version` block, malformed or mismatched input maps to HTTP 400 with no audit result, and missing/out-of-range versions produce bounded `evidence_gaps` |
+ | handler_ddl_lifecycle_mysql_test.go | Verifies HTTP lifecycle findings for MySQL/TiDB DDL, including 400 envelopes for supported statements that still carry extracted-but-unaudited option aspects (sequence/placement-policy option lists, per-spec account `identified` auth) |
+ | handler_test.go | Verifies HTTP request binding, error mapping, JSON response shape without CLI-only `fail_on_triggered`, metadata-aware omission of offline existence caveats, field-level rejection of MCP `connection_ref`, and per-target denylist findings for multi-target DROP/RENAME via `config_path` |
+diff --git a/internal/interfaces/http/audit_procedure_state_a8_test.go b/internal/interfaces/http/audit_procedure_state_a8_test.go
+new file mode 100644
+index 00000000..0a65e508
+--- /dev/null
++++ b/internal/interfaces/http/audit_procedure_state_a8_test.go
+@@ -0,0 +1,199 @@
++// Package httpapi verifies the T05-A8 procedure lifecycle at the HTTP seam.
++// input: four-statement TiDB CREATE PROCEDURE and MySQL DROP PROCEDURE /v1/audit requests through the real handler
++// output: HTTP 400 vendor-boundary envelope versus HTTP 200 supported MySQL DROP result
++// pos: HTTP transport contract test for procedure table-state isolation (T05-A8)
++// note: if this file changes, update this header and module README.md.
++package httpapi
++
++import (
++	"bytes"
++	"encoding/json"
++	"fmt"
++	"net/http"
++	"net/http/httptest"
++	"os"
++	"path/filepath"
++	"reflect"
++	"strings"
++	"testing"
++
++	"github.com/Fanduzi/DeltaScope/internal/domain/rule/catalog"
++)
++
++var t05A8HTTPLines = []string{
++	"CREATE TABLE t (id INT PRIMARY KEY);",
++	"",
++	"ALTER TABLE t ADD COLUMN c INT;",
++	"CREATE INDEX idx_c ON t(c);",
++}
++
++func t05A8HTTPPolicy(t *testing.T) string {
++	t.Helper()
++	enabled := map[string]string{
++		"ddl.table.exists.create.forbid":          "",
++		"ddl.table.exists.alter.require":          "",
++		"ddl.alter.add_column.exists.forbid":      "",
++		"ddl.create_index.columns.exists.require": "      required: true\n",
++	}
++	for id := range enabled {
++		if _, ok := catalog.Lookup(id); !ok {
++			t.Fatalf("missing catalog rule %s", id)
++		}
++	}
++	var text strings.Builder
++	text.WriteString("rules:\n")
++	for _, entry := range catalog.All() {
++		params, on := enabled[entry.RuleID]
++		fmt.Fprintf(&text, "  %q:\n    enabled: %t\n", entry.RuleID, on)
++		if on {
++			text.WriteString("    level: blocker\n")
++			if params != "" {
++				text.WriteString("    params:\n" + params)
++			}
++		}
++	}
++	path := filepath.Join(t.TempDir(), "policy.yaml")
++	if err := os.WriteFile(path, []byte(text.String()), 0o600); err != nil {
++		t.Fatal(err)
++	}
++	return path
++}
++
++func postT05A8Audit(t *testing.T, dialect, sql string) (int, map[string]any) {
++	t.Helper()
++	handler, err := NewHandler(t05A8HTTPPolicy(t), "test-build")
++	if err != nil {
++		t.Fatalf("new handler: %v", err)
++	}
++	body, err := json.Marshal(map[string]any{"sql": sql, "dialect": dialect, "schema": "golden"})
++	if err != nil {
++		t.Fatalf("marshal request: %v", err)
++	}
++	req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewReader(body))
++	req.Header.Set("Content-Type", "application/json")
++	rec := httptest.NewRecorder()
++	handler.ServeHTTP(rec, req)
++	var payload map[string]any
++	if err := json.Unmarshal(rec.Body.Bytes(), &payload); err != nil {
++		t.Fatalf("decode response: %v", err)
++	}
++	return rec.Code, payload
++}
++
++func TestHandlerT05A8ProcedureOuterState(t *testing.T) {
++	cases := []struct {
++		name      string
++		dialect   string
++		procedure string
++		wantCode  int
++		coverage  string
++		boundary  bool
++	}{
++		{"tidb_create", "tidb", "CREATE PROCEDURE p() SELECT 1;", http.StatusBadRequest, "incomplete", true},
++		{"mysql_drop", "mysql", "DROP PROCEDURE p;", http.StatusOK, "unverified", false},
++	}
++	for _, tc := range cases {
++		t.Run(tc.name, func(t *testing.T) {
++			lines := append([]string(nil), t05A8HTTPLines...)
++			lines[1] = tc.procedure
++			code, payload := postT05A8Audit(t, tc.dialect, strings.Join(lines, "\n"))
++			if code != tc.wantCode {
++				t.Fatalf("status = %d, want %d: %#v", code, tc.wantCode, payload)
++			}
++			if payload["verdict"] != "review" {
++				t.Fatalf("verdict = %#v, want review", payload["verdict"])
++			}
++			if tc.wantCode == http.StatusBadRequest {
++				errBody, _ := payload["error"].(map[string]any)
++				if errBody == nil || errBody["code"] != "bad_request" {
++					t.Fatalf("expected the existing bad_request error envelope, got %#v", payload["error"])
++				}
++				diagnosticSeen := false
++				for _, raw := range payload["diagnostics"].([]any) {
++					if diagnostic, _ := raw.(map[string]any); diagnostic["classification"] == "unsupported_statement" {
++						diagnosticSeen = true
++					}
++				}
++				if !diagnosticSeen {
++					t.Fatalf("expected the unsupported_statement diagnostic, got %#v", payload["diagnostics"])
++				}
++			} else if payload["error"] != nil {
++				t.Fatalf("unexpected error envelope %#v", payload["error"])
++			}
++			if coverage, _ := payload["coverage"].(map[string]any); coverage["status"] != tc.coverage {
++				t.Fatalf("coverage = %#v, want %s", payload["coverage"], tc.coverage)
++			}
++			statements, _ := payload["statements"].([]any)
++			if len(statements) != 4 {
++				t.Fatalf("statements = %d, want 4", len(statements))
++			}
++			for i, raw := range statements {
++				statement, _ := raw.(map[string]any)
++				normalized, ok := statement["normalized_sql"].(string)
++				if !ok || normalized == "" {
++					t.Fatalf("statement %d normalized_sql = %#v, want nonempty string", i, statement["normalized_sql"])
++				}
++				if statement["index"] != float64(i) || statement["kind"] != "ddl" ||
++					statement["raw_sql"] != lines[i] || normalized != strings.TrimSuffix(lines[i], ";") {
++					t.Fatalf("statement %d identity = %#v", i, statement)
++				}
++				if statement["findings"] != nil || statement["impact"] != nil {
++					t.Fatalf("statement %d = %#v, want no findings/impact", i, statement)
++				}
++			}
++			first, _ := statements[0].(map[string]any)
++			firstCoverage, _ := first["coverage"].(map[string]any)
++			if firstCoverage["status"] != "unverified" {
++				t.Fatalf("first coverage = %#v, want unverified", firstCoverage)
++			}
++			gaps, _ := first["evidence_gaps"].([]any)
++			if len(gaps) != 1 {
++				t.Fatalf("first gaps = %#v, want exactly one", first["evidence_gaps"])
++			}
++			gap, _ := gaps[0].(map[string]any)
++			if gap["rule_id"] != "ddl.table.exists.create.forbid" || gap["reason_code"] != "unknown_table_state" ||
++				!reflect.DeepEqual(gap["required_facts"], []any{"target_table.existence"}) {
++				t.Fatalf("first gap = %#v, want unknown_table_state create-existence", gap)
++			}
++			procedure, _ := statements[1].(map[string]any)
++			procedureCoverage, _ := procedure["coverage"].(map[string]any)
++			wantProcedureCoverage := "complete"
++			if tc.boundary {
++				wantProcedureCoverage = "incomplete"
++			}
++			if procedureCoverage["status"] != wantProcedureCoverage || procedure["evidence_gaps"] != nil {
++				t.Fatalf("procedure = %#v, want %s with no gaps", procedure, wantProcedureCoverage)
++			}
++			for i := 2; i < 4; i++ {
++				follower, _ := statements[i].(map[string]any)
++				followerCoverage, _ := follower["coverage"].(map[string]any)
++				if followerCoverage["status"] != "complete" || follower["evidence_gaps"] != nil {
++					t.Fatalf("follower %d = %#v, want complete with no gaps", i, follower)
++				}
++			}
++			unsupported, _ := payload["unsupported"].([]any)
++			wantUnsupported := 0
++			if tc.boundary {
++				wantUnsupported = 1
++			}
++			if len(unsupported) != wantUnsupported {
++				t.Fatalf("unsupported = %#v, want %d", payload["unsupported"], wantUnsupported)
++			}
++			if tc.boundary {
++				item, _ := unsupported[0].(map[string]any)
++				if item["index"] != float64(1) || item["feature"] != "create_procedure" ||
++					item["reason"] != "parsed by the shared parser but outside the supported statement surface for this dialect" ||
++					item["sql"] != procedure["raw_sql"] ||
++					!reflect.DeepEqual(item["metadata"], map[string]any{"boundary": "vendor"}) {
++					t.Fatalf("boundary = %#v, want create_procedure vendor at index 1 bound to raw_sql", item)
++				}
++			}
++			if payload["global_findings"] != nil {
++				t.Fatalf("global findings = %#v, want none", payload["global_findings"])
++			}
++			if summary, _ := payload["summary"].(map[string]any); summary["blockers"] != float64(0) || summary["warnings"] != float64(0) || summary["notices"] != float64(0) {
++				t.Fatalf("finding counters = %#v, want zero", summary)
++			}
++		})
++	}
++}
+diff --git a/pkg/deltascope/README.md b/pkg/deltascope/README.md
+index e24872f8..cc830eb0 100644
+--- a/pkg/deltascope/README.md
++++ b/pkg/deltascope/README.md
+@@ -36,6 +36,7 @@ Stable public package surface for library consumers.
+ | audit_ordered_modify_a4_test.go | Verifies the T05-A4 public contract under the isolated four-rule policy: a provider-confirmed-absent `VARCHAR(10) → 20 → 15` returns nil error, `complete`/`reject`, one compatibility blocker with `source_length=20` and `target_length=15`, and exactly one `t` read for both dialects; `10 → 20 → 30` returns `complete`/`pass`; the same sequences without a provider keep the leading CREATE `unknown_table_state` gap (`reject`/`unverified` when narrowed, `review`/`unverified` when widened); a provider sentinel survives `errors.Is` |
+ | audit_ordered_drop_column_a6_test.go | Verifies the T05-A6 public contract under the isolated six-rule policy: a provider-confirmed-absent first path returns nil error, `complete`/`pass`, and exactly one `t` read for both dialects; `ix_removed(obsolete)` returns nil error, `complete`/`reject`, and one index-column blocker with schema golden |
+ | audit_resource_limit_a7_test.go | Verifies the T05-A7 public contract: a 1025-statement MySQL request returns `ErrUnsupportedStatement` with a retained `review`/`incomplete` partial result whose first 1024 statements stay complete and whose blocked statement keeps index/kind/raw/normalized identity plus exactly one `audit.resource_limit` unsupported entry with the ordered_state metadata |
++| audit_procedure_state_a8_test.go | Verifies the T05-A8 public SDK contract under the isolated four-rule policy at schema golden: a TiDB `CREATE PROCEDURE` batch returns `ErrUnsupportedStatement` with `review`/`incomplete` and one vendor boundary while a MySQL `DROP PROCEDURE` batch returns nil error with `review`/`unverified`, both keeping the four ddl identities, the exact first `unknown_table_state` gap, and complete followers |
+ | query_access_test.go | Verifies the public query access API with dialect routing, mode handling, JSON structure parity, and context cancellation |
+ | query_access_probe_boundary_no_leak_test.go | No-leak regression for the MySQL/TiDB builtin-identity probe boundary: asserts injected markers, identity facts, candidates, session/context, manifest, raw SQL, and `severity` are absent from the SDK result and JSON mapping |
+ 
+diff --git a/pkg/deltascope/audit_procedure_state_a8_test.go b/pkg/deltascope/audit_procedure_state_a8_test.go
+new file mode 100644
+index 00000000..6eb521c9
+--- /dev/null
++++ b/pkg/deltascope/audit_procedure_state_a8_test.go
+@@ -0,0 +1,154 @@
++// Package deltascope verifies the T05-A8 procedure lifecycle at the public SDK seam.
++// input: four-statement TiDB CREATE PROCEDURE and MySQL DROP PROCEDURE migration batches through the public Audit entrypoint
++// output: ErrUnsupportedStatement partial results versus nil-error gap-only results, with complete outer followers
++// pos: public SDK contract test for procedure table-state isolation (T05-A8)
++// note: if this file changes, update this header and module README.md.
++package deltascope
++
++import (
++	"context"
++	"errors"
++	"fmt"
++	"os"
++	"path/filepath"
++	"reflect"
++	"strings"
++	"testing"
++
++	"github.com/Fanduzi/DeltaScope/internal/domain/rule/catalog"
++)
++
++var t05A8ProcedureLines = []string{
++	"CREATE TABLE t (id INT PRIMARY KEY);",
++	"",
++	"ALTER TABLE t ADD COLUMN c INT;",
++	"CREATE INDEX idx_c ON t(c);",
++}
++
++func t05A8SDKPolicy(t *testing.T) string {
++	t.Helper()
++	enabled := map[string]string{
++		"ddl.table.exists.create.forbid":          "",
++		"ddl.table.exists.alter.require":          "",
++		"ddl.alter.add_column.exists.forbid":      "",
++		"ddl.create_index.columns.exists.require": "      required: true\n",
++	}
++	for id := range enabled {
++		if _, ok := catalog.Lookup(id); !ok {
++			t.Fatalf("missing catalog rule %s", id)
++		}
++	}
++	var text strings.Builder
++	text.WriteString("rules:\n")
++	for _, entry := range catalog.All() {
++		params, on := enabled[entry.RuleID]
++		fmt.Fprintf(&text, "  %q:\n    enabled: %t\n", entry.RuleID, on)
++		if on {
++			text.WriteString("    level: blocker\n")
++			if params != "" {
++				text.WriteString("    params:\n" + params)
++			}
++		}
++	}
++	path := filepath.Join(t.TempDir(), "policy.yaml")
++	if err := os.WriteFile(path, []byte(text.String()), 0o600); err != nil {
++		t.Fatal(err)
++	}
++	return path
++}
++
++func TestT05A8ProcedureOuterState(t *testing.T) {
++	policy := t05A8SDKPolicy(t)
++	cases := []struct {
++		name      string
++		dialect   Dialect
++		procedure string
++		wantErr   bool
++		verdict   Verdict
++		coverage  CoverageStatus
++		boundary  bool
++	}{
++		{"tidb_create", DialectTiDB, "CREATE PROCEDURE p() SELECT 1;", true, VerdictReview, CoverageIncomplete, true},
++		{"mysql_drop", DialectMySQL, "DROP PROCEDURE p;", false, VerdictReview, CoverageUnverified, false},
++	}
++	for _, tc := range cases {
++		t.Run(tc.name, func(t *testing.T) {
++			lines := append([]string(nil), t05A8ProcedureLines...)
++			lines[1] = tc.procedure
++			sql := strings.Join(lines, "\n")
++			result, err := Audit(context.Background(), Request{
++				SQL: sql, Dialect: tc.dialect, Schema: "golden", ConfigPath: policy,
++			})
++			if tc.wantErr {
++				if !errors.Is(err, ErrUnsupportedStatement) {
++					t.Fatalf("error = %v, want ErrUnsupportedStatement", err)
++				}
++			} else if err != nil {
++				t.Fatalf("error = %v, want nil", err)
++			}
++			if result.Verdict != tc.verdict || result.Coverage.Status != tc.coverage {
++				t.Fatalf("aggregate = %s/%s, want %s/%s", result.Verdict, result.Coverage.Status, tc.verdict, tc.coverage)
++			}
++			if len(result.Statements) != 4 {
++				t.Fatalf("statements = %d, want 4", len(result.Statements))
++			}
++			for i, statement := range result.Statements {
++				if statement.Index != i || statement.Kind != "ddl" || statement.RawSQL != lines[i] ||
++					statement.NormalizedSQL != strings.TrimSuffix(lines[i], ";") {
++					t.Fatalf("statement %d identity = %+v", i, statement)
++				}
++				if statement.Impact != nil {
++					t.Fatalf("statement %d impact = %+v, want nil", i, statement.Impact)
++				}
++			}
++			first := result.Statements[0]
++			if first.Coverage.Status != CoverageUnverified || len(first.Findings) != 0 {
++				t.Fatalf("first statement = %+v, want unverified with no findings", first)
++			}
++			if len(first.EvidenceGaps) != 1 {
++				t.Fatalf("first gaps = %+v, want exactly the create-existence gap", first.EvidenceGaps)
++			}
++			gap := first.EvidenceGaps[0]
++			if gap.RuleID != "ddl.table.exists.create.forbid" || gap.ReasonCode != "unknown_table_state" ||
++				!reflect.DeepEqual(gap.RequiredFacts, []string{"target_table.existence"}) {
++				t.Fatalf("first gap = %+v, want unknown_table_state create-existence", gap)
++			}
++			procedure := result.Statements[1]
++			wantProcedureCoverage := CoverageComplete
++			if tc.boundary {
++				wantProcedureCoverage = CoverageIncomplete
++			}
++			if procedure.Coverage.Status != wantProcedureCoverage || len(procedure.Findings) != 0 || len(procedure.EvidenceGaps) != 0 {
++				t.Fatalf("procedure statement = %+v, want %s with no findings/gaps", procedure, wantProcedureCoverage)
++			}
++			for i := 2; i < 4; i++ {
++				statement := result.Statements[i]
++				if statement.Coverage.Status != CoverageComplete || len(statement.Findings) != 0 || len(statement.EvidenceGaps) != 0 {
++					t.Fatalf("follower %d = %+v, want complete with no findings/gaps", i, statement)
++				}
++			}
++			wantUnsupported := 0
++			if tc.boundary {
++				wantUnsupported = 1
++			}
++			if len(result.Unsupported) != wantUnsupported {
++				t.Fatalf("unsupported = %+v, want %d", result.Unsupported, wantUnsupported)
++			}
++			if tc.boundary {
++				item := result.Unsupported[0]
++				if item.Index != 1 || item.Feature != "create_procedure" ||
++					item.Reason != "parsed by the shared parser but outside the supported statement surface for this dialect" ||
++					item.SQL != procedure.RawSQL ||
++					!reflect.DeepEqual(item.Metadata, map[string]any{"boundary": "vendor"}) {
++					t.Fatalf("boundary = %+v, want create_procedure vendor at index 1", item)
++				}
++			}
++			if len(result.GlobalFindings) != 0 {
++				t.Fatalf("global findings = %+v, want none", result.GlobalFindings)
++			}
++			if result.Summary.Blockers != 0 || result.Summary.Warnings != 0 || result.Summary.Notices != 0 {
++				t.Fatalf("finding counters = %+v, want zero", result.Summary)
++			}
++		})
++	}
++}

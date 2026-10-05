@@ -1,0 +1,4 @@
+cwd: /tmp/ds-t05-a8.7jDPXi/doc-check
+base HEAD: affad1b1
+applied code tree: eedf80c2be2f854b248d2c5014231bf68c058f3c
+argv: check_three_level_doc.sh --staged

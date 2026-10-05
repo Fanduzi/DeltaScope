@@ -1,0 +1,13 @@
+{
+  "cwd": "/Users/fan/GolangProjects/DeltaScope",
+  "argv": [
+    "/private/tmp/ds-t05-a8-plan.Bo8bDt/deltascope",
+    "rules",
+    "list",
+    "--format",
+    "json"
+  ],
+  "environment_overrides": {},
+  "returncode": 0,
+  "tested_head": "affad1b1ae72fd0a910286499e14b8ae2e98a5f5"
+}

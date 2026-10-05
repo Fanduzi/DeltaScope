@@ -1,0 +1,20 @@
+{
+  "cwd": "/Users/fan/GolangProjects/DeltaScope",
+  "argv": [
+    "/private/tmp/ds-t05-a8-plan.Bo8bDt/deltascope",
+    "audit",
+    "--sql",
+    "CREATE TABLE t (id INT PRIMARY KEY);\nCREATE PROCEDURE p() DELETE FROM t;\nALTER TABLE t ADD COLUMN c INT;\nCREATE INDEX idx_c ON t(c);\n",
+    "--config",
+    "/private/tmp/ds-t05-a8-plan.Bo8bDt/four-rule-policy.yaml",
+    "--dialect",
+    "tidb",
+    "--format",
+    "json",
+    "--fail-on",
+    "none"
+  ],
+  "environment_overrides": {},
+  "returncode": 1,
+  "tested_head": "affad1b1ae72fd0a910286499e14b8ae2e98a5f5"
+}

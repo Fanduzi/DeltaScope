@@ -1,0 +1,2 @@
+Previous HEAD position was affad1b1 docs(verification): publish T05-A7 budget and final-SHA evidence (#84)
+HEAD is now at c30be585 fix(audit): preserve outer table state across procedure lifecycle (#84)

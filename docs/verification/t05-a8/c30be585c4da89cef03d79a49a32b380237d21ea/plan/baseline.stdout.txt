@@ -1,0 +1,1 @@
+{"status": "baseline captured; implementation not attempted", "cases": 6, "tested_head": "affad1b1ae72fd0a910286499e14b8ae2e98a5f5", "output": "/private/tmp/ds-t05-a8-plan.Bo8bDt"}

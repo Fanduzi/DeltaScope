@@ -1,0 +1,1 @@
+argv: git diff --check affad1b1..c30be585

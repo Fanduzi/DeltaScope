@@ -1,0 +1,650 @@
+{
+  "scope": "A8 planning baseline only; no fix, no provider, no independent acceptance claim",
+  "cases": [
+    {
+      "case": "mysql-create-select",
+      "tested_head": "affad1b1ae72fd0a910286499e14b8ae2e98a5f5",
+      "actual_rc": 1,
+      "context": {
+        "mode": "offline",
+        "dialect": "mysql",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      },
+      "summary": {
+        "statements": 4,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "verdict": "review",
+      "coverage": {
+        "status": "incomplete"
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t (id INT PRIMARY KEY);",
+          "normalized_sql": "CREATE TABLE t (id INT PRIMARY KEY)",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.table.exists.create.forbid",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "target_table.existence"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        },
+        {
+          "index": 1,
+          "kind": "ddl",
+          "raw_sql": "CREATE PROCEDURE p() SELECT 1;",
+          "normalized_sql": "CREATE PROCEDURE p() SELECT 1",
+          "coverage": {
+            "status": "incomplete"
+          }
+        },
+        {
+          "index": 2,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t ADD COLUMN c INT;",
+          "normalized_sql": "ALTER TABLE t ADD COLUMN c INT",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 3,
+          "kind": "ddl",
+          "raw_sql": "CREATE INDEX idx_c ON t(c);",
+          "normalized_sql": "CREATE INDEX idx_c ON t(c)",
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "unsupported": [
+        {
+          "index": 1,
+          "feature": "create_procedure.body",
+          "sql": "CREATE PROCEDURE p() SELECT 1;",
+          "reason": "parsed by the shared parser but not covered by audited semantics",
+          "metadata": {
+            "aspect": "option"
+          }
+        }
+      ],
+      "diagnostics": [
+        {
+          "classification": "unsupported_statement",
+          "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+          "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+          "audited": false,
+          "dialect": "mysql"
+        }
+      ],
+      "rule_summary": {
+        "loaded": 4,
+        "applicable": 4,
+        "skipped": []
+      }
+    },
+    {
+      "case": "tidb-create-select",
+      "tested_head": "affad1b1ae72fd0a910286499e14b8ae2e98a5f5",
+      "actual_rc": 1,
+      "context": {
+        "mode": "offline",
+        "dialect": "tidb",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      },
+      "summary": {
+        "statements": 4,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "verdict": "review",
+      "coverage": {
+        "status": "incomplete"
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t (id INT PRIMARY KEY);",
+          "normalized_sql": "CREATE TABLE t (id INT PRIMARY KEY)",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.table.exists.create.forbid",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "target_table.existence"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        },
+        {
+          "index": 1,
+          "kind": "ddl",
+          "raw_sql": "CREATE PROCEDURE p() SELECT 1;",
+          "normalized_sql": "CREATE PROCEDURE p() SELECT 1",
+          "coverage": {
+            "status": "incomplete"
+          }
+        },
+        {
+          "index": 2,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t ADD COLUMN c INT;",
+          "normalized_sql": "ALTER TABLE t ADD COLUMN c INT",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.table.exists.alter.require",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "target_table.existence"
+              ]
+            },
+            {
+              "rule_id": "ddl.alter.add_column.exists.forbid",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "target_table.columns",
+                "target_table.existence"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        },
+        {
+          "index": 3,
+          "kind": "ddl",
+          "raw_sql": "CREATE INDEX idx_c ON t(c);",
+          "normalized_sql": "CREATE INDEX idx_c ON t(c)",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.create_index.columns.exists.require",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "target_table.columns",
+                "target_table.existence"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        }
+      ],
+      "unsupported": [
+        {
+          "index": 1,
+          "feature": "create_procedure",
+          "sql": "CREATE PROCEDURE p() SELECT 1;",
+          "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+          "metadata": {
+            "boundary": "vendor"
+          }
+        }
+      ],
+      "diagnostics": [
+        {
+          "classification": "unsupported_statement",
+          "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+          "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+          "audited": false,
+          "dialect": "tidb"
+        }
+      ],
+      "rule_summary": {
+        "loaded": 4,
+        "applicable": 4,
+        "skipped": []
+      }
+    },
+    {
+      "case": "mysql-drop",
+      "tested_head": "affad1b1ae72fd0a910286499e14b8ae2e98a5f5",
+      "actual_rc": 0,
+      "context": {
+        "mode": "offline",
+        "dialect": "mysql",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      },
+      "summary": {
+        "statements": 4,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "verdict": "review",
+      "coverage": {
+        "status": "unverified"
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t (id INT PRIMARY KEY);",
+          "normalized_sql": "CREATE TABLE t (id INT PRIMARY KEY)",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.table.exists.create.forbid",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "target_table.existence"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        },
+        {
+          "index": 1,
+          "kind": "ddl",
+          "raw_sql": "DROP PROCEDURE p;",
+          "normalized_sql": "DROP PROCEDURE p",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 2,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t ADD COLUMN c INT;",
+          "normalized_sql": "ALTER TABLE t ADD COLUMN c INT",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 3,
+          "kind": "ddl",
+          "raw_sql": "CREATE INDEX idx_c ON t(c);",
+          "normalized_sql": "CREATE INDEX idx_c ON t(c)",
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "unsupported": [],
+      "diagnostics": [],
+      "rule_summary": {
+        "loaded": 4,
+        "applicable": 4,
+        "skipped": []
+      }
+    },
+    {
+      "case": "tidb-drop",
+      "tested_head": "affad1b1ae72fd0a910286499e14b8ae2e98a5f5",
+      "actual_rc": 1,
+      "context": {
+        "mode": "offline",
+        "dialect": "tidb",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      },
+      "summary": {
+        "statements": 4,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "verdict": "review",
+      "coverage": {
+        "status": "incomplete"
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t (id INT PRIMARY KEY);",
+          "normalized_sql": "CREATE TABLE t (id INT PRIMARY KEY)",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.table.exists.create.forbid",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "target_table.existence"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        },
+        {
+          "index": 1,
+          "kind": "ddl",
+          "raw_sql": "DROP PROCEDURE p;",
+          "normalized_sql": "DROP PROCEDURE p",
+          "coverage": {
+            "status": "incomplete"
+          }
+        },
+        {
+          "index": 2,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t ADD COLUMN c INT;",
+          "normalized_sql": "ALTER TABLE t ADD COLUMN c INT",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.table.exists.alter.require",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "target_table.existence"
+              ]
+            },
+            {
+              "rule_id": "ddl.alter.add_column.exists.forbid",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "target_table.columns",
+                "target_table.existence"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        },
+        {
+          "index": 3,
+          "kind": "ddl",
+          "raw_sql": "CREATE INDEX idx_c ON t(c);",
+          "normalized_sql": "CREATE INDEX idx_c ON t(c)",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.create_index.columns.exists.require",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "target_table.columns",
+                "target_table.existence"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        }
+      ],
+      "unsupported": [
+        {
+          "index": 1,
+          "feature": "drop_procedure",
+          "sql": "DROP PROCEDURE p;",
+          "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+          "metadata": {
+            "boundary": "vendor"
+          }
+        }
+      ],
+      "diagnostics": [
+        {
+          "classification": "unsupported_statement",
+          "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+          "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+          "audited": false,
+          "dialect": "tidb"
+        }
+      ],
+      "rule_summary": {
+        "loaded": 4,
+        "applicable": 4,
+        "skipped": []
+      }
+    },
+    {
+      "case": "mysql-create-delete",
+      "tested_head": "affad1b1ae72fd0a910286499e14b8ae2e98a5f5",
+      "actual_rc": 1,
+      "context": {
+        "mode": "offline",
+        "dialect": "mysql",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      },
+      "summary": {
+        "statements": 4,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "verdict": "review",
+      "coverage": {
+        "status": "incomplete"
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t (id INT PRIMARY KEY);",
+          "normalized_sql": "CREATE TABLE t (id INT PRIMARY KEY)",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.table.exists.create.forbid",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "target_table.existence"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        },
+        {
+          "index": 1,
+          "kind": "ddl",
+          "raw_sql": "CREATE PROCEDURE p() DELETE FROM t;",
+          "normalized_sql": "CREATE PROCEDURE p() DELETE FROM t",
+          "coverage": {
+            "status": "incomplete"
+          }
+        },
+        {
+          "index": 2,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t ADD COLUMN c INT;",
+          "normalized_sql": "ALTER TABLE t ADD COLUMN c INT",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 3,
+          "kind": "ddl",
+          "raw_sql": "CREATE INDEX idx_c ON t(c);",
+          "normalized_sql": "CREATE INDEX idx_c ON t(c)",
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "unsupported": [
+        {
+          "index": 1,
+          "feature": "create_procedure.body",
+          "sql": "CREATE PROCEDURE p() DELETE FROM t;",
+          "reason": "parsed by the shared parser but not covered by audited semantics",
+          "metadata": {
+            "aspect": "option"
+          }
+        }
+      ],
+      "diagnostics": [
+        {
+          "classification": "unsupported_statement",
+          "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+          "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+          "audited": false,
+          "dialect": "mysql"
+        }
+      ],
+      "rule_summary": {
+        "loaded": 4,
+        "applicable": 4,
+        "skipped": []
+      }
+    },
+    {
+      "case": "tidb-create-delete",
+      "tested_head": "affad1b1ae72fd0a910286499e14b8ae2e98a5f5",
+      "actual_rc": 1,
+      "context": {
+        "mode": "offline",
+        "dialect": "tidb",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      },
+      "summary": {
+        "statements": 4,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "verdict": "review",
+      "coverage": {
+        "status": "incomplete"
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t (id INT PRIMARY KEY);",
+          "normalized_sql": "CREATE TABLE t (id INT PRIMARY KEY)",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.table.exists.create.forbid",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "target_table.existence"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        },
+        {
+          "index": 1,
+          "kind": "ddl",
+          "raw_sql": "CREATE PROCEDURE p() DELETE FROM t;",
+          "normalized_sql": "CREATE PROCEDURE p() DELETE FROM t",
+          "coverage": {
+            "status": "incomplete"
+          }
+        },
+        {
+          "index": 2,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t ADD COLUMN c INT;",
+          "normalized_sql": "ALTER TABLE t ADD COLUMN c INT",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.table.exists.alter.require",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "target_table.existence"
+              ]
+            },
+            {
+              "rule_id": "ddl.alter.add_column.exists.forbid",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "target_table.columns",
+                "target_table.existence"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        },
+        {
+          "index": 3,
+          "kind": "ddl",
+          "raw_sql": "CREATE INDEX idx_c ON t(c);",
+          "normalized_sql": "CREATE INDEX idx_c ON t(c)",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.create_index.columns.exists.require",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "target_table.columns",
+                "target_table.existence"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        }
+      ],
+      "unsupported": [
+        {
+          "index": 1,
+          "feature": "create_procedure",
+          "sql": "CREATE PROCEDURE p() DELETE FROM t;",
+          "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+          "metadata": {
+            "boundary": "vendor"
+          }
+        }
+      ],
+      "diagnostics": [
+        {
+          "classification": "unsupported_statement",
+          "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+          "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+          "audited": false,
+          "dialect": "tidb"
+        }
+      ],
+      "rule_summary": {
+        "loaded": 4,
+        "applicable": 4,
+        "skipped": []
+      }
+    }
+  ]
+}

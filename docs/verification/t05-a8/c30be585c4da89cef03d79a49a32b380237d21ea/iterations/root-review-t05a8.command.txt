@@ -1,0 +1,5 @@
+label: PRE-COMMIT affad1b1 + working diff (review corrections)
+cwd: /Users/fan/GolangProjects/DeltaScope
+HEAD: affad1b1ae72fd0a910286499e14b8ae2e98a5f5
+argv: go test -count=1 ./internal/application/audit -run T05A8 -v
+date: 2026-10-05T14:18:58Z

@@ -1,0 +1,1090 @@
+{
+  "tested_code_sha": "c30be585c4da89cef03d79a49a32b380237d21ea",
+  "started_utc": "2026-10-05T14:34:28.573983+00:00",
+  "finished_utc": "2026-10-05T14:34:31.027648+00:00",
+  "status": "pass",
+  "error": null,
+  "cases": [
+    {
+      "case": "mysql-create-select",
+      "dialect": "mysql",
+      "variant": "create-select",
+      "statements": 4,
+      "actual_rc": 1,
+      "status": "pass",
+      "input": "sql/create-select.sql"
+    },
+    {
+      "case": "tidb-create-select",
+      "dialect": "tidb",
+      "variant": "create-select",
+      "statements": 4,
+      "actual_rc": 1,
+      "status": "pass",
+      "input": "sql/create-select.sql"
+    },
+    {
+      "case": "mysql-drop",
+      "dialect": "mysql",
+      "variant": "drop",
+      "statements": 4,
+      "actual_rc": 0,
+      "status": "pass",
+      "input": "sql/drop.sql"
+    },
+    {
+      "case": "tidb-drop",
+      "dialect": "tidb",
+      "variant": "drop",
+      "statements": 4,
+      "actual_rc": 1,
+      "status": "pass",
+      "input": "sql/drop.sql"
+    },
+    {
+      "case": "mysql-create-delete",
+      "dialect": "mysql",
+      "variant": "create-delete",
+      "statements": 4,
+      "actual_rc": 1,
+      "status": "pass",
+      "input": "sql/create-delete.sql"
+    },
+    {
+      "case": "tidb-create-delete",
+      "dialect": "tidb",
+      "variant": "create-delete",
+      "statements": 4,
+      "actual_rc": 1,
+      "status": "pass",
+      "input": "sql/create-delete.sql"
+    }
+  ],
+  "checks": [
+    {
+      "case": "head-before",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "source",
+      "check": "exact_code_sha",
+      "passed": true,
+      "expected": "c30be585c4da89cef03d79a49a32b380237d21ea",
+      "observed": "c30be585c4da89cef03d79a49a32b380237d21ea"
+    },
+    {
+      "case": "tracked-clean-before",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "index-clean-before",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "status-before",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "worktrees",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "go-version",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "build",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "build-info",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "build",
+      "check": "revision_and_cgo",
+      "passed": true
+    },
+    {
+      "case": "catalog",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "policy",
+      "check": "unique_actual_catalog_ids",
+      "passed": true
+    },
+    {
+      "case": "policy",
+      "check": "frozen_rules_exist",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-select",
+      "check": "no_metadata_or_budget_flags",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-select",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 1,
+      "observed": 1
+    },
+    {
+      "case": "mysql-create-select",
+      "check": "aggregate_review",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-select",
+      "check": "aggregate_coverage",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-select",
+      "check": "zero_finding_counters_four_statements",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-select",
+      "check": "zero_global_findings",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-select",
+      "check": "fail_on_none_not_triggered_by_findings",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-select",
+      "check": "offline_selected_dialect_empty_schema",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-select",
+      "check": "isolated_four_rules_loaded_and_evaluated",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-select",
+      "check": "four_top_level_statements_no_body_dml",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-select",
+      "check": "statement_0_identity",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-select",
+      "check": "statement_0_coverage",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-select",
+      "check": "statement_0_zero_findings_and_impact",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-select",
+      "check": "statement_0_exact_gaps",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-select",
+      "check": "statement_1_identity",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-select",
+      "check": "statement_1_coverage",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-select",
+      "check": "statement_1_zero_findings_and_impact",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-select",
+      "check": "statement_1_exact_gaps",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-select",
+      "check": "statement_2_identity",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-select",
+      "check": "statement_2_coverage",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-select",
+      "check": "statement_2_zero_findings_and_impact",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-select",
+      "check": "statement_2_exact_gaps",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-select",
+      "check": "statement_3_identity",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-select",
+      "check": "statement_3_coverage",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-select",
+      "check": "statement_3_zero_findings_and_impact",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-select",
+      "check": "statement_3_exact_gaps",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-select",
+      "check": "original_unsupported_count",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-select",
+      "check": "original_feature_reason_metadata_and_sql_binding",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-select",
+      "check": "unsupported_sql_matches_retained_statement",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-select",
+      "check": "unchanged_error_diagnostic_channel",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-select",
+      "check": "no_metadata_or_budget_flags",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-select",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 1,
+      "observed": 1
+    },
+    {
+      "case": "tidb-create-select",
+      "check": "aggregate_review",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-select",
+      "check": "aggregate_coverage",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-select",
+      "check": "zero_finding_counters_four_statements",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-select",
+      "check": "zero_global_findings",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-select",
+      "check": "fail_on_none_not_triggered_by_findings",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-select",
+      "check": "offline_selected_dialect_empty_schema",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-select",
+      "check": "isolated_four_rules_loaded_and_evaluated",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-select",
+      "check": "four_top_level_statements_no_body_dml",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-select",
+      "check": "statement_0_identity",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-select",
+      "check": "statement_0_coverage",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-select",
+      "check": "statement_0_zero_findings_and_impact",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-select",
+      "check": "statement_0_exact_gaps",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-select",
+      "check": "statement_1_identity",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-select",
+      "check": "statement_1_coverage",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-select",
+      "check": "statement_1_zero_findings_and_impact",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-select",
+      "check": "statement_1_exact_gaps",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-select",
+      "check": "statement_2_identity",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-select",
+      "check": "statement_2_coverage",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-select",
+      "check": "statement_2_zero_findings_and_impact",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-select",
+      "check": "statement_2_exact_gaps",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-select",
+      "check": "statement_3_identity",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-select",
+      "check": "statement_3_coverage",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-select",
+      "check": "statement_3_zero_findings_and_impact",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-select",
+      "check": "statement_3_exact_gaps",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-select",
+      "check": "original_unsupported_count",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-select",
+      "check": "original_feature_reason_metadata_and_sql_binding",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-select",
+      "check": "unsupported_sql_matches_retained_statement",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-select",
+      "check": "unchanged_error_diagnostic_channel",
+      "passed": true
+    },
+    {
+      "case": "mysql-drop",
+      "check": "no_metadata_or_budget_flags",
+      "passed": true
+    },
+    {
+      "case": "mysql-drop",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "mysql-drop",
+      "check": "aggregate_review",
+      "passed": true
+    },
+    {
+      "case": "mysql-drop",
+      "check": "aggregate_coverage",
+      "passed": true
+    },
+    {
+      "case": "mysql-drop",
+      "check": "zero_finding_counters_four_statements",
+      "passed": true
+    },
+    {
+      "case": "mysql-drop",
+      "check": "zero_global_findings",
+      "passed": true
+    },
+    {
+      "case": "mysql-drop",
+      "check": "fail_on_none_not_triggered_by_findings",
+      "passed": true
+    },
+    {
+      "case": "mysql-drop",
+      "check": "offline_selected_dialect_empty_schema",
+      "passed": true
+    },
+    {
+      "case": "mysql-drop",
+      "check": "isolated_four_rules_loaded_and_evaluated",
+      "passed": true
+    },
+    {
+      "case": "mysql-drop",
+      "check": "four_top_level_statements_no_body_dml",
+      "passed": true
+    },
+    {
+      "case": "mysql-drop",
+      "check": "statement_0_identity",
+      "passed": true
+    },
+    {
+      "case": "mysql-drop",
+      "check": "statement_0_coverage",
+      "passed": true
+    },
+    {
+      "case": "mysql-drop",
+      "check": "statement_0_zero_findings_and_impact",
+      "passed": true
+    },
+    {
+      "case": "mysql-drop",
+      "check": "statement_0_exact_gaps",
+      "passed": true
+    },
+    {
+      "case": "mysql-drop",
+      "check": "statement_1_identity",
+      "passed": true
+    },
+    {
+      "case": "mysql-drop",
+      "check": "statement_1_coverage",
+      "passed": true
+    },
+    {
+      "case": "mysql-drop",
+      "check": "statement_1_zero_findings_and_impact",
+      "passed": true
+    },
+    {
+      "case": "mysql-drop",
+      "check": "statement_1_exact_gaps",
+      "passed": true
+    },
+    {
+      "case": "mysql-drop",
+      "check": "statement_2_identity",
+      "passed": true
+    },
+    {
+      "case": "mysql-drop",
+      "check": "statement_2_coverage",
+      "passed": true
+    },
+    {
+      "case": "mysql-drop",
+      "check": "statement_2_zero_findings_and_impact",
+      "passed": true
+    },
+    {
+      "case": "mysql-drop",
+      "check": "statement_2_exact_gaps",
+      "passed": true
+    },
+    {
+      "case": "mysql-drop",
+      "check": "statement_3_identity",
+      "passed": true
+    },
+    {
+      "case": "mysql-drop",
+      "check": "statement_3_coverage",
+      "passed": true
+    },
+    {
+      "case": "mysql-drop",
+      "check": "statement_3_zero_findings_and_impact",
+      "passed": true
+    },
+    {
+      "case": "mysql-drop",
+      "check": "statement_3_exact_gaps",
+      "passed": true
+    },
+    {
+      "case": "mysql-drop",
+      "check": "original_unsupported_count",
+      "passed": true
+    },
+    {
+      "case": "mysql-drop",
+      "check": "unchanged_error_diagnostic_channel",
+      "passed": true
+    },
+    {
+      "case": "tidb-drop",
+      "check": "no_metadata_or_budget_flags",
+      "passed": true
+    },
+    {
+      "case": "tidb-drop",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 1,
+      "observed": 1
+    },
+    {
+      "case": "tidb-drop",
+      "check": "aggregate_review",
+      "passed": true
+    },
+    {
+      "case": "tidb-drop",
+      "check": "aggregate_coverage",
+      "passed": true
+    },
+    {
+      "case": "tidb-drop",
+      "check": "zero_finding_counters_four_statements",
+      "passed": true
+    },
+    {
+      "case": "tidb-drop",
+      "check": "zero_global_findings",
+      "passed": true
+    },
+    {
+      "case": "tidb-drop",
+      "check": "fail_on_none_not_triggered_by_findings",
+      "passed": true
+    },
+    {
+      "case": "tidb-drop",
+      "check": "offline_selected_dialect_empty_schema",
+      "passed": true
+    },
+    {
+      "case": "tidb-drop",
+      "check": "isolated_four_rules_loaded_and_evaluated",
+      "passed": true
+    },
+    {
+      "case": "tidb-drop",
+      "check": "four_top_level_statements_no_body_dml",
+      "passed": true
+    },
+    {
+      "case": "tidb-drop",
+      "check": "statement_0_identity",
+      "passed": true
+    },
+    {
+      "case": "tidb-drop",
+      "check": "statement_0_coverage",
+      "passed": true
+    },
+    {
+      "case": "tidb-drop",
+      "check": "statement_0_zero_findings_and_impact",
+      "passed": true
+    },
+    {
+      "case": "tidb-drop",
+      "check": "statement_0_exact_gaps",
+      "passed": true
+    },
+    {
+      "case": "tidb-drop",
+      "check": "statement_1_identity",
+      "passed": true
+    },
+    {
+      "case": "tidb-drop",
+      "check": "statement_1_coverage",
+      "passed": true
+    },
+    {
+      "case": "tidb-drop",
+      "check": "statement_1_zero_findings_and_impact",
+      "passed": true
+    },
+    {
+      "case": "tidb-drop",
+      "check": "statement_1_exact_gaps",
+      "passed": true
+    },
+    {
+      "case": "tidb-drop",
+      "check": "statement_2_identity",
+      "passed": true
+    },
+    {
+      "case": "tidb-drop",
+      "check": "statement_2_coverage",
+      "passed": true
+    },
+    {
+      "case": "tidb-drop",
+      "check": "statement_2_zero_findings_and_impact",
+      "passed": true
+    },
+    {
+      "case": "tidb-drop",
+      "check": "statement_2_exact_gaps",
+      "passed": true
+    },
+    {
+      "case": "tidb-drop",
+      "check": "statement_3_identity",
+      "passed": true
+    },
+    {
+      "case": "tidb-drop",
+      "check": "statement_3_coverage",
+      "passed": true
+    },
+    {
+      "case": "tidb-drop",
+      "check": "statement_3_zero_findings_and_impact",
+      "passed": true
+    },
+    {
+      "case": "tidb-drop",
+      "check": "statement_3_exact_gaps",
+      "passed": true
+    },
+    {
+      "case": "tidb-drop",
+      "check": "original_unsupported_count",
+      "passed": true
+    },
+    {
+      "case": "tidb-drop",
+      "check": "original_feature_reason_metadata_and_sql_binding",
+      "passed": true
+    },
+    {
+      "case": "tidb-drop",
+      "check": "unsupported_sql_matches_retained_statement",
+      "passed": true
+    },
+    {
+      "case": "tidb-drop",
+      "check": "unchanged_error_diagnostic_channel",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-delete",
+      "check": "no_metadata_or_budget_flags",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-delete",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 1,
+      "observed": 1
+    },
+    {
+      "case": "mysql-create-delete",
+      "check": "aggregate_review",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-delete",
+      "check": "aggregate_coverage",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-delete",
+      "check": "zero_finding_counters_four_statements",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-delete",
+      "check": "zero_global_findings",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-delete",
+      "check": "fail_on_none_not_triggered_by_findings",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-delete",
+      "check": "offline_selected_dialect_empty_schema",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-delete",
+      "check": "isolated_four_rules_loaded_and_evaluated",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-delete",
+      "check": "four_top_level_statements_no_body_dml",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-delete",
+      "check": "statement_0_identity",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-delete",
+      "check": "statement_0_coverage",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-delete",
+      "check": "statement_0_zero_findings_and_impact",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-delete",
+      "check": "statement_0_exact_gaps",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-delete",
+      "check": "statement_1_identity",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-delete",
+      "check": "statement_1_coverage",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-delete",
+      "check": "statement_1_zero_findings_and_impact",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-delete",
+      "check": "statement_1_exact_gaps",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-delete",
+      "check": "statement_2_identity",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-delete",
+      "check": "statement_2_coverage",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-delete",
+      "check": "statement_2_zero_findings_and_impact",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-delete",
+      "check": "statement_2_exact_gaps",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-delete",
+      "check": "statement_3_identity",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-delete",
+      "check": "statement_3_coverage",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-delete",
+      "check": "statement_3_zero_findings_and_impact",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-delete",
+      "check": "statement_3_exact_gaps",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-delete",
+      "check": "original_unsupported_count",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-delete",
+      "check": "original_feature_reason_metadata_and_sql_binding",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-delete",
+      "check": "unsupported_sql_matches_retained_statement",
+      "passed": true
+    },
+    {
+      "case": "mysql-create-delete",
+      "check": "unchanged_error_diagnostic_channel",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-delete",
+      "check": "no_metadata_or_budget_flags",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-delete",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 1,
+      "observed": 1
+    },
+    {
+      "case": "tidb-create-delete",
+      "check": "aggregate_review",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-delete",
+      "check": "aggregate_coverage",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-delete",
+      "check": "zero_finding_counters_four_statements",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-delete",
+      "check": "zero_global_findings",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-delete",
+      "check": "fail_on_none_not_triggered_by_findings",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-delete",
+      "check": "offline_selected_dialect_empty_schema",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-delete",
+      "check": "isolated_four_rules_loaded_and_evaluated",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-delete",
+      "check": "four_top_level_statements_no_body_dml",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-delete",
+      "check": "statement_0_identity",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-delete",
+      "check": "statement_0_coverage",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-delete",
+      "check": "statement_0_zero_findings_and_impact",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-delete",
+      "check": "statement_0_exact_gaps",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-delete",
+      "check": "statement_1_identity",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-delete",
+      "check": "statement_1_coverage",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-delete",
+      "check": "statement_1_zero_findings_and_impact",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-delete",
+      "check": "statement_1_exact_gaps",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-delete",
+      "check": "statement_2_identity",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-delete",
+      "check": "statement_2_coverage",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-delete",
+      "check": "statement_2_zero_findings_and_impact",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-delete",
+      "check": "statement_2_exact_gaps",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-delete",
+      "check": "statement_3_identity",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-delete",
+      "check": "statement_3_coverage",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-delete",
+      "check": "statement_3_zero_findings_and_impact",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-delete",
+      "check": "statement_3_exact_gaps",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-delete",
+      "check": "original_unsupported_count",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-delete",
+      "check": "original_feature_reason_metadata_and_sql_binding",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-delete",
+      "check": "unsupported_sql_matches_retained_statement",
+      "passed": true
+    },
+    {
+      "case": "tidb-create-delete",
+      "check": "unchanged_error_diagnostic_channel",
+      "passed": true
+    },
+    {
+      "case": "cases",
+      "check": "exact_six_case_set",
+      "passed": true
+    },
+    {
+      "case": "head-after",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "source",
+      "check": "head_unchanged",
+      "passed": true
+    },
+    {
+      "case": "tracked-clean-after",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "index-clean-after",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "status-after",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    }
+  ]
+}

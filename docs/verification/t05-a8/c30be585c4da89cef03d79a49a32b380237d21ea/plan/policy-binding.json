@@ -1,0 +1,12 @@
+{
+  "enabled": {
+    "ddl.table.exists.create.forbid": {},
+    "ddl.table.exists.alter.require": {},
+    "ddl.alter.add_column.exists.forbid": {},
+    "ddl.create_index.columns.exists.require": {
+      "required": true
+    }
+  },
+  "all_other_actual_catalog_ids": "disabled",
+  "sha256": "276d3462a09095525a6fb52411da409f1d1fbd3f3c1101215c8fd4896f6bdf6a"
+}

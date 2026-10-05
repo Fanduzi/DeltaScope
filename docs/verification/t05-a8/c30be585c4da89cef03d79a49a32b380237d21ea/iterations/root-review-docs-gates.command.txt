@@ -1,0 +1,2 @@
+cwd: /Users/fan/GolangProjects/DeltaScope
+argv: make docs-example-gates

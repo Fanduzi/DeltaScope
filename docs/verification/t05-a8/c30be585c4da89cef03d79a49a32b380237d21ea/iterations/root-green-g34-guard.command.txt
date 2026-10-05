@@ -1,0 +1,3 @@
+cwd: /Users/fan/GolangProjects/DeltaScope
+HEAD: affad1b1ae72fd0a910286499e14b8ae2e98a5f5
+argv: go test -count=1 ./internal/application/audit -run 'T05A7|TestBatchStateR1|TestBatchStateR2'

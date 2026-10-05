@@ -1,0 +1,8 @@
+{
+  "tested_head": "affad1b1ae72fd0a910286499e14b8ae2e98a5f5",
+  "accepted_production_code": "2dbeb3dd9c87c5d01b4b4e8baed03ac5eb84bd0a",
+  "binary": "/private/tmp/ds-t05-a8-plan.Bo8bDt/deltascope",
+  "sha256": "2acd09ac3027dd286e550e49c5059037d70b8ed5c29b61d5ae34870191d9640d",
+  "CGO_ENABLED": "0",
+  "repository_modified": false
+}

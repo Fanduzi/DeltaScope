@@ -1,0 +1,2 @@
+argv: ./scripts/check_decision_record.sh
+cwd: /Users/fan/GolangProjects/DeltaScope

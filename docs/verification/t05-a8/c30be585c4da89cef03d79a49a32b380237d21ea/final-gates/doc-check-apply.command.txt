@@ -1,0 +1,3 @@
+cwd: /tmp/ds-t05-a8.7jDPXi/doc-check
+base HEAD: affad1b1ae72fd0a910286499e14b8ae2e98a5f5
+argv: git apply --index task.patch

@@ -1,0 +1,2 @@
+cwd: /tmp/ds-t05-a8.7jDPXi/doc-check
+argv: git switch --detach c30be585

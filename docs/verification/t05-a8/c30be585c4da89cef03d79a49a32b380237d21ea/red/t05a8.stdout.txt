@@ -1,0 +1,27 @@
+=== RUN   TestT05A8ProcedureFirstPath
+=== RUN   TestT05A8ProcedureFirstPath/tidb/create
+    batch_state_a8_first_path_test.go:60: statement 2 = unverified findings=[] gaps=[{RuleID:ddl.table.exists.alter.require ReasonCode:unknown_table_state RequiredFacts:[target_table.existence]} {RuleID:ddl.alter.add_column.exists.forbid ReasonCode:unknown_table_state RequiredFacts:[target_table.columns target_table.existence]}] impact=<nil>, want complete with no findings/gaps/impact
+    batch_state_a8_first_path_test.go:60: statement 3 = unverified findings=[] gaps=[{RuleID:ddl.create_index.columns.exists.require ReasonCode:unknown_table_state RequiredFacts:[target_table.columns target_table.existence]}] impact=<nil>, want complete with no findings/gaps/impact
+    batch_state_a8_first_path_test.go:120: statement 2 pre-state columns = [], want [id]
+    batch_state_a8_first_path_test.go:120: statement 3 pre-state columns = [], want [id c]
+    batch_state_a8_first_path_test.go:124: procedure lifecycle contaminated outer state
+    batch_state_a8_first_path_test.go:131: final columns = [id], want [id c]
+    batch_state_a8_first_path_test.go:140: missing derived idx_c(c)
+=== RUN   TestT05A8ProcedureFirstPath/tidb/drop
+    batch_state_a8_first_path_test.go:60: statement 2 = unverified findings=[] gaps=[{RuleID:ddl.table.exists.alter.require ReasonCode:unknown_table_state RequiredFacts:[target_table.existence]} {RuleID:ddl.alter.add_column.exists.forbid ReasonCode:unknown_table_state RequiredFacts:[target_table.columns target_table.existence]}] impact=<nil>, want complete with no findings/gaps/impact
+    batch_state_a8_first_path_test.go:60: statement 3 = unverified findings=[] gaps=[{RuleID:ddl.create_index.columns.exists.require ReasonCode:unknown_table_state RequiredFacts:[target_table.columns target_table.existence]}] impact=<nil>, want complete with no findings/gaps/impact
+    batch_state_a8_first_path_test.go:120: statement 2 pre-state columns = [], want [id]
+    batch_state_a8_first_path_test.go:120: statement 3 pre-state columns = [], want [id c]
+    batch_state_a8_first_path_test.go:124: procedure lifecycle contaminated outer state
+    batch_state_a8_first_path_test.go:131: final columns = [id], want [id c]
+    batch_state_a8_first_path_test.go:140: missing derived idx_c(c)
+=== RUN   TestT05A8ProcedureFirstPath/mysql/create
+=== RUN   TestT05A8ProcedureFirstPath/mysql/drop
+--- FAIL: TestT05A8ProcedureFirstPath (0.02s)
+    --- FAIL: TestT05A8ProcedureFirstPath/tidb/create (0.01s)
+    --- FAIL: TestT05A8ProcedureFirstPath/tidb/drop (0.00s)
+    --- PASS: TestT05A8ProcedureFirstPath/mysql/create (0.01s)
+    --- PASS: TestT05A8ProcedureFirstPath/mysql/drop (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.748s
+FAIL

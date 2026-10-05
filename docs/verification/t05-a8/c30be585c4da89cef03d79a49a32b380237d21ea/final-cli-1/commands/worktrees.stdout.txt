@@ -1,0 +1,16 @@
+worktree /Users/fan/GolangProjects/DeltaScope
+HEAD c30be585c4da89cef03d79a49a32b380237d21ea
+branch refs/heads/milestone/mysql-tidb-ddl-completion
+
+worktree /private/tmp/ds-t05-a3-final.2K4NKO/doc-check
+HEAD 49a0f5bce25a72f71c1171ac0bee9bb5d86d963b
+detached
+
+worktree /private/tmp/ds-t05-a7.IrVZyg/doc-check
+HEAD 2dbeb3dd9c87c5d01b4b4e8baed03ac5eb84bd0a
+detached
+
+worktree /private/tmp/ds-t05-a8.7jDPXi/doc-check
+HEAD c30be585c4da89cef03d79a49a32b380237d21ea
+detached
+

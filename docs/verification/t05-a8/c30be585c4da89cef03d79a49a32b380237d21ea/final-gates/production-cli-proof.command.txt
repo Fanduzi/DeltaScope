@@ -1,0 +1,5 @@
+label: POST-COMMIT c30be585
+cwd: /Users/fan/GolangProjects/DeltaScope
+HEAD: c30be585c4da89cef03d79a49a32b380237d21ea
+env: PYTHONDONTWRITEBYTECODE=1
+argv: python3 /tmp/ds-t05-a8.7jDPXi/proof.py --repo /Users/fan/GolangProjects/DeltaScope --proof-dir /tmp/ds-t05-a8.7jDPXi/final-cli-1 --code-sha c30be585c4da89cef03d79a49a32b380237d21ea

@@ -1,0 +1,2 @@
+argv: gofmt -l <six staged go paths>
+cwd: /Users/fan/GolangProjects/DeltaScope

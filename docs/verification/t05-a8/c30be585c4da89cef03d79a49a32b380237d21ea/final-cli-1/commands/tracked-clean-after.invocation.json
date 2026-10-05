@@ -1,0 +1,16 @@
+{
+  "argv": [
+    "git",
+    "diff",
+    "--exit-code"
+  ],
+  "cwd": "/Users/fan/GolangProjects/DeltaScope",
+  "environment_overrides": {},
+  "tested_code_sha": "c30be585c4da89cef03d79a49a32b380237d21ea",
+  "returncode": 0,
+  "expected_returncode": 0,
+  "started_utc": "2026-10-05T14:34:30.971000+00:00",
+  "finished_utc": "2026-10-05T14:34:30.986872+00:00",
+  "stdout": "commands/tracked-clean-after.stdout.txt",
+  "stderr": "commands/tracked-clean-after.stderr.txt"
+}

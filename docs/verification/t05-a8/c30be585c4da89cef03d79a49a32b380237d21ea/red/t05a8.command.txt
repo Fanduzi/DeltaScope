@@ -1,0 +1,4 @@
+argv: go test -count=1 ./internal/application/audit -run T05A8 -v
+cwd: /Users/fan/GolangProjects/DeltaScope
+HEAD: affad1b1ae72fd0a910286499e14b8ae2e98a5f5
+file: verbatim pasted source, normalized by gofmt only

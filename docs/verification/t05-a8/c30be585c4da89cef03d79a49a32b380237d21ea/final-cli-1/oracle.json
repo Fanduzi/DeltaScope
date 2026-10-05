@@ -1,0 +1,65 @@
+{
+  "origin": "Frozen T05-A8-IMPLEMENT sections 4 and 6, authored before final code-SHA execution; not derived from actual output",
+  "schema": "",
+  "provider": "none",
+  "first_gap": {
+    "rule_id": "ddl.table.exists.create.forbid",
+    "reason_code": "unknown_table_state",
+    "required_facts": [
+      "target_table.existence"
+    ]
+  },
+  "case_fields": [
+    "name",
+    "dialect",
+    "variant",
+    "procedure_sql",
+    "expected_process_rc"
+  ],
+  "cases": [
+    [
+      "mysql-create-select",
+      "mysql",
+      "create-select",
+      "CREATE PROCEDURE p() SELECT 1;",
+      1
+    ],
+    [
+      "tidb-create-select",
+      "tidb",
+      "create-select",
+      "CREATE PROCEDURE p() SELECT 1;",
+      1
+    ],
+    [
+      "mysql-drop",
+      "mysql",
+      "drop",
+      "DROP PROCEDURE p;",
+      0
+    ],
+    [
+      "tidb-drop",
+      "tidb",
+      "drop",
+      "DROP PROCEDURE p;",
+      1
+    ],
+    [
+      "mysql-create-delete",
+      "mysql",
+      "create-delete",
+      "CREATE PROCEDURE p() DELETE FROM t;",
+      1
+    ],
+    [
+      "tidb-create-delete",
+      "tidb",
+      "create-delete",
+      "CREATE PROCEDURE p() DELETE FROM t;",
+      1
+    ]
+  ],
+  "identity": "Four original top-level DDL statements; CREATE body does not become outer DML",
+  "followers": "Both complete with zero finding, gap and impact"
+}

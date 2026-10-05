@@ -1,0 +1,2 @@
+argv: /opt/homebrew/bin/bash check_three_level_doc.sh --staged
+cwd: /Users/fan/GolangProjects/DeltaScope

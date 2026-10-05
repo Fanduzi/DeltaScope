@@ -1,0 +1,17 @@
+label: POST-COMMIT c30be585
+date: 2026-10-05T14:34:40Z
+HEAD: c30be585c4da89cef03d79a49a32b380237d21ea
+branch: milestone/mysql-tidb-ddl-completion
+tree: eedf80c2be2f854b248d2c5014231bf68c058f3c
+--- status ---
+?? .agents/
+?? .debug-journal.md
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? docs/quality/architecture-review-2026-08-11.html
+--- worktrees ---
+/Users/fan/GolangProjects/DeltaScope           c30be585 [milestone/mysql-tidb-ddl-completion]
+/private/tmp/ds-t05-a3-final.2K4NKO/doc-check  49a0f5bc (detached HEAD)
+/private/tmp/ds-t05-a7.IrVZyg/doc-check        2dbeb3dd (detached HEAD)
+/private/tmp/ds-t05-a8.7jDPXi/doc-check        c30be585 (detached HEAD)

@@ -1,0 +1,23 @@
+label: POST-COMMIT tested code SHA c30be585c4da89cef03d79a49a32b380237d21ea
+date: 2026-10-05T14:31:50Z
+cwd: /Users/fan/GolangProjects/DeltaScope
+HEAD: c30be585c4da89cef03d79a49a32b380237d21ea
+branch: milestone/mysql-tidb-ddl-completion
+--- commit identity ---
+c30be585c4da89cef03d79a49a32b380237d21ea
+affad1b1ae72fd0a910286499e14b8ae2e98a5f5
+Fan() <18501341937@163.com>
+Fan() <18501341937@163.com>
+fix(audit): preserve outer table state across procedure lifecycle (#84)
+tree: eedf80c2be2f854b248d2c5014231bf68c058f3c
+--- status ---
+?? .agents/
+?? .debug-journal.md
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? docs/quality/architecture-review-2026-08-11.html
+--- worktrees ---
+/Users/fan/GolangProjects/DeltaScope           c30be585 [milestone/mysql-tidb-ddl-completion]
+/private/tmp/ds-t05-a3-final.2K4NKO/doc-check  49a0f5bc (detached HEAD)
+/private/tmp/ds-t05-a7.IrVZyg/doc-check        2dbeb3dd (detached HEAD)

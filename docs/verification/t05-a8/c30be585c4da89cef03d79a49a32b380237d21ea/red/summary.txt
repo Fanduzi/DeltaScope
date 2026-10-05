@@ -1,0 +1,17 @@
+T05-A8 RED-REGRESSION BASELINE
+==============================
+label: BASELINE at affad1b1ae72fd0a910286499e14b8ae2e98a5f5 + only new untracked regression; NOT committed validation
+
+command: go test -count=1 ./internal/application/audit -run T05A8 -v  (cwd=/Users/fan/GolangProjects/DeltaScope)
+process rc: 1
+compile: OK (test ran, all 4 subtests executed)
+
+subtests:
+  tidb/create  FAIL — follower gaps unknown_table_state on stmts 2,3; pre-state columns [] vs [id]/[id c]; contaminated=true; final [id] vs [id c]; missing idx_c(c)
+  tidb/drop    FAIL — same contamination signature
+  mysql/create PASS — body aspect boundary does not contaminate (green already)
+  mysql/drop   PASS — non-boundary supported path (pass/complete)
+
+new file: internal/application/audit/batch_state_a8_first_path_test.go (untracked, gofmt-clean, verbatim assertions)
+tracked diff under internal/application/audit: 0 lines
+plan originals /tmp/ds-t05-a8-plan.Bo8bDt: untouched

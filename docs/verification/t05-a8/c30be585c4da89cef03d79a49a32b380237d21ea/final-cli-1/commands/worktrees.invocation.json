@@ -1,0 +1,17 @@
+{
+  "argv": [
+    "git",
+    "worktree",
+    "list",
+    "--porcelain"
+  ],
+  "cwd": "/Users/fan/GolangProjects/DeltaScope",
+  "environment_overrides": {},
+  "tested_code_sha": "c30be585c4da89cef03d79a49a32b380237d21ea",
+  "returncode": 0,
+  "expected_returncode": 0,
+  "started_utc": "2026-10-05T14:34:28.638939+00:00",
+  "finished_utc": "2026-10-05T14:34:28.651307+00:00",
+  "stdout": "commands/worktrees.stdout.txt",
+  "stderr": "commands/worktrees.stderr.txt"
+}

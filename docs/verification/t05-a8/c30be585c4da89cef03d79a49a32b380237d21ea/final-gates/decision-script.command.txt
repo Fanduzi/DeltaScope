@@ -1,0 +1,1 @@
+argv: ./scripts/check_decision_record.sh affad1b1..c30be585

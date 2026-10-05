@@ -1,0 +1,6 @@
+affad1b1ae72fd0a910286499e14b8ae2e98a5f5
+parents: 2dbeb3dd9c87c5d01b4b4e8baed03ac5eb84bd0a
+docs(verification): publish T05-A7 budget and final-SHA evidence (#84)
+2dbeb3dd9c87c5d01b4b4e8baed03ac5eb84bd0a
+parents: c9ebc1202b34f123038c8a8ffff28549eda23bea
+feat(audit): stop ordered work when statement budget is exhausted (#84)

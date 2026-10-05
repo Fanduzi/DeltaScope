@@ -1,0 +1,2 @@
+usage: proof.py [-h] --repo REPO --proof-dir PROOF_DIR --code-sha CODE_SHA
+proof.py: error: repo and fresh external proof directory must already exist

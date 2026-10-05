@@ -1,0 +1,4 @@
+label: POST-COMMIT c30be585
+cwd: /Users/fan/GolangProjects/DeltaScope
+HEAD: c30be585c4da89cef03d79a49a32b380237d21ea
+argv: go test -count=1 ./pkg/deltascope ./internal/interfaces/http -run T05A8 -v

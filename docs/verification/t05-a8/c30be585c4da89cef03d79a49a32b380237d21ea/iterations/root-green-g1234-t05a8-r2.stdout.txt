@@ -1,0 +1,235 @@
+=== RUN   TestT05A8ProcedureFirstPath
+=== RUN   TestT05A8ProcedureFirstPath/tidb/create
+=== RUN   TestT05A8ProcedureFirstPath/tidb/drop
+=== RUN   TestT05A8ProcedureFirstPath/mysql/create
+=== RUN   TestT05A8ProcedureFirstPath/mysql/drop
+--- PASS: TestT05A8ProcedureFirstPath (0.02s)
+    --- PASS: TestT05A8ProcedureFirstPath/tidb/create (0.01s)
+    --- PASS: TestT05A8ProcedureFirstPath/tidb/drop (0.00s)
+    --- PASS: TestT05A8ProcedureFirstPath/mysql/create (0.00s)
+    --- PASS: TestT05A8ProcedureFirstPath/mysql/drop (0.01s)
+=== RUN   TestT05A8MetadataPremises
+=== RUN   TestT05A8MetadataPremises/mysql/create_select/provider
+=== RUN   TestT05A8MetadataPremises/mysql/create_select/offline
+=== RUN   TestT05A8MetadataPremises/mysql/drop/provider
+=== RUN   TestT05A8MetadataPremises/mysql/drop/offline
+=== RUN   TestT05A8MetadataPremises/mysql/create_delete/provider
+=== RUN   TestT05A8MetadataPremises/mysql/create_delete/offline
+=== RUN   TestT05A8MetadataPremises/tidb/create_select/provider
+=== RUN   TestT05A8MetadataPremises/tidb/create_select/offline
+=== RUN   TestT05A8MetadataPremises/tidb/drop/provider
+=== RUN   TestT05A8MetadataPremises/tidb/drop/offline
+=== RUN   TestT05A8MetadataPremises/tidb/create_delete/provider
+=== RUN   TestT05A8MetadataPremises/tidb/create_delete/offline
+--- PASS: TestT05A8MetadataPremises (0.05s)
+    --- PASS: TestT05A8MetadataPremises/mysql/create_select/provider (0.01s)
+    --- PASS: TestT05A8MetadataPremises/mysql/create_select/offline (0.00s)
+    --- PASS: TestT05A8MetadataPremises/mysql/drop/provider (0.00s)
+    --- PASS: TestT05A8MetadataPremises/mysql/drop/offline (0.00s)
+    --- PASS: TestT05A8MetadataPremises/mysql/create_delete/provider (0.00s)
+    --- PASS: TestT05A8MetadataPremises/mysql/create_delete/offline (0.01s)
+    --- PASS: TestT05A8MetadataPremises/tidb/create_select/provider (0.00s)
+    --- PASS: TestT05A8MetadataPremises/tidb/create_select/offline (0.00s)
+    --- PASS: TestT05A8MetadataPremises/tidb/drop/provider (0.00s)
+    --- PASS: TestT05A8MetadataPremises/tidb/drop/offline (0.00s)
+    --- PASS: TestT05A8MetadataPremises/tidb/create_delete/provider (0.00s)
+    --- PASS: TestT05A8MetadataPremises/tidb/create_delete/offline (0.00s)
+=== RUN   TestT05A8DefinitionsAndIdentity
+=== RUN   TestT05A8DefinitionsAndIdentity/mysql/create_select
+=== RUN   TestT05A8DefinitionsAndIdentity/mysql/create_delete_t
+=== RUN   TestT05A8DefinitionsAndIdentity/mysql/create_delete_other_u
+=== RUN   TestT05A8DefinitionsAndIdentity/mysql/create_named_t
+=== RUN   TestT05A8DefinitionsAndIdentity/mysql/drop_p
+=== RUN   TestT05A8DefinitionsAndIdentity/mysql/drop_named_t
+=== RUN   TestT05A8DefinitionsAndIdentity/tidb/create_select
+=== RUN   TestT05A8DefinitionsAndIdentity/tidb/create_delete_t
+=== RUN   TestT05A8DefinitionsAndIdentity/tidb/create_delete_other_u
+=== RUN   TestT05A8DefinitionsAndIdentity/tidb/create_named_t
+=== RUN   TestT05A8DefinitionsAndIdentity/tidb/drop_p
+=== RUN   TestT05A8DefinitionsAndIdentity/tidb/drop_named_t
+=== RUN   TestT05A8DefinitionsAndIdentity/mysql/audit/create_named_t
+=== RUN   TestT05A8DefinitionsAndIdentity/mysql/audit/drop_named_t
+=== RUN   TestT05A8DefinitionsAndIdentity/tidb/audit/create_named_t
+=== RUN   TestT05A8DefinitionsAndIdentity/tidb/audit/drop_named_t
+--- PASS: TestT05A8DefinitionsAndIdentity (0.01s)
+    --- PASS: TestT05A8DefinitionsAndIdentity/mysql/create_select (0.00s)
+    --- PASS: TestT05A8DefinitionsAndIdentity/mysql/create_delete_t (0.00s)
+    --- PASS: TestT05A8DefinitionsAndIdentity/mysql/create_delete_other_u (0.00s)
+    --- PASS: TestT05A8DefinitionsAndIdentity/mysql/create_named_t (0.00s)
+    --- PASS: TestT05A8DefinitionsAndIdentity/mysql/drop_p (0.00s)
+    --- PASS: TestT05A8DefinitionsAndIdentity/mysql/drop_named_t (0.00s)
+    --- PASS: TestT05A8DefinitionsAndIdentity/tidb/create_select (0.00s)
+    --- PASS: TestT05A8DefinitionsAndIdentity/tidb/create_delete_t (0.00s)
+    --- PASS: TestT05A8DefinitionsAndIdentity/tidb/create_delete_other_u (0.00s)
+    --- PASS: TestT05A8DefinitionsAndIdentity/tidb/create_named_t (0.00s)
+    --- PASS: TestT05A8DefinitionsAndIdentity/tidb/drop_p (0.00s)
+    --- PASS: TestT05A8DefinitionsAndIdentity/tidb/drop_named_t (0.00s)
+    --- PASS: TestT05A8DefinitionsAndIdentity/mysql/audit/create_named_t (0.00s)
+    --- PASS: TestT05A8DefinitionsAndIdentity/mysql/audit/drop_named_t (0.00s)
+    --- PASS: TestT05A8DefinitionsAndIdentity/tidb/audit/create_named_t (0.00s)
+    --- PASS: TestT05A8DefinitionsAndIdentity/tidb/audit/drop_named_t (0.00s)
+=== RUN   TestT05A8WhitelistAndExecution
+=== RUN   TestT05A8WhitelistAndExecution/mysql/execute
+=== RUN   TestT05A8WhitelistAndExecution/mysql/do
+=== RUN   TestT05A8WhitelistAndExecution/tidb/execute
+=== RUN   TestT05A8WhitelistAndExecution/tidb/do
+=== RUN   TestT05A8WhitelistAndExecution/predicate_positive
+=== RUN   TestT05A8WhitelistAndExecution/predicate_negative/dialect_postgresql
+=== RUN   TestT05A8WhitelistAndExecution/predicate_negative/dialect_unknown
+=== RUN   TestT05A8WhitelistAndExecution/predicate_negative/kind_unknown
+=== RUN   TestT05A8WhitelistAndExecution/predicate_negative/kind_dml
+=== RUN   TestT05A8WhitelistAndExecution/predicate_negative/ddl_nil
+=== RUN   TestT05A8WhitelistAndExecution/predicate_negative/operation_unknown
+=== RUN   TestT05A8WhitelistAndExecution/predicate_negative/create_function
+=== RUN   TestT05A8WhitelistAndExecution/predicate_negative/drop_function
+=== RUN   TestT05A8WhitelistAndExecution/predicate_negative/create_trigger
+=== RUN   TestT05A8WhitelistAndExecution/predicate_negative/drop_trigger
+=== RUN   TestT05A8WhitelistAndExecution/predicate_negative/create_event
+=== RUN   TestT05A8WhitelistAndExecution/predicate_negative/call
+=== RUN   TestT05A8WhitelistAndExecution/predicate_negative/alter_procedure
+=== RUN   TestT05A8WhitelistAndExecution/predicate_negative/dml_nonnil
+=== RUN   TestT05A8WhitelistAndExecution/predicate_negative/table_named
+=== RUN   TestT05A8WhitelistAndExecution/predicate_negative/table_empty
+=== RUN   TestT05A8WhitelistAndExecution/predicate_negative/targets_nonempty
+=== RUN   TestT05A8WhitelistAndExecution/predicate_negative/resource_limit
+=== RUN   TestT05A8WhitelistAndExecution/predicate_negative/lookalike
+=== RUN   TestT05A8WhitelistAndExecution/bound_target_not_preserved
+--- PASS: TestT05A8WhitelistAndExecution (0.01s)
+    --- PASS: TestT05A8WhitelistAndExecution/mysql/execute (0.00s)
+    --- PASS: TestT05A8WhitelistAndExecution/mysql/do (0.00s)
+    --- PASS: TestT05A8WhitelistAndExecution/tidb/execute (0.00s)
+    --- PASS: TestT05A8WhitelistAndExecution/tidb/do (0.00s)
+    --- PASS: TestT05A8WhitelistAndExecution/predicate_positive (0.00s)
+    --- PASS: TestT05A8WhitelistAndExecution/predicate_negative/dialect_postgresql (0.00s)
+    --- PASS: TestT05A8WhitelistAndExecution/predicate_negative/dialect_unknown (0.00s)
+    --- PASS: TestT05A8WhitelistAndExecution/predicate_negative/kind_unknown (0.00s)
+    --- PASS: TestT05A8WhitelistAndExecution/predicate_negative/kind_dml (0.00s)
+    --- PASS: TestT05A8WhitelistAndExecution/predicate_negative/ddl_nil (0.00s)
+    --- PASS: TestT05A8WhitelistAndExecution/predicate_negative/operation_unknown (0.00s)
+    --- PASS: TestT05A8WhitelistAndExecution/predicate_negative/create_function (0.00s)
+    --- PASS: TestT05A8WhitelistAndExecution/predicate_negative/drop_function (0.00s)
+    --- PASS: TestT05A8WhitelistAndExecution/predicate_negative/create_trigger (0.00s)
+    --- PASS: TestT05A8WhitelistAndExecution/predicate_negative/drop_trigger (0.00s)
+    --- PASS: TestT05A8WhitelistAndExecution/predicate_negative/create_event (0.00s)
+    --- PASS: TestT05A8WhitelistAndExecution/predicate_negative/call (0.00s)
+    --- PASS: TestT05A8WhitelistAndExecution/predicate_negative/alter_procedure (0.00s)
+    --- PASS: TestT05A8WhitelistAndExecution/predicate_negative/dml_nonnil (0.00s)
+    --- PASS: TestT05A8WhitelistAndExecution/predicate_negative/table_named (0.00s)
+    --- PASS: TestT05A8WhitelistAndExecution/predicate_negative/table_empty (0.00s)
+    --- PASS: TestT05A8WhitelistAndExecution/predicate_negative/targets_nonempty (0.00s)
+    --- PASS: TestT05A8WhitelistAndExecution/predicate_negative/resource_limit (0.00s)
+    --- PASS: TestT05A8WhitelistAndExecution/predicate_negative/lookalike (0.00s)
+    --- PASS: TestT05A8WhitelistAndExecution/bound_target_not_preserved (0.00s)
+=== RUN   TestT05A8ContaminationAndBudget
+=== RUN   TestT05A8ContaminationAndBudget/mysql/prior_pollution
+=== RUN   TestT05A8ContaminationAndBudget/mysql/schema_invalidation
+=== RUN   TestT05A8ContaminationAndBudget/tidb/prior_pollution
+=== RUN   TestT05A8ContaminationAndBudget/tidb/schema_invalidation
+=== RUN   TestT05A8ContaminationAndBudget/mysql/budget/create
+=== RUN   TestT05A8ContaminationAndBudget/mysql/budget/create/limit1
+=== RUN   TestT05A8ContaminationAndBudget/mysql/budget/create/limit2
+=== RUN   TestT05A8ContaminationAndBudget/mysql/budget/create/limit3
+=== RUN   TestT05A8ContaminationAndBudget/mysql/budget/create/limit4
+=== RUN   TestT05A8ContaminationAndBudget/mysql/budget/drop
+=== RUN   TestT05A8ContaminationAndBudget/mysql/budget/drop/limit1
+=== RUN   TestT05A8ContaminationAndBudget/mysql/budget/drop/limit2
+=== RUN   TestT05A8ContaminationAndBudget/mysql/budget/drop/limit3
+=== RUN   TestT05A8ContaminationAndBudget/mysql/budget/drop/limit4
+=== RUN   TestT05A8ContaminationAndBudget/tidb/budget/create
+=== RUN   TestT05A8ContaminationAndBudget/tidb/budget/create/limit1
+=== RUN   TestT05A8ContaminationAndBudget/tidb/budget/create/limit2
+=== RUN   TestT05A8ContaminationAndBudget/tidb/budget/create/limit3
+=== RUN   TestT05A8ContaminationAndBudget/tidb/budget/create/limit4
+=== RUN   TestT05A8ContaminationAndBudget/tidb/budget/drop
+=== RUN   TestT05A8ContaminationAndBudget/tidb/budget/drop/limit1
+=== RUN   TestT05A8ContaminationAndBudget/tidb/budget/drop/limit2
+=== RUN   TestT05A8ContaminationAndBudget/tidb/budget/drop/limit3
+=== RUN   TestT05A8ContaminationAndBudget/tidb/budget/drop/limit4
+--- PASS: TestT05A8ContaminationAndBudget (0.05s)
+    --- PASS: TestT05A8ContaminationAndBudget/mysql/prior_pollution (0.00s)
+    --- PASS: TestT05A8ContaminationAndBudget/mysql/schema_invalidation (0.00s)
+    --- PASS: TestT05A8ContaminationAndBudget/tidb/prior_pollution (0.00s)
+    --- PASS: TestT05A8ContaminationAndBudget/tidb/schema_invalidation (0.00s)
+    --- PASS: TestT05A8ContaminationAndBudget/mysql/budget/create (0.01s)
+        --- PASS: TestT05A8ContaminationAndBudget/mysql/budget/create/limit1 (0.00s)
+        --- PASS: TestT05A8ContaminationAndBudget/mysql/budget/create/limit2 (0.00s)
+        --- PASS: TestT05A8ContaminationAndBudget/mysql/budget/create/limit3 (0.00s)
+        --- PASS: TestT05A8ContaminationAndBudget/mysql/budget/create/limit4 (0.00s)
+    --- PASS: TestT05A8ContaminationAndBudget/mysql/budget/drop (0.01s)
+        --- PASS: TestT05A8ContaminationAndBudget/mysql/budget/drop/limit1 (0.00s)
+        --- PASS: TestT05A8ContaminationAndBudget/mysql/budget/drop/limit2 (0.00s)
+        --- PASS: TestT05A8ContaminationAndBudget/mysql/budget/drop/limit3 (0.00s)
+        --- PASS: TestT05A8ContaminationAndBudget/mysql/budget/drop/limit4 (0.00s)
+    --- PASS: TestT05A8ContaminationAndBudget/tidb/budget/create (0.01s)
+        --- PASS: TestT05A8ContaminationAndBudget/tidb/budget/create/limit1 (0.00s)
+        --- PASS: TestT05A8ContaminationAndBudget/tidb/budget/create/limit2 (0.00s)
+        --- PASS: TestT05A8ContaminationAndBudget/tidb/budget/create/limit3 (0.00s)
+        --- PASS: TestT05A8ContaminationAndBudget/tidb/budget/create/limit4 (0.00s)
+    --- PASS: TestT05A8ContaminationAndBudget/tidb/budget/drop (0.01s)
+        --- PASS: TestT05A8ContaminationAndBudget/tidb/budget/drop/limit1 (0.00s)
+        --- PASS: TestT05A8ContaminationAndBudget/tidb/budget/drop/limit2 (0.00s)
+        --- PASS: TestT05A8ContaminationAndBudget/tidb/budget/drop/limit3 (0.00s)
+        --- PASS: TestT05A8ContaminationAndBudget/tidb/budget/drop/limit4 (0.00s)
+=== RUN   TestT05A8ErrorsAndConsumers
+=== RUN   TestT05A8ErrorsAndConsumers/mysql/failure_before
+=== RUN   TestT05A8ErrorsAndConsumers/mysql/failure_after
+=== RUN   TestT05A8ErrorsAndConsumers/mysql/compound_parser_control
+=== RUN   TestT05A8ErrorsAndConsumers/tidb/failure_before
+=== RUN   TestT05A8ErrorsAndConsumers/tidb/failure_after
+=== RUN   TestT05A8ErrorsAndConsumers/tidb/compound_parser_control
+=== RUN   TestT05A8ErrorsAndConsumers/cancellation
+=== RUN   TestT05A8ErrorsAndConsumers/cancellation/already_canceled
+=== RUN   TestT05A8ErrorsAndConsumers/cancellation/cancel_on_first_check
+=== RUN   TestT05A8ErrorsAndConsumers/cancellation/full_core_precanceled
+=== RUN   TestT05A8ErrorsAndConsumers/cancellation/full_core_instance_cancel
+=== RUN   TestT05A8ErrorsAndConsumers/provider_errors
+=== RUN   TestT05A8ErrorsAndConsumers/object_resolver_cache
+=== RUN   TestT05A8ErrorsAndConsumers/object_resolver_cache/mysql
+=== RUN   TestT05A8ErrorsAndConsumers/object_resolver_cache/tidb
+=== RUN   TestT05A8ErrorsAndConsumers/params_fixture
+=== RUN   TestT05A8ErrorsAndConsumers/params_fixture/mysql
+=== RUN   TestT05A8ErrorsAndConsumers/params_fixture/tidb
+=== RUN   TestT05A8ErrorsAndConsumers/lifecycle_notice
+=== RUN   TestT05A8ErrorsAndConsumers/lifecycle_notice/mysql/create
+=== RUN   TestT05A8ErrorsAndConsumers/lifecycle_notice/tidb/create
+    batch_state_a8_test.go:1205: procedure boundary = {Index:0 Feature:create_procedure SQL:CREATE PROCEDURE p() SELECT 1; Reason:parsed by the shared parser but outside the supported statement surface for this dialect Metadata:map[boundary:vendor]}, want feature=create_procedure reason=parsed by the shared parser but outside the supported statement surface for this dialect metadata=map[boundary:vendor] index=1
+=== RUN   TestT05A8ErrorsAndConsumers/lifecycle_notice/mysql/drop
+=== RUN   TestT05A8ErrorsAndConsumers/lifecycle_notice/tidb/drop
+    batch_state_a8_test.go:1205: procedure boundary = {Index:0 Feature:drop_procedure SQL:DROP PROCEDURE p; Reason:parsed by the shared parser but outside the supported statement surface for this dialect Metadata:map[boundary:vendor]}, want feature=drop_procedure reason=parsed by the shared parser but outside the supported statement surface for this dialect metadata=map[boundary:vendor] index=1
+=== RUN   TestT05A8ErrorsAndConsumers/registry_consumers
+=== RUN   TestT05A8ErrorsAndConsumers/registry_consumers/mysql/create
+=== RUN   TestT05A8ErrorsAndConsumers/registry_consumers/mysql/drop
+=== RUN   TestT05A8ErrorsAndConsumers/registry_consumers/tidb/create
+=== RUN   TestT05A8ErrorsAndConsumers/registry_consumers/tidb/drop
+--- FAIL: TestT05A8ErrorsAndConsumers (0.05s)
+    --- PASS: TestT05A8ErrorsAndConsumers/mysql/failure_before (0.00s)
+    --- PASS: TestT05A8ErrorsAndConsumers/mysql/failure_after (0.00s)
+    --- PASS: TestT05A8ErrorsAndConsumers/mysql/compound_parser_control (0.00s)
+    --- PASS: TestT05A8ErrorsAndConsumers/tidb/failure_before (0.00s)
+    --- PASS: TestT05A8ErrorsAndConsumers/tidb/failure_after (0.00s)
+    --- PASS: TestT05A8ErrorsAndConsumers/tidb/compound_parser_control (0.00s)
+    --- PASS: TestT05A8ErrorsAndConsumers/cancellation (0.00s)
+        --- PASS: TestT05A8ErrorsAndConsumers/cancellation/already_canceled (0.00s)
+        --- PASS: TestT05A8ErrorsAndConsumers/cancellation/cancel_on_first_check (0.00s)
+        --- PASS: TestT05A8ErrorsAndConsumers/cancellation/full_core_precanceled (0.00s)
+        --- PASS: TestT05A8ErrorsAndConsumers/cancellation/full_core_instance_cancel (0.00s)
+    --- PASS: TestT05A8ErrorsAndConsumers/provider_errors (0.01s)
+    --- PASS: TestT05A8ErrorsAndConsumers/object_resolver_cache (0.00s)
+        --- PASS: TestT05A8ErrorsAndConsumers/object_resolver_cache/mysql (0.00s)
+        --- PASS: TestT05A8ErrorsAndConsumers/object_resolver_cache/tidb (0.00s)
+    --- PASS: TestT05A8ErrorsAndConsumers/params_fixture (0.01s)
+        --- PASS: TestT05A8ErrorsAndConsumers/params_fixture/mysql (0.00s)
+        --- PASS: TestT05A8ErrorsAndConsumers/params_fixture/tidb (0.00s)
+    --- FAIL: TestT05A8ErrorsAndConsumers/lifecycle_notice (0.01s)
+        --- PASS: TestT05A8ErrorsAndConsumers/lifecycle_notice/mysql/create (0.00s)
+        --- FAIL: TestT05A8ErrorsAndConsumers/lifecycle_notice/tidb/create (0.00s)
+        --- PASS: TestT05A8ErrorsAndConsumers/lifecycle_notice/mysql/drop (0.00s)
+        --- FAIL: TestT05A8ErrorsAndConsumers/lifecycle_notice/tidb/drop (0.00s)
+    --- PASS: TestT05A8ErrorsAndConsumers/registry_consumers (0.00s)
+        --- PASS: TestT05A8ErrorsAndConsumers/registry_consumers/mysql/create (0.00s)
+        --- PASS: TestT05A8ErrorsAndConsumers/registry_consumers/mysql/drop (0.00s)
+        --- PASS: TestT05A8ErrorsAndConsumers/registry_consumers/tidb/create (0.00s)
+        --- PASS: TestT05A8ErrorsAndConsumers/registry_consumers/tidb/drop (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.745s
+FAIL

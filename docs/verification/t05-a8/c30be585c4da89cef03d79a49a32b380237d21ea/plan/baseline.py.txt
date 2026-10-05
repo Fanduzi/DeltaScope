@@ -1,0 +1,98 @@
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--repo', required=True, type=Path)
+parser.add_argument('--out', required=True, type=Path)
+args = parser.parse_args()
+repo, out = args.repo.resolve(), args.out.resolve()
+head_expected = 'affad1b1ae72fd0a910286499e14b8ae2e98a5f5'
+if not out.is_dir() or (out / 'commands').exists():
+    raise SystemExit('require a fresh existing temp directory')
+(out / 'commands').mkdir()
+def store(path, data):
+    path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + '\n')
+def run(name, argv, env=None):
+    prefix = out / 'commands' / name
+    stdout, stderr = prefix.with_suffix('.stdout'), prefix.with_suffix('.stderr')
+    store(prefix.with_suffix('.argv.json'), argv)
+    with stdout.open('wb') as o, stderr.open('wb') as e:
+        process = subprocess.run(argv, cwd=repo, env={**os.environ, **(env or {})}, stdout=o, stderr=e, check=False)
+    prefix.with_suffix('.rc').write_text(str(process.returncode) + '\n')
+    store(prefix.with_suffix('.invocation.json'), {'cwd':str(repo), 'argv':argv, 'environment_overrides':env or {}, 'returncode':process.returncode, 'tested_head':head_expected})
+    return process.returncode, stdout.read_bytes()
+def checked(name, argv, env=None):
+    rc, data = run(name, argv, env)
+    if rc != 0:
+        raise SystemExit(name + ': actual rc=' + str(rc))
+    return data
+head = checked('head-before', ['git','rev-parse','HEAD']).decode().strip()
+if head != head_expected:
+    raise SystemExit('unexpected HEAD: ' + head)
+status_before = checked('status-before', ['git','status','--porcelain=v1','--untracked-files=all'])
+checked('identity', ['git','log','-2','--format=%H%nparents: %P%n%s'])
+checked('worktrees', ['git','worktree','list','--porcelain'])
+checked('tracked-clean', ['git','diff','--exit-code'])
+checked('index-clean', ['git','diff','--cached','--exit-code'])
+checked('go-version', ['go','version'])
+binary = out / 'deltascope'
+checked('build', ['go','build','-mod=readonly','-o',str(binary),'./cmd/deltascope'], {'CGO_ENABLED':'0'})
+build_info = checked('build-info', ['go','version','-m',str(binary)]).decode()
+if 'vcs.revision=' + head not in build_info:
+    raise SystemExit('built binary revision mismatch')
+store(out / 'build-identity.json', {'tested_head':head, 'accepted_production_code':'2dbeb3dd9c87c5d01b4b4e8baed03ac5eb84bd0a', 'binary':str(binary), 'sha256':hashlib.sha256(binary.read_bytes()).hexdigest(), 'CGO_ENABLED':'0', 'repository_modified':False})
+raw_catalog = checked('catalog', [str(binary),'rules','list','--format','json'])
+(out / 'catalog.json').write_bytes(raw_catalog)
+ids = [row['rule_id'] for row in json.loads(raw_catalog)['rules']]
+enabled = {'ddl.table.exists.create.forbid':{}, 'ddl.table.exists.alter.require':{}, 'ddl.alter.add_column.exists.forbid':{}, 'ddl.create_index.columns.exists.require':{'required':True}}
+if len(ids) != len(set(ids)) or not set(enabled) <= set(ids):
+    raise SystemExit('catalog missing/duplicate frozen IDs')
+lines = ['rules:']
+for rid in sorted(ids):
+    lines.extend(['  '+json.dumps(rid)+':', '    enabled: '+('true' if rid in enabled else 'false')])
+    if rid in enabled:
+        lines.append('    level: blocker')
+        if enabled[rid]:
+            lines.extend(['    params:', '      required: true'])
+policy = out / 'four-rule-policy.yaml'
+policy.write_text('\n'.join(lines)+'\n')
+store(out / 'policy-binding.json', {'enabled':enabled, 'all_other_actual_catalog_ids':'disabled', 'sha256':hashlib.sha256(policy.read_bytes()).hexdigest()})
+variants = (
+    ('create-select', 'CREATE PROCEDURE p() SELECT 1;'),
+    ('drop', 'DROP PROCEDURE p;'),
+    ('create-delete', 'CREATE PROCEDURE p() DELETE FROM t;'),
+)
+observations = []
+for variant, procedure in variants:
+    sql_lines = ['CREATE TABLE t (id INT PRIMARY KEY);', procedure, 'ALTER TABLE t ADD COLUMN c INT;', 'CREATE INDEX idx_c ON t(c);']
+    sql = '\n'.join(sql_lines)+'\n'
+    (out / (variant+'.sql')).write_text(sql)
+    for dialect in ('mysql','tidb'):
+        name = dialect+'-'+variant
+        argv = [str(binary),'audit','--sql',sql,'--config',str(policy),'--dialect',dialect,'--format','json','--fail-on','none']
+        rc, raw = run(name, argv)
+        data = json.loads(raw)
+        statements = data.get('statements', [])
+        if len(statements) != 4 or any(s.get('kind') != 'ddl' or s.get('index') != i or s.get('raw_sql','').strip() != sql_lines[i] for i,s in enumerate(statements)):
+            raise SystemExit(name+': unexpected top-level statement identities; original output retained')
+        if data.get('context',{}).get('mode') != 'offline':
+            raise SystemExit(name+': not offline; original output retained')
+        if any(d.get('classification') == 'parser_error' for d in data.get('diagnostics', [])):
+            raise SystemExit(name+': parser failure; do not substitute a different SQL fixture')
+        expected_rc = 0 if dialect == 'mysql' and variant == 'drop' else 1
+        if rc != expected_rc:
+            raise SystemExit(name+': unexpected process rc='+str(rc)+'; do not reinterpret it as success')
+        observations.append({'case':name, 'tested_head':head, 'actual_rc':rc, 'context':data.get('context'), 'summary':data.get('summary'), 'verdict':data.get('verdict'), 'coverage':data.get('coverage'), 'statements':statements, 'unsupported':data.get('unsupported',[]), 'diagnostics':data.get('diagnostics',[]), 'rule_summary':data.get('rule_summary')})
+store(out / 'observations.json', {'scope':'A8 planning baseline only; no fix, no provider, no independent acceptance claim', 'cases':observations})
+status_after = checked('status-after', ['git','status','--porcelain=v1','--untracked-files=all'])
+if status_after != status_before:
+    raise SystemExit('repository status changed during read-only baseline')
+if checked('head-after', ['git','rev-parse','HEAD']).decode().strip() != head:
+    raise SystemExit('HEAD changed during baseline')
+checked('tracked-clean-after', ['git','diff','--exit-code'])
+checked('index-clean-after', ['git','diff','--cached','--exit-code'])
+print(json.dumps({'status':'baseline captured; implementation not attempted', 'cases':len(observations), 'tested_head':head, 'output':str(out)}))
