@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: synthetic ddl-golden artifacts and manifests built in a temp directory
-# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3, T05-A4, T05-A5, and T05-A6 mutation coverage
+# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1 mutation coverage
 # pos: offline negative tests for scripts/ddl_golden.py validation (no Docker required)
 # note: if this file changes, update this header and module README.md.
 """Validator contract tests for scripts/ddl_golden.py.
@@ -1524,6 +1524,7 @@ def main():
         results.append(check("t05 required rename case removed rejected", a, "not executed", manifest=mt5))
 
         results.extend(a3_contract_tests(tmp))
+        results.extend(t06_contract_tests(tmp))
 
     failures = results.count(False)
     print(f"contract cases={len(results)} failures={failures}")
@@ -2091,6 +2092,359 @@ def a3_contract_tests(tmp):
     c["actual"]["parsed"]["rule_summary"]["loaded"] = 5
     update_stdout(c)
     run("a6 loaded rule count other than 6 rejected", a, "loaded rule count")
+    return results
+
+
+def t06_contract_tests(tmp):
+    """T06-A1 (#85) contract mutations: the frozen 32-case CREATE TABLE
+    primary-key-presence oracle must survive shrink/rewrite/forge attempts on
+    the manifest, the artifact, or both sides together."""
+    source = json.loads((ddl_golden.MANIFEST_DIR / "T06.json").read_text())
+    manifest = copy.deepcopy(source)
+    baseline = ddl_golden.load_baseline()
+    directory = tmp / "t06"
+    directory.mkdir()
+    artifact = make_artifact(directory)
+    binary = directory / "deltascope"
+    catalog = json.dumps({"rules": [{"rule_id": ddl_golden.T06_PK_RULE}]})
+    binary.write_text("#!/bin/sh\nprintf '%s' '" + catalog + "'\n")
+    artifact["cli"]["sha256"] = ddl_golden.sha256_file(binary)
+    policies = ddl_golden.make_policies(str(binary), directory, manifest)
+    artifact.update(task_id="T06", policies=list(policies.values()),
+                    policy_profile=policies[manifest["policy_profile"]])
+    artifact["cases"] = []
+
+    def query_records(queries):
+        return [{"assert": q["assert"], "sql": q["sql"], "rc": 0,
+                 "output": q["expect"], "stderr": ""} for q in queries]
+
+    def step_records(steps):
+        return [{"name": s["name"], "sql": s["sql"], "rc": s.get("expect_rc", 0),
+                 "stdout": "", "stderr": "",
+                 "verify": query_records(s.get("verify", []))} for s in steps]
+
+    for key, anchor in manifest["anchors"].items():
+        banner = anchor["version_contains"]
+        if anchor["product"] == "tidb":
+            banner = "5.7.25-TiDB-v8.5.0"
+        database = {"product": anchor["product"], "image": anchor["image"],
+                    "image_digest": anchor["image"].split(":")[0] + "@sha256:stub",
+                    "container": anchor["container"], "reachable": True, "version": banner}
+        artifact["cases"].append({
+            "case_id": f"T06.db.{key}.ddl", "kind": "db_ddl", "anchor": key,
+            "input_sql": [s["sql"] for s in manifest["ddl_steps"]],
+            "expected": {"steps": [{"name": s["name"], "rc": s["expect_rc"], "verify": s["verify"]} for s in manifest["ddl_steps"]]},
+            "actual": {"database": database, "steps": step_records(manifest["ddl_steps"])},
+            "assertions": [{"name": "synthetic", "ok": True, "detail": "fixture"}],
+            "status": "pass"})
+        artifact["cases"].append({
+            "case_id": f"T06.db.{key}.syntax_negative", "kind": "db_syntax_negative", "anchor": key,
+            "input_sql": manifest["syntax_negative"]["sql"],
+            "expected": manifest["syntax_negative"]["expect"],
+            "actual": {"rc": 1, "stdout": "", "stderr": "ERROR 1064 (42000): syntax error near ''", "error_class": "1064"},
+            "assertions": [{"name": "synthetic", "ok": True, "detail": "fixture"}],
+            "status": "pass"})
+
+    def parsed_for(spec):
+        expected = spec["expect"]
+        statements = []
+        for i, sql in enumerate(expected["statement_sql"]):
+            statements.append({
+                "index": i, "kind": "ddl", "raw_sql": sql,
+                "normalized_sql": sql[:-1] if sql.endswith(";") else sql,
+                "coverage": {"status": expected["statement_coverage"][i]},
+                "findings": [], "evidence_gaps": []})
+        finding_metadata = {(e["index"], e["rule_id"]): e["metadata"]
+                            for e in expected.get("finding_metadata", [])}
+        finding_locations = {e["index"]: e for e in expected.get("finding_locations", [])}
+        for entry in expected.get("finding_entries", []):
+            location = finding_locations.get(entry["index"])
+            finding = {
+                "rule_id": entry["rule_id"], "level": entry["level"],
+                "message": "primary key is required", "statement_kind": "ddl",
+                "metadata": copy.deepcopy(finding_metadata.get((entry["index"], entry["rule_id"]), {}))}
+            if location is not None:
+                finding["location"] = {"line": location["line"], "column": location["column"]}
+            statements[entry["index"]]["findings"].append(finding)
+        blockers = sum(len(s["findings"]) for s in statements)
+        parsed = {"verdict": expected["verdict"], "coverage": {"status": expected["coverage"]},
+                  "statements": statements,
+                  "summary": {"statements": len(statements), "blockers": blockers,
+                              "warnings": 0, "notices": 0},
+                  "global_findings": [], "diagnostics": [], "unsupported": [],
+                  "fail_on_triggered": expected["fail_on_triggered"]}
+        if "rule_summary_loaded" in expected:
+            parsed["rule_summary"] = {"loaded": expected["rule_summary_loaded"],
+                                      "applicable": expected["rule_summary_loaded"], "skipped": []}
+        return parsed
+
+    def connect_argv(connect):
+        argv = ["--host", connect["host"], "--port", str(connect["port"]),
+                "--user", connect["user"]]
+        if connect.get("password_env"):
+            argv += ["--password-env", connect["password_env"]]
+        if connect.get("password_file"):
+            argv += ["--password-file", connect["password_file"]]
+        if connect.get("schema"):
+            argv += ["--schema", connect["schema"]]
+        return argv
+
+    for kind, specs in (("cli", manifest["cli_cases"]), ("meta", manifest["metadata_cases"])):
+        for spec in specs:
+            expected = spec["expect"]
+            parsed = parsed_for(spec)
+            profile = spec.get("policy") or manifest["policy_profile"]
+            command = [str(binary), "audit", "--dialect", spec["dialect"], "--sql", spec["sql"],
+                       "--config", policies[profile]["path"], "--format", "json"]
+            case = {"case_id": f"T06.{kind}.{spec['id']}",
+                    "kind": "cli_metadata" if kind == "meta" else "cli_audit",
+                    "cli_case": spec["id"], "dialect": spec["dialect"], "input_sql": spec["sql"],
+                    "policy_profile": profile, "policy_path": policies[profile]["path"],
+                    "expected": copy.deepcopy(expected),
+                    "actual": {"exit": expected["exit"], "stdout": json.dumps(parsed),
+                               "stderr": "", "parsed": parsed},
+                    "assertions": [{"name": "synthetic", "ok": True, "detail": "offline validator fixture"}],
+                    "status": "pass"}
+            if kind == "meta":
+                anchor = manifest["anchors"][spec["anchor"]]
+                banner = anchor["version_contains"]
+                if anchor["product"] == "tidb":
+                    banner = "5.7.25-TiDB-v8.5.0"
+                case["anchor"] = spec["anchor"]
+                case["connect"] = {k: v for k, v in spec["connect"].items() if k != "password"}
+                command += connect_argv(spec["connect"])
+                case["actual"]["database"] = {
+                    "product": anchor["product"], "image": anchor["image"],
+                    "image_digest": anchor["image"].split(":")[0] + "@sha256:stub",
+                    "container": anchor["container"], "reachable": True, "version": banner}
+                canonical = ddl_golden.canonical_observed_version(anchor["product"], banner)
+                major, minor, patch = (int(part) for part in canonical["version"].split("."))
+                parsed["version"] = {"product": canonical["product"], "version": canonical["version"],
+                                     "major": major, "minor": minor, "patch": patch,
+                                     "source": "observed", "validated_range": True}
+                case["actual"]["stdout"] = json.dumps(parsed)
+                case["actual"]["parsed"] = parsed
+                case["actual"]["version_evidence"] = ddl_golden.version_evidence_record(
+                    spec, parsed, observed_banner=banner, observed_product=anchor["product"])
+                declared_facts = expected.get("instance_facts")
+                if declared_facts is not None:
+                    case["actual"]["instance_facts"] = dict(declared_facts)
+                for field in ("setup", "execute", "teardown"):
+                    case["actual"][field] = step_records(spec[field])
+                for field in ("post_verify", "structure"):
+                    case["actual"][field] = query_records(spec[field])
+            else:
+                case["actual"]["version_evidence"] = ddl_golden.version_evidence_record(spec, parsed)
+            command += spec.get("args") or []
+            case["command"] = command
+            artifact["cases"].append(case)
+    artifact["required_case_ids"] = list(manifest["required_case_ids"])
+    artifact["executed_count"] = len(artifact["cases"])
+    results = []
+
+    def run(name, modified, needle="", changed_manifest=None):
+        failures = ddl_golden.validate_artifact(modified, changed_manifest or manifest, baseline=baseline)
+        ok = any(needle in f for f in failures) if needle else not failures
+        print(("PASS " if ok else "FAIL ") + name)
+        if not ok:
+            print(f"  expected={needle!r} actual={failures}")
+        results.append(ok)
+
+    def t06(suffix="mysql84-no-pk"):
+        candidate = copy.deepcopy(artifact)
+        case = next(item for item in candidate["cases"] if item.get("cli_case") == "t06-" + suffix)
+        return candidate, case
+
+    def update_stdout(case):
+        case["actual"]["stdout"] = json.dumps(case["actual"]["parsed"])
+
+    run("t06 valid synthetic control", artifact)
+
+    # Denominator: a required case or anchor removed on both sides still fails —
+    # the frozen contract and the locked baseline hold the 32-case set.
+    a, c = t06()
+    case_id = c["case_id"]
+    a["cases"] = [item for item in a["cases"] if item["case_id"] != case_id]
+    a["executed_count"] -= 1
+    m = copy.deepcopy(manifest)
+    m["metadata_cases"] = [s for s in m["metadata_cases"] if s["id"] != c["cli_case"]]
+    m["required_case_ids"].remove(case_id)
+    a["required_case_ids"].remove(case_id)
+    run("t06 metadata case deleted on both sides rejected", a, "T06-A1", m)
+    a = copy.deepcopy(artifact)
+    m = copy.deepcopy(manifest)
+    del m["anchors"]["tidb85"]
+    m["metadata_cases"] = [s for s in m["metadata_cases"] if s["anchor"] != "tidb85"]
+    m["required_case_ids"] = [i for i in m["required_case_ids"] if "tidb85" not in i]
+    a["cases"] = [x for x in a["cases"] if x.get("anchor") != "tidb85"]
+    a["executed_count"] = len(a["cases"])
+    a["required_case_ids"] = list(m["required_case_ids"])
+    run("t06 anchor deleted on both sides rejected", a, "T06-A1", m)
+
+    # Frozen input SQL: rewriting inline/table-level PK on the manifest while
+    # keeping the artifact consistent still fails the frozen contract.
+    a, c = t06("mysql84-inline-pk")
+    m = copy.deepcopy(manifest)
+    spec = next(s for s in m["metadata_cases"] if s["id"] == c["cli_case"])
+    spec["sql"] = ddl_golden.T06_NO_PK_SQL
+    spec["expect"]["statement_sql"] = [ddl_golden.T06_NO_PK_SQL]
+    c["input_sql"] = ddl_golden.T06_NO_PK_SQL
+    run("t06 inline PK rewritten as no-PK on both sides rejected", a, "T06-A1", m)
+    a, c = t06("tidb-table-pk")
+    m = copy.deepcopy(manifest)
+    spec = next(s for s in m["cli_cases"] if s["id"] == c["cli_case"])
+    spec["sql"] = "CREATE TABLE t (id INT UNIQUE);"
+    spec["expect"]["statement_sql"] = ["CREATE TABLE t (id INT UNIQUE);"]
+    run("t06 table-level PK rewritten as UNIQUE on manifest rejected", a, "T06-A1", m)
+
+    # Result-side forgery: verdict flips, wrong rule/level/metadata/table,
+    # misattributed statement_index, normalized/raw mismatch, wrong message.
+    a, c = t06()
+    parsed = c["actual"]["parsed"]
+    parsed["verdict"] = "pass"
+    parsed["statements"][0]["findings"] = []
+    parsed["summary"]["blockers"] = 0
+    update_stdout(c)
+    run("t06 no-PK recorded as pass rejected", a, "verdict")
+    a, c = t06()
+    c["actual"]["parsed"]["statements"][0]["findings"][0]["rule_id"] = "ddl.table.engine.allowlist"
+    update_stdout(c)
+    run("t06 wrong finding rule_id rejected", a, "finding entries")
+    a, c = t06()
+    c["actual"]["parsed"]["statements"][0]["findings"][0]["level"] = "warning"
+    update_stdout(c)
+    run("t06 blocker downgraded to warning rejected", a, "finding entries")
+    a, c = t06()
+    c["actual"]["parsed"]["statements"][0]["findings"][0]["metadata"]["table"] = "u"
+    update_stdout(c)
+    run("t06 finding metadata table swapped rejected", a, "finding metadata")
+    a, c = t06()
+    c["actual"]["parsed"]["statements"][0]["findings"][0]["statement_index"] = 1
+    update_stdout(c)
+    run("t06 finding attributed to another statement rejected", a, "finding entries")
+    a, c = t06()
+    c["actual"]["parsed"]["statements"][0]["findings"][0]["message"] = "syntax not supported"
+    update_stdout(c)
+    run("t06 finding message rewritten rejected", a, "T06-A1")
+    a, c = t06()
+    c["actual"]["parsed"]["statements"][0]["normalized_sql"] = "CREATE TABLE t (id INT) ENGINE=InnoDB"
+    update_stdout(c)
+    run("t06 normalized SQL drifted rejected", a, "T06-A1")
+    a, c = t06()
+    parsed = copy.deepcopy(c["actual"]["parsed"])
+    parsed["statements"][0]["findings"][0]["metadata"]["table"] = "u"
+    c["actual"]["parsed"] = parsed
+    run("t06 parsed disagreeing with raw stdout rejected", a, "parsed")
+
+    # Policy-side forgery: profile swap on both sides, profile content drift,
+    # required=true/false swap between the two frozen profiles.
+    a, c = t06("mysql-no-pk")
+    m = copy.deepcopy(manifest)
+    next(s for s in m["cli_cases"] if s["id"] == c["cli_case"])["policy"] = "all-rules-disabled"
+    c["policy_profile"] = "all-rules-disabled"
+    run("t06 isolated profile swapped for all-off rejected", a, "T06-A1", m)
+    a, c = t06()
+    m = copy.deepcopy(manifest)
+    m["policy"]["profiles"][ddl_golden.T06_ISOLATED_PROFILE]["enable"][ddl_golden.T06_PK_RULE]["params"]["required"] = False
+    run("t06 isolated profile weakened to required=false rejected", a, "T06-A1", m)
+    a, c = t06("tidb-required-false")
+    m = copy.deepcopy(manifest)
+    m["policy"]["profiles"][ddl_golden.T06_REQUIRED_FALSE_PROFILE]["enable"][ddl_golden.T06_PK_RULE]["params"]["required"] = True
+    run("t06 required-false profile strengthened to true rejected", a, "T06-A1", m)
+    a, c = t06()
+    command = c["command"]
+    idx = command.index("--config")
+    command[idx + 1] = str(directory / "golden-policy-all-off.yaml")
+    run("t06 tampered policy path in command rejected", a, "command")
+
+    # post_verify forgery: claiming the product created t, or deleting the
+    # absence re-check, must fail.
+    a, c = t06()
+    c["actual"]["post_verify"][0]["output"] = "1"
+    run("t06 product-side create claimed rejected", a, "post_verify")
+    a, c = t06()
+    c["actual"]["post_verify"] = []
+    run("t06 absence re-check deleted rejected", a, "post_verify count")
+
+    # Native execution and structure forgery: driver failure reported as
+    # legal, wrong counts, wrong member, deleted query on both sides.
+    a, c = t06()
+    c["actual"]["execute"][0]["rc"] = 1
+    c["actual"]["execute"][0]["stderr"] = "ERROR 1064 syntax"
+    run("t06 native CREATE failure reported as legal rejected", a, "execute")
+    a, c = t06("mysql84-inline-pk")
+    c["actual"]["structure"][3]["output"] = "0"
+    run("t06 primary key constraint count erased rejected", a, "structure")
+    a, c = t06("mysql84-inline-pk")
+    c["actual"]["structure"][5]["output"] = "other:1"
+    run("t06 primary key member renamed rejected", a, "structure")
+    a, c = t06("mysql80-table-pk")
+    m = copy.deepcopy(manifest)
+    spec = next(s for s in m["metadata_cases"] if s["id"] == c["cli_case"])
+    spec["structure"] = [q for q in spec["structure"] if q["assert"] != "primary key member"]
+    c["actual"]["structure"] = [q for q in c["actual"]["structure"] if q["assert"] != "primary key member"]
+    run("t06 member query deleted on both sides rejected", a, "T06-A1", m)
+    a, c = t06()
+    c["actual"]["structure"][2]["output"] = "id:int:1:NO"
+    run("t06 no-PK column recorded as NOT NULL rejected", a, "structure")
+
+    # Cleanup/ordering forgery: teardown dropped, driver step skipped, and a
+    # connectivity stderr must not pass as a semantic result.
+    a, c = t06()
+    c["actual"]["teardown"] = []
+    run("t06 teardown deleted rejected", a, "teardown count")
+    a, c = t06()
+    c["actual"]["execute"] = []
+    run("t06 driver create step skipped rejected", a, "execute step count")
+    a, c = t06()
+    c["actual"]["stderr"] = "ERROR 2003 (HY000): Can't connect to MySQL server"
+    run("t06 connectivity stderr recorded as result rejected", a, "T06-A1")
+    a = copy.deepcopy(artifact)
+    a["cleanup"]["compose_down_rc"] = 1
+    run("t06 failed cleanup accepted rejected", a, "cleanup")
+
+    # The runner itself must emit records the validator accepts — including
+    # live instance-fact reads for the MySQL 8.0/8.4 GIPK variables.
+    spec = next(s for s in manifest["metadata_cases"] if s["id"] == "t06-mysql84-no-pk")
+    answers = {}
+    for group in (spec["structure"], spec["post_verify"]):
+        for q in group:
+            if q["sql"] != ddl_golden.T06_TABLE_COUNT:
+                answers[q["sql"]] = q["expect"]
+    answers.update({f"show variables like '{name}'": f"{name}\t{value}"
+                    for name, value in ddl_golden.T06_GIPK_FACTS.items()})
+    reject_stdout = None
+    for item in artifact["cases"]:
+        if item.get("cli_case") == "t06-mysql84-no-pk":
+            reject_stdout = item["actual"]["stdout"]
+    calls = []
+    created = False
+
+    def database_call(anchor, sql, database=None, silent=True):
+        nonlocal created
+        calls.append(sql)
+        if sql == "SELECT VERSION()":
+            return 0, "8.4.10", ""
+        if sql.startswith("DROP TABLE"):
+            created = False
+        elif sql.startswith("CREATE TABLE"):
+            created = True
+        if sql == ddl_golden.T06_TABLE_COUNT:
+            return 0, "1" if created else "0", ""
+        return 0, answers.get(sql, ""), ""
+
+    with mock.patch.object(ddl_golden, "mysql_exec", side_effect=database_call), \
+            mock.patch.object(ddl_golden, "image_digest", return_value="mysql@sha256:stub"), \
+            mock.patch.object(ddl_golden, "run_cmd", return_value=(1, reject_stdout, "")):
+        recorded = ddl_golden.execute_metadata_case(manifest, "mysql84", str(binary), policies, spec)
+    observed = [sql for sql in calls if sql.startswith("show variables like 'sql_")]
+    fact_check = len(observed) == 2 and recorded["status"] == "pass"
+    print(("PASS " if fact_check else "FAIL ") + "t06 runner reads GIPK facts on the no-PK reject path")
+    results.append(fact_check)
+    a = copy.deepcopy(artifact)
+    a["cases"][a["cases"].index(next(x for x in a["cases"] if x["case_id"] == recorded["case_id"]))] = recorded
+    run("t06 runner-produced no-PK case validates", a)
+
     return results
 
 

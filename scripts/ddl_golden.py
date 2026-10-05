@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: task manifest testdata/ddl-golden/<TASK>.json, docker/ddl-golden-compose.yaml, freshly built deltascope CLI
-# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest, including synchronous execute verification and the frozen T05-A3, T05-A4, T05-A5, and T05-A6 oracles
+# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest, including synchronous execute verification and the frozen T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1 oracles
 # pos: DDL golden-path runner and artifact validator behind `make ddl-golden TASK=Txx ARTIFACT_DIR=...`
 # note: if this file changes, update this header and module README.md.
 """DeltaScope DDL golden-path runner (milestone T02/#81, T04/#83).
@@ -708,6 +708,11 @@ INSTANCE_FACT_QUERIES = {
     "innodb_large_prefix": "show variables like 'innodb_large_prefix'",
     "innodb_default_row_format": "show variables like 'innodb_default_row_format'",
     "tidb_max_index_length": "show config where Type = 'tidb' and Name = 'max-index-length'",
+    # MySQL 8.0/8.4 GIPK knobs (issue #85 T06): recorded so a server-generated
+    # invisible primary key can never masquerade as a declared PRIMARY KEY.
+    "sql_require_primary_key": "show variables like 'sql_require_primary_key'",
+    "sql_generate_invisible_primary_key": "show variables like 'sql_generate_invisible_primary_key'",
+    "show_gipk_in_create_table_and_information_schema": "show variables like 'show_gipk_in_create_table_and_information_schema'",
 }
 
 
@@ -2300,6 +2305,523 @@ def t05_a6_manifest_failures(manifest):
     return failures
 
 
+# ---------------------------------------------------------------------------
+# T06-A1 frozen oracle (issue #85): CREATE TABLE primary-key presence.
+# The 32 required cases, the isolated policy profiles, and the structure
+# queries are hardcoded here — independent of the manifest — so deleting or
+# rewriting a case, an input SQL, a profile, or a required structure check on
+# the manifest and artifact sides at once still fails validation.
+# ---------------------------------------------------------------------------
+
+T06_PK_RULE = "ddl.table.primary_key.require"
+T06_ISOLATED_PROFILE = "t06-pk-presence-isolated"
+T06_REQUIRED_FALSE_PROFILE = "t06-pk-required-false"
+T06_NO_PK_SQL = "CREATE TABLE t (id INT);"
+T06_INLINE_PK_SQL = "CREATE TABLE t (id INT PRIMARY KEY);"
+T06_TABLE_PK_SQL = "CREATE TABLE t (id INT, PRIMARY KEY (id));"
+T06_BASELINE_SQL = (
+    "CREATE TABLE golden_t (id INT PRIMARY KEY); "
+    "ALTER TABLE golden_t ADD COLUMN c INT; DROP TABLE golden_t;"
+)
+T06_BASELINE_STATEMENTS = [
+    "CREATE TABLE golden_t (id INT PRIMARY KEY);",
+    "ALTER TABLE golden_t ADD COLUMN c INT;",
+    "DROP TABLE golden_t;",
+]
+
+T06_TABLE_COUNT = (
+    "SELECT COUNT(*) FROM information_schema.TABLES "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'"
+)
+T06_COLUMN_COUNT = (
+    "SELECT COUNT(*) FROM information_schema.COLUMNS "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'"
+)
+T06_COLUMN_ROW = (
+    "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) "
+    "FROM information_schema.COLUMNS "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION"
+)
+T06_PK_CONSTRAINT = (
+    "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'"
+)
+T06_PK_PARTS = (
+    "SELECT COUNT(*) FROM information_schema.STATISTICS "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'"
+)
+T06_PK_MEMBER = (
+    "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY' "
+    "ORDER BY SEQ_IN_INDEX"
+)
+T06_ENGINE = (
+    "SELECT ENGINE FROM information_schema.TABLES "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'"
+)
+# MySQL 8.0/8.4 only: the server could add an invisible PK silently. Recording
+# these variables proves none was generated; a generated GIPK would also be
+# caught by the structure oracle (id would not be the sole column member).
+T06_GIPK_FACTS = {
+    "sql_require_primary_key": "OFF",
+    "sql_generate_invisible_primary_key": "OFF",
+    "show_gipk_in_create_table_and_information_schema": "ON",
+}
+
+T06_ANCHORS = {
+    "mysql57": {
+        "service": "mysql57",
+        "container": "deltascope-ddl-golden-mysql57",
+        "image": "mysql:5.7.44",
+        "product": "mysql",
+        "version_contains": "5.7.44",
+        "database": "golden",
+        "exec_client": ["mysql", "-uroot", "-proot"],
+        "needs_database_create": False,
+    },
+    "mysql80": {
+        "service": "mysql80",
+        "container": "deltascope-ddl-golden-mysql80",
+        "image": "mysql:8.0.46",
+        "product": "mysql",
+        "version_contains": "8.0.46",
+        "database": "golden",
+        "exec_client": ["mysql", "-uroot", "-proot"],
+        "needs_database_create": False,
+    },
+    "mysql84": {
+        "service": "mysql84",
+        "container": "deltascope-ddl-golden-mysql84",
+        "image": "mysql:8.4.10",
+        "product": "mysql",
+        "version_contains": "8.4.10",
+        "database": "golden",
+        "exec_client": ["mysql", "-uroot", "-proot"],
+        "needs_database_create": False,
+    },
+    "tidb85": {
+        "service": "tidb85",
+        "container": "deltascope-ddl-golden-tidb85",
+        "client_container": "deltascope-ddl-golden-tidb85-client",
+        "client_service": "tidb85-client",
+        "image": "pingcap/tidb:v8.5.0",
+        "product": "tidb",
+        "version_contains": "v8.5.0",
+        "database": "golden",
+        "exec_client": ["mysql", "--protocol=tcp", "-h", "tidb85", "-P", "4000", "-uroot"],
+        "needs_database_create": True,
+    },
+}
+
+# The baseline execution block is the T02 contract verbatim: same statements,
+# same verify queries, same negative case. It proves connectivity and the
+# audit/execute split on this anchor set — it is not T06 semantic evidence.
+T06_DDL_STEPS = [
+    {
+        "name": "create",
+        "sql": "CREATE TABLE golden_t (id INT PRIMARY KEY)",
+        "expect_rc": 0,
+        "verify": [
+            {
+                "assert": "table exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+                "expect": "1",
+            },
+            {
+                "assert": "primary key exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+                "expect": "1",
+            },
+        ],
+    },
+    {
+        "name": "alter",
+        "sql": "ALTER TABLE golden_t ADD COLUMN c INT",
+        "expect_rc": 0,
+        "verify": [
+            {
+                "assert": "column c exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND COLUMN_NAME='c'",
+                "expect": "1",
+            },
+        ],
+    },
+    {
+        "name": "drop",
+        "sql": "DROP TABLE golden_t",
+        "expect_rc": 0,
+        "verify": [
+            {
+                "assert": "table absent",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+                "expect": "0",
+            },
+        ],
+    },
+]
+
+T06_SYNTAX_NEGATIVE = {
+    "sql": "CREATE TABLE golden_broken (",
+    "expect": {
+        "rc_nonzero": True,
+        "error_class": "1064",
+        "forbidden_markers": [
+            "ERROR 1045",
+            "ERROR 1044",
+            "ERROR 1049",
+            "ERROR 1142",
+            "ERROR 1143",
+            "ERROR 2002",
+            "ERROR 2003",
+            "ERROR 2005",
+            "Access denied",
+            "Unknown database",
+            "Can't connect",
+            "Connection refused",
+            "already exists",
+        ],
+    },
+}
+
+
+def t06_a1_contract():
+    """Frozen T06-A1 oracle (issue #85). Baseline cases reuse the T02 batch
+    verbatim; the ten offline controls pin the two isolated policy profiles;
+    the twelve anchored cases pin the information_schema structure oracle.
+
+    MySQL 8.0/8.4 cases additionally record the GIPK-related server variables
+    so a server-generated invisible primary key can never masquerade as a
+    declared PRIMARY KEY."""
+
+    def verify(label, sql, expect):
+        return {"assert": label, "sql": sql, "expect": expect}
+
+    def audit_expect(sql, rejects, loaded=None):
+        expect = {
+            "exit": 1 if rejects else 0,
+            "verdict": "reject" if rejects else "pass",
+            "statements": 1,
+            "findings": 1 if rejects else 0,
+            "diagnostics": 0,
+            "unsupported": 0,
+            "coverage": "complete",
+            "statement_coverage": ["complete"],
+            "statement_sql": [sql],
+            "statement_indices": [0],
+            "evidence_gaps": 0,
+            "fail_on_triggered": bool(rejects),
+        }
+        if loaded is not None:
+            expect["rule_summary_loaded"] = loaded
+        if rejects:
+            expect["finding_entries"] = [
+                {"index": 0, "rule_id": T06_PK_RULE, "level": "blocker"}
+            ]
+            expect["finding_metadata"] = [
+                {"index": 0, "rule_id": T06_PK_RULE, "metadata": {"table": "t"}}
+            ]
+            expect["finding_locations"] = [{"index": 0, "line": 1, "column": 1}]
+        return expect
+
+    baseline_expect = {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 3,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": ["complete", "complete", "complete"],
+        "statement_sql": list(T06_BASELINE_STATEMENTS),
+        "statement_indices": [0, 1, 2],
+        "evidence_gaps": 0,
+        "fail_on_triggered": False,
+    }
+
+    cli_cases = []
+    for dialect in ("mysql", "tidb"):
+        cli_cases.append({
+            "id": dialect,
+            "dialect": dialect,
+            "sql": T06_BASELINE_SQL,
+            "expect": dict(baseline_expect),
+        })
+    for dialect in ("mysql", "tidb"):
+        cli_cases += [
+            {
+                "id": f"t06-{dialect}-no-pk",
+                "dialect": dialect,
+                "sql": T06_NO_PK_SQL,
+                "policy": T06_ISOLATED_PROFILE,
+                "args": ["--fail-on", "blocker"],
+                "expect": audit_expect(T06_NO_PK_SQL, True, loaded=1),
+            },
+            {
+                "id": f"t06-{dialect}-inline-pk",
+                "dialect": dialect,
+                "sql": T06_INLINE_PK_SQL,
+                "policy": T06_ISOLATED_PROFILE,
+                "args": ["--fail-on", "blocker"],
+                "expect": audit_expect(T06_INLINE_PK_SQL, False, loaded=1),
+            },
+            {
+                "id": f"t06-{dialect}-table-pk",
+                "dialect": dialect,
+                "sql": T06_TABLE_PK_SQL,
+                "policy": T06_ISOLATED_PROFILE,
+                "args": ["--fail-on", "blocker"],
+                "expect": audit_expect(T06_TABLE_PK_SQL, False, loaded=1),
+            },
+            {
+                "id": f"t06-{dialect}-rule-off",
+                "dialect": dialect,
+                "sql": T06_NO_PK_SQL,
+                "args": ["--fail-on", "blocker"],
+                "expect": audit_expect(T06_NO_PK_SQL, False),
+            },
+            {
+                "id": f"t06-{dialect}-required-false",
+                "dialect": dialect,
+                "sql": T06_NO_PK_SQL,
+                "policy": T06_REQUIRED_FALSE_PROFILE,
+                "args": ["--fail-on", "blocker"],
+                "expect": audit_expect(T06_NO_PK_SQL, False, loaded=1),
+            },
+        ]
+
+    connects = {
+        "mysql57": {
+            "host": "127.0.0.1", "port": 23357, "user": "root",
+            "password_env": "DS_T06_GOLDEN_PW", "password": "root",
+            "schema": "golden",
+        },
+        "mysql80": {
+            "host": "127.0.0.1", "port": 23380, "user": "root",
+            "password_env": "DS_T06_GOLDEN_PW", "password": "root",
+            "schema": "golden",
+        },
+        "mysql84": {
+            "host": "127.0.0.1", "port": 23384, "user": "root",
+            "password_env": "DS_T06_GOLDEN_PW", "password": "root",
+            "schema": "golden",
+        },
+        "tidb85": {
+            "host": "127.0.0.1", "port": 24000, "user": "root",
+            "schema": "golden",
+        },
+    }
+
+    def structure(anchor_key, pk):
+        rows = [
+            verify("exactly one user table", T06_TABLE_COUNT, "1"),
+            verify("exactly one user column", T06_COLUMN_COUNT, "1"),
+            verify(
+                "column id identity",
+                T06_COLUMN_ROW,
+                "id:int:1:" + ("NO" if pk else "YES"),
+            ),
+            verify("primary key constraint count", T06_PK_CONSTRAINT, "1" if pk else "0"),
+            verify("primary index part count", T06_PK_PARTS, "1" if pk else "0"),
+        ]
+        if pk:
+            rows.append(verify("primary key member", T06_PK_MEMBER, "id:1"))
+        if anchor_key != "tidb85":
+            rows.append(verify("storage engine", T06_ENGINE, "InnoDB"))
+        return rows
+
+    metadata_cases = []
+    for anchor_key in ("mysql57", "mysql80", "mysql84", "tidb85"):
+        dialect = "tidb" if anchor_key == "tidb85" else "mysql"
+        for variant, sql, has_pk in (
+            ("no-pk", T06_NO_PK_SQL, False),
+            ("inline-pk", T06_INLINE_PK_SQL, True),
+            ("table-pk", T06_TABLE_PK_SQL, True),
+        ):
+            expect = audit_expect(sql, not has_pk, loaded=1)
+            if anchor_key in ("mysql80", "mysql84"):
+                expect["instance_facts"] = dict(T06_GIPK_FACTS)
+            metadata_cases.append({
+                "id": f"t06-{anchor_key}-{variant}",
+                "anchor": anchor_key,
+                "dialect": dialect,
+                "sql": sql,
+                "policy": T06_ISOLATED_PROFILE,
+                "connect": dict(connects[anchor_key]),
+                "args": ["--fail-on", "blocker"],
+                "setup": [
+                    {
+                        "name": "ensure t absent",
+                        "sql": "DROP TABLE IF EXISTS t",
+                        "expect_rc": 0,
+                        "verify": [verify("t absent before audit", T06_TABLE_COUNT, "0")],
+                    },
+                ],
+                "expect": expect,
+                "post_verify": [
+                    verify("audit did not create t", T06_TABLE_COUNT, "0"),
+                ],
+                "execute": [
+                    {
+                        "name": "driver applies the audited create",
+                        "sql": sql,
+                        "expect_rc": 0,
+                    },
+                ],
+                "structure": structure(anchor_key, has_pk),
+                "teardown": [
+                    {
+                        "name": "drop fixture",
+                        "sql": "DROP TABLE IF EXISTS t",
+                        "expect_rc": 0,
+                        "verify": [verify("no residual t", T06_TABLE_COUNT, "0")],
+                    },
+                ],
+            })
+
+    required_case_ids = (
+        [f"T06.db.{anchor}.{kind}" for anchor in T06_ANCHORS for kind in ("ddl", "syntax_negative")]
+        + [f"T06.cli.{spec['id']}" for spec in cli_cases]
+        + [f"T06.meta.{spec['id']}" for spec in metadata_cases]
+    )
+
+    return {
+        "policy_profile": "all-rules-disabled",
+        "policy_profiles": {
+            T06_ISOLATED_PROFILE: {
+                "enable": {
+                    T06_PK_RULE: {"enabled": True, "level": "blocker", "params": {"required": True}}
+                }
+            },
+            T06_REQUIRED_FALSE_PROFILE: {
+                "enable": {
+                    T06_PK_RULE: {"enabled": True, "level": "blocker", "params": {"required": False}}
+                }
+            },
+        },
+        "anchors": T06_ANCHORS,
+        "ddl_steps": T06_DDL_STEPS,
+        "syntax_negative": T06_SYNTAX_NEGATIVE,
+        "cli_cases": cli_cases,
+        "metadata_cases": metadata_cases,
+        "required_case_ids": required_case_ids,
+    }
+
+
+def t06_a1_manifest_failures(manifest):
+    if manifest.get("task_id") != "T06":
+        return []
+    contract = t06_a1_contract()
+    failures = []
+    if manifest.get("policy_profile") != contract["policy_profile"]:
+        failures.append("T06-A1 default policy profile changed")
+    if (manifest.get("policy") or {}).get("profiles") != contract["policy_profiles"]:
+        failures.append("T06-A1 frozen policy profiles missing or changed")
+    if manifest.get("anchors") != contract["anchors"]:
+        failures.append("T06-A1 anchors differ from the frozen four-version fixture")
+    if manifest.get("ddl_steps") != contract["ddl_steps"]:
+        failures.append("T06-A1 baseline ddl_steps changed")
+    if manifest.get("syntax_negative") != contract["syntax_negative"]:
+        failures.append("T06-A1 baseline syntax_negative changed")
+    required = manifest.get("required_case_ids") or []
+    if required != contract["required_case_ids"]:
+        failures.append("T06-A1 required_case_ids differ from the frozen 32-case denominator")
+    for field, kind in (("cli_cases", "cli"), ("metadata_cases", "meta")):
+        declared = {spec.get("id"): spec for spec in manifest.get(field) or []}
+        for wanted in contract[field]:
+            if declared.get(wanted["id"]) != wanted:
+                failures.append(f"T06-A1 frozen oracle changed or missing: {wanted['id']}")
+            if f"T06.{kind}.{wanted['id']}" not in required:
+                failures.append(f"T06-A1 required case missing: {wanted['id']}")
+    return failures
+
+
+def t06_a1_artifact_failures(artifact, manifest):
+    """T06-specific evidence assertions on top of the generic validator:
+    statement identity (raw/normalized SQL, index, kind, no fabricated
+    impact), exact finding identity (rule, level, message, location,
+    metadata), summary counters, connectivity markers on stderr, and the
+    product-reject/driver-accept coexistence for anchored no-PK cases."""
+    if manifest.get("task_id") != "T06":
+        return []
+    contract = t06_a1_contract()
+    frozen = {}
+    for spec in contract["cli_cases"]:
+        if spec["id"].startswith("t06-"):
+            frozen[f"T06.cli.{spec['id']}"] = spec
+    for spec in contract["metadata_cases"]:
+        frozen[f"T06.meta.{spec['id']}"] = spec
+    forbidden_stderr = (
+        "Can't connect", "Access denied", "Unknown database",
+        "Connection refused", "ERROR 1045", "ERROR 1044", "ERROR 1049",
+        "ERROR 2002", "ERROR 2003", "ERROR 2005", "No such file",
+    )
+    failures = []
+    for case in artifact.get("cases") or []:
+        case_id = case.get("case_id")
+        spec = frozen.get(case_id)
+        if spec is None:
+            continue
+        actual = case.get("actual") or {}
+        stderr = actual.get("stderr") or ""
+        for marker in forbidden_stderr:
+            if marker.lower() in stderr.lower():
+                failures.append(f"T06-A1 {case_id}: stderr carries connectivity/permission marker {marker!r}")
+        try:
+            parsed = json.loads(actual.get("stdout") or "")
+        except (json.JSONDecodeError, TypeError):
+            continue  # the generic validator already reports unparseable stdout
+        statements = parsed.get("statements") or []
+        if len(statements) != 1:
+            failures.append(f"T06-A1 {case_id}: statements {len(statements)} != 1")
+            continue
+        statement = statements[0]
+        sql = spec["sql"]
+        if (statement.get("index") != 0 or statement.get("kind") != "ddl"
+                or statement.get("raw_sql") != sql
+                or statement.get("normalized_sql") != sql[:-1]):
+            failures.append(f"T06-A1 {case_id}: statement identity mismatch: {statement!r}")
+        if statement.get("impact") is not None:
+            failures.append(f"T06-A1 {case_id}: impact must not be fabricated")
+        findings = statement.get("findings") or []
+        summary = parsed.get("summary") or {}
+        rejects = spec["expect"]["exit"] == 1
+        if rejects:
+            if len(findings) != 1:
+                failures.append(f"T06-A1 {case_id}: findings {len(findings)} != 1")
+            else:
+                finding = findings[0]
+                location = finding.get("location") or {}
+                metadata = finding.get("metadata") or {}
+                if (finding.get("rule_id") != T06_PK_RULE
+                        or finding.get("level") != "blocker"
+                        or finding.get("message") != "primary key is required"
+                        or finding.get("statement_index", 0) != 0
+                        or finding.get("statement_kind") != "ddl"
+                        or location.get("line") != 1 or location.get("column") != 1
+                        or metadata.get("table") != "t"):
+                    failures.append(f"T06-A1 {case_id}: finding identity mismatch: {finding!r}")
+            if summary.get("blockers") != 1 or summary.get("warnings") != 0 or summary.get("notices") != 0:
+                failures.append(f"T06-A1 {case_id}: summary counters mismatch: {summary!r}")
+        else:
+            if findings:
+                failures.append(f"T06-A1 {case_id}: pass case carries findings {findings!r}")
+            if summary.get("blockers") != 0 or summary.get("warnings") != 0 or summary.get("notices") != 0:
+                failures.append(f"T06-A1 {case_id}: summary counters mismatch: {summary!r}")
+        if parsed.get("global_findings"):
+            failures.append(f"T06-A1 {case_id}: global findings must stay empty")
+        if case.get("kind") == "cli_metadata":
+            # Policy rejection never means the server refused the DDL: on the
+            # no-PK anchored cases the product exit and the driver return code
+            # must coexist exactly as the frozen table states.
+            execute = actual.get("execute") or []
+            want_exit = 1 if spec["sql"] == T06_NO_PK_SQL else 0
+            if actual.get("exit") != want_exit or len(execute) != 1 or execute[0].get("rc") != 0:
+                failures.append(
+                    f"T06-A1 {case_id}: product exit {actual.get('exit')!r} and driver create must be "
+                    f"{want_exit}/rc=0")
+    return failures
+
+
 def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
     """Re-check an emitted artifact. Returns a list of failure strings."""
     failures = []
@@ -2316,6 +2838,8 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
     failures.extend(t05_a4_manifest_failures(manifest))
     failures.extend(t05_a5_manifest_failures(manifest))
     failures.extend(t05_a6_manifest_failures(manifest))
+    failures.extend(t06_a1_manifest_failures(manifest))
+    failures.extend(t06_a1_artifact_failures(artifact, manifest))
 
     if artifact.get("external_blocker"):
         failures.append(f"external blocker recorded: {artifact['external_blocker']}")

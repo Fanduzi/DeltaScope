@@ -58,12 +58,17 @@ Per-task manifests for the milestone DDL golden-path runner
   product/version mismatch can never be laundered into a connection failure
   or lack its observed identity proof (#83 T04-B).
 - `metadata_cases` may declare `instance_facts` (`innodb_page_size`,
-  `tidb_max_index_length`): the runner live-reads each declared fact from
-  the anchor (`SHOW VARIABLES` for MySQL page size, `SHOW CONFIG` for TiDB
-  `max-index-length`) and the validator rejects deleted, emptied, or
-  tampered values — the manifest can never substitute for live evidence.
-  Task-scoped auxiliary anchors (e.g. `mysql84-4k`, `tidb85-12288`) pin the
-  fact in compose instead of the manifest so live reads prove it.
+  `tidb_max_index_length`, `sql_require_primary_key`,
+  `sql_generate_invisible_primary_key`,
+  `show_gipk_in_create_table_and_information_schema`): the runner live-reads
+  each declared fact from the anchor (`SHOW VARIABLES` for MySQL page size
+  and the GIPK variables, `SHOW CONFIG` for TiDB `max-index-length`) and the
+  validator rejects deleted, emptied, or tampered values — the manifest can
+  never substitute for live evidence. Task-scoped auxiliary anchors (e.g.
+  `mysql84-4k`, `tidb85-12288`) pin the fact in compose instead of the
+  manifest so live reads prove it. GIPK facts prove a server-generated
+  invisible primary key was not in play, so a driver-side CREATE cannot
+  launder a server-added PK into input-declared evidence (T06-A1).
 - `required_case_ids`: exact case IDs that must appear as executed in the
   artifact; any missing required case is a violation.
 

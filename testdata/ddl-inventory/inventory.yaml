@@ -264,7 +264,7 @@ rows:
     targets: "table identity, columns, PK, indexes, options"
     acceptance:
       dimensions: "per-statement findings, version-legal column forms, metadata presence/absence"
-      refs: ["file:testdata/ddl-golden/T02.json", "file:testdata/sql-corpus/mysql/ddl/findings", "file:testdata/sql-corpus/mysql/ddl/metadata"]
+      refs: ["file:testdata/ddl-golden/T02.json", "file:testdata/sql-corpus/mysql/ddl/findings", "file:testdata/sql-corpus/mysql/ddl/metadata", "file:testdata/ddl-golden/T06.json", "file:testdata/ddl-inventory/T06-base-traceability.md"]
     owner: T06
 
   - id: mysql.create-table-temporary
@@ -1281,7 +1281,7 @@ rows:
     targets: "table identity, columns, PK kind, TiDB options as facts"
     acceptance:
       dimensions: "base table checks plus TiDB option capture"
-      refs: ["file:testdata/ddl-golden/T02.json", "file:testdata/sql-corpus/tidb/ddl/findings"]
+      refs: ["file:testdata/ddl-golden/T02.json", "file:testdata/sql-corpus/tidb/ddl/findings", "file:testdata/ddl-golden/T06.json", "file:testdata/ddl-inventory/T06-base-traceability.md"]
     owner: T06
 
   - id: tidb.create-table-like
