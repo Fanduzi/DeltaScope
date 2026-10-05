@@ -1,0 +1,33 @@
+diff --git a/internal/domain/spec/statement.go b/internal/domain/spec/statement.go
+index b6daab86..55f63c1e 100644
+--- a/internal/domain/spec/statement.go
++++ b/internal/domain/spec/statement.go
+@@ -41,17 +41,17 @@ type StatementExtractor interface {
+ 
+ // Statement is the normalized domain input for rule evaluation.
+ type Statement struct {
+-	Kind          Kind               `json:"kind"`
+-	Dialect       Dialect            `json:"dialect"`
+-	RawSQL        string             `json:"raw_sql"`
+-	NormalizedSQL string             `json:"normalized_sql,omitempty"`
+-	Warnings      []string           `json:"warnings,omitempty"`
+-	Line          int                `json:"line,omitempty"`
+-	Column        int                `json:"column,omitempty"`
+-	Metadata      *Metadata          `json:"metadata,omitempty"`
+-	DDL           *DDL               `json:"ddl,omitempty"`
+-	DML           *DML               `json:"dml,omitempty"`
+-	Unsupported   *UnsupportedDetail `json:"unsupported,omitempty"`
++	Kind          Kind                `json:"kind"`
++	Dialect       Dialect             `json:"dialect"`
++	RawSQL        string              `json:"raw_sql"`
++	NormalizedSQL string              `json:"normalized_sql,omitempty"`
++	Warnings      []string            `json:"warnings,omitempty"`
++	Line          int                 `json:"line,omitempty"`
++	Column        int                 `json:"column,omitempty"`
++	Metadata      *Metadata           `json:"metadata,omitempty"`
++	DDL           *DDL                `json:"ddl,omitempty"`
++	DML           *DML                `json:"dml,omitempty"`
++	Unsupported   *UnsupportedDetail  `json:"unsupported,omitempty"`
+ 	ResourceLimit *AuditResourceLimit `json:"-"`
+ }
+ 

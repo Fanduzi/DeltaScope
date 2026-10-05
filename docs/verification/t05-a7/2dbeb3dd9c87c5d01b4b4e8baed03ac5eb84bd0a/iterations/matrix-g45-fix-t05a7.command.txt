@@ -1,0 +1,4 @@
+argv: go test -count=1 ./internal/application/audit -run T05A7 -v
+cwd: /Users/fan/GolangProjects/DeltaScope
+HEAD: c9ebc1202b34f123038c8a8ffff28549eda23bea
+label: PRE-COMMIT task-base c9ebc12 + T05-A7 implementation diff + matrix groups 2-5 (fix1)

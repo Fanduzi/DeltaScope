@@ -1,0 +1,2 @@
+cwd: /Users/fan/GolangProjects/DeltaScope
+argv: go test -count=1 ./pkg/deltascope ./internal/interfaces/cli ./internal/interfaces/http ./internal/interfaces/mcp -run T05A7 -v

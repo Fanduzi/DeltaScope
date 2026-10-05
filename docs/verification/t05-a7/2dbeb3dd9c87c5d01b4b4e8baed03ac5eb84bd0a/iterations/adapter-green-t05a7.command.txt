@@ -1,0 +1,2 @@
+cwd: /Users/fan/GolangProjects/DeltaScope
+argv: go test -count=1 ./internal/application/audit -run T05A7 -v

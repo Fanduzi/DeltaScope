@@ -1,0 +1,17 @@
+{
+  "scope": "Implementer self-check of frozen artifacts, not a product rerun or independent Reviewer acceptance",
+  "tested_code_sha": "2dbeb3dd9c87c5d01b4b4e8baed03ac5eb84bd0a",
+  "cwd": "/Users/fan/GolangProjects/DeltaScope",
+  "argv": [
+    "python3",
+    "/tmp/ds-t05-a7.IrVZyg/verify_artifacts.py",
+    "--proof-root",
+    "/tmp/ds-t05-a7.IrVZyg",
+    "--code-sha",
+    "2dbeb3dd9c87c5d01b4b4e8baed03ac5eb84bd0a",
+    "--output",
+    "/tmp/ds-t05-a7.IrVZyg/lead-artifact-review.json"
+  ],
+  "returncode": 0,
+  "result": "lead-artifact-review.json"
+}

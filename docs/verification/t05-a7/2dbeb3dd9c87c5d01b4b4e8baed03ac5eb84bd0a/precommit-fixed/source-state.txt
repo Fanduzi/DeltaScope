@@ -1,0 +1,5 @@
+cwd: /Users/fan/GolangProjects/DeltaScope
+HEAD: c9ebc1202b34f123038c8a8ffff28549eda23bea
+branch: milestone/mysql-tidb-ddl-completion
+date: 2026-10-05T09:42:13Z
+staged count: 24

@@ -1,0 +1,24 @@
+label: POST-COMMIT / tested code SHA 2dbeb3dd9c87c5d01b4b4e8baed03ac5eb84bd0a
+cwd: /Users/fan/GolangProjects/DeltaScope
+date: 2026-10-05T09:46:00Z
+HEAD: 2dbeb3dd9c87c5d01b4b4e8baed03ac5eb84bd0a
+tree: 87b582db56d02f1f878b87368d2b3b08603d52ad
+branch: milestone/mysql-tidb-ddl-completion
+
+== commit identity ==
+author: Fan() <18501341937@163.com>
+committer: Fan() <18501341937@163.com>
+subject: feat(audit): stop ordered work when statement budget is exhausted (#84)
+parents: c9ebc1202b34f123038c8a8ffff28549eda23bea
+
+== status ==
+?? .agents/
+?? .debug-journal.md
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? docs/quality/architecture-review-2026-08-11.html
+
+== worktrees ==
+/Users/fan/GolangProjects/DeltaScope           2dbeb3dd [milestone/mysql-tidb-ddl-completion]
+/private/tmp/ds-t05-a3-final.2K4NKO/doc-check  49a0f5bc (detached HEAD)

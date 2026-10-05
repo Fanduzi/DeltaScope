@@ -1,0 +1,6 @@
+[
+  "git",
+  "status",
+  "--short",
+  "--branch"
+]

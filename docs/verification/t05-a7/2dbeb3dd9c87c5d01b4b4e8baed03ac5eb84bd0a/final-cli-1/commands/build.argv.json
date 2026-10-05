@@ -1,0 +1,7 @@
+[
+  "go",
+  "build",
+  "-o",
+  "/private/tmp/ds-t05-a7.IrVZyg/final-cli-1/deltascope",
+  "./cmd/deltascope"
+]

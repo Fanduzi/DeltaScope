@@ -1,0 +1,13 @@
+PRE-COMMIT SUMMARY
+==================
+HEAD: c9ebc1202b34f123038c8a8ffff28549eda23bea
+branch: milestone/mysql-tidb-ddl-completion
+staged files: 24 (see staged-name-only.txt, staged-stat.txt, staged.patch = 2885 lines)
+
+results:
+  diff-check rc=0
+  decision-record rc=0
+  three-level-doc rc=0
+  gofmt rc=0
+
+FAIL: gofmt -l nonempty -> internal/domain/spec/statement.go (see gofmt-diff.txt)

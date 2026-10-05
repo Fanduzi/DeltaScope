@@ -1,0 +1,1278 @@
+=== RUN   TestBatchStateA2RenameMigratesIdentity
+=== PAUSE TestBatchStateA2RenameMigratesIdentity
+=== RUN   TestBatchStateA2RenameKeepsSourcePreState
+=== PAUSE TestBatchStateA2RenameKeepsSourcePreState
+=== RUN   TestBatchStateA2OldNameStaysAbsent
+=== PAUSE TestBatchStateA2OldNameStaysAbsent
+=== RUN   TestBatchStateA2RenamePremiseCellsInvalidate
+=== PAUSE TestBatchStateA2RenamePremiseCellsInvalidate
+=== RUN   TestBatchStateA2ExistenceGrid
+=== PAUSE TestBatchStateA2ExistenceGrid
+=== RUN   TestBatchStateA2ContaminationAndForms
+=== PAUSE TestBatchStateA2ContaminationAndForms
+=== RUN   TestBatchStateA2PolicyBlockerKeepsMigration
+=== PAUSE TestBatchStateA2PolicyBlockerKeepsMigration
+=== RUN   TestBatchStateA2ReadLedger
+=== PAUSE TestBatchStateA2ReadLedger
+=== RUN   TestBatchStateA2MemberTransportBoundary
+=== PAUSE TestBatchStateA2MemberTransportBoundary
+=== RUN   TestBatchStateA2R1LoadedDependentInvalidates
+=== PAUSE TestBatchStateA2R1LoadedDependentInvalidates
+=== RUN   TestBatchStateA2R1LoadedDependentKeepsPublicGapContract
+=== PAUSE TestBatchStateA2R1LoadedDependentKeepsPublicGapContract
+=== RUN   TestBatchStateA2R1PrimaryKeyPayloadMigrates
+=== PAUSE TestBatchStateA2R1PrimaryKeyPayloadMigrates
+=== RUN   TestBatchStateA2R1RenameObservesCancellation
+=== PAUSE TestBatchStateA2R1RenameObservesCancellation
+=== RUN   TestBatchStateA3DropRecreate
+=== PAUSE TestBatchStateA3DropRecreate
+=== RUN   TestBatchStateA3DropPreStateMatrix
+=== PAUSE TestBatchStateA3DropPreStateMatrix
+=== RUN   TestBatchStateA3TombstoneThenIfExistsDrop
+=== PAUSE TestBatchStateA3TombstoneThenIfExistsDrop
+=== RUN   TestBatchStateA3AuditSurfacePollution
+=== PAUSE TestBatchStateA3AuditSurfacePollution
+=== RUN   TestBatchStateA3DropStateTable
+=== PAUSE TestBatchStateA3DropStateTable
+=== RUN   TestBatchStateA3OldColumnIndexNegative
+=== PAUSE TestBatchStateA3OldColumnIndexNegative
+=== RUN   TestBatchStateA3OldShapeNotInherited
+=== PAUSE TestBatchStateA3OldShapeNotInherited
+=== RUN   TestBatchStateA3LoadedDependentInvalidates
+=== PAUSE TestBatchStateA3LoadedDependentInvalidates
+=== RUN   TestBatchStateA3NonPreciseForms
+=== PAUSE TestBatchStateA3NonPreciseForms
+=== RUN   TestBatchStateA3DispatchGuards
+=== PAUSE TestBatchStateA3DispatchGuards
+=== RUN   TestBatchStateA3TruncateUnchanged
+=== PAUSE TestBatchStateA3TruncateUnchanged
+=== RUN   TestBatchStateA3IdentitySeparation
+=== PAUSE TestBatchStateA3IdentitySeparation
+=== RUN   TestBatchStateA3CancellationAndProviderError
+=== PAUSE TestBatchStateA3CancellationAndProviderError
+=== RUN   TestBatchStateA3DropForbidOrthogonal
+=== PAUSE TestBatchStateA3DropForbidOrthogonal
+=== RUN   TestBatchStateA3IndependentAuditCalls
+=== PAUSE TestBatchStateA3IndependentAuditCalls
+=== RUN   TestBatchStateA4PartialDefinitionPublishesNext
+=== PAUSE TestBatchStateA4PartialDefinitionPublishesNext
+=== RUN   TestBatchStateA4AbsentAndUnknownStayDistinct
+=== PAUSE TestBatchStateA4AbsentAndUnknownStayDistinct
+=== RUN   TestBatchStateA4OmittedAttributesAndCharset
+=== PAUSE TestBatchStateA4OmittedAttributesAndCharset
+=== RUN   TestBatchStateA4PrimaryKeyNullability
+=== PAUSE TestBatchStateA4PrimaryKeyNullability
+=== RUN   TestBatchStateA4OrdinaryIndexAndLoadedDependents
+=== PAUSE TestBatchStateA4OrdinaryIndexAndLoadedDependents
+=== RUN   TestBatchStateA4UnsafeDependentsInvalidate
+=== PAUSE TestBatchStateA4UnsafeDependentsInvalidate
+=== RUN   TestBatchStateA4NonTemplateStaysConservative
+=== PAUSE TestBatchStateA4NonTemplateStaysConservative
+=== RUN   TestBatchStateA4PolicyDoesNotBlockTransfer
+=== PAUSE TestBatchStateA4PolicyDoesNotBlockTransfer
+=== RUN   TestBatchStateA4ProviderIsolationCopyAndCancel
+=== PAUSE TestBatchStateA4ProviderIsolationCopyAndCancel
+=== RUN   TestBatchStateA4R1AffectedSet
+=== PAUSE TestBatchStateA4R1AffectedSet
+=== RUN   TestBatchStateA5MembersAndPartialKnowledge
+=== PAUSE TestBatchStateA5MembersAndPartialKnowledge
+=== RUN   TestBatchStateA5UnsafeAndNonPrecise
+=== PAUSE TestBatchStateA5UnsafeAndNonPrecise
+=== RUN   TestBatchStateA5PolicyIsolationAndCancel
+=== PAUSE TestBatchStateA5PolicyIsolationAndCancel
+=== RUN   TestBatchStateA6KnownEmptyMembersAllowPreciseDrop
+=== PAUSE TestBatchStateA6KnownEmptyMembersAllowPreciseDrop
+=== RUN   TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop
+=== PAUSE TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop
+=== RUN   TestBatchStateA6UnrelatedMembersStay
+=== PAUSE TestBatchStateA6UnrelatedMembersStay
+=== RUN   TestBatchStateA6UnsupportedDropStillTombstonesDependents
+=== PAUSE TestBatchStateA6UnsupportedDropStillTombstonesDependents
+=== RUN   TestBatchStateA6StatsCopyAndIdentityIsolation
+=== PAUSE TestBatchStateA6StatsCopyAndIdentityIsolation
+=== RUN   TestBatchStateA6CancelAndProviderErrorPublishNothing
+=== PAUSE TestBatchStateA6CancelAndProviderErrorPublishNothing
+=== RUN   TestBatchStateA6DuplicateColumnIdentityIsNotGuessed
+=== PAUSE TestBatchStateA6DuplicateColumnIdentityIsNotGuessed
+=== RUN   TestBatchStateA6TemplateModifiersRefusePreciseDrop
+=== PAUSE TestBatchStateA6TemplateModifiersRefusePreciseDrop
+=== RUN   TestBatchStateA6WithheldColumnsInvalidateTheWholeTable
+=== PAUSE TestBatchStateA6WithheldColumnsInvalidateTheWholeTable
+=== RUN   TestBatchStateA6CaseFoldDropsTheSingleColumn
+=== PAUSE TestBatchStateA6CaseFoldDropsTheSingleColumn
+=== RUN   TestBatchStateR1QualifiedNamesUseTheirOwnSchema
+=== PAUSE TestBatchStateR1QualifiedNamesUseTheirOwnSchema
+=== RUN   TestBatchStateR1CrossSchemaNoStateLeak
+=== PAUSE TestBatchStateR1CrossSchemaNoStateLeak
+=== RUN   TestBatchStateR1MixedQualifiedAndUnqualified
+=== PAUSE TestBatchStateR1MixedQualifiedAndUnqualified
+=== RUN   TestBatchStateR1CrossSchemaRenameMigrates
+=== PAUSE TestBatchStateR1CrossSchemaRenameMigrates
+=== RUN   TestBatchStateR1ExecuteContaminatesLaterState
+=== PAUSE TestBatchStateR1ExecuteContaminatesLaterState
+=== RUN   TestBatchStateR1DropDatabaseInvalidatesSchemaScope
+=== PAUSE TestBatchStateR1DropDatabaseInvalidatesSchemaScope
+=== RUN   TestBatchStateR1MultiActionAlterInvalidates
+=== PAUSE TestBatchStateR1MultiActionAlterInvalidates
+=== RUN   TestBatchStateR1PartialProviderShapeKeepsKnownPrimaryKey
+=== PAUSE TestBatchStateR1PartialProviderShapeKeepsKnownPrimaryKey
+=== RUN   TestBatchStateR1ConditionalCreateLeavesPrimaryKeyUnknown
+=== PAUSE TestBatchStateR1ConditionalCreateLeavesPrimaryKeyUnknown
+=== RUN   TestBatchStateR1KnownAbsentPrimaryKeyKeepsBlocker
+=== PAUSE TestBatchStateR1KnownAbsentPrimaryKeyKeepsBlocker
+=== RUN   TestBatchStateR1IncompleteColumnsUseFrozenReason
+=== PAUSE TestBatchStateR1IncompleteColumnsUseFrozenReason
+=== RUN   TestBatchStateR2UnknownMemberCollectionsEmitGaps
+=== PAUSE TestBatchStateR2UnknownMemberCollectionsEmitGaps
+=== RUN   TestBatchStateR2UnknownTableStateMemberGapFacts
+=== PAUSE TestBatchStateR2UnknownTableStateMemberGapFacts
+=== RUN   TestBatchStateR2KnownIndexSetKeepsRealAnswers
+=== PAUSE TestBatchStateR2KnownIndexSetKeepsRealAnswers
+=== RUN   TestBatchStateOnlineFirstPathDerivesSequentialState
+=== PAUSE TestBatchStateOnlineFirstPathDerivesSequentialState
+=== RUN   TestBatchStateCreateIndexMissingColumnFindsDerivedShape
+=== PAUSE TestBatchStateCreateIndexMissingColumnFindsDerivedShape
+=== RUN   TestBatchStateRepeatedAddColumnFiresOnDerivedState
+=== PAUSE TestBatchStateRepeatedAddColumnFiresOnDerivedState
+=== RUN   TestBatchStateUnauditedMutationInvalidatesOnlyItsTable
+=== PAUSE TestBatchStateUnauditedMutationInvalidatesOnlyItsTable
+=== RUN   TestBatchStateCreateIndexOnAbsentTableReportsTableNotFound
+=== PAUSE TestBatchStateCreateIndexOnAbsentTableReportsTableNotFound
+=== RUN   TestBatchStateOfflineFirstPathGapProfile
+=== PAUSE TestBatchStateOfflineFirstPathGapProfile
+=== RUN   TestBatchStateIncompleteProviderShapeYieldsIncompleteStructureGap
+=== PAUSE TestBatchStateIncompleteProviderShapeYieldsIncompleteStructureGap
+=== RUN   TestBatchStateParseFailureContaminatesLaterStatements
+=== PAUSE TestBatchStateParseFailureContaminatesLaterStatements
+=== RUN   TestBatchStateTruncateClearsRowStatistics
+=== PAUSE TestBatchStateTruncateClearsRowStatistics
+=== RUN   TestBatchStateProviderErrorStaysAnError
+=== PAUSE TestBatchStateProviderErrorStaysAnError
+=== RUN   TestBatchStatePolicyBlockerKeepsDeterministicTransition
+=== PAUSE TestBatchStatePolicyBlockerKeepsDeterministicTransition
+=== RUN   TestBatchStateProviderReadsAreRequestLocal
+=== PAUSE TestBatchStateProviderReadsAreRequestLocal
+=== RUN   TestBatchStateRenameTableMigratesToAbsentDestination
+=== PAUSE TestBatchStateRenameTableMigratesToAbsentDestination
+=== RUN   TestBatchStateNoticeControlKeepsLegacyNotice
+=== PAUSE TestBatchStateNoticeControlKeepsLegacyNotice
+=== RUN   TestBatchStateDoesNotMutateProviderSnapshotOrEarlierMetadata
+=== PAUSE TestBatchStateDoesNotMutateProviderSnapshotOrEarlierMetadata
+=== RUN   TestEvaluateProducesReportFlowOutput
+=== PAUSE TestEvaluateProducesReportFlowOutput
+=== RUN   TestEvaluateStatementsEnrichesFindingFromCatalogMetadata
+=== PAUSE TestEvaluateStatementsEnrichesFindingFromCatalogMetadata
+=== RUN   TestEvaluateStatementsGracefullyHandlesMissingCatalogMetadata
+=== PAUSE TestEvaluateStatementsGracefullyHandlesMissingCatalogMetadata
+=== RUN   TestEvaluateStatementsBuildsAggregateExplanations
+=== PAUSE TestEvaluateStatementsBuildsAggregateExplanations
+=== RUN   TestEvaluateStatementsAddsMetadataLimitedNoteForMetadataAwareRuleWithoutMetadata
+=== PAUSE TestEvaluateStatementsAddsMetadataLimitedNoteForMetadataAwareRuleWithoutMetadata
+=== RUN   TestEvaluateStatementsAddsMetadataAvailableNoteForMetadataAwareRuleWithMetadata
+=== PAUSE TestEvaluateStatementsAddsMetadataAvailableNoteForMetadataAwareRuleWithMetadata
+=== RUN   TestEvaluateStatementsTreatsSchemaAsSufficientForSchemaAwareRules
+=== PAUSE TestEvaluateStatementsTreatsSchemaAsSufficientForSchemaAwareRules
+=== RUN   TestEvaluateStatementsTreatsTargetTableAsInsufficientForInstanceAwareRules
+=== PAUSE TestEvaluateStatementsTreatsTargetTableAsInsufficientForInstanceAwareRules
+=== RUN   TestEstimateStatementImpact
+=== PAUSE TestEstimateStatementImpact
+=== CONT  TestBatchStateA2RenameMigratesIdentity
+=== RUN   TestBatchStateA2RenameMigratesIdentity/standalone_qualified
+=== PAUSE TestBatchStateA2RenameMigratesIdentity/standalone_qualified
+=== CONT  TestEstimateStatementImpact
+=== CONT  TestBatchStateA6StatsCopyAndIdentityIsolation
+=== RUN   TestBatchStateA2RenameMigratesIdentity/alter_rename_to
+=== RUN   TestEstimateStatementImpact/delete_without_where_returns_high_risk
+=== PAUSE TestBatchStateA2RenameMigratesIdentity/alter_rename_to
+=== CONT  TestBatchStateA6UnrelatedMembersStay
+=== CONT  TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop
+=== RUN   TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/primary_key_unknown
+=== CONT  TestBatchStateA6KnownEmptyMembersAllowPreciseDrop
+=== RUN   TestBatchStateA2RenameMigratesIdentity/same_schema
+=== CONT  TestBatchStateA5PolicyIsolationAndCancel
+=== CONT  TestBatchStateA5UnsafeAndNonPrecise
+=== CONT  TestBatchStateA5MembersAndPartialKnowledge
+=== CONT  TestBatchStateA4R1AffectedSet
+=== CONT  TestBatchStateA4ProviderIsolationCopyAndCancel
+=== CONT  TestBatchStateA6UnsupportedDropStillTombstonesDependents
+=== PAUSE TestBatchStateA2RenameMigratesIdentity/same_schema
+=== PAUSE TestEstimateStatementImpact/delete_without_where_returns_high_risk
+=== PAUSE TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/primary_key_unknown
+=== RUN   TestBatchStateA6KnownEmptyMembersAllowPreciseDrop/nil_index_and_constraint_sets
+=== PAUSE TestBatchStateA6KnownEmptyMembersAllowPreciseDrop/nil_index_and_constraint_sets
+=== RUN   TestBatchStateA6KnownEmptyMembersAllowPreciseDrop/empty_index_and_constraint_sets
+=== PAUSE TestBatchStateA6KnownEmptyMembersAllowPreciseDrop/empty_index_and_constraint_sets
+=== RUN   TestBatchStateA6KnownEmptyMembersAllowPreciseDrop/nil_primary_key_with_unrelated_primary_constraint
+=== PAUSE TestBatchStateA6KnownEmptyMembersAllowPreciseDrop/nil_primary_key_with_unrelated_primary_constraint
+=== RUN   TestBatchStateA5MembersAndPartialKnowledge/primary_key_and_index_references
+=== RUN   TestBatchStateA5UnsafeAndNonPrecise/self_foreign_key_invalidates_the_target
+=== CONT  TestBatchStateA4PolicyDoesNotBlockTransfer
+=== PAUSE TestBatchStateA5UnsafeAndNonPrecise/self_foreign_key_invalidates_the_target
+=== RUN   TestBatchStateA5UnsafeAndNonPrecise/expression_index_invalidates
+=== PAUSE TestBatchStateA5UnsafeAndNonPrecise/expression_index_invalidates
+=== RUN   TestBatchStateA5UnsafeAndNonPrecise/multi-action_and_position_stay_unknown
+=== PAUSE TestBatchStateA5UnsafeAndNonPrecise/multi-action_and_position_stay_unknown
+=== RUN   TestBatchStateA4R1AffectedSet/related_foreign_key_invalidates_the_target_with_the_child
+=== PAUSE TestBatchStateA4R1AffectedSet/related_foreign_key_invalidates_the_target_with_the_child
+=== RUN   TestBatchStateA4ProviderIsolationCopyAndCancel/requests_are_isolated
+=== RUN   TestEstimateStatementImpact/update_unique_equality_shape_returns_low_risk
+=== PAUSE TestEstimateStatementImpact/update_unique_equality_shape_returns_low_risk
+=== RUN   TestEstimateStatementImpact/join_shape_returns_high_risk_with_low_confidence
+=== PAUSE TestEstimateStatementImpact/join_shape_returns_high_risk_with_low_confidence
+=== RUN   TestEstimateStatementImpact/unknown_fallback_ignores_statement-level_subquery_facts
+=== PAUSE TestEstimateStatementImpact/unknown_fallback_ignores_statement-level_subquery_facts
+=== CONT  TestBatchStateA4NonTemplateStaysConservative
+=== PAUSE TestBatchStateA4ProviderIsolationCopyAndCancel/requests_are_isolated
+=== PAUSE TestBatchStateA5MembersAndPartialKnowledge/primary_key_and_index_references
+=== RUN   TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/indexes_unknown
+=== PAUSE TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/indexes_unknown
+=== RUN   TestBatchStateA2RenameMigratesIdentity/same_name_cross_schema
+=== RUN   TestBatchStateA5UnsafeAndNonPrecise/prior_parser_error_does_not_publish
+=== PAUSE TestBatchStateA5UnsafeAndNonPrecise/prior_parser_error_does_not_publish
+=== CONT  TestBatchStateA4UnsafeDependentsInvalidate
+=== PAUSE TestBatchStateA2RenameMigratesIdentity/same_name_cross_schema
+=== RUN   TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/constraints_unknown
+=== PAUSE TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/constraints_unknown
+=== RUN   TestBatchStateA5MembersAndPartialKnowledge/rename_keeps_stats_and_change_clears_them
+=== PAUSE TestBatchStateA5MembersAndPartialKnowledge/rename_keeps_stats_and_change_clears_them
+=== RUN   TestBatchStateA4R1AffectedSet/conditional_modify_drops_a_loaded_child
+=== PAUSE TestBatchStateA4R1AffectedSet/conditional_modify_drops_a_loaded_child
+=== RUN   TestBatchStateA4NonTemplateStaysConservative/CREATE_TABLE_t_(id_INT_PRIMARY_KEY,_c_VARCHAR(10));_ALTER_TABLE_t_MODIFY_COLUMN_c_VARCHAR(20),_ADD_COLUMN_d_INT;_ALTER_TABLE_t_MODIFY_COLUMN_c_VARCHAR(15);
+=== PAUSE TestBatchStateA4NonTemplateStaysConservative/CREATE_TABLE_t_(id_INT_PRIMARY_KEY,_c_VARCHAR(10));_ALTER_TABLE_t_MODIFY_COLUMN_c_VARCHAR(20),_ADD_COLUMN_d_INT;_ALTER_TABLE_t_MODIFY_COLUMN_c_VARCHAR(15);
+=== RUN   TestBatchStateA4NonTemplateStaysConservative/CREATE_TABLE_t_(id_INT_PRIMARY_KEY,_c_VARCHAR(10));_ALTER_TABLE_t_MODIFY_COLUMN_c_VARCHAR(20)_FIRST;_ALTER_TABLE_t_MODIFY_COLUMN_c_VARCHAR(15);
+=== PAUSE TestBatchStateA4NonTemplateStaysConservative/CREATE_TABLE_t_(id_INT_PRIMARY_KEY,_c_VARCHAR(10));_ALTER_TABLE_t_MODIFY_COLUMN_c_VARCHAR(20)_FIRST;_ALTER_TABLE_t_MODIFY_COLUMN_c_VARCHAR(15);
+=== RUN   TestBatchStateA4ProviderIsolationCopyAndCancel/pre-state_copies_are_independent
+=== PAUSE TestBatchStateA4ProviderIsolationCopyAndCancel/pre-state_copies_are_independent
+=== RUN   TestBatchStateA4ProviderIsolationCopyAndCancel/canceled_apply_publishes_nothing
+=== PAUSE TestBatchStateA4ProviderIsolationCopyAndCancel/canceled_apply_publishes_nothing
+=== RUN   TestBatchStateA4ProviderIsolationCopyAndCancel/provider_error_keeps_identity
+--- PASS: TestBatchStateA6UnsupportedDropStillTombstonesDependents (0.00s)
+=== CONT  TestBatchStateA4OrdinaryIndexAndLoadedDependents
+=== PAUSE TestBatchStateA4ProviderIsolationCopyAndCancel/provider_error_keeps_identity
+=== CONT  TestBatchStateA4PrimaryKeyNullability
+=== RUN   TestBatchStateA5PolicyIsolationAndCancel/policy_forbid_still_publishes
+=== RUN   TestBatchStateA4UnsafeDependentsInvalidate/check
+=== PAUSE TestBatchStateA4UnsafeDependentsInvalidate/check
+=== PAUSE TestBatchStateA5PolicyIsolationAndCancel/policy_forbid_still_publishes
+=== RUN   TestBatchStateA5PolicyIsolationAndCancel/requests_stay_isolated
+=== RUN   TestBatchStateA2RenameMigratesIdentity/unqualified_destination_uses_request_schema
+=== RUN   TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/columns_withheld
+=== PAUSE TestBatchStateA2RenameMigratesIdentity/unqualified_destination_uses_request_schema
+=== CONT  TestBatchStateA4AbsentAndUnknownStayDistinct
+=== PAUSE TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/columns_withheld
+=== RUN   TestBatchStateA5MembersAndPartialKnowledge/withheld_columns_scrub_old_references
+=== RUN   TestBatchStateA4AbsentAndUnknownStayDistinct/confirmed_absent_column
+=== PAUSE TestBatchStateA4AbsentAndUnknownStayDistinct/confirmed_absent_column
+=== PAUSE TestBatchStateA5MembersAndPartialKnowledge/withheld_columns_scrub_old_references
+=== RUN   TestBatchStateA4AbsentAndUnknownStayDistinct/known_absent_table
+=== RUN   TestBatchStateA4NonTemplateStaysConservative/CREATE_TABLE_t_(id_INT_PRIMARY_KEY,_c_VARCHAR(10));_ALTER_TABLE_t_MODIFY_COLUMN_c_INT;_ALTER_TABLE_t_MODIFY_COLUMN_c_BIGINT;
+=== PAUSE TestBatchStateA4AbsentAndUnknownStayDistinct/known_absent_table
+=== RUN   TestBatchStateA4AbsentAndUnknownStayDistinct/withheld_column_set
+=== PAUSE TestBatchStateA4NonTemplateStaysConservative/CREATE_TABLE_t_(id_INT_PRIMARY_KEY,_c_VARCHAR(10));_ALTER_TABLE_t_MODIFY_COLUMN_c_INT;_ALTER_TABLE_t_MODIFY_COLUMN_c_BIGINT;
+=== PAUSE TestBatchStateA4AbsentAndUnknownStayDistinct/withheld_column_set
+=== RUN   TestBatchStateA4R1AffectedSet/position_modify_drops_a_loaded_child
+=== PAUSE TestBatchStateA4R1AffectedSet/position_modify_drops_a_loaded_child
+=== RUN   TestBatchStateA4NonTemplateStaysConservative/CREATE_TABLE_t_(id_INT_PRIMARY_KEY,_c_INT);_ALTER_TABLE_t_MODIFY_COLUMN_c_INT_AUTO_INCREMENT;_ALTER_TABLE_t_MODIFY_COLUMN_c_BIGINT;
+=== RUN   TestBatchStateA4R1AffectedSet/multi-action_modify_drops_a_loaded_child
+=== PAUSE TestBatchStateA4NonTemplateStaysConservative/CREATE_TABLE_t_(id_INT_PRIMARY_KEY,_c_INT);_ALTER_TABLE_t_MODIFY_COLUMN_c_INT_AUTO_INCREMENT;_ALTER_TABLE_t_MODIFY_COLUMN_c_BIGINT;
+=== RUN   TestBatchStateA6StatsCopyAndIdentityIsolation/requests_do_not_share_state
+=== RUN   TestBatchStateA4NonTemplateStaysConservative/tidb_if_exists
+=== PAUSE TestBatchStateA4NonTemplateStaysConservative/tidb_if_exists
+=== RUN   TestBatchStateA4NonTemplateStaysConservative/prior_contamination
+=== PAUSE TestBatchStateA4NonTemplateStaysConservative/prior_contamination
+--- PASS: TestBatchStateA6UnrelatedMembersStay (0.00s)
+=== PAUSE TestBatchStateA5PolicyIsolationAndCancel/requests_stay_isolated
+=== PAUSE TestBatchStateA4R1AffectedSet/multi-action_modify_drops_a_loaded_child
+=== RUN   TestBatchStateA5MembersAndPartialKnowledge/missing_source_type_still_accepts_a_full_change
+=== RUN   TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/primary_key_names_the_column
+=== PAUSE TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/primary_key_names_the_column
+=== CONT  TestBatchStateA4OmittedAttributesAndCharset
+=== RUN   TestBatchStateA4R1AffectedSet/withheld_columns_keep_the_target_and_drop_the_child
+=== PAUSE TestBatchStateA4R1AffectedSet/withheld_columns_keep_the_target_and_drop_the_child
+=== RUN   TestBatchStateA4UnsafeDependentsInvalidate/prefix_index
+=== PAUSE TestBatchStateA4UnsafeDependentsInvalidate/prefix_index
+=== CONT  TestBatchStateA4PartialDefinitionPublishesNext
+=== RUN   TestBatchStateA4UnsafeDependentsInvalidate/expression_index
+=== PAUSE TestBatchStateA5MembersAndPartialKnowledge/missing_source_type_still_accepts_a_full_change
+=== PAUSE TestBatchStateA4UnsafeDependentsInvalidate/expression_index
+=== PAUSE TestBatchStateA6StatsCopyAndIdentityIsolation/requests_do_not_share_state
+=== RUN   TestBatchStateA5PolicyIsolationAndCancel/snapshots_are_deep_copies
+=== RUN   TestBatchStateA4PartialDefinitionPublishesNext/empty_type
+=== PAUSE TestBatchStateA5PolicyIsolationAndCancel/snapshots_are_deep_copies
+=== RUN   TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/primary_constraint_names_the_column
+=== PAUSE TestBatchStateA4PartialDefinitionPublishesNext/empty_type
+=== RUN   TestBatchStateA4PartialDefinitionPublishesNext/unknown_varchar_length
+=== PAUSE TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/primary_constraint_names_the_column
+=== PAUSE TestBatchStateA4PartialDefinitionPublishesNext/unknown_varchar_length
+=== CONT  TestBatchStateA3IndependentAuditCalls
+--- PASS: TestBatchStateA4OrdinaryIndexAndLoadedDependents (0.00s)
+=== RUN   TestBatchStateA4AbsentAndUnknownStayDistinct/unknown_provider_stays_unknown
+=== PAUSE TestBatchStateA4AbsentAndUnknownStayDistinct/unknown_provider_stays_unknown
+=== RUN   TestBatchStateA5MembersAndPartialKnowledge/rename_keeps_an_unknown_type
+=== PAUSE TestBatchStateA5MembersAndPartialKnowledge/rename_keeps_an_unknown_type
+=== RUN   TestBatchStateA4UnsafeDependentsInvalidate/generated_column
+=== CONT  TestBatchStateA3CancellationAndProviderError
+=== RUN   TestBatchStateA6StatsCopyAndIdentityIsolation/dotted_name_stays_whole
+=== PAUSE TestBatchStateA6StatsCopyAndIdentityIsolation/dotted_name_stays_whole
+=== RUN   TestBatchStateA5PolicyIsolationAndCancel/cancel_publishes_nothing
+=== RUN   TestBatchStateA3CancellationAndProviderError/pre_canceled_apply_publishes_nothing_DROP_TABLE_t;
+=== PAUSE TestBatchStateA4UnsafeDependentsInvalidate/generated_column
+=== PAUSE TestBatchStateA3CancellationAndProviderError/pre_canceled_apply_publishes_nothing_DROP_TABLE_t;
+=== RUN   TestBatchStateA3CancellationAndProviderError/pre_canceled_apply_publishes_nothing_DROP_TABLE_IF_EXISTS_t;
+=== PAUSE TestBatchStateA3CancellationAndProviderError/pre_canceled_apply_publishes_nothing_DROP_TABLE_IF_EXISTS_t;
+=== CONT  TestBatchStateA3IdentitySeparation
+=== CONT  TestBatchStateA3TruncateUnchanged
+=== CONT  TestBatchStateA3DropForbidOrthogonal
+=== RUN   TestBatchStateA4UnsafeDependentsInvalidate/foreign_key_on_column
+=== PAUSE TestBatchStateA4UnsafeDependentsInvalidate/foreign_key_on_column
+=== RUN   TestBatchStateA4UnsafeDependentsInvalidate/unrelated_prefix_stays
+=== PAUSE TestBatchStateA4UnsafeDependentsInvalidate/unrelated_prefix_stays
+=== RUN   TestBatchStateA3CancellationAndProviderError/mid_read_cancellation_aborts_publication
+=== PAUSE TestBatchStateA3CancellationAndProviderError/mid_read_cancellation_aborts_publication
+=== RUN   TestBatchStateA3CancellationAndProviderError/mid_read_cancellation_keeps_cached_state
+=== PAUSE TestBatchStateA3CancellationAndProviderError/mid_read_cancellation_keeps_cached_state
+=== RUN   TestBatchStateA3CancellationAndProviderError/provider_error_keeps_identity_over_cancellation
+=== PAUSE TestBatchStateA5PolicyIsolationAndCancel/cancel_publishes_nothing
+=== RUN   TestBatchStateA3TruncateUnchanged/mysql
+=== PAUSE TestBatchStateA3TruncateUnchanged/mysql
+=== PAUSE TestBatchStateA3CancellationAndProviderError/provider_error_keeps_identity_over_cancellation
+=== CONT  TestBatchStateA3DispatchGuards
+=== RUN   TestBatchStateA3IdentitySeparation/qualified_schema_separation
+=== PAUSE TestBatchStateA3IdentitySeparation/qualified_schema_separation
+=== RUN   TestBatchStateA4R1AffectedSet/confirmed-absent_column_drops_a_loaded_reference
+=== PAUSE TestBatchStateA4R1AffectedSet/confirmed-absent_column_drops_a_loaded_reference
+=== RUN   TestBatchStateA4R1AffectedSet/explicit_null_on_a_known_primary_key_drops_a_loaded_reference
+=== PAUSE TestBatchStateA4R1AffectedSet/explicit_null_on_a_known_primary_key_drops_a_loaded_reference
+=== RUN   TestBatchStateA5PolicyIsolationAndCancel/provider_error_keeps_identity
+=== PAUSE TestBatchStateA5PolicyIsolationAndCancel/provider_error_keeps_identity
+=== CONT  TestBatchStateA3NonPreciseForms
+=== RUN   TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/primary_key_column_list_is_empty
+=== RUN   TestBatchStateA3CancellationAndProviderError/provider_error_propagates_from_pre_state
+=== PAUSE TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/primary_key_column_list_is_empty
+=== PAUSE TestBatchStateA3CancellationAndProviderError/provider_error_propagates_from_pre_state
+=== CONT  TestBatchStateA3LoadedDependentInvalidates
+=== RUN   TestBatchStateA3TruncateUnchanged/tidb
+=== PAUSE TestBatchStateA3TruncateUnchanged/tidb
+=== CONT  TestBatchStateA3OldShapeNotInherited
+=== RUN   TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/target_is_auto_increment
+=== RUN   TestBatchStateA3DispatchGuards/unsupported_marker_stays_conservative
+=== PAUSE TestBatchStateA3DispatchGuards/unsupported_marker_stays_conservative
+=== PAUSE TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/target_is_auto_increment
+=== RUN   TestBatchStateA3IdentitySeparation/dotted_identifier_stays_whole
+=== PAUSE TestBatchStateA3IdentitySeparation/dotted_identifier_stays_whole
+=== CONT  TestBatchStateA3OldColumnIndexNegative
+=== RUN   TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/target_is_auto_random
+=== PAUSE TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/target_is_auto_random
+=== RUN   TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/target_is_identity
+=== PAUSE TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/target_is_identity
+=== RUN   TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/target_is_generated
+=== PAUSE TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/target_is_generated
+=== RUN   TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/target_has_an_unextracted_option
+=== PAUSE TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/target_has_an_unextracted_option
+=== RUN   TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/ordinary_index_names_the_column
+=== PAUSE TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/ordinary_index_names_the_column
+=== RUN   TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/composite_unique_names_the_column
+=== PAUSE TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/composite_unique_names_the_column
+=== RUN   TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/fulltext_index_is_not_a_complete_ordinary_key
+=== PAUSE TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/fulltext_index_is_not_a_complete_ordinary_key
+=== RUN   TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/prefix_index
+=== PAUSE TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/prefix_index
+=== RUN   TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/expression_index
+=== PAUSE TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/expression_index
+=== RUN   TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/included_column_names_the_target
+=== PAUSE TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/included_column_names_the_target
+=== RUN   TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/index_column_list_is_empty
+=== PAUSE TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/index_column_list_is_empty
+=== RUN   TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/index_column_name_is_blank
+=== PAUSE TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/index_column_name_is_blank
+=== RUN   TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/index_has_an_unmodeled_option
+=== PAUSE TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/index_has_an_unmodeled_option
+=== RUN   TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/local_foreign_key_names_the_column
+=== PAUSE TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/local_foreign_key_names_the_column
+=== RUN   TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/self_reference_names_the_column
+=== PAUSE TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/self_reference_names_the_column
+=== RUN   TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/check_list_is_empty
+=== PAUSE TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/check_list_is_empty
+=== RUN   TestBatchStateA3DispatchGuards/mismatched_primary_and_targets_stays_conservative
+=== RUN   TestBatchStateA3OldColumnIndexNegative/mysql
+=== RUN   TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/check_has_unmodeled_parts
+=== PAUSE TestBatchStateA3DispatchGuards/mismatched_primary_and_targets_stays_conservative
+=== PAUSE TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/check_has_unmodeled_parts
+=== RUN   TestBatchStateA4R1AffectedSet/unknown_primary-key_membership_drops_a_loaded_reference
+=== RUN   TestBatchStateA3LoadedDependentInvalidates/explicit_target_schema
+=== RUN   TestBatchStateA3NonPreciseForms/multi_target_invalidates_every_key
+=== PAUSE TestBatchStateA3NonPreciseForms/multi_target_invalidates_every_key
+=== PAUSE TestBatchStateA3OldColumnIndexNegative/mysql
+--- PASS: TestBatchStateA3OldShapeNotInherited (0.00s)
+=== PAUSE TestBatchStateA3LoadedDependentInvalidates/explicit_target_schema
+=== PAUSE TestBatchStateA4R1AffectedSet/unknown_primary-key_membership_drops_a_loaded_reference
+=== RUN   TestBatchStateA3DispatchGuards/omitted_targets_stays_conservative
+=== CONT  TestBatchStateA3DropStateTable
+=== RUN   TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/sibling_is_generated
+=== RUN   TestBatchStateA3OldColumnIndexNegative/tidb
+=== PAUSE TestBatchStateA3OldColumnIndexNegative/tidb
+=== RUN   TestBatchStateA4R1AffectedSet/self_reference_on_the_referenced_side_invalidates_the_target
+=== PAUSE TestBatchStateA4R1AffectedSet/self_reference_on_the_referenced_side_invalidates_the_target
+=== RUN   TestBatchStateA4R1AffectedSet/unmodeled_referenced_parts_do_not_prove_unrelated
+=== PAUSE TestBatchStateA4R1AffectedSet/unmodeled_referenced_parts_do_not_prove_unrelated
+=== RUN   TestBatchStateA4R1AffectedSet/unmodeled_local_parts_do_not_prove_unrelated
+=== PAUSE TestBatchStateA4R1AffectedSet/unmodeled_local_parts_do_not_prove_unrelated
+=== CONT  TestBatchStateA3AuditSurfacePollution
+=== RUN   TestBatchStateA3LoadedDependentInvalidates/unqualified_owner_schema_match
+=== PAUSE TestBatchStateA3LoadedDependentInvalidates/unqualified_owner_schema_match
+=== RUN   TestBatchStateA4R1AffectedSet/complete_unrelated_reference_stays
+=== PAUSE TestBatchStateA4R1AffectedSet/complete_unrelated_reference_stays
+=== RUN   TestBatchStateA4R1AffectedSet/empty_referenced_list_does_not_prove_unrelated
+=== RUN   TestBatchStateA3LoadedDependentInvalidates/unqualified_owner_schema_miss
+=== RUN   TestBatchStateA3AuditSurfacePollution/parse_failure_prefix
+=== PAUSE TestBatchStateA3DispatchGuards/omitted_targets_stays_conservative
+=== PAUSE TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/sibling_is_generated
+=== RUN   TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/sibling_default_is_not_provably_column-free
+=== PAUSE TestBatchStateA3AuditSurfacePollution/parse_failure_prefix
+=== PAUSE TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/sibling_default_is_not_provably_column-free
+=== PAUSE TestBatchStateA4R1AffectedSet/empty_referenced_list_does_not_prove_unrelated
+=== CONT  TestBatchStateA3TombstoneThenIfExistsDrop
+=== RUN   TestBatchStateA3DropStateTable/present_complete
+=== RUN   TestBatchStateA4R1AffectedSet/same_table_name_in_another_schema_stays
+=== PAUSE TestBatchStateA4R1AffectedSet/same_table_name_in_another_schema_stays
+=== PAUSE TestBatchStateA3LoadedDependentInvalidates/unqualified_owner_schema_miss
+=== PAUSE TestBatchStateA3DropStateTable/present_complete
+=== CONT  TestBatchStateA3DropPreStateMatrix
+=== RUN   TestBatchStateA3AuditSurfacePollution/execute_prefix
+=== PAUSE TestBatchStateA3AuditSurfacePollution/execute_prefix
+=== CONT  TestBatchStateA3DropRecreate
+=== RUN   TestBatchStateA3NonPreciseForms/duplicate_raw_target_is_not_precise
+=== PAUSE TestBatchStateA3NonPreciseForms/duplicate_raw_target_is_not_precise
+=== RUN   TestBatchStateA3LoadedDependentInvalidates/other_schema_same_name
+=== PAUSE TestBatchStateA3LoadedDependentInvalidates/other_schema_same_name
+=== RUN   TestBatchStateA3LoadedDependentInvalidates/conservative_branch_still_tombstones
+=== PAUSE TestBatchStateA3LoadedDependentInvalidates/conservative_branch_still_tombstones
+=== RUN   TestBatchStateA3DropPreStateMatrix/mysql/plain/present_complete
+=== RUN   TestBatchStateA4R1AffectedSet/unloaded_child_is_not_discovered
+=== PAUSE TestBatchStateA3DropPreStateMatrix/mysql/plain/present_complete
+=== PAUSE TestBatchStateA4R1AffectedSet/unloaded_child_is_not_discovered
+=== RUN   TestBatchStateA3LoadedDependentInvalidates/recreate_does_not_restore
+=== RUN   TestBatchStateA3DropPreStateMatrix/mysql/plain/present_partial
+=== PAUSE TestBatchStateA3DropPreStateMatrix/mysql/plain/present_partial
+=== PAUSE TestBatchStateA3LoadedDependentInvalidates/recreate_does_not_restore
+=== RUN   TestBatchStateA3DropStateTable/present_partial
+=== RUN   TestBatchStateA3DropPreStateMatrix/mysql/plain/absent
+=== PAUSE TestBatchStateA3DropStateTable/present_partial
+=== RUN   TestBatchStateA3LoadedDependentInvalidates/multi_target_union
+=== PAUSE TestBatchStateA3DropPreStateMatrix/mysql/plain/absent
+=== CONT  TestBatchStateA2R1RenameObservesCancellation
+=== RUN   TestBatchStateA2R1RenameObservesCancellation/pre-cancelled_context_publishes_nothing/rename_table
+=== RUN   TestBatchStateA3DropPreStateMatrix/mysql/plain/unknown
+=== PAUSE TestBatchStateA3DropPreStateMatrix/mysql/plain/unknown
+=== RUN   TestBatchStateA3DropPreStateMatrix/mysql/if_exists/present_complete
+=== PAUSE TestBatchStateA3DropPreStateMatrix/mysql/if_exists/present_complete
+=== RUN   TestBatchStateA3NonPreciseForms/temporary_drop_invalidates_without_absence
+=== RUN   TestBatchStateA3DropRecreate/mysql/plain
+=== RUN   TestBatchStateA3DropStateTable/absent_plain_then_recreate
+=== PAUSE TestBatchStateA3LoadedDependentInvalidates/multi_target_union
+=== RUN   TestBatchStateA3LoadedDependentInvalidates/target_referencing_target
+=== PAUSE TestBatchStateA3LoadedDependentInvalidates/target_referencing_target
+=== RUN   TestBatchStateA3DropPreStateMatrix/mysql/if_exists/present_partial
+=== PAUSE TestBatchStateA3DropPreStateMatrix/mysql/if_exists/present_partial
+=== RUN   TestBatchStateA3DropPreStateMatrix/mysql/if_exists/absent
+=== CONT  TestBatchStateA2R1PrimaryKeyPayloadMigrates
+=== PAUSE TestBatchStateA3NonPreciseForms/temporary_drop_invalidates_without_absence
+=== PAUSE TestBatchStateA3DropPreStateMatrix/mysql/if_exists/absent
+=== RUN   TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_field_only
+=== PAUSE TestBatchStateA3DropRecreate/mysql/plain
+=== PAUSE TestBatchStateA3DropStateTable/absent_plain_then_recreate
+=== RUN   TestBatchStateA3DropRecreate/mysql/if_exists
+=== RUN   TestBatchStateA3DropStateTable/absent_if_exists_then_recreate
+=== RUN   TestBatchStateA2R1RenameObservesCancellation/cancel_inside_destination_read_publishes_nothing/rename_table
+=== PAUSE TestBatchStateA3DropRecreate/mysql/if_exists
+=== PAUSE TestBatchStateA3DropStateTable/absent_if_exists_then_recreate
+=== RUN   TestBatchStateA3DropRecreate/tidb/plain
+=== RUN   TestBatchStateA3DropStateTable/unknown_plain
+=== PAUSE TestBatchStateA3DropRecreate/tidb/plain
+=== PAUSE TestBatchStateA3DropStateTable/unknown_plain
+=== RUN   TestBatchStateA3DropRecreate/tidb/if_exists
+=== RUN   TestBatchStateA3NonPreciseForms/execute_contamination_suppresses_derivation
+=== PAUSE TestBatchStateA3DropRecreate/tidb/if_exists
+=== PAUSE TestBatchStateA3NonPreciseForms/execute_contamination_suppresses_derivation
+=== CONT  TestBatchStateA2R1LoadedDependentKeepsPublicGapContract
+=== RUN   TestBatchStateA2R1LoadedDependentKeepsPublicGapContract/rename_table
+=== RUN   TestBatchStateA3DropPreStateMatrix/mysql/if_exists/unknown
+=== PAUSE TestBatchStateA3DropPreStateMatrix/mysql/if_exists/unknown
+=== PAUSE TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_field_only
+=== RUN   TestBatchStateA3NonPreciseForms/schema_invalidation_survives
+=== PAUSE TestBatchStateA3NonPreciseForms/schema_invalidation_survives
+=== RUN   TestBatchStateA3NonPreciseForms/unbound_drop_contaminates
+=== RUN   TestBatchStateA3DropStateTable/unknown_if_exists
+=== RUN   TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_constraint_payload
+=== PAUSE TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_constraint_payload
+=== RUN   TestBatchStateA2R1PrimaryKeyPayloadMigrates/partial_knowledge_keeps_unknown_flags_and_statistics
+=== RUN   TestBatchStateA3DropPreStateMatrix/tidb/plain/present_complete
+=== PAUSE TestBatchStateA3NonPreciseForms/unbound_drop_contaminates
+=== PAUSE TestBatchStateA2R1PrimaryKeyPayloadMigrates/partial_knowledge_keeps_unknown_flags_and_statistics
+=== RUN   TestBatchStateA2R1RenameObservesCancellation/provider_error_keeps_its_identity_over_cancellation/rename_table
+=== RUN   TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_payload_keeps_unknown_member_flags
+=== PAUSE TestBatchStateA3DropPreStateMatrix/tidb/plain/present_complete
+=== CONT  TestBatchStateA2R1LoadedDependentInvalidates
+=== PAUSE TestBatchStateA3DropStateTable/unknown_if_exists
+=== PAUSE TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_payload_keeps_unknown_member_flags
+=== RUN   TestBatchStateA3DropPreStateMatrix/tidb/plain/present_partial
+=== PAUSE TestBatchStateA3DropPreStateMatrix/tidb/plain/present_partial
+=== RUN   TestBatchStateA3DropPreStateMatrix/tidb/plain/absent
+=== PAUSE TestBatchStateA3DropPreStateMatrix/tidb/plain/absent
+=== RUN   TestBatchStateA3DropPreStateMatrix/tidb/plain/unknown
+=== PAUSE TestBatchStateA3DropPreStateMatrix/tidb/plain/unknown
+=== RUN   TestBatchStateA2R1RenameObservesCancellation/enrichment_propagates_mid-read_cancellation/rename_table
+=== RUN   TestBatchStateA2R1RenameObservesCancellation/pre-cancelled_context_publishes_nothing/alter_rename_to
+=== RUN   TestBatchStateA2R1PrimaryKeyPayloadMigrates/foreign_key_on_the_source_keeps_both_ends_unknown
+=== PAUSE TestBatchStateA2R1PrimaryKeyPayloadMigrates/foreign_key_on_the_source_keeps_both_ends_unknown
+=== RUN   TestBatchStateA2R1LoadedDependentInvalidates/explicit_src_reference_under_aux_owner
+=== PAUSE TestBatchStateA2R1LoadedDependentInvalidates/explicit_src_reference_under_aux_owner
+=== RUN   TestBatchStateA3DropPreStateMatrix/tidb/if_exists/present_complete
+=== RUN   TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_under_src_owner
+=== PAUSE TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_under_src_owner
+=== CONT  TestBatchStateA2MemberTransportBoundary
+=== RUN   TestBatchStateA2MemberTransportBoundary/known_constraint_shape_invalidates_both_ends
+=== RUN   TestBatchStateA2R1LoadedDependentInvalidates/explicit_src_reference_with_check_source
+=== PAUSE TestBatchStateA2R1LoadedDependentInvalidates/explicit_src_reference_with_check_source
+=== RUN   TestBatchStateA2R1RenameObservesCancellation/cancel_inside_destination_read_publishes_nothing/alter_rename_to
+=== RUN   TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_with_check_source
+=== PAUSE TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_with_check_source
+=== RUN   TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_under_aux_owner_stays_local
+=== RUN   TestBatchStateA3DropStateTable/repeated_drop_third_blocker
+=== RUN   TestBatchStateA2R1RenameObservesCancellation/provider_error_keeps_its_identity_over_cancellation/alter_rename_to
+=== PAUSE TestBatchStateA3DropStateTable/repeated_drop_third_blocker
+=== PAUSE TestBatchStateA3DropPreStateMatrix/tidb/if_exists/present_complete
+=== PAUSE TestBatchStateA2MemberTransportBoundary/known_constraint_shape_invalidates_both_ends
+=== RUN   TestBatchStateA3DropStateTable/gap_disabled_stays_complete
+=== RUN   TestBatchStateA2MemberTransportBoundary/same_effective_key_invalidates_instead_of_self-migration
+=== PAUSE TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_under_aux_owner_stays_local
+=== PAUSE TestBatchStateA2MemberTransportBoundary/same_effective_key_invalidates_instead_of_self-migration
+=== RUN   TestBatchStateA2R1LoadedDependentInvalidates/explicit_other-schema_same-name_reference_stays_known
+=== RUN   TestBatchStateA2MemberTransportBoundary/migrated_primary_key_stays_provable
+=== PAUSE TestBatchStateA2R1LoadedDependentInvalidates/explicit_other-schema_same-name_reference_stays_known
+=== PAUSE TestBatchStateA2MemberTransportBoundary/migrated_primary_key_stays_provable
+=== RUN   TestBatchStateA2R1LoadedDependentInvalidates/destination_reference_invalidates_on_non-move_cell
+=== RUN   TestBatchStateA2MemberTransportBoundary/renamed_shape_keeps_statistics_values
+=== PAUSE TestBatchStateA2R1LoadedDependentInvalidates/destination_reference_invalidates_on_non-move_cell
+=== PAUSE TestBatchStateA3DropStateTable/gap_disabled_stays_complete
+=== PAUSE TestBatchStateA2MemberTransportBoundary/renamed_shape_keeps_statistics_values
+=== RUN   TestBatchStateA3DropPreStateMatrix/tidb/if_exists/present_partial
+=== CONT  TestBatchStateA2ReadLedger
+=== PAUSE TestBatchStateA3DropPreStateMatrix/tidb/if_exists/present_partial
+=== RUN   TestBatchStateA2R1RenameObservesCancellation/enrichment_propagates_mid-read_cancellation/alter_rename_to
+=== RUN   TestBatchStateA2ReadLedger/destination_first-touch_resolves_once
+=== PAUSE TestBatchStateA2ReadLedger/destination_first-touch_resolves_once
+=== RUN   TestBatchStateA2ReadLedger/invalidated_destination_is_never_re-read
+--- PASS: TestBatchStateA2R1RenameObservesCancellation (0.00s)
+    --- PASS: TestBatchStateA2R1RenameObservesCancellation/pre-cancelled_context_publishes_nothing/rename_table (0.00s)
+    --- PASS: TestBatchStateA2R1RenameObservesCancellation/cancel_inside_destination_read_publishes_nothing/rename_table (0.00s)
+    --- PASS: TestBatchStateA2R1RenameObservesCancellation/provider_error_keeps_its_identity_over_cancellation/rename_table (0.00s)
+    --- PASS: TestBatchStateA2R1RenameObservesCancellation/enrichment_propagates_mid-read_cancellation/rename_table (0.00s)
+    --- PASS: TestBatchStateA2R1RenameObservesCancellation/pre-cancelled_context_publishes_nothing/alter_rename_to (0.00s)
+    --- PASS: TestBatchStateA2R1RenameObservesCancellation/cancel_inside_destination_read_publishes_nothing/alter_rename_to (0.00s)
+    --- PASS: TestBatchStateA2R1RenameObservesCancellation/provider_error_keeps_its_identity_over_cancellation/alter_rename_to (0.00s)
+    --- PASS: TestBatchStateA2R1RenameObservesCancellation/enrichment_propagates_mid-read_cancellation/alter_rename_to (0.00s)
+=== CONT  TestBatchStateA2ContaminationAndForms
+=== CONT  TestBatchStateA2PolicyBlockerKeepsMigration
+=== RUN   TestBatchStateA3DropPreStateMatrix/tidb/if_exists/absent
+=== PAUSE TestBatchStateA3DropPreStateMatrix/tidb/if_exists/absent
+=== RUN   TestBatchStateA3DropStateTable/unknown_then_recreate
+=== RUN   TestBatchStateA3DropPreStateMatrix/tidb/if_exists/unknown
+=== PAUSE TestBatchStateA3DropStateTable/unknown_then_recreate
+=== PAUSE TestBatchStateA3DropPreStateMatrix/tidb/if_exists/unknown
+=== CONT  TestBatchStateA2ExistenceGrid
+=== PAUSE TestBatchStateA2ReadLedger/invalidated_destination_is_never_re-read
+=== RUN   TestBatchStateA2ReadLedger/destination_provider_error_aborts_without_half_post-state
+=== CONT  TestBatchStateA2RenamePremiseCellsInvalidate
+=== PAUSE TestBatchStateA2ReadLedger/destination_provider_error_aborts_without_half_post-state
+=== RUN   TestBatchStateA2ExistenceGrid/present+absent_migrates
+=== PAUSE TestBatchStateA2ExistenceGrid/present+absent_migrates
+=== RUN   TestBatchStateA2ExistenceGrid/present+present
+=== PAUSE TestBatchStateA2ExistenceGrid/present+present
+=== RUN   TestBatchStateA2ExistenceGrid/present+unknown
+=== PAUSE TestBatchStateA2ExistenceGrid/present+unknown
+=== RUN   TestBatchStateA2ExistenceGrid/absent+absent
+=== PAUSE TestBatchStateA2ExistenceGrid/absent+absent
+=== RUN   TestBatchStateA2ExistenceGrid/absent+present
+=== PAUSE TestBatchStateA2ExistenceGrid/absent+present
+=== RUN   TestBatchStateA2RenamePremiseCellsInvalidate/source_absent_invalidates_both_ends
+=== PAUSE TestBatchStateA2RenamePremiseCellsInvalidate/source_absent_invalidates_both_ends
+=== RUN   TestBatchStateA2ContaminationAndForms/execute_contamination_survives_rename
+=== PAUSE TestBatchStateA2ContaminationAndForms/execute_contamination_survives_rename
+=== RUN   TestBatchStateA2ReadLedger/second_audit_does_not_inherit_derived_state
+=== PAUSE TestBatchStateA2ReadLedger/second_audit_does_not_inherit_derived_state
+=== RUN   TestBatchStateA2ExistenceGrid/absent+unknown
+=== PAUSE TestBatchStateA2ExistenceGrid/absent+unknown
+=== RUN   TestBatchStateA2ExistenceGrid/unknown+absent_cannot_derive_source_absent
+=== PAUSE TestBatchStateA2ExistenceGrid/unknown+absent_cannot_derive_source_absent
+=== RUN   TestBatchStateA2ExistenceGrid/unknown+present
+=== PAUSE TestBatchStateA2ExistenceGrid/unknown+present
+=== RUN   TestBatchStateA2ExistenceGrid/unknown+unknown
+=== PAUSE TestBatchStateA2ExistenceGrid/unknown+unknown
+=== RUN   TestBatchStateA2ExistenceGrid/present-incomplete+absent_migrates_incompletely
+=== PAUSE TestBatchStateA2ExistenceGrid/present-incomplete+absent_migrates_incompletely
+=== CONT  TestBatchStateA2OldNameStaysAbsent
+=== RUN   TestBatchStateA2RenamePremiseCellsInvalidate/destination_present_invalidates_both_ends
+=== PAUSE TestBatchStateA2RenamePremiseCellsInvalidate/destination_present_invalidates_both_ends
+=== RUN   TestBatchStateA2RenamePremiseCellsInvalidate/alter_rename_keeps_source_existence_finding
+=== PAUSE TestBatchStateA2RenamePremiseCellsInvalidate/alter_rename_keeps_source_existence_finding
+=== RUN   TestBatchStateA2ContaminationAndForms/multi-pair_rename_invalidates_every_endpoint
+=== PAUSE TestBatchStateA2ContaminationAndForms/multi-pair_rename_invalidates_every_endpoint
+=== RUN   TestBatchStateA2ContaminationAndForms/mixed_alter_invalidates_both_ends
+=== PAUSE TestBatchStateA2ContaminationAndForms/mixed_alter_invalidates_both_ends
+=== RUN   TestBatchStateA2ContaminationAndForms/unrelated_table_survives_rename
+=== PAUSE TestBatchStateA2ContaminationAndForms/unrelated_table_survives_rename
+=== CONT  TestBatchStateRepeatedAddColumnFiresOnDerivedState
+=== CONT  TestBatchStateA2RenameKeepsSourcePreState
+=== CONT  TestEvaluateStatementsTreatsTargetTableAsInsufficientForInstanceAwareRules
+--- PASS: TestEvaluateStatementsTreatsTargetTableAsInsufficientForInstanceAwareRules (0.00s)
+=== CONT  TestEvaluateStatementsTreatsSchemaAsSufficientForSchemaAwareRules
+--- PASS: TestBatchStateA2RenameKeepsSourcePreState (0.00s)
+=== CONT  TestEvaluateStatementsAddsMetadataAvailableNoteForMetadataAwareRuleWithMetadata
+=== CONT  TestEvaluateStatementsBuildsAggregateExplanations
+=== CONT  TestEvaluateStatementsGracefullyHandlesMissingCatalogMetadata
+=== CONT  TestEvaluateStatementsEnrichesFindingFromCatalogMetadata
+--- PASS: TestEvaluateStatementsTreatsSchemaAsSufficientForSchemaAwareRules (0.00s)
+--- PASS: TestEvaluateStatementsAddsMetadataAvailableNoteForMetadataAwareRuleWithMetadata (0.00s)
+--- PASS: TestEvaluateStatementsBuildsAggregateExplanations (0.00s)
+--- PASS: TestEvaluateStatementsGracefullyHandlesMissingCatalogMetadata (0.00s)
+--- PASS: TestEvaluateStatementsEnrichesFindingFromCatalogMetadata (0.00s)
+=== CONT  TestEvaluateStatementsAddsMetadataLimitedNoteForMetadataAwareRuleWithoutMetadata
+=== CONT  TestEvaluateProducesReportFlowOutput
+--- PASS: TestEvaluateStatementsAddsMetadataLimitedNoteForMetadataAwareRuleWithoutMetadata (0.00s)
+=== CONT  TestBatchStateDoesNotMutateProviderSnapshotOrEarlierMetadata
+--- PASS: TestEvaluateProducesReportFlowOutput (0.00s)
+=== CONT  TestBatchStateNoticeControlKeepsLegacyNotice
+--- PASS: TestBatchStateDoesNotMutateProviderSnapshotOrEarlierMetadata (0.00s)
+=== CONT  TestBatchStateRenameTableMigratesToAbsentDestination
+=== RUN   TestBatchStateA4PrimaryKeyNullability/constraint_payload
+=== PAUSE TestBatchStateA4PrimaryKeyNullability/constraint_payload
+=== RUN   TestBatchStateA4PrimaryKeyNullability/explicit_null_invalidates
+=== PAUSE TestBatchStateA4PrimaryKeyNullability/explicit_null_invalidates
+=== CONT  TestBatchStateProviderReadsAreRequestLocal
+=== RUN   TestBatchStateA4OmittedAttributesAndCharset/both_omitted_use_table_defaults
+=== PAUSE TestBatchStateA4OmittedAttributesAndCharset/both_omitted_use_table_defaults
+=== RUN   TestBatchStateA4OmittedAttributesAndCharset/charset_only_does_not_copy_table_collation
+=== PAUSE TestBatchStateA4OmittedAttributesAndCharset/charset_only_does_not_copy_table_collation
+=== RUN   TestBatchStateA4OmittedAttributesAndCharset/contradictory_table_collations_stay_unknown
+=== PAUSE TestBatchStateA4OmittedAttributesAndCharset/contradictory_table_collations_stay_unknown
+=== CONT  TestBatchStatePolicyBlockerKeepsDeterministicTransition
+--- PASS: TestBatchStateA3DropForbidOrthogonal (0.01s)
+=== CONT  TestBatchStateProviderErrorStaysAnError
+--- PASS: TestBatchStateA3TombstoneThenIfExistsDrop (0.01s)
+=== CONT  TestBatchStateTruncateClearsRowStatistics
+--- PASS: TestBatchStateA2OldNameStaysAbsent (0.01s)
+=== CONT  TestBatchStateParseFailureContaminatesLaterStatements
+--- PASS: TestBatchStateA2PolicyBlockerKeepsMigration (0.01s)
+=== CONT  TestBatchStateIncompleteProviderShapeYieldsIncompleteStructureGap
+=== RUN   TestBatchStateA2R1LoadedDependentKeepsPublicGapContract/alter_rename_to
+--- PASS: TestBatchStateRenameTableMigratesToAbsentDestination (0.01s)
+=== CONT  TestBatchStateOfflineFirstPathGapProfile
+=== RUN   TestBatchStateOfflineFirstPathGapProfile/mysql
+=== PAUSE TestBatchStateOfflineFirstPathGapProfile/mysql
+=== RUN   TestBatchStateOfflineFirstPathGapProfile/tidb
+=== PAUSE TestBatchStateOfflineFirstPathGapProfile/tidb
+=== CONT  TestBatchStateCreateIndexOnAbsentTableReportsTableNotFound
+--- PASS: TestBatchStateNoticeControlKeepsLegacyNotice (0.01s)
+=== CONT  TestBatchStateUnauditedMutationInvalidatesOnlyItsTable
+--- PASS: TestBatchStateProviderErrorStaysAnError (0.01s)
+=== CONT  TestBatchStateR1DropDatabaseInvalidatesSchemaScope
+--- PASS: TestBatchStateA3IndependentAuditCalls (0.02s)
+=== CONT  TestBatchStateCreateIndexMissingColumnFindsDerivedShape
+--- PASS: TestBatchStateRepeatedAddColumnFiresOnDerivedState (0.01s)
+=== CONT  TestBatchStateOnlineFirstPathDerivesSequentialState
+=== RUN   TestBatchStateOnlineFirstPathDerivesSequentialState/mysql
+=== PAUSE TestBatchStateOnlineFirstPathDerivesSequentialState/mysql
+=== RUN   TestBatchStateOnlineFirstPathDerivesSequentialState/tidb
+=== PAUSE TestBatchStateOnlineFirstPathDerivesSequentialState/tidb
+=== CONT  TestBatchStateR2KnownIndexSetKeepsRealAnswers
+=== RUN   TestBatchStateR2KnownIndexSetKeepsRealAnswers/known_empty_produces_finding
+=== PAUSE TestBatchStateR2KnownIndexSetKeepsRealAnswers/known_empty_produces_finding
+=== RUN   TestBatchStateR2KnownIndexSetKeepsRealAnswers/known_member_clean
+=== PAUSE TestBatchStateR2KnownIndexSetKeepsRealAnswers/known_member_clean
+=== CONT  TestBatchStateR2UnknownTableStateMemberGapFacts
+=== RUN   TestBatchStateR2UnknownTableStateMemberGapFacts/drop_index
+=== PAUSE TestBatchStateR2UnknownTableStateMemberGapFacts/drop_index
+=== RUN   TestBatchStateR2UnknownTableStateMemberGapFacts/drop_column
+=== PAUSE TestBatchStateR2UnknownTableStateMemberGapFacts/drop_column
+=== CONT  TestBatchStateR2UnknownMemberCollectionsEmitGaps
+=== RUN   TestBatchStateR2UnknownMemberCollectionsEmitGaps/drop_index
+=== PAUSE TestBatchStateR2UnknownMemberCollectionsEmitGaps/drop_index
+=== RUN   TestBatchStateR2UnknownMemberCollectionsEmitGaps/rename_index
+=== PAUSE TestBatchStateR2UnknownMemberCollectionsEmitGaps/rename_index
+=== RUN   TestBatchStateR2UnknownMemberCollectionsEmitGaps/add_index_forbid
+=== PAUSE TestBatchStateR2UnknownMemberCollectionsEmitGaps/add_index_forbid
+=== RUN   TestBatchStateR2UnknownMemberCollectionsEmitGaps/drop_column
+=== PAUSE TestBatchStateR2UnknownMemberCollectionsEmitGaps/drop_column
+=== RUN   TestBatchStateR2UnknownMemberCollectionsEmitGaps/modify_column
+=== PAUSE TestBatchStateR2UnknownMemberCollectionsEmitGaps/modify_column
+=== RUN   TestBatchStateR2UnknownMemberCollectionsEmitGaps/change_column
+=== PAUSE TestBatchStateR2UnknownMemberCollectionsEmitGaps/change_column
+=== RUN   TestBatchStateR2UnknownMemberCollectionsEmitGaps/rename_column
+=== PAUSE TestBatchStateR2UnknownMemberCollectionsEmitGaps/rename_column
+=== CONT  TestBatchStateR1IncompleteColumnsUseFrozenReason
+--- PASS: TestBatchStateA4PolicyDoesNotBlockTransfer (0.02s)
+=== CONT  TestBatchStateR1KnownAbsentPrimaryKeyKeepsBlocker
+--- PASS: TestBatchStateParseFailureContaminatesLaterStatements (0.01s)
+=== CONT  TestBatchStateR1ConditionalCreateLeavesPrimaryKeyUnknown
+--- PASS: TestBatchStateTruncateClearsRowStatistics (0.01s)
+=== CONT  TestBatchStateR1PartialProviderShapeKeepsKnownPrimaryKey
+--- PASS: TestBatchStatePolicyBlockerKeepsDeterministicTransition (0.01s)
+=== CONT  TestBatchStateR1MultiActionAlterInvalidates
+--- PASS: TestBatchStateIncompleteProviderShapeYieldsIncompleteStructureGap (0.01s)
+=== CONT  TestBatchStateR1QualifiedNamesUseTheirOwnSchema
+--- PASS: TestBatchStateA2R1LoadedDependentKeepsPublicGapContract (0.02s)
+    --- PASS: TestBatchStateA2R1LoadedDependentKeepsPublicGapContract/rename_table (0.01s)
+    --- PASS: TestBatchStateA2R1LoadedDependentKeepsPublicGapContract/alter_rename_to (0.01s)
+=== CONT  TestBatchStateR1CrossSchemaRenameMigrates
+--- PASS: TestBatchStateCreateIndexOnAbsentTableReportsTableNotFound (0.01s)
+=== CONT  TestBatchStateR1MixedQualifiedAndUnqualified
+--- PASS: TestBatchStateR1KnownAbsentPrimaryKeyKeepsBlocker (0.01s)
+=== CONT  TestBatchStateR1ExecuteContaminatesLaterState
+--- PASS: TestBatchStateR1IncompleteColumnsUseFrozenReason (0.01s)
+=== CONT  TestBatchStateR1CrossSchemaNoStateLeak
+--- PASS: TestBatchStateProviderReadsAreRequestLocal (0.02s)
+=== CONT  TestBatchStateA6TemplateModifiersRefusePreciseDrop
+--- PASS: TestBatchStateCreateIndexMissingColumnFindsDerivedShape (0.01s)
+=== CONT  TestBatchStateA6DuplicateColumnIdentityIsNotGuessed
+=== RUN   TestBatchStateA6TemplateModifiersRefusePreciseDrop/position
+=== PAUSE TestBatchStateA6TemplateModifiersRefusePreciseDrop/position
+=== RUN   TestBatchStateA6TemplateModifiersRefusePreciseDrop/unextracted_alter_option
+=== PAUSE TestBatchStateA6TemplateModifiersRefusePreciseDrop/unextracted_alter_option
+=== CONT  TestBatchStateA6CaseFoldDropsTheSingleColumn
+--- PASS: TestBatchStateA6DuplicateColumnIdentityIsNotGuessed (0.00s)
+--- PASS: TestBatchStateR1DropDatabaseInvalidatesSchemaScope (0.01s)
+=== CONT  TestBatchStateA6CancelAndProviderErrorPublishNothing
+=== RUN   TestBatchStateA6CancelAndProviderErrorPublishNothing/canceled_before_apply
+=== PAUSE TestBatchStateA6CancelAndProviderErrorPublishNothing/canceled_before_apply
+=== RUN   TestBatchStateA6CancelAndProviderErrorPublishNothing/canceled_before_publication
+=== PAUSE TestBatchStateA6CancelAndProviderErrorPublishNothing/canceled_before_publication
+=== RUN   TestBatchStateA6CancelAndProviderErrorPublishNothing/provider_error_keeps_identity
+=== PAUSE TestBatchStateA6CancelAndProviderErrorPublishNothing/provider_error_keeps_identity
+=== CONT  TestBatchStateA6KnownEmptyMembersAllowPreciseDrop/nil_index_and_constraint_sets
+--- PASS: TestBatchStateA6CaseFoldDropsTheSingleColumn (0.00s)
+=== CONT  TestBatchStateA6KnownEmptyMembersAllowPreciseDrop/nil_primary_key_with_unrelated_primary_constraint
+=== CONT  TestBatchStateA6KnownEmptyMembersAllowPreciseDrop/empty_index_and_constraint_sets
+=== CONT  TestEstimateStatementImpact/delete_without_where_returns_high_risk
+=== CONT  TestEstimateStatementImpact/join_shape_returns_high_risk_with_low_confidence
+=== CONT  TestEstimateStatementImpact/update_unique_equality_shape_returns_low_risk
+=== CONT  TestEstimateStatementImpact/unknown_fallback_ignores_statement-level_subquery_facts
+--- PASS: TestBatchStateA6KnownEmptyMembersAllowPreciseDrop (0.00s)
+    --- PASS: TestBatchStateA6KnownEmptyMembersAllowPreciseDrop/nil_index_and_constraint_sets (0.00s)
+    --- PASS: TestBatchStateA6KnownEmptyMembersAllowPreciseDrop/empty_index_and_constraint_sets (0.00s)
+    --- PASS: TestBatchStateA6KnownEmptyMembersAllowPreciseDrop/nil_primary_key_with_unrelated_primary_constraint (0.00s)
+--- PASS: TestEstimateStatementImpact (0.00s)
+    --- PASS: TestEstimateStatementImpact/delete_without_where_returns_high_risk (0.00s)
+    --- PASS: TestEstimateStatementImpact/join_shape_returns_high_risk_with_low_confidence (0.00s)
+    --- PASS: TestEstimateStatementImpact/update_unique_equality_shape_returns_low_risk (0.00s)
+    --- PASS: TestEstimateStatementImpact/unknown_fallback_ignores_statement-level_subquery_facts (0.00s)
+=== CONT  TestBatchStateA5UnsafeAndNonPrecise/self_foreign_key_invalidates_the_target
+=== CONT  TestBatchStateA5UnsafeAndNonPrecise/multi-action_and_position_stay_unknown
+=== CONT  TestBatchStateA5UnsafeAndNonPrecise/prior_parser_error_does_not_publish
+=== CONT  TestBatchStateA6WithheldColumnsInvalidateTheWholeTable
+=== CONT  TestBatchStateA5UnsafeAndNonPrecise/expression_index_invalidates
+--- PASS: TestBatchStateR1PartialProviderShapeKeepsKnownPrimaryKey (0.01s)
+=== CONT  TestBatchStateA4ProviderIsolationCopyAndCancel/provider_error_keeps_identity
+--- PASS: TestBatchStateUnauditedMutationInvalidatesOnlyItsTable (0.01s)
+=== CONT  TestBatchStateA4ProviderIsolationCopyAndCancel/requests_are_isolated
+=== CONT  TestBatchStateA4ProviderIsolationCopyAndCancel/canceled_apply_publishes_nothing
+=== CONT  TestBatchStateA4ProviderIsolationCopyAndCancel/pre-state_copies_are_independent
+=== CONT  TestBatchStateA2RenameMigratesIdentity/standalone_qualified
+--- PASS: TestBatchStateR1MultiActionAlterInvalidates (0.01s)
+=== CONT  TestBatchStateA2RenameMigratesIdentity/unqualified_destination_uses_request_schema
+--- PASS: TestBatchStateR1QualifiedNamesUseTheirOwnSchema (0.01s)
+=== CONT  TestBatchStateA2RenameMigratesIdentity/same_name_cross_schema
+--- PASS: TestBatchStateR1CrossSchemaRenameMigrates (0.01s)
+=== CONT  TestBatchStateA2RenameMigratesIdentity/same_schema
+--- PASS: TestBatchStateR1ConditionalCreateLeavesPrimaryKeyUnknown (0.01s)
+=== CONT  TestBatchStateA2RenameMigratesIdentity/alter_rename_to
+--- PASS: TestBatchStateR1MixedQualifiedAndUnqualified (0.01s)
+=== CONT  TestBatchStateA4NonTemplateStaysConservative/CREATE_TABLE_t_(id_INT_PRIMARY_KEY,_c_VARCHAR(10));_ALTER_TABLE_t_MODIFY_COLUMN_c_VARCHAR(20),_ADD_COLUMN_d_INT;_ALTER_TABLE_t_MODIFY_COLUMN_c_VARCHAR(15);
+=== CONT  TestBatchStateA4NonTemplateStaysConservative/tidb_if_exists
+=== CONT  TestBatchStateA4NonTemplateStaysConservative/prior_contamination
+--- PASS: TestBatchStateA6WithheldColumnsInvalidateTheWholeTable (0.01s)
+=== CONT  TestBatchStateA4NonTemplateStaysConservative/CREATE_TABLE_t_(id_INT_PRIMARY_KEY,_c_VARCHAR(10));_ALTER_TABLE_t_MODIFY_COLUMN_c_VARCHAR(20)_FIRST;_ALTER_TABLE_t_MODIFY_COLUMN_c_VARCHAR(15);
+=== CONT  TestBatchStateA4NonTemplateStaysConservative/CREATE_TABLE_t_(id_INT_PRIMARY_KEY,_c_INT);_ALTER_TABLE_t_MODIFY_COLUMN_c_INT_AUTO_INCREMENT;_ALTER_TABLE_t_MODIFY_COLUMN_c_BIGINT;
+=== CONT  TestBatchStateA4NonTemplateStaysConservative/CREATE_TABLE_t_(id_INT_PRIMARY_KEY,_c_VARCHAR(10));_ALTER_TABLE_t_MODIFY_COLUMN_c_INT;_ALTER_TABLE_t_MODIFY_COLUMN_c_BIGINT;
+--- PASS: TestBatchStateR1ExecuteContaminatesLaterState (0.01s)
+=== CONT  TestBatchStateA4PartialDefinitionPublishesNext/unknown_varchar_length
+=== CONT  TestBatchStateA4PartialDefinitionPublishesNext/empty_type
+--- PASS: TestBatchStateR1CrossSchemaNoStateLeak (0.01s)
+=== CONT  TestBatchStateA4AbsentAndUnknownStayDistinct/confirmed_absent_column
+=== CONT  TestBatchStateA5MembersAndPartialKnowledge/primary_key_and_index_references
+=== CONT  TestBatchStateA4AbsentAndUnknownStayDistinct/known_absent_table
+=== CONT  TestBatchStateA4AbsentAndUnknownStayDistinct/withheld_column_set
+=== CONT  TestBatchStateA5MembersAndPartialKnowledge/withheld_columns_scrub_old_references
+=== CONT  TestBatchStateA5MembersAndPartialKnowledge/rename_keeps_stats_and_change_clears_them
+=== CONT  TestBatchStateA5MembersAndPartialKnowledge/missing_source_type_still_accepts_a_full_change
+=== CONT  TestBatchStateA5MembersAndPartialKnowledge/rename_keeps_an_unknown_type
+=== CONT  TestBatchStateA4AbsentAndUnknownStayDistinct/unknown_provider_stays_unknown
+=== CONT  TestBatchStateA6StatsCopyAndIdentityIsolation/requests_do_not_share_state
+--- PASS: TestBatchStateA5MembersAndPartialKnowledge (0.00s)
+    --- PASS: TestBatchStateA5MembersAndPartialKnowledge/primary_key_and_index_references (0.00s)
+    --- PASS: TestBatchStateA5MembersAndPartialKnowledge/withheld_columns_scrub_old_references (0.00s)
+    --- PASS: TestBatchStateA5MembersAndPartialKnowledge/missing_source_type_still_accepts_a_full_change (0.00s)
+    --- PASS: TestBatchStateA5MembersAndPartialKnowledge/rename_keeps_stats_and_change_clears_them (0.00s)
+    --- PASS: TestBatchStateA5MembersAndPartialKnowledge/rename_keeps_an_unknown_type (0.00s)
+=== CONT  TestBatchStateA6StatsCopyAndIdentityIsolation/dotted_name_stays_whole
+=== CONT  TestBatchStateA4UnsafeDependentsInvalidate/check
+=== CONT  TestBatchStateA4UnsafeDependentsInvalidate/unrelated_prefix_stays
+=== CONT  TestBatchStateA4UnsafeDependentsInvalidate/foreign_key_on_column
+=== CONT  TestBatchStateA4UnsafeDependentsInvalidate/generated_column
+=== CONT  TestBatchStateA4UnsafeDependentsInvalidate/expression_index
+=== CONT  TestBatchStateA4UnsafeDependentsInvalidate/prefix_index
+--- PASS: TestBatchStateA4UnsafeDependentsInvalidate (0.00s)
+    --- PASS: TestBatchStateA4UnsafeDependentsInvalidate/check (0.00s)
+    --- PASS: TestBatchStateA4UnsafeDependentsInvalidate/unrelated_prefix_stays (0.00s)
+    --- PASS: TestBatchStateA4UnsafeDependentsInvalidate/foreign_key_on_column (0.00s)
+    --- PASS: TestBatchStateA4UnsafeDependentsInvalidate/generated_column (0.00s)
+    --- PASS: TestBatchStateA4UnsafeDependentsInvalidate/expression_index (0.00s)
+    --- PASS: TestBatchStateA4UnsafeDependentsInvalidate/prefix_index (0.00s)
+=== CONT  TestBatchStateA5PolicyIsolationAndCancel/policy_forbid_still_publishes
+--- PASS: TestBatchStateA5UnsafeAndNonPrecise (0.00s)
+    --- PASS: TestBatchStateA5UnsafeAndNonPrecise/self_foreign_key_invalidates_the_target (0.00s)
+    --- PASS: TestBatchStateA5UnsafeAndNonPrecise/multi-action_and_position_stay_unknown (0.00s)
+    --- PASS: TestBatchStateA5UnsafeAndNonPrecise/expression_index_invalidates (0.00s)
+    --- PASS: TestBatchStateA5UnsafeAndNonPrecise/prior_parser_error_does_not_publish (0.01s)
+=== CONT  TestBatchStateA5PolicyIsolationAndCancel/provider_error_keeps_identity
+=== CONT  TestBatchStateA5PolicyIsolationAndCancel/cancel_publishes_nothing
+=== CONT  TestBatchStateA5PolicyIsolationAndCancel/snapshots_are_deep_copies
+=== CONT  TestBatchStateA5PolicyIsolationAndCancel/requests_stay_isolated
+=== CONT  TestBatchStateA3CancellationAndProviderError/pre_canceled_apply_publishes_nothing_DROP_TABLE_t;
+=== CONT  TestBatchStateA3CancellationAndProviderError/provider_error_propagates_from_pre_state
+=== CONT  TestBatchStateA3CancellationAndProviderError/provider_error_keeps_identity_over_cancellation
+=== CONT  TestBatchStateA3CancellationAndProviderError/mid_read_cancellation_keeps_cached_state
+=== CONT  TestBatchStateA3CancellationAndProviderError/mid_read_cancellation_aborts_publication
+=== CONT  TestBatchStateA3CancellationAndProviderError/pre_canceled_apply_publishes_nothing_DROP_TABLE_IF_EXISTS_t;
+=== CONT  TestBatchStateA3TruncateUnchanged/mysql
+--- PASS: TestBatchStateA2RenameMigratesIdentity (0.00s)
+    --- PASS: TestBatchStateA2RenameMigratesIdentity/unqualified_destination_uses_request_schema (0.01s)
+    --- PASS: TestBatchStateA2RenameMigratesIdentity/standalone_qualified (0.01s)
+    --- PASS: TestBatchStateA2RenameMigratesIdentity/alter_rename_to (0.01s)
+    --- PASS: TestBatchStateA2RenameMigratesIdentity/same_schema (0.01s)
+    --- PASS: TestBatchStateA2RenameMigratesIdentity/same_name_cross_schema (0.01s)
+=== CONT  TestBatchStateA3TruncateUnchanged/tidb
+=== CONT  TestBatchStateA3IdentitySeparation/qualified_schema_separation
+--- PASS: TestBatchStateA4ProviderIsolationCopyAndCancel (0.00s)
+    --- PASS: TestBatchStateA4ProviderIsolationCopyAndCancel/canceled_apply_publishes_nothing (0.00s)
+    --- PASS: TestBatchStateA4ProviderIsolationCopyAndCancel/pre-state_copies_are_independent (0.00s)
+    --- PASS: TestBatchStateA4ProviderIsolationCopyAndCancel/provider_error_keeps_identity (0.01s)
+    --- PASS: TestBatchStateA4ProviderIsolationCopyAndCancel/requests_are_isolated (0.02s)
+=== CONT  TestBatchStateA3IdentitySeparation/dotted_identifier_stays_whole
+--- PASS: TestBatchStateA4AbsentAndUnknownStayDistinct (0.00s)
+    --- PASS: TestBatchStateA4AbsentAndUnknownStayDistinct/known_absent_table (0.00s)
+    --- PASS: TestBatchStateA4AbsentAndUnknownStayDistinct/withheld_column_set (0.00s)
+    --- PASS: TestBatchStateA4AbsentAndUnknownStayDistinct/unknown_provider_stays_unknown (0.00s)
+    --- PASS: TestBatchStateA4AbsentAndUnknownStayDistinct/confirmed_absent_column (0.01s)
+=== CONT  TestBatchStateA3OldColumnIndexNegative/mysql
+--- PASS: TestBatchStateA4PartialDefinitionPublishesNext (0.00s)
+    --- PASS: TestBatchStateA4PartialDefinitionPublishesNext/empty_type (0.01s)
+    --- PASS: TestBatchStateA4PartialDefinitionPublishesNext/unknown_varchar_length (0.01s)
+=== CONT  TestBatchStateA3OldColumnIndexNegative/tidb
+--- PASS: TestBatchStateA4NonTemplateStaysConservative (0.00s)
+    --- PASS: TestBatchStateA4NonTemplateStaysConservative/CREATE_TABLE_t_(id_INT_PRIMARY_KEY,_c_VARCHAR(10));_ALTER_TABLE_t_MODIFY_COLUMN_c_VARCHAR(20),_ADD_COLUMN_d_INT;_ALTER_TABLE_t_MODIFY_COLUMN_c_VARCHAR(15); (0.00s)
+    --- PASS: TestBatchStateA4NonTemplateStaysConservative/tidb_if_exists (0.00s)
+    --- PASS: TestBatchStateA4NonTemplateStaysConservative/CREATE_TABLE_t_(id_INT_PRIMARY_KEY,_c_VARCHAR(10));_ALTER_TABLE_t_MODIFY_COLUMN_c_VARCHAR(20)_FIRST;_ALTER_TABLE_t_MODIFY_COLUMN_c_VARCHAR(15); (0.00s)
+    --- PASS: TestBatchStateA4NonTemplateStaysConservative/CREATE_TABLE_t_(id_INT_PRIMARY_KEY,_c_INT);_ALTER_TABLE_t_MODIFY_COLUMN_c_INT_AUTO_INCREMENT;_ALTER_TABLE_t_MODIFY_COLUMN_c_BIGINT; (0.00s)
+    --- PASS: TestBatchStateA4NonTemplateStaysConservative/CREATE_TABLE_t_(id_INT_PRIMARY_KEY,_c_VARCHAR(10));_ALTER_TABLE_t_MODIFY_COLUMN_c_INT;_ALTER_TABLE_t_MODIFY_COLUMN_c_BIGINT; (0.00s)
+    --- PASS: TestBatchStateA4NonTemplateStaysConservative/prior_contamination (0.01s)
+=== CONT  TestBatchStateA3DispatchGuards/unsupported_marker_stays_conservative
+=== CONT  TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/primary_key_unknown
+=== CONT  TestBatchStateA3DispatchGuards/omitted_targets_stays_conservative
+=== CONT  TestBatchStateA3DispatchGuards/mismatched_primary_and_targets_stays_conservative
+--- PASS: TestBatchStateA3DispatchGuards (0.00s)
+    --- PASS: TestBatchStateA3DispatchGuards/unsupported_marker_stays_conservative (0.00s)
+    --- PASS: TestBatchStateA3DispatchGuards/omitted_targets_stays_conservative (0.00s)
+    --- PASS: TestBatchStateA3DispatchGuards/mismatched_primary_and_targets_stays_conservative (0.00s)
+=== CONT  TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/sibling_default_is_not_provably_column-free
+=== CONT  TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/sibling_is_generated
+=== CONT  TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/check_list_is_empty
+=== CONT  TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/self_reference_names_the_column
+=== CONT  TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/local_foreign_key_names_the_column
+=== CONT  TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/index_has_an_unmodeled_option
+=== CONT  TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/index_column_name_is_blank
+=== CONT  TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/index_column_list_is_empty
+=== CONT  TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/check_has_unmodeled_parts
+=== CONT  TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/expression_index
+=== CONT  TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/included_column_names_the_target
+=== CONT  TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/prefix_index
+=== CONT  TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/fulltext_index_is_not_a_complete_ordinary_key
+=== CONT  TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/composite_unique_names_the_column
+=== CONT  TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/ordinary_index_names_the_column
+=== CONT  TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/target_has_an_unextracted_option
+=== CONT  TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/target_is_generated
+=== CONT  TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/target_is_identity
+=== CONT  TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/target_is_auto_random
+=== CONT  TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/target_is_auto_increment
+=== CONT  TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/primary_key_column_list_is_empty
+=== CONT  TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/primary_key_names_the_column
+=== CONT  TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/primary_constraint_names_the_column
+=== CONT  TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/columns_withheld
+=== CONT  TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/constraints_unknown
+=== CONT  TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/indexes_unknown
+=== CONT  TestBatchStateA3AuditSurfacePollution/parse_failure_prefix
+--- PASS: TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop (0.00s)
+    --- PASS: TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/primary_key_unknown (0.00s)
+    --- PASS: TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/sibling_default_is_not_provably_column-free (0.00s)
+    --- PASS: TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/sibling_is_generated (0.00s)
+    --- PASS: TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/check_list_is_empty (0.00s)
+    --- PASS: TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/self_reference_names_the_column (0.00s)
+    --- PASS: TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/local_foreign_key_names_the_column (0.00s)
+    --- PASS: TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/index_has_an_unmodeled_option (0.00s)
+    --- PASS: TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/index_column_name_is_blank (0.00s)
+    --- PASS: TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/index_column_list_is_empty (0.00s)
+    --- PASS: TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/check_has_unmodeled_parts (0.00s)
+    --- PASS: TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/expression_index (0.00s)
+    --- PASS: TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/prefix_index (0.00s)
+    --- PASS: TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/included_column_names_the_target (0.00s)
+    --- PASS: TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/composite_unique_names_the_column (0.00s)
+    --- PASS: TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/ordinary_index_names_the_column (0.00s)
+    --- PASS: TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/target_has_an_unextracted_option (0.00s)
+    --- PASS: TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/target_is_generated (0.00s)
+    --- PASS: TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/fulltext_index_is_not_a_complete_ordinary_key (0.00s)
+    --- PASS: TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/target_is_identity (0.00s)
+    --- PASS: TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/target_is_auto_increment (0.00s)
+    --- PASS: TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/primary_key_column_list_is_empty (0.00s)
+    --- PASS: TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/target_is_auto_random (0.00s)
+    --- PASS: TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/primary_key_names_the_column (0.00s)
+    --- PASS: TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/primary_constraint_names_the_column (0.00s)
+    --- PASS: TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/columns_withheld (0.00s)
+    --- PASS: TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/constraints_unknown (0.00s)
+    --- PASS: TestBatchStateA6UnknownOrSpecialMembersRefusePreciseDrop/indexes_unknown (0.00s)
+=== CONT  TestBatchStateA3AuditSurfacePollution/execute_prefix
+=== CONT  TestBatchStateA4R1AffectedSet/related_foreign_key_invalidates_the_target_with_the_child
+--- PASS: TestBatchStateA3CancellationAndProviderError (0.00s)
+    --- PASS: TestBatchStateA3CancellationAndProviderError/pre_canceled_apply_publishes_nothing_DROP_TABLE_t; (0.00s)
+    --- PASS: TestBatchStateA3CancellationAndProviderError/provider_error_keeps_identity_over_cancellation (0.00s)
+    --- PASS: TestBatchStateA3CancellationAndProviderError/mid_read_cancellation_keeps_cached_state (0.00s)
+    --- PASS: TestBatchStateA3CancellationAndProviderError/mid_read_cancellation_aborts_publication (0.00s)
+    --- PASS: TestBatchStateA3CancellationAndProviderError/pre_canceled_apply_publishes_nothing_DROP_TABLE_IF_EXISTS_t; (0.00s)
+    --- PASS: TestBatchStateA3CancellationAndProviderError/provider_error_propagates_from_pre_state (0.01s)
+=== CONT  TestBatchStateA4R1AffectedSet/unloaded_child_is_not_discovered
+=== CONT  TestBatchStateA4R1AffectedSet/same_table_name_in_another_schema_stays
+=== CONT  TestBatchStateA4R1AffectedSet/empty_referenced_list_does_not_prove_unrelated
+=== CONT  TestBatchStateA4R1AffectedSet/complete_unrelated_reference_stays
+=== CONT  TestBatchStateA4R1AffectedSet/unmodeled_local_parts_do_not_prove_unrelated
+=== CONT  TestBatchStateA4R1AffectedSet/withheld_columns_keep_the_target_and_drop_the_child
+=== CONT  TestBatchStateA4R1AffectedSet/confirmed-absent_column_drops_a_loaded_reference
+=== CONT  TestBatchStateA4R1AffectedSet/multi-action_modify_drops_a_loaded_child
+=== CONT  TestBatchStateA4R1AffectedSet/position_modify_drops_a_loaded_child
+=== CONT  TestBatchStateA4R1AffectedSet/unmodeled_referenced_parts_do_not_prove_unrelated
+=== CONT  TestBatchStateA4R1AffectedSet/conditional_modify_drops_a_loaded_child
+=== CONT  TestBatchStateA4R1AffectedSet/self_reference_on_the_referenced_side_invalidates_the_target
+=== CONT  TestBatchStateA4R1AffectedSet/unknown_primary-key_membership_drops_a_loaded_reference
+=== CONT  TestBatchStateA4R1AffectedSet/explicit_null_on_a_known_primary_key_drops_a_loaded_reference
+--- PASS: TestBatchStateA3IdentitySeparation (0.00s)
+    --- PASS: TestBatchStateA3IdentitySeparation/qualified_schema_separation (0.01s)
+    --- PASS: TestBatchStateA3IdentitySeparation/dotted_identifier_stays_whole (0.01s)
+=== CONT  TestBatchStateA3LoadedDependentInvalidates/explicit_target_schema
+=== CONT  TestBatchStateA3LoadedDependentInvalidates/conservative_branch_still_tombstones
+=== CONT  TestBatchStateA3LoadedDependentInvalidates/other_schema_same_name
+=== CONT  TestBatchStateA3LoadedDependentInvalidates/unqualified_owner_schema_miss
+=== CONT  TestBatchStateA3LoadedDependentInvalidates/unqualified_owner_schema_match
+--- PASS: TestBatchStateA6StatsCopyAndIdentityIsolation (0.00s)
+    --- PASS: TestBatchStateA6StatsCopyAndIdentityIsolation/dotted_name_stays_whole (0.00s)
+    --- PASS: TestBatchStateA6StatsCopyAndIdentityIsolation/requests_do_not_share_state (0.02s)
+=== CONT  TestBatchStateA3LoadedDependentInvalidates/multi_target_union
+--- PASS: TestBatchStateA5PolicyIsolationAndCancel (0.00s)
+    --- PASS: TestBatchStateA5PolicyIsolationAndCancel/cancel_publishes_nothing (0.00s)
+    --- PASS: TestBatchStateA5PolicyIsolationAndCancel/snapshots_are_deep_copies (0.00s)
+    --- PASS: TestBatchStateA5PolicyIsolationAndCancel/policy_forbid_still_publishes (0.01s)
+    --- PASS: TestBatchStateA5PolicyIsolationAndCancel/provider_error_keeps_identity (0.01s)
+    --- PASS: TestBatchStateA5PolicyIsolationAndCancel/requests_stay_isolated (0.02s)
+=== CONT  TestBatchStateA3LoadedDependentInvalidates/target_referencing_target
+--- PASS: TestBatchStateA3TruncateUnchanged (0.00s)
+    --- PASS: TestBatchStateA3TruncateUnchanged/tidb (0.01s)
+    --- PASS: TestBatchStateA3TruncateUnchanged/mysql (0.01s)
+=== CONT  TestBatchStateA3LoadedDependentInvalidates/recreate_does_not_restore
+--- PASS: TestBatchStateA3OldColumnIndexNegative (0.00s)
+    --- PASS: TestBatchStateA3OldColumnIndexNegative/tidb (0.01s)
+    --- PASS: TestBatchStateA3OldColumnIndexNegative/mysql (0.01s)
+=== CONT  TestBatchStateA3DropRecreate/mysql/plain
+=== CONT  TestBatchStateA3DropRecreate/tidb/plain
+=== CONT  TestBatchStateA3DropRecreate/tidb/if_exists
+--- PASS: TestBatchStateA4R1AffectedSet (0.00s)
+    --- PASS: TestBatchStateA4R1AffectedSet/related_foreign_key_invalidates_the_target_with_the_child (0.00s)
+    --- PASS: TestBatchStateA4R1AffectedSet/unloaded_child_is_not_discovered (0.00s)
+    --- PASS: TestBatchStateA4R1AffectedSet/same_table_name_in_another_schema_stays (0.00s)
+    --- PASS: TestBatchStateA4R1AffectedSet/empty_referenced_list_does_not_prove_unrelated (0.00s)
+    --- PASS: TestBatchStateA4R1AffectedSet/complete_unrelated_reference_stays (0.00s)
+    --- PASS: TestBatchStateA4R1AffectedSet/unmodeled_local_parts_do_not_prove_unrelated (0.00s)
+    --- PASS: TestBatchStateA4R1AffectedSet/withheld_columns_keep_the_target_and_drop_the_child (0.00s)
+    --- PASS: TestBatchStateA4R1AffectedSet/confirmed-absent_column_drops_a_loaded_reference (0.00s)
+    --- PASS: TestBatchStateA4R1AffectedSet/unmodeled_referenced_parts_do_not_prove_unrelated (0.00s)
+    --- PASS: TestBatchStateA4R1AffectedSet/conditional_modify_drops_a_loaded_child (0.00s)
+    --- PASS: TestBatchStateA4R1AffectedSet/multi-action_modify_drops_a_loaded_child (0.00s)
+    --- PASS: TestBatchStateA4R1AffectedSet/unknown_primary-key_membership_drops_a_loaded_reference (0.00s)
+    --- PASS: TestBatchStateA4R1AffectedSet/explicit_null_on_a_known_primary_key_drops_a_loaded_reference (0.00s)
+    --- PASS: TestBatchStateA4R1AffectedSet/position_modify_drops_a_loaded_child (0.00s)
+    --- PASS: TestBatchStateA4R1AffectedSet/self_reference_on_the_referenced_side_invalidates_the_target (0.01s)
+=== CONT  TestBatchStateA3DropRecreate/mysql/if_exists
+--- PASS: TestBatchStateA3AuditSurfacePollution (0.00s)
+    --- PASS: TestBatchStateA3AuditSurfacePollution/parse_failure_prefix (0.01s)
+    --- PASS: TestBatchStateA3AuditSurfacePollution/execute_prefix (0.01s)
+=== CONT  TestBatchStateA3NonPreciseForms/multi_target_invalidates_every_key
+=== CONT  TestBatchStateA3NonPreciseForms/execute_contamination_suppresses_derivation
+=== CONT  TestBatchStateA3NonPreciseForms/schema_invalidation_survives
+=== CONT  TestBatchStateA3NonPreciseForms/temporary_drop_invalidates_without_absence
+=== CONT  TestBatchStateA3NonPreciseForms/unbound_drop_contaminates
+=== CONT  TestBatchStateA3NonPreciseForms/duplicate_raw_target_is_not_precise
+=== CONT  TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_payload_keeps_unknown_member_flags
+=== RUN   TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_payload_keeps_unknown_member_flags/rename_table
+=== RUN   TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_payload_keeps_unknown_member_flags/alter_rename_to
+=== CONT  TestBatchStateA2R1PrimaryKeyPayloadMigrates/foreign_key_on_the_source_keeps_both_ends_unknown
+=== CONT  TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_constraint_payload
+=== RUN   TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_constraint_payload/rename_table
+=== CONT  TestBatchStateA2R1PrimaryKeyPayloadMigrates/partial_knowledge_keeps_unknown_flags_and_statistics
+=== RUN   TestBatchStateA2R1PrimaryKeyPayloadMigrates/partial_knowledge_keeps_unknown_flags_and_statistics/rename_table
+=== RUN   TestBatchStateA2R1PrimaryKeyPayloadMigrates/partial_knowledge_keeps_unknown_flags_and_statistics/alter_rename_to
+=== CONT  TestBatchStateA2R1LoadedDependentInvalidates/explicit_src_reference_under_aux_owner
+=== CONT  TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_field_only
+=== RUN   TestBatchStateA2R1LoadedDependentInvalidates/explicit_src_reference_under_aux_owner/rename_table
+=== RUN   TestBatchStateA2R1LoadedDependentInvalidates/explicit_src_reference_under_aux_owner/alter_rename_to
+=== CONT  TestBatchStateA2MemberTransportBoundary/known_constraint_shape_invalidates_both_ends
+=== RUN   TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_field_only/rename_table
+=== CONT  TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_under_aux_owner_stays_local
+=== RUN   TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_under_aux_owner_stays_local/rename_table
+=== RUN   TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_under_aux_owner_stays_local/alter_rename_to
+=== CONT  TestBatchStateA2MemberTransportBoundary/renamed_shape_keeps_statistics_values
+=== CONT  TestBatchStateA2MemberTransportBoundary/migrated_primary_key_stays_provable
+=== CONT  TestBatchStateA2MemberTransportBoundary/same_effective_key_invalidates_instead_of_self-migration
+=== CONT  TestBatchStateA2R1LoadedDependentInvalidates/explicit_src_reference_with_check_source
+=== RUN   TestBatchStateA2R1LoadedDependentInvalidates/explicit_src_reference_with_check_source/rename_table
+=== RUN   TestBatchStateA2R1LoadedDependentInvalidates/explicit_src_reference_with_check_source/alter_rename_to
+=== CONT  TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_with_check_source
+=== RUN   TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_with_check_source/rename_table
+=== RUN   TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_with_check_source/alter_rename_to
+=== CONT  TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_under_src_owner
+=== RUN   TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_under_src_owner/rename_table
+=== RUN   TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_under_src_owner/alter_rename_to
+=== CONT  TestBatchStateA2R1LoadedDependentInvalidates/explicit_other-schema_same-name_reference_stays_known
+=== RUN   TestBatchStateA2R1LoadedDependentInvalidates/explicit_other-schema_same-name_reference_stays_known/rename_table
+=== CONT  TestBatchStateA2R1LoadedDependentInvalidates/destination_reference_invalidates_on_non-move_cell
+=== RUN   TestBatchStateA2R1LoadedDependentInvalidates/destination_reference_invalidates_on_non-move_cell/rename_table
+=== RUN   TestBatchStateA2R1LoadedDependentInvalidates/explicit_other-schema_same-name_reference_stays_known/alter_rename_to
+=== RUN   TestBatchStateA2R1LoadedDependentInvalidates/destination_reference_invalidates_on_non-move_cell/alter_rename_to
+=== CONT  TestBatchStateA3DropStateTable/present_complete
+--- PASS: TestBatchStateA2R1LoadedDependentInvalidates (0.00s)
+    --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/explicit_src_reference_under_aux_owner (0.00s)
+        --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/explicit_src_reference_under_aux_owner/rename_table (0.00s)
+        --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/explicit_src_reference_under_aux_owner/alter_rename_to (0.00s)
+    --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_under_aux_owner_stays_local (0.00s)
+        --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_under_aux_owner_stays_local/rename_table (0.00s)
+        --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_under_aux_owner_stays_local/alter_rename_to (0.00s)
+    --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/explicit_src_reference_with_check_source (0.00s)
+        --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/explicit_src_reference_with_check_source/rename_table (0.00s)
+        --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/explicit_src_reference_with_check_source/alter_rename_to (0.00s)
+    --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_with_check_source (0.00s)
+        --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_with_check_source/rename_table (0.00s)
+        --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_with_check_source/alter_rename_to (0.00s)
+    --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_under_src_owner (0.00s)
+        --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_under_src_owner/rename_table (0.00s)
+        --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/unqualified_reference_under_src_owner/alter_rename_to (0.00s)
+    --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/explicit_other-schema_same-name_reference_stays_known (0.00s)
+        --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/explicit_other-schema_same-name_reference_stays_known/rename_table (0.00s)
+        --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/explicit_other-schema_same-name_reference_stays_known/alter_rename_to (0.00s)
+    --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/destination_reference_invalidates_on_non-move_cell (0.00s)
+        --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/destination_reference_invalidates_on_non-move_cell/rename_table (0.00s)
+        --- PASS: TestBatchStateA2R1LoadedDependentInvalidates/destination_reference_invalidates_on_non-move_cell/alter_rename_to (0.00s)
+=== CONT  TestBatchStateA3DropPreStateMatrix/mysql/plain/present_complete
+=== CONT  TestBatchStateA3DropStateTable/unknown_then_recreate
+=== CONT  TestBatchStateA3DropStateTable/gap_disabled_stays_complete
+=== CONT  TestBatchStateA3DropStateTable/repeated_drop_third_blocker
+--- PASS: TestBatchStateA3LoadedDependentInvalidates (0.00s)
+    --- PASS: TestBatchStateA3LoadedDependentInvalidates/conservative_branch_still_tombstones (0.01s)
+    --- PASS: TestBatchStateA3LoadedDependentInvalidates/recreate_does_not_restore (0.01s)
+    --- PASS: TestBatchStateA3LoadedDependentInvalidates/unqualified_owner_schema_match (0.01s)
+    --- PASS: TestBatchStateA3LoadedDependentInvalidates/explicit_target_schema (0.01s)
+    --- PASS: TestBatchStateA3LoadedDependentInvalidates/target_referencing_target (0.01s)
+    --- PASS: TestBatchStateA3LoadedDependentInvalidates/other_schema_same_name (0.01s)
+    --- PASS: TestBatchStateA3LoadedDependentInvalidates/unqualified_owner_schema_miss (0.02s)
+    --- PASS: TestBatchStateA3LoadedDependentInvalidates/multi_target_union (0.02s)
+--- PASS: TestBatchStateA3DropRecreate (0.00s)
+    --- PASS: TestBatchStateA3DropRecreate/mysql/plain (0.01s)
+    --- PASS: TestBatchStateA3DropRecreate/mysql/if_exists (0.01s)
+    --- PASS: TestBatchStateA3DropRecreate/tidb/if_exists (0.01s)
+    --- PASS: TestBatchStateA3DropRecreate/tidb/plain (0.01s)
+=== CONT  TestBatchStateA3DropStateTable/unknown_if_exists
+=== CONT  TestBatchStateA3DropStateTable/unknown_plain
+=== CONT  TestBatchStateA3DropStateTable/absent_if_exists_then_recreate
+=== CONT  TestBatchStateA3DropStateTable/absent_plain_then_recreate
+--- PASS: TestBatchStateA3NonPreciseForms (0.00s)
+    --- PASS: TestBatchStateA3NonPreciseForms/execute_contamination_suppresses_derivation (0.00s)
+    --- PASS: TestBatchStateA3NonPreciseForms/temporary_drop_invalidates_without_absence (0.00s)
+    --- PASS: TestBatchStateA3NonPreciseForms/unbound_drop_contaminates (0.00s)
+    --- PASS: TestBatchStateA3NonPreciseForms/duplicate_raw_target_is_not_precise (0.01s)
+    --- PASS: TestBatchStateA3NonPreciseForms/schema_invalidation_survives (0.01s)
+    --- PASS: TestBatchStateA3NonPreciseForms/multi_target_invalidates_every_key (0.01s)
+=== CONT  TestBatchStateA3DropStateTable/present_partial
+=== RUN   TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_constraint_payload/alter_rename_to
+=== CONT  TestBatchStateA3DropPreStateMatrix/tidb/plain/present_partial
+--- PASS: TestBatchStateA2MemberTransportBoundary (0.00s)
+    --- PASS: TestBatchStateA2MemberTransportBoundary/renamed_shape_keeps_statistics_values (0.00s)
+    --- PASS: TestBatchStateA2MemberTransportBoundary/migrated_primary_key_stays_provable (0.00s)
+    --- PASS: TestBatchStateA2MemberTransportBoundary/known_constraint_shape_invalidates_both_ends (0.01s)
+    --- PASS: TestBatchStateA2MemberTransportBoundary/same_effective_key_invalidates_instead_of_self-migration (0.01s)
+=== CONT  TestBatchStateA3DropPreStateMatrix/tidb/if_exists/unknown
+=== CONT  TestBatchStateA3DropPreStateMatrix/tidb/if_exists/absent
+=== CONT  TestBatchStateA3DropPreStateMatrix/tidb/if_exists/present_complete
+=== CONT  TestBatchStateA3DropPreStateMatrix/tidb/plain/unknown
+=== CONT  TestBatchStateA3DropPreStateMatrix/tidb/plain/absent
+=== CONT  TestBatchStateA3DropPreStateMatrix/mysql/if_exists/present_complete
+=== CONT  TestBatchStateA3DropPreStateMatrix/tidb/plain/present_complete
+=== CONT  TestBatchStateA3DropPreStateMatrix/mysql/if_exists/present_partial
+=== CONT  TestBatchStateA3DropPreStateMatrix/mysql/plain/present_partial
+=== CONT  TestBatchStateA3DropPreStateMatrix/mysql/plain/unknown
+=== CONT  TestBatchStateA3DropPreStateMatrix/mysql/plain/absent
+=== CONT  TestBatchStateA3DropPreStateMatrix/mysql/if_exists/absent
+=== CONT  TestBatchStateA3DropPreStateMatrix/mysql/if_exists/unknown
+=== RUN   TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_field_only/alter_rename_to
+=== CONT  TestBatchStateA2ReadLedger/destination_first-touch_resolves_once
+=== CONT  TestBatchStateA3DropPreStateMatrix/tidb/if_exists/present_partial
+=== CONT  TestBatchStateA2ReadLedger/destination_provider_error_aborts_without_half_post-state
+=== CONT  TestBatchStateA2ReadLedger/second_audit_does_not_inherit_derived_state
+--- PASS: TestBatchStateA3DropPreStateMatrix (0.00s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/mysql/plain/present_complete (0.00s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/tidb/plain/present_partial (0.00s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/tidb/if_exists/absent (0.00s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/tidb/if_exists/present_complete (0.00s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/tidb/if_exists/unknown (0.00s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/tidb/plain/unknown (0.00s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/tidb/plain/absent (0.00s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/tidb/plain/present_complete (0.00s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/mysql/if_exists/present_complete (0.00s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/mysql/if_exists/present_partial (0.00s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/mysql/plain/present_partial (0.00s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/mysql/plain/unknown (0.00s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/mysql/plain/absent (0.00s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/mysql/if_exists/absent (0.00s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/tidb/if_exists/present_partial (0.00s)
+    --- PASS: TestBatchStateA3DropPreStateMatrix/mysql/if_exists/unknown (0.00s)
+=== CONT  TestBatchStateA2ExistenceGrid/present+absent_migrates
+=== CONT  TestBatchStateA2ReadLedger/invalidated_destination_is_never_re-read
+=== CONT  TestBatchStateA2RenamePremiseCellsInvalidate/source_absent_invalidates_both_ends
+=== CONT  TestBatchStateA2ContaminationAndForms/execute_contamination_survives_rename
+=== CONT  TestBatchStateA2ExistenceGrid/unknown+absent_cannot_derive_source_absent
+=== CONT  TestBatchStateA2RenamePremiseCellsInvalidate/alter_rename_keeps_source_existence_finding
+=== CONT  TestBatchStateA2RenamePremiseCellsInvalidate/destination_present_invalidates_both_ends
+--- PASS: TestBatchStateA3DropStateTable (0.00s)
+    --- PASS: TestBatchStateA3DropStateTable/present_complete (0.01s)
+    --- PASS: TestBatchStateA3DropStateTable/gap_disabled_stays_complete (0.01s)
+    --- PASS: TestBatchStateA3DropStateTable/unknown_if_exists (0.01s)
+    --- PASS: TestBatchStateA3DropStateTable/unknown_then_recreate (0.01s)
+    --- PASS: TestBatchStateA3DropStateTable/repeated_drop_third_blocker (0.01s)
+    --- PASS: TestBatchStateA3DropStateTable/unknown_plain (0.01s)
+    --- PASS: TestBatchStateA3DropStateTable/absent_if_exists_then_recreate (0.01s)
+    --- PASS: TestBatchStateA3DropStateTable/absent_plain_then_recreate (0.01s)
+    --- PASS: TestBatchStateA3DropStateTable/present_partial (0.01s)
+=== CONT  TestBatchStateA2ContaminationAndForms/mixed_alter_invalidates_both_ends
+=== CONT  TestBatchStateA2ContaminationAndForms/unrelated_table_survives_rename
+=== CONT  TestBatchStateA2ExistenceGrid/unknown+unknown
+=== CONT  TestBatchStateA2ExistenceGrid/present-incomplete+absent_migrates_incompletely
+=== CONT  TestBatchStateA2ContaminationAndForms/multi-pair_rename_invalidates_every_endpoint
+=== CONT  TestBatchStateA2ExistenceGrid/unknown+present
+=== CONT  TestBatchStateA2ExistenceGrid/absent+unknown
+=== CONT  TestBatchStateA2ExistenceGrid/absent+absent
+=== CONT  TestBatchStateA2ExistenceGrid/absent+present
+--- PASS: TestBatchStateA2R1PrimaryKeyPayloadMigrates (0.00s)
+    --- PASS: TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_payload_keeps_unknown_member_flags (0.00s)
+        --- PASS: TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_payload_keeps_unknown_member_flags/rename_table (0.00s)
+        --- PASS: TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_payload_keeps_unknown_member_flags/alter_rename_to (0.00s)
+    --- PASS: TestBatchStateA2R1PrimaryKeyPayloadMigrates/foreign_key_on_the_source_keeps_both_ends_unknown (0.00s)
+    --- PASS: TestBatchStateA2R1PrimaryKeyPayloadMigrates/partial_knowledge_keeps_unknown_flags_and_statistics (0.00s)
+        --- PASS: TestBatchStateA2R1PrimaryKeyPayloadMigrates/partial_knowledge_keeps_unknown_flags_and_statistics/rename_table (0.00s)
+        --- PASS: TestBatchStateA2R1PrimaryKeyPayloadMigrates/partial_knowledge_keeps_unknown_flags_and_statistics/alter_rename_to (0.00s)
+    --- PASS: TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_field_only (0.02s)
+        --- PASS: TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_field_only/rename_table (0.01s)
+        --- PASS: TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_field_only/alter_rename_to (0.01s)
+    --- PASS: TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_constraint_payload (0.03s)
+        --- PASS: TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_constraint_payload/rename_table (0.01s)
+        --- PASS: TestBatchStateA2R1PrimaryKeyPayloadMigrates/primary_key_constraint_payload/alter_rename_to (0.01s)
+=== CONT  TestBatchStateA2ExistenceGrid/present+unknown
+=== CONT  TestBatchStateA2ExistenceGrid/present+present
+--- PASS: TestBatchStateA2ReadLedger (0.00s)
+    --- PASS: TestBatchStateA2ReadLedger/destination_provider_error_aborts_without_half_post-state (0.01s)
+    --- PASS: TestBatchStateA2ReadLedger/destination_first-touch_resolves_once (0.01s)
+    --- PASS: TestBatchStateA2ReadLedger/invalidated_destination_is_never_re-read (0.01s)
+    --- PASS: TestBatchStateA2ReadLedger/second_audit_does_not_inherit_derived_state (0.02s)
+--- PASS: TestBatchStateA2RenamePremiseCellsInvalidate (0.00s)
+    --- PASS: TestBatchStateA2RenamePremiseCellsInvalidate/source_absent_invalidates_both_ends (0.01s)
+    --- PASS: TestBatchStateA2RenamePremiseCellsInvalidate/alter_rename_keeps_source_existence_finding (0.01s)
+    --- PASS: TestBatchStateA2RenamePremiseCellsInvalidate/destination_present_invalidates_both_ends (0.01s)
+=== CONT  TestBatchStateA4PrimaryKeyNullability/constraint_payload
+=== CONT  TestBatchStateA4PrimaryKeyNullability/explicit_null_invalidates
+=== CONT  TestBatchStateA4OmittedAttributesAndCharset/contradictory_table_collations_stay_unknown
+=== CONT  TestBatchStateA4OmittedAttributesAndCharset/charset_only_does_not_copy_table_collation
+=== CONT  TestBatchStateOfflineFirstPathGapProfile/mysql
+=== CONT  TestBatchStateA4OmittedAttributesAndCharset/both_omitted_use_table_defaults
+=== CONT  TestBatchStateOnlineFirstPathDerivesSequentialState/mysql
+--- PASS: TestBatchStateA4PrimaryKeyNullability (0.01s)
+    --- PASS: TestBatchStateA4PrimaryKeyNullability/constraint_payload (0.00s)
+    --- PASS: TestBatchStateA4PrimaryKeyNullability/explicit_null_invalidates (0.00s)
+=== CONT  TestBatchStateR2KnownIndexSetKeepsRealAnswers/known_empty_produces_finding
+=== CONT  TestBatchStateOnlineFirstPathDerivesSequentialState/tidb
+--- PASS: TestBatchStateA2ContaminationAndForms (0.00s)
+    --- PASS: TestBatchStateA2ContaminationAndForms/execute_contamination_survives_rename (0.01s)
+    --- PASS: TestBatchStateA2ContaminationAndForms/mixed_alter_invalidates_both_ends (0.01s)
+    --- PASS: TestBatchStateA2ContaminationAndForms/unrelated_table_survives_rename (0.01s)
+    --- PASS: TestBatchStateA2ContaminationAndForms/multi-pair_rename_invalidates_every_endpoint (0.01s)
+=== CONT  TestBatchStateR2UnknownTableStateMemberGapFacts/drop_index
+--- PASS: TestBatchStateA4OmittedAttributesAndCharset (0.01s)
+    --- PASS: TestBatchStateA4OmittedAttributesAndCharset/contradictory_table_collations_stay_unknown (0.00s)
+    --- PASS: TestBatchStateA4OmittedAttributesAndCharset/charset_only_does_not_copy_table_collation (0.00s)
+    --- PASS: TestBatchStateA4OmittedAttributesAndCharset/both_omitted_use_table_defaults (0.00s)
+=== CONT  TestBatchStateOfflineFirstPathGapProfile/tidb
+=== CONT  TestBatchStateR2KnownIndexSetKeepsRealAnswers/known_member_clean
+=== CONT  TestBatchStateR2UnknownMemberCollectionsEmitGaps/drop_index
+=== CONT  TestBatchStateR2UnknownTableStateMemberGapFacts/drop_column
+=== CONT  TestBatchStateR2UnknownMemberCollectionsEmitGaps/modify_column
+=== CONT  TestBatchStateR2UnknownMemberCollectionsEmitGaps/rename_column
+=== CONT  TestBatchStateR2UnknownMemberCollectionsEmitGaps/add_index_forbid
+--- PASS: TestBatchStateA2ExistenceGrid (0.00s)
+    --- PASS: TestBatchStateA2ExistenceGrid/present+absent_migrates (0.01s)
+    --- PASS: TestBatchStateA2ExistenceGrid/unknown+absent_cannot_derive_source_absent (0.01s)
+    --- PASS: TestBatchStateA2ExistenceGrid/absent+absent (0.01s)
+    --- PASS: TestBatchStateA2ExistenceGrid/unknown+unknown (0.01s)
+    --- PASS: TestBatchStateA2ExistenceGrid/absent+present (0.01s)
+    --- PASS: TestBatchStateA2ExistenceGrid/unknown+present (0.01s)
+    --- PASS: TestBatchStateA2ExistenceGrid/present-incomplete+absent_migrates_incompletely (0.01s)
+    --- PASS: TestBatchStateA2ExistenceGrid/present+unknown (0.01s)
+    --- PASS: TestBatchStateA2ExistenceGrid/absent+unknown (0.01s)
+    --- PASS: TestBatchStateA2ExistenceGrid/present+present (0.01s)
+=== CONT  TestBatchStateR2UnknownMemberCollectionsEmitGaps/change_column
+=== CONT  TestBatchStateR2UnknownMemberCollectionsEmitGaps/drop_column
+=== CONT  TestBatchStateR2UnknownMemberCollectionsEmitGaps/rename_index
+=== CONT  TestBatchStateA6TemplateModifiersRefusePreciseDrop/position
+=== CONT  TestBatchStateA6TemplateModifiersRefusePreciseDrop/unextracted_alter_option
+--- PASS: TestBatchStateA6TemplateModifiersRefusePreciseDrop (0.00s)
+    --- PASS: TestBatchStateA6TemplateModifiersRefusePreciseDrop/position (0.00s)
+    --- PASS: TestBatchStateA6TemplateModifiersRefusePreciseDrop/unextracted_alter_option (0.00s)
+=== CONT  TestBatchStateA6CancelAndProviderErrorPublishNothing/canceled_before_apply
+=== CONT  TestBatchStateA6CancelAndProviderErrorPublishNothing/provider_error_keeps_identity
+--- PASS: TestBatchStateOnlineFirstPathDerivesSequentialState (0.00s)
+    --- PASS: TestBatchStateOnlineFirstPathDerivesSequentialState/tidb (0.01s)
+    --- PASS: TestBatchStateOnlineFirstPathDerivesSequentialState/mysql (0.01s)
+=== CONT  TestBatchStateA6CancelAndProviderErrorPublishNothing/canceled_before_publication
+--- PASS: TestBatchStateOfflineFirstPathGapProfile (0.00s)
+    --- PASS: TestBatchStateOfflineFirstPathGapProfile/tidb (0.01s)
+    --- PASS: TestBatchStateOfflineFirstPathGapProfile/mysql (0.01s)
+--- PASS: TestBatchStateR2KnownIndexSetKeepsRealAnswers (0.00s)
+    --- PASS: TestBatchStateR2KnownIndexSetKeepsRealAnswers/known_empty_produces_finding (0.01s)
+    --- PASS: TestBatchStateR2KnownIndexSetKeepsRealAnswers/known_member_clean (0.01s)
+--- PASS: TestBatchStateR2UnknownTableStateMemberGapFacts (0.00s)
+    --- PASS: TestBatchStateR2UnknownTableStateMemberGapFacts/drop_index (0.01s)
+    --- PASS: TestBatchStateR2UnknownTableStateMemberGapFacts/drop_column (0.01s)
+--- PASS: TestBatchStateR2UnknownMemberCollectionsEmitGaps (0.00s)
+    --- PASS: TestBatchStateR2UnknownMemberCollectionsEmitGaps/modify_column (0.01s)
+    --- PASS: TestBatchStateR2UnknownMemberCollectionsEmitGaps/rename_column (0.01s)
+    --- PASS: TestBatchStateR2UnknownMemberCollectionsEmitGaps/drop_index (0.01s)
+    --- PASS: TestBatchStateR2UnknownMemberCollectionsEmitGaps/change_column (0.01s)
+    --- PASS: TestBatchStateR2UnknownMemberCollectionsEmitGaps/add_index_forbid (0.01s)
+    --- PASS: TestBatchStateR2UnknownMemberCollectionsEmitGaps/drop_column (0.01s)
+    --- PASS: TestBatchStateR2UnknownMemberCollectionsEmitGaps/rename_index (0.01s)
+--- PASS: TestBatchStateA6CancelAndProviderErrorPublishNothing (0.00s)
+    --- PASS: TestBatchStateA6CancelAndProviderErrorPublishNothing/canceled_before_apply (0.00s)
+    --- PASS: TestBatchStateA6CancelAndProviderErrorPublishNothing/canceled_before_publication (0.00s)
+    --- PASS: TestBatchStateA6CancelAndProviderErrorPublishNothing/provider_error_keeps_identity (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.428s

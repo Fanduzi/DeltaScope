@@ -1,0 +1,12 @@
+PRE-COMMIT-FIXED SUMMARY
+========================
+fix: gofmt -w internal/domain/spec/statement.go (process rc=0), restaged via git add -- that file only
+HEAD: c9ebc1202b34f123038c8a8ffff28549eda23bea  branch: milestone/mysql-tidb-ddl-completion
+staged files: 24  staged.patch: 2907 lines
+
+check results (process rc / assertion):
+  diff-check        rc=0  clean
+  decision-record   rc=0  decision-record-gate: docs/decisions/*.md present in diff, PASS
+  three-level-doc   rc=0  [three-level-doc] OK  [via /opt/homebrew/bin/bash 5.3.9]
+  gofmt -l          process rc=0  output bytes=0 (empty = formatting clean)
+  t05a7-after-fmt   rc=0  all PASS

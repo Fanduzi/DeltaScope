@@ -1,0 +1,16 @@
+{
+  "argv": [
+    "git",
+    "branch",
+    "--show-current"
+  ],
+  "cwd": "/Users/fan/GolangProjects/DeltaScope",
+  "environment_overrides": {},
+  "started_utc": "2026-10-05T09:49:13.496536+00:00",
+  "finished_utc": "2026-10-05T09:49:13.505674+00:00",
+  "returncode": 0,
+  "expected_returncode": 0,
+  "tested_code_sha": "2dbeb3dd9c87c5d01b4b4e8baed03ac5eb84bd0a",
+  "stdout": "commands/branch.stdout.txt",
+  "stderr": "commands/branch.stderr.txt"
+}

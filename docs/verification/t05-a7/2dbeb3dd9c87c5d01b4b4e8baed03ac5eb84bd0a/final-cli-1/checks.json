@@ -1,0 +1,1381 @@
+{
+  "tested_code_sha": "2dbeb3dd9c87c5d01b4b4e8baed03ac5eb84bd0a",
+  "started_utc": "2026-10-05T09:49:13.438757+00:00",
+  "finished_utc": "2026-10-05T09:49:15.203669+00:00",
+  "status": "pass",
+  "error": null,
+  "cases": [
+    {
+      "name": "mysql-at-limit-none",
+      "dialect": "mysql",
+      "input": "sql/at-limit.sql",
+      "policy": "policies/four-rules.yaml",
+      "fail_on": "none",
+      "returncode": 0,
+      "statements": 1024,
+      "status": "pass"
+    },
+    {
+      "name": "mysql-prefix-only-none",
+      "dialect": "mysql",
+      "input": "sql/prefix-only.sql",
+      "policy": "policies/four-rules.yaml",
+      "fail_on": "none",
+      "returncode": 0,
+      "statements": 1024,
+      "status": "pass"
+    },
+    {
+      "name": "mysql-over-limit-blocker",
+      "dialect": "mysql",
+      "input": "sql/over-limit.sql",
+      "policy": "policies/four-rules.yaml",
+      "fail_on": "blocker",
+      "returncode": 1,
+      "statements": 1025,
+      "status": "pass"
+    },
+    {
+      "name": "mysql-over-limit-warning",
+      "dialect": "mysql",
+      "input": "sql/over-limit.sql",
+      "policy": "policies/four-rules.yaml",
+      "fail_on": "warning",
+      "returncode": 1,
+      "statements": 1025,
+      "status": "pass"
+    },
+    {
+      "name": "mysql-over-limit-notice",
+      "dialect": "mysql",
+      "input": "sql/over-limit.sql",
+      "policy": "policies/four-rules.yaml",
+      "fail_on": "notice",
+      "returncode": 1,
+      "statements": 1025,
+      "status": "pass"
+    },
+    {
+      "name": "mysql-over-limit-none",
+      "dialect": "mysql",
+      "input": "sql/over-limit.sql",
+      "policy": "policies/four-rules.yaml",
+      "fail_on": "none",
+      "returncode": 1,
+      "statements": 1025,
+      "status": "pass"
+    },
+    {
+      "name": "mysql-over-limit-all-off",
+      "dialect": "mysql",
+      "input": "sql/over-limit.sql",
+      "policy": "policies/all-off.yaml",
+      "fail_on": "none",
+      "returncode": 1,
+      "statements": 1025,
+      "status": "pass"
+    },
+    {
+      "name": "tidb-at-limit-none",
+      "dialect": "tidb",
+      "input": "sql/at-limit.sql",
+      "policy": "policies/four-rules.yaml",
+      "fail_on": "none",
+      "returncode": 0,
+      "statements": 1024,
+      "status": "pass"
+    },
+    {
+      "name": "tidb-prefix-only-none",
+      "dialect": "tidb",
+      "input": "sql/prefix-only.sql",
+      "policy": "policies/four-rules.yaml",
+      "fail_on": "none",
+      "returncode": 0,
+      "statements": 1024,
+      "status": "pass"
+    },
+    {
+      "name": "tidb-over-limit-none",
+      "dialect": "tidb",
+      "input": "sql/over-limit.sql",
+      "policy": "policies/four-rules.yaml",
+      "fail_on": "none",
+      "returncode": 1,
+      "statements": 1025,
+      "status": "pass"
+    }
+  ],
+  "checks": [
+    {
+      "case": "head-before",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "source",
+      "check": "exact_tested_code_sha",
+      "passed": true,
+      "expected": "2dbeb3dd9c87c5d01b4b4e8baed03ac5eb84bd0a",
+      "observed": "2dbeb3dd9c87c5d01b4b4e8baed03ac5eb84bd0a"
+    },
+    {
+      "case": "tracked-clean-before",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "index-clean-before",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "status-before",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "branch",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "worktrees",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "go-version",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "build",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "binary-build-info",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "build",
+      "check": "binary_vcs_revision",
+      "passed": true
+    },
+    {
+      "case": "build",
+      "check": "binary_cgo_disabled",
+      "passed": true
+    },
+    {
+      "case": "catalog",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "policy",
+      "check": "catalog_ids_unique",
+      "passed": true
+    },
+    {
+      "case": "policy",
+      "check": "all_four_frozen_rules_exist",
+      "passed": true
+    },
+    {
+      "case": "at-limit",
+      "check": "generated_short_one_statement_per_line",
+      "passed": true,
+      "expected_statements": 1024,
+      "input_bytes": 10307
+    },
+    {
+      "case": "over-limit",
+      "check": "generated_short_one_statement_per_line",
+      "passed": true,
+      "expected_statements": 1025,
+      "input_bytes": 10317
+    },
+    {
+      "case": "prefix-only",
+      "check": "generated_short_one_statement_per_line",
+      "passed": true,
+      "expected_statements": 1024,
+      "input_bytes": 10289
+    },
+    {
+      "case": "mysql-at-limit-none",
+      "check": "no_metadata_or_budget_flags",
+      "passed": true
+    },
+    {
+      "case": "mysql-at-limit-none",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "mysql-at-limit-none",
+      "check": "aggregate_verdict",
+      "passed": true
+    },
+    {
+      "case": "mysql-at-limit-none",
+      "check": "aggregate_coverage",
+      "passed": true
+    },
+    {
+      "case": "mysql-at-limit-none",
+      "check": "summary_real_findings_only",
+      "passed": true
+    },
+    {
+      "case": "mysql-at-limit-none",
+      "check": "no_global_findings",
+      "passed": true
+    },
+    {
+      "case": "mysql-at-limit-none",
+      "check": "offline_without_schema",
+      "passed": true
+    },
+    {
+      "case": "mysql-at-limit-none",
+      "check": "gap_only_fail_threshold_weight",
+      "passed": true
+    },
+    {
+      "case": "mysql-at-limit-none",
+      "check": "loaded_rules",
+      "passed": true
+    },
+    {
+      "case": "mysql-at-limit-none",
+      "check": "only_evaluated_rules_applicable",
+      "passed": true,
+      "expected": 4,
+      "observed": 4
+    },
+    {
+      "case": "mysql-at-limit-none",
+      "check": "retained_statement_count",
+      "passed": true,
+      "expected": 1024,
+      "observed": 1024
+    },
+    {
+      "case": "mysql-at-limit-none",
+      "check": "every_statement_index_kind_raw_normalized_identity",
+      "passed": true,
+      "inspected": 1024,
+      "bad_indexes": []
+    },
+    {
+      "case": "mysql-at-limit-none",
+      "check": "every_statement_exact_coverage",
+      "passed": true,
+      "inspected": 1024,
+      "bad_indexes": []
+    },
+    {
+      "case": "mysql-at-limit-none",
+      "check": "every_statement_zero_findings_and_impact",
+      "passed": true,
+      "inspected": 1024,
+      "bad_indexes": []
+    },
+    {
+      "case": "mysql-at-limit-none",
+      "check": "only_original_create_gap_or_all_off_zero_gaps",
+      "passed": true,
+      "inspected": 1024,
+      "bad_indexes": []
+    },
+    {
+      "case": "mysql-at-limit-none",
+      "check": "exact_resource_entry_count",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "mysql-at-limit-none",
+      "check": "unchanged_unsupported_diagnostic_channel",
+      "passed": true
+    },
+    {
+      "case": "mysql-prefix-only-none",
+      "check": "no_metadata_or_budget_flags",
+      "passed": true
+    },
+    {
+      "case": "mysql-prefix-only-none",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "mysql-prefix-only-none",
+      "check": "aggregate_verdict",
+      "passed": true
+    },
+    {
+      "case": "mysql-prefix-only-none",
+      "check": "aggregate_coverage",
+      "passed": true
+    },
+    {
+      "case": "mysql-prefix-only-none",
+      "check": "summary_real_findings_only",
+      "passed": true
+    },
+    {
+      "case": "mysql-prefix-only-none",
+      "check": "no_global_findings",
+      "passed": true
+    },
+    {
+      "case": "mysql-prefix-only-none",
+      "check": "offline_without_schema",
+      "passed": true
+    },
+    {
+      "case": "mysql-prefix-only-none",
+      "check": "gap_only_fail_threshold_weight",
+      "passed": true
+    },
+    {
+      "case": "mysql-prefix-only-none",
+      "check": "loaded_rules",
+      "passed": true
+    },
+    {
+      "case": "mysql-prefix-only-none",
+      "check": "only_evaluated_rules_applicable",
+      "passed": true,
+      "expected": 3,
+      "observed": 3
+    },
+    {
+      "case": "mysql-prefix-only-none",
+      "check": "retained_statement_count",
+      "passed": true,
+      "expected": 1024,
+      "observed": 1024
+    },
+    {
+      "case": "mysql-prefix-only-none",
+      "check": "every_statement_index_kind_raw_normalized_identity",
+      "passed": true,
+      "inspected": 1024,
+      "bad_indexes": []
+    },
+    {
+      "case": "mysql-prefix-only-none",
+      "check": "every_statement_exact_coverage",
+      "passed": true,
+      "inspected": 1024,
+      "bad_indexes": []
+    },
+    {
+      "case": "mysql-prefix-only-none",
+      "check": "every_statement_zero_findings_and_impact",
+      "passed": true,
+      "inspected": 1024,
+      "bad_indexes": []
+    },
+    {
+      "case": "mysql-prefix-only-none",
+      "check": "only_original_create_gap_or_all_off_zero_gaps",
+      "passed": true,
+      "inspected": 1024,
+      "bad_indexes": []
+    },
+    {
+      "case": "mysql-prefix-only-none",
+      "check": "exact_resource_entry_count",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "mysql-prefix-only-none",
+      "check": "unchanged_unsupported_diagnostic_channel",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-blocker",
+      "check": "no_metadata_or_budget_flags",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-blocker",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 1,
+      "observed": 1
+    },
+    {
+      "case": "mysql-over-limit-blocker",
+      "check": "aggregate_verdict",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-blocker",
+      "check": "aggregate_coverage",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-blocker",
+      "check": "summary_real_findings_only",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-blocker",
+      "check": "no_global_findings",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-blocker",
+      "check": "offline_without_schema",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-blocker",
+      "check": "gap_only_fail_threshold_weight",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-blocker",
+      "check": "loaded_rules",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-blocker",
+      "check": "only_evaluated_rules_applicable",
+      "passed": true,
+      "expected": 3,
+      "observed": 3
+    },
+    {
+      "case": "mysql-over-limit-blocker",
+      "check": "retained_statement_count",
+      "passed": true,
+      "expected": 1025,
+      "observed": 1025
+    },
+    {
+      "case": "mysql-over-limit-blocker",
+      "check": "every_statement_index_kind_raw_normalized_identity",
+      "passed": true,
+      "inspected": 1025,
+      "bad_indexes": []
+    },
+    {
+      "case": "mysql-over-limit-blocker",
+      "check": "every_statement_exact_coverage",
+      "passed": true,
+      "inspected": 1025,
+      "bad_indexes": []
+    },
+    {
+      "case": "mysql-over-limit-blocker",
+      "check": "every_statement_zero_findings_and_impact",
+      "passed": true,
+      "inspected": 1025,
+      "bad_indexes": []
+    },
+    {
+      "case": "mysql-over-limit-blocker",
+      "check": "only_original_create_gap_or_all_off_zero_gaps",
+      "passed": true,
+      "inspected": 1025,
+      "bad_indexes": []
+    },
+    {
+      "case": "mysql-over-limit-blocker",
+      "check": "exact_resource_entry_count",
+      "passed": true,
+      "expected": 1,
+      "observed": 1
+    },
+    {
+      "case": "mysql-over-limit-blocker",
+      "check": "resource_identity_feature_reason_sql",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-blocker",
+      "check": "exact_bounded_resource_metadata",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-blocker",
+      "check": "unchanged_unsupported_diagnostic_channel",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-warning",
+      "check": "no_metadata_or_budget_flags",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-warning",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 1,
+      "observed": 1
+    },
+    {
+      "case": "mysql-over-limit-warning",
+      "check": "aggregate_verdict",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-warning",
+      "check": "aggregate_coverage",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-warning",
+      "check": "summary_real_findings_only",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-warning",
+      "check": "no_global_findings",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-warning",
+      "check": "offline_without_schema",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-warning",
+      "check": "gap_only_fail_threshold_weight",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-warning",
+      "check": "loaded_rules",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-warning",
+      "check": "only_evaluated_rules_applicable",
+      "passed": true,
+      "expected": 3,
+      "observed": 3
+    },
+    {
+      "case": "mysql-over-limit-warning",
+      "check": "retained_statement_count",
+      "passed": true,
+      "expected": 1025,
+      "observed": 1025
+    },
+    {
+      "case": "mysql-over-limit-warning",
+      "check": "every_statement_index_kind_raw_normalized_identity",
+      "passed": true,
+      "inspected": 1025,
+      "bad_indexes": []
+    },
+    {
+      "case": "mysql-over-limit-warning",
+      "check": "every_statement_exact_coverage",
+      "passed": true,
+      "inspected": 1025,
+      "bad_indexes": []
+    },
+    {
+      "case": "mysql-over-limit-warning",
+      "check": "every_statement_zero_findings_and_impact",
+      "passed": true,
+      "inspected": 1025,
+      "bad_indexes": []
+    },
+    {
+      "case": "mysql-over-limit-warning",
+      "check": "only_original_create_gap_or_all_off_zero_gaps",
+      "passed": true,
+      "inspected": 1025,
+      "bad_indexes": []
+    },
+    {
+      "case": "mysql-over-limit-warning",
+      "check": "exact_resource_entry_count",
+      "passed": true,
+      "expected": 1,
+      "observed": 1
+    },
+    {
+      "case": "mysql-over-limit-warning",
+      "check": "resource_identity_feature_reason_sql",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-warning",
+      "check": "exact_bounded_resource_metadata",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-warning",
+      "check": "unchanged_unsupported_diagnostic_channel",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-notice",
+      "check": "no_metadata_or_budget_flags",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-notice",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 1,
+      "observed": 1
+    },
+    {
+      "case": "mysql-over-limit-notice",
+      "check": "aggregate_verdict",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-notice",
+      "check": "aggregate_coverage",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-notice",
+      "check": "summary_real_findings_only",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-notice",
+      "check": "no_global_findings",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-notice",
+      "check": "offline_without_schema",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-notice",
+      "check": "gap_only_fail_threshold_weight",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-notice",
+      "check": "loaded_rules",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-notice",
+      "check": "only_evaluated_rules_applicable",
+      "passed": true,
+      "expected": 3,
+      "observed": 3
+    },
+    {
+      "case": "mysql-over-limit-notice",
+      "check": "retained_statement_count",
+      "passed": true,
+      "expected": 1025,
+      "observed": 1025
+    },
+    {
+      "case": "mysql-over-limit-notice",
+      "check": "every_statement_index_kind_raw_normalized_identity",
+      "passed": true,
+      "inspected": 1025,
+      "bad_indexes": []
+    },
+    {
+      "case": "mysql-over-limit-notice",
+      "check": "every_statement_exact_coverage",
+      "passed": true,
+      "inspected": 1025,
+      "bad_indexes": []
+    },
+    {
+      "case": "mysql-over-limit-notice",
+      "check": "every_statement_zero_findings_and_impact",
+      "passed": true,
+      "inspected": 1025,
+      "bad_indexes": []
+    },
+    {
+      "case": "mysql-over-limit-notice",
+      "check": "only_original_create_gap_or_all_off_zero_gaps",
+      "passed": true,
+      "inspected": 1025,
+      "bad_indexes": []
+    },
+    {
+      "case": "mysql-over-limit-notice",
+      "check": "exact_resource_entry_count",
+      "passed": true,
+      "expected": 1,
+      "observed": 1
+    },
+    {
+      "case": "mysql-over-limit-notice",
+      "check": "resource_identity_feature_reason_sql",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-notice",
+      "check": "exact_bounded_resource_metadata",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-notice",
+      "check": "unchanged_unsupported_diagnostic_channel",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-none",
+      "check": "no_metadata_or_budget_flags",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-none",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 1,
+      "observed": 1
+    },
+    {
+      "case": "mysql-over-limit-none",
+      "check": "aggregate_verdict",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-none",
+      "check": "aggregate_coverage",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-none",
+      "check": "summary_real_findings_only",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-none",
+      "check": "no_global_findings",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-none",
+      "check": "offline_without_schema",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-none",
+      "check": "gap_only_fail_threshold_weight",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-none",
+      "check": "loaded_rules",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-none",
+      "check": "only_evaluated_rules_applicable",
+      "passed": true,
+      "expected": 3,
+      "observed": 3
+    },
+    {
+      "case": "mysql-over-limit-none",
+      "check": "retained_statement_count",
+      "passed": true,
+      "expected": 1025,
+      "observed": 1025
+    },
+    {
+      "case": "mysql-over-limit-none",
+      "check": "every_statement_index_kind_raw_normalized_identity",
+      "passed": true,
+      "inspected": 1025,
+      "bad_indexes": []
+    },
+    {
+      "case": "mysql-over-limit-none",
+      "check": "every_statement_exact_coverage",
+      "passed": true,
+      "inspected": 1025,
+      "bad_indexes": []
+    },
+    {
+      "case": "mysql-over-limit-none",
+      "check": "every_statement_zero_findings_and_impact",
+      "passed": true,
+      "inspected": 1025,
+      "bad_indexes": []
+    },
+    {
+      "case": "mysql-over-limit-none",
+      "check": "only_original_create_gap_or_all_off_zero_gaps",
+      "passed": true,
+      "inspected": 1025,
+      "bad_indexes": []
+    },
+    {
+      "case": "mysql-over-limit-none",
+      "check": "exact_resource_entry_count",
+      "passed": true,
+      "expected": 1,
+      "observed": 1
+    },
+    {
+      "case": "mysql-over-limit-none",
+      "check": "resource_identity_feature_reason_sql",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-none",
+      "check": "exact_bounded_resource_metadata",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-none",
+      "check": "unchanged_unsupported_diagnostic_channel",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-all-off",
+      "check": "no_metadata_or_budget_flags",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-all-off",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 1,
+      "observed": 1
+    },
+    {
+      "case": "mysql-over-limit-all-off",
+      "check": "aggregate_verdict",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-all-off",
+      "check": "aggregate_coverage",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-all-off",
+      "check": "summary_real_findings_only",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-all-off",
+      "check": "no_global_findings",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-all-off",
+      "check": "offline_without_schema",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-all-off",
+      "check": "gap_only_fail_threshold_weight",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-all-off",
+      "check": "loaded_rules",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-all-off",
+      "check": "only_evaluated_rules_applicable",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "mysql-over-limit-all-off",
+      "check": "retained_statement_count",
+      "passed": true,
+      "expected": 1025,
+      "observed": 1025
+    },
+    {
+      "case": "mysql-over-limit-all-off",
+      "check": "every_statement_index_kind_raw_normalized_identity",
+      "passed": true,
+      "inspected": 1025,
+      "bad_indexes": []
+    },
+    {
+      "case": "mysql-over-limit-all-off",
+      "check": "every_statement_exact_coverage",
+      "passed": true,
+      "inspected": 1025,
+      "bad_indexes": []
+    },
+    {
+      "case": "mysql-over-limit-all-off",
+      "check": "every_statement_zero_findings_and_impact",
+      "passed": true,
+      "inspected": 1025,
+      "bad_indexes": []
+    },
+    {
+      "case": "mysql-over-limit-all-off",
+      "check": "only_original_create_gap_or_all_off_zero_gaps",
+      "passed": true,
+      "inspected": 1025,
+      "bad_indexes": []
+    },
+    {
+      "case": "mysql-over-limit-all-off",
+      "check": "exact_resource_entry_count",
+      "passed": true,
+      "expected": 1,
+      "observed": 1
+    },
+    {
+      "case": "mysql-over-limit-all-off",
+      "check": "resource_identity_feature_reason_sql",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-all-off",
+      "check": "exact_bounded_resource_metadata",
+      "passed": true
+    },
+    {
+      "case": "mysql-over-limit-all-off",
+      "check": "unchanged_unsupported_diagnostic_channel",
+      "passed": true
+    },
+    {
+      "case": "tidb-at-limit-none",
+      "check": "no_metadata_or_budget_flags",
+      "passed": true
+    },
+    {
+      "case": "tidb-at-limit-none",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "tidb-at-limit-none",
+      "check": "aggregate_verdict",
+      "passed": true
+    },
+    {
+      "case": "tidb-at-limit-none",
+      "check": "aggregate_coverage",
+      "passed": true
+    },
+    {
+      "case": "tidb-at-limit-none",
+      "check": "summary_real_findings_only",
+      "passed": true
+    },
+    {
+      "case": "tidb-at-limit-none",
+      "check": "no_global_findings",
+      "passed": true
+    },
+    {
+      "case": "tidb-at-limit-none",
+      "check": "offline_without_schema",
+      "passed": true
+    },
+    {
+      "case": "tidb-at-limit-none",
+      "check": "gap_only_fail_threshold_weight",
+      "passed": true
+    },
+    {
+      "case": "tidb-at-limit-none",
+      "check": "loaded_rules",
+      "passed": true
+    },
+    {
+      "case": "tidb-at-limit-none",
+      "check": "only_evaluated_rules_applicable",
+      "passed": true,
+      "expected": 4,
+      "observed": 4
+    },
+    {
+      "case": "tidb-at-limit-none",
+      "check": "retained_statement_count",
+      "passed": true,
+      "expected": 1024,
+      "observed": 1024
+    },
+    {
+      "case": "tidb-at-limit-none",
+      "check": "every_statement_index_kind_raw_normalized_identity",
+      "passed": true,
+      "inspected": 1024,
+      "bad_indexes": []
+    },
+    {
+      "case": "tidb-at-limit-none",
+      "check": "every_statement_exact_coverage",
+      "passed": true,
+      "inspected": 1024,
+      "bad_indexes": []
+    },
+    {
+      "case": "tidb-at-limit-none",
+      "check": "every_statement_zero_findings_and_impact",
+      "passed": true,
+      "inspected": 1024,
+      "bad_indexes": []
+    },
+    {
+      "case": "tidb-at-limit-none",
+      "check": "only_original_create_gap_or_all_off_zero_gaps",
+      "passed": true,
+      "inspected": 1024,
+      "bad_indexes": []
+    },
+    {
+      "case": "tidb-at-limit-none",
+      "check": "exact_resource_entry_count",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "tidb-at-limit-none",
+      "check": "unchanged_unsupported_diagnostic_channel",
+      "passed": true
+    },
+    {
+      "case": "tidb-prefix-only-none",
+      "check": "no_metadata_or_budget_flags",
+      "passed": true
+    },
+    {
+      "case": "tidb-prefix-only-none",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "tidb-prefix-only-none",
+      "check": "aggregate_verdict",
+      "passed": true
+    },
+    {
+      "case": "tidb-prefix-only-none",
+      "check": "aggregate_coverage",
+      "passed": true
+    },
+    {
+      "case": "tidb-prefix-only-none",
+      "check": "summary_real_findings_only",
+      "passed": true
+    },
+    {
+      "case": "tidb-prefix-only-none",
+      "check": "no_global_findings",
+      "passed": true
+    },
+    {
+      "case": "tidb-prefix-only-none",
+      "check": "offline_without_schema",
+      "passed": true
+    },
+    {
+      "case": "tidb-prefix-only-none",
+      "check": "gap_only_fail_threshold_weight",
+      "passed": true
+    },
+    {
+      "case": "tidb-prefix-only-none",
+      "check": "loaded_rules",
+      "passed": true
+    },
+    {
+      "case": "tidb-prefix-only-none",
+      "check": "only_evaluated_rules_applicable",
+      "passed": true,
+      "expected": 3,
+      "observed": 3
+    },
+    {
+      "case": "tidb-prefix-only-none",
+      "check": "retained_statement_count",
+      "passed": true,
+      "expected": 1024,
+      "observed": 1024
+    },
+    {
+      "case": "tidb-prefix-only-none",
+      "check": "every_statement_index_kind_raw_normalized_identity",
+      "passed": true,
+      "inspected": 1024,
+      "bad_indexes": []
+    },
+    {
+      "case": "tidb-prefix-only-none",
+      "check": "every_statement_exact_coverage",
+      "passed": true,
+      "inspected": 1024,
+      "bad_indexes": []
+    },
+    {
+      "case": "tidb-prefix-only-none",
+      "check": "every_statement_zero_findings_and_impact",
+      "passed": true,
+      "inspected": 1024,
+      "bad_indexes": []
+    },
+    {
+      "case": "tidb-prefix-only-none",
+      "check": "only_original_create_gap_or_all_off_zero_gaps",
+      "passed": true,
+      "inspected": 1024,
+      "bad_indexes": []
+    },
+    {
+      "case": "tidb-prefix-only-none",
+      "check": "exact_resource_entry_count",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "tidb-prefix-only-none",
+      "check": "unchanged_unsupported_diagnostic_channel",
+      "passed": true
+    },
+    {
+      "case": "tidb-over-limit-none",
+      "check": "no_metadata_or_budget_flags",
+      "passed": true
+    },
+    {
+      "case": "tidb-over-limit-none",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 1,
+      "observed": 1
+    },
+    {
+      "case": "tidb-over-limit-none",
+      "check": "aggregate_verdict",
+      "passed": true
+    },
+    {
+      "case": "tidb-over-limit-none",
+      "check": "aggregate_coverage",
+      "passed": true
+    },
+    {
+      "case": "tidb-over-limit-none",
+      "check": "summary_real_findings_only",
+      "passed": true
+    },
+    {
+      "case": "tidb-over-limit-none",
+      "check": "no_global_findings",
+      "passed": true
+    },
+    {
+      "case": "tidb-over-limit-none",
+      "check": "offline_without_schema",
+      "passed": true
+    },
+    {
+      "case": "tidb-over-limit-none",
+      "check": "gap_only_fail_threshold_weight",
+      "passed": true
+    },
+    {
+      "case": "tidb-over-limit-none",
+      "check": "loaded_rules",
+      "passed": true
+    },
+    {
+      "case": "tidb-over-limit-none",
+      "check": "only_evaluated_rules_applicable",
+      "passed": true,
+      "expected": 3,
+      "observed": 3
+    },
+    {
+      "case": "tidb-over-limit-none",
+      "check": "retained_statement_count",
+      "passed": true,
+      "expected": 1025,
+      "observed": 1025
+    },
+    {
+      "case": "tidb-over-limit-none",
+      "check": "every_statement_index_kind_raw_normalized_identity",
+      "passed": true,
+      "inspected": 1025,
+      "bad_indexes": []
+    },
+    {
+      "case": "tidb-over-limit-none",
+      "check": "every_statement_exact_coverage",
+      "passed": true,
+      "inspected": 1025,
+      "bad_indexes": []
+    },
+    {
+      "case": "tidb-over-limit-none",
+      "check": "every_statement_zero_findings_and_impact",
+      "passed": true,
+      "inspected": 1025,
+      "bad_indexes": []
+    },
+    {
+      "case": "tidb-over-limit-none",
+      "check": "only_original_create_gap_or_all_off_zero_gaps",
+      "passed": true,
+      "inspected": 1025,
+      "bad_indexes": []
+    },
+    {
+      "case": "tidb-over-limit-none",
+      "check": "exact_resource_entry_count",
+      "passed": true,
+      "expected": 1,
+      "observed": 1
+    },
+    {
+      "case": "tidb-over-limit-none",
+      "check": "resource_identity_feature_reason_sql",
+      "passed": true
+    },
+    {
+      "case": "tidb-over-limit-none",
+      "check": "exact_bounded_resource_metadata",
+      "passed": true
+    },
+    {
+      "case": "tidb-over-limit-none",
+      "check": "unchanged_unsupported_diagnostic_channel",
+      "passed": true
+    },
+    {
+      "case": "mysql",
+      "check": "all_1024_prefix_results_equal_real_uncut_control",
+      "passed": true,
+      "inspected": 1024
+    },
+    {
+      "case": "mysql",
+      "check": "original_first_create_gap_unchanged_at_and_over",
+      "passed": true
+    },
+    {
+      "case": "mysql",
+      "check": "common_at_limit_prefix_unchanged",
+      "passed": true,
+      "inspected": 1023
+    },
+    {
+      "case": "tidb",
+      "check": "all_1024_prefix_results_equal_real_uncut_control",
+      "passed": true,
+      "inspected": 1024
+    },
+    {
+      "case": "tidb",
+      "check": "original_first_create_gap_unchanged_at_and_over",
+      "passed": true
+    },
+    {
+      "case": "tidb",
+      "check": "common_at_limit_prefix_unchanged",
+      "passed": true,
+      "inspected": 1023
+    },
+    {
+      "case": "blocker",
+      "check": "fail_on_does_not_change_statement_results_or_resource",
+      "passed": true
+    },
+    {
+      "case": "warning",
+      "check": "fail_on_does_not_change_statement_results_or_resource",
+      "passed": true
+    },
+    {
+      "case": "notice",
+      "check": "fail_on_does_not_change_statement_results_or_resource",
+      "passed": true
+    },
+    {
+      "case": "head-after",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "source",
+      "check": "source_head_unchanged_after_proof",
+      "passed": true
+    },
+    {
+      "case": "tracked-clean-after",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "index-clean-after",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    },
+    {
+      "case": "status-after",
+      "check": "real_process_returncode",
+      "passed": true,
+      "expected": 0,
+      "observed": 0
+    }
+  ]
+}

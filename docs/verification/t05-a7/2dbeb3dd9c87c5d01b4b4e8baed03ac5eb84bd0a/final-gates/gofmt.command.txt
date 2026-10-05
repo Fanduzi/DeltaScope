@@ -1,0 +1,18 @@
+label: POST-COMMIT tested code SHA 2dbeb3dd9c87c5d01b4b4e8baed03ac5eb84bd0a
+cwd: /Users/fan/GolangProjects/DeltaScope
+argv: gofmt -l <14 task-range go files>
+files:
+internal/application/audit/coverage.go
+internal/application/audit/evaluate.go
+internal/application/audit/impact.go
+internal/application/audit/metadata.go
+internal/application/audit/resource_limit_matrix_test.go
+internal/application/audit/resource_limit_postgresql_tag_test.go
+internal/application/audit/resource_limit_public_test.go
+internal/application/audit/resource_limit_test.go
+internal/application/audit/service.go
+internal/domain/spec/statement.go
+internal/interfaces/cli/audit_resource_limit_a7_test.go
+internal/interfaces/http/audit_resource_limit_a7_test.go
+internal/interfaces/mcp/audit_resource_limit_a7_test.go
+pkg/deltascope/audit_resource_limit_a7_test.go

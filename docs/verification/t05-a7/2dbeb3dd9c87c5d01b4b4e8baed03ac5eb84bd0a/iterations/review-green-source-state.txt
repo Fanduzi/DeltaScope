@@ -1,0 +1,53 @@
+label: PRE-COMMIT (task base c9ebc12 + working diff only)
+HEAD: c9ebc1202b34f123038c8a8ffff28549eda23bea
+branch: milestone/mysql-tidb-ddl-completion
+
+== git status ==
+ M README.md
+ M README_ZH.md
+ M docs/reference/audit-capability-matrix.md
+ M internal/application/audit/README.md
+ M internal/application/audit/coverage.go
+ M internal/application/audit/evaluate.go
+ M internal/application/audit/impact.go
+ M internal/application/audit/metadata.go
+ M internal/application/audit/service.go
+ M internal/domain/spec/README.md
+ M internal/domain/spec/statement.go
+ M internal/interfaces/cli/README.md
+ M internal/interfaces/http/README.md
+ M internal/interfaces/mcp/README.md
+ M pkg/deltascope/README.md
+?? .agents/
+?? .debug-journal.md
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? docs/decisions/2026-10-05-ddl-ordered-audit-resource-limit.md
+?? docs/quality/architecture-review-2026-08-11.html
+?? internal/application/audit/resource_limit_matrix_test.go
+?? internal/application/audit/resource_limit_postgresql_tag_test.go
+?? internal/application/audit/resource_limit_public_test.go
+?? internal/application/audit/resource_limit_test.go
+?? internal/interfaces/cli/audit_resource_limit_a7_test.go
+?? internal/interfaces/http/audit_resource_limit_a7_test.go
+?? internal/interfaces/mcp/audit_resource_limit_a7_test.go
+?? pkg/deltascope/audit_resource_limit_a7_test.go
+
+== diff --stat ==
+ README.md                                 |  2 ++
+ README_ZH.md                              |  2 ++
+ docs/reference/audit-capability-matrix.md | 16 ++++++++++
+ internal/application/audit/README.md      | 14 +++++---
+ internal/application/audit/coverage.go    | 21 ++++++++++--
+ internal/application/audit/evaluate.go    | 34 ++++++++++++++------
+ internal/application/audit/impact.go      | 10 ++++--
+ internal/application/audit/metadata.go    | 53 +++++++++++++++++++++++++++----
+ internal/application/audit/service.go     | 26 +++++++++++++--
+ internal/domain/spec/README.md            |  5 ++-
+ internal/domain/spec/statement.go         | 13 +++++++-
+ internal/interfaces/cli/README.md         |  1 +
+ internal/interfaces/http/README.md        |  1 +
+ internal/interfaces/mcp/README.md         |  1 +
+ pkg/deltascope/README.md                  |  1 +
+ 15 files changed, 171 insertions(+), 29 deletions(-)

@@ -1,0 +1,31 @@
+=== go version ===
+go version go1.26.1 darwin/arm64
+
+=== branch ===
+milestone/mysql-tidb-ddl-completion
+
+=== HEAD ===
+c9ebc1202b34f123038c8a8ffff28549eda23bea
+
+=== remotes ===
+origin	git@github.com:Fanduzi/DeltaScope.git (fetch)
+origin	git@github.com:Fanduzi/DeltaScope.git (push)
+
+=== worktrees ===
+/Users/fan/GolangProjects/DeltaScope           c9ebc120 [milestone/mysql-tidb-ddl-completion]
+/private/tmp/ds-t05-a3-final.2K4NKO/doc-check  49a0f5bc (detached HEAD)
+
+=== task base ===
+c9ebc1202b34f123038c8a8ffff28549eda23bea
+Fan() <18501341937@163.com>
+Mon Oct 5 08:55:25 2026 +0800
+docs(verification): publish T05-A6 golden artifact and case records (#84)
+
+=== git status --porcelain (pre-test) ===
+?? .agents/
+?? .debug-journal.md
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? docs/quality/architecture-review-2026-08-11.html
+?? internal/application/audit/resource_limit_public_test.go

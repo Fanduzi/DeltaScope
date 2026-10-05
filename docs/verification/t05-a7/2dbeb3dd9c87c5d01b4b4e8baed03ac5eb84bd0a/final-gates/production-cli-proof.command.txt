@@ -1,0 +1,4 @@
+label: POST-COMMIT production CLI proof (lead-authored proof.py, executed verbatim)
+cwd: /Users/fan/GolangProjects/DeltaScope
+repo HEAD: 2dbeb3dd9c87c5d01b4b4e8baed03ac5eb84bd0a
+argv: python3 /tmp/ds-t05-a7.IrVZyg/proof.py --repo /Users/fan/GolangProjects/DeltaScope --proof-dir /tmp/ds-t05-a7.IrVZyg/final-cli-1 --code-sha 2dbeb3dd9c87c5d01b4b4e8baed03ac5eb84bd0a

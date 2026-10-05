@@ -1,0 +1,90 @@
+=== RUN   TestAuditSQLT05A6DropColumnFirstPath
+=== PAUSE TestAuditSQLT05A6DropColumnFirstPath
+=== RUN   TestBatchStateOnlineFirstPathDerivesSequentialState
+=== PAUSE TestBatchStateOnlineFirstPathDerivesSequentialState
+=== RUN   TestBatchStateOfflineFirstPathGapProfile
+=== PAUSE TestBatchStateOfflineFirstPathGapProfile
+=== RUN   TestEvaluateProducesReportFlowOutput
+=== PAUSE TestEvaluateProducesReportFlowOutput
+=== RUN   TestEvaluateStatementsEnrichesFindingFromCatalogMetadata
+=== PAUSE TestEvaluateStatementsEnrichesFindingFromCatalogMetadata
+=== RUN   TestEvaluateStatementsGracefullyHandlesMissingCatalogMetadata
+=== PAUSE TestEvaluateStatementsGracefullyHandlesMissingCatalogMetadata
+=== RUN   TestEvaluateStatementsBuildsAggregateExplanations
+=== PAUSE TestEvaluateStatementsBuildsAggregateExplanations
+=== RUN   TestEvaluateStatementsAddsMetadataLimitedNoteForMetadataAwareRuleWithoutMetadata
+=== PAUSE TestEvaluateStatementsAddsMetadataLimitedNoteForMetadataAwareRuleWithoutMetadata
+=== RUN   TestEvaluateStatementsAddsMetadataAvailableNoteForMetadataAwareRuleWithMetadata
+=== PAUSE TestEvaluateStatementsAddsMetadataAvailableNoteForMetadataAwareRuleWithMetadata
+=== RUN   TestEvaluateStatementsTreatsSchemaAsSufficientForSchemaAwareRules
+=== PAUSE TestEvaluateStatementsTreatsSchemaAsSufficientForSchemaAwareRules
+=== RUN   TestEvaluateStatementsTreatsTargetTableAsInsufficientForInstanceAwareRules
+=== PAUSE TestEvaluateStatementsTreatsTargetTableAsInsufficientForInstanceAwareRules
+=== RUN   TestEstimateStatementImpact
+=== PAUSE TestEstimateStatementImpact
+=== CONT  TestAuditSQLT05A6DropColumnFirstPath
+=== CONT  TestEvaluateStatementsBuildsAggregateExplanations
+=== RUN   TestAuditSQLT05A6DropColumnFirstPath/mysql
+=== CONT  TestEvaluateStatementsTreatsSchemaAsSufficientForSchemaAwareRules
+=== CONT  TestEvaluateStatementsAddsMetadataAvailableNoteForMetadataAwareRuleWithMetadata
+=== PAUSE TestAuditSQLT05A6DropColumnFirstPath/mysql
+=== CONT  TestEvaluateStatementsGracefullyHandlesMissingCatalogMetadata
+=== CONT  TestEvaluateStatementsEnrichesFindingFromCatalogMetadata
+--- PASS: TestEvaluateStatementsGracefullyHandlesMissingCatalogMetadata (0.00s)
+--- PASS: TestEvaluateStatementsAddsMetadataAvailableNoteForMetadataAwareRuleWithMetadata (0.00s)
+=== CONT  TestBatchStateOfflineFirstPathGapProfile
+=== CONT  TestBatchStateOnlineFirstPathDerivesSequentialState
+=== RUN   TestAuditSQLT05A6DropColumnFirstPath/tidb
+=== CONT  TestEvaluateStatementsAddsMetadataLimitedNoteForMetadataAwareRuleWithoutMetadata
+=== CONT  TestEstimateStatementImpact
+=== RUN   TestBatchStateOnlineFirstPathDerivesSequentialState/mysql
+=== CONT  TestEvaluateStatementsTreatsTargetTableAsInsufficientForInstanceAwareRules
+=== PAUSE TestBatchStateOnlineFirstPathDerivesSequentialState/mysql
+--- PASS: TestEvaluateStatementsEnrichesFindingFromCatalogMetadata (0.00s)
+--- PASS: TestEvaluateStatementsTreatsSchemaAsSufficientForSchemaAwareRules (0.00s)
+--- PASS: TestEvaluateStatementsBuildsAggregateExplanations (0.00s)
+--- PASS: TestEvaluateStatementsAddsMetadataLimitedNoteForMetadataAwareRuleWithoutMetadata (0.00s)
+=== CONT  TestEvaluateProducesReportFlowOutput
+=== RUN   TestEstimateStatementImpact/delete_without_where_returns_high_risk
+=== PAUSE TestAuditSQLT05A6DropColumnFirstPath/tidb
+=== CONT  TestAuditSQLT05A6DropColumnFirstPath/tidb
+=== CONT  TestAuditSQLT05A6DropColumnFirstPath/mysql
+=== PAUSE TestEstimateStatementImpact/delete_without_where_returns_high_risk
+--- PASS: TestEvaluateProducesReportFlowOutput (0.00s)
+=== RUN   TestBatchStateOfflineFirstPathGapProfile/mysql
+=== PAUSE TestBatchStateOfflineFirstPathGapProfile/mysql
+=== RUN   TestBatchStateOnlineFirstPathDerivesSequentialState/tidb
+=== PAUSE TestBatchStateOnlineFirstPathDerivesSequentialState/tidb
+=== RUN   TestEstimateStatementImpact/update_unique_equality_shape_returns_low_risk
+=== RUN   TestBatchStateOfflineFirstPathGapProfile/tidb
+=== CONT  TestBatchStateOnlineFirstPathDerivesSequentialState/tidb
+=== PAUSE TestBatchStateOfflineFirstPathGapProfile/tidb
+=== CONT  TestBatchStateOfflineFirstPathGapProfile/mysql
+=== PAUSE TestEstimateStatementImpact/update_unique_equality_shape_returns_low_risk
+=== CONT  TestBatchStateOnlineFirstPathDerivesSequentialState/mysql
+--- PASS: TestEvaluateStatementsTreatsTargetTableAsInsufficientForInstanceAwareRules (0.00s)
+=== CONT  TestBatchStateOfflineFirstPathGapProfile/tidb
+=== RUN   TestEstimateStatementImpact/join_shape_returns_high_risk_with_low_confidence
+=== PAUSE TestEstimateStatementImpact/join_shape_returns_high_risk_with_low_confidence
+=== RUN   TestEstimateStatementImpact/unknown_fallback_ignores_statement-level_subquery_facts
+=== PAUSE TestEstimateStatementImpact/unknown_fallback_ignores_statement-level_subquery_facts
+=== CONT  TestEstimateStatementImpact/delete_without_where_returns_high_risk
+=== CONT  TestEstimateStatementImpact/join_shape_returns_high_risk_with_low_confidence
+=== CONT  TestEstimateStatementImpact/unknown_fallback_ignores_statement-level_subquery_facts
+=== CONT  TestEstimateStatementImpact/update_unique_equality_shape_returns_low_risk
+--- PASS: TestEstimateStatementImpact (0.00s)
+    --- PASS: TestEstimateStatementImpact/delete_without_where_returns_high_risk (0.00s)
+    --- PASS: TestEstimateStatementImpact/join_shape_returns_high_risk_with_low_confidence (0.00s)
+    --- PASS: TestEstimateStatementImpact/unknown_fallback_ignores_statement-level_subquery_facts (0.00s)
+    --- PASS: TestEstimateStatementImpact/update_unique_equality_shape_returns_low_risk (0.00s)
+--- PASS: TestBatchStateOnlineFirstPathDerivesSequentialState (0.00s)
+    --- PASS: TestBatchStateOnlineFirstPathDerivesSequentialState/mysql (0.01s)
+    --- PASS: TestBatchStateOnlineFirstPathDerivesSequentialState/tidb (0.01s)
+--- PASS: TestAuditSQLT05A6DropColumnFirstPath (0.00s)
+    --- PASS: TestAuditSQLT05A6DropColumnFirstPath/mysql (0.01s)
+    --- PASS: TestAuditSQLT05A6DropColumnFirstPath/tidb (0.01s)
+--- PASS: TestBatchStateOfflineFirstPathGapProfile (0.00s)
+    --- PASS: TestBatchStateOfflineFirstPathGapProfile/mysql (0.01s)
+    --- PASS: TestBatchStateOfflineFirstPathGapProfile/tidb (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.322s

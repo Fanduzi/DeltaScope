@@ -1,0 +1,25 @@
+ README.md                                          |    2 +
+ README_ZH.md                                       |    2 +
+ .../2026-10-05-ddl-ordered-audit-resource-limit.md |   62 ++
+ docs/reference/audit-capability-matrix.md          |   16 +
+ internal/application/audit/README.md               |   14 +-
+ internal/application/audit/coverage.go             |   21 +-
+ internal/application/audit/evaluate.go             |   34 +-
+ internal/application/audit/impact.go               |   10 +-
+ internal/application/audit/metadata.go             |   53 +-
+ .../audit/resource_limit_matrix_test.go            | 1131 ++++++++++++++++++++
+ .../audit/resource_limit_postgresql_tag_test.go    |  216 ++++
+ .../audit/resource_limit_public_test.go            |   58 +
+ internal/application/audit/resource_limit_test.go  |  388 +++++++
+ internal/application/audit/service.go              |   26 +-
+ internal/domain/spec/README.md                     |    5 +-
+ internal/domain/spec/statement.go                  |   13 +-
+ internal/interfaces/cli/README.md                  |    1 +
+ .../interfaces/cli/audit_resource_limit_a7_test.go |  124 +++
+ internal/interfaces/http/README.md                 |    1 +
+ .../http/audit_resource_limit_a7_test.go           |  114 ++
+ internal/interfaces/mcp/README.md                  |    1 +
+ .../interfaces/mcp/audit_resource_limit_a7_test.go |  109 ++
+ pkg/deltascope/README.md                           |    1 +
+ pkg/deltascope/audit_resource_limit_a7_test.go     |   71 ++
+ 24 files changed, 2444 insertions(+), 29 deletions(-)

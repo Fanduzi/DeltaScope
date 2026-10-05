@@ -1,0 +1,2 @@
+# github.com/Fanduzi/DeltaScope/internal/application/audit [github.com/Fanduzi/DeltaScope/internal/application/audit.test]
+internal/application/audit/resource_limit_postgresql_tag_test.go:21:30: "CREATE TABLE t (id INT PRIMARY KEY);\n" + strings.Repeat("ALTER TABLE t ADD COLUMN c INT;\n", 1024) (value of type string) is not constant

@@ -1,0 +1,4 @@
+label: PRE-COMMIT
+argv: go test -count=1 ./internal/application/audit -run 'TestBatchState(OnlineFirstPath|Offline|ProviderSnapshot)|TestEvaluate|TestAuditSQLT05A6DropColumnFirstPath|TestEstimateStatementImpact' -v
+cwd: /Users/fan/GolangProjects/DeltaScope
+head: c9ebc1202b34f123038c8a8ffff28549eda23bea

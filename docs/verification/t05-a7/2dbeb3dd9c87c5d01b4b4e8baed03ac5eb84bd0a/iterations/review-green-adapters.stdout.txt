@@ -1,0 +1,42 @@
+=== RUN   TestT05A7AuditBudgetsOrderedStatements
+--- PASS: TestT05A7AuditBudgetsOrderedStatements (0.02s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.598s
+=== RUN   TestT05A7OrderedStatementBudgetCLI
+=== RUN   TestT05A7OrderedStatementBudgetCLI/fail_on_blocker
+=== RUN   TestT05A7OrderedStatementBudgetCLI/fail_on_warning
+=== RUN   TestT05A7OrderedStatementBudgetCLI/fail_on_notice
+=== RUN   TestT05A7OrderedStatementBudgetCLI/fail_on_none
+=== RUN   TestT05A7OrderedStatementBudgetCLI/parser_error_priority
+--- PASS: TestT05A7OrderedStatementBudgetCLI (0.08s)
+    --- PASS: TestT05A7OrderedStatementBudgetCLI/fail_on_blocker (0.02s)
+    --- PASS: TestT05A7OrderedStatementBudgetCLI/fail_on_warning (0.02s)
+    --- PASS: TestT05A7OrderedStatementBudgetCLI/fail_on_notice (0.02s)
+    --- PASS: TestT05A7OrderedStatementBudgetCLI/fail_on_none (0.02s)
+    --- PASS: TestT05A7OrderedStatementBudgetCLI/parser_error_priority (0.02s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/cli	1.199s
+=== RUN   TestHandlerT05A7OrderedStatementBudget
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /healthz                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func1 (8 handlers)
+[GIN-debug] GET    /readyz                   --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func2 (8 handlers)
+[GIN-debug] GET    /version                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func3 (8 handlers)
+[GIN-debug] GET    /v1/rules                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func4 (8 handlers)
+[GIN-debug] GET    /v1/rules/:rule_id        --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func5 (8 handlers)
+[GIN-debug] GET    /v1/capabilities          --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func6 (8 handlers)
+[GIN-debug] POST   /v1/audit                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func7 (8 handlers)
+[GIN-debug] POST   /v1/query-access/analyze  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func8 (8 handlers)
+[GIN-debug] GET    /metrics                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.WrapH.func13 (8 handlers)
+2026/10/05 17:37:09 {"timestamp":"2026-10-05T09:37:09Z","level":"info","msg":"http request","method":"POST","path":"/v1/audit","status":400,"duration_ms":31,"request_id":"req-e804b8d7c8be15c7a5055598"}
+--- PASS: TestHandlerT05A7OrderedStatementBudget (0.03s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/http	1.574s
+=== RUN   TestAuditSQLT05A7OrderedStatementBudget
+=== PAUSE TestAuditSQLT05A7OrderedStatementBudget
+=== CONT  TestAuditSQLT05A7OrderedStatementBudget
+--- PASS: TestAuditSQLT05A7OrderedStatementBudget (0.02s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/mcp	0.939s

@@ -1,0 +1,7 @@
+label: POST-COMMIT three-level-doc substantive check in task-owned validation worktree
+worktree: /tmp/ds-t05-a7.IrVZyg/doc-check
+worktree HEAD (task base): c9ebc1202b34f123038c8a8ffff28549eda23bea
+applied index write-tree: 87b582db56d02f1f878b87368d2b3b08603d52ad
+equals code tree 2dbeb3dd^{tree}: yes (verified)
+staged names count: 24
+argv: /opt/homebrew/bin/bash /Users/fan/.agents/skills/check-three-level-doc/scripts/check_three_level_doc.sh --staged

@@ -1,0 +1,4 @@
+argv: CGO_ENABLED=1 go test -tags postgresql -count=1 ./internal/application/audit -run 'T05A7|TestBatchStatePostgreSQL' -v
+cwd: /Users/fan/GolangProjects/DeltaScope
+HEAD: c9ebc1202b34f123038c8a8ffff28549eda23bea
+label: PRE-COMMIT task-base c9ebc12 + T05-A7 diff + matrix g2-5 + postgresql tag file

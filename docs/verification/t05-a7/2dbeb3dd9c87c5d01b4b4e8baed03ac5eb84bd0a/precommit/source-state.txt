@@ -1,0 +1,39 @@
+label: PRE-COMMIT staged-diff verification
+cwd: /Users/fan/GolangProjects/DeltaScope
+HEAD: c9ebc1202b34f123038c8a8ffff28549eda23bea
+branch: milestone/mysql-tidb-ddl-completion
+date: 2026-10-05T09:39:51Z
+
+== staged files ==
+README.md
+README_ZH.md
+docs/decisions/2026-10-05-ddl-ordered-audit-resource-limit.md
+docs/reference/audit-capability-matrix.md
+internal/application/audit/README.md
+internal/application/audit/coverage.go
+internal/application/audit/evaluate.go
+internal/application/audit/impact.go
+internal/application/audit/metadata.go
+internal/application/audit/resource_limit_matrix_test.go
+internal/application/audit/resource_limit_postgresql_tag_test.go
+internal/application/audit/resource_limit_public_test.go
+internal/application/audit/resource_limit_test.go
+internal/application/audit/service.go
+internal/domain/spec/README.md
+internal/domain/spec/statement.go
+internal/interfaces/cli/README.md
+internal/interfaces/cli/audit_resource_limit_a7_test.go
+internal/interfaces/http/README.md
+internal/interfaces/http/audit_resource_limit_a7_test.go
+internal/interfaces/mcp/README.md
+internal/interfaces/mcp/audit_resource_limit_a7_test.go
+pkg/deltascope/README.md
+pkg/deltascope/audit_resource_limit_a7_test.go
+
+== unstaged/untracked (context, not checked) ==
+?? .agents/
+?? .debug-journal.md
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? docs/quality/architecture-review-2026-08-11.html

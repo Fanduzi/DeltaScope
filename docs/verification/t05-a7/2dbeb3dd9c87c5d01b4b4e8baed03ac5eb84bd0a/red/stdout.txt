@@ -1,0 +1,11 @@
+=== RUN   TestT05A7AuditSQLDefaultBudget
+=== RUN   TestT05A7AuditSQLDefaultBudget/mysql
+    resource_limit_public_test.go:34: resource entries = 0, want 1; final coverage=complete aggregate=unverified err=<nil>
+=== RUN   TestT05A7AuditSQLDefaultBudget/tidb
+    resource_limit_public_test.go:34: resource entries = 0, want 1; final coverage=complete aggregate=unverified err=<nil>
+--- FAIL: TestT05A7AuditSQLDefaultBudget (0.05s)
+    --- FAIL: TestT05A7AuditSQLDefaultBudget/mysql (0.03s)
+    --- FAIL: TestT05A7AuditSQLDefaultBudget/tidb (0.02s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.694s
+FAIL

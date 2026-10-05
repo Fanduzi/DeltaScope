@@ -1,0 +1,36 @@
+label: PRE-COMMIT
+
+=== HEAD ===
+c9ebc1202b34f123038c8a8ffff28549eda23bea
+
+=== git status --porcelain ===
+ M internal/application/audit/README.md
+ M internal/application/audit/coverage.go
+ M internal/application/audit/evaluate.go
+ M internal/application/audit/impact.go
+ M internal/application/audit/metadata.go
+ M internal/application/audit/service.go
+ M internal/domain/spec/README.md
+ M internal/domain/spec/statement.go
+?? .agents/
+?? .debug-journal.md
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? docs/quality/architecture-review-2026-08-11.html
+?? internal/application/audit/resource_limit_public_test.go
+?? internal/application/audit/resource_limit_test.go
+
+=== git diff --stat (tracked) ===
+ internal/application/audit/README.md   | 12 ++++---
+ internal/application/audit/coverage.go | 21 +++++++++--
+ internal/application/audit/evaluate.go | 34 +++++++++++++-----
+ internal/application/audit/impact.go   | 10 ++++--
+ internal/application/audit/metadata.go | 65 ++++++++++++++++++++++++++++------
+ internal/application/audit/service.go  | 36 +++++++++++++++++--
+ internal/domain/spec/README.md         |  5 ++-
+ internal/domain/spec/statement.go      | 23 +++++++++++-
+ 8 files changed, 172 insertions(+), 34 deletions(-)
+
+=== cmp public test vs red copy ===
+BYTE_IDENTICAL

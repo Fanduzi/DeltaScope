@@ -1,0 +1,4 @@
+label: POST-COMMIT tested code SHA 2dbeb3dd9c87c5d01b4b4e8baed03ac5eb84bd0a
+cwd: /Users/fan/GolangProjects/DeltaScope
+env: CGO_ENABLED=1
+argv: go test -tags postgresql -count=1 ./internal/application/audit -run T05A7 -v

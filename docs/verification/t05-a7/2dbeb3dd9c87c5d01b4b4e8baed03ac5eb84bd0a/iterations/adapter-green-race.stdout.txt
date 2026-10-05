@@ -1,0 +1,42 @@
+=== RUN   TestT05A7RequestIsolation
+=== RUN   TestT05A7RequestIsolation/mysql
+=== RUN   TestT05A7RequestIsolation/tidb
+--- PASS: TestT05A7RequestIsolation (0.11s)
+    --- PASS: TestT05A7RequestIsolation/mysql (0.06s)
+    --- PASS: TestT05A7RequestIsolation/tidb (0.05s)
+=== RUN   TestT05A7ConcurrentFirstPath
+=== RUN   TestT05A7ConcurrentFirstPath/mysql/limit_0
+=== PAUSE TestT05A7ConcurrentFirstPath/mysql/limit_0
+=== RUN   TestT05A7ConcurrentFirstPath/mysql/limit_1
+=== PAUSE TestT05A7ConcurrentFirstPath/mysql/limit_1
+=== RUN   TestT05A7ConcurrentFirstPath/mysql/limit_2
+=== PAUSE TestT05A7ConcurrentFirstPath/mysql/limit_2
+=== RUN   TestT05A7ConcurrentFirstPath/mysql/limit_3
+=== PAUSE TestT05A7ConcurrentFirstPath/mysql/limit_3
+=== RUN   TestT05A7ConcurrentFirstPath/tidb/limit_0
+=== PAUSE TestT05A7ConcurrentFirstPath/tidb/limit_0
+=== RUN   TestT05A7ConcurrentFirstPath/tidb/limit_1
+=== PAUSE TestT05A7ConcurrentFirstPath/tidb/limit_1
+=== RUN   TestT05A7ConcurrentFirstPath/tidb/limit_2
+=== PAUSE TestT05A7ConcurrentFirstPath/tidb/limit_2
+=== RUN   TestT05A7ConcurrentFirstPath/tidb/limit_3
+=== PAUSE TestT05A7ConcurrentFirstPath/tidb/limit_3
+=== CONT  TestT05A7ConcurrentFirstPath/mysql/limit_2
+=== CONT  TestT05A7ConcurrentFirstPath/tidb/limit_2
+=== CONT  TestT05A7ConcurrentFirstPath/mysql/limit_3
+=== CONT  TestT05A7ConcurrentFirstPath/tidb/limit_1
+=== CONT  TestT05A7ConcurrentFirstPath/mysql/limit_1
+=== CONT  TestT05A7ConcurrentFirstPath/tidb/limit_0
+=== CONT  TestT05A7ConcurrentFirstPath/mysql/limit_0
+=== CONT  TestT05A7ConcurrentFirstPath/tidb/limit_3
+--- PASS: TestT05A7ConcurrentFirstPath (0.00s)
+    --- PASS: TestT05A7ConcurrentFirstPath/tidb/limit_2 (0.05s)
+    --- PASS: TestT05A7ConcurrentFirstPath/mysql/limit_3 (0.05s)
+    --- PASS: TestT05A7ConcurrentFirstPath/mysql/limit_1 (0.05s)
+    --- PASS: TestT05A7ConcurrentFirstPath/tidb/limit_3 (0.05s)
+    --- PASS: TestT05A7ConcurrentFirstPath/mysql/limit_0 (0.05s)
+    --- PASS: TestT05A7ConcurrentFirstPath/tidb/limit_0 (0.05s)
+    --- PASS: TestT05A7ConcurrentFirstPath/mysql/limit_2 (0.05s)
+    --- PASS: TestT05A7ConcurrentFirstPath/tidb/limit_1 (0.06s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	1.736s

@@ -1,0 +1,11 @@
+{
+  "tested_code_sha": "2dbeb3dd9c87c5d01b4b4e8baed03ac5eb84bd0a",
+  "executable": "/private/tmp/ds-t05-a7.IrVZyg/final-cli-1/deltascope",
+  "sha256": "2e0125dbaa95c830a5ec1a1430cbbd0532368e3d6426d446275074e8796a76b4",
+  "size_bytes": 33157554,
+  "build_environment": {
+    "CGO_ENABLED": "0"
+  },
+  "binary_archived": false,
+  "build_info": "commands/binary-build-info.stdout.txt"
+}

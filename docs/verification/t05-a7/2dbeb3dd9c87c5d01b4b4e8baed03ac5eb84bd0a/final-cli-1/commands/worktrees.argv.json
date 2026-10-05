@@ -1,0 +1,6 @@
+[
+  "git",
+  "worktree",
+  "list",
+  "--porcelain"
+]

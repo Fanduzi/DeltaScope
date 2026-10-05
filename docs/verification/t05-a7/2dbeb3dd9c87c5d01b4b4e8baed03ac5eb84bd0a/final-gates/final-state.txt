@@ -1,0 +1,29 @@
+label: POST-COMMIT final state
+cwd: /Users/fan/GolangProjects/DeltaScope
+HEAD after all gates: 2dbeb3dd9c87c5d01b4b4e8baed03ac5eb84bd0a
+branch: milestone/mysql-tidb-ddl-completion
+
+== status ==
+?? .agents/
+?? .debug-journal.md
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? docs/quality/architecture-review-2026-08-11.html
+
+== worktrees ==
+/Users/fan/GolangProjects/DeltaScope           2dbeb3dd [milestone/mysql-tidb-ddl-completion]
+/private/tmp/ds-t05-a3-final.2K4NKO/doc-check  49a0f5bc (detached HEAD)
+/private/tmp/ds-t05-a7.IrVZyg/doc-check        2dbeb3dd (detached HEAD)
+
+== final-cli-1 contents ==
+binary-identity.json
+catalog.json
+checks.json
+cli
+commands
+deltascope
+oracle.json
+policies
+policy-binding.json
+sql

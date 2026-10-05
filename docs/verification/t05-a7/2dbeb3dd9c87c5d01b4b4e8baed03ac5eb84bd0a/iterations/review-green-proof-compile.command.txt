@@ -1,0 +1,2 @@
+cwd: /Users/fan/GolangProjects/DeltaScope
+argv: python3 -m py_compile /tmp/ds-t05-a7.IrVZyg/proof.py

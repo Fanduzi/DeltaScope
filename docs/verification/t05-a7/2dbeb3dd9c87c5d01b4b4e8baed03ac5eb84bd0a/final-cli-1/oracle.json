@@ -1,0 +1,104 @@
+{
+  "origin": "Frozen user T05-A7 contract; literal expectations authored before final code-SHA execution, never generated from actual outputs",
+  "limit": 1024,
+  "resource_feature": "audit.resource_limit",
+  "resource_reason": "ordered-state statement budget exhausted",
+  "original_offline_gap": {
+    "rule_id": "ddl.table.exists.create.forbid",
+    "reason_code": "unknown_table_state",
+    "required_facts": [
+      "target_table.existence"
+    ]
+  },
+  "case_fields": [
+    "name",
+    "dialect",
+    "input",
+    "policy",
+    "fail_on",
+    "expected_rc"
+  ],
+  "cases": [
+    [
+      "mysql-at-limit-none",
+      "mysql",
+      "at-limit",
+      "four-rules",
+      "none",
+      0
+    ],
+    [
+      "mysql-prefix-only-none",
+      "mysql",
+      "prefix-only",
+      "four-rules",
+      "none",
+      0
+    ],
+    [
+      "mysql-over-limit-blocker",
+      "mysql",
+      "over-limit",
+      "four-rules",
+      "blocker",
+      1
+    ],
+    [
+      "mysql-over-limit-warning",
+      "mysql",
+      "over-limit",
+      "four-rules",
+      "warning",
+      1
+    ],
+    [
+      "mysql-over-limit-notice",
+      "mysql",
+      "over-limit",
+      "four-rules",
+      "notice",
+      1
+    ],
+    [
+      "mysql-over-limit-none",
+      "mysql",
+      "over-limit",
+      "four-rules",
+      "none",
+      1
+    ],
+    [
+      "mysql-over-limit-all-off",
+      "mysql",
+      "over-limit",
+      "all-off",
+      "none",
+      1
+    ],
+    [
+      "tidb-at-limit-none",
+      "tidb",
+      "at-limit",
+      "four-rules",
+      "none",
+      0
+    ],
+    [
+      "tidb-prefix-only-none",
+      "tidb",
+      "prefix-only",
+      "four-rules",
+      "none",
+      0
+    ],
+    [
+      "tidb-over-limit-none",
+      "tidb",
+      "over-limit",
+      "four-rules",
+      "none",
+      1
+    ]
+  ],
+  "prefix_control": "The additional prefix-only input contains the first 1024 over-limit statements, permitting exact full-prefix equality without confusing the at-limit INDEX with the over-limit SELECT at index 1023."
+}
