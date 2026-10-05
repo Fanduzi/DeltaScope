@@ -1,0 +1,669 @@
+{
+  "case_id": "T05.meta.t05-a5-mysql84-rename-rebind",
+  "kind": "cli_metadata",
+  "cli_case": "t05-a5-mysql84-rename-rebind",
+  "anchor": "mysql84",
+  "dialect": "mysql",
+  "input_sql": "CREATE TABLE t (c INT PRIMARY KEY, k INT, KEY idx_c(c), UNIQUE KEY uk_c_k(c, k)); ALTER TABLE t RENAME COLUMN c TO c2; ALTER TABLE t MODIFY COLUMN c2 BIGINT NOT NULL; CREATE INDEX ix_new ON t(c2);",
+  "policy_profile": "t05-a5-column-identity-isolated",
+  "policy_path": "/private/tmp/ds-t05-a6-golden-02843c405bcfbf912b0e9528e3cba99d7ac1f34b-r2/T05/golden-policy-t05-a5-column-identity-isolated.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW"
+  },
+  "expected": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 4,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete",
+      "complete",
+      "complete",
+      "complete"
+    ],
+    "statement_sql": [
+      "CREATE TABLE t (c INT PRIMARY KEY, k INT, KEY idx_c(c), UNIQUE KEY uk_c_k(c, k));",
+      "ALTER TABLE t RENAME COLUMN c TO c2;",
+      "ALTER TABLE t MODIFY COLUMN c2 BIGINT NOT NULL;",
+      "CREATE INDEX ix_new ON t(c2);"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 11,
+    "statement_indices": [
+      0,
+      1,
+      2,
+      3
+    ]
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:8.4.10",
+      "image_digest": "mysql@sha256:c592c15aaf4a1961e15d82eb31ea5987dda862d1c4b1e93424438c0e91dc1f8d",
+      "container": "deltascope-ddl-golden-mysql84",
+      "reachable": true,
+      "version": "8.4.10"
+    },
+    "setup": [
+      {
+        "name": "ensure t absent",
+        "sql": "DROP TABLE IF EXISTS t",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "verify": [
+          {
+            "assert": "t absent before audit",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ]
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit did not create t",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "0",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      }
+    ],
+    "execute": [
+      {
+        "name": "driver statement 0",
+        "sql": "CREATE TABLE t (c INT PRIMARY KEY, k INT, KEY idx_c(c), UNIQUE KEY uk_c_k(c, k))",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "verify": [
+          {
+            "assert": "columns are c then k",
+            "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "c,k",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          },
+          {
+            "assert": "primary key is c",
+            "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+            "rc": 0,
+            "output": "c",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          },
+          {
+            "assert": "idx_c references c",
+            "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_c'",
+            "rc": 0,
+            "output": "c",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          },
+          {
+            "assert": "uk_c_k references c then k",
+            "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='uk_c_k'",
+            "rc": 0,
+            "output": "c,k",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          },
+          {
+            "assert": "c is not null",
+            "sql": "SELECT CONCAT(DATA_TYPE,':',IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+            "rc": 0,
+            "output": "int:NO",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          },
+          {
+            "assert": "k stays nullable",
+            "sql": "SELECT CONCAT(DATA_TYPE,':',IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='k'",
+            "rc": 0,
+            "output": "int:YES",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ]
+      },
+      {
+        "name": "driver statement 1",
+        "sql": "ALTER TABLE t RENAME COLUMN c TO c2",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "verify": [
+          {
+            "assert": "columns are c2 then k",
+            "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "c2,k",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          },
+          {
+            "assert": "primary key moved to c2",
+            "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+            "rc": 0,
+            "output": "c2",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          },
+          {
+            "assert": "idx_c name stays and references c2",
+            "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_c'",
+            "rc": 0,
+            "output": "c2",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          },
+          {
+            "assert": "uk_c_k keeps c2 then k",
+            "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='uk_c_k'",
+            "rc": 0,
+            "output": "c2,k",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          },
+          {
+            "assert": "c2 stays not null",
+            "sql": "SELECT CONCAT(DATA_TYPE,':',IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c2'",
+            "rc": 0,
+            "output": "int:NO",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          },
+          {
+            "assert": "old c is gone",
+            "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+            "rc": 0,
+            "output": "0",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          },
+          {
+            "assert": "k is unchanged",
+            "sql": "SELECT CONCAT(DATA_TYPE,':',IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='k'",
+            "rc": 0,
+            "output": "int:YES",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ]
+      },
+      {
+        "name": "driver statement 2",
+        "sql": "ALTER TABLE t MODIFY COLUMN c2 BIGINT NOT NULL",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "verify": [
+          {
+            "assert": "c2 widened and stays not null",
+            "sql": "SELECT CONCAT(DATA_TYPE,':',IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c2'",
+            "rc": 0,
+            "output": "bigint:NO",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ]
+      },
+      {
+        "name": "driver statement 3",
+        "sql": "CREATE INDEX ix_new ON t(c2)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "verify": [
+          {
+            "assert": "ix_new references c2",
+            "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='ix_new'",
+            "rc": 0,
+            "output": "c2",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ]
+      }
+    ],
+    "structure": [
+      {
+        "assert": "t exists",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "1",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "columns are c2 then k",
+        "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "c2,k",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "primary key is c2",
+        "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+        "rc": 0,
+        "output": "c2",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "idx_c still named idx_c and references c2",
+        "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_c'",
+        "rc": 0,
+        "output": "c2",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "uk_c_k keeps order c2,k",
+        "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='uk_c_k'",
+        "rc": 0,
+        "output": "c2,k",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "c2 is not null bigint",
+        "sql": "SELECT CONCAT(DATA_TYPE,':',IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c2'",
+        "rc": 0,
+        "output": "bigint:NO",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "k stays nullable int",
+        "sql": "SELECT CONCAT(DATA_TYPE,':',IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='k'",
+        "rc": 0,
+        "output": "int:YES",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "ix_new references c2",
+        "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='ix_new'",
+        "rc": 0,
+        "output": "c2",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "old c is absent",
+        "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+        "rc": 0,
+        "output": "0",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      }
+    ],
+    "teardown": [
+      {
+        "name": "drop fixture",
+        "sql": "DROP TABLE IF EXISTS t",
+        "rc": 0,
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "verify": [
+          {
+            "assert": "no residual t",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ]
+      }
+    ],
+    "exit": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":4,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t (c INT PRIMARY KEY, k INT, KEY idx_c(c), UNIQUE KEY uk_c_k(c, k));\",\"normalized_sql\":\"CREATE TABLE t (c INT PRIMARY KEY, k INT, KEY idx_c(c), UNIQUE KEY uk_c_k(c, k))\",\"coverage\":{\"status\":\"complete\"}},{\"index\":1,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t RENAME COLUMN c TO c2;\",\"normalized_sql\":\"ALTER TABLE t RENAME COLUMN c TO c2\",\"coverage\":{\"status\":\"complete\"}},{\"index\":2,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t MODIFY COLUMN c2 BIGINT NOT NULL;\",\"normalized_sql\":\"ALTER TABLE t MODIFY COLUMN c2 BIGINT NOT NULL\",\"coverage\":{\"status\":\"complete\"}},{\"index\":3,\"kind\":\"ddl\",\"raw_sql\":\"CREATE INDEX ix_new ON t(c2);\",\"normalized_sql\":\"CREATE INDEX ix_new ON t(c2)\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.4.10\",\"major\":8,\"minor\":4,\"patch\":10,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":11,\"applicable\":8,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "pass",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 4,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t (c INT PRIMARY KEY, k INT, KEY idx_c(c), UNIQUE KEY uk_c_k(c, k));",
+          "normalized_sql": "CREATE TABLE t (c INT PRIMARY KEY, k INT, KEY idx_c(c), UNIQUE KEY uk_c_k(c, k))",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 1,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t RENAME COLUMN c TO c2;",
+          "normalized_sql": "ALTER TABLE t RENAME COLUMN c TO c2",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 2,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t MODIFY COLUMN c2 BIGINT NOT NULL;",
+          "normalized_sql": "ALTER TABLE t MODIFY COLUMN c2 BIGINT NOT NULL",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 3,
+          "kind": "ddl",
+          "raw_sql": "CREATE INDEX ix_new ON t(c2);",
+          "normalized_sql": "CREATE INDEX ix_new ON t(c2)",
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "8.4.10",
+        "major": 8,
+        "minor": 4,
+        "patch": 10,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 11,
+        "applicable": 8,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.4.10",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "8.4.10"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "8.4.10",
+        "major": 8,
+        "minor": 4,
+        "patch": 10,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.4.10' expected_contains='8.4.10'"
+    },
+    {
+      "name": "setup ensure t absent return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "setup ensure t absent: t absent before audit",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='pass'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=4 expected=4"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=11"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0, 1, 2, 3]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete', 'complete', 'complete', 'complete']"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['CREATE TABLE t (c INT PRIMARY KEY, k INT, KEY idx_c(c), UNIQUE KEY uk_c_k(c, k));', 'ALTER TABLE t RENAME COLUMN c TO c2;', 'ALTER TABLE t MODIFY COLUMN c2 BIGINT NOT NULL;', 'CREATE INDEX ix_new ON t(c2);'] expected=['CREATE TABLE t (c INT PRIMARY KEY, k INT, KEY idx_c(c), UNIQUE KEY uk_c_k(c, k));', 'ALTER TABLE t RENAME COLUMN c TO c2;', 'ALTER TABLE t MODIFY COLUMN c2 BIGINT NOT NULL;', 'CREATE INDEX ix_new ON t(c2);']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "fail_on_triggered",
+      "ok": true,
+      "detail": "fail_on_triggered=False"
+    },
+    {
+      "name": "post-verify audit did not create t",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute driver statement 0 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "execute driver statement 0: columns are c then k",
+      "ok": true,
+      "detail": "rc=0 output='c,k' expected='c,k'"
+    },
+    {
+      "name": "execute driver statement 0: primary key is c",
+      "ok": true,
+      "detail": "rc=0 output='c' expected='c'"
+    },
+    {
+      "name": "execute driver statement 0: idx_c references c",
+      "ok": true,
+      "detail": "rc=0 output='c' expected='c'"
+    },
+    {
+      "name": "execute driver statement 0: uk_c_k references c then k",
+      "ok": true,
+      "detail": "rc=0 output='c,k' expected='c,k'"
+    },
+    {
+      "name": "execute driver statement 0: c is not null",
+      "ok": true,
+      "detail": "rc=0 output='int:NO' expected='int:NO'"
+    },
+    {
+      "name": "execute driver statement 0: k stays nullable",
+      "ok": true,
+      "detail": "rc=0 output='int:YES' expected='int:YES'"
+    },
+    {
+      "name": "execute driver statement 1 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "execute driver statement 1: columns are c2 then k",
+      "ok": true,
+      "detail": "rc=0 output='c2,k' expected='c2,k'"
+    },
+    {
+      "name": "execute driver statement 1: primary key moved to c2",
+      "ok": true,
+      "detail": "rc=0 output='c2' expected='c2'"
+    },
+    {
+      "name": "execute driver statement 1: idx_c name stays and references c2",
+      "ok": true,
+      "detail": "rc=0 output='c2' expected='c2'"
+    },
+    {
+      "name": "execute driver statement 1: uk_c_k keeps c2 then k",
+      "ok": true,
+      "detail": "rc=0 output='c2,k' expected='c2,k'"
+    },
+    {
+      "name": "execute driver statement 1: c2 stays not null",
+      "ok": true,
+      "detail": "rc=0 output='int:NO' expected='int:NO'"
+    },
+    {
+      "name": "execute driver statement 1: old c is gone",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute driver statement 1: k is unchanged",
+      "ok": true,
+      "detail": "rc=0 output='int:YES' expected='int:YES'"
+    },
+    {
+      "name": "execute driver statement 2 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "execute driver statement 2: c2 widened and stays not null",
+      "ok": true,
+      "detail": "rc=0 output='bigint:NO' expected='bigint:NO'"
+    },
+    {
+      "name": "execute driver statement 3 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "execute driver statement 3: ix_new references c2",
+      "ok": true,
+      "detail": "rc=0 output='c2' expected='c2'"
+    },
+    {
+      "name": "structure t exists",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "structure columns are c2 then k",
+      "ok": true,
+      "detail": "rc=0 output='c2,k' expected='c2,k'"
+    },
+    {
+      "name": "structure primary key is c2",
+      "ok": true,
+      "detail": "rc=0 output='c2' expected='c2'"
+    },
+    {
+      "name": "structure idx_c still named idx_c and references c2",
+      "ok": true,
+      "detail": "rc=0 output='c2' expected='c2'"
+    },
+    {
+      "name": "structure uk_c_k keeps order c2,k",
+      "ok": true,
+      "detail": "rc=0 output='c2,k' expected='c2,k'"
+    },
+    {
+      "name": "structure c2 is not null bigint",
+      "ok": true,
+      "detail": "rc=0 output='bigint:NO' expected='bigint:NO'"
+    },
+    {
+      "name": "structure k stays nullable int",
+      "ok": true,
+      "detail": "rc=0 output='int:YES' expected='int:YES'"
+    },
+    {
+      "name": "structure ix_new references c2",
+      "ok": true,
+      "detail": "rc=0 output='c2' expected='c2'"
+    },
+    {
+      "name": "structure old c is absent",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "teardown drop fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "teardown drop fixture: no residual t",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ds-t05-a6-golden-02843c405bcfbf912b0e9528e3cba99d7ac1f34b-r2/T05/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "CREATE TABLE t (c INT PRIMARY KEY, k INT, KEY idx_c(c), UNIQUE KEY uk_c_k(c, k)); ALTER TABLE t RENAME COLUMN c TO c2; ALTER TABLE t MODIFY COLUMN c2 BIGINT NOT NULL; CREATE INDEX ix_new ON t(c2);",
+    "--config",
+    "/private/tmp/ds-t05-a6-golden-02843c405bcfbf912b0e9528e3cba99d7ac1f34b-r2/T05/golden-policy-t05-a5-column-identity-isolated.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23384",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T05_GOLDEN_PW",
+    "--schema",
+    "golden",
+    "--fail-on",
+    "blocker"
+  ]
+}

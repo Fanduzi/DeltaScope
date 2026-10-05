@@ -1,0 +1,680 @@
+{
+  "case_id": "T05.meta.t05-a6-tidb85-readd",
+  "kind": "cli_metadata",
+  "cli_case": "t05-a6-tidb85-readd",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT UNSIGNED NOT NULL DEFAULT 7 COMMENT 'retired', keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t DROP COLUMN obsolete; ALTER TABLE t ADD COLUMN obsolete VARCHAR(12) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; ALTER TABLE t MODIFY COLUMN obsolete VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; CREATE INDEX idx_readded ON t(obsolete);",
+  "policy_profile": "t05-a6-drop-column-isolated",
+  "policy_path": "/private/tmp/ds-t05-a6-golden-02843c405bcfbf912b0e9528e3cba99d7ac1f34b-r2/T05/golden-policy-t05-a6-drop-column-isolated.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+  },
+  "expected": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 5,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete",
+      "complete",
+      "complete",
+      "complete",
+      "complete"
+    ],
+    "statement_sql": [
+      "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT UNSIGNED NOT NULL DEFAULT 7 COMMENT 'retired', keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+      "ALTER TABLE t DROP COLUMN obsolete;",
+      "ALTER TABLE t ADD COLUMN obsolete VARCHAR(12) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+      "ALTER TABLE t MODIFY COLUMN obsolete VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+      "CREATE INDEX idx_readded ON t(obsolete);"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 6,
+    "statement_indices": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ]
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [
+      {
+        "name": "ensure t absent",
+        "sql": "DROP TABLE IF EXISTS t",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "t absent before audit",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit did not create t",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "0",
+        "stderr": ""
+      }
+    ],
+    "execute": [
+      {
+        "name": "driver statement 0",
+        "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT UNSIGNED NOT NULL DEFAULT 7 COMMENT 'retired', keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "columns are id, obsolete, keep_c",
+            "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "id,obsolete,keep_c",
+            "stderr": ""
+          },
+          {
+            "assert": "obsolete starts unsigned with default 7",
+            "sql": "SELECT CONCAT(DATA_TYPE,':',IF(COLUMN_TYPE LIKE '%unsigned%',1,0),':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+            "rc": 0,
+            "output": "int:1:7:retired",
+            "stderr": ""
+          },
+          {
+            "assert": "keep_c starts at length 10",
+            "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+            "rc": 0,
+            "output": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:",
+            "stderr": ""
+          },
+          {
+            "assert": "primary key is id",
+            "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+            "rc": 0,
+            "output": "id",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "driver statement 1",
+        "sql": "ALTER TABLE t DROP COLUMN obsolete",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "columns are id then keep_c",
+            "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "id,keep_c",
+            "stderr": ""
+          },
+          {
+            "assert": "obsolete absent after drop",
+            "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          },
+          {
+            "assert": "keep_c stays length 10",
+            "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+            "rc": 0,
+            "output": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:",
+            "stderr": ""
+          },
+          {
+            "assert": "primary key stays id",
+            "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+            "rc": 0,
+            "output": "id",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "driver statement 2",
+        "sql": "ALTER TABLE t ADD COLUMN obsolete VARCHAR(12) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "columns are id, keep_c, obsolete",
+            "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "id,keep_c,obsolete",
+            "stderr": ""
+          },
+          {
+            "assert": "readded obsolete drops the old definition",
+            "sql": "SELECT CONCAT(DATA_TYPE,':',IF(COLUMN_TYPE LIKE '%unsigned%',1,0),':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+            "rc": 0,
+            "output": "varchar:0:<nil>:",
+            "stderr": ""
+          },
+          {
+            "assert": "readded obsolete length is 12",
+            "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+            "rc": 0,
+            "output": "varchar:12:utf8mb4:utf8mb4_bin:NO:<nil>:",
+            "stderr": ""
+          },
+          {
+            "assert": "keep_c stays length 10 after readd",
+            "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+            "rc": 0,
+            "output": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "driver statement 3",
+        "sql": "ALTER TABLE t MODIFY COLUMN obsolete VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "readded obsolete length is 20",
+            "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+            "rc": 0,
+            "output": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:",
+            "stderr": ""
+          },
+          {
+            "assert": "readded obsolete keeps the new definition",
+            "sql": "SELECT CONCAT(DATA_TYPE,':',IF(COLUMN_TYPE LIKE '%unsigned%',1,0),':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+            "rc": 0,
+            "output": "varchar:0:<nil>:",
+            "stderr": ""
+          },
+          {
+            "assert": "columns stay id, keep_c, obsolete",
+            "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "id,keep_c,obsolete",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "driver statement 4",
+        "sql": "CREATE INDEX idx_readded ON t(obsolete)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "idx_readded references the new obsolete",
+            "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_readded'",
+            "rc": 0,
+            "output": "obsolete",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "structure": [
+      {
+        "assert": "t exists",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "1",
+        "stderr": ""
+      },
+      {
+        "assert": "columns are id, keep_c, obsolete",
+        "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "id,keep_c,obsolete",
+        "stderr": ""
+      },
+      {
+        "assert": "obsolete length is 20",
+        "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+        "rc": 0,
+        "output": "varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:",
+        "stderr": ""
+      },
+      {
+        "assert": "obsolete keeps the new definition",
+        "sql": "SELECT CONCAT(DATA_TYPE,':',IF(COLUMN_TYPE LIKE '%unsigned%',1,0),':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='obsolete'",
+        "rc": 0,
+        "output": "varchar:0:<nil>:",
+        "stderr": ""
+      },
+      {
+        "assert": "primary key stays id",
+        "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+        "rc": 0,
+        "output": "id",
+        "stderr": ""
+      },
+      {
+        "assert": "idx_readded references obsolete",
+        "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_readded'",
+        "rc": 0,
+        "output": "obsolete",
+        "stderr": ""
+      },
+      {
+        "assert": "keep_c stays length 10",
+        "sql": "SELECT CONCAT(DATA_TYPE,':',IFNULL(CHARACTER_MAXIMUM_LENGTH,''),':',IFNULL(CHARACTER_SET_NAME,''),':',IFNULL(COLLATION_NAME,''),':',IS_NULLABLE,':',IFNULL(COLUMN_DEFAULT,'<nil>'),':',IFNULL(COLUMN_COMMENT,'')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+        "rc": 0,
+        "output": "varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:",
+        "stderr": ""
+      }
+    ],
+    "teardown": [
+      {
+        "name": "drop fixture",
+        "sql": "DROP TABLE IF EXISTS t",
+        "rc": 0,
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "no residual t",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "exit": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":5,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t (id INT PRIMARY KEY, obsolete INT UNSIGNED NOT NULL DEFAULT 7 COMMENT 'retired', keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);\",\"normalized_sql\":\"CREATE TABLE t (id INT PRIMARY KEY, obsolete INT UNSIGNED NOT NULL DEFAULT 7 COMMENT 'retired', keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)\",\"coverage\":{\"status\":\"complete\"}},{\"index\":1,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t DROP COLUMN obsolete;\",\"normalized_sql\":\"ALTER TABLE t DROP COLUMN obsolete\",\"coverage\":{\"status\":\"complete\"}},{\"index\":2,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t ADD COLUMN obsolete VARCHAR(12) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;\",\"normalized_sql\":\"ALTER TABLE t ADD COLUMN obsolete VARCHAR(12) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL\",\"coverage\":{\"status\":\"complete\"}},{\"index\":3,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t MODIFY COLUMN obsolete VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;\",\"normalized_sql\":\"ALTER TABLE t MODIFY COLUMN obsolete VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL\",\"coverage\":{\"status\":\"complete\"}},{\"index\":4,\"kind\":\"ddl\",\"raw_sql\":\"CREATE INDEX idx_readded ON t(obsolete);\",\"normalized_sql\":\"CREATE INDEX idx_readded ON t(obsolete)\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":6,\"applicable\":6,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "pass",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 5,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT UNSIGNED NOT NULL DEFAULT 7 COMMENT 'retired', keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+          "normalized_sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT UNSIGNED NOT NULL DEFAULT 7 COMMENT 'retired', keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 1,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t DROP COLUMN obsolete;",
+          "normalized_sql": "ALTER TABLE t DROP COLUMN obsolete",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 2,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t ADD COLUMN obsolete VARCHAR(12) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+          "normalized_sql": "ALTER TABLE t ADD COLUMN obsolete VARCHAR(12) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 3,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t MODIFY COLUMN obsolete VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+          "normalized_sql": "ALTER TABLE t MODIFY COLUMN obsolete VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 4,
+          "kind": "ddl",
+          "raw_sql": "CREATE INDEX idx_readded ON t(obsolete);",
+          "normalized_sql": "CREATE INDEX idx_readded ON t(obsolete)",
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 6,
+        "applicable": 6,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "tidb",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "setup ensure t absent return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup ensure t absent: t absent before audit",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='pass'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=5 expected=5"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=6"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0, 1, 2, 3, 4]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete', 'complete', 'complete', 'complete', 'complete']"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=[\"CREATE TABLE t (id INT PRIMARY KEY, obsolete INT UNSIGNED NOT NULL DEFAULT 7 COMMENT 'retired', keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);\", 'ALTER TABLE t DROP COLUMN obsolete;', 'ALTER TABLE t ADD COLUMN obsolete VARCHAR(12) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;', 'ALTER TABLE t MODIFY COLUMN obsolete VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;', 'CREATE INDEX idx_readded ON t(obsolete);'] expected=[\"CREATE TABLE t (id INT PRIMARY KEY, obsolete INT UNSIGNED NOT NULL DEFAULT 7 COMMENT 'retired', keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);\", 'ALTER TABLE t DROP COLUMN obsolete;', 'ALTER TABLE t ADD COLUMN obsolete VARCHAR(12) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;', 'ALTER TABLE t MODIFY COLUMN obsolete VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;', 'CREATE INDEX idx_readded ON t(obsolete);']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "fail_on_triggered",
+      "ok": true,
+      "detail": "fail_on_triggered=False"
+    },
+    {
+      "name": "post-verify audit did not create t",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute driver statement 0 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute driver statement 0: columns are id, obsolete, keep_c",
+      "ok": true,
+      "detail": "rc=0 output='id,obsolete,keep_c' expected='id,obsolete,keep_c'"
+    },
+    {
+      "name": "execute driver statement 0: obsolete starts unsigned with default 7",
+      "ok": true,
+      "detail": "rc=0 output='int:1:7:retired' expected='int:1:7:retired'"
+    },
+    {
+      "name": "execute driver statement 0: keep_c starts at length 10",
+      "ok": true,
+      "detail": "rc=0 output='varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:' expected='varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:'"
+    },
+    {
+      "name": "execute driver statement 0: primary key is id",
+      "ok": true,
+      "detail": "rc=0 output='id' expected='id'"
+    },
+    {
+      "name": "execute driver statement 1 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute driver statement 1: columns are id then keep_c",
+      "ok": true,
+      "detail": "rc=0 output='id,keep_c' expected='id,keep_c'"
+    },
+    {
+      "name": "execute driver statement 1: obsolete absent after drop",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute driver statement 1: keep_c stays length 10",
+      "ok": true,
+      "detail": "rc=0 output='varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:' expected='varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:'"
+    },
+    {
+      "name": "execute driver statement 1: primary key stays id",
+      "ok": true,
+      "detail": "rc=0 output='id' expected='id'"
+    },
+    {
+      "name": "execute driver statement 2 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute driver statement 2: columns are id, keep_c, obsolete",
+      "ok": true,
+      "detail": "rc=0 output='id,keep_c,obsolete' expected='id,keep_c,obsolete'"
+    },
+    {
+      "name": "execute driver statement 2: readded obsolete drops the old definition",
+      "ok": true,
+      "detail": "rc=0 output='varchar:0:<nil>:' expected='varchar:0:<nil>:'"
+    },
+    {
+      "name": "execute driver statement 2: readded obsolete length is 12",
+      "ok": true,
+      "detail": "rc=0 output='varchar:12:utf8mb4:utf8mb4_bin:NO:<nil>:' expected='varchar:12:utf8mb4:utf8mb4_bin:NO:<nil>:'"
+    },
+    {
+      "name": "execute driver statement 2: keep_c stays length 10 after readd",
+      "ok": true,
+      "detail": "rc=0 output='varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:' expected='varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:'"
+    },
+    {
+      "name": "execute driver statement 3 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute driver statement 3: readded obsolete length is 20",
+      "ok": true,
+      "detail": "rc=0 output='varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:' expected='varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:'"
+    },
+    {
+      "name": "execute driver statement 3: readded obsolete keeps the new definition",
+      "ok": true,
+      "detail": "rc=0 output='varchar:0:<nil>:' expected='varchar:0:<nil>:'"
+    },
+    {
+      "name": "execute driver statement 3: columns stay id, keep_c, obsolete",
+      "ok": true,
+      "detail": "rc=0 output='id,keep_c,obsolete' expected='id,keep_c,obsolete'"
+    },
+    {
+      "name": "execute driver statement 4 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute driver statement 4: idx_readded references the new obsolete",
+      "ok": true,
+      "detail": "rc=0 output='obsolete' expected='obsolete'"
+    },
+    {
+      "name": "structure t exists",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "structure columns are id, keep_c, obsolete",
+      "ok": true,
+      "detail": "rc=0 output='id,keep_c,obsolete' expected='id,keep_c,obsolete'"
+    },
+    {
+      "name": "structure obsolete length is 20",
+      "ok": true,
+      "detail": "rc=0 output='varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:' expected='varchar:20:utf8mb4:utf8mb4_bin:NO:<nil>:'"
+    },
+    {
+      "name": "structure obsolete keeps the new definition",
+      "ok": true,
+      "detail": "rc=0 output='varchar:0:<nil>:' expected='varchar:0:<nil>:'"
+    },
+    {
+      "name": "structure primary key stays id",
+      "ok": true,
+      "detail": "rc=0 output='id' expected='id'"
+    },
+    {
+      "name": "structure idx_readded references obsolete",
+      "ok": true,
+      "detail": "rc=0 output='obsolete' expected='obsolete'"
+    },
+    {
+      "name": "structure keep_c stays length 10",
+      "ok": true,
+      "detail": "rc=0 output='varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:' expected='varchar:10:utf8mb4:utf8mb4_bin:NO:<nil>:'"
+    },
+    {
+      "name": "teardown drop fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop fixture: no residual t",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ds-t05-a6-golden-02843c405bcfbf912b0e9528e3cba99d7ac1f34b-r2/T05/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT UNSIGNED NOT NULL DEFAULT 7 COMMENT 'retired', keep_c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t DROP COLUMN obsolete; ALTER TABLE t ADD COLUMN obsolete VARCHAR(12) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; ALTER TABLE t MODIFY COLUMN obsolete VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; CREATE INDEX idx_readded ON t(obsolete);",
+    "--config",
+    "/private/tmp/ds-t05-a6-golden-02843c405bcfbf912b0e9528e3cba99d7ac1f34b-r2/T05/golden-policy-t05-a6-drop-column-isolated.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "golden",
+    "--fail-on",
+    "blocker"
+  ]
+}
