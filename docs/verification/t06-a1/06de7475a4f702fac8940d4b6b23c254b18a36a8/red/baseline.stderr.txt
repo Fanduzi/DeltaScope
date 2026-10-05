@@ -1,0 +1,1 @@
+[ddl-golden][FAIL] missing task manifest: /Users/fan/GolangProjects/DeltaScope/testdata/ddl-golden/T06.json

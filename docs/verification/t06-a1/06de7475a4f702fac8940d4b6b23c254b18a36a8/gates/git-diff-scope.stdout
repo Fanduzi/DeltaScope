@@ -1,0 +1,15 @@
+docs/decisions/2026-10-06-ddl-create-table-pk-golden-proof.md
+internal/application/audit/README.md
+internal/application/audit/batch_state_t06a1_test.go
+internal/interfaces/http/README.md
+internal/interfaces/http/audit_create_table_pk_t06a1_test.go
+pkg/deltascope/README.md
+pkg/deltascope/audit_create_table_pk_t06a1_test.go
+scripts/README.md
+scripts/ddl_golden.py
+scripts/test_ddl_golden.py
+testdata/ddl-golden/README.md
+testdata/ddl-golden/T06.json
+testdata/ddl-inventory/README.md
+testdata/ddl-inventory/T06-base-traceability.md
+testdata/ddl-inventory/inventory.yaml

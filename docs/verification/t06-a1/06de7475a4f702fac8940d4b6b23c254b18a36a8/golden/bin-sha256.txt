@@ -1,0 +1,1 @@
+54bbf613c91475f0352e1fb519b7e6ecd3c7e4fa5612e514f437dec7970ae7c2  /tmp/ds-t06-a1-golden/T06/bin/deltascope

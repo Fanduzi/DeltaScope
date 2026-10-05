@@ -1,0 +1,1 @@
+gofmt -l internal/application/audit/batch_state_t06a1_test.go internal/interfaces/http/audit_create_table_pk_t06a1_test.go pkg/deltascope/audit_create_table_pk_t06a1_test.go

@@ -1,0 +1,1 @@
+["/tmp/ds-t06-a0.dDi8kG/deltascope", "audit", "--dialect", "mysql", "--sql", "CREATE TABLE t (id INT);", "--config", "/tmp/ds-t06-a0.dDi8kG/policy-off.yaml", "--format", "json", "--fail-on", "blocker", "--quiet"]

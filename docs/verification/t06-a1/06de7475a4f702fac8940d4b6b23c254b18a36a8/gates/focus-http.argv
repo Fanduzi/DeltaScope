@@ -1,0 +1,1 @@
+go test -count=1 ./internal/interfaces/http -run T06A1 -v

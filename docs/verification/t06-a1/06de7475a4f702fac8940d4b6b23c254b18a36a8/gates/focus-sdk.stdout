@@ -1,0 +1,10 @@
+=== RUN   TestT06A1PrimaryKeyPresenceSDK
+=== RUN   TestT06A1PrimaryKeyPresenceSDK/mysql_no_pk
+=== RUN   TestT06A1PrimaryKeyPresenceSDK/tidb_no_pk
+=== RUN   TestT06A1PrimaryKeyPresenceSDK/mysql_table_pk
+--- PASS: TestT06A1PrimaryKeyPresenceSDK (0.01s)
+    --- PASS: TestT06A1PrimaryKeyPresenceSDK/mysql_no_pk (0.00s)
+    --- PASS: TestT06A1PrimaryKeyPresenceSDK/tidb_no_pk (0.00s)
+    --- PASS: TestT06A1PrimaryKeyPresenceSDK/mysql_table_pk (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.360s
