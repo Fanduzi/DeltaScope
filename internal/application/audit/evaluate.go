@@ -1,6 +1,6 @@
 // Package audit orchestrates audit use cases at the application layer.
-// input: extracted domain statements and the registered rule engine
-// output: aggregated report results with statement/global findings, rule-declared evidence gaps lowering complete coverage to unverified, and preserved statement-level impact estimates
+// input: extracted domain statements (including ordered-state budget-blocked markers) and the registered rule engine
+// output: aggregated report results with statement/global findings, retained blocked statements carrying incomplete coverage plus resource-limit evidence, rule-declared evidence gaps lowering complete coverage to unverified, and preserved statement-level impact estimates
 // pos: application evaluation step between extraction/metadata refinement and reporting
 // note: if this file changes, update this header and module README.md.
 package audit
@@ -24,14 +24,21 @@ func EvaluateStatements(ctx context.Context, registry *rule.Registry, statements
 	skippedDedup := make(map[string]rule.SkippedRule)
 
 	for idx, statement := range statements {
+		if err := ctx.Err(); err != nil {
+			return report.Result{}, err
+		}
 		coverage, gaps := statementCoverage(statement.Dialect, statement)
-		if statement.Unsupported != nil {
-			item := *statement.Unsupported
-			item.Index = idx
-			if item.SQL == "" {
-				item.SQL = statement.RawSQL
+		if statement.Unsupported != nil || statement.ResourceLimit != nil {
+			if statement.ResourceLimit == nil {
+				gaps = []spec.UnsupportedDetail{*statement.Unsupported}
 			}
-			unsupported = append(unsupported, item)
+			for _, item := range gaps {
+				item.Index = idx
+				if item.SQL == "" {
+					item.SQL = statement.RawSQL
+				}
+				unsupported = append(unsupported, item)
+			}
 			statementResults = append(statementResults, report.StatementResult{
 				Index:         idx,
 				Kind:          statement.Kind.String(),
@@ -39,6 +46,9 @@ func EvaluateStatements(ctx context.Context, registry *rule.Registry, statements
 				NormalizedSQL: statement.NormalizedSQL,
 				Coverage:      coverage,
 			})
+			if err := ctx.Err(); err != nil {
+				return report.Result{}, err
+			}
 			continue
 		}
 
@@ -99,6 +109,9 @@ func EvaluateStatements(ctx context.Context, registry *rule.Registry, statements
 		supportedStatements = append(supportedStatements, statement)
 	}
 
+	if err := ctx.Err(); err != nil {
+		return report.Result{}, err
+	}
 	globalFindings, err := registry.EvaluateGlobal(ctx, supportedStatements)
 	if err != nil {
 		return report.Result{}, err
@@ -124,11 +137,14 @@ func EvaluateStatements(ctx context.Context, registry *rule.Registry, statements
 		}
 	}
 
+	if err := ctx.Err(); err != nil {
+		return report.Result{}, err
+	}
 	return result, nil
 }
 
 func reportImpact(statement spec.Statement) *report.Impact {
-	if statement.DML == nil || statement.DML.Impact == nil {
+	if statement.ResourceLimit != nil || statement.DML == nil || statement.DML.Impact == nil {
 		return nil
 	}
 

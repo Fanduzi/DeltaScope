@@ -167,6 +167,8 @@ deltascope audit \
 
 `coverage.status` 表示被识别语句的每个方面是否都有已审计语义（`complete`、`unverified`、`incomplete`）。已识别但未支持的语句保留在 `statements` 中并标记 `coverage.status=incomplete`，携带有界的 `unsupported` 证据，verdict 至少降为 `review`，并通过 `ErrUnsupportedStatement`（SDK）、退出码 1（CLI）、HTTP 400、MCP `isError=true` 暴露。声明了必需元数据事实的已启用必需规则在事实不可得时按语句报告 `evidence_gaps`（`rule_id`、`reason_code`、`required_facts`）：gap 不是 finding，它把语句标记为 `unverified`，将 verdict 降为 `review`，并按 warning 等效权重参与 `--fail-on` 判断。
 
+MySQL/TiDB 每个请求的有序 enrichment 及后续规则评估固定限额为 **1024 条顶层、已归一化 statement**。第 1024 条正常处理；第 1025 条及所有后句仍保留在结果中，标记 `coverage.status=incomplete`，并各有一个 feature 为 `audit.resource_limit` 的 `unsupported` 条目。这不是可关闭的 policy rule：部分结果至少为 `review`（此前的 `reject` 保留），沿用既有 unsupported 错误通道（application/SDK `ErrUnsupportedStatement`、CLI 即使 `--fail-on none` 也退出 1、HTTP 400、MCP `isError=true`）。真正的 parser failure 仍优先，包括 CLI 退出 2。检查位于 **parse/extract 之后**，不限制 SQL 大小、解析深度、运行时长或内存，也不是 OOM 防护；解析、归一化输入和结果保存仍可随输入增长。PostgreSQL 路径不变。将迁移拆成多个请求并不天然等价，因为前序推导出的表结构不会跨请求保留。详见[有序审计额度合同](docs/reference/audit-capability-matrix.md#ordered-audit-statement-quota-mysqltidb)。
+
 版本依赖检查（当前为 `ddl.index.key_length.max_bytes.require`）从规范化版本事实与带已知位的实例事实解析边界。离线审计可用 `--target-version [v]MAJOR.MINOR.PATCH` 提供该事实——结果携带顶层 `version` 块（`product`、规范化 `version`、`source`、`validated_range`）。在线审计时观测到的服务器身份为准，其产品由 banner 自身推导：`--target-version` 与观测值相等则继续，版本或产品不等则是输入错误（SDK typed error、CLI 退出码 2、HTTP 400、MCP `isError=true`），原始服务器 banner 不会出现在输出中。当可能改变结果的版本或实例事实缺失时（例如未观测到的 `innodb_page_size` 或 TiDB `max-index-length`），规则报告有界 `evidence_gaps`，绝不按默认值处理；已验证系列为 MySQL 5.7.x/8.0.x/8.4.x 与 TiDB 8.5.x。
 
 审核 TiDB 语句：

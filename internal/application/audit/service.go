@@ -1,6 +1,6 @@
 // Package audit orchestrates audit use cases at the application layer.
 // input: audit requests carrying SQL text, dialect, optional target_version, optional policy override paths, optional metadata providers, and shared input normalization
-// output: end-to-end audit results assembled from policy loading, parsing, extraction, metadata enrichment, rule evaluation, a resolved canonical version identity, and a review floor for partial parser failures and structured unsupported statements
+// output: end-to-end audit results assembled from policy loading, parsing, extraction, bounded ordered-state metadata enrichment, rule evaluation, a resolved canonical version identity, and a review floor for partial parser failures and structured unsupported statements
 // pos: application service entrypoint for the unified offline/metadata-aware SQL audit use case with preserved statement impact estimates and target/observed version reconciliation
 // note: if this file changes, update this header and module README.md.
 package audit
@@ -55,6 +55,12 @@ type Request struct {
 	TargetVersion string
 }
 
+const defaultOrderedStatementLimit = 1024
+
+type auditLimits struct {
+	orderedStatements int
+}
+
 // Service coordinates the full audit use case.
 type Service struct{}
 
@@ -70,6 +76,10 @@ func AuditSQL(ctx context.Context, request Request) (report.Result, error) {
 
 // Audit executes the full SQL audit flow.
 func (s Service) Audit(ctx context.Context, request Request) (report.Result, error) {
+	return auditWithLimits(ctx, request, auditLimits{orderedStatements: defaultOrderedStatementLimit})
+}
+
+func auditWithLimits(ctx context.Context, request Request, limits auditLimits) (report.Result, error) {
 	if err := ctx.Err(); err != nil {
 		return report.Result{}, err
 	}
@@ -137,7 +147,7 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 		return report.Result{}, err
 	}
 
-	statements, err = enrichStatementsWithMetadata(ctx, request.Dialect, metadataRequestFor(request, targetVersion), statements, parsed.failures)
+	statements, err = enrichStatementsWithMetadataLimits(ctx, request.Dialect, metadataRequestFor(request, targetVersion), statements, parsed.failures, limits)
 	if err != nil {
 		return report.Result{}, err
 	}
@@ -148,6 +158,9 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 		statements = attachImpactEstimatesWithPlanner(ctx, planner, statements)
 	} else {
 		statements = attachImpactEstimates(ctx, statements)
+	}
+	if err := ctx.Err(); err != nil {
+		return report.Result{}, err
 	}
 
 	registry, err := buildRegistry(policyCfg)
@@ -169,11 +182,20 @@ func (s Service) Audit(ctx context.Context, request Request) (report.Result, err
 	}
 	if request.Dialect == spec.DialectMySQL {
 		for _, statement := range statements {
+			if err := ctx.Err(); err != nil {
+				return report.Result{}, err
+			}
+			if statement.ResourceLimit != nil {
+				continue
+			}
 			if statementHasMySQLUnsupportedReturning(statement) {
 				result = addGlobalFinding(result, buildMySQLReturningUnsupportedFinding(string(request.Dialect)))
 				break
 			}
 		}
+	}
+	if err := ctx.Err(); err != nil {
+		return report.Result{}, err
 	}
 	if len(parsed.failures) > 0 {
 		result.Diagnostics = append(result.Diagnostics, parserFailureDiagnostics(parsed.failures, request.Dialect)...)

@@ -22,6 +22,22 @@ This matrix lists every rule shipped with DeltaScope, its rule ID, whether it ru
 
 ---
 
+## Ordered Audit Statement Quota (MySQL/TiDB)
+
+Each MySQL/TiDB Audit request admits at most **1024 top-level normalized statements** to ordered enrichment and rule evaluation. DDL, DML, read-only, session, and already-unsupported statements each consume one slot. ALTER sub-actions, tables, columns, and semicolons inside strings are not separate units; comment-only blocks and parser failures do not invent normalized statements. Exactly 1024 statements at end of input creates no resource entry. The quota is request-local, including under concurrent calls, and does not reset after contamination, unsupported input, or policy changes. There is no request/SDK field, flag, environment variable, or policy switch for this quota. PostgreSQL keeps its existing path.
+
+The check runs after parse/extract and before target resolution, table/object/index-owner lookup, pre-state cloning, and state publication. Pre-batch instance-fact loading keeps its existing behavior. Once exhausted, the current statement and every successor skip those ordered operations, StatementRule/EvidenceReporter callbacks, and PlanEstimator/impact publication. Global rules receive only the genuinely evaluable subset. Previously saved pre-states, findings, gaps, and identities remain unchanged; unexecuted checks do not create missing-table/column findings or `unknown_table_state` gaps.
+
+Every blocked statement keeps its original index, kind, raw/normalized SQL and source location. It is incomplete and appends exactly one resource entry to `unsupported`, retaining any earlier vendor/unaudited/aspect evidence. The fixed feature is `audit.resource_limit`; the fixed reason is `ordered-state statement budget exhausted`. Metadata contains exactly `phase: ordered_state`, `resource: statements`, `limit: 1024`, the actual `consumed` count (1024 for every blocked production statement), and the original `line`/`column`. Index zero follows the existing `omitempty` encoding. The resource itself creates zero findings and zero evidence gaps. New reason/metadata contain no SQL, body text, credentials, provider errors, or stack traces; the existing `unsupported[].sql == corresponding raw_sql` projection remains and is not a no-SQL API.
+
+With only resource exhaustion, the result is `review`/`incomplete`; an admitted-prefix `reject` is preserved. Application/SDK return the partial result with `errors.Is(err, ErrUnsupportedStatement)`. CLI exits 1 at all four fail thresholds unless a higher-priority independent error applies; HTTP returns its existing 400 unsupported envelope; MCP returns its existing envelope with `isError=true`. Parser failures discovered anywhere in the input retain diagnostics, partial results and CLI exit 2. Existing cancellation, provider and connection error channels are not converted into resource outcomes. `Applicable` counts only rules actually evaluated.
+
+This is a Planner-selected engineering quota, not a database limit or a measured safety threshold. It does not bound parsing depth, a single SQL statement's size, wall-clock time, memory, or OOM risk: parsing, normalization, and retained result storage may still grow. The HTTP 1 MiB body limit, parser/splitter, connection and cancellation contracts are unchanged. Splitting a batch may lose preceding Prospective Schema State and change the audit semantics; it is not an unconditional remedy.
+
+See [the decision record](../decisions/2026-10-05-ddl-ordered-audit-resource-limit.md). This boundary does not implement PROCEDURE definition/deletion isolation or complete T05/#84.
+
+---
+
 ## DDL: Create Table
 
 ### Table-Level Checks

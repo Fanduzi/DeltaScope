@@ -1,6 +1,6 @@
 // Package audit orchestrates audit use cases at the application layer.
-// input: optional metadata providers, parsed statement MutationTargets, the validated target_version for observed-identity reconciliation, and parse-failure positions that contaminate later derived state
-// output: metadata-enriched statements with resolved target schemas, per-statement pre-state snapshots from the request-local ordered batch state (provider facts or in-batch derivations for MySQL/TiDB — PostgreSQL keeps its original enrichment in every request shape), a canonical Version identity for rules that can use live instance or schema facts, and that same resolved version stored on the batch state
+// input: optional metadata providers, parsed statement MutationTargets, the validated target_version for observed-identity reconciliation, parse-failure positions that contaminate later derived state, and the ordered-state admission budget
+// output: metadata-enriched statements with resolved target schemas, per-statement pre-state snapshots from the request-local ordered batch state (provider facts or in-batch derivations for MySQL/TiDB — PostgreSQL keeps its original enrichment in every request shape), a canonical Version identity for rules that can use live instance or schema facts, that same resolved version stored on the batch state, and retained statements beyond the budget marked with a nonserialized ResourceLimit instead of derivation
 // pos: application-layer bridge between provider-backed metadata and domain statements, owning the ordered schema-state seam (batch_state.go) and the effective-identity resolver (explicit qualifiers win over the request schema); the ordered state reads the resolved version passed here and does not assume the original statement already carries Metadata.Version
 // note: if this file changes, update this header and module README.md.
 package audit
@@ -47,6 +47,10 @@ type MetadataRequest struct {
 }
 
 func enrichStatementsWithMetadata(ctx context.Context, dialect spec.Dialect, request *MetadataRequest, statements []spec.Statement, failures []parseFailure) ([]spec.Statement, error) {
+	return enrichStatementsWithMetadataLimits(ctx, dialect, request, statements, failures, auditLimits{orderedStatements: defaultOrderedStatementLimit})
+}
+
+func enrichStatementsWithMetadataLimits(ctx context.Context, dialect spec.Dialect, request *MetadataRequest, statements []spec.Statement, failures []parseFailure, limits auditLimits) ([]spec.Statement, error) {
 	if request == nil {
 		if !orderedStateDialect(dialect) {
 			return statements, nil
@@ -54,7 +58,7 @@ func enrichStatementsWithMetadata(ctx context.Context, dialect spec.Dialect, req
 		// No request at all still gets the ordered state pass: batch-local
 		// derived facts satisfy table/column existence even when no provider,
 		// schema, or version is configured.
-		return enrichOrderedStatements(ctx, dialect, nil, statements, failures, nil, nil)
+		return enrichOrderedStatements(ctx, dialect, nil, statements, failures, nil, nil, limits)
 	}
 
 	if request.Provider == nil {
@@ -81,7 +85,7 @@ func enrichStatementsWithMetadata(ctx context.Context, dialect spec.Dialect, req
 			}
 			return enriched, nil
 		}
-		return enrichOrderedStatements(ctx, dialect, request, statements, failures, nil, request.TargetVersion)
+		return enrichOrderedStatements(ctx, dialect, request, statements, failures, nil, request.TargetVersion, limits)
 	}
 
 	instanceFacts, err := request.Provider.LoadInstanceFacts(ctx, dialect, request.Schema)
@@ -107,7 +111,7 @@ func enrichStatementsWithMetadata(ctx context.Context, dialect spec.Dialect, req
 	resolvedVersion := observed
 
 	if orderedStateDialect(dialect) {
-		return enrichOrderedStatements(ctx, dialect, request, statements, failures, instanceFacts, resolvedVersion)
+		return enrichOrderedStatements(ctx, dialect, request, statements, failures, instanceFacts, resolvedVersion, limits)
 	}
 
 	snapshots := make(map[string]*spec.TableSnapshot)
@@ -159,7 +163,7 @@ func enrichStatementsWithMetadata(ctx context.Context, dialect spec.Dialect, req
 // records the statement's conditional post-state. Provider facts load at most
 // once per (schema, table); derived state never flows back into the provider
 // and never aliases into statement metadata.
-func enrichOrderedStatements(ctx context.Context, dialect spec.Dialect, request *MetadataRequest, statements []spec.Statement, failures []parseFailure, instanceFacts *spec.InstanceFacts, resolvedVersion *spec.VersionIdentity) ([]spec.Statement, error) {
+func enrichOrderedStatements(ctx context.Context, dialect spec.Dialect, request *MetadataRequest, statements []spec.Statement, failures []parseFailure, instanceFacts *spec.InstanceFacts, resolvedVersion *spec.VersionIdentity, limits auditLimits) ([]spec.Statement, error) {
 	requestSchema := ""
 	var provider MetadataProvider
 	if request != nil {
@@ -168,12 +172,45 @@ func enrichOrderedStatements(ctx context.Context, dialect spec.Dialect, request 
 	}
 	state := newBatchState(dialect, requestSchema, provider)
 	state.resolvedVersion = resolvedVersion
+	return state.enrichStatements(ctx, request, statements, failures, instanceFacts, limits)
+}
+
+func (state *batchState) enrichStatements(ctx context.Context, request *MetadataRequest, statements []spec.Statement, failures []parseFailure, instanceFacts *spec.InstanceFacts, limits auditLimits) ([]spec.Statement, error) {
+	dialect, resolvedVersion := state.dialect, state.resolvedVersion
+	requestSchema := ""
+	if request != nil {
+		requestSchema = request.Schema
+	}
 	enriched := make([]spec.Statement, len(statements))
 	// Object lookups resolve at most once per distinct (schema, type, name,
 	// qualifiers) identity per request — the same object is never re-asked.
 	objectCache := make(map[objectLookupKey]*spec.ObjectSnapshot)
 
+	consumed := 0
 	for i, statement := range statements {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		enriched[i] = statement
+		if consumed >= limits.orderedStatements {
+			state.contaminated = true
+			enriched[i].ResourceLimit = &spec.AuditResourceLimit{Limit: limits.orderedStatements, Consumed: consumed}
+			enriched[i].Metadata = nil
+			if resolvedVersion != nil {
+				enriched[i].Metadata = &spec.Metadata{Version: resolvedVersion}
+			}
+			if statement.DML != nil {
+				dml := *statement.DML
+				dml.Impact = nil
+				enriched[i].DML = &dml
+			}
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+			continue
+		}
+		consumed++
+
 		for _, failure := range failures {
 			if failureBefore(failure.Line, failure.Column, statement.Line, statement.Column) {
 				state.contaminated = true
@@ -181,7 +218,6 @@ func enrichOrderedStatements(ctx context.Context, dialect spec.Dialect, request 
 			}
 		}
 
-		enriched[i] = statement
 		metadataSchema := metadataTargetSchema(request, statement)
 		metadata := &spec.Metadata{Schema: metadataSchema, Instance: instanceFacts, Version: resolvedVersion}
 
@@ -223,6 +259,9 @@ func enrichOrderedStatements(ctx context.Context, dialect spec.Dialect, request 
 		}
 	}
 
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	return enriched, nil
 }
 

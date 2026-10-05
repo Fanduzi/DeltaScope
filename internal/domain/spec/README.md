@@ -6,7 +6,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 
 | File | Responsibility |
 |------|---------------|
-| statement.go | Defines the top-level normalized statement model and parser-neutral extraction interface |
+| statement.go | Defines the top-level normalized statement model and parser-neutral extraction interface, including the nonserialized `ResourceLimit` execution marker and its feature/reason constants |
 | statement_test.go | Verifies typed statement metadata behavior |
 | metadata.go | Defines optional schema context, instance facts, target-table snapshots, object-level validation snapshots, and lookup helpers for metadata-aware auditing |
 | version.go | Defines the shared parser-neutral `VersionIdentity` fact (numeric components always serialize, including zero), strict `[v]MAJOR.MINOR.PATCH` target_version parsing plus the shared `ValidateTargetVersion` transport preflight, provider-banner observed canonicalization where the product is derived from the banner itself (including the TiDB compatibility prefix, never from the request dialect), the milestone-validated product/version series, and `RenameColumnVersionSupport`, `RenameColumnVersionSupportFor`, and `RenameColumnMinimumSupportedVersion` for the RENAME COLUMN 8.0.3 applicability check |
@@ -19,6 +19,8 @@ Normalized statement specifications used as the stable input for rule evaluation
 ## Exports
 
 - `Statement`
+- `AuditResourceLimit`
+- `AuditResourceLimitFeature`, `AuditResourceLimitReason`
 - `UnsupportedDetail`
 - `Diagnostic`
 - `DiagnosticParserError`
@@ -60,6 +62,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 
 - `Statement` may now carry optional metadata-aware context through `Metadata` and an additive `Unsupported` payload for recognized-but-unsupported statements so mixed PostgreSQL results can preserve supported statements while surfacing structured unsupported details.
 - `UnsupportedDetail` carries the unsupported statement index, feature name, original SQL, and reason so CLI/API surfaces can render machine-readable partial-support outcomes.
+- `Statement.ResourceLimit` (`json:"-"`) is a nonserialized execution marker stamped by the application ordered-state admission budget on retained statements beyond the limit. It is internal-domain only — never a public SDK field, request field, or serialized output — and evaluation projects it as ordinary `UnsupportedDetail` evidence with `Feature` `audit.resource_limit` and the fixed `ordered-state statement budget exhausted` reason.
 - `DDL.UnextractedOptions` and `Alter.UnextractedOptions` name parsed statement/table-option clauses the extractor recognized but did not model, so coverage classification can flag an unaudited aspect (incomplete coverage) instead of silently passing. This is distinct from `coverage.status=unverified`, which is reserved for understood operations missing required metadata/version evidence.
 - `DDL.TemporaryScope` records the parsed temporary-table scope (`"local"`/`"global"`) on create and drop table statements, and `DDL.OnCommitDelete` records the global temporary transaction-scope marker. No rule audits temporary identity or scope yet, so the fact exists purely to drive incomplete-coverage evidence.
 - `Column.UnextractedOptions` names recognized-but-dropped column option clauses (`generated`, `reference`, `check`, `unique`, `fulltext`, `column_format`, `storage`, `secondary_engine_attribute`) so coverage classification flags them instead of silently passing; `Column.AutoRandom` carries the typed AUTO_RANDOM fact for the same reason.

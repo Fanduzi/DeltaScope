@@ -1,6 +1,6 @@
 // Package spec defines normalized statement specifications for rule evaluation.
 // input: statement data extracted from parser-specific AST adapters
-// output: parser-neutral statement models and source-located audit diagnostics for domain processing
+// output: parser-neutral statement models, nonserialized execution markers, and source-located audit diagnostics for domain processing
 // pos: domain specification model for all auditable SQL statements
 // note: if this file changes, update this header and module README.md.
 package spec
@@ -41,18 +41,29 @@ type StatementExtractor interface {
 
 // Statement is the normalized domain input for rule evaluation.
 type Statement struct {
-	Kind          Kind               `json:"kind"`
-	Dialect       Dialect            `json:"dialect"`
-	RawSQL        string             `json:"raw_sql"`
-	NormalizedSQL string             `json:"normalized_sql,omitempty"`
-	Warnings      []string           `json:"warnings,omitempty"`
-	Line          int                `json:"line,omitempty"`
-	Column        int                `json:"column,omitempty"`
-	Metadata      *Metadata          `json:"metadata,omitempty"`
-	DDL           *DDL               `json:"ddl,omitempty"`
-	DML           *DML               `json:"dml,omitempty"`
-	Unsupported   *UnsupportedDetail `json:"unsupported,omitempty"`
+	Kind          Kind                `json:"kind"`
+	Dialect       Dialect             `json:"dialect"`
+	RawSQL        string              `json:"raw_sql"`
+	NormalizedSQL string              `json:"normalized_sql,omitempty"`
+	Warnings      []string            `json:"warnings,omitempty"`
+	Line          int                 `json:"line,omitempty"`
+	Column        int                 `json:"column,omitempty"`
+	Metadata      *Metadata           `json:"metadata,omitempty"`
+	DDL           *DDL                `json:"ddl,omitempty"`
+	DML           *DML                `json:"dml,omitempty"`
+	Unsupported   *UnsupportedDetail  `json:"unsupported,omitempty"`
+	ResourceLimit *AuditResourceLimit `json:"-"`
 }
+
+type AuditResourceLimit struct {
+	Limit    int
+	Consumed int
+}
+
+const (
+	AuditResourceLimitFeature = "audit.resource_limit"
+	AuditResourceLimitReason  = "ordered-state statement budget exhausted"
+)
 
 // UnsupportedDetail captures one parser-recognized but unsupported statement or feature.
 type UnsupportedDetail struct {

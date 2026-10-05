@@ -1,6 +1,6 @@
 // Package audit computes statement and aggregate audit-coverage status.
-// input: extracted domain statements with parser-attached boundary markers and extraction facts
-// output: per-statement coverage status plus bounded unsupported evidence for unaudited aspects
+// input: extracted domain statements with parser-attached boundary markers, ordered-state resource-limit markers, and extraction facts
+// output: per-statement coverage status plus bounded unsupported evidence for unaudited aspects and exhausted-budget markers
 // pos: application coverage classification between extraction and reporting (issue #82)
 // note: if this file changes, update this header and module README.md.
 package audit
@@ -443,6 +443,23 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 // parser-marked boundaries and any aspect gap make the statement incomplete;
 // everything else is complete.
 func statementCoverage(dialect spec.Dialect, statement spec.Statement) (report.Coverage, []spec.UnsupportedDetail) {
+	if boundary := statement.ResourceLimit; boundary != nil {
+		var details []spec.UnsupportedDetail
+		if statement.Unsupported != nil {
+			details = append(details, *statement.Unsupported)
+		}
+		details = append(details, statementCoverageAspects(dialect, statement)...)
+		details = append(details, spec.UnsupportedDetail{
+			Feature: spec.AuditResourceLimitFeature,
+			Reason:  spec.AuditResourceLimitReason,
+			Metadata: map[string]any{
+				"phase": "ordered_state", "resource": "statements",
+				"limit": boundary.Limit, "consumed": boundary.Consumed,
+				"line": statement.Line, "column": statement.Column,
+			},
+		})
+		return report.Coverage{Status: report.CoverageIncomplete}, details
+	}
 	if statement.Unsupported != nil {
 		return report.Coverage{Status: report.CoverageIncomplete}, nil
 	}

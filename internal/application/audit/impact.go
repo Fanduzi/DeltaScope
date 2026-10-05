@@ -1,5 +1,5 @@
 // Package audit orchestrates audit use cases at the application layer.
-// input: extracted statement-local DML shape facts plus optional metadata snapshots for refinement
+// input: extracted statement-local DML shape facts plus optional metadata snapshots for refinement (budget-blocked statements are skipped)
 // output: conservative DML impact estimates attached during extraction and upgraded after metadata enrichment
 // pos: application impact estimation step between extraction, metadata enrichment, and rule evaluation
 // note: if this file changes, update this header and module README.md.
@@ -24,8 +24,11 @@ func attachImpactEstimatesWithPlanner(ctx context.Context, planner PlanEstimator
 
 	attached := make([]spec.Statement, len(statements))
 	for i, statement := range statements {
+		if ctx.Err() != nil {
+			return statements
+		}
 		attached[i] = statement
-		if statement.DML == nil {
+		if statement.ResourceLimit != nil || statement.DML == nil {
 			continue
 		}
 
@@ -40,6 +43,9 @@ func attachImpactEstimatesWithPlanner(ctx context.Context, planner PlanEstimator
 		attached[i].DML = &dml
 	}
 
+	if ctx.Err() != nil {
+		return statements
+	}
 	return attached
 }
 
