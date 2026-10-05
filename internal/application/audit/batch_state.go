@@ -1,7 +1,7 @@
 // Package audit orchestrates audit use cases at the application layer.
 // input: request context, ordered statements, optional metadata provider, the request's already-resolved version identity, and parse-failure positions for one audit request
 // output: request-local ordered table facts (unknown / known-absent / known-present, per-collection member knowledge) feeding per-statement pre-state snapshots
-// pos: prospective schema-state ownership for the first migration path — the effective (dialect, schema, table) identity drives provider reads, keys, writes, and invalidation; unsupported or executable-but-unmodeled effects settle before kind dispatch; deterministic conditional transitions update derived facts, including the bounded single-pair RENAME identity migration onto a known-absent destination, a bounded single-target DROP identity retirement, an ordinary single-column MODIFY definition replacement, a precise single CHANGE COLUMN or RENAME COLUMN identity migration, and an ordinary dependency-free single-column DROP COLUMN that removes only that column, keeps unrelated members, and clears the accepted MODIFY statistic set; each tombstones loaded dependents that the transition cannot keep; a non-precise MODIFY, CHANGE, RENAME, or DROP COLUMN tombstones every named table identity and the loaded dependents of those identities, a precise replacement is withheld when a loaded foreign key cannot be recomputed, an unsupported RENAME version withholds publication, and cancellation is checked before publishing effects; unaudited, unbound, or contaminated operations invalidate them
+// pos: prospective schema-state ownership for the first migration path — the effective (dialect, schema, table) identity drives provider reads, keys, writes, and invalidation; unsupported or executable-but-unmodeled effects settle before kind dispatch; deterministic conditional transitions update derived facts, including the bounded single-pair RENAME identity migration onto a known-absent destination, a bounded single-target DROP identity retirement, an ordinary single-column MODIFY definition replacement, a precise single CHANGE COLUMN or RENAME COLUMN identity migration, and an ordinary dependency-free single-column DROP COLUMN that removes only that column, keeps unrelated members, and clears the accepted MODIFY statistic set; each tombstones loaded dependents that the transition cannot keep; a non-precise MODIFY, CHANGE, RENAME, or DROP COLUMN tombstones every named table identity and the loaded dependents of those identities, a precise replacement is withheld when a loaded foreign key cannot be recomputed, an unsupported RENAME version withholds publication, and cancellation is checked before publishing effects; unaudited, unbound, or contaminated operations invalidate them; recognized CREATE/DROP PROCEDURE statements preserve outer table facts while keeping their own audit evidence
 // note: if this file changes, update this header and module README.md.
 package audit
 
@@ -240,6 +240,9 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 	if s.contaminated {
 		return nil
 	}
+	if procedureLifecyclePreservesTableState(statement) {
+		return ctx.Err()
+	}
 	if statement.DDL != nil && statement.DDL.Operation == spec.DDLOperationDropTable {
 		return s.applyDropTable(ctx, statement)
 	}
@@ -290,6 +293,19 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 		s.invalidateAll(ddl.TableTargets())
 	}
 	return nil
+}
+
+func procedureLifecyclePreservesTableState(statement spec.Statement) bool {
+	if !orderedStateDialect(statement.Dialect) || statement.Kind != spec.KindDDL || statement.DDL == nil ||
+		statement.ResourceLimit != nil || statement.DML != nil || statement.DDL.Table != nil || len(statement.DDL.Targets) != 0 {
+		return false
+	}
+	switch statement.DDL.Operation {
+	case spec.DDLOperationCreateProcedure, spec.DDLOperationDropProcedure:
+		return true
+	default:
+		return false
+	}
 }
 
 // boundTargets returns the table identities a statement's effect is bound to,

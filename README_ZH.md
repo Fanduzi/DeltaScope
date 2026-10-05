@@ -169,6 +169,8 @@ deltascope audit \
 
 MySQL/TiDB 每个请求的有序 enrichment 及后续规则评估固定限额为 **1024 条顶层、已归一化 statement**。第 1024 条正常处理；第 1025 条及所有后句仍保留在结果中，标记 `coverage.status=incomplete`，并各有一个 feature 为 `audit.resource_limit` 的 `unsupported` 条目。这不是可关闭的 policy rule：部分结果至少为 `review`（此前的 `reject` 保留），沿用既有 unsupported 错误通道（application/SDK `ErrUnsupportedStatement`、CLI 即使 `--fail-on none` 也退出 1、HTTP 400、MCP `isError=true`）。真正的 parser failure 仍优先，包括 CLI 退出 2。检查位于 **parse/extract 之后**，不限制 SQL 大小、解析深度、运行时长或内存，也不是 OOM 防护；解析、归一化输入和结果保存仍可随输入增长。PostgreSQL 路径不变。将迁移拆成多个请求并不天然等价，因为前序推导出的表结构不会跨请求保留。详见[有序审计额度合同](docs/reference/audit-capability-matrix.md#ordered-audit-statement-quota-mysqltidb)。
 
+已识别的 MySQL/TiDB `CREATE PROCEDURE`、`DROP PROCEDURE` 保留外层迁移的表事实：定义过程不会执行体内 SQL，删除过程也不会删除同名表。这里只跳过外层表状态变更，不跳过过程自身的审计。MySQL CREATE 保留 body/参数未审计证据，TiDB CREATE/DROP 保留 vendor boundary，MySQL DROP 保留既有 complete 分类。前序污染和资源阻断不会被清除，过程仍占一个顶层 statement 名额。这不表示过程体已审计，不模拟过程对象或调用，也不表示 TiDB 已支持存储过程。详见[过程生命周期与外层表状态](docs/reference/audit-capability-matrix.md#procedure-lifecycle-and-outer-table-state-mysqltidb)。
+
 版本依赖检查（当前为 `ddl.index.key_length.max_bytes.require`）从规范化版本事实与带已知位的实例事实解析边界。离线审计可用 `--target-version [v]MAJOR.MINOR.PATCH` 提供该事实——结果携带顶层 `version` 块（`product`、规范化 `version`、`source`、`validated_range`）。在线审计时观测到的服务器身份为准，其产品由 banner 自身推导：`--target-version` 与观测值相等则继续，版本或产品不等则是输入错误（SDK typed error、CLI 退出码 2、HTTP 400、MCP `isError=true`），原始服务器 banner 不会出现在输出中。当可能改变结果的版本或实例事实缺失时（例如未观测到的 `innodb_page_size` 或 TiDB `max-index-length`），规则报告有界 `evidence_gaps`，绝不按默认值处理；已验证系列为 MySQL 5.7.x/8.0.x/8.4.x 与 TiDB 8.5.x。
 
 审核 TiDB 语句：

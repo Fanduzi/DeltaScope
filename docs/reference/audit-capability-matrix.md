@@ -34,7 +34,26 @@ With only resource exhaustion, the result is `review`/`incomplete`; an admitted-
 
 This is a Planner-selected engineering quota, not a database limit or a measured safety threshold. It does not bound parsing depth, a single SQL statement's size, wall-clock time, memory, or OOM risk: parsing, normalization, and retained result storage may still grow. The HTTP 1 MiB body limit, parser/splitter, connection and cancellation contracts are unchanged. Splitting a batch may lose preceding Prospective Schema State and change the audit semantics; it is not an unconditional remedy.
 
-See [the decision record](../decisions/2026-10-05-ddl-ordered-audit-resource-limit.md). This boundary does not implement PROCEDURE definition/deletion isolation or complete T05/#84.
+See [the decision record](../decisions/2026-10-05-ddl-ordered-audit-resource-limit.md). Procedure lifecycle isolation is described separately below; the quota itself does not complete T05/#84.
+
+## Procedure Lifecycle and Outer Table State (MySQL/TiDB)
+
+Recognized `CREATE PROCEDURE` and `DROP PROCEDURE` are neutral only with respect to outer Prospective Schema State. Creating a definition does not execute its body; deleting a procedure does not delete a same-named table. The shared state dispatcher uses only the two existing normalized operation enums, on MySQL/TiDB DDL with no ResourceLimit, DML, Table or Targets payload. It does not infer identity from SQL, an unsupported feature string or a name, and does not require the statement's own coverage to be complete. Unexpected table/DML payloads remain on the old conservative path.
+
+For `CREATE TABLE t → PROCEDURE → ADD c → CREATE INDEX idx_c(c)` under the four-rule isolated profile, the last two statements use pre-states `t(id)` and `t(id,c)` and complete without findings or gaps. With provider-confirmed table absence, the first CREATE is complete; offline its original `unknown_table_state` existence gap remains. Process bodies are not additional outer statements and do not clear table statistics or member knowledge.
+
+| Procedure statement | Its own coverage/evidence | Batch with known-absent table provider | Offline batch |
+|---|---|---|---|
+| MySQL CREATE, SELECT or DELETE body | incomplete, original `create_procedure.body` (plus parameter evidence when present) | review/incomplete, unsupported error | review/incomplete, unsupported error |
+| TiDB CREATE | incomplete, original `create_procedure` vendor boundary | review/incomplete, unsupported error | review/incomplete, unsupported error |
+| MySQL DROP | complete, no new unsupported | pass/complete, nil error | review/unverified, nil error |
+| TiDB DROP | incomplete, original `drop_procedure` vendor boundary | review/incomplete, unsupported error | review/incomplete, unsupported error |
+
+This table assumes those simple statements, the four isolated blockers, and no independent error or budget cutoff. Existing findings and an earlier reject remain authoritative. Unsupported results retain the existing partial-result contract: application/SDK `ErrUnsupportedStatement`, CLI exit 1 even with `--fail-on none`, HTTP 400 and MCP `isError=true`. MySQL DROP's offline gap-only result keeps CLI exit 0 at none, HTTP 200 and MCP `isError=false`; warning/notice thresholds retain the existing gap weight. Existing `unsupported[].sql` stays equal to its statement's raw SQL; no new body or error text is copied into reason/metadata.
+
+The exception never clears contamination, schema invalidation or unknown tombstones, never restores provider certainty, and does not bypass the A7 quota: every procedure still consumes one top-level slot, and blocked successors stay blocked. The new early return checks cancellation. Existing metadata/object lookup, lifecycle rules, coverage projection, parser/provider errors and PostgreSQL behavior remain unchanged. `EXECUTE`, `DO`, `BINLOG`, execution-capable EXPLAIN, calls, unknown ASTs and other stored-object families are not added to the whitelist.
+
+This is not a whole-statement no-op, a promise that a procedure exists or can execute, or an implementation of body analysis. Static procedure/function bodies remain T27 work; no CALL simulation or new syntax/version support is introduced. See [the A8 decision record](../decisions/2026-10-05-ddl-procedure-outer-state-isolation.md).
 
 ---
 
