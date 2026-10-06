@@ -2445,6 +2445,69 @@ def t06_contract_tests(tmp):
     a["cases"][a["cases"].index(next(x for x in a["cases"] if x["case_id"] == recorded["case_id"]))] = recorded
     run("t06 runner-produced no-PK case validates", a)
 
+    # Identity binding (T06-A1-R1): a required case_id only counts when the
+    # record's self-declared kind/local id/dialect/anchor/policy profile
+    # equal the frozen role — the required set staying full is not proof the
+    # right anchor or branch ran.
+    def by_id(a, cid):
+        return next(item for item in a["cases"] if item["case_id"] == cid)
+
+    def slot(a, cid, donor):
+        forged = copy.deepcopy(donor)
+        forged["case_id"] = cid
+        a["cases"][a["cases"].index(by_id(a, cid))] = forged
+
+    # Same-variant cross-anchor donor reuse: single slot and all twelve.
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.meta.t06-mysql57-no-pk", by_id(a, "T06.meta.t06-mysql84-no-pk"))
+    run("t06 mysql84 record re-keyed as mysql57 rejected", a, "identity")
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.meta.t06-tidb85-no-pk", by_id(a, "T06.meta.t06-mysql84-no-pk"))
+    run("t06 mysql84 record re-keyed as tidb85 rejected", a, "identity")
+    a = copy.deepcopy(artifact)
+    donors = {v: copy.deepcopy(by_id(a, f"T06.meta.t06-mysql84-{v}"))
+              for v in ("no-pk", "inline-pk", "table-pk")}
+    for item in list(a["cases"]):
+        if item["kind"] == "cli_metadata":
+            slot(a, item["case_id"], donors[item["cli_case"].split("-", 2)[2]])
+    run("t06 all metadata slots refilled variant-wise rejected", a, "identity")
+
+    # Metadata slots demoted to offline cli_audit records (kind itself is a
+    # self-declared field and cannot re-pick the proof role).
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.meta.t06-mysql57-no-pk", by_id(a, "T06.cli.t06-mysql-no-pk"))
+    run("t06 metadata slot filled by offline record rejected", a, "identity")
+    a = copy.deepcopy(artifact)
+    for item in list(a["cases"]):
+        if item["kind"] == "cli_metadata":
+            variant = item["cli_case"].split("-", 2)[2]
+            dialect = "tidb" if item["anchor"] == "tidb85" else "mysql"
+            slot(a, item["case_id"], by_id(a, f"T06.cli.t06-{dialect}-{variant}"))
+    run("t06 all metadata slots demoted to offline records rejected", a, "identity")
+
+    # Same SQL, different policy role: required:false cannot stand in for
+    # the all-rules-disabled slot and vice versa.
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.cli.t06-mysql-rule-off", by_id(a, "T06.cli.t06-mysql-required-false"))
+    run("t06 required-false record in rule-off slot rejected", a, "identity")
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.cli.t06-mysql-required-false", by_id(a, "T06.cli.t06-mysql-rule-off"))
+    run("t06 rule-off record in required-false slot rejected", a, "identity")
+
+    # Duplicate executed records and duplicated/extra manifest declarations.
+    a = copy.deepcopy(artifact)
+    a["cases"].append(copy.deepcopy(by_id(a, "T06.cli.t06-mysql-no-pk")))
+    a["executed_count"] = len(a["cases"])
+    run("t06 duplicate executed case rejected", a, "duplicate")
+    m = copy.deepcopy(manifest)
+    m["metadata_cases"].append(copy.deepcopy(m["metadata_cases"][0]))
+    run("t06 manifest duplicate declared case id rejected", artifact, "T06-A1", m)
+    m = copy.deepcopy(manifest)
+    forged = copy.deepcopy(m["cli_cases"][-1])
+    forged["id"] = "t06-mysql-extra"
+    m["cli_cases"].append(forged)
+    run("t06 manifest extra declared case rejected", artifact, "T06-A1", m)
+
     return results
 
 

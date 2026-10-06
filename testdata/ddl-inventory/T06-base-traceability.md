@@ -55,7 +55,9 @@ Neighboring rows share the CREATE TABLE grammar but stay with their owners:
   enforced on 8.0) are T12/T04 territory; this slice does not pin them.
 - `CREATE TABLE ... LIKE`/`SELECT`/`IF NOT EXISTS` lifecycle semantics are T16.
 - Full table-option coverage (ROW_FORMAT/KEY_BLOCK_SIZE/STATS_*/comment sizes)
-  is T15; `DDL.UnextractedOptions` rows remain evidence gaps, not findings.
+  is T15; `DDL.UnextractedOptions` rows are extracted-but-unaudited boundary
+  entries (unsupported evidence), not #83-style missing-fact evidence gaps
+  and not findings.
 - TiDB-only CREATE TABLE options (AUTO_RANDOM, SHARD_ROW_ID_BITS,
   PRE_SPLIT_REGIONS, TTL, placement) keep their existing vendor-boundary or
   dedicated-row status under T19/T20/T23.

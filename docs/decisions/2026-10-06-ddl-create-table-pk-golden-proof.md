@@ -72,6 +72,25 @@ index families (T09/T10), generated columns (T07), and TiDB-only options
 (T19/T20/T23) remain with their owning tasks. `semantically_checked` on the
 two inventory rows predates this slice and is unchanged; #85 stays open.
 
+## Revision T06-A1-R1: identity binding (2026-10-06)
+
+Review found that a required `case_id` was only a name: the T06-specific
+checks selected the frozen spec by full ID, while the generic validator
+dispatched on the record's self-declared `kind` and re-selected the manifest
+spec by self-declared `cli_case`. A passing mysql84 record could therefore
+occupy the `t06-tidb85-no-pk` slot, and an offline `cli_audit` record could
+occupy a `cli_metadata` slot, with the required set still complete.
+
+The validator now builds one frozen map from `t06_a1_contract` —
+`case_id → kind / local id / dialect / anchor / policy profile / input SQL` —
+and binds every executed record to it **before** kind-based dispatch, plus
+rejects duplicate executed ids and duplicated or unfrozen manifest
+declarations. An ID being present is not proof the right anchor and role
+ran; the original `06de7475` artifact remains valid evidence — the artifact's
+`head_sha` is unchanged and validator-fix commits are recorded separately.
+Verified by the full validator entry on the original artifact plus 10 new
+contract mutations (244 total).
+
 ## Verification Evidence
 
 - `python3 scripts/test_ddl_golden.py` — 234 contract cases, 0 failures,

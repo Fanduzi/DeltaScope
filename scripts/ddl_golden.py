@@ -2707,6 +2707,63 @@ def t06_a1_contract():
     }
 
 
+def t06_a1_identity_map():
+    """Frozen full-case-id → proof-role identity for T06-A1 (issue #85 R1):
+    a required ID only counts when the record's self-declared kind, local
+    case id, dialect, anchor, and policy profile equal the role that ID
+    names — the presence of `T06.meta.t06-tidb85-no-pk` alone never proves
+    the TiDB anchor executed that proof."""
+    contract = t06_a1_contract()
+    bound = {}
+    for anchor_key in contract["anchors"]:
+        bound[f"T06.db.{anchor_key}.ddl"] = {"kind": "db_ddl", "anchor": anchor_key}
+        bound[f"T06.db.{anchor_key}.syntax_negative"] = {
+            "kind": "db_syntax_negative", "anchor": anchor_key}
+    for spec in contract["cli_cases"]:
+        bound[f"T06.cli.{spec['id']}"] = {
+            "kind": "cli_audit", "cli_case": spec["id"],
+            "dialect": spec["dialect"], "sql": spec["sql"],
+            "policy_profile": spec.get("policy") or contract["policy_profile"],
+        }
+    for spec in contract["metadata_cases"]:
+        bound[f"T06.meta.{spec['id']}"] = {
+            "kind": "cli_metadata", "cli_case": spec["id"],
+            "dialect": spec["dialect"], "anchor": spec["anchor"], "sql": spec["sql"],
+            "policy_profile": spec.get("policy") or contract["policy_profile"],
+        }
+    return bound
+
+
+def t06_a1_identity_failures(artifact, manifest):
+    """Bind every executed T06 record to the frozen proof role its full
+    case_id names (issue #85 T06-A1-R1). Runs before kind-based dispatch so
+    a record's self-declared kind/cli_case can never re-pick which manifest
+    spec it satisfies: cross-anchor reuse, metadata slots refilled by
+    offline records, isolated/required-false profile swaps, and duplicate
+    or foreign executed records are all rejected here."""
+    if manifest.get("task_id") != "T06":
+        return []
+    failures = []
+    bound = t06_a1_identity_map()
+    counts = {}
+    for case in artifact.get("cases") or []:
+        case_id = case.get("case_id")
+        counts[case_id] = counts.get(case_id, 0) + 1
+        role = bound.get(case_id)
+        if role is None:
+            continue  # the generic validator already reports unknown ids
+        for field in ("kind", "cli_case", "dialect", "anchor", "policy_profile"):
+            if field in role and case.get(field) != role[field]:
+                failures.append(
+                    f"T06-A1 {case_id}: identity {field} {case.get(field)!r} != frozen role {role[field]!r}")
+        if "sql" in role and case.get("input_sql") != role["sql"]:
+            failures.append(f"T06-A1 {case_id}: identity input_sql differs from the frozen statement")
+    for case_id, count in sorted(counts.items()):
+        if count > 1:
+            failures.append(f"T06-A1 {case_id}: {count} duplicate executed records")
+    return failures
+
+
 def t06_a1_manifest_failures(manifest):
     if manifest.get("task_id") != "T06":
         return []
@@ -2726,7 +2783,14 @@ def t06_a1_manifest_failures(manifest):
     if required != contract["required_case_ids"]:
         failures.append("T06-A1 required_case_ids differ from the frozen 32-case denominator")
     for field, kind in (("cli_cases", "cli"), ("metadata_cases", "meta")):
+        declared_list = [spec.get("id") for spec in manifest.get(field) or []]
         declared = {spec.get("id"): spec for spec in manifest.get(field) or []}
+        if len(declared_list) != len(declared):
+            failures.append(f"T06-A1 manifest {field} declares duplicate ids")
+        frozen_ids = {spec["id"] for spec in contract[field]}
+        extra_ids = sorted(set(declared) - frozen_ids)
+        if extra_ids:
+            failures.append(f"T06-A1 manifest {field} declares unfrozen ids {extra_ids}")
         for wanted in contract[field]:
             if declared.get(wanted["id"]) != wanted:
                 failures.append(f"T06-A1 frozen oracle changed or missing: {wanted['id']}")
@@ -2839,6 +2903,7 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
     failures.extend(t05_a5_manifest_failures(manifest))
     failures.extend(t05_a6_manifest_failures(manifest))
     failures.extend(t06_a1_manifest_failures(manifest))
+    failures.extend(t06_a1_identity_failures(artifact, manifest))
     failures.extend(t06_a1_artifact_failures(artifact, manifest))
 
     if artifact.get("external_blocker"):
