@@ -1,7 +1,7 @@
 {
  "task_id": "T06",
  "issue": "https://github.com/Fanduzi/DeltaScope/issues/85",
- "description": "CREATE TABLE base semantics (issue #85 T06-A1+A2): the accepted 32-case primary-key-presence subset plus 24 nullability/default cases \u2014 isolated policies pin PK member NOT NULL normalization, explicit-NULL member conflicts, and DEFAULT presence across four anchors.",
+ "description": "CREATE TABLE base semantics (issue #85 T06-A1/A2/A3): the accepted 56-case primary-key/nullability/default-presence subset plus 16 DEFAULT NULL cases \u2014 the CLI matrix pins the presence contract across four default spellings, the representation oracle binds COLUMN_DEFAULT NULL flags and raw bytes per anchor, and the null-drop-state path proves a sibling SQL NULL default stays out of the drop-column projection.",
  "policy_profile": "all-rules-disabled",
  "policy": {
   "profiles": {
@@ -41,6 +41,32 @@
    "t06-a2-default-presence-isolated": {
     "enable": {
      "ddl.column.default.require": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "required": true
+      }
+     }
+    }
+   },
+   "t06-a3-null-drop-state-isolated": {
+    "enable": {
+     "ddl.table.exists.create.forbid": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {}
+     },
+     "ddl.table.exists.alter.require": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {}
+     },
+     "ddl.alter.drop_column.exists.require": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {}
+     },
+     "ddl.create_index.columns.exists.require": {
       "enabled": true,
       "level": "blocker",
       "params": {
@@ -896,6 +922,306 @@
     "fail_on_triggered": false,
     "rule_summary_loaded": 1
    }
+  },
+  {
+   "id": "t06-a3-mysql-no-default",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(8));",
+   "policy": "t06-a2-default-presence-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(8));"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.default.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.default.require",
+      "metadata": {
+       "table": "t",
+       "column": "c",
+       "type": "varchar(8)"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c\" should define a default value"
+   }
+  },
+  {
+   "id": "t06-a3-mysql-sql-null",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(8) DEFAULT NULL);",
+   "policy": "t06-a2-default-presence-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(8) DEFAULT NULL);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   }
+  },
+  {
+   "id": "t06-a3-mysql-text-null",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(8) DEFAULT 'NULL');",
+   "policy": "t06-a2-default-presence-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(8) DEFAULT 'NULL');"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   }
+  },
+  {
+   "id": "t06-a3-mysql-text-nil",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(8) DEFAULT '<nil>');",
+   "policy": "t06-a2-default-presence-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(8) DEFAULT '<nil>');"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   }
+  },
+  {
+   "id": "t06-a3-tidb-no-default",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(8));",
+   "policy": "t06-a2-default-presence-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(8));"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.default.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.default.require",
+      "metadata": {
+       "table": "t",
+       "column": "c",
+       "type": "varchar(8)"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c\" should define a default value"
+   }
+  },
+  {
+   "id": "t06-a3-tidb-sql-null",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(8) DEFAULT NULL);",
+   "policy": "t06-a2-default-presence-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(8) DEFAULT NULL);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   }
+  },
+  {
+   "id": "t06-a3-tidb-text-null",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(8) DEFAULT 'NULL');",
+   "policy": "t06-a2-default-presence-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(8) DEFAULT 'NULL');"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   }
+  },
+  {
+   "id": "t06-a3-tidb-text-nil",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(8) DEFAULT '<nil>');",
+   "policy": "t06-a2-default-presence-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(8) DEFAULT '<nil>');"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   }
   }
  ],
  "metadata_cases": [
@@ -1740,6 +2066,295 @@
      "verify": [
       {
        "assert": "t absent after rejected create",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a3-mysql57-default-representation",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '<nil>');",
+   "policy": "t06-a2-default-presence-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '<nil>');"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.default.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.default.require",
+      "metadata": {
+       "table": "t",
+       "column": "a",
+       "type": "varchar(8)"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"a\" should define a default value"
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '<nil>');",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly four user columns",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "4"
+    },
+    {
+     "assert": "four varchar(8) columns in declared order",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "a:varchar:1:YES,b:varchar:2:YES,c:varchar:3:YES,d:varchar:4:YES"
+    },
+    {
+     "assert": "all four varchar lengths",
+     "sql": "SELECT GROUP_CONCAT(CHARACTER_MAXIMUM_LENGTH ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "8,8,8,8"
+    },
+    {
+     "assert": "no primary key constraint",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "default null flags and raw bytes",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a3-mysql57-null-drop-state",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(8) DEFAULT NULL); ALTER TABLE t DROP COLUMN obsolete; CREATE INDEX idx_keep ON t(keep_c);",
+   "policy": "t06-a3-null-drop-state-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 3,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(8) DEFAULT NULL);",
+     "ALTER TABLE t DROP COLUMN obsolete;",
+     "CREATE INDEX idx_keep ON t(keep_c);"
+    ],
+    "statement_indices": [
+     0,
+     1,
+     2
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 4
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies audited create",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(8) DEFAULT NULL);",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "three columns after create",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id:int:1:NO,obsolete:int:2:YES,keep_c:varchar:3:YES"
+      },
+      {
+       "assert": "keep_c stores SQL NULL default",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, IS_NULLABLE, COLUMN_DEFAULT IS NULL) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "keep_c:varchar:8:YES:1"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    },
+    {
+     "name": "driver drops obsolete",
+     "sql": "ALTER TABLE t DROP COLUMN obsolete;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "obsolete dropped, order id/keep_c",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id:int:1:NO,keep_c:varchar:2:YES"
+      },
+      {
+       "assert": "keep_c still SQL NULL default",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, IS_NULLABLE, COLUMN_DEFAULT IS NULL) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "keep_c:varchar:8:YES:1"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    },
+    {
+     "name": "driver creates index on keep_c",
+     "sql": "CREATE INDEX idx_keep ON t(keep_c);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "final columns id and keep_c",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int:1:NO,keep_c:varchar:2:YES"
+    },
+    {
+     "assert": "indexes PRIMARY(id) and idx_keep(keep_c)",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', INDEX_NAME, COLUMN_NAME, SEQ_IN_INDEX) ORDER BY BINARY INDEX_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "PRIMARY:id:1,idx_keep:keep_c:1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
        "expect": "0"
       }
@@ -2631,6 +3246,305 @@
    ]
   },
   {
+   "id": "t06-a3-mysql80-default-representation",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '<nil>');",
+   "policy": "t06-a2-default-presence-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '<nil>');"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.default.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.default.require",
+      "metadata": {
+       "table": "t",
+       "column": "a",
+       "type": "varchar(8)"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"a\" should define a default value",
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '<nil>');",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly four user columns",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "4"
+    },
+    {
+     "assert": "four varchar(8) columns in declared order",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "a:varchar:1:YES,b:varchar:2:YES,c:varchar:3:YES,d:varchar:4:YES"
+    },
+    {
+     "assert": "all four varchar lengths",
+     "sql": "SELECT GROUP_CONCAT(CHARACTER_MAXIMUM_LENGTH ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "8,8,8,8"
+    },
+    {
+     "assert": "no primary key constraint",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "default null flags and raw bytes",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a3-mysql80-null-drop-state",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(8) DEFAULT NULL); ALTER TABLE t DROP COLUMN obsolete; CREATE INDEX idx_keep ON t(keep_c);",
+   "policy": "t06-a3-null-drop-state-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 3,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(8) DEFAULT NULL);",
+     "ALTER TABLE t DROP COLUMN obsolete;",
+     "CREATE INDEX idx_keep ON t(keep_c);"
+    ],
+    "statement_indices": [
+     0,
+     1,
+     2
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 4,
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies audited create",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(8) DEFAULT NULL);",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "three columns after create",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id:int:1:NO,obsolete:int:2:YES,keep_c:varchar:3:YES"
+      },
+      {
+       "assert": "keep_c stores SQL NULL default",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, IS_NULLABLE, COLUMN_DEFAULT IS NULL) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "keep_c:varchar:8:YES:1"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    },
+    {
+     "name": "driver drops obsolete",
+     "sql": "ALTER TABLE t DROP COLUMN obsolete;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "obsolete dropped, order id/keep_c",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id:int:1:NO,keep_c:varchar:2:YES"
+      },
+      {
+       "assert": "keep_c still SQL NULL default",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, IS_NULLABLE, COLUMN_DEFAULT IS NULL) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "keep_c:varchar:8:YES:1"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    },
+    {
+     "name": "driver creates index on keep_c",
+     "sql": "CREATE INDEX idx_keep ON t(keep_c);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "final columns id and keep_c",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int:1:NO,keep_c:varchar:2:YES"
+    },
+    {
+     "assert": "indexes PRIMARY(id) and idx_keep(keep_c)",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', INDEX_NAME, COLUMN_NAME, SEQ_IN_INDEX) ORDER BY BINARY INDEX_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "PRIMARY:id:1,idx_keep:keep_c:1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
    "id": "t06-mysql84-no-pk",
    "anchor": "mysql84",
    "dialect": "mysql",
@@ -3514,6 +4428,305 @@
    ]
   },
   {
+   "id": "t06-a3-mysql84-default-representation",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '<nil>');",
+   "policy": "t06-a2-default-presence-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '<nil>');"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.default.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.default.require",
+      "metadata": {
+       "table": "t",
+       "column": "a",
+       "type": "varchar(8)"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"a\" should define a default value",
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '<nil>');",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly four user columns",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "4"
+    },
+    {
+     "assert": "four varchar(8) columns in declared order",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "a:varchar:1:YES,b:varchar:2:YES,c:varchar:3:YES,d:varchar:4:YES"
+    },
+    {
+     "assert": "all four varchar lengths",
+     "sql": "SELECT GROUP_CONCAT(CHARACTER_MAXIMUM_LENGTH ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "8,8,8,8"
+    },
+    {
+     "assert": "no primary key constraint",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "default null flags and raw bytes",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a3-mysql84-null-drop-state",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(8) DEFAULT NULL); ALTER TABLE t DROP COLUMN obsolete; CREATE INDEX idx_keep ON t(keep_c);",
+   "policy": "t06-a3-null-drop-state-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 3,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(8) DEFAULT NULL);",
+     "ALTER TABLE t DROP COLUMN obsolete;",
+     "CREATE INDEX idx_keep ON t(keep_c);"
+    ],
+    "statement_indices": [
+     0,
+     1,
+     2
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 4,
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies audited create",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(8) DEFAULT NULL);",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "three columns after create",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id:int:1:NO,obsolete:int:2:YES,keep_c:varchar:3:YES"
+      },
+      {
+       "assert": "keep_c stores SQL NULL default",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, IS_NULLABLE, COLUMN_DEFAULT IS NULL) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "keep_c:varchar:8:YES:1"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    },
+    {
+     "name": "driver drops obsolete",
+     "sql": "ALTER TABLE t DROP COLUMN obsolete;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "obsolete dropped, order id/keep_c",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id:int:1:NO,keep_c:varchar:2:YES"
+      },
+      {
+       "assert": "keep_c still SQL NULL default",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, IS_NULLABLE, COLUMN_DEFAULT IS NULL) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "keep_c:varchar:8:YES:1"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    },
+    {
+     "name": "driver creates index on keep_c",
+     "sql": "CREATE INDEX idx_keep ON t(keep_c);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "final columns id and keep_c",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int:1:NO,keep_c:varchar:2:YES"
+    },
+    {
+     "assert": "indexes PRIMARY(id) and idx_keep(keep_c)",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', INDEX_NAME, COLUMN_NAME, SEQ_IN_INDEX) ORDER BY BINARY INDEX_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "PRIMARY:id:1,idx_keep:keep_c:1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
    "id": "t06-tidb85-no-pk",
    "anchor": "tidb85",
    "dialect": "tidb",
@@ -4321,6 +5534,291 @@
      ]
     }
    ]
+  },
+  {
+   "id": "t06-a3-tidb85-default-representation",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '<nil>');",
+   "policy": "t06-a2-default-presence-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '<nil>');"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.default.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.default.require",
+      "metadata": {
+       "table": "t",
+       "column": "a",
+       "type": "varchar(8)"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"a\" should define a default value"
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '<nil>');",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly four user columns",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "4"
+    },
+    {
+     "assert": "four varchar(8) columns in declared order",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "a:varchar:1:YES,b:varchar:2:YES,c:varchar:3:YES,d:varchar:4:YES"
+    },
+    {
+     "assert": "all four varchar lengths",
+     "sql": "SELECT GROUP_CONCAT(CHARACTER_MAXIMUM_LENGTH ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "8,8,8,8"
+    },
+    {
+     "assert": "no primary key constraint",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "default null flags and raw bytes",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a3-tidb85-null-drop-state",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(8) DEFAULT NULL); ALTER TABLE t DROP COLUMN obsolete; CREATE INDEX idx_keep ON t(keep_c);",
+   "policy": "t06-a3-null-drop-state-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 3,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(8) DEFAULT NULL);",
+     "ALTER TABLE t DROP COLUMN obsolete;",
+     "CREATE INDEX idx_keep ON t(keep_c);"
+    ],
+    "statement_indices": [
+     0,
+     1,
+     2
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 4
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies audited create",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(8) DEFAULT NULL);",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "three columns after create",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id:int:1:NO,obsolete:int:2:YES,keep_c:varchar:3:YES"
+      },
+      {
+       "assert": "keep_c stores SQL NULL default",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, IS_NULLABLE, COLUMN_DEFAULT IS NULL) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "keep_c:varchar:8:YES:1"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    },
+    {
+     "name": "driver drops obsolete",
+     "sql": "ALTER TABLE t DROP COLUMN obsolete;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "obsolete dropped, order id/keep_c",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "id:int:1:NO,keep_c:varchar:2:YES"
+      },
+      {
+       "assert": "keep_c still SQL NULL default",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, IS_NULLABLE, COLUMN_DEFAULT IS NULL) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'",
+       "expect": "keep_c:varchar:8:YES:1"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    },
+    {
+     "name": "driver creates index on keep_c",
+     "sql": "CREATE INDEX idx_keep ON t(keep_c);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "final columns id and keep_c",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int:1:NO,keep_c:varchar:2:YES"
+    },
+    {
+     "assert": "indexes PRIMARY(id) and idx_keep(keep_c)",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', INDEX_NAME, COLUMN_NAME, SEQ_IN_INDEX) ORDER BY BINARY INDEX_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "PRIMARY:id:1,idx_keep:keep_c:1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
   }
  ],
  "required_case_ids": [
@@ -4352,6 +5850,14 @@
   "T06.cli.t06-a2-tidb-table-composite",
   "T06.cli.t06-a2-tidb-no-default",
   "T06.cli.t06-a2-tidb-default-null",
+  "T06.cli.t06-a3-mysql-no-default",
+  "T06.cli.t06-a3-mysql-sql-null",
+  "T06.cli.t06-a3-mysql-text-null",
+  "T06.cli.t06-a3-mysql-text-nil",
+  "T06.cli.t06-a3-tidb-no-default",
+  "T06.cli.t06-a3-tidb-sql-null",
+  "T06.cli.t06-a3-tidb-text-null",
+  "T06.cli.t06-a3-tidb-text-nil",
   "T06.meta.t06-mysql57-no-pk",
   "T06.meta.t06-mysql57-inline-pk",
   "T06.meta.t06-mysql57-table-pk",
@@ -4359,6 +5865,8 @@
   "T06.meta.t06-a2-mysql57-table-composite",
   "T06.meta.t06-a2-mysql57-explicit-null-table",
   "T06.meta.t06-a2-mysql57-explicit-null-inline",
+  "T06.meta.t06-a3-mysql57-default-representation",
+  "T06.meta.t06-a3-mysql57-null-drop-state",
   "T06.meta.t06-mysql80-no-pk",
   "T06.meta.t06-mysql80-inline-pk",
   "T06.meta.t06-mysql80-table-pk",
@@ -4366,6 +5874,8 @@
   "T06.meta.t06-a2-mysql80-table-composite",
   "T06.meta.t06-a2-mysql80-explicit-null-table",
   "T06.meta.t06-a2-mysql80-explicit-null-inline",
+  "T06.meta.t06-a3-mysql80-default-representation",
+  "T06.meta.t06-a3-mysql80-null-drop-state",
   "T06.meta.t06-mysql84-no-pk",
   "T06.meta.t06-mysql84-inline-pk",
   "T06.meta.t06-mysql84-table-pk",
@@ -4373,12 +5883,16 @@
   "T06.meta.t06-a2-mysql84-table-composite",
   "T06.meta.t06-a2-mysql84-explicit-null-table",
   "T06.meta.t06-a2-mysql84-explicit-null-inline",
+  "T06.meta.t06-a3-mysql84-default-representation",
+  "T06.meta.t06-a3-mysql84-null-drop-state",
   "T06.meta.t06-tidb85-no-pk",
   "T06.meta.t06-tidb85-inline-pk",
   "T06.meta.t06-tidb85-table-pk",
   "T06.meta.t06-a2-tidb85-table-single",
   "T06.meta.t06-a2-tidb85-table-composite",
   "T06.meta.t06-a2-tidb85-explicit-null-table",
-  "T06.meta.t06-a2-tidb85-explicit-null-inline"
+  "T06.meta.t06-a2-tidb85-explicit-null-inline",
+  "T06.meta.t06-a3-tidb85-default-representation",
+  "T06.meta.t06-a3-tidb85-null-drop-state"
  ]
 }

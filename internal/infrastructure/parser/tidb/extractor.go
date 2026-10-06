@@ -670,8 +670,12 @@ func extractColumn(col *ast.ColumnDef) spec.Column {
 			column.AutoIncrement = true
 		case ast.ColumnOptionDefaultValue:
 			column.HasDefault = true
-			column.DefaultValue = normalizedExprText(option.Expr)
-			column.DefaultIsNull = strings.EqualFold(column.DefaultValue, "null")
+			if exprIsNullLiteral(option.Expr) {
+				column.DefaultValue = "NULL"
+				column.DefaultIsNull = true
+			} else {
+				column.DefaultValue = normalizedExprText(option.Expr)
+			}
 			column.DefaultIsCurrentTimestamp = exprIsCurrentTimestamp(option.Expr)
 		case ast.ColumnOptionOnUpdate:
 			column.OnUpdateCurrentTimestamp = exprIsCurrentTimestamp(option.Expr)
@@ -1514,6 +1518,27 @@ func rowFormatName(value uint64) string {
 	default:
 		return ""
 	}
+}
+
+// exprIsNullLiteral reports whether expr is the SQL NULL literal, recognized
+// from the typed datum, never from rendered text. A param marker embeds a
+// ValueExpr whose datum also reports a nil value, so markers are excluded
+// first; absent nodes and non-literal expressions (functions, variables,
+// parameters, arithmetic) are never NULL literals. The pinned parser driver's
+// NULL datum returns nil from GetValue, which is the typed fact this check
+// relies on.
+func exprIsNullLiteral(expr ast.ExprNode) bool {
+	if expr == nil {
+		return false
+	}
+	if _, marker := expr.(ast.ParamMarkerExpr); marker {
+		return false
+	}
+	valueExpr, ok := expr.(ast.ValueExpr)
+	if !ok {
+		return false
+	}
+	return valueExpr.GetValue() == nil
 }
 
 func normalizedExprText(expr ast.ExprNode) string {

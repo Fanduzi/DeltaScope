@@ -139,11 +139,11 @@ func TestT06A2DefaultFactsPreserved(t *testing.T) {
 	if columns[0].HasDefault || columns[0].DefaultIsNull {
 		t.Fatalf("a = %+v, want no explicit DEFAULT clause modeled", columns[0])
 	}
-	// Explicit DEFAULT NULL satisfies "has a default". The normalized text for
-	// a NULL literal currently records "<nil>", so DefaultIsNull stays false —
-	// that bounded fidelity gap is recorded, not changed, in this slice.
-	if !columns[1].HasDefault || columns[1].DefaultIsNull {
-		t.Fatalf("b = %+v, want explicit DEFAULT NULL satisfying has_default", columns[1])
+	// Explicit DEFAULT NULL satisfies "has a default" and records the typed
+	// NULL literal fact (T06-A3): DefaultValue is the normalized text "NULL"
+	// and DefaultIsNull=true.
+	if !columns[1].HasDefault || !columns[1].DefaultIsNull || columns[1].DefaultValue != "NULL" {
+		t.Fatalf("b = %+v, want typed DEFAULT NULL recorded", columns[1])
 	}
 	if !columns[2].HasDefault || columns[2].DefaultIsNull || columns[2].DefaultValue != "0" {
 		t.Fatalf("c = %+v, want DEFAULT 0 distinct from an absent clause", columns[2])
@@ -157,8 +157,8 @@ func TestT06A2DefaultFactsPreserved(t *testing.T) {
 	pkStatement := t06a2Extract(t, spec.DialectMySQL,
 		"CREATE TABLE t (id INT DEFAULT NULL, PRIMARY KEY (id));")
 	id := pkStatement.DDL.Columns[0]
-	if !id.NotNull || !id.HasDefault {
-		t.Fatalf("id = %+v, want NotNull with the DEFAULT fact preserved", id)
+	if !id.NotNull || !id.HasDefault || !id.DefaultIsNull || id.DefaultValue != "NULL" {
+		t.Fatalf("id = %+v, want NotNull with the typed DEFAULT NULL fact preserved", id)
 	}
 }
 

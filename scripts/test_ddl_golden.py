@@ -2107,7 +2107,9 @@ def t06_contract_tests(tmp):
     artifact = make_artifact(directory)
     binary = directory / "deltascope"
     catalog = json.dumps({"rules": [{"rule_id": rid} for rid in (
-        ddl_golden.T06_PK_RULE, ddl_golden.T06_PK_NN_RULE, ddl_golden.T06_DEFAULT_RULE)]})
+        ddl_golden.T06_PK_RULE, ddl_golden.T06_PK_NN_RULE, ddl_golden.T06_DEFAULT_RULE,
+        "ddl.table.exists.create.forbid", "ddl.table.exists.alter.require",
+        "ddl.alter.drop_column.exists.require", "ddl.create_index.columns.exists.require")]})
     binary.write_text("#!/bin/sh\nprintf '%s' '" + catalog + "'\n")
     artifact["cli"]["sha256"] = ddl_golden.sha256_file(binary)
     policies = ddl_golden.make_policies(str(binary), directory, manifest)
@@ -2470,7 +2472,7 @@ def t06_contract_tests(tmp):
     donors = {v: copy.deepcopy(by_id(a, f"T06.meta.t06-mysql84-{v}"))
               for v in ("no-pk", "inline-pk", "table-pk")}
     for item in list(a["cases"]):
-        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith("t06-a2-"):
+        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-")):
             slot(a, item["case_id"], donors[item["cli_case"].split("-", 2)[2]])
     run("t06 all metadata slots refilled variant-wise rejected", a, "identity")
 
@@ -2481,7 +2483,7 @@ def t06_contract_tests(tmp):
     run("t06 metadata slot filled by offline record rejected", a, "identity")
     a = copy.deepcopy(artifact)
     for item in list(a["cases"]):
-        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith("t06-a2-"):
+        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-")):
             variant = item["cli_case"].split("-", 2)[2]
             dialect = "tidb" if item["anchor"] == "tidb85" else "mysql"
             slot(a, item["case_id"], by_id(a, f"T06.cli.t06-{dialect}-{variant}"))
@@ -2605,6 +2607,121 @@ def t06_contract_tests(tmp):
     a, c = t06a2("mysql84-table-single")
     c["policy_profile"] = ddl_golden.T06_A2_DEFAULT_PROFILE
     run("t06a2 isolated policy profile swapped rejected", a, "identity")
+
+    # --- T06-A3 additions: typed DEFAULT NULL roles on the 72-case set ---
+
+    def t06a3(suffix):
+        candidate = copy.deepcopy(artifact)
+        case = next(item for item in candidate["cases"]
+                    if item.get("cli_case") == "t06-a3-" + suffix)
+        return candidate, case
+
+    # The CLI spelling matrix is identity-bound: a DEFAULT NULL record can
+    # never stand in for the missing-default slot, and vice versa.
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.cli.t06-a3-mysql-no-default", by_id(a, "T06.cli.t06-a3-mysql-sql-null"))
+    run("t06a3 sql-null record in no-default slot rejected", a, "identity")
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.cli.t06-a3-tidb-sql-null", by_id(a, "T06.cli.t06-a3-tidb-text-null"))
+    run("t06a3 text-null record in sql-null slot rejected", a, "identity")
+
+    # The representation oracle distinguishes the SQL NULL datum from the
+    # string literals byte-for-byte: flipping a flag or the HEX output must
+    # fail, whether the lie claims a literal was NULL or NULL was a literal.
+    a, c = t06a3("mysql84-default-representation")
+    for record in c["actual"]["structure"]:
+        if record["assert"] == "default null flags and raw bytes":
+            record["output"] = "a:1:-,b:0:4E554C4C,c:0:4E554C4C,d:0:3C6E696C3E"
+    run("t06a3 SQL NULL recorded as literal rejected", a, "structure")
+    a, c = t06a3("mysql84-default-representation")
+    for record in c["actual"]["structure"]:
+        if record["assert"] == "default null flags and raw bytes":
+            record["output"] = "a:1:-,b:1:-,c:1:-,d:0:3C6E696C3E"
+    run("t06a3 literal NULL recorded as SQL NULL rejected", a, "structure")
+    a, c = t06a3("mysql84-default-representation")
+    for record in c["actual"]["structure"]:
+        if record["assert"] == "default null flags and raw bytes":
+            record["output"] = "a:1:-,b:1:-,c:0:3C6E696C3E,d:0:4E554C4C"
+    run("t06a3 string literal hex swapped rejected", a, "structure")
+    a, c = t06a3("mysql84-default-representation")
+    for record in c["actual"]["structure"]:
+        if record["assert"] == "default null flags and raw bytes":
+            record["output"] = "a:1:-,b:1:-,c:0:DEADBEEF,d:0:3C6E696C3E"
+    run("t06a3 literal bytes corrupted rejected", a, "structure")
+
+    # Dropping a default-probe verify or the mid-DROP check on both sides
+    # still violates the frozen oracle.
+    a = copy.deepcopy(artifact)
+    m = copy.deepcopy(manifest)
+    for item in a["cases"]:
+        if item.get("cli_case") == "t06-a3-mysql84-default-representation":
+            item["actual"]["structure"] = [
+                r for r in item["actual"]["structure"]
+                if r["assert"] != "default null flags and raw bytes"]
+    for spec in m["metadata_cases"]:
+        if spec["id"] == "t06-a3-mysql84-default-representation":
+            spec["structure"] = [q for q in spec["structure"]
+                                 if q["assert"] != "default null flags and raw bytes"]
+    run("t06a3 default-probe query deleted on both sides rejected", a, "T06-A1", m)
+    a = copy.deepcopy(artifact)
+    m = copy.deepcopy(manifest)
+    for item in a["cases"]:
+        if item.get("cli_case") == "t06-a3-mysql84-null-drop-state":
+            for step in item["actual"]["execute"]:
+                if step["name"] == "driver drops obsolete":
+                    step["verify"] = []
+    for spec in m["metadata_cases"]:
+        if spec["id"] == "t06-a3-mysql84-null-drop-state":
+            for step in spec["execute"]:
+                if step["name"] == "driver drops obsolete":
+                    step["verify"] = []
+    run("t06a3 mid-drop column check deleted on both sides rejected", a, "T06-A1", m)
+
+    # The three-statement path may not collapse to one statement or lose the
+    # DROP/INDEX legs while still reporting pass.
+    a, c = t06a3("mysql84-null-drop-state")
+    c["actual"]["parsed"]["statements"] = c["actual"]["parsed"]["statements"][:1]
+    update_stdout(c)
+    run("t06a3 drop-state collapsed to single statement rejected", a, "T06-A1")
+    a, c = t06a3("mysql84-null-drop-state")
+    c["actual"]["parsed"]["statements"].pop(1)
+    update_stdout(c)
+    run("t06a3 drop statement lost but pass rejected", a, "T06-A1")
+
+    # A revived unknown-state gap on statement 2 may not be reported while
+    # the aggregate claims complete.
+    a, c = t06a3("mysql84-null-drop-state")
+    c["actual"]["parsed"]["statements"][2]["evidence_gaps"].append(
+        {"rule_id": "ddl.create_index.columns.exists.require",
+         "reason_code": "unknown_table_state",
+         "required_facts": ["target_table.columns", "target_table.existence"]})
+    update_stdout(c)
+    run("t06a3 revived gap hidden under complete rejected", a, "gap")
+
+    # The new roles share the rebind/demote/profile-swap defenses.
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.meta.t06-a3-mysql57-null-drop-state",
+         by_id(a, "T06.meta.t06-a3-mysql84-null-drop-state"))
+    run("t06a3 mysql84 drop-state re-keyed as mysql57 rejected", a, "identity")
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.meta.t06-a3-tidb85-default-representation",
+         by_id(a, "T06.cli.t06-a3-tidb-sql-null"))
+    run("t06a3 metadata slot demoted to offline record rejected", a, "identity")
+    a, c = t06a3("mysql84-null-drop-state")
+    c["policy_profile"] = ddl_golden.T06_A2_DEFAULT_PROFILE
+    run("t06a3 drop-state profile swapped rejected", a, "identity")
+
+    # Deleting a new case on both sides still fails the frozen contract.
+    a = copy.deepcopy(artifact)
+    m = copy.deepcopy(manifest)
+    victim = "T06.meta.t06-a3-tidb85-null-drop-state"
+    a["cases"] = [x for x in a["cases"] if x["case_id"] != victim]
+    a["executed_count"] = len(a["cases"])
+    a["required_case_ids"].remove(victim)
+    m["metadata_cases"] = [s for s in m["metadata_cases"]
+                           if s["id"] != "t06-a3-tidb85-null-drop-state"]
+    m["required_case_ids"].remove(victim)
+    run("t06a3 case deleted on both sides rejected", a, "T06-A1", m)
 
     return results
 

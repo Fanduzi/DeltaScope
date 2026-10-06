@@ -2388,6 +2388,47 @@ T06_GIPK_FACTS = {
     "show_gipk_in_create_table_and_information_schema": "ON",
 }
 
+# T06-A3 (issue #85): SQL DEFAULT NULL typed-identity fix. The CLI matrix
+# reuses the A2 default-presence profile; the three-statement drop path gets
+# its own isolated four-rule profile so no other rule can mask the seam.
+T06_A3_DROP_PROFILE = "t06-a3-null-drop-state-isolated"
+T06_A3_NO_DEFAULT_SQL = "CREATE TABLE t (c VARCHAR(8));"
+T06_A3_SQL_NULL_SQL = "CREATE TABLE t (c VARCHAR(8) DEFAULT NULL);"
+T06_A3_TEXT_NULL_SQL = "CREATE TABLE t (c VARCHAR(8) DEFAULT 'NULL');"
+T06_A3_TEXT_NIL_SQL = "CREATE TABLE t (c VARCHAR(8) DEFAULT '<nil>');"
+T06_A3_MATRIX_SQL = (
+    "CREATE TABLE t (a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, "
+    "c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '<nil>');"
+)
+T06_A3_DROP_STATEMENTS = [
+    "CREATE TABLE t (id INT PRIMARY KEY, obsolete INT, keep_c VARCHAR(8) DEFAULT NULL);",
+    "ALTER TABLE t DROP COLUMN obsolete;",
+    "CREATE INDEX idx_keep ON t(keep_c);",
+]
+T06_A3_DROP_STATE_SQL = " ".join(T06_A3_DROP_STATEMENTS)
+# One ordered row pins every column's NULL flag plus the raw bytes of any
+# non-NULL default: `a:1,-`/`b:1,-` are SQL NULL, `c`/`d` carry HEX output so
+# a string literal can never masquerade as the null datum.
+T06_A3_DEFAULT_ROWS = (
+    "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, "
+    "IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) "
+    "FROM information_schema.COLUMNS "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'"
+)
+T06_A3_KEEPC_COLUMN = (
+    "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, CHARACTER_MAXIMUM_LENGTH, "
+    "IS_NULLABLE, COLUMN_DEFAULT IS NULL) FROM information_schema.COLUMNS "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='keep_c'"
+)
+# BINARY ordering keeps PRIMARY ahead of idx_keep on every anchor: MySQL's
+# information_schema columns carry a case-insensitive collation while TiDB
+# compares bytes, so a plain ORDER BY INDEX_NAME forks by engine.
+T06_A3_INDEX_ROWS = (
+    "SELECT GROUP_CONCAT(CONCAT_WS(':', INDEX_NAME, COLUMN_NAME, SEQ_IN_INDEX) "
+    "ORDER BY BINARY INDEX_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'"
+)
+
 T06_ANCHORS = {
     "mysql57": {
         "service": "mysql57",
@@ -2505,16 +2546,24 @@ T06_SYNTAX_NEGATIVE = {
 
 
 def t06_a1_contract():
-    """Frozen T06 oracle (issue #85): the accepted A1 32-case subset plus the
-    A2 24-case subset, 56 cases total. A1 baseline cases reuse the T02 batch
-    verbatim; the ten offline controls pin the two isolated policy profiles;
-    the twelve anchored cases pin the information_schema structure oracle.
+    """Frozen T06 oracle (issue #85): the accepted A1 32-case subset, the
+    A2 24-case subset, and the A3 16-case subset, 72 cases total. A1
+    baseline cases reuse the T02 batch verbatim; the offline controls pin
+    the isolated policy profiles; the anchored cases pin the
+    information_schema structure oracle.
 
     The A2 subset pins primary-key member nullability normalization: legal
     table-level and composite members pass the isolated not-null rule, while
     explicit NULL members keep exactly one policy blocker and the driver
     rejects them with ERROR 1171. DEFAULT presence keeps its exact contract —
     an absent clause reports, explicit DEFAULT NULL satisfies.
+
+    The A3 subset pins typed DEFAULT NULL identity: a four-spelling CLI
+    matrix reuses the default-presence profile, a four-column representation
+    case proves via COLUMN_DEFAULT NULL flags and HEX bytes that the server
+    stored `b` as SQL NULL and `c`/`d` as strings, and a three-statement
+    CREATE→DROP COLUMN→CREATE INDEX path proves a sibling DEFAULT NULL no
+    longer poisons the drop-column state projection.
 
     MySQL 8.0/8.4 cases additionally record the GIPK-related server variables
     so a server-generated invisible primary key can never masquerade as a
@@ -2665,6 +2714,27 @@ def t06_a1_contract():
                 "expect": audit_expect(T06_A2_DEFAULT_NULL_SQL, False, loaded=1),
             },
         ]
+    a3_default_finding = {
+        "rule_id": T06_DEFAULT_RULE,
+        "message": 'column "c" should define a default value',
+        "metadata": {"table": "t", "column": "c", "type": "varchar(8)"},
+    }
+    for dialect in ("mysql", "tidb"):
+        for variant, sql, rejects in (
+            ("no-default", T06_A3_NO_DEFAULT_SQL, True),
+            ("sql-null", T06_A3_SQL_NULL_SQL, False),
+            ("text-null", T06_A3_TEXT_NULL_SQL, False),
+            ("text-nil", T06_A3_TEXT_NIL_SQL, False),
+        ):
+            cli_cases.append({
+                "id": f"t06-a3-{dialect}-{variant}",
+                "dialect": dialect,
+                "sql": sql,
+                "policy": T06_A2_DEFAULT_PROFILE,
+                "args": ["--fail-on", "blocker"],
+                "expect": audit_expect(sql, rejects, loaded=1,
+                                       finding=a3_default_finding if rejects else None),
+            })
 
     connects = {
         "mysql57": {
@@ -2847,6 +2917,182 @@ def t06_a1_contract():
             ("explicit-null-inline", T06_A2_NULL_INLINE_SQL, True),
         ):
             metadata_cases.append(a2_metadata_case(anchor_key, dialect, variant, sql, rejects))
+        # A3 default-representation: the presence policy must still reject
+        # only column `a`, while the server-side oracle distinguishes SQL
+        # NULL (a and b store COLUMN_DEFAULT IS NULL) from the string
+        # literals 'NULL' and '<nil>' via HEX bytes. The driver CREATE must
+        # succeed even though the product audit rejects.
+        a3_matrix_expect = audit_expect(T06_A3_MATRIX_SQL, True, loaded=1, finding={
+            "rule_id": T06_DEFAULT_RULE,
+            "message": 'column "a" should define a default value',
+            "metadata": {"table": "t", "column": "a", "type": "varchar(8)"},
+        })
+        if anchor_key in ("mysql80", "mysql84"):
+            a3_matrix_expect["instance_facts"] = dict(T06_GIPK_FACTS)
+        metadata_cases.append({
+            "id": f"t06-a3-{anchor_key}-default-representation",
+            "anchor": anchor_key,
+            "dialect": dialect,
+            "sql": T06_A3_MATRIX_SQL,
+            "policy": T06_A2_DEFAULT_PROFILE,
+            "connect": dict(connects[anchor_key]),
+            "args": ["--fail-on", "blocker"],
+            "setup": [
+                {
+                    "name": "ensure t absent",
+                    "sql": "DROP TABLE IF EXISTS t",
+                    "expect_rc": 0,
+                    "verify": [verify("t absent before audit", T06_TABLE_COUNT, "0")],
+                },
+            ],
+            "expect": a3_matrix_expect,
+            "post_verify": [
+                verify("audit did not create t", T06_TABLE_COUNT, "0"),
+            ],
+            "execute": [
+                {
+                    "name": "driver applies the audited create",
+                    "sql": T06_A3_MATRIX_SQL,
+                    "expect_rc": 0,
+                },
+            ],
+            "structure": [
+                verify("exactly one user table", T06_TABLE_COUNT, "1"),
+                verify("exactly four user columns", T06_COLUMN_COUNT, "4"),
+                verify(
+                    "four varchar(8) columns in declared order",
+                    T06_A2_COLUMN_ROWS,
+                    "a:varchar:1:YES,b:varchar:2:YES,c:varchar:3:YES,d:varchar:4:YES",
+                ),
+                verify(
+                    "all four varchar lengths",
+                    "SELECT GROUP_CONCAT(CHARACTER_MAXIMUM_LENGTH ORDER BY ORDINAL_POSITION) "
+                    "FROM information_schema.COLUMNS "
+                    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+                    "8,8,8,8",
+                ),
+                verify("no primary key constraint", T06_PK_CONSTRAINT, "0"),
+                verify(
+                    "default null flags and raw bytes",
+                    T06_A3_DEFAULT_ROWS,
+                    "a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E",
+                ),
+            ],
+            "teardown": [
+                {
+                    "name": "drop fixture",
+                    "sql": "DROP TABLE IF EXISTS t",
+                    "expect_rc": 0,
+                    "verify": [verify("no residual t", T06_TABLE_COUNT, "0")],
+                },
+            ],
+        })
+        # A3 null-drop-state: with the typed NULL fix the sibling DEFAULT NULL
+        # column is provably independent of the dropped column, so the whole
+        # three-statement batch stays complete/pass while the driver replays
+        # each statement against the live anchor.
+        a3_drop_expect = {
+            "exit": 0,
+            "verdict": "pass",
+            "statements": 3,
+            "findings": 0,
+            "diagnostics": 0,
+            "unsupported": 0,
+            "coverage": "complete",
+            "statement_coverage": ["complete", "complete", "complete"],
+            "statement_sql": list(T06_A3_DROP_STATEMENTS),
+            "statement_indices": [0, 1, 2],
+            "evidence_gaps": 0,
+            "fail_on_triggered": False,
+            "rule_summary_loaded": 4,
+        }
+        if anchor_key in ("mysql80", "mysql84"):
+            a3_drop_expect["instance_facts"] = dict(T06_GIPK_FACTS)
+        metadata_cases.append({
+            "id": f"t06-a3-{anchor_key}-null-drop-state",
+            "anchor": anchor_key,
+            "dialect": dialect,
+            "sql": T06_A3_DROP_STATE_SQL,
+            "policy": T06_A3_DROP_PROFILE,
+            "connect": dict(connects[anchor_key]),
+            "args": ["--fail-on", "blocker"],
+            "setup": [
+                {
+                    "name": "ensure t absent",
+                    "sql": "DROP TABLE IF EXISTS t",
+                    "expect_rc": 0,
+                    "verify": [verify("t absent before audit", T06_TABLE_COUNT, "0")],
+                },
+            ],
+            "expect": a3_drop_expect,
+            "post_verify": [
+                verify("audit did not create t", T06_TABLE_COUNT, "0"),
+            ],
+            "execute": [
+                {
+                    "name": "driver applies audited create",
+                    "sql": T06_A3_DROP_STATEMENTS[0],
+                    "expect_rc": 0,
+                    "verify": [
+                        verify(
+                            "three columns after create",
+                            T06_A2_COLUMN_ROWS,
+                            "id:int:1:NO,obsolete:int:2:YES,keep_c:varchar:3:YES",
+                        ),
+                        verify(
+                            "keep_c stores SQL NULL default",
+                            T06_A3_KEEPC_COLUMN,
+                            "keep_c:varchar:8:YES:1",
+                        ),
+                        verify("primary key member", T06_PK_MEMBER, "id:1"),
+                    ],
+                },
+                {
+                    "name": "driver drops obsolete",
+                    "sql": T06_A3_DROP_STATEMENTS[1],
+                    "expect_rc": 0,
+                    "verify": [
+                        verify(
+                            "obsolete dropped, order id/keep_c",
+                            T06_A2_COLUMN_ROWS,
+                            "id:int:1:NO,keep_c:varchar:2:YES",
+                        ),
+                        verify(
+                            "keep_c still SQL NULL default",
+                            T06_A3_KEEPC_COLUMN,
+                            "keep_c:varchar:8:YES:1",
+                        ),
+                        verify("primary key member", T06_PK_MEMBER, "id:1"),
+                    ],
+                },
+                {
+                    "name": "driver creates index on keep_c",
+                    "sql": T06_A3_DROP_STATEMENTS[2],
+                    "expect_rc": 0,
+                },
+            ],
+            "structure": [
+                verify("exactly one user table", T06_TABLE_COUNT, "1"),
+                verify(
+                    "final columns id and keep_c",
+                    T06_A2_COLUMN_ROWS,
+                    "id:int:1:NO,keep_c:varchar:2:YES",
+                ),
+                verify(
+                    "indexes PRIMARY(id) and idx_keep(keep_c)",
+                    T06_A3_INDEX_ROWS,
+                    "PRIMARY:id:1,idx_keep:keep_c:1",
+                ),
+            ],
+            "teardown": [
+                {
+                    "name": "drop fixture",
+                    "sql": "DROP TABLE IF EXISTS t",
+                    "expect_rc": 0,
+                    "verify": [verify("no residual t", T06_TABLE_COUNT, "0")],
+                },
+            ],
+        })
 
     required_case_ids = (
         [f"T06.db.{anchor}.{kind}" for anchor in T06_ANCHORS for kind in ("ddl", "syntax_negative")]
@@ -2875,6 +3121,16 @@ def t06_a1_contract():
             T06_A2_DEFAULT_PROFILE: {
                 "enable": {
                     T06_DEFAULT_RULE: {"enabled": True, "level": "blocker", "params": {"required": True}}
+                }
+            },
+            T06_A3_DROP_PROFILE: {
+                "enable": {
+                    "ddl.table.exists.create.forbid": {"enabled": True, "level": "blocker", "params": {}},
+                    "ddl.table.exists.alter.require": {"enabled": True, "level": "blocker", "params": {}},
+                    "ddl.alter.drop_column.exists.require": {"enabled": True, "level": "blocker", "params": {}},
+                    "ddl.create_index.columns.exists.require": {
+                        "enabled": True, "level": "blocker", "params": {"required": True}
+                    },
                 }
             },
         },
@@ -2961,7 +3217,7 @@ def t06_a1_manifest_failures(manifest):
         failures.append("T06-A1 baseline syntax_negative changed")
     required = manifest.get("required_case_ids") or []
     if required != contract["required_case_ids"]:
-        failures.append("T06-A1 required_case_ids differ from the frozen 32-case denominator")
+        failures.append("T06-A1 required_case_ids differ from the frozen 72-case denominator")
     for field, kind in (("cli_cases", "cli"), ("metadata_cases", "meta")):
         declared_list = [spec.get("id") for spec in manifest.get(field) or []]
         declared = {spec.get("id"): spec for spec in manifest.get(field) or []}
@@ -3015,18 +3271,23 @@ def t06_a1_artifact_failures(artifact, manifest):
         except (json.JSONDecodeError, TypeError):
             continue  # the generic validator already reports unparseable stdout
         statements = parsed.get("statements") or []
-        if len(statements) != 1:
-            failures.append(f"T06-A1 {case_id}: statements {len(statements)} != 1")
+        # Statement count and per-statement SQL identity derive from the
+        # frozen spec — single-statement A1/A2 cases stay single, while the
+        # A3 three-statement drop path must record all three verbatim.
+        want_sql = spec["expect"].get("statement_sql") or [spec["sql"]]
+        if len(statements) != len(want_sql):
+            failures.append(f"T06-A1 {case_id}: statements {len(statements)} != frozen {len(want_sql)}")
             continue
-        statement = statements[0]
-        sql = spec["sql"]
-        if (statement.get("index") != 0 or statement.get("kind") != "ddl"
-                or statement.get("raw_sql") != sql
-                or statement.get("normalized_sql") != sql[:-1]):
-            failures.append(f"T06-A1 {case_id}: statement identity mismatch: {statement!r}")
-        if statement.get("impact") is not None:
-            failures.append(f"T06-A1 {case_id}: impact must not be fabricated")
-        findings = statement.get("findings") or []
+        for idx, statement in enumerate(statements):
+            want_raw = want_sql[idx]
+            want_norm = want_raw[:-1] if want_raw.endswith(";") else want_raw
+            if (statement.get("index") != idx or statement.get("kind") != "ddl"
+                    or statement.get("raw_sql") != want_raw
+                    or statement.get("normalized_sql") != want_norm):
+                failures.append(f"T06-A1 {case_id}: statement {idx} identity mismatch: {statement!r}")
+            if statement.get("impact") is not None:
+                failures.append(f"T06-A1 {case_id}: statement {idx} impact must not be fabricated")
+        findings = [f for s in statements for f in (s.get("findings") or [])]
         summary = parsed.get("summary") or {}
         rejects = spec["expect"]["exit"] == 1
         if rejects:
