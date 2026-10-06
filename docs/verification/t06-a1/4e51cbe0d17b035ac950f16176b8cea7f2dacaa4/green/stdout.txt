@@ -1,0 +1,19 @@
+repo: /Users/fan/GolangProjects/DeltaScope
+control: original 32-case artifact accepted (head_sha=06de7475a4f7)
+REJECTED: cross-anchor mysql84->mysql57
+   first failure: T06-A1 T06.meta.t06-mysql57-no-pk: identity cli_case 't06-mysql84-no-pk' != frozen role 't06-mysql57-no-pk'
+REJECTED: cross-anchor mysql84->tidb85
+   first failure: T06-A1 T06.meta.t06-tidb85-no-pk: identity cli_case 't06-mysql84-no-pk' != frozen role 't06-tidb85-no-pk'
+REJECTED: all-12 slots refilled by mysql84 donor
+   first failure: T06-A1 T06.meta.t06-mysql57-no-pk: identity cli_case 't06-mysql84-no-pk' != frozen role 't06-mysql57-no-pk'
+REJECTED: metadata slot downgraded to offline cli record
+   first failure: T06-A1 T06.meta.t06-mysql57-no-pk: identity kind 'cli_audit' != frozen role 'cli_metadata'
+REJECTED: all-12 metadata slots demoted to offline
+   first failure: T06-A1 T06.meta.t06-mysql57-no-pk: identity kind 'cli_audit' != frozen role 'cli_metadata'
+REJECTED: required-false record in rule-off slot
+   first failure: T06-A1 T06.cli.t06-mysql-rule-off: identity cli_case 't06-mysql-required-false' != frozen role 't06-mysql-rule-off'
+REJECTED: rule-off record in required-false slot
+   first failure: T06-A1 T06.cli.t06-mysql-required-false: identity cli_case 't06-mysql-rule-off' != frozen role 't06-mysql-required-false'
+REJECTED: duplicate case_id with consistent executed_count
+   first failure: T06-A1 T06.cli.t06-mysql-no-pk: 2 duplicate executed records
+GREEN: all mutations rejected

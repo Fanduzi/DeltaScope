@@ -1,0 +1,5 @@
+docs/decisions/2026-10-06-ddl-create-table-pk-golden-proof.md
+scripts/README.md
+scripts/ddl_golden.py
+scripts/test_ddl_golden.py
+testdata/ddl-inventory/T06-base-traceability.md

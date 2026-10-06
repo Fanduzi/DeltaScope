@@ -1,0 +1,13 @@
+repo: /tmp/t06-a1-r1/base-tree
+control: original 32-case artifact accepted (head_sha=06de7475a4f7)
+ACCEPTED: cross-anchor mysql84->mysql57
+ACCEPTED: cross-anchor mysql84->tidb85
+REJECTED: all-12 slots refilled by mysql84 donor
+   first failure: T06-A1 T06.meta.t06-mysql57-inline-pk: statement identity mismatch: {'index': 0, 'kind': 'ddl', 'raw_sql': 'CREATE TABLE t (id INT);', 'normalized_sql': 'CREATE TABLE t (id INT)', 'findings': [{'rule_id': 'ddl.table.primary_key.require', 'level': 'blocker', 'message': 'primary key is required', 'statement_kind': 'ddl', 'location': {'line': 1, 'column': 1}, 'suggestion': 'add an explicit PRIMARY KEY declaration', 'metadata': {'table': 't'}, 'explanation': {'summary': 'Require DDL table primary key require', 'why': 'The statement is missing a clause, option, or object that the shipped policy requires.', 'risk': 'Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.', 'suggestion': 'add an explicit PRIMARY KEY declaration'}}], 'coverage': {'status': 'complete'}}
+ACCEPTED: metadata slot downgraded to offline cli record
+REJECTED: all-12 metadata slots demoted to offline
+   first failure: T06-A1 T06.meta.t06-mysql57-inline-pk: statement identity mismatch: {'index': 0, 'kind': 'ddl', 'raw_sql': 'CREATE TABLE t (id INT);', 'normalized_sql': 'CREATE TABLE t (id INT)', 'findings': [{'rule_id': 'ddl.table.primary_key.require', 'level': 'blocker', 'message': 'primary key is required', 'statement_kind': 'ddl', 'location': {'line': 1, 'column': 1}, 'suggestion': 'add an explicit PRIMARY KEY declaration', 'metadata': {'table': 't'}, 'explanation': {'summary': 'Require DDL table primary key require', 'why': 'The statement is missing a clause, option, or object that the shipped policy requires.', 'risk': 'Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.', 'suggestion': 'add an explicit PRIMARY KEY declaration'}}], 'coverage': {'status': 'complete'}}
+ACCEPTED: required-false record in rule-off slot
+ACCEPTED: rule-off record in required-false slot
+ACCEPTED: duplicate case_id with consistent executed_count
+RED: 6 mutation(s) accepted

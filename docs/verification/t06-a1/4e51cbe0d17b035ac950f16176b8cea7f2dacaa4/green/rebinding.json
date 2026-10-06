@@ -1,0 +1,15 @@
+{
+ "control": "pass",
+ "artifact_head_sha": "06de7475a4f702fac8940d4b6b23c254b18a36a8",
+ "validator_source": "/Users/fan/GolangProjects/DeltaScope/scripts/ddl_golden.py",
+ "mutations": {
+  "cross-anchor mysql84->mysql57": "rejected",
+  "cross-anchor mysql84->tidb85": "rejected",
+  "all-12 slots refilled by mysql84 donor": "rejected",
+  "metadata slot downgraded to offline cli record": "rejected",
+  "all-12 metadata slots demoted to offline": "rejected",
+  "required-false record in rule-off slot": "rejected",
+  "rule-off record in required-false slot": "rejected",
+  "duplicate case_id with consistent executed_count": "rejected"
+ }
+}
