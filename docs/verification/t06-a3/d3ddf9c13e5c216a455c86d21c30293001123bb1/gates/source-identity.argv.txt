@@ -1,0 +1,3 @@
+git rev-parse HEAD
+git status --short
+git log --oneline -3

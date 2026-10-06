@@ -1,0 +1,2 @@
+git diff --stat 577a253b740acd45ebbf1113dc1f2e5f809d8276..d3ddf9c13e5c216a455c86d21c30293001123bb1
+git diff --name-only 577a253b..d3ddf9c1

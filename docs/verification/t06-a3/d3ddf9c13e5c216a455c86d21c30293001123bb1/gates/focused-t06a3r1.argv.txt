@@ -1,0 +1,1 @@
+go test -count=1 ./internal/infrastructure/parser/tidb ./internal/application/audit -run T06A3R1 -v

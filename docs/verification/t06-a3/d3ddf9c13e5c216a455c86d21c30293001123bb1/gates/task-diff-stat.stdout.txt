@@ -1,0 +1,13 @@
+ ...2026-10-06-ddl-default-null-literal-fidelity.md |  15 +++
+ internal/application/audit/README.md               |   1 +
+ .../application/audit/batch_state_t06a3r1_test.go  |  95 +++++++++++++++++
+ internal/infrastructure/parser/tidb/README.md      |   1 +
+ internal/infrastructure/parser/tidb/extractor.go   |   4 +-
+ .../parser/tidb/extractor_t06a3r1_test.go          | 118 +++++++++++++++++++++
+ 6 files changed, 232 insertions(+), 2 deletions(-)
+docs/decisions/2026-10-06-ddl-default-null-literal-fidelity.md
+internal/application/audit/README.md
+internal/application/audit/batch_state_t06a3r1_test.go
+internal/infrastructure/parser/tidb/README.md
+internal/infrastructure/parser/tidb/extractor.go
+internal/infrastructure/parser/tidb/extractor_t06a3r1_test.go

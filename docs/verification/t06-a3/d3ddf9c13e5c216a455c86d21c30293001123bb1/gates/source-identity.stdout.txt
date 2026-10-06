@@ -1,0 +1,11 @@
+d3ddf9c13e5c216a455c86d21c30293001123bb1
+?? .agents/
+?? .debug-journal.md
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? docs/quality/architecture-review-2026-08-11.html
+?? docs/verification/t06-a3/d3ddf9c13e5c216a455c86d21c30293001123bb1/
+d3ddf9c1 fix(parser): recompute DefaultIsNull per DEFAULT option (#85)
+577a253b docs(verification): publish T06-A3 DEFAULT NULL fidelity evidence (#85)
+c640b00c fix(parser): recognize SQL DEFAULT NULL as a typed literal (#85)

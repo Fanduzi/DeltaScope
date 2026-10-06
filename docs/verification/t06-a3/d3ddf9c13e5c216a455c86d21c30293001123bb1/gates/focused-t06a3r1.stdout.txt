@@ -1,0 +1,88 @@
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/mysql/null_then_text_null
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/mysql/null_then_text_nil
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/mysql/null_then_zero
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/mysql/null_then_empty
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/mysql/text_null_then_null
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/mysql/null_then_null
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/mysql/triple_ending_null
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/mysql/single_null
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/mysql/single_text_null
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/mysql/single_text_nil
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/mysql/no_default
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/tidb/null_then_text_null
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/tidb/null_then_text_nil
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/tidb/null_then_zero
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/tidb/null_then_empty
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/tidb/text_null_then_null
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/tidb/null_then_null
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/tidb/triple_ending_null
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/tidb/single_null
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/tidb/single_text_null
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/tidb/single_text_nil
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/tidb/no_default
+--- PASS: TestT06A3R1DuplicateDefaultFieldMatrix (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/mysql/null_then_text_null (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/mysql/null_then_text_nil (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/mysql/null_then_zero (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/mysql/null_then_empty (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/mysql/text_null_then_null (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/mysql/null_then_null (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/mysql/triple_ending_null (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/mysql/single_null (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/mysql/single_text_null (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/mysql/single_text_nil (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/mysql/no_default (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/tidb/null_then_text_null (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/tidb/null_then_text_nil (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/tidb/null_then_zero (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/tidb/null_then_empty (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/tidb/text_null_then_null (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/tidb/null_then_null (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/tidb/triple_ending_null (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/tidb/single_null (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/tidb/single_text_null (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/tidb/single_text_nil (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/tidb/no_default (0.00s)
+=== RUN   TestT06A3R1DuplicateDefaultIsolation
+=== RUN   TestT06A3R1DuplicateDefaultIsolation/mysql
+=== RUN   TestT06A3R1DuplicateDefaultIsolation/tidb
+--- PASS: TestT06A3R1DuplicateDefaultIsolation (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultIsolation/mysql (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultIsolation/tidb (0.00s)
+=== RUN   TestT06A3R1AlterDefinitionDuplicateDefault
+=== RUN   TestT06A3R1AlterDefinitionDuplicateDefault/mysql/ALTER_TABLE_t_MODIFY_COLU
+=== RUN   TestT06A3R1AlterDefinitionDuplicateDefault/mysql/ALTER_TABLE_t_CHANGE_COLU
+=== RUN   TestT06A3R1AlterDefinitionDuplicateDefault/mysql/ALTER_TABLE_t_ADD_COLUMN_
+=== RUN   TestT06A3R1AlterDefinitionDuplicateDefault/tidb/ALTER_TABLE_t_MODIFY_COLU
+=== RUN   TestT06A3R1AlterDefinitionDuplicateDefault/tidb/ALTER_TABLE_t_CHANGE_COLU
+=== RUN   TestT06A3R1AlterDefinitionDuplicateDefault/tidb/ALTER_TABLE_t_ADD_COLUMN_
+--- PASS: TestT06A3R1AlterDefinitionDuplicateDefault (0.00s)
+    --- PASS: TestT06A3R1AlterDefinitionDuplicateDefault/mysql/ALTER_TABLE_t_MODIFY_COLU (0.00s)
+    --- PASS: TestT06A3R1AlterDefinitionDuplicateDefault/mysql/ALTER_TABLE_t_CHANGE_COLU (0.00s)
+    --- PASS: TestT06A3R1AlterDefinitionDuplicateDefault/mysql/ALTER_TABLE_t_ADD_COLUMN_ (0.00s)
+    --- PASS: TestT06A3R1AlterDefinitionDuplicateDefault/tidb/ALTER_TABLE_t_MODIFY_COLU (0.00s)
+    --- PASS: TestT06A3R1AlterDefinitionDuplicateDefault/tidb/ALTER_TABLE_t_CHANGE_COLU (0.00s)
+    --- PASS: TestT06A3R1AlterDefinitionDuplicateDefault/tidb/ALTER_TABLE_t_ADD_COLUMN_ (0.00s)
+=== RUN   TestT06A3R1HelperBoundariesPreserved
+--- PASS: TestT06A3R1HelperBoundariesPreserved (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	0.562s
+=== RUN   TestT06A3R1DuplicateDefaultConservativePath
+=== RUN   TestT06A3R1DuplicateDefaultConservativePath/mysql/DEFAULT_NULL_DEFAULT_'NULL'
+=== RUN   TestT06A3R1DuplicateDefaultConservativePath/tidb/DEFAULT_NULL_DEFAULT_'NULL'
+=== RUN   TestT06A3R1DuplicateDefaultConservativePath/mysql/DEFAULT_NULL_DEFAULT_'<nil>'
+=== RUN   TestT06A3R1DuplicateDefaultConservativePath/tidb/DEFAULT_NULL_DEFAULT_'<nil>'
+--- PASS: TestT06A3R1DuplicateDefaultConservativePath (0.02s)
+    --- PASS: TestT06A3R1DuplicateDefaultConservativePath/mysql/DEFAULT_NULL_DEFAULT_'NULL' (0.01s)
+    --- PASS: TestT06A3R1DuplicateDefaultConservativePath/tidb/DEFAULT_NULL_DEFAULT_'NULL' (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultConservativePath/mysql/DEFAULT_NULL_DEFAULT_'<nil>' (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultConservativePath/tidb/DEFAULT_NULL_DEFAULT_'<nil>' (0.00s)
+=== RUN   TestT06A3R1NullEndingDuplicateStaysComplete
+=== RUN   TestT06A3R1NullEndingDuplicateStaysComplete/mysql
+=== RUN   TestT06A3R1NullEndingDuplicateStaysComplete/tidb
+--- PASS: TestT06A3R1NullEndingDuplicateStaysComplete (0.01s)
+    --- PASS: TestT06A3R1NullEndingDuplicateStaysComplete/mysql (0.00s)
+    --- PASS: TestT06A3R1NullEndingDuplicateStaysComplete/tidb (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.868s
