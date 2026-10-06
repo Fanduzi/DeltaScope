@@ -1,0 +1,14 @@
+=== RUN   TestT06A3RedDefaultNullFieldMatrix
+=== RUN   TestT06A3RedDefaultNullFieldMatrix/no_clause
+=== RUN   TestT06A3RedDefaultNullFieldMatrix/sql_null
+    extractor_t06a3_red_test.go:35: sql_null = {HasDefault:true DefaultValue:"<nil>" DefaultIsNull:false}, want {true "NULL" true}
+=== RUN   TestT06A3RedDefaultNullFieldMatrix/text_null
+=== RUN   TestT06A3RedDefaultNullFieldMatrix/text_nil
+--- FAIL: TestT06A3RedDefaultNullFieldMatrix (0.00s)
+    --- PASS: TestT06A3RedDefaultNullFieldMatrix/no_clause (0.00s)
+    --- FAIL: TestT06A3RedDefaultNullFieldMatrix/sql_null (0.00s)
+    --- PASS: TestT06A3RedDefaultNullFieldMatrix/text_null (0.00s)
+    --- PASS: TestT06A3RedDefaultNullFieldMatrix/text_nil (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	0.610s
+FAIL

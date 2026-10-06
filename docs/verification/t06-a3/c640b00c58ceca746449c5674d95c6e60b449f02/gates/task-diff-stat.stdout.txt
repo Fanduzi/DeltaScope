@@ -1,0 +1,31 @@
+ ...2026-10-06-ddl-default-null-literal-fidelity.md |  136 ++
+ internal/application/audit/README.md               |    1 +
+ .../application/audit/batch_state_t06a3_test.go    |  203 ++
+ internal/infrastructure/parser/tidb/README.md      |    1 +
+ internal/infrastructure/parser/tidb/extractor.go   |   29 +-
+ .../parser/tidb/extractor_t06a2_test.go            |   14 +-
+ .../parser/tidb/extractor_t06a3_test.go            |  132 ++
+ internal/interfaces/http/README.md                 |    1 +
+ .../http/audit_default_null_state_t06a3_test.go    |  152 ++
+ pkg/deltascope/README.md                           |    1 +
+ .../audit_default_null_state_t06a3_test.go         |  120 ++
+ scripts/ddl_golden.py                              |  293 ++-
+ scripts/test_ddl_golden.py                         |  123 +-
+ testdata/ddl-golden/T06.json                       | 2036 +++++++++++++++++---
+ testdata/ddl-inventory/T06-base-traceability.md    |   24 +-
+ 15 files changed, 2968 insertions(+), 298 deletions(-)
+docs/decisions/2026-10-06-ddl-default-null-literal-fidelity.md
+internal/application/audit/README.md
+internal/application/audit/batch_state_t06a3_test.go
+internal/infrastructure/parser/tidb/README.md
+internal/infrastructure/parser/tidb/extractor.go
+internal/infrastructure/parser/tidb/extractor_t06a2_test.go
+internal/infrastructure/parser/tidb/extractor_t06a3_test.go
+internal/interfaces/http/README.md
+internal/interfaces/http/audit_default_null_state_t06a3_test.go
+pkg/deltascope/README.md
+pkg/deltascope/audit_default_null_state_t06a3_test.go
+scripts/ddl_golden.py
+scripts/test_ddl_golden.py
+testdata/ddl-golden/T06.json
+testdata/ddl-inventory/T06-base-traceability.md

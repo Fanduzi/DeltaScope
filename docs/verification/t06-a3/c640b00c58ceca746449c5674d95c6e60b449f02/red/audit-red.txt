@@ -1,0 +1,47 @@
+=== RUN   TestT06A3NullDropStatePath
+=== RUN   TestT06A3NullDropStatePath/mysql
+    batch_state_t06a3_test.go:70: aggregate = review/unverified, want pass/complete
+=== RUN   TestT06A3NullDropStatePath/tidb
+    batch_state_t06a3_test.go:70: aggregate = review/unverified, want pass/complete
+--- FAIL: TestT06A3NullDropStatePath (0.01s)
+    --- FAIL: TestT06A3NullDropStatePath/mysql (0.01s)
+    --- FAIL: TestT06A3NullDropStatePath/tidb (0.01s)
+=== RUN   TestT06A3StringDefaultsKeepConservativeDrop
+=== RUN   TestT06A3StringDefaultsKeepConservativeDrop/mysql/'NULL'
+=== RUN   TestT06A3StringDefaultsKeepConservativeDrop/tidb/'NULL'
+=== RUN   TestT06A3StringDefaultsKeepConservativeDrop/mysql/'<nil>'
+=== RUN   TestT06A3StringDefaultsKeepConservativeDrop/tidb/'<nil>'
+--- PASS: TestT06A3StringDefaultsKeepConservativeDrop (0.01s)
+    --- PASS: TestT06A3StringDefaultsKeepConservativeDrop/mysql/'NULL' (0.00s)
+    --- PASS: TestT06A3StringDefaultsKeepConservativeDrop/tidb/'NULL' (0.00s)
+    --- PASS: TestT06A3StringDefaultsKeepConservativeDrop/mysql/'<nil>' (0.00s)
+    --- PASS: TestT06A3StringDefaultsKeepConservativeDrop/tidb/'<nil>' (0.00s)
+=== RUN   TestT06A3OfflineProviderlessPreservesExistenceGap
+=== RUN   TestT06A3OfflineProviderlessPreservesExistenceGap/mysql
+    batch_state_t06a3_test.go:158: statement 2 = unverified findings []rule.Finding(nil) gaps []rule.EvidenceGap{rule.EvidenceGap{RuleID:"ddl.create_index.columns.exists.require", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"target_table.columns", "target_table.existence"}}}, want clean
+=== RUN   TestT06A3OfflineProviderlessPreservesExistenceGap/tidb
+    batch_state_t06a3_test.go:158: statement 2 = unverified findings []rule.Finding(nil) gaps []rule.EvidenceGap{rule.EvidenceGap{RuleID:"ddl.create_index.columns.exists.require", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"target_table.columns", "target_table.existence"}}}, want clean
+--- FAIL: TestT06A3OfflineProviderlessPreservesExistenceGap (0.01s)
+    --- FAIL: TestT06A3OfflineProviderlessPreservesExistenceGap/mysql (0.00s)
+    --- FAIL: TestT06A3OfflineProviderlessPreservesExistenceGap/tidb (0.00s)
+=== RUN   TestT06A3DefaultRequireSemanticsUnchanged
+=== RUN   TestT06A3DefaultRequireSemanticsUnchanged/mysql/no_default
+=== RUN   TestT06A3DefaultRequireSemanticsUnchanged/mysql/sql_null
+=== RUN   TestT06A3DefaultRequireSemanticsUnchanged/mysql/text_null
+=== RUN   TestT06A3DefaultRequireSemanticsUnchanged/mysql/text_nil
+=== RUN   TestT06A3DefaultRequireSemanticsUnchanged/tidb/no_default
+=== RUN   TestT06A3DefaultRequireSemanticsUnchanged/tidb/sql_null
+=== RUN   TestT06A3DefaultRequireSemanticsUnchanged/tidb/text_null
+=== RUN   TestT06A3DefaultRequireSemanticsUnchanged/tidb/text_nil
+--- PASS: TestT06A3DefaultRequireSemanticsUnchanged (0.02s)
+    --- PASS: TestT06A3DefaultRequireSemanticsUnchanged/mysql/no_default (0.00s)
+    --- PASS: TestT06A3DefaultRequireSemanticsUnchanged/mysql/sql_null (0.00s)
+    --- PASS: TestT06A3DefaultRequireSemanticsUnchanged/mysql/text_null (0.00s)
+    --- PASS: TestT06A3DefaultRequireSemanticsUnchanged/mysql/text_nil (0.00s)
+    --- PASS: TestT06A3DefaultRequireSemanticsUnchanged/tidb/no_default (0.00s)
+    --- PASS: TestT06A3DefaultRequireSemanticsUnchanged/tidb/sql_null (0.00s)
+    --- PASS: TestT06A3DefaultRequireSemanticsUnchanged/tidb/text_null (0.00s)
+    --- PASS: TestT06A3DefaultRequireSemanticsUnchanged/tidb/text_nil (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.601s
+FAIL

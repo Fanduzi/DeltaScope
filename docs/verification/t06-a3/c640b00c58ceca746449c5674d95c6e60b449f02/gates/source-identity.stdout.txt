@@ -1,0 +1,11 @@
+c640b00c58ceca746449c5674d95c6e60b449f02
+?? .agents/
+?? .debug-journal.md
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? docs/quality/architecture-review-2026-08-11.html
+?? docs/verification/t06-a3/
+c640b00c fix(parser): recognize SQL DEFAULT NULL as a typed literal (#85)
+d2cba4dd docs(verification): publish T06-A2 primary-key nullability evidence (#85)
+9d12aec8 fix(parser): normalize CREATE TABLE primary-key member nullability

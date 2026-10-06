@@ -1,0 +1,192 @@
+=== RUN   TestT06A3DefaultNullFieldMatrix
+=== RUN   TestT06A3DefaultNullFieldMatrix/mysql/no_clause
+=== RUN   TestT06A3DefaultNullFieldMatrix/mysql/sql_null
+=== RUN   TestT06A3DefaultNullFieldMatrix/mysql/text_null
+=== RUN   TestT06A3DefaultNullFieldMatrix/mysql/text_nil
+=== RUN   TestT06A3DefaultNullFieldMatrix/mysql/text_null_lower
+=== RUN   TestT06A3DefaultNullFieldMatrix/tidb/no_clause
+=== RUN   TestT06A3DefaultNullFieldMatrix/tidb/sql_null
+=== RUN   TestT06A3DefaultNullFieldMatrix/tidb/text_null
+=== RUN   TestT06A3DefaultNullFieldMatrix/tidb/text_nil
+=== RUN   TestT06A3DefaultNullFieldMatrix/tidb/text_null_lower
+--- PASS: TestT06A3DefaultNullFieldMatrix (0.00s)
+    --- PASS: TestT06A3DefaultNullFieldMatrix/mysql/no_clause (0.00s)
+    --- PASS: TestT06A3DefaultNullFieldMatrix/mysql/sql_null (0.00s)
+    --- PASS: TestT06A3DefaultNullFieldMatrix/mysql/text_null (0.00s)
+    --- PASS: TestT06A3DefaultNullFieldMatrix/mysql/text_nil (0.00s)
+    --- PASS: TestT06A3DefaultNullFieldMatrix/mysql/text_null_lower (0.00s)
+    --- PASS: TestT06A3DefaultNullFieldMatrix/tidb/no_clause (0.00s)
+    --- PASS: TestT06A3DefaultNullFieldMatrix/tidb/sql_null (0.00s)
+    --- PASS: TestT06A3DefaultNullFieldMatrix/tidb/text_null (0.00s)
+    --- PASS: TestT06A3DefaultNullFieldMatrix/tidb/text_nil (0.00s)
+    --- PASS: TestT06A3DefaultNullFieldMatrix/tidb/text_null_lower (0.00s)
+=== RUN   TestT06A3NullLiteralHelperBoundaries
+--- PASS: TestT06A3NullLiteralHelperBoundaries (0.00s)
+=== RUN   TestT06A3DefaultLiteralPreservation
+--- PASS: TestT06A3DefaultLiteralPreservation (0.00s)
+=== RUN   TestT06A3AlterDefinitionDefaultNull
+=== RUN   TestT06A3AlterDefinitionDefaultNull/mysql
+=== RUN   TestT06A3AlterDefinitionDefaultNull/tidb
+--- PASS: TestT06A3AlterDefinitionDefaultNull (0.00s)
+    --- PASS: TestT06A3AlterDefinitionDefaultNull/mysql (0.00s)
+    --- PASS: TestT06A3AlterDefinitionDefaultNull/tidb (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	0.635s
+=== RUN   TestT06A3NullDropStatePath
+=== RUN   TestT06A3NullDropStatePath/mysql
+=== RUN   TestT06A3NullDropStatePath/tidb
+--- PASS: TestT06A3NullDropStatePath (0.01s)
+    --- PASS: TestT06A3NullDropStatePath/mysql (0.00s)
+    --- PASS: TestT06A3NullDropStatePath/tidb (0.00s)
+=== RUN   TestT06A3StringDefaultsKeepConservativeDrop
+=== RUN   TestT06A3StringDefaultsKeepConservativeDrop/mysql/'NULL'
+=== RUN   TestT06A3StringDefaultsKeepConservativeDrop/tidb/'NULL'
+=== RUN   TestT06A3StringDefaultsKeepConservativeDrop/mysql/'<nil>'
+=== RUN   TestT06A3StringDefaultsKeepConservativeDrop/tidb/'<nil>'
+--- PASS: TestT06A3StringDefaultsKeepConservativeDrop (0.01s)
+    --- PASS: TestT06A3StringDefaultsKeepConservativeDrop/mysql/'NULL' (0.00s)
+    --- PASS: TestT06A3StringDefaultsKeepConservativeDrop/tidb/'NULL' (0.00s)
+    --- PASS: TestT06A3StringDefaultsKeepConservativeDrop/mysql/'<nil>' (0.00s)
+    --- PASS: TestT06A3StringDefaultsKeepConservativeDrop/tidb/'<nil>' (0.00s)
+=== RUN   TestT06A3OfflineProviderlessPreservesExistenceGap
+=== RUN   TestT06A3OfflineProviderlessPreservesExistenceGap/mysql
+=== RUN   TestT06A3OfflineProviderlessPreservesExistenceGap/tidb
+--- PASS: TestT06A3OfflineProviderlessPreservesExistenceGap (0.01s)
+    --- PASS: TestT06A3OfflineProviderlessPreservesExistenceGap/mysql (0.00s)
+    --- PASS: TestT06A3OfflineProviderlessPreservesExistenceGap/tidb (0.00s)
+=== RUN   TestT06A3DefaultRequireSemanticsUnchanged
+=== RUN   TestT06A3DefaultRequireSemanticsUnchanged/mysql/no_default
+=== RUN   TestT06A3DefaultRequireSemanticsUnchanged/mysql/sql_null
+=== RUN   TestT06A3DefaultRequireSemanticsUnchanged/mysql/text_null
+=== RUN   TestT06A3DefaultRequireSemanticsUnchanged/mysql/text_nil
+=== RUN   TestT06A3DefaultRequireSemanticsUnchanged/tidb/no_default
+=== RUN   TestT06A3DefaultRequireSemanticsUnchanged/tidb/sql_null
+=== RUN   TestT06A3DefaultRequireSemanticsUnchanged/tidb/text_null
+=== RUN   TestT06A3DefaultRequireSemanticsUnchanged/tidb/text_nil
+--- PASS: TestT06A3DefaultRequireSemanticsUnchanged (0.02s)
+    --- PASS: TestT06A3DefaultRequireSemanticsUnchanged/mysql/no_default (0.00s)
+    --- PASS: TestT06A3DefaultRequireSemanticsUnchanged/mysql/sql_null (0.00s)
+    --- PASS: TestT06A3DefaultRequireSemanticsUnchanged/mysql/text_null (0.00s)
+    --- PASS: TestT06A3DefaultRequireSemanticsUnchanged/mysql/text_nil (0.00s)
+    --- PASS: TestT06A3DefaultRequireSemanticsUnchanged/tidb/no_default (0.00s)
+    --- PASS: TestT06A3DefaultRequireSemanticsUnchanged/tidb/sql_null (0.00s)
+    --- PASS: TestT06A3DefaultRequireSemanticsUnchanged/tidb/text_null (0.00s)
+    --- PASS: TestT06A3DefaultRequireSemanticsUnchanged/tidb/text_nil (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	1.176s
+=== RUN   TestT06A3NullDropStateSDK
+=== RUN   TestT06A3NullDropStateSDK/mysql
+=== RUN   TestT06A3NullDropStateSDK/tidb
+--- PASS: TestT06A3NullDropStateSDK (0.01s)
+    --- PASS: TestT06A3NullDropStateSDK/mysql (0.01s)
+    --- PASS: TestT06A3NullDropStateSDK/tidb (0.00s)
+=== RUN   TestT06A3DefaultRequireSDK
+=== RUN   TestT06A3DefaultRequireSDK/mysql
+=== RUN   TestT06A3DefaultRequireSDK/tidb
+--- PASS: TestT06A3DefaultRequireSDK (0.01s)
+    --- PASS: TestT06A3DefaultRequireSDK/mysql (0.01s)
+    --- PASS: TestT06A3DefaultRequireSDK/tidb (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	1.489s
+=== RUN   TestHandlerT06A3NullDropState
+=== RUN   TestHandlerT06A3NullDropState/mysql
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /healthz                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func1 (8 handlers)
+[GIN-debug] GET    /readyz                   --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func2 (8 handlers)
+[GIN-debug] GET    /version                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func3 (8 handlers)
+[GIN-debug] GET    /v1/rules                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func4 (8 handlers)
+[GIN-debug] GET    /v1/rules/:rule_id        --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func5 (8 handlers)
+[GIN-debug] GET    /v1/capabilities          --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func6 (8 handlers)
+[GIN-debug] POST   /v1/audit                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func7 (8 handlers)
+[GIN-debug] POST   /v1/query-access/analyze  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func8 (8 handlers)
+[GIN-debug] GET    /metrics                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.WrapH.func13 (8 handlers)
+2026/10/06 22:55:13 {"timestamp":"2026-10-06T14:55:13Z","level":"info","msg":"http request","method":"POST","path":"/v1/audit","status":200,"duration_ms":6,"request_id":"req-312098528d10e00ff3ccaa5b"}
+=== RUN   TestHandlerT06A3NullDropState/tidb
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /healthz                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func1 (8 handlers)
+[GIN-debug] GET    /readyz                   --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func2 (8 handlers)
+[GIN-debug] GET    /version                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func3 (8 handlers)
+[GIN-debug] GET    /v1/rules                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func4 (8 handlers)
+[GIN-debug] GET    /v1/rules/:rule_id        --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func5 (8 handlers)
+[GIN-debug] GET    /v1/capabilities          --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func6 (8 handlers)
+[GIN-debug] POST   /v1/audit                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func7 (8 handlers)
+[GIN-debug] POST   /v1/query-access/analyze  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func8 (8 handlers)
+[GIN-debug] GET    /metrics                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.WrapH.func13 (8 handlers)
+2026/10/06 22:55:13 {"timestamp":"2026-10-06T14:55:13Z","level":"info","msg":"http request","method":"POST","path":"/v1/audit","status":200,"duration_ms":3,"request_id":"req-c6b1a960a8c96d9e377c6c2e"}
+--- PASS: TestHandlerT06A3NullDropState (0.02s)
+    --- PASS: TestHandlerT06A3NullDropState/mysql (0.01s)
+    --- PASS: TestHandlerT06A3NullDropState/tidb (0.01s)
+=== RUN   TestHandlerT06A3DefaultRequire
+=== RUN   TestHandlerT06A3DefaultRequire/mysql_no_default
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /healthz                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func1 (8 handlers)
+[GIN-debug] GET    /readyz                   --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func2 (8 handlers)
+[GIN-debug] GET    /version                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func3 (8 handlers)
+[GIN-debug] GET    /v1/rules                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func4 (8 handlers)
+[GIN-debug] GET    /v1/rules/:rule_id        --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func5 (8 handlers)
+[GIN-debug] GET    /v1/capabilities          --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func6 (8 handlers)
+[GIN-debug] POST   /v1/audit                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func7 (8 handlers)
+[GIN-debug] POST   /v1/query-access/analyze  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func8 (8 handlers)
+[GIN-debug] GET    /metrics                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.WrapH.func13 (8 handlers)
+2026/10/06 22:55:13 {"timestamp":"2026-10-06T14:55:13Z","level":"info","msg":"http request","method":"POST","path":"/v1/audit","status":200,"duration_ms":2,"request_id":"req-2dc2b38a831eb630566d0b5b"}
+=== RUN   TestHandlerT06A3DefaultRequire/mysql_default_null
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /healthz                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func1 (8 handlers)
+[GIN-debug] GET    /readyz                   --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func2 (8 handlers)
+[GIN-debug] GET    /version                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func3 (8 handlers)
+[GIN-debug] GET    /v1/rules                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func4 (8 handlers)
+[GIN-debug] GET    /v1/rules/:rule_id        --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func5 (8 handlers)
+[GIN-debug] GET    /v1/capabilities          --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func6 (8 handlers)
+[GIN-debug] POST   /v1/audit                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func7 (8 handlers)
+[GIN-debug] POST   /v1/query-access/analyze  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func8 (8 handlers)
+[GIN-debug] GET    /metrics                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.WrapH.func13 (8 handlers)
+2026/10/06 22:55:13 {"timestamp":"2026-10-06T14:55:13Z","level":"info","msg":"http request","method":"POST","path":"/v1/audit","status":200,"duration_ms":2,"request_id":"req-93febc55466e1fda82a50545"}
+=== RUN   TestHandlerT06A3DefaultRequire/tidb_no_default
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /healthz                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func1 (8 handlers)
+[GIN-debug] GET    /readyz                   --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func2 (8 handlers)
+[GIN-debug] GET    /version                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func3 (8 handlers)
+[GIN-debug] GET    /v1/rules                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func4 (8 handlers)
+[GIN-debug] GET    /v1/rules/:rule_id        --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func5 (8 handlers)
+[GIN-debug] GET    /v1/capabilities          --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func6 (8 handlers)
+[GIN-debug] POST   /v1/audit                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func7 (8 handlers)
+[GIN-debug] POST   /v1/query-access/analyze  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func8 (8 handlers)
+[GIN-debug] GET    /metrics                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.WrapH.func13 (8 handlers)
+2026/10/06 22:55:13 {"timestamp":"2026-10-06T14:55:13Z","level":"info","msg":"http request","method":"POST","path":"/v1/audit","status":200,"duration_ms":2,"request_id":"req-a4012a7e171a24e8b9470754"}
+=== RUN   TestHandlerT06A3DefaultRequire/tidb_default_null
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /healthz                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func1 (8 handlers)
+[GIN-debug] GET    /readyz                   --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func2 (8 handlers)
+[GIN-debug] GET    /version                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func3 (8 handlers)
+[GIN-debug] GET    /v1/rules                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func4 (8 handlers)
+[GIN-debug] GET    /v1/rules/:rule_id        --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func5 (8 handlers)
+[GIN-debug] GET    /v1/capabilities          --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func6 (8 handlers)
+[GIN-debug] POST   /v1/audit                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func7 (8 handlers)
+[GIN-debug] POST   /v1/query-access/analyze  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func8 (8 handlers)
+[GIN-debug] GET    /metrics                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.WrapH.func13 (8 handlers)
+2026/10/06 22:55:13 {"timestamp":"2026-10-06T14:55:13Z","level":"info","msg":"http request","method":"POST","path":"/v1/audit","status":200,"duration_ms":2,"request_id":"req-4451a91439d73cda905b30c0"}
+--- PASS: TestHandlerT06A3DefaultRequire (0.02s)
+    --- PASS: TestHandlerT06A3DefaultRequire/mysql_no_default (0.01s)
+    --- PASS: TestHandlerT06A3DefaultRequire/mysql_default_null (0.01s)
+    --- PASS: TestHandlerT06A3DefaultRequire/tidb_no_default (0.00s)
+    --- PASS: TestHandlerT06A3DefaultRequire/tidb_default_null (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/http	1.350s

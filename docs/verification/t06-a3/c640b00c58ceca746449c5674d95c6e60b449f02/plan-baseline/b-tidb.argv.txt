@@ -1,0 +1,1 @@
+/tmp/ds-t06-a3plan.1791293015/deltascope audit --dialect tidb --config /tmp/ds-t06-a3plan.1791293015/policy-default.yaml --format json --fail-on blocker --sql <sql>

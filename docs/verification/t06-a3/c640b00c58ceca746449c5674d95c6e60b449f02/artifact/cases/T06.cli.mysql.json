@@ -1,0 +1,179 @@
+{
+  "case_id": "T06.cli.mysql",
+  "kind": "cli_audit",
+  "cli_case": "mysql",
+  "dialect": "mysql",
+  "input_sql": "CREATE TABLE golden_t (id INT PRIMARY KEY); ALTER TABLE golden_t ADD COLUMN c INT; DROP TABLE golden_t;",
+  "policy_profile": "all-rules-disabled",
+  "policy_path": "/private/tmp/ds-t06-a3.mgYSm4/T06/golden-policy-all-off.yaml",
+  "command": [
+    "/private/tmp/ds-t06-a3.mgYSm4/T06/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "CREATE TABLE golden_t (id INT PRIMARY KEY); ALTER TABLE golden_t ADD COLUMN c INT; DROP TABLE golden_t;",
+    "--config",
+    "/private/tmp/ds-t06-a3.mgYSm4/T06/golden-policy-all-off.yaml",
+    "--format",
+    "json"
+  ],
+  "expected": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 3,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete",
+      "complete",
+      "complete"
+    ],
+    "statement_sql": [
+      "CREATE TABLE golden_t (id INT PRIMARY KEY);",
+      "ALTER TABLE golden_t ADD COLUMN c INT;",
+      "DROP TABLE golden_t;"
+    ],
+    "statement_indices": [
+      0,
+      1,
+      2
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+  },
+  "actual": {
+    "exit": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":3,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE golden_t (id INT PRIMARY KEY);\",\"normalized_sql\":\"CREATE TABLE golden_t (id INT PRIMARY KEY)\",\"coverage\":{\"status\":\"complete\"}},{\"index\":1,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE golden_t ADD COLUMN c INT;\",\"normalized_sql\":\"ALTER TABLE golden_t ADD COLUMN c INT\",\"coverage\":{\"status\":\"complete\"}},{\"index\":2,\"kind\":\"ddl\",\"raw_sql\":\"DROP TABLE golden_t;\",\"normalized_sql\":\"DROP TABLE golden_t\",\"coverage\":{\"status\":\"complete\"}}],\"fail_on_triggered\":false,\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "pass",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 3,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE golden_t (id INT PRIMARY KEY);",
+          "normalized_sql": "CREATE TABLE golden_t (id INT PRIMARY KEY)",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 1,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE golden_t ADD COLUMN c INT;",
+          "normalized_sql": "ALTER TABLE golden_t ADD COLUMN c INT",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 2,
+          "kind": "ddl",
+          "raw_sql": "DROP TABLE golden_t;",
+          "normalized_sql": "DROP TABLE golden_t",
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "fail_on_triggered": false,
+      "context": {
+        "mode": "offline",
+        "dialect": "mysql",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='pass'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=3 expected=3"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0, 1, 2]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete', 'complete', 'complete']"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['CREATE TABLE golden_t (id INT PRIMARY KEY);', 'ALTER TABLE golden_t ADD COLUMN c INT;', 'DROP TABLE golden_t;'] expected=['CREATE TABLE golden_t (id INT PRIMARY KEY);', 'ALTER TABLE golden_t ADD COLUMN c INT;', 'DROP TABLE golden_t;']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "fail_on_triggered",
+      "ok": true,
+      "detail": "fail_on_triggered=False"
+    }
+  ],
+  "status": "pass"
+}

@@ -1,0 +1,13 @@
+python3 ./scripts/ddl_golden.py run --task "T06" --artifact-dir "/tmp/ds-t06-a3.mgYSm4"
+[ddl-golden][FAIL] case T06.meta.t06-a3-mysql57-null-drop-state: status='fail'
+[ddl-golden][FAIL] case T06.meta.t06-a3-mysql57-null-drop-state: failed assertion 'structure indexes PRIMARY(id) and idx_keep(keep_c)': "rc=0 output='idx_keep:keep_c:1,PRIMARY:id:1' expected='PRIMARY:id:1,idx_keep:keep_c:1'"
+[ddl-golden][FAIL] case T06.meta.t06-a3-mysql57-null-drop-state: structure indexes PRIMARY(id) and idx_keep(keep_c) output 'idx_keep:keep_c:1,PRIMARY:id:1' != 'PRIMARY:id:1,idx_keep:keep_c:1'
+[ddl-golden][FAIL] case T06.meta.t06-a3-mysql80-null-drop-state: status='fail'
+[ddl-golden][FAIL] case T06.meta.t06-a3-mysql80-null-drop-state: failed assertion 'structure indexes PRIMARY(id) and idx_keep(keep_c)': "rc=0 output='idx_keep:keep_c:1,PRIMARY:id:1' expected='PRIMARY:id:1,idx_keep:keep_c:1'"
+[ddl-golden][FAIL] case T06.meta.t06-a3-mysql80-null-drop-state: structure indexes PRIMARY(id) and idx_keep(keep_c) output 'idx_keep:keep_c:1,PRIMARY:id:1' != 'PRIMARY:id:1,idx_keep:keep_c:1'
+[ddl-golden][FAIL] case T06.meta.t06-a3-mysql84-null-drop-state: status='fail'
+[ddl-golden][FAIL] case T06.meta.t06-a3-mysql84-null-drop-state: failed assertion 'structure indexes PRIMARY(id) and idx_keep(keep_c)': "rc=0 output='idx_keep:keep_c:1,PRIMARY:id:1' expected='PRIMARY:id:1,idx_keep:keep_c:1'"
+[ddl-golden][FAIL] case T06.meta.t06-a3-mysql84-null-drop-state: structure indexes PRIMARY(id) and idx_keep(keep_c) output 'idx_keep:keep_c:1,PRIMARY:id:1' != 'PRIMARY:id:1,idx_keep:keep_c:1'
+[ddl-golden] task=T06 head=798a7b10184c cases=72 passed=69 assertions=1524
+[ddl-golden] artifact=/private/tmp/ds-t06-a3.mgYSm4/T06/artifact.json
+make: *** [ddl-golden] Error 1
