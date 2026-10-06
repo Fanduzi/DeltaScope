@@ -1,0 +1,1 @@
++ python3 scripts/ddl_golden.py validate --artifact docs/verification/t06-a2/9d12aec81ecdca0be94252ae6b568127817cdf5d/artifact/artifact.json

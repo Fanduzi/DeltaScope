@@ -1,0 +1,28 @@
+--- FAIL: TestT06A2PrimaryKeyMemberNullability (0.00s)
+    --- FAIL: TestT06A2PrimaryKeyMemberNullability/mysql/table_single (0.00s)
+        extractor_t06a2_test.go:112: column "id" NotNull = false, want true
+    --- FAIL: TestT06A2PrimaryKeyMemberNullability/mysql/table_composite_reordered (0.00s)
+        extractor_t06a2_test.go:112: column "a" NotNull = false, want true
+    --- FAIL: TestT06A2PrimaryKeyMemberNullability/mysql/table_prefix_member (0.00s)
+        extractor_t06a2_test.go:112: column "id" NotNull = false, want true
+    --- FAIL: TestT06A2PrimaryKeyMemberNullability/mysql/explicit_null_inline (0.00s)
+        extractor_t06a2_test.go:112: column "id" NotNull = true, want false
+    --- FAIL: TestT06A2PrimaryKeyMemberNullability/mysql/mixed_case_binding (0.00s)
+        extractor_t06a2_test.go:112: column "userid" NotNull = false, want true
+    --- FAIL: TestT06A2PrimaryKeyMemberNullability/tidb/table_single (0.00s)
+        extractor_t06a2_test.go:112: column "id" NotNull = false, want true
+    --- FAIL: TestT06A2PrimaryKeyMemberNullability/tidb/table_composite_reordered (0.00s)
+        extractor_t06a2_test.go:112: column "a" NotNull = false, want true
+    --- FAIL: TestT06A2PrimaryKeyMemberNullability/tidb/table_prefix_member (0.00s)
+        extractor_t06a2_test.go:112: column "id" NotNull = false, want true
+    --- FAIL: TestT06A2PrimaryKeyMemberNullability/tidb/explicit_null_inline (0.00s)
+        extractor_t06a2_test.go:112: column "id" NotNull = true, want false
+    --- FAIL: TestT06A2PrimaryKeyMemberNullability/tidb/mixed_case_binding (0.00s)
+        extractor_t06a2_test.go:112: column "userid" NotNull = false, want true
+--- FAIL: TestT06A2PrimaryKeyIndexFactsPreserved (0.00s)
+    extractor_t06a2_test.go:129: column "id" NotNull = false, want true
+--- FAIL: TestT06A2DefaultFactsPreserved (0.00s)
+    extractor_t06a2_test.go:161: id = {Name:id Type:int(11) Length:-1 Charset: Collation: Comment: Unsigned:false NotNull:false AutoIncrement:false HasDefault:true DefaultValue:<nil> DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[]}, want NotNull with the DEFAULT fact preserved
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	0.585s
+FAIL

@@ -1,0 +1,93 @@
+=== RUN   TestT06A2PrimaryKeyMemberNullability
+=== RUN   TestT06A2PrimaryKeyMemberNullability/mysql/inline
+=== RUN   TestT06A2PrimaryKeyMemberNullability/mysql/table_single
+=== RUN   TestT06A2PrimaryKeyMemberNullability/mysql/table_explicit_not_null
+=== RUN   TestT06A2PrimaryKeyMemberNullability/mysql/table_composite_reordered
+=== RUN   TestT06A2PrimaryKeyMemberNullability/mysql/table_prefix_member
+=== RUN   TestT06A2PrimaryKeyMemberNullability/mysql/explicit_null_table
+=== RUN   TestT06A2PrimaryKeyMemberNullability/mysql/explicit_null_inline
+=== RUN   TestT06A2PrimaryKeyMemberNullability/mysql/no_pk
+=== RUN   TestT06A2PrimaryKeyMemberNullability/mysql/secondary_key
+=== RUN   TestT06A2PrimaryKeyMemberNullability/mysql/unique_key
+=== RUN   TestT06A2PrimaryKeyMemberNullability/mysql/foreign_key_member
+=== RUN   TestT06A2PrimaryKeyMemberNullability/mysql/mixed_case_binding
+=== RUN   TestT06A2PrimaryKeyMemberNullability/tidb/inline
+=== RUN   TestT06A2PrimaryKeyMemberNullability/tidb/table_single
+=== RUN   TestT06A2PrimaryKeyMemberNullability/tidb/table_explicit_not_null
+=== RUN   TestT06A2PrimaryKeyMemberNullability/tidb/table_composite_reordered
+=== RUN   TestT06A2PrimaryKeyMemberNullability/tidb/table_prefix_member
+=== RUN   TestT06A2PrimaryKeyMemberNullability/tidb/explicit_null_table
+=== RUN   TestT06A2PrimaryKeyMemberNullability/tidb/explicit_null_inline
+=== RUN   TestT06A2PrimaryKeyMemberNullability/tidb/no_pk
+=== RUN   TestT06A2PrimaryKeyMemberNullability/tidb/secondary_key
+=== RUN   TestT06A2PrimaryKeyMemberNullability/tidb/unique_key
+=== RUN   TestT06A2PrimaryKeyMemberNullability/tidb/foreign_key_member
+=== RUN   TestT06A2PrimaryKeyMemberNullability/tidb/mixed_case_binding
+--- PASS: TestT06A2PrimaryKeyMemberNullability (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/mysql/inline (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/mysql/table_single (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/mysql/table_explicit_not_null (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/mysql/table_composite_reordered (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/mysql/table_prefix_member (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/mysql/explicit_null_table (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/mysql/explicit_null_inline (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/mysql/no_pk (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/mysql/secondary_key (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/mysql/unique_key (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/mysql/foreign_key_member (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/mysql/mixed_case_binding (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/tidb/inline (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/tidb/table_single (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/tidb/table_explicit_not_null (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/tidb/table_composite_reordered (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/tidb/table_prefix_member (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/tidb/explicit_null_table (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/tidb/explicit_null_inline (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/tidb/no_pk (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/tidb/secondary_key (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/tidb/unique_key (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/tidb/foreign_key_member (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/tidb/mixed_case_binding (0.00s)
+=== RUN   TestT06A2PrimaryKeyIndexFactsPreserved
+--- PASS: TestT06A2PrimaryKeyIndexFactsPreserved (0.00s)
+=== RUN   TestT06A2DefaultFactsPreserved
+--- PASS: TestT06A2DefaultFactsPreserved (0.00s)
+=== RUN   TestT06A2AlterColumnExtractionUnchanged
+--- PASS: TestT06A2AlterColumnExtractionUnchanged (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	0.386s
+testing: warning: no tests to run
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	0.580s [no tests to run]
+=== RUN   TestT06A2PKMemberNullabilityAudit
+=== RUN   TestT06A2PKMemberNullabilityAudit/mysql
+=== RUN   TestT06A2PKMemberNullabilityAudit/tidb
+--- PASS: TestT06A2PKMemberNullabilityAudit (0.07s)
+    --- PASS: TestT06A2PKMemberNullabilityAudit/mysql (0.04s)
+    --- PASS: TestT06A2PKMemberNullabilityAudit/tidb (0.03s)
+=== RUN   TestT06A2ColumnNotNullConsumer
+=== RUN   TestT06A2ColumnNotNullConsumer/mysql
+=== RUN   TestT06A2ColumnNotNullConsumer/tidb
+--- PASS: TestT06A2ColumnNotNullConsumer (0.01s)
+    --- PASS: TestT06A2ColumnNotNullConsumer/mysql (0.01s)
+    --- PASS: TestT06A2ColumnNotNullConsumer/tidb (0.01s)
+=== RUN   TestT06A2ModifyColumnPreStateConsumption
+=== RUN   TestT06A2ModifyColumnPreStateConsumption/mysql
+=== RUN   TestT06A2ModifyColumnPreStateConsumption/tidb
+--- PASS: TestT06A2ModifyColumnPreStateConsumption (0.01s)
+    --- PASS: TestT06A2ModifyColumnPreStateConsumption/mysql (0.00s)
+    --- PASS: TestT06A2ModifyColumnPreStateConsumption/tidb (0.00s)
+=== RUN   TestT06A2DefaultRequirePreserved
+=== RUN   TestT06A2DefaultRequirePreserved/mysql
+=== RUN   TestT06A2DefaultRequirePreserved/tidb
+--- PASS: TestT06A2DefaultRequirePreserved (0.01s)
+    --- PASS: TestT06A2DefaultRequirePreserved/mysql (0.00s)
+    --- PASS: TestT06A2DefaultRequirePreserved/tidb (0.00s)
+=== RUN   TestT06A2StatementIdentityPreserved
+=== RUN   TestT06A2StatementIdentityPreserved/mysql
+=== RUN   TestT06A2StatementIdentityPreserved/tidb
+--- PASS: TestT06A2StatementIdentityPreserved (0.01s)
+    --- PASS: TestT06A2StatementIdentityPreserved/mysql (0.00s)
+    --- PASS: TestT06A2StatementIdentityPreserved/tidb (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.928s

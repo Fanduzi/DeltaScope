@@ -1,0 +1,1 @@
+/tmp/ds-t06-a2.eznhqT/deltascope audit --dialect tidb --sql CREATE TABLE t (c INT); --config policy-col-default.yaml --format json --fail-on blocker

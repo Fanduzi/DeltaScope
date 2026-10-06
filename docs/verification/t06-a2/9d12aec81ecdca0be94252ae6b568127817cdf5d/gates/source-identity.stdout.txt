@@ -1,0 +1,10 @@
+9d12aec81ecdca0be94252ae6b568127817cdf5d
+4332dcbd7c66b16daf51356f69890bfac28ec1a2
+go version go1.26.1 darwin/arm64
+?? .agents/
+?? .debug-journal.md
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? docs/quality/architecture-review-2026-08-11.html
+?? docs/verification/t06-a2/

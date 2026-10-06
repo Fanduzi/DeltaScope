@@ -1,0 +1,1 @@
+/tmp/ds-t06-a2.eznhqT/deltascope audit --dialect mysql --sql CREATE TABLE t (id INT PRIMARY KEY); --config policy-pk-notnull.yaml --format json --fail-on blocker

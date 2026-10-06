@@ -1,0 +1,23 @@
+ ...026-10-06-ddl-create-primary-key-nullability.md |  120 +
+ internal/application/audit/README.md               |    1 +
+ .../application/audit/batch_state_t06a2_test.go    |  285 ++
+ internal/infrastructure/parser/tidb/README.md      |    3 +-
+ internal/infrastructure/parser/tidb/extractor.go   |   45 +
+ .../parser/tidb/extractor_t06a2_test.go            |  182 ++
+ internal/interfaces/http/README.md                 |    1 +
+ ...audit_create_table_pk_nullability_t06a2_test.go |  129 +
+ pkg/deltascope/README.md                           |    1 +
+ ...audit_create_table_pk_nullability_t06a2_test.go |   97 +
+ scripts/README.md                                  |    4 +-
+ scripts/ddl_golden.py                              |  217 +-
+ scripts/test_ddl_golden.py                         |  112 +-
+ testdata/ddl-golden/README.md                      |    7 +-
+ testdata/ddl-golden/T06.json                       | 3236 +++++++++++++++++---
+ testdata/ddl-inventory/T06-base-traceability.md    |   19 +-
+ .../primary_key_explicit_null.expected.yaml        |   12 +
+ .../ddl/findings/primary_key_explicit_null.sql     |    4 +
+ .../findings/rule_coverage_offline.expected.yaml   |    1 -
+ .../primary_key_explicit_null.expected.yaml        |   12 +
+ .../ddl/findings/primary_key_explicit_null.sql     |    4 +
+ .../findings/rule_coverage_offline.expected.yaml   |    1 -
+ 22 files changed, 3974 insertions(+), 519 deletions(-)
