@@ -2314,11 +2314,20 @@ def t05_a6_manifest_failures(manifest):
 # ---------------------------------------------------------------------------
 
 T06_PK_RULE = "ddl.table.primary_key.require"
+T06_PK_NN_RULE = "ddl.table.primary_key.not_null.require"
+T06_DEFAULT_RULE = "ddl.column.default.require"
 T06_ISOLATED_PROFILE = "t06-pk-presence-isolated"
 T06_REQUIRED_FALSE_PROFILE = "t06-pk-required-false"
+T06_A2_PK_NULL_PROFILE = "t06-a2-pk-nullability-isolated"
+T06_A2_DEFAULT_PROFILE = "t06-a2-default-presence-isolated"
 T06_NO_PK_SQL = "CREATE TABLE t (id INT);"
 T06_INLINE_PK_SQL = "CREATE TABLE t (id INT PRIMARY KEY);"
 T06_TABLE_PK_SQL = "CREATE TABLE t (id INT, PRIMARY KEY (id));"
+T06_A2_COMPOSITE_PK_SQL = "CREATE TABLE t (a INT, spare INT, b INT, PRIMARY KEY (b,a));"
+T06_A2_NULL_TABLE_SQL = "CREATE TABLE t (id INT NULL, PRIMARY KEY (id));"
+T06_A2_NULL_INLINE_SQL = "CREATE TABLE t (id INT NULL PRIMARY KEY);"
+T06_A2_NO_DEFAULT_SQL = "CREATE TABLE t (c INT);"
+T06_A2_DEFAULT_NULL_SQL = "CREATE TABLE t (c INT DEFAULT NULL);"
 T06_BASELINE_SQL = (
     "CREATE TABLE golden_t (id INT PRIMARY KEY); "
     "ALTER TABLE golden_t ADD COLUMN c INT; DROP TABLE golden_t;"
@@ -2358,6 +2367,17 @@ T06_PK_MEMBER = (
 T06_ENGINE = (
     "SELECT ENGINE FROM information_schema.TABLES "
     "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'"
+)
+# Ordered single-row shapes keep multi-column/multi-member assertions scalar.
+T06_A2_COLUMN_ROWS = (
+    "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) "
+    "ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'"
+)
+T06_A2_PK_MEMBERS = (
+    "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) "
+    "ORDER BY SEQ_IN_INDEX) FROM information_schema.STATISTICS "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'"
 )
 # MySQL 8.0/8.4 only: the server could add an invisible PK silently. Recording
 # these variables proves none was generated; a generated GIPK would also be
@@ -2485,9 +2505,16 @@ T06_SYNTAX_NEGATIVE = {
 
 
 def t06_a1_contract():
-    """Frozen T06-A1 oracle (issue #85). Baseline cases reuse the T02 batch
+    """Frozen T06 oracle (issue #85): the accepted A1 32-case subset plus the
+    A2 24-case subset, 56 cases total. A1 baseline cases reuse the T02 batch
     verbatim; the ten offline controls pin the two isolated policy profiles;
     the twelve anchored cases pin the information_schema structure oracle.
+
+    The A2 subset pins primary-key member nullability normalization: legal
+    table-level and composite members pass the isolated not-null rule, while
+    explicit NULL members keep exactly one policy blocker and the driver
+    rejects them with ERROR 1171. DEFAULT presence keeps its exact contract —
+    an absent clause reports, explicit DEFAULT NULL satisfies.
 
     MySQL 8.0/8.4 cases additionally record the GIPK-related server variables
     so a server-generated invisible primary key can never masquerade as a
@@ -2496,7 +2523,7 @@ def t06_a1_contract():
     def verify(label, sql, expect):
         return {"assert": label, "sql": sql, "expect": expect}
 
-    def audit_expect(sql, rejects, loaded=None):
+    def audit_expect(sql, rejects, loaded=None, finding=None):
         expect = {
             "exit": 1 if rejects else 0,
             "verdict": "reject" if rejects else "pass",
@@ -2514,13 +2541,17 @@ def t06_a1_contract():
         if loaded is not None:
             expect["rule_summary_loaded"] = loaded
         if rejects:
+            rule_id = (finding or {}).get("rule_id") or T06_PK_RULE
+            metadata = (finding or {}).get("metadata") or {"table": "t"}
             expect["finding_entries"] = [
-                {"index": 0, "rule_id": T06_PK_RULE, "level": "blocker"}
+                {"index": 0, "rule_id": rule_id, "level": "blocker"}
             ]
             expect["finding_metadata"] = [
-                {"index": 0, "rule_id": T06_PK_RULE, "metadata": {"table": "t"}}
+                {"index": 0, "rule_id": rule_id, "metadata": metadata}
             ]
             expect["finding_locations"] = [{"index": 0, "line": 1, "column": 1}]
+            expect["finding_message"] = (finding or {}).get(
+                "message") or "primary key is required"
         return expect
 
     baseline_expect = {
@@ -2588,6 +2619,52 @@ def t06_a1_contract():
                 "expect": audit_expect(T06_NO_PK_SQL, False, loaded=1),
             },
         ]
+    pk_nn_finding = {
+        "rule_id": T06_PK_NN_RULE,
+        "message": 'primary key column "id" must be NOT NULL',
+        "metadata": {"table": "t", "column": "id"},
+    }
+    default_finding = {
+        "rule_id": T06_DEFAULT_RULE,
+        "message": 'column "c" should define a default value',
+        "metadata": {"table": "t", "column": "c", "type": "int(11)"},
+    }
+    for dialect in ("mysql", "tidb"):
+        cli_cases += [
+            {
+                "id": f"t06-a2-{dialect}-table-single",
+                "dialect": dialect,
+                "sql": T06_TABLE_PK_SQL,
+                "policy": T06_A2_PK_NULL_PROFILE,
+                "args": ["--fail-on", "blocker"],
+                "expect": audit_expect(T06_TABLE_PK_SQL, False, loaded=1),
+            },
+            {
+                "id": f"t06-a2-{dialect}-table-composite",
+                "dialect": dialect,
+                "sql": T06_A2_COMPOSITE_PK_SQL,
+                "policy": T06_A2_PK_NULL_PROFILE,
+                "args": ["--fail-on", "blocker"],
+                "expect": audit_expect(T06_A2_COMPOSITE_PK_SQL, False, loaded=1),
+            },
+            {
+                "id": f"t06-a2-{dialect}-no-default",
+                "dialect": dialect,
+                "sql": T06_A2_NO_DEFAULT_SQL,
+                "policy": T06_A2_DEFAULT_PROFILE,
+                "args": ["--fail-on", "blocker"],
+                "expect": audit_expect(T06_A2_NO_DEFAULT_SQL, True, loaded=1,
+                                       finding=default_finding),
+            },
+            {
+                "id": f"t06-a2-{dialect}-default-null",
+                "dialect": dialect,
+                "sql": T06_A2_DEFAULT_NULL_SQL,
+                "policy": T06_A2_DEFAULT_PROFILE,
+                "args": ["--fail-on", "blocker"],
+                "expect": audit_expect(T06_A2_DEFAULT_NULL_SQL, False, loaded=1),
+            },
+        ]
 
     connects = {
         "mysql57": {
@@ -2628,6 +2705,92 @@ def t06_a1_contract():
         if anchor_key != "tidb85":
             rows.append(verify("storage engine", T06_ENGINE, "InnoDB"))
         return rows
+
+    def a2_structure(anchor_key, variant):
+        rows = [verify("exactly one user table", T06_TABLE_COUNT, "1")]
+        if variant == "table-composite":
+            rows += [
+                verify("exactly three user columns", T06_COLUMN_COUNT, "3"),
+                verify(
+                    "composite column order and nullability",
+                    T06_A2_COLUMN_ROWS,
+                    "a:int:1:NO,spare:int:2:YES,b:int:3:NO",
+                ),
+                verify("primary key constraint count", T06_PK_CONSTRAINT, "1"),
+                verify("primary index part count", T06_PK_PARTS, "2"),
+                verify("primary key members in key order", T06_A2_PK_MEMBERS, "b:1,a:2"),
+            ]
+        else:
+            rows += [
+                verify("exactly one user column", T06_COLUMN_COUNT, "1"),
+                verify("column id identity", T06_COLUMN_ROW, "id:int:1:NO"),
+                verify("primary key constraint count", T06_PK_CONSTRAINT, "1"),
+                verify("primary index part count", T06_PK_PARTS, "1"),
+                verify("primary key member", T06_PK_MEMBER, "id:1"),
+            ]
+        if anchor_key != "tidb85":
+            rows.append(verify("storage engine", T06_ENGINE, "InnoDB"))
+        return rows
+
+    def a2_metadata_case(anchor_key, dialect, variant, sql, rejects):
+        expect = audit_expect(sql, rejects, loaded=1,
+                              finding=pk_nn_finding if rejects else None)
+        if anchor_key in ("mysql80", "mysql84"):
+            expect["instance_facts"] = dict(T06_GIPK_FACTS)
+        case = {
+            "id": f"t06-a2-{anchor_key}-{variant}",
+            "anchor": anchor_key,
+            "dialect": dialect,
+            "sql": sql,
+            "policy": T06_A2_PK_NULL_PROFILE,
+            "connect": dict(connects[anchor_key]),
+            "args": ["--fail-on", "blocker"],
+            "setup": [
+                {
+                    "name": "ensure t absent",
+                    "sql": "DROP TABLE IF EXISTS t",
+                    "expect_rc": 0,
+                    "verify": [verify("t absent before audit", T06_TABLE_COUNT, "0")],
+                },
+            ],
+            "expect": expect,
+            "post_verify": [
+                verify("audit did not create t", T06_TABLE_COUNT, "0"),
+            ],
+            "teardown": [
+                {
+                    "name": "drop fixture",
+                    "sql": "DROP TABLE IF EXISTS t",
+                    "expect_rc": 0,
+                    "verify": [verify("no residual t", T06_TABLE_COUNT, "0")],
+                },
+            ],
+        }
+        if rejects:
+            # The explicit-NULL declaration conflict is a real native negative:
+            # the driver must fail with ERROR 1171 (not a connectivity or
+            # permission error) and the table must stay absent afterwards.
+            case["execute"] = [
+                {
+                    "name": "driver rejects explicit-null primary key",
+                    "sql": sql,
+                    "expect_rc": 1,
+                    "stderr_contains": ["ERROR 1171"],
+                    "verify": [
+                        verify("t absent after rejected create", T06_TABLE_COUNT, "0"),
+                    ],
+                },
+            ]
+        else:
+            case["execute"] = [
+                {
+                    "name": "driver applies the audited create",
+                    "sql": sql,
+                    "expect_rc": 0,
+                },
+            ]
+            case["structure"] = a2_structure(anchor_key, variant)
+        return case
 
     metadata_cases = []
     for anchor_key in ("mysql57", "mysql80", "mysql84", "tidb85"):
@@ -2677,6 +2840,13 @@ def t06_a1_contract():
                     },
                 ],
             })
+        for variant, sql, rejects in (
+            ("table-single", T06_TABLE_PK_SQL, False),
+            ("table-composite", T06_A2_COMPOSITE_PK_SQL, False),
+            ("explicit-null-table", T06_A2_NULL_TABLE_SQL, True),
+            ("explicit-null-inline", T06_A2_NULL_INLINE_SQL, True),
+        ):
+            metadata_cases.append(a2_metadata_case(anchor_key, dialect, variant, sql, rejects))
 
     required_case_ids = (
         [f"T06.db.{anchor}.{kind}" for anchor in T06_ANCHORS for kind in ("ddl", "syntax_negative")]
@@ -2695,6 +2865,16 @@ def t06_a1_contract():
             T06_REQUIRED_FALSE_PROFILE: {
                 "enable": {
                     T06_PK_RULE: {"enabled": True, "level": "blocker", "params": {"required": False}}
+                }
+            },
+            T06_A2_PK_NULL_PROFILE: {
+                "enable": {
+                    T06_PK_NN_RULE: {"enabled": True, "level": "blocker", "params": {"required": True}}
+                }
+            },
+            T06_A2_DEFAULT_PROFILE: {
+                "enable": {
+                    T06_DEFAULT_RULE: {"enabled": True, "level": "blocker", "params": {"required": True}}
                 }
             },
         },
@@ -2856,13 +3036,16 @@ def t06_a1_artifact_failures(artifact, manifest):
                 finding = findings[0]
                 location = finding.get("location") or {}
                 metadata = finding.get("metadata") or {}
-                if (finding.get("rule_id") != T06_PK_RULE
+                want_rule = (spec["expect"].get("finding_entries") or [{}])[0].get("rule_id")
+                want_message = spec["expect"].get("finding_message")
+                want_meta = (spec["expect"].get("finding_metadata") or [{}])[0].get("metadata") or {}
+                if (finding.get("rule_id") != want_rule
                         or finding.get("level") != "blocker"
-                        or finding.get("message") != "primary key is required"
+                        or finding.get("message") != want_message
                         or finding.get("statement_index", 0) != 0
                         or finding.get("statement_kind") != "ddl"
                         or location.get("line") != 1 or location.get("column") != 1
-                        or metadata.get("table") != "t"):
+                        or any(metadata.get(k) != v for k, v in want_meta.items())):
                     failures.append(f"T06-A1 {case_id}: finding identity mismatch: {finding!r}")
             if summary.get("blockers") != 1 or summary.get("warnings") != 0 or summary.get("notices") != 0:
                 failures.append(f"T06-A1 {case_id}: summary counters mismatch: {summary!r}")
@@ -2874,15 +3057,21 @@ def t06_a1_artifact_failures(artifact, manifest):
         if parsed.get("global_findings"):
             failures.append(f"T06-A1 {case_id}: global findings must stay empty")
         if case.get("kind") == "cli_metadata":
-            # Policy rejection never means the server refused the DDL: on the
-            # no-PK anchored cases the product exit and the driver return code
-            # must coexist exactly as the frozen table states.
+            # Policy rejection never means the server refused the DDL: the
+            # product exit and each driver return code must coexist exactly as
+            # the frozen spec declares — including native negatives where the
+            # product rejects AND the driver fails with the declared markers.
             execute = actual.get("execute") or []
-            want_exit = 1 if spec["sql"] == T06_NO_PK_SQL else 0
-            if actual.get("exit") != want_exit or len(execute) != 1 or execute[0].get("rc") != 0:
+            manifest_execs = spec.get("execute") or []
+            if actual.get("exit") != spec["expect"]["exit"] or len(execute) != len(manifest_execs):
                 failures.append(
-                    f"T06-A1 {case_id}: product exit {actual.get('exit')!r} and driver create must be "
-                    f"{want_exit}/rc=0")
+                    f"T06-A1 {case_id}: product exit {actual.get('exit')!r} with {len(execute)} "
+                    f"driver steps != frozen {spec['expect']['exit']}/{len(manifest_execs)}")
+            for got, want in zip(execute, manifest_execs):
+                if got.get("rc") != want.get("expect_rc", 0):
+                    failures.append(
+                        f"T06-A1 {case_id}: driver {want['name']} rc {got.get('rc')!r} != "
+                        f"{want.get('expect_rc', 0)}")
     return failures
 
 

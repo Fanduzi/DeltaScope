@@ -49,7 +49,12 @@ Per-task manifests for the milestone DDL golden-path runner
   `--password-env`/`--password-file` and is never recorded), ordered
   `setup` steps (with `verify` metadata assertions), the same `expect`
   vocabulary as `cli_cases`, `post_verify` assertions proving the audited
-  object was not mutated, and `teardown` steps.
+  object was not mutated, optional driver-side `execute` steps applying
+  the audited SQL natively (each recorded step re-derived by the
+  validator; a step may pin `expect` exit/`stderr_contains` when a native
+  negative like ERROR 1171 is required), `structure` oracle queries
+  pinning the resulting `information_schema` facts, and `teardown`
+  steps.
 - `error_cases`: CLI invocations expected to fail before producing an audit
   result (for example a real connection refusal). `expect` pins `exit` and
   `stderr_contains` markers only; stdout is never parsed as a result. An

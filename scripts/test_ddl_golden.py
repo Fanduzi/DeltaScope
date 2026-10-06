@@ -2106,7 +2106,8 @@ def t06_contract_tests(tmp):
     directory.mkdir()
     artifact = make_artifact(directory)
     binary = directory / "deltascope"
-    catalog = json.dumps({"rules": [{"rule_id": ddl_golden.T06_PK_RULE}]})
+    catalog = json.dumps({"rules": [{"rule_id": rid} for rid in (
+        ddl_golden.T06_PK_RULE, ddl_golden.T06_PK_NN_RULE, ddl_golden.T06_DEFAULT_RULE)]})
     binary.write_text("#!/bin/sh\nprintf '%s' '" + catalog + "'\n")
     artifact["cli"]["sha256"] = ddl_golden.sha256_file(binary)
     policies = ddl_golden.make_policies(str(binary), directory, manifest)
@@ -2120,7 +2121,7 @@ def t06_contract_tests(tmp):
 
     def step_records(steps):
         return [{"name": s["name"], "sql": s["sql"], "rc": s.get("expect_rc", 0),
-                 "stdout": "", "stderr": "",
+                 "stdout": "", "stderr": " ".join(s.get("stderr_contains") or []),
                  "verify": query_records(s.get("verify", []))} for s in steps]
 
     for key, anchor in manifest["anchors"].items():
@@ -2161,7 +2162,8 @@ def t06_contract_tests(tmp):
             location = finding_locations.get(entry["index"])
             finding = {
                 "rule_id": entry["rule_id"], "level": entry["level"],
-                "message": "primary key is required", "statement_kind": "ddl",
+                "message": expected.get("finding_message", "primary key is required"),
+                "statement_kind": "ddl",
                 "metadata": copy.deepcopy(finding_metadata.get((entry["index"], entry["rule_id"]), {}))}
             if location is not None:
                 finding["location"] = {"line": location["line"], "column": location["column"]}
@@ -2230,9 +2232,9 @@ def t06_contract_tests(tmp):
                 if declared_facts is not None:
                     case["actual"]["instance_facts"] = dict(declared_facts)
                 for field in ("setup", "execute", "teardown"):
-                    case["actual"][field] = step_records(spec[field])
+                    case["actual"][field] = step_records(spec.get(field) or [])
                 for field in ("post_verify", "structure"):
-                    case["actual"][field] = query_records(spec[field])
+                    case["actual"][field] = query_records(spec.get(field) or [])
             else:
                 case["actual"]["version_evidence"] = ddl_golden.version_evidence_record(spec, parsed)
             command += spec.get("args") or []
@@ -2468,7 +2470,7 @@ def t06_contract_tests(tmp):
     donors = {v: copy.deepcopy(by_id(a, f"T06.meta.t06-mysql84-{v}"))
               for v in ("no-pk", "inline-pk", "table-pk")}
     for item in list(a["cases"]):
-        if item["kind"] == "cli_metadata":
+        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith("t06-a2-"):
             slot(a, item["case_id"], donors[item["cli_case"].split("-", 2)[2]])
     run("t06 all metadata slots refilled variant-wise rejected", a, "identity")
 
@@ -2479,7 +2481,7 @@ def t06_contract_tests(tmp):
     run("t06 metadata slot filled by offline record rejected", a, "identity")
     a = copy.deepcopy(artifact)
     for item in list(a["cases"]):
-        if item["kind"] == "cli_metadata":
+        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith("t06-a2-"):
             variant = item["cli_case"].split("-", 2)[2]
             dialect = "tidb" if item["anchor"] == "tidb85" else "mysql"
             slot(a, item["case_id"], by_id(a, f"T06.cli.t06-{dialect}-{variant}"))
@@ -2507,6 +2509,102 @@ def t06_contract_tests(tmp):
     forged["id"] = "t06-mysql-extra"
     m["cli_cases"].append(forged)
     run("t06 manifest extra declared case rejected", artifact, "T06-A1", m)
+
+    # --- T06-A2 additions: nullability/default roles on the 56-case set ---
+
+    def t06a2(suffix):
+        candidate = copy.deepcopy(artifact)
+        case = next(item for item in candidate["cases"]
+                    if item.get("cli_case") == "t06-a2-" + suffix)
+        return candidate, case
+
+    # A table-level/composite proof cannot be masked by an inline-PK record:
+    # the case_id binds the frozen input SQL, not just the variant family.
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.meta.t06-a2-mysql84-table-single",
+         by_id(a, "T06.meta.t06-mysql84-inline-pk"))
+    run("t06a2 table-level slot refilled by inline record rejected", a, "identity")
+
+    # Member nullability and key order are bound to the frozen structure oracle.
+    a, c = t06a2("mysql84-table-composite")
+    for record in c["actual"]["structure"]:
+        if record["assert"] == "composite column order and nullability":
+            record["output"] = "a:int:1:YES,spare:int:2:YES,b:int:3:YES"
+    run("t06a2 composite members recorded still-nullable rejected", a, "structure")
+    a, c = t06a2("mysql84-table-composite")
+    for record in c["actual"]["structure"]:
+        if record["assert"] == "composite column order and nullability":
+            record["output"] = "a:int:1:NO,spare:int:2:NO,b:int:3:NO"
+    run("t06a2 spare recorded not-null rejected", a, "structure")
+    a, c = t06a2("mysql84-table-composite")
+    for record in c["actual"]["structure"]:
+        if record["assert"] == "primary key members in key order":
+            record["output"] = "a:1,b:2"
+    run("t06a2 primary key member order reversed rejected", a, "structure")
+
+    # An explicit-NULL conflict recorded as pass fails the frozen product side.
+    a, c = t06a2("mysql84-explicit-null-table")
+    c["actual"]["exit"] = 0
+    c["actual"]["parsed"]["verdict"] = "pass"
+    c["actual"]["parsed"]["statements"][0]["findings"] = []
+    c["actual"]["parsed"]["summary"]["blockers"] = 0
+    c["actual"]["parsed"]["fail_on_triggered"] = False
+    update_stdout(c)
+    run("t06a2 explicit-null conflict recorded as pass rejected", a, "verdict")
+
+    # A driver success or a permission error can never masquerade as the
+    # ERROR 1171 native negative.
+    a, c = t06a2("mysql84-explicit-null-inline")
+    c["actual"]["execute"][0]["rc"] = 0
+    c["actual"]["execute"][0]["stderr"] = ""
+    run("t06a2 driver success recorded for explicit-null negative rejected", a, "rc")
+    a, c = t06a2("mysql84-explicit-null-inline")
+    c["actual"]["execute"][0]["stderr"] = "ERROR 1045 (28000): Access denied for user"
+    run("t06a2 permission error masquerading as 1171 rejected", a, "marker")
+
+    # DEFAULT presence keeps its exact contract in both directions.
+    a, c = t06a2("mysql-default-null")
+    c["actual"]["parsed"]["statements"][0]["findings"].append(
+        {"rule_id": ddl_golden.T06_DEFAULT_RULE, "level": "blocker",
+         "message": 'column "c" should define a default value',
+         "statement_kind": "ddl", "metadata": {"table": "t", "column": "c"},
+         "location": {"line": 1, "column": 1}})
+    c["actual"]["parsed"]["summary"]["blockers"] = 1
+    update_stdout(c)
+    run("t06a2 DEFAULT NULL recorded as missing default rejected", a, "pass case carries findings")
+    a, c = t06a2("mysql-no-default")
+    c["actual"]["exit"] = 0
+    c["actual"]["parsed"]["verdict"] = "pass"
+    c["actual"]["parsed"]["statements"][0]["findings"] = []
+    c["actual"]["parsed"]["summary"]["blockers"] = 0
+    c["actual"]["parsed"]["fail_on_triggered"] = False
+    update_stdout(c)
+    run("t06a2 absent DEFAULT recorded as pass rejected", a, "verdict")
+
+    # Deleting a new case on both sides still fails the frozen contract.
+    a = copy.deepcopy(artifact)
+    m = copy.deepcopy(manifest)
+    victim = "T06.meta.t06-a2-tidb85-table-composite"
+    a["cases"] = [x for x in a["cases"] if x["case_id"] != victim]
+    a["executed_count"] = len(a["cases"])
+    a["required_case_ids"].remove(victim)
+    m["metadata_cases"] = [s for s in m["metadata_cases"]
+                           if s["id"] != "t06-a2-tidb85-table-composite"]
+    m["required_case_ids"].remove(victim)
+    run("t06a2 case deleted on both sides rejected", a, "T06-A1", m)
+
+    # The same rebind/demote/profile-swap defenses cover the new roles.
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.meta.t06-a2-mysql57-table-single",
+         by_id(a, "T06.meta.t06-a2-mysql84-table-single"))
+    run("t06a2 mysql84 record re-keyed as mysql57 rejected", a, "identity")
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.meta.t06-a2-mysql57-table-single",
+         by_id(a, "T06.cli.t06-a2-mysql-table-single"))
+    run("t06a2 metadata slot demoted to offline record rejected", a, "identity")
+    a, c = t06a2("mysql84-table-single")
+    c["policy_profile"] = ddl_golden.T06_A2_DEFAULT_PROFILE
+    run("t06a2 isolated policy profile swapped rejected", a, "identity")
 
     return results
 

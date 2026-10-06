@@ -1,4 +1,4 @@
-# T06 base CREATE TABLE traceability (issue #85, slice A1)
+# T06 base CREATE TABLE traceability (issue #85, slices A1+A2)
 
 Scope: the `mysql.create-table` and `tidb.create-table` inventory rows owned by
 T06. This file maps each #85 acceptance dimension to the normalized spec
@@ -9,8 +9,8 @@ tasks are listed as deferred, not silently absorbed.
 Status vocabulary:
 
 - **golden-proven (this slice)** — pinned by `testdata/ddl-golden/T06.json`
-  (32 cases: 10 baseline + 10 offline controls + 12 anchored structure proofs)
-  and/or the `T06A1` Go regression tests.
+  (56 cases: 10 baseline + 18 offline controls + 28 anchored structure proofs)
+  and/or the `T06A1`/`T06A2` Go regression tests.
 - **earlier evidence** — covered by pre-T06 artifacts (T02–T05 golden runs,
   sql-corpus fixtures, catalog examples); not re-proven by this slice.
 - **not proven** — the field/rule exists but no dedicated evidence pins the
@@ -19,7 +19,7 @@ Status vocabulary:
 
 ## Row ownership
 
-| Inventory row | Status in inventory | T06-A1 addition |
+| Inventory row | Status in inventory | T06-A1/A2 addition |
 |---|---|---|
 | `mysql.create-table` | `semantically_checked` | `file:testdata/ddl-golden/T06.json` + this file appended to `acceptance.refs` |
 | `tidb.create-table` | `semantically_checked` | same |
@@ -41,7 +41,10 @@ Neighboring rows share the CREATE TABLE grammar but stay with their owners:
 | Policy on/off is independent of legality | policy `enabled`/`params.required` | `ddl.table.primary_key.require` | `T06.json` `t06-*-rule-off` / `t06-*-required-false` cli cases; anchored no-PK cases show product reject + driver success | **golden-proven (this slice)** |
 | Type family presence (INT etc.) | `Column.Type` | `ddl.column.blob_text.forbid`, `ddl.column.json.forbid`, `ddl.column.bit.forbid`, `ddl.column.float_double.forbid`, `ddl.column.timestamp.forbid`, `ddl.table.primary_key.bigint.require`, `ddl.table.primary_key.unsigned.require` | corpus `findings`/`metadata` fixtures; catalog examples; `T06.json` structure oracle pins `DATA_TYPE=int` | **earlier evidence** — per-type-family version matrix not yet pinned |
 | Length / precision | `Column.Length` (and type args) | `ddl.column.char.max_length`, `ddl.column.varchar.max_length`, `ddl.table.row_size.max_bytes.require` | corpus fixtures; catalog examples | **earlier evidence** |
-| NULL / literal defaults | `Column.NotNull`, `HasDefault`, `DefaultValue`, `DefaultKind`, `DefaultIsNull` | `ddl.column.not_null.require`, `ddl.column.default.require`, `ddl.table.primary_key.not_null.require` | corpus fixtures; `T06.json` `IS_NULLABLE` structure assertions | **earlier evidence** — expression defaults are T07 |
+| PK member implied NOT NULL (inline + table-level + composite) | `Column.NotNull` normalized in `extractCreateTable`; `DDL.PrimaryKey.Columns` binding | `ddl.table.primary_key.not_null.require`, `ddl.column.not_null.require` | `T06.json` `t06-a2-*` 8 cli + 16 meta cases (`IS_NULLABLE=NO`, ordered `b:1,a:2` members, ERROR 1171 negatives); `TestT06A2*` Go tests | **golden-proven (A2)** |
+| Explicit NULL on PK member keeps the declaration conflict | `ColumnOptionNull` → member `NotNull=false` | `ddl.table.primary_key.not_null.require` | `t06-a2-*-explicit-null-{table,inline}` meta cases (product reject + driver ERROR 1171 + absence); `primary_key_explicit_null` corpus fixtures | **golden-proven (A2)** |
+| DEFAULT clause presence (absent vs explicit `DEFAULT NULL`) | `HasDefault`, `DefaultValue`, `DefaultIsNull` | `ddl.column.default.require` | `T06.json` `t06-a2-*-no-default`/`default-null` cli cases; `TestT06A2*` | **golden-proven (A2)** — `DefaultValue` records bounded `"<nil>"` for `DEFAULT NULL`, `DefaultIsNull` never set on MySQL/TiDB path |
+| NULL / literal defaults beyond PK members | `Column.NotNull`, `HasDefault`, `DefaultValue`, `DefaultKind`, `DefaultIsNull` | `ddl.column.not_null.require`, `ddl.column.default.require` | corpus fixtures; `T06.json` `IS_NULLABLE` structure assertions | **earlier evidence** — expression defaults are T07 |
 | Temporal columns | `DefaultIsCurrentTimestamp`, `OnUpdateCurrentTimestamp` | `ddl.column.timestamp.forbid` | corpus fixtures | **earlier evidence** — temporal default/version semantics not yet pinned per anchor |
 | AUTO_INCREMENT | `Column.AutoIncrement` | `ddl.table.auto_increment.init_value.require`, `ddl.table.primary_key.auto_increment.require` | corpus fixtures | **earlier evidence** |
 | Charset / collation | `Column.Charset`, `Column.Collation`, `DDL.Options` entries | `ddl.column.charset.allowlist`, `ddl.column.collation.allowlist`, `ddl.column.charset_collation.match.require`, `ddl.table.charset.allowlist` | corpus fixtures | **earlier evidence** |
@@ -61,6 +64,12 @@ Neighboring rows share the CREATE TABLE grammar but stay with their owners:
 - TiDB-only CREATE TABLE options (AUTO_RANDOM, SHARD_ROW_ID_BITS,
   PRE_SPLIT_REGIONS, TTL, placement) keep their existing vendor-boundary or
   dedicated-row status under T19/T20/T23.
+- `DEFAULT NULL` is distinguishable only through `HasDefault=true` — the
+  extracted `DefaultValue` is the bounded literal `"<nil>"` and
+  `DefaultIsNull` is never set on the MySQL/TiDB path; tightening this
+  fidelity is deferred.
+- `ColumnOptionNull` stays a no-op marker on non-PK columns, so "declared
+  NULL" vs "omitted nullability" is only observable on primary-key members.
 - No stored-body or generated/expression semantics enter this slice
   (T07/T27–T30).
 

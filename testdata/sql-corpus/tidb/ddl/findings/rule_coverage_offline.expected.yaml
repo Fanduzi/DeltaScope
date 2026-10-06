@@ -104,7 +104,6 @@ expect:
       - ddl.table.name.suffix.require
       - ddl.table.partition.forbid
       - ddl.table.primary_key.columns.max_count
-      - ddl.table.primary_key.not_null.require
       - ddl.table.primary_key.require
       - ddl.table.row_format.allowlist
       - ddl.table.truncate.forbid

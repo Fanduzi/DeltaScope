@@ -243,6 +243,8 @@ func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
 		}
 	}
 
+	normalizeCreatePrimaryKeyNullability(ddl, stmt.Cols)
+
 	extracted, unextracted := extractTableOptions(stmt.Options)
 	for key, value := range extracted {
 		ddl.Options[key] = value
@@ -264,6 +266,49 @@ func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
 	}
 
 	return ddl
+}
+
+// normalizeCreatePrimaryKeyNullability writes the database-implied NOT NULL
+// fact onto primary-key members that bind to a declared column. MySQL and
+// TiDB mark primary-key members NOT NULL regardless of the written
+// nullability clause, so table-level members get the same fact the inline
+// PRIMARY KEY option already records in extractColumn — single or composite,
+// with key order independent of column order. An explicit NULL declaration
+// keeps the conflict visible: the member stays NotNull=false so the existing
+// primary-key-not-null rule can report the declaration conflict instead of
+// the model silently pretending a legal table. Members that do not bind to a
+// declared column (expression parts, unknown names) are left untouched.
+func normalizeCreatePrimaryKeyNullability(ddl *spec.DDL, cols []*ast.ColumnDef) {
+	if ddl.PrimaryKey == nil {
+		return
+	}
+	members := make(map[string]struct{}, len(ddl.PrimaryKey.Columns))
+	for _, name := range ddl.PrimaryKey.Columns {
+		members[name] = struct{}{}
+	}
+	explicitNull := make(map[string]struct{}, len(cols))
+	for _, col := range cols {
+		if col == nil || col.Name == nil {
+			continue
+		}
+		for _, option := range col.Options {
+			if option != nil && option.Tp == ast.ColumnOptionNull {
+				explicitNull[col.Name.Name.L] = struct{}{}
+				break
+			}
+		}
+	}
+	for i := range ddl.Columns {
+		column := &ddl.Columns[i]
+		if _, ok := members[column.Name]; !ok {
+			continue
+		}
+		if _, conflict := explicitNull[column.Name]; conflict {
+			column.NotNull = false
+			continue
+		}
+		column.NotNull = true
+	}
 }
 
 func extractCreateView(stmt *ast.CreateViewStmt) *spec.DDL {
