@@ -670,9 +670,9 @@ func extractColumn(col *ast.ColumnDef) spec.Column {
 			column.AutoIncrement = true
 		case ast.ColumnOptionDefaultValue:
 			column.HasDefault = true
-			if exprIsNullLiteral(option.Expr) {
+			column.DefaultIsNull = exprIsNullLiteral(option.Expr)
+			if column.DefaultIsNull {
 				column.DefaultValue = "NULL"
-				column.DefaultIsNull = true
 			} else {
 				column.DefaultValue = normalizedExprText(option.Expr)
 			}

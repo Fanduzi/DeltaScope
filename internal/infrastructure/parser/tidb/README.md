@@ -21,6 +21,7 @@ TiDB-backed parser adapter for multi-statement SQL parsing, parser-warning colle
 | field_census_test.go | Field-level disposition census: pins projected/evidence/carried/subsumed/exempt/deferred for every exported field of every census-scope struct (extracted statement types and their option/fact carriers), and closes the carrier boundary by requiring any ast-package struct reachable through a census field to join the scope or carry a reach exemption |
 | extractor_t06a2_test.go | Verifies CREATE-scoped primary-key member nullability normalization: inline/table-level/composite/reordered/prefix/mixed-case members record `NotNull=true`, explicit `NULL` keeps the declaration conflict, non-PK columns are untouched, and shared `extractColumn` semantics used by ALTER stay unchanged |
 | extractor_t06a3_test.go | Verifies T06-A3 typed `DEFAULT NULL` recognition: absent/`NULL`/`'NULL'`/`'<nil>'`/`'null'` spellings record exact `HasDefault`/`DefaultValue`/`DefaultIsNull` triples on both dialects, `exprIsNullLiteral` rejects nil nodes/param markers/non-literals, literal/timestamp/comment facts stay unchanged, and ALTER column `Definition` shares the corrected facts without touching nullability markers |
+| extractor_t06a3r1_test.go | Verifies T06-A3-R1 per-option DEFAULT recomputation: repeated `DEFAULT` clauses bind `DefaultValue`/`DefaultIsNull` to the last expression (NULL→non-NULL clears the flag, non-NULL→NULL sets it), siblings/non-DEFAULT options stay isolated, and ALTER `MODIFY`/`CHANGE`/`ADD` definitions share the contract |
 
 ## Exports
 

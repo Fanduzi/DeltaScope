@@ -134,3 +134,18 @@ any explicit `DEFAULT` clause satisfies it regardless of spelling.
   `internal/interfaces/http/audit_default_null_state_t06a3_test.go`
 - Docs: `testdata/ddl-golden/T06.json`,
   `testdata/ddl-inventory/T06-base-traceability.md`
+
+## Revision R1 — per-option recomputation, not flag accumulation
+
+The original branch set `DefaultIsNull=true` only when the current
+expression was a NULL literal, but a later non-NULL `DEFAULT` option (the
+parser's `ColumnOptionList` preserves repeated `DEFAULT` clauses in order)
+overwrote `DefaultValue` without clearing the flag — leaving the
+contradictory pair `DefaultValue="'NULL'"` + `DefaultIsNull=true`. The
+branch now assigns `column.DefaultIsNull = exprIsNullLiteral(option.Expr)`
+on every option and picks `DefaultValue` from the same boolean, so the last
+written `DEFAULT` alone determines both fields. No rule judges duplicate
+`DEFAULT` legality — the keep-last option ordering is unchanged, and the
+A6 conservative drop boundary still applies whenever the final default is
+a non-NULL literal. Regression: `extractor_t06a3r1_test.go` /
+`batch_state_t06a3r1_test.go` (prefix `T06A3R1`).
