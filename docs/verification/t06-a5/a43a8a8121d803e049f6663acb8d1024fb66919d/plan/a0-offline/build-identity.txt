@@ -1,0 +1,3 @@
+toolchain: go version go1.26.1 darwin/arm64
+binary: 584ab21f06adb18c2766ccc2e5eac4c6906b08a90a5dab5e490fcaf2dfe01399
+built_from: 527fd48dde8190b3c3037ef2335c97ec7ad2853e (working tree HEAD f2a5bd14 = evidence commit, code unchanged since 527fd48d)

@@ -1,0 +1,1 @@
+deltascope audit --dialect tidb --sql "CREATE TABLE t (c VARCHAR(9));" --config policy-all-off.yaml --format json --fail-on blocker

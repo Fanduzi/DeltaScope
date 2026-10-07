@@ -1,0 +1,1 @@
+env GOFLAGS=-count=1 make ddl-golden-validator-test

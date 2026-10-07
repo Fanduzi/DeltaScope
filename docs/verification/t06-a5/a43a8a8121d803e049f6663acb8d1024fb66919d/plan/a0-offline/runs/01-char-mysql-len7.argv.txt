@@ -1,0 +1,1 @@
+deltascope audit --dialect mysql --sql "CREATE TABLE t (c CHAR(7));" --config policy-char-limit8.yaml --format json --fail-on blocker

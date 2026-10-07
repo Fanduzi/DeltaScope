@@ -1,0 +1,1 @@
+gofmt -l internal/application/audit/batch_state_t06a5_test.go internal/domain/rule/ddl/type_family_rules_t06a5_test.go internal/infrastructure/parser/tidb/extractor_t06a5_test.go pkg/deltascope/audit_char_length_t06a5_test.go internal/interfaces/http/audit_char_length_t06a5_test.go

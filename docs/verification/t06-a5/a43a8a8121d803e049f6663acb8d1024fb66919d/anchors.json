@@ -1,0 +1,217 @@
+{
+  "anchor_evidence": {
+    "mysql57": {
+      "product": "mysql",
+      "image": "mysql:5.7.44",
+      "image_digest": "mysql@sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb",
+      "container": "deltascope-ddl-golden-mysql57",
+      "reachable": true,
+      "version": "5.7.44"
+    },
+    "mysql80": {
+      "product": "mysql",
+      "image": "mysql:8.0.46",
+      "image_digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+      "container": "deltascope-ddl-golden-mysql80",
+      "reachable": true,
+      "version": "8.0.46"
+    },
+    "mysql84": {
+      "product": "mysql",
+      "image": "mysql:8.4.10",
+      "image_digest": "mysql@sha256:c592c15aaf4a1961e15d82eb31ea5987dda862d1c4b1e93424438c0e91dc1f8d",
+      "container": "deltascope-ddl-golden-mysql84",
+      "reachable": true,
+      "version": "8.4.10"
+    },
+    "tidb85": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    }
+  },
+  "cli_binary": {
+    "path": "/private/tmp/ds-t06-a5-golden/T06/bin/deltascope",
+    "sha256": "afcf6c065bb0c4507c16805a07f85ad96e8f79d73764f0ae9d1d1c86f3bdb5ec",
+    "build": {
+      "command": "CGO_ENABLED=0 go build -o <artifact>/deltascope ./cmd/deltascope",
+      "cgo_enabled": "0",
+      "go_version": "go1.26.1",
+      "built_at": "2026-10-07T05:25:39.323261+00:00",
+      "head_sha": "a43a8a8121d803e049f6663acb8d1024fb66919d"
+    }
+  },
+  "policies": [
+    {
+      "profile": "all-rules-disabled",
+      "path": "/private/tmp/ds-t06-a5-golden/T06/golden-policy-all-off.yaml",
+      "sha256": "57e926645162cf32e47f91c9409b48374e85f8c571f801dc56728cb61859b250",
+      "catalog_rules": 380,
+      "enabled_rules": {},
+      "disabled_rules": 380
+    },
+    {
+      "profile": "t06-a2-default-presence-isolated",
+      "path": "/private/tmp/ds-t06-a5-golden/T06/golden-policy-t06-a2-default-presence-isolated.yaml",
+      "sha256": "27913ae6f7df4bb6f846fe427d81674b29033eaca1d825d3ae7f1e520ab17a59",
+      "catalog_rules": 380,
+      "enabled_rules": {
+        "ddl.column.default.require": {
+          "enabled": true,
+          "level": "blocker",
+          "params": {
+            "required": true
+          }
+        }
+      },
+      "disabled_rules": 379
+    },
+    {
+      "profile": "t06-a2-pk-nullability-isolated",
+      "path": "/private/tmp/ds-t06-a5-golden/T06/golden-policy-t06-a2-pk-nullability-isolated.yaml",
+      "sha256": "daf905f2741bdadb88e58a035f186f09d4487bd8eb85abe4bfea249a69356c13",
+      "catalog_rules": 380,
+      "enabled_rules": {
+        "ddl.table.primary_key.not_null.require": {
+          "enabled": true,
+          "level": "blocker",
+          "params": {
+            "required": true
+          }
+        }
+      },
+      "disabled_rules": 379
+    },
+    {
+      "profile": "t06-a3-null-drop-state-isolated",
+      "path": "/private/tmp/ds-t06-a5-golden/T06/golden-policy-t06-a3-null-drop-state-isolated.yaml",
+      "sha256": "cba5a97f44fb7e62ff263318187886869e8a5751e8567acc0ace27ef6d323fae",
+      "catalog_rules": 380,
+      "enabled_rules": {
+        "ddl.table.exists.create.forbid": {
+          "enabled": true,
+          "level": "blocker",
+          "params": {}
+        },
+        "ddl.table.exists.alter.require": {
+          "enabled": true,
+          "level": "blocker",
+          "params": {}
+        },
+        "ddl.alter.drop_column.exists.require": {
+          "enabled": true,
+          "level": "blocker",
+          "params": {}
+        },
+        "ddl.create_index.columns.exists.require": {
+          "enabled": true,
+          "level": "blocker",
+          "params": {
+            "required": true
+          }
+        }
+      },
+      "disabled_rules": 376
+    },
+    {
+      "profile": "t06-a4-provider-defaults-isolated",
+      "path": "/private/tmp/ds-t06-a5-golden/T06/golden-policy-t06-a4-provider-defaults-isolated.yaml",
+      "sha256": "37a9515c2318d536de5a588195bfe3224a2df5f40461aa8f2dec826e9e54001d",
+      "catalog_rules": 380,
+      "enabled_rules": {
+        "ddl.table.exists.alter.require": {
+          "enabled": true,
+          "level": "blocker",
+          "params": {}
+        },
+        "ddl.alter.drop_column.exists.require": {
+          "enabled": true,
+          "level": "blocker",
+          "params": {}
+        },
+        "ddl.create_index.columns.exists.require": {
+          "enabled": true,
+          "level": "blocker",
+          "params": {
+            "required": true
+          }
+        }
+      },
+      "disabled_rules": 377
+    },
+    {
+      "profile": "t06-a5-char-length-isolated",
+      "path": "/private/tmp/ds-t06-a5-golden/T06/golden-policy-t06-a5-char-length-isolated.yaml",
+      "sha256": "579e7a9f31cb128e81f552d0644b0b49b39c8bebf8965cfebf51895b86fcd9e6",
+      "catalog_rules": 380,
+      "enabled_rules": {
+        "ddl.column.char.max_length": {
+          "enabled": true,
+          "level": "blocker",
+          "params": {
+            "limit": 8
+          }
+        }
+      },
+      "disabled_rules": 379
+    },
+    {
+      "profile": "t06-a5-varchar-length-isolated",
+      "path": "/private/tmp/ds-t06-a5-golden/T06/golden-policy-t06-a5-varchar-length-isolated.yaml",
+      "sha256": "e8c50d631b9f69a63f37343d68c9befc7a33ce0743d4d6fff3d4ff559a5f957c",
+      "catalog_rules": 380,
+      "enabled_rules": {
+        "ddl.column.varchar.max_length": {
+          "enabled": true,
+          "level": "blocker",
+          "params": {
+            "limit": 8
+          }
+        }
+      },
+      "disabled_rules": 379
+    },
+    {
+      "profile": "t06-pk-presence-isolated",
+      "path": "/private/tmp/ds-t06-a5-golden/T06/golden-policy-t06-pk-presence-isolated.yaml",
+      "sha256": "39e27e5b35be63e0718d3abb8447713d82c869d559d5f9ee39ebcfe88a10a56f",
+      "catalog_rules": 380,
+      "enabled_rules": {
+        "ddl.table.primary_key.require": {
+          "enabled": true,
+          "level": "blocker",
+          "params": {
+            "required": true
+          }
+        }
+      },
+      "disabled_rules": 379
+    },
+    {
+      "profile": "t06-pk-required-false",
+      "path": "/private/tmp/ds-t06-a5-golden/T06/golden-policy-t06-pk-required-false.yaml",
+      "sha256": "d7c1b00a32a19bd7d9e17612ad2f968928abe5aba852b1c7ba28fdff0e3d9898",
+      "catalog_rules": 380,
+      "enabled_rules": {
+        "ddl.table.primary_key.require": {
+          "enabled": true,
+          "level": "blocker",
+          "params": {
+            "required": false
+          }
+        }
+      },
+      "disabled_rules": 379
+    }
+  ],
+  "head_sha": "a43a8a8121d803e049f6663acb8d1024fb66919d",
+  "generated_at": "2026-10-07T05:26:49.135711+00:00",
+  "cleanup": {
+    "compose_down_rc": 0,
+    "compose_down_stderr": "Container deltascope-ddl-golden-tidb85-client Stopping \n Container deltascope-ddl-golden-mysql80 Stopping \n Container deltascope-ddl-golden-mysql84 Stopping \n Container deltascope-ddl-golden-mysql57 Stopping \n Container deltascope-ddl-golden-mysql84 Stopped \n Container deltascope-ddl-golden-mysql84 Removing \n Container deltascope-ddl-golden-mysql84 Removed \n Container deltascope-ddl-golden-mysql80 Stopped \n Container deltascope-ddl-golden-mysql80 Removing \n Container deltascope-ddl-golden-mysql80 Removed \n Container deltascope-ddl-golden-mysql57 Stopped \n Container deltascope-ddl-golden-mysql57 Removing \n Container deltascope-ddl-golden-mysql57 Removed \n Container deltascope-ddl-golden-tidb85-client Stopped \n Container deltascope-ddl-golden-tidb85-client Removing \n Container deltascope-ddl-golden-tidb85-client Removed \n Container deltascope-ddl-golden-tidb85 Stopping \n Container deltascope-ddl-golden-tidb85 Stopped \n Container deltascope-ddl-golden-tidb85 Removing \n Container deltascope-ddl-golden-tidb85 Removed \n Network deltascope-ddl-golden_default Removing \n Network deltascope-ddl-golden_default Removed",
+    "residual_containers": []
+  }
+}
