@@ -1,0 +1,19 @@
+=== RUN   TestT06A4RealProviderTextNullDropStaysConservative
+    audit_t06a4_test.go:293: aggregate = pass/complete, want review/unverified
+--- FAIL: TestT06A4RealProviderTextNullDropStaysConservative (0.01s)
+=== RUN   TestT06A4RealProviderTextNilDropStaysConservative
+--- PASS: TestT06A4RealProviderTextNilDropStaysConservative (0.00s)
+=== RUN   TestT06A4RealProviderNullDropStaysPrecise
+--- PASS: TestT06A4RealProviderNullDropStaysPrecise (0.00s)
+=== RUN   TestT06A4SourceContrastSameOutcome
+    audit_t06a4_test.go:347: provider pass/complete vs parsed review/unverified, want identical conservative outcome
+--- FAIL: TestT06A4SourceContrastSameOutcome (0.01s)
+=== RUN   TestT06A4RealProviderErrorPropagates
+--- PASS: TestT06A4RealProviderErrorPropagates (0.00s)
+=== RUN   TestT06A4DefaultRequireReadsOnlySubmittedDDL
+--- PASS: TestT06A4DefaultRequireReadsOnlySubmittedDDL (0.00s)
+=== RUN   TestT06A4DisabledRulesStaySilent
+--- PASS: TestT06A4DisabledRulesStaySilent (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/auditmeta	0.574s
+FAIL

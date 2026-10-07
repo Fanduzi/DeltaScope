@@ -1,0 +1,62 @@
+{
+  "schema": "golden",
+  "exists": true,
+  "table": {
+    "name": "t06_a4_defaults"
+  },
+  "columns": [
+    {
+      "name": "id",
+      "type": "int",
+      "not_null": true
+    },
+    {
+      "name": "a",
+      "type": "varchar",
+      "length": 8,
+      "charset": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    },
+    {
+      "name": "b",
+      "type": "varchar",
+      "length": 8,
+      "charset": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci"
+    },
+    {
+      "name": "c",
+      "type": "varchar",
+      "length": 8,
+      "charset": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci",
+      "has_default": true,
+      "default_value": "NULL",
+      "default_is_null": true
+    },
+    {
+      "name": "d",
+      "type": "varchar",
+      "length": 8,
+      "charset": "utf8mb4",
+      "collation": "utf8mb4_0900_ai_ci",
+      "has_default": true,
+      "default_value": "\u003cnil\u003e"
+    }
+  ],
+  "primary_key": {
+    "name": "PRIMARY",
+    "kind": "primary",
+    "columns": [
+      "id"
+    ],
+    "cardinality": 0
+  },
+  "options": {
+    "charset": "utf8mb4",
+    "collation": "utf8mb4_0900_ai_ci",
+    "engine": "InnoDB",
+    "row_format": "DYNAMIC",
+    "table_rows": "0"
+  }
+}

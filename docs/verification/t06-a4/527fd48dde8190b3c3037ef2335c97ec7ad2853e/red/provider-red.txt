@@ -1,0 +1,27 @@
+=== RUN   TestT06A4ProviderDefaultIdentityMatrix
+=== RUN   TestT06A4ProviderDefaultIdentityMatrix/sql_null_stores_null
+=== RUN   TestT06A4ProviderDefaultIdentityMatrix/text_NULL_is_literal
+    provider_t06a4_test.go:91: column "a" = {HasDefault:true DefaultValue:"NULL" DefaultIsNull:true}, want {true "NULL" false}
+=== RUN   TestT06A4ProviderDefaultIdentityMatrix/text_null_lowercase
+    provider_t06a4_test.go:91: column "a" = {HasDefault:true DefaultValue:"null" DefaultIsNull:true}, want {true "null" false}
+=== RUN   TestT06A4ProviderDefaultIdentityMatrix/text_NuLl_mixed
+    provider_t06a4_test.go:91: column "a" = {HasDefault:true DefaultValue:"NuLl" DefaultIsNull:true}, want {true "NuLl" false}
+=== RUN   TestT06A4ProviderDefaultIdentityMatrix/text_nil_literal
+=== RUN   TestT06A4ProviderDefaultIdentityMatrix/empty_string_literal
+=== RUN   TestT06A4ProviderDefaultIdentityMatrix/zero_literal
+--- FAIL: TestT06A4ProviderDefaultIdentityMatrix (0.00s)
+    --- PASS: TestT06A4ProviderDefaultIdentityMatrix/sql_null_stores_null (0.00s)
+    --- FAIL: TestT06A4ProviderDefaultIdentityMatrix/text_NULL_is_literal (0.00s)
+    --- FAIL: TestT06A4ProviderDefaultIdentityMatrix/text_null_lowercase (0.00s)
+    --- FAIL: TestT06A4ProviderDefaultIdentityMatrix/text_NuLl_mixed (0.00s)
+    --- PASS: TestT06A4ProviderDefaultIdentityMatrix/text_nil_literal (0.00s)
+    --- PASS: TestT06A4ProviderDefaultIdentityMatrix/empty_string_literal (0.00s)
+    --- PASS: TestT06A4ProviderDefaultIdentityMatrix/zero_literal (0.00s)
+=== RUN   TestT06A4ProviderDefaultsDoNotCrossRows
+    provider_t06a4_test.go:124: column "c" = [true NULL true], want [true NULL false]
+--- FAIL: TestT06A4ProviderDefaultsDoNotCrossRows (0.00s)
+=== RUN   TestT06A4ProviderColumnQueryErrorPropagates
+--- PASS: TestT06A4ProviderColumnQueryErrorPropagates (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql	0.241s
+FAIL

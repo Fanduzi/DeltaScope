@@ -1,0 +1,98 @@
+=== RUN   TestT06A4ProviderDefaultIdentityMatrix
+=== RUN   TestT06A4ProviderDefaultIdentityMatrix/sql_null_stores_null
+=== RUN   TestT06A4ProviderDefaultIdentityMatrix/text_NULL_is_literal
+=== RUN   TestT06A4ProviderDefaultIdentityMatrix/text_null_lowercase
+=== RUN   TestT06A4ProviderDefaultIdentityMatrix/text_NuLl_mixed
+=== RUN   TestT06A4ProviderDefaultIdentityMatrix/text_nil_literal
+=== RUN   TestT06A4ProviderDefaultIdentityMatrix/empty_string_literal
+=== RUN   TestT06A4ProviderDefaultIdentityMatrix/zero_literal
+--- PASS: TestT06A4ProviderDefaultIdentityMatrix (0.00s)
+    --- PASS: TestT06A4ProviderDefaultIdentityMatrix/sql_null_stores_null (0.00s)
+    --- PASS: TestT06A4ProviderDefaultIdentityMatrix/text_NULL_is_literal (0.00s)
+    --- PASS: TestT06A4ProviderDefaultIdentityMatrix/text_null_lowercase (0.00s)
+    --- PASS: TestT06A4ProviderDefaultIdentityMatrix/text_NuLl_mixed (0.00s)
+    --- PASS: TestT06A4ProviderDefaultIdentityMatrix/text_nil_literal (0.00s)
+    --- PASS: TestT06A4ProviderDefaultIdentityMatrix/empty_string_literal (0.00s)
+    --- PASS: TestT06A4ProviderDefaultIdentityMatrix/zero_literal (0.00s)
+=== RUN   TestT06A4ProviderDefaultsDoNotCrossRows
+--- PASS: TestT06A4ProviderDefaultsDoNotCrossRows (0.00s)
+=== RUN   TestT06A4ProviderColumnQueryErrorPropagates
+--- PASS: TestT06A4ProviderColumnQueryErrorPropagates (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql	0.229s
+=== RUN   TestT06A4NullPostDropStateInternal
+--- PASS: TestT06A4NullPostDropStateInternal (0.00s)
+=== RUN   TestT06A4TextNullInvalidatesStateInternal
+--- PASS: TestT06A4TextNullInvalidatesStateInternal (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.423s
+=== RUN   TestT06A4RealProviderTextNullDropStaysConservative
+--- PASS: TestT06A4RealProviderTextNullDropStaysConservative (0.00s)
+=== RUN   TestT06A4RealProviderTextNilDropStaysConservative
+--- PASS: TestT06A4RealProviderTextNilDropStaysConservative (0.00s)
+=== RUN   TestT06A4RealProviderNullDropStaysPrecise
+--- PASS: TestT06A4RealProviderNullDropStaysPrecise (0.00s)
+=== RUN   TestT06A4SourceContrastSameOutcome
+--- PASS: TestT06A4SourceContrastSameOutcome (0.01s)
+=== RUN   TestT06A4RealProviderErrorPropagates
+--- PASS: TestT06A4RealProviderErrorPropagates (0.00s)
+=== RUN   TestT06A4DefaultRequireReadsOnlySubmittedDDL
+--- PASS: TestT06A4DefaultRequireReadsOnlySubmittedDDL (0.00s)
+=== RUN   TestT06A4DisabledRulesStaySilent
+--- PASS: TestT06A4DisabledRulesStaySilent (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/auditmeta	0.717s
+=== RUN   TestT06A4ProviderTextNullStaysConservative
+--- PASS: TestT06A4ProviderTextNullStaysConservative (0.00s)
+=== RUN   TestT06A4ProviderNullStaysPrecise
+--- PASS: TestT06A4ProviderNullStaysPrecise (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.929s
+=== RUN   TestHandlerT06A4ProviderTextNullStaysConservative
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /healthz                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func1 (8 handlers)
+[GIN-debug] GET    /readyz                   --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func2 (8 handlers)
+[GIN-debug] GET    /version                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func3 (8 handlers)
+[GIN-debug] GET    /v1/rules                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func4 (8 handlers)
+[GIN-debug] GET    /v1/rules/:rule_id        --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func5 (8 handlers)
+[GIN-debug] GET    /v1/capabilities          --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func6 (8 handlers)
+[GIN-debug] POST   /v1/audit                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func7 (8 handlers)
+[GIN-debug] POST   /v1/query-access/analyze  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func8 (8 handlers)
+[GIN-debug] GET    /metrics                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.WrapH.func13 (8 handlers)
+2026/10/07 09:20:55 {"timestamp":"2026-10-07T01:20:55Z","level":"info","msg":"http request","method":"POST","path":"/v1/audit","status":200,"duration_ms":3,"request_id":"req-02745b5abf1c55058dde4328"}
+--- PASS: TestHandlerT06A4ProviderTextNullStaysConservative (0.01s)
+=== RUN   TestHandlerT06A4ProviderNullStaysPrecise
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /healthz                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func1 (8 handlers)
+[GIN-debug] GET    /readyz                   --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func2 (8 handlers)
+[GIN-debug] GET    /version                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func3 (8 handlers)
+[GIN-debug] GET    /v1/rules                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func4 (8 handlers)
+[GIN-debug] GET    /v1/rules/:rule_id        --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func5 (8 handlers)
+[GIN-debug] GET    /v1/capabilities          --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func6 (8 handlers)
+[GIN-debug] POST   /v1/audit                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func7 (8 handlers)
+[GIN-debug] POST   /v1/query-access/analyze  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func8 (8 handlers)
+[GIN-debug] GET    /metrics                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.WrapH.func13 (8 handlers)
+2026/10/07 09:20:55 {"timestamp":"2026-10-07T01:20:55Z","level":"info","msg":"http request","method":"POST","path":"/v1/audit","status":200,"duration_ms":2,"request_id":"req-17c129fe49c2828bbf7e274a"}
+--- PASS: TestHandlerT06A4ProviderNullStaysPrecise (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/http	0.457s
+=== RUN   TestT06A4FailOnExitTable
+=== RUN   TestT06A4FailOnExitTable/blocker
+=== RUN   TestT06A4FailOnExitTable/none
+=== RUN   TestT06A4FailOnExitTable/warning
+=== RUN   TestT06A4FailOnExitTable/notice
+--- PASS: TestT06A4FailOnExitTable (0.00s)
+    --- PASS: TestT06A4FailOnExitTable/blocker (0.00s)
+    --- PASS: TestT06A4FailOnExitTable/none (0.00s)
+    --- PASS: TestT06A4FailOnExitTable/warning (0.00s)
+    --- PASS: TestT06A4FailOnExitTable/notice (0.00s)
+=== RUN   TestT06A4FailOnTriggeredStaysFalseAtBlocker
+--- PASS: TestT06A4FailOnTriggeredStaysFalseAtBlocker (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/cli	0.747s

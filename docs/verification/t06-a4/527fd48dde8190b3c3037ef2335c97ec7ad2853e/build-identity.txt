@@ -1,0 +1,5 @@
+go version go1.26.1 darwin/arm64
+commit=527fd48dde8190b3c3037ef2335c97ec7ad2853e
+author=Fan() <18501341937@163.com>
+date=2026-10-07T09:17:10+08:00
+274165ed5efd669e7c320c4d92c5f90521772a0f3dceebf848ea76a76bd3e8af  docs/verification/t06-a4/527fd48dde8190b3c3037ef2335c97ec7ad2853e/artifact/artifact.json

@@ -1,0 +1,1 @@
+go test -count=1 ./internal/infrastructure/metadata/mysql ./internal/application/audit ./internal/application/auditmeta ./pkg/deltascope ./internal/interfaces/http ./internal/interfaces/cli -run T06A4 -v

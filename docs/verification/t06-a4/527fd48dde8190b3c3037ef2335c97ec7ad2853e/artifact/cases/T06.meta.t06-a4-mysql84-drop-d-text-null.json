@@ -1,0 +1,546 @@
+{
+  "case_id": "T06.meta.t06-a4-mysql84-drop-d-text-null",
+  "kind": "cli_metadata",
+  "cli_case": "t06-a4-mysql84-drop-d-text-null",
+  "anchor": "mysql84",
+  "dialect": "mysql",
+  "input_sql": "ALTER TABLE t06_a4_defaults DROP COLUMN d;\nCREATE INDEX idx_b ON t06_a4_defaults(b);",
+  "policy_profile": "t06-a4-provider-defaults-isolated",
+  "policy_path": "/private/tmp/ds-t06-a4/golden/T06/golden-policy-t06-a4-provider-defaults-isolated.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "schema": "golden"
+  },
+  "expected": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+      "complete",
+      "unverified"
+    ],
+    "statement_sql": [
+      "ALTER TABLE t06_a4_defaults DROP COLUMN d;",
+      "CREATE INDEX idx_b ON t06_a4_defaults(b);"
+    ],
+    "statement_indices": [
+      0,
+      1
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+      {
+        "index": 1,
+        "rule_id": "ddl.create_index.columns.exists.require",
+        "reason_code": "unknown_table_state",
+        "required_facts": [
+          "target_table.columns",
+          "target_table.existence"
+        ]
+      }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 3,
+    "instance_facts": {
+      "sql_require_primary_key": "OFF",
+      "sql_generate_invisible_primary_key": "OFF",
+      "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:8.4.10",
+      "image_digest": "mysql@sha256:c592c15aaf4a1961e15d82eb31ea5987dda862d1c4b1e93424438c0e91dc1f8d",
+      "container": "deltascope-ddl-golden-mysql84",
+      "reachable": true,
+      "version": "8.4.10"
+    },
+    "setup": [
+      {
+        "name": "ensure fixture absent",
+        "sql": "DROP TABLE IF EXISTS t06_a4_defaults",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "verify": [
+          {
+            "assert": "fixture absent before setup",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+            "rc": 0,
+            "output": "0",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ]
+      },
+      {
+        "name": "driver builds the audited initial state",
+        "sql": "CREATE TABLE t06_a4_defaults (id INT PRIMARY KEY, a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '<nil>');",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "verify": [
+          {
+            "assert": "five columns in declared order",
+            "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+            "rc": 0,
+            "output": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES,d:varchar:5:YES",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          },
+          {
+            "assert": "default null flags and raw bytes",
+            "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+            "rc": 0,
+            "output": "a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          },
+          {
+            "assert": "primary key member",
+            "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+            "rc": 0,
+            "output": "id:1",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ]
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit did not change columns",
+        "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+        "rc": 0,
+        "output": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES,d:varchar:5:YES",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "audit did not change defaults",
+        "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+        "rc": 0,
+        "output": "a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "audit kept primary key member",
+        "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+        "rc": 0,
+        "output": "id:1",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "audit did not create idx_b",
+        "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='idx_b'",
+        "rc": 0,
+        "output": "0",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      }
+    ],
+    "execute": [
+      {
+        "name": "driver drops d",
+        "sql": "ALTER TABLE t06_a4_defaults DROP COLUMN d;",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "verify": [
+          {
+            "assert": "d dropped, order pinned",
+            "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+            "rc": 0,
+            "output": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          },
+          {
+            "assert": "remaining defaults unchanged",
+            "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+            "rc": 0,
+            "output": "a:1:-,b:1:-,c:0:4E554C4C",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          },
+          {
+            "assert": "primary key member",
+            "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+            "rc": 0,
+            "output": "id:1",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ]
+      },
+      {
+        "name": "driver creates index idx_b on b",
+        "sql": "CREATE INDEX idx_b ON t06_a4_defaults(b);",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      }
+    ],
+    "structure": [
+      {
+        "assert": "exactly one user table",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+        "rc": 0,
+        "output": "1",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "final columns after replay",
+        "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+        "rc": 0,
+        "output": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "indexes PRIMARY(id) and idx_b(b)",
+        "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', INDEX_NAME, COLUMN_NAME, SEQ_IN_INDEX) ORDER BY BINARY INDEX_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+        "rc": 0,
+        "output": "PRIMARY:id:1,idx_b:b:1",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      }
+    ],
+    "teardown": [
+      {
+        "name": "drop fixture",
+        "sql": "DROP TABLE IF EXISTS t06_a4_defaults",
+        "rc": 0,
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "verify": [
+          {
+            "assert": "no residual fixture",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+            "rc": 0,
+            "output": "0",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ]
+      }
+    ],
+    "exit": 0,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":2,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t06_a4_defaults DROP COLUMN d;\",\"normalized_sql\":\"ALTER TABLE t06_a4_defaults DROP COLUMN d\",\"coverage\":{\"status\":\"complete\"}},{\"index\":1,\"kind\":\"ddl\",\"raw_sql\":\"CREATE INDEX idx_b ON t06_a4_defaults(b);\",\"normalized_sql\":\"CREATE INDEX idx_b ON t06_a4_defaults(b)\",\"evidence_gaps\":[{\"rule_id\":\"ddl.create_index.columns.exists.require\",\"reason_code\":\"unknown_table_state\",\"required_facts\":[\"target_table.columns\",\"target_table.existence\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.4.10\",\"major\":8,\"minor\":4,\"patch\":10,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":3,\"applicable\":3,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "unverified"
+      },
+      "summary": {
+        "statements": 2,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t06_a4_defaults DROP COLUMN d;",
+          "normalized_sql": "ALTER TABLE t06_a4_defaults DROP COLUMN d",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 1,
+          "kind": "ddl",
+          "raw_sql": "CREATE INDEX idx_b ON t06_a4_defaults(b);",
+          "normalized_sql": "CREATE INDEX idx_b ON t06_a4_defaults(b)",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.create_index.columns.exists.require",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "target_table.columns",
+                "target_table.existence"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "8.4.10",
+        "major": 8,
+        "minor": 4,
+        "patch": 10,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 3,
+        "applicable": 3,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.4.10",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "8.4.10"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "8.4.10",
+        "major": 8,
+        "minor": 4,
+        "patch": 10,
+        "source": "observed",
+        "validated_range": true
+      }
+    },
+    "instance_facts": {
+      "sql_require_primary_key": "OFF",
+      "sql_generate_invisible_primary_key": "OFF",
+      "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.4.10' expected_contains='8.4.10'"
+    },
+    {
+      "name": "setup ensure fixture absent return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "setup ensure fixture absent: fixture absent before setup",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "setup driver builds the audited initial state return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "setup driver builds the audited initial state: five columns in declared order",
+      "ok": true,
+      "detail": "rc=0 output='id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES,d:varchar:5:YES' expected='id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES,d:varchar:5:YES'"
+    },
+    {
+      "name": "setup driver builds the audited initial state: default null flags and raw bytes",
+      "ok": true,
+      "detail": "rc=0 output='a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E' expected='a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E'"
+    },
+    {
+      "name": "setup driver builds the audited initial state: primary key member",
+      "ok": true,
+      "detail": "rc=0 output='id:1' expected='id:1'"
+    },
+    {
+      "name": "instance fact sql_require_primary_key",
+      "ok": true,
+      "detail": "sql_require_primary_key='OFF' expected='OFF'"
+    },
+    {
+      "name": "instance fact sql_generate_invisible_primary_key",
+      "ok": true,
+      "detail": "sql_generate_invisible_primary_key='OFF' expected='OFF'"
+    },
+    {
+      "name": "instance fact show_gipk_in_create_table_and_information_schema",
+      "ok": true,
+      "detail": "show_gipk_in_create_table_and_information_schema='ON' expected='ON'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=2 expected=2"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=3"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0, 1]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='unverified'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete', 'unverified']"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['ALTER TABLE t06_a4_defaults DROP COLUMN d;', 'CREATE INDEX idx_b ON t06_a4_defaults(b);'] expected=['ALTER TABLE t06_a4_defaults DROP COLUMN d;', 'CREATE INDEX idx_b ON t06_a4_defaults(b);']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=1"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[(1, 'ddl.create_index.columns.exists.require', 'unknown_table_state')] expected=[(1, 'ddl.create_index.columns.exists.require', 'unknown_table_state')]"
+    },
+    {
+      "name": "evidence gap required_facts (1, 'ddl.create_index.columns.exists.require', 'unknown_table_state')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.create_index.columns.exists.require', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.columns', 'target_table.existence']}] expected_facts=['target_table.columns', 'target_table.existence']"
+    },
+    {
+      "name": "no gap encoded as finding",
+      "ok": true,
+      "detail": "findings carrying gap shape=[]"
+    },
+    {
+      "name": "fail_on_triggered",
+      "ok": true,
+      "detail": "fail_on_triggered=False"
+    },
+    {
+      "name": "post-verify audit did not change columns",
+      "ok": true,
+      "detail": "rc=0 output='id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES,d:varchar:5:YES' expected='id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES,d:varchar:5:YES'"
+    },
+    {
+      "name": "post-verify audit did not change defaults",
+      "ok": true,
+      "detail": "rc=0 output='a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E' expected='a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E'"
+    },
+    {
+      "name": "post-verify audit kept primary key member",
+      "ok": true,
+      "detail": "rc=0 output='id:1' expected='id:1'"
+    },
+    {
+      "name": "post-verify audit did not create idx_b",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute driver drops d return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "execute driver drops d: d dropped, order pinned",
+      "ok": true,
+      "detail": "rc=0 output='id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES' expected='id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES'"
+    },
+    {
+      "name": "execute driver drops d: remaining defaults unchanged",
+      "ok": true,
+      "detail": "rc=0 output='a:1:-,b:1:-,c:0:4E554C4C' expected='a:1:-,b:1:-,c:0:4E554C4C'"
+    },
+    {
+      "name": "execute driver drops d: primary key member",
+      "ok": true,
+      "detail": "rc=0 output='id:1' expected='id:1'"
+    },
+    {
+      "name": "execute driver creates index idx_b on b return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "structure exactly one user table",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "structure final columns after replay",
+      "ok": true,
+      "detail": "rc=0 output='id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES' expected='id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES'"
+    },
+    {
+      "name": "structure indexes PRIMARY(id) and idx_b(b)",
+      "ok": true,
+      "detail": "rc=0 output='PRIMARY:id:1,idx_b:b:1' expected='PRIMARY:id:1,idx_b:b:1'"
+    },
+    {
+      "name": "teardown drop fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "teardown drop fixture: no residual fixture",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ds-t06-a4/golden/T06/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "ALTER TABLE t06_a4_defaults DROP COLUMN d;\nCREATE INDEX idx_b ON t06_a4_defaults(b);",
+    "--config",
+    "/private/tmp/ds-t06-a4/golden/T06/golden-policy-t06-a4-provider-defaults-isolated.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23384",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T06_GOLDEN_PW",
+    "--schema",
+    "golden",
+    "--fail-on",
+    "blocker"
+  ]
+}

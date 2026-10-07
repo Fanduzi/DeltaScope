@@ -1,0 +1,5 @@
+id:1:int:1:-:NO:
+a:2:varchar(8):1:-:YES:
+b:3:varchar(8):1:-:YES:
+c:4:varchar(8):0:4E554C4C:YES:
+d:5:varchar(8):0:3C6E696C3E:YES:

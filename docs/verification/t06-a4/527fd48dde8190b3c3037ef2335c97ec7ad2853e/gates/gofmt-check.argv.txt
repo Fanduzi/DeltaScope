@@ -1,0 +1,1 @@
+bash -c test -z "$(gofmt -l internal/ pkg/ cmd/ 2>/dev/null)" && echo CLEAN
