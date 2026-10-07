@@ -1,0 +1,149 @@
+=== RUN   TestT06A8ColumnEmptyCommentRequired
+=== RUN   TestT06A8ColumnEmptyCommentRequired/mysql/empty
+    coverage_t06a8_test.go:110: aggregate = pass/complete, want reject/complete
+=== RUN   TestT06A8ColumnEmptyCommentRequired/mysql/blank
+    coverage_t06a8_test.go:117: aggregate = pass/complete, want reject/complete
+=== RUN   TestT06A8ColumnEmptyCommentRequired/tidb/empty
+    coverage_t06a8_test.go:110: aggregate = pass/complete, want reject/complete
+=== RUN   TestT06A8ColumnEmptyCommentRequired/tidb/blank
+    coverage_t06a8_test.go:117: aggregate = pass/complete, want reject/complete
+--- FAIL: TestT06A8ColumnEmptyCommentRequired (0.02s)
+    --- FAIL: TestT06A8ColumnEmptyCommentRequired/mysql/empty (0.00s)
+    --- FAIL: TestT06A8ColumnEmptyCommentRequired/mysql/blank (0.00s)
+    --- FAIL: TestT06A8ColumnEmptyCommentRequired/tidb/empty (0.00s)
+    --- FAIL: TestT06A8ColumnEmptyCommentRequired/tidb/blank (0.00s)
+=== RUN   TestT06A8TableCommentRuneLength
+=== RUN   TestT06A8TableCommentRuneLength/mysql
+    coverage_t06a8_test.go:134: aggregate = reject/complete, want pass/complete
+=== RUN   TestT06A8TableCommentRuneLength/tidb
+    coverage_t06a8_test.go:134: aggregate = reject/complete, want pass/complete
+--- FAIL: TestT06A8TableCommentRuneLength (0.01s)
+    --- FAIL: TestT06A8TableCommentRuneLength/mysql (0.00s)
+    --- FAIL: TestT06A8TableCommentRuneLength/tidb (0.00s)
+=== RUN   TestT06A8DerivedStateCarriesTableComment
+=== RUN   TestT06A8DerivedStateCarriesTableComment/mysql
+    coverage_t06a8_test.go:154: derived Table.Comment = &{Schema:golden Name:t Comment:}, want 表注
+=== RUN   TestT06A8DerivedStateCarriesTableComment/tidb
+    coverage_t06a8_test.go:154: derived Table.Comment = &{Schema:golden Name:t Comment:}, want 表注
+--- FAIL: TestT06A8DerivedStateCarriesTableComment (0.00s)
+    --- FAIL: TestT06A8DerivedStateCarriesTableComment/mysql (0.00s)
+    --- FAIL: TestT06A8DerivedStateCarriesTableComment/tidb (0.00s)
+=== RUN   TestT06A8RequireIsolation
+=== RUN   TestT06A8RequireIsolation/mysql/table_comment_not_column
+=== RUN   TestT06A8RequireIsolation/mysql/column_comment_not_table
+=== RUN   TestT06A8RequireIsolation/mysql/table_empty_and_blank
+=== RUN   TestT06A8RequireIsolation/mysql/required_false_silent
+=== RUN   TestT06A8RequireIsolation/mysql/disabled_silent
+=== RUN   TestT06A8RequireIsolation/mysql/multi_column_attribution
+=== RUN   TestT06A8RequireIsolation/mysql/multi_statement_attribution
+=== RUN   TestT06A8RequireIsolation/tidb/table_comment_not_column
+=== RUN   TestT06A8RequireIsolation/tidb/column_comment_not_table
+=== RUN   TestT06A8RequireIsolation/tidb/table_empty_and_blank
+=== RUN   TestT06A8RequireIsolation/tidb/required_false_silent
+=== RUN   TestT06A8RequireIsolation/tidb/disabled_silent
+=== RUN   TestT06A8RequireIsolation/tidb/multi_column_attribution
+=== RUN   TestT06A8RequireIsolation/tidb/multi_statement_attribution
+--- PASS: TestT06A8RequireIsolation (0.04s)
+    --- PASS: TestT06A8RequireIsolation/mysql/table_comment_not_column (0.00s)
+    --- PASS: TestT06A8RequireIsolation/mysql/column_comment_not_table (0.00s)
+    --- PASS: TestT06A8RequireIsolation/mysql/table_empty_and_blank (0.01s)
+    --- PASS: TestT06A8RequireIsolation/mysql/required_false_silent (0.00s)
+    --- PASS: TestT06A8RequireIsolation/mysql/disabled_silent (0.00s)
+    --- PASS: TestT06A8RequireIsolation/mysql/multi_column_attribution (0.00s)
+    --- PASS: TestT06A8RequireIsolation/mysql/multi_statement_attribution (0.00s)
+    --- PASS: TestT06A8RequireIsolation/tidb/table_comment_not_column (0.00s)
+    --- PASS: TestT06A8RequireIsolation/tidb/column_comment_not_table (0.00s)
+    --- PASS: TestT06A8RequireIsolation/tidb/table_empty_and_blank (0.00s)
+    --- PASS: TestT06A8RequireIsolation/tidb/required_false_silent (0.00s)
+    --- PASS: TestT06A8RequireIsolation/tidb/disabled_silent (0.00s)
+    --- PASS: TestT06A8RequireIsolation/tidb/multi_column_attribution (0.00s)
+    --- PASS: TestT06A8RequireIsolation/tidb/multi_statement_attribution (0.00s)
+=== RUN   TestT06A8CommentLengthBoundaries
+=== RUN   TestT06A8CommentLengthBoundaries/mysql/ascii_at
+=== RUN   TestT06A8CommentLengthBoundaries/mysql/ascii_above
+=== RUN   TestT06A8CommentLengthBoundaries/mysql/multibyte_3
+    coverage_t06a8_test.go:288: aggregate = reject/complete, want pass/complete
+=== RUN   TestT06A8CommentLengthBoundaries/mysql/multibyte_at_8
+    coverage_t06a8_test.go:288: aggregate = reject/complete, want pass/complete
+=== RUN   TestT06A8CommentLengthBoundaries/mysql/multibyte_above_9
+    coverage_t06a8_test.go:290: metadata = map[string]interface {}{"actual":21, "limit":8, "table":"t"}, want map[string]interface {}{"actual":9, "limit":8, "table":"t"}
+=== RUN   TestT06A8CommentLengthBoundaries/mysql/untrimmed_edges
+=== RUN   TestT06A8CommentLengthBoundaries/mysql/combining_rune_not_grapheme
+    coverage_t06a8_test.go:290: metadata = map[string]interface {}{"actual":22, "limit":8, "table":"t"}, want map[string]interface {}{"actual":9, "limit":8, "table":"t"}
+=== RUN   TestT06A8CommentLengthBoundaries/tidb/ascii_at
+=== RUN   TestT06A8CommentLengthBoundaries/tidb/ascii_above
+=== RUN   TestT06A8CommentLengthBoundaries/tidb/multibyte_3
+    coverage_t06a8_test.go:288: aggregate = reject/complete, want pass/complete
+=== RUN   TestT06A8CommentLengthBoundaries/tidb/multibyte_at_8
+    coverage_t06a8_test.go:288: aggregate = reject/complete, want pass/complete
+=== RUN   TestT06A8CommentLengthBoundaries/tidb/multibyte_above_9
+    coverage_t06a8_test.go:290: metadata = map[string]interface {}{"actual":21, "limit":8, "table":"t"}, want map[string]interface {}{"actual":9, "limit":8, "table":"t"}
+=== RUN   TestT06A8CommentLengthBoundaries/tidb/untrimmed_edges
+=== RUN   TestT06A8CommentLengthBoundaries/tidb/combining_rune_not_grapheme
+    coverage_t06a8_test.go:290: metadata = map[string]interface {}{"actual":22, "limit":8, "table":"t"}, want map[string]interface {}{"actual":9, "limit":8, "table":"t"}
+=== RUN   TestT06A8CommentLengthBoundaries/mysql/actual_is_runes
+    coverage_t06a8_test.go:303: metadata = map[string]interface {}{"actual":21, "limit":8, "table":"t"}, want rune-counted actual=9 limit=8
+=== RUN   TestT06A8CommentLengthBoundaries/mysql/invalid_limit_still_rejected
+=== RUN   TestT06A8CommentLengthBoundaries/tidb/actual_is_runes
+    coverage_t06a8_test.go:303: metadata = map[string]interface {}{"actual":21, "limit":8, "table":"t"}, want rune-counted actual=9 limit=8
+=== RUN   TestT06A8CommentLengthBoundaries/tidb/invalid_limit_still_rejected
+--- FAIL: TestT06A8CommentLengthBoundaries (0.04s)
+    --- PASS: TestT06A8CommentLengthBoundaries/mysql/ascii_at (0.00s)
+    --- PASS: TestT06A8CommentLengthBoundaries/mysql/ascii_above (0.00s)
+    --- FAIL: TestT06A8CommentLengthBoundaries/mysql/multibyte_3 (0.00s)
+    --- FAIL: TestT06A8CommentLengthBoundaries/mysql/multibyte_at_8 (0.00s)
+    --- FAIL: TestT06A8CommentLengthBoundaries/mysql/multibyte_above_9 (0.00s)
+    --- PASS: TestT06A8CommentLengthBoundaries/mysql/untrimmed_edges (0.00s)
+    --- FAIL: TestT06A8CommentLengthBoundaries/mysql/combining_rune_not_grapheme (0.00s)
+    --- PASS: TestT06A8CommentLengthBoundaries/tidb/ascii_at (0.00s)
+    --- PASS: TestT06A8CommentLengthBoundaries/tidb/ascii_above (0.00s)
+    --- FAIL: TestT06A8CommentLengthBoundaries/tidb/multibyte_3 (0.00s)
+    --- FAIL: TestT06A8CommentLengthBoundaries/tidb/multibyte_at_8 (0.00s)
+    --- FAIL: TestT06A8CommentLengthBoundaries/tidb/multibyte_above_9 (0.00s)
+    --- PASS: TestT06A8CommentLengthBoundaries/tidb/untrimmed_edges (0.00s)
+    --- FAIL: TestT06A8CommentLengthBoundaries/tidb/combining_rune_not_grapheme (0.00s)
+    --- FAIL: TestT06A8CommentLengthBoundaries/mysql/actual_is_runes (0.00s)
+    --- PASS: TestT06A8CommentLengthBoundaries/mysql/invalid_limit_still_rejected (0.00s)
+    --- FAIL: TestT06A8CommentLengthBoundaries/tidb/actual_is_runes (0.00s)
+    --- PASS: TestT06A8CommentLengthBoundaries/tidb/invalid_limit_still_rejected (0.00s)
+=== RUN   TestT06A8DerivedStateBoundaries
+=== RUN   TestT06A8DerivedStateBoundaries/mysql/if_not_exists_keeps_old_comment
+=== RUN   TestT06A8DerivedStateBoundaries/mysql/unknown_target_not_published
+=== RUN   TestT06A8DerivedStateBoundaries/mysql/if_not_exists_absent_derives_comment
+    coverage_t06a8_test.go:367: known-absent IF NOT EXISTS derived comment = &{Schema:golden Exists:true Table:0x26d4133630b0 Columns:[{Name:c Type:int(11) Length:-1 Charset: Collation: Comment: Unsigned:false NotNull:false AutoIncrement:false HasDefault:false DefaultValue: DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[]}] PrimaryKey:<nil> Indexes:[] Constraints:[] Options:map[comment:新注 if_not_exists:true] PrimaryKeyUnknown:false IndexesUnknown:false ConstraintsUnknown:false}, want 新注
+=== RUN   TestT06A8DerivedStateBoundaries/mysql/recreate_no_old_comment
+=== RUN   TestT06A8DerivedStateBoundaries/mysql/statement_facts_not_mutated
+    coverage_t06a8_test.go:400: extracted facts mutated: table="表注" opt="表注" col="'列注'"
+=== RUN   TestT06A8DerivedStateBoundaries/tidb/if_not_exists_keeps_old_comment
+=== RUN   TestT06A8DerivedStateBoundaries/tidb/unknown_target_not_published
+=== RUN   TestT06A8DerivedStateBoundaries/tidb/if_not_exists_absent_derives_comment
+    coverage_t06a8_test.go:367: known-absent IF NOT EXISTS derived comment = &{Schema:golden Exists:true Table:0x26d4131026c0 Columns:[{Name:c Type:int(11) Length:-1 Charset: Collation: Comment: Unsigned:false NotNull:false AutoIncrement:false HasDefault:false DefaultValue: DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[]}] PrimaryKey:<nil> Indexes:[] Constraints:[] Options:map[comment:新注 if_not_exists:true] PrimaryKeyUnknown:false IndexesUnknown:false ConstraintsUnknown:false}, want 新注
+=== RUN   TestT06A8DerivedStateBoundaries/tidb/recreate_no_old_comment
+=== RUN   TestT06A8DerivedStateBoundaries/tidb/statement_facts_not_mutated
+    coverage_t06a8_test.go:400: extracted facts mutated: table="表注" opt="表注" col="'列注'"
+--- FAIL: TestT06A8DerivedStateBoundaries (0.00s)
+    --- PASS: TestT06A8DerivedStateBoundaries/mysql/if_not_exists_keeps_old_comment (0.00s)
+    --- PASS: TestT06A8DerivedStateBoundaries/mysql/unknown_target_not_published (0.00s)
+    --- FAIL: TestT06A8DerivedStateBoundaries/mysql/if_not_exists_absent_derives_comment (0.00s)
+    --- PASS: TestT06A8DerivedStateBoundaries/mysql/recreate_no_old_comment (0.00s)
+    --- FAIL: TestT06A8DerivedStateBoundaries/mysql/statement_facts_not_mutated (0.00s)
+    --- PASS: TestT06A8DerivedStateBoundaries/tidb/if_not_exists_keeps_old_comment (0.00s)
+    --- PASS: TestT06A8DerivedStateBoundaries/tidb/unknown_target_not_published (0.00s)
+    --- FAIL: TestT06A8DerivedStateBoundaries/tidb/if_not_exists_absent_derives_comment (0.00s)
+    --- PASS: TestT06A8DerivedStateBoundaries/tidb/recreate_no_old_comment (0.00s)
+    --- FAIL: TestT06A8DerivedStateBoundaries/tidb/statement_facts_not_mutated (0.00s)
+=== RUN   TestT06A8OtherSourcesUnchanged
+=== RUN   TestT06A8OtherSourcesUnchanged/mysql/default_literals_keep_quotes
+=== RUN   TestT06A8OtherSourcesUnchanged/mysql/comment_null_literal_is_content
+    coverage_t06a8_test.go:435: COMMENT 'NULL' = comment "'NULL'" hasDefault false, want plain content no default
+=== RUN   TestT06A8OtherSourcesUnchanged/tidb/default_literals_keep_quotes
+=== RUN   TestT06A8OtherSourcesUnchanged/tidb/comment_null_literal_is_content
+    coverage_t06a8_test.go:435: COMMENT 'NULL' = comment "'NULL'" hasDefault false, want plain content no default
+--- FAIL: TestT06A8OtherSourcesUnchanged (0.00s)
+    --- PASS: TestT06A8OtherSourcesUnchanged/mysql/default_literals_keep_quotes (0.00s)
+    --- FAIL: TestT06A8OtherSourcesUnchanged/mysql/comment_null_literal_is_content (0.00s)
+    --- PASS: TestT06A8OtherSourcesUnchanged/tidb/default_literals_keep_quotes (0.00s)
+    --- FAIL: TestT06A8OtherSourcesUnchanged/tidb/comment_null_literal_is_content (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.456s
+FAIL

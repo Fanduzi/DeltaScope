@@ -1,0 +1,158 @@
+=== RUN   TestT06A8CommentDecodingMatrix
+=== RUN   TestT06A8CommentDecodingMatrix/mysql/none
+=== RUN   TestT06A8CommentDecodingMatrix/mysql/table_empty
+=== RUN   TestT06A8CommentDecodingMatrix/mysql/table_blank
+=== RUN   TestT06A8CommentDecodingMatrix/mysql/table_multibyte
+=== RUN   TestT06A8CommentDecodingMatrix/mysql/table_edge_spaces
+=== RUN   TestT06A8CommentDecodingMatrix/mysql/table_apostrophe
+=== RUN   TestT06A8CommentDecodingMatrix/mysql/table_lone_quote
+=== RUN   TestT06A8CommentDecodingMatrix/mysql/column_empty
+    extractor_t06a8_test.go:56: Columns[0].Comment = "''", want ""
+=== RUN   TestT06A8CommentDecodingMatrix/mysql/column_blank
+    extractor_t06a8_test.go:56: Columns[0].Comment = "'   '", want "   "
+=== RUN   TestT06A8CommentDecodingMatrix/mysql/column_multibyte
+    extractor_t06a8_test.go:56: Columns[0].Comment = "'中文注'", want "中文注"
+=== RUN   TestT06A8CommentDecodingMatrix/mysql/column_edge_spaces
+    extractor_t06a8_test.go:56: Columns[0].Comment = "'  pad  '", want "  pad  "
+=== RUN   TestT06A8CommentDecodingMatrix/mysql/column_apostrophe
+    extractor_t06a8_test.go:56: Columns[0].Comment = "'it's 中文'", want "it's 中文"
+=== RUN   TestT06A8CommentDecodingMatrix/mysql/column_lone_quote
+    extractor_t06a8_test.go:56: Columns[0].Comment = "'''", want "'"
+=== RUN   TestT06A8CommentDecodingMatrix/mysql/both
+    extractor_t06a8_test.go:56: Columns[0].Comment = "'列注'", want "列注"
+=== RUN   TestT06A8CommentDecodingMatrix/tidb/none
+=== RUN   TestT06A8CommentDecodingMatrix/tidb/table_empty
+=== RUN   TestT06A8CommentDecodingMatrix/tidb/table_blank
+=== RUN   TestT06A8CommentDecodingMatrix/tidb/table_multibyte
+=== RUN   TestT06A8CommentDecodingMatrix/tidb/table_edge_spaces
+=== RUN   TestT06A8CommentDecodingMatrix/tidb/table_apostrophe
+=== RUN   TestT06A8CommentDecodingMatrix/tidb/table_lone_quote
+=== RUN   TestT06A8CommentDecodingMatrix/tidb/column_empty
+    extractor_t06a8_test.go:56: Columns[0].Comment = "''", want ""
+=== RUN   TestT06A8CommentDecodingMatrix/tidb/column_blank
+    extractor_t06a8_test.go:56: Columns[0].Comment = "'   '", want "   "
+=== RUN   TestT06A8CommentDecodingMatrix/tidb/column_multibyte
+    extractor_t06a8_test.go:56: Columns[0].Comment = "'中文注'", want "中文注"
+=== RUN   TestT06A8CommentDecodingMatrix/tidb/column_edge_spaces
+    extractor_t06a8_test.go:56: Columns[0].Comment = "'  pad  '", want "  pad  "
+=== RUN   TestT06A8CommentDecodingMatrix/tidb/column_apostrophe
+    extractor_t06a8_test.go:56: Columns[0].Comment = "'it's 中文'", want "it's 中文"
+=== RUN   TestT06A8CommentDecodingMatrix/tidb/column_lone_quote
+    extractor_t06a8_test.go:56: Columns[0].Comment = "'''", want "'"
+=== RUN   TestT06A8CommentDecodingMatrix/tidb/both
+    extractor_t06a8_test.go:56: Columns[0].Comment = "'列注'", want "列注"
+--- FAIL: TestT06A8CommentDecodingMatrix (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/mysql/none (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/mysql/table_empty (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/mysql/table_blank (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/mysql/table_multibyte (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/mysql/table_edge_spaces (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/mysql/table_apostrophe (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/mysql/table_lone_quote (0.00s)
+    --- FAIL: TestT06A8CommentDecodingMatrix/mysql/column_empty (0.00s)
+    --- FAIL: TestT06A8CommentDecodingMatrix/mysql/column_blank (0.00s)
+    --- FAIL: TestT06A8CommentDecodingMatrix/mysql/column_multibyte (0.00s)
+    --- FAIL: TestT06A8CommentDecodingMatrix/mysql/column_edge_spaces (0.00s)
+    --- FAIL: TestT06A8CommentDecodingMatrix/mysql/column_apostrophe (0.00s)
+    --- FAIL: TestT06A8CommentDecodingMatrix/mysql/column_lone_quote (0.00s)
+    --- FAIL: TestT06A8CommentDecodingMatrix/mysql/both (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/tidb/none (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/tidb/table_empty (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/tidb/table_blank (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/tidb/table_multibyte (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/tidb/table_edge_spaces (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/tidb/table_apostrophe (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/tidb/table_lone_quote (0.00s)
+    --- FAIL: TestT06A8CommentDecodingMatrix/tidb/column_empty (0.00s)
+    --- FAIL: TestT06A8CommentDecodingMatrix/tidb/column_blank (0.00s)
+    --- FAIL: TestT06A8CommentDecodingMatrix/tidb/column_multibyte (0.00s)
+    --- FAIL: TestT06A8CommentDecodingMatrix/tidb/column_edge_spaces (0.00s)
+    --- FAIL: TestT06A8CommentDecodingMatrix/tidb/column_apostrophe (0.00s)
+    --- FAIL: TestT06A8CommentDecodingMatrix/tidb/column_lone_quote (0.00s)
+    --- FAIL: TestT06A8CommentDecodingMatrix/tidb/both (0.00s)
+=== RUN   TestT06A8RepeatedCommentOverwrite
+=== RUN   TestT06A8RepeatedCommentOverwrite/mysql/nonempty_to_empty
+    extractor_t06a8_test.go:81: Columns[0].Comment = "''", want ""
+=== RUN   TestT06A8RepeatedCommentOverwrite/mysql/empty_to_nonempty
+    extractor_t06a8_test.go:81: Columns[0].Comment = "'second'", want "second"
+=== RUN   TestT06A8RepeatedCommentOverwrite/mysql/nonempty_to_nonempty
+    extractor_t06a8_test.go:81: Columns[0].Comment = "'second'", want "second"
+=== RUN   TestT06A8RepeatedCommentOverwrite/tidb/nonempty_to_empty
+    extractor_t06a8_test.go:81: Columns[0].Comment = "''", want ""
+=== RUN   TestT06A8RepeatedCommentOverwrite/tidb/empty_to_nonempty
+    extractor_t06a8_test.go:81: Columns[0].Comment = "'second'", want "second"
+=== RUN   TestT06A8RepeatedCommentOverwrite/tidb/nonempty_to_nonempty
+    extractor_t06a8_test.go:81: Columns[0].Comment = "'second'", want "second"
+--- FAIL: TestT06A8RepeatedCommentOverwrite (0.00s)
+    --- FAIL: TestT06A8RepeatedCommentOverwrite/mysql/nonempty_to_empty (0.00s)
+    --- FAIL: TestT06A8RepeatedCommentOverwrite/mysql/empty_to_nonempty (0.00s)
+    --- FAIL: TestT06A8RepeatedCommentOverwrite/mysql/nonempty_to_nonempty (0.00s)
+    --- FAIL: TestT06A8RepeatedCommentOverwrite/tidb/nonempty_to_empty (0.00s)
+    --- FAIL: TestT06A8RepeatedCommentOverwrite/tidb/empty_to_nonempty (0.00s)
+    --- FAIL: TestT06A8RepeatedCommentOverwrite/tidb/nonempty_to_nonempty (0.00s)
+=== RUN   TestT06A8AlterColumnCommentDecoding
+=== RUN   TestT06A8AlterColumnCommentDecoding/mysql/add
+    extractor_t06a8_test.go:115: alter comment = name "d" comment "'加列'", want "d"/"加列"
+=== RUN   TestT06A8AlterColumnCommentDecoding/mysql/modify
+    extractor_t06a8_test.go:115: alter comment = name "c" comment "'改列'", want "c"/"改列"
+=== RUN   TestT06A8AlterColumnCommentDecoding/mysql/change
+    extractor_t06a8_test.go:115: alter comment = name "c2" comment "'换名'", want "c2"/"换名"
+=== RUN   TestT06A8AlterColumnCommentDecoding/mysql/add_empty
+    extractor_t06a8_test.go:115: alter comment = name "d" comment "''", want "d"/""
+=== RUN   TestT06A8AlterColumnCommentDecoding/tidb/add
+    extractor_t06a8_test.go:115: alter comment = name "d" comment "'加列'", want "d"/"加列"
+=== RUN   TestT06A8AlterColumnCommentDecoding/tidb/modify
+    extractor_t06a8_test.go:115: alter comment = name "c" comment "'改列'", want "c"/"改列"
+=== RUN   TestT06A8AlterColumnCommentDecoding/tidb/change
+    extractor_t06a8_test.go:115: alter comment = name "c2" comment "'换名'", want "c2"/"换名"
+=== RUN   TestT06A8AlterColumnCommentDecoding/tidb/add_empty
+    extractor_t06a8_test.go:115: alter comment = name "d" comment "''", want "d"/""
+--- FAIL: TestT06A8AlterColumnCommentDecoding (0.00s)
+    --- FAIL: TestT06A8AlterColumnCommentDecoding/mysql/add (0.00s)
+    --- FAIL: TestT06A8AlterColumnCommentDecoding/mysql/modify (0.00s)
+    --- FAIL: TestT06A8AlterColumnCommentDecoding/mysql/change (0.00s)
+    --- FAIL: TestT06A8AlterColumnCommentDecoding/mysql/add_empty (0.00s)
+    --- FAIL: TestT06A8AlterColumnCommentDecoding/tidb/add (0.00s)
+    --- FAIL: TestT06A8AlterColumnCommentDecoding/tidb/modify (0.00s)
+    --- FAIL: TestT06A8AlterColumnCommentDecoding/tidb/change (0.00s)
+    --- FAIL: TestT06A8AlterColumnCommentDecoding/tidb/add_empty (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	0.498s
+=== RUN   TestT06A8TableCommentMaxLengthCountsCodePoints
+=== PAUSE TestT06A8TableCommentMaxLengthCountsCodePoints
+=== RUN   TestT06A8TableCommentMaxLengthConstructorBounds
+=== PAUSE TestT06A8TableCommentMaxLengthConstructorBounds
+=== RUN   TestT06A8RequireRulesReadSeparateFields
+=== PAUSE TestT06A8RequireRulesReadSeparateFields
+=== CONT  TestT06A8TableCommentMaxLengthCountsCodePoints
+=== CONT  TestT06A8RequireRulesReadSeparateFields
+=== RUN   TestT06A8TableCommentMaxLengthCountsCodePoints/ascii_below
+=== CONT  TestT06A8TableCommentMaxLengthConstructorBounds
+--- PASS: TestT06A8TableCommentMaxLengthConstructorBounds (0.00s)
+=== RUN   TestT06A8TableCommentMaxLengthCountsCodePoints/ascii_at_limit
+--- PASS: TestT06A8RequireRulesReadSeparateFields (0.00s)
+=== RUN   TestT06A8TableCommentMaxLengthCountsCodePoints/ascii_above
+=== RUN   TestT06A8TableCommentMaxLengthCountsCodePoints/multibyte_below
+    table_comment_t06a8_test.go:58: comment "中文注": findings=1 wantFinding=false
+=== RUN   TestT06A8TableCommentMaxLengthCountsCodePoints/multibyte_at_limit
+    table_comment_t06a8_test.go:58: comment "中文注中文注ab": findings=1 wantFinding=false
+=== RUN   TestT06A8TableCommentMaxLengthCountsCodePoints/multibyte_above
+    table_comment_t06a8_test.go:63: comment "中文注中文注abc": metadata=map[actual:21 limit:8 table:users]
+=== RUN   TestT06A8TableCommentMaxLengthCountsCodePoints/combining_runes_at_limit
+    table_comment_t06a8_test.go:58: comment "éééé": findings=1 wantFinding=false
+=== RUN   TestT06A8TableCommentMaxLengthCountsCodePoints/combining_runes_above
+    table_comment_t06a8_test.go:63: comment "éééééééé": metadata=map[actual:24 limit:8 table:users]
+=== RUN   TestT06A8TableCommentMaxLengthCountsCodePoints/padding_counted
+--- FAIL: TestT06A8TableCommentMaxLengthCountsCodePoints (0.00s)
+    --- PASS: TestT06A8TableCommentMaxLengthCountsCodePoints/ascii_below (0.00s)
+    --- PASS: TestT06A8TableCommentMaxLengthCountsCodePoints/ascii_at_limit (0.00s)
+    --- PASS: TestT06A8TableCommentMaxLengthCountsCodePoints/ascii_above (0.00s)
+    --- FAIL: TestT06A8TableCommentMaxLengthCountsCodePoints/multibyte_below (0.00s)
+    --- FAIL: TestT06A8TableCommentMaxLengthCountsCodePoints/multibyte_at_limit (0.00s)
+    --- FAIL: TestT06A8TableCommentMaxLengthCountsCodePoints/multibyte_above (0.00s)
+    --- FAIL: TestT06A8TableCommentMaxLengthCountsCodePoints/combining_runes_at_limit (0.00s)
+    --- FAIL: TestT06A8TableCommentMaxLengthCountsCodePoints/combining_runes_above (0.00s)
+    --- PASS: TestT06A8TableCommentMaxLengthCountsCodePoints/padding_counted (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	0.253s
+FAIL

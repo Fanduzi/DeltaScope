@@ -1,0 +1,6083 @@
+{
+  "version": "",
+  "summary": {
+    "total": 381,
+    "returned": 381
+  },
+  "rules": [
+    {
+      "rule_id": "ddl.alter.add_column.exists.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter add column exists forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.add_column.exists.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.add_column.notice",
+      "level": "notice",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL alter add column notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.alter.add_column.notice"
+    },
+    {
+      "rule_id": "ddl.alter.add_constraint.notice",
+      "level": "notice",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL alter add constraint notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.alter.add_constraint.notice"
+    },
+    {
+      "rule_id": "ddl.alter.add_index.columns.max_count",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Limit DDL alter add index columns max count",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table"
+      ],
+      "config_key": "ddl.alter.add_index.columns.max_count"
+    },
+    {
+      "rule_id": "ddl.alter.add_index.duplicate.forbid",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter add index duplicate forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.add_index.duplicate.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.add_index.exists.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter add index exists forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.add_index.exists.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.add_index.fulltext.contains.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Require DDL alter add index fulltext contains require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "require"
+      ],
+      "config_key": "ddl.alter.add_index.fulltext.contains.require"
+    },
+    {
+      "rule_id": "ddl.alter.add_index.fulltext.prefix.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Require DDL alter add index fulltext prefix require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "require"
+      ],
+      "config_key": "ddl.alter.add_index.fulltext.prefix.require"
+    },
+    {
+      "rule_id": "ddl.alter.add_index.fulltext.suffix.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Require DDL alter add index fulltext suffix require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "require"
+      ],
+      "config_key": "ddl.alter.add_index.fulltext.suffix.require"
+    },
+    {
+      "rule_id": "ddl.alter.add_index.redundant_left_prefix.forbid",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter add index redundant left prefix forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.add_index.redundant_left_prefix.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.add_index.redundant_unique_overlap.forbid",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter add index redundant unique overlap forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.add_index.redundant_unique_overlap.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.add_index.secondary.contains.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Require DDL alter add index secondary contains require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "require"
+      ],
+      "config_key": "ddl.alter.add_index.secondary.contains.require"
+    },
+    {
+      "rule_id": "ddl.alter.add_index.secondary.prefix.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Require DDL alter add index secondary prefix require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "require"
+      ],
+      "config_key": "ddl.alter.add_index.secondary.prefix.require"
+    },
+    {
+      "rule_id": "ddl.alter.add_index.secondary.suffix.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Require DDL alter add index secondary suffix require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "require"
+      ],
+      "config_key": "ddl.alter.add_index.secondary.suffix.require"
+    },
+    {
+      "rule_id": "ddl.alter.add_index.unique.contains.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Require DDL alter add index unique contains require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "require"
+      ],
+      "config_key": "ddl.alter.add_index.unique.contains.require"
+    },
+    {
+      "rule_id": "ddl.alter.add_index.unique.prefix.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Require DDL alter add index unique prefix require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "require"
+      ],
+      "config_key": "ddl.alter.add_index.unique.prefix.require"
+    },
+    {
+      "rule_id": "ddl.alter.add_index.unique.suffix.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Require DDL alter add index unique suffix require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "require"
+      ],
+      "config_key": "ddl.alter.add_index.unique.suffix.require"
+    },
+    {
+      "rule_id": "ddl.alter.change_column.compatibility.require",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Require DDL alter change column compatibility require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "require"
+      ],
+      "config_key": "ddl.alter.change_column.compatibility.require"
+    },
+    {
+      "rule_id": "ddl.alter.change_column.exists.require",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Require DDL alter change column exists require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "require"
+      ],
+      "config_key": "ddl.alter.change_column.exists.require"
+    },
+    {
+      "rule_id": "ddl.alter.change_column.explicit_auto_increment_change.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter change column explicit auto increment change forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.change_column.explicit_auto_increment_change.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.change_column.explicit_default_change.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter change column explicit default change forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.change_column.explicit_default_change.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.change_column.explicit_nullability_change.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter change column explicit nullability change forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.change_column.explicit_nullability_change.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.change_column.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter change column forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.change_column.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.change_column.target.exists.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter change column target exists forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.change_column.target.exists.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.change_column.target_type_family.allowlist",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Restrict DDL alter change column target type family allowlist",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table"
+      ],
+      "config_key": "ddl.alter.change_column.target_type_family.allowlist"
+    },
+    {
+      "rule_id": "ddl.alter.drop_column.exists.require",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Require DDL alter drop column exists require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "require"
+      ],
+      "config_key": "ddl.alter.drop_column.exists.require"
+    },
+    {
+      "rule_id": "ddl.alter.drop_column.forbid",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter drop column forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.drop_column.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.drop_column.notice",
+      "level": "notice",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL alter drop column notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.alter.drop_column.notice"
+    },
+    {
+      "rule_id": "ddl.alter.drop_default.explicit_default_change.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter drop default explicit default change forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.drop_default.explicit_default_change.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.drop_default.forbid",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter drop default forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.drop_default.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.drop_expression.forbid",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter drop expression forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.drop_expression.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.drop_foreign_key.notice",
+      "level": "notice",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL alter drop foreign key notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.alter.drop_foreign_key.notice"
+    },
+    {
+      "rule_id": "ddl.alter.drop_identity.forbid",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter drop identity forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.drop_identity.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.drop_index.exists.require",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Require DDL alter drop index exists require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "require"
+      ],
+      "config_key": "ddl.alter.drop_index.exists.require"
+    },
+    {
+      "rule_id": "ddl.alter.drop_index.forbid",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter drop index forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.drop_index.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.drop_index.notice",
+      "level": "notice",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL alter drop index notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.alter.drop_index.notice"
+    },
+    {
+      "rule_id": "ddl.alter.drop_not_null.explicit_nullability_change.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter drop not null explicit nullability change forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.drop_not_null.explicit_nullability_change.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.drop_not_null.forbid",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter drop not null forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.drop_not_null.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.drop_primary_key.exists.require",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Require DDL alter drop primary key exists require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "require"
+      ],
+      "config_key": "ddl.alter.drop_primary_key.exists.require"
+    },
+    {
+      "rule_id": "ddl.alter.drop_primary_key.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter drop primary key forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.drop_primary_key.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.merge.mysql.require",
+      "level": "warning",
+      "dialect": "mysql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Require DDL alter merge mysql require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "mysql",
+        "alter_table",
+        "require"
+      ],
+      "config_key": "ddl.alter.merge.mysql.require"
+    },
+    {
+      "rule_id": "ddl.alter.merge.tidb.require",
+      "level": "warning",
+      "dialect": "tidb",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Require DDL alter merge tidb require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "tidb",
+        "alter_table",
+        "require"
+      ],
+      "config_key": "ddl.alter.merge.tidb.require"
+    },
+    {
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Require DDL alter modify column compatibility require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "require"
+      ],
+      "config_key": "ddl.alter.modify_column.compatibility.require"
+    },
+    {
+      "rule_id": "ddl.alter.modify_column.exists.require",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Require DDL alter modify column exists require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "require"
+      ],
+      "config_key": "ddl.alter.modify_column.exists.require"
+    },
+    {
+      "rule_id": "ddl.alter.modify_column.explicit_auto_increment_change.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter modify column explicit auto increment change forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.modify_column.explicit_auto_increment_change.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.modify_column.explicit_default_change.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter modify column explicit default change forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.modify_column.explicit_default_change.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.modify_column.explicit_nullability_change.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter modify column explicit nullability change forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.modify_column.explicit_nullability_change.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory",
+      "level": "notice",
+      "dialect": "mysql,tidb",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL alter modify column explicit nullability change unknown prior state advisory",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "mysql",
+        "tidb",
+        "alter_table",
+        "advisory"
+      ],
+      "config_key": "ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory"
+    },
+    {
+      "rule_id": "ddl.alter.modify_column.forbid",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter modify column forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.modify_column.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.modify_column.notice",
+      "level": "notice",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL alter modify column notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.alter.modify_column.notice"
+    },
+    {
+      "rule_id": "ddl.alter.modify_column.target_type_family.allowlist",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Restrict DDL alter modify column target type family allowlist",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table"
+      ],
+      "config_key": "ddl.alter.modify_column.target_type_family.allowlist"
+    },
+    {
+      "rule_id": "ddl.alter.rename_column.exists.require",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Require DDL alter rename column exists require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "require"
+      ],
+      "config_key": "ddl.alter.rename_column.exists.require"
+    },
+    {
+      "rule_id": "ddl.alter.rename_column.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter rename column forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.rename_column.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.rename_column.target.exists.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter rename column target exists forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.rename_column.target.exists.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.rename_column.version.require",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Require DDL alter rename column version require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "require"
+      ],
+      "config_key": "ddl.alter.rename_column.version.require"
+    },
+    {
+      "rule_id": "ddl.alter.rename_index.exists.require",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Require DDL alter rename index exists require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "require"
+      ],
+      "config_key": "ddl.alter.rename_index.exists.require"
+    },
+    {
+      "rule_id": "ddl.alter.rename_index.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter rename index forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.rename_index.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.rename_table.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter rename table forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.rename_table.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.set_data_type.forbid",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter set data type forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.set_data_type.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.set_default.explicit_default_change.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter set default explicit default change forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.set_default.explicit_default_change.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.set_default.forbid",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter set default forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.set_default.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.set_generated.forbid",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter set generated forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.set_generated.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.set_not_null.explicit_nullability_change.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter set not null explicit nullability change forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.set_not_null.explicit_nullability_change.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.set_not_null.forbid",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Forbid DDL alter set not null forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "forbid"
+      ],
+      "config_key": "ddl.alter.set_not_null.forbid"
+    },
+    {
+      "rule_id": "ddl.alter.table_option.compatibility.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Require DDL alter table option compatibility require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "alter_table",
+        "require"
+      ],
+      "config_key": "ddl.alter.table_option.compatibility.require"
+    },
+    {
+      "rule_id": "ddl.alter_database.notice",
+      "level": "notice",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "database",
+      "summary": "Check DDL alter database notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "database",
+        "notice"
+      ],
+      "config_key": "ddl.alter_database.notice"
+    },
+    {
+      "rule_id": "ddl.alter_placement_policy.notice",
+      "level": "notice",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "resource_management",
+      "summary": "Check DDL alter placement policy notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "resource_management",
+        "notice"
+      ],
+      "config_key": "ddl.alter_placement_policy.notice"
+    },
+    {
+      "rule_id": "ddl.alter_sequence.notice",
+      "level": "notice",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "sequence",
+      "summary": "Check DDL alter sequence notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "sequence",
+        "notice"
+      ],
+      "config_key": "ddl.alter_sequence.notice"
+    },
+    {
+      "rule_id": "ddl.alter_user.notice",
+      "level": "notice",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "user_management",
+      "summary": "Check DDL alter user notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "user_management",
+        "notice"
+      ],
+      "config_key": "ddl.alter_user.notice"
+    },
+    {
+      "rule_id": "ddl.column.bit.forbid",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "column",
+      "summary": "Forbid DDL column bit forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "column",
+        "forbid"
+      ],
+      "config_key": "ddl.column.bit.forbid"
+    },
+    {
+      "rule_id": "ddl.column.blob_text.forbid",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "column",
+      "summary": "Forbid DDL column blob text forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "column",
+        "forbid"
+      ],
+      "config_key": "ddl.column.blob_text.forbid"
+    },
+    {
+      "rule_id": "ddl.column.char.max_length",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "column",
+      "summary": "Limit DDL column char max length",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "column"
+      ],
+      "config_key": "ddl.column.char.max_length"
+    },
+    {
+      "rule_id": "ddl.column.charset.allowlist",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "column",
+      "summary": "Restrict DDL column charset allowlist",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "column"
+      ],
+      "config_key": "ddl.column.charset.allowlist"
+    },
+    {
+      "rule_id": "ddl.column.charset_collation.match.require",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "column",
+      "summary": "Require DDL column charset collation match require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "column",
+        "require"
+      ],
+      "config_key": "ddl.column.charset_collation.match.require"
+    },
+    {
+      "rule_id": "ddl.column.collation.allowlist",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "column",
+      "summary": "Restrict DDL column collation allowlist",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "column"
+      ],
+      "config_key": "ddl.column.collation.allowlist"
+    },
+    {
+      "rule_id": "ddl.column.comment.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "column",
+      "summary": "Require DDL column comment require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "column",
+        "require"
+      ],
+      "config_key": "ddl.column.comment.require"
+    },
+    {
+      "rule_id": "ddl.column.default.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "column",
+      "summary": "Require DDL column default require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "column",
+        "require"
+      ],
+      "config_key": "ddl.column.default.require"
+    },
+    {
+      "rule_id": "ddl.column.float_double.forbid",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "column",
+      "summary": "Forbid DDL column float double forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "column",
+        "forbid"
+      ],
+      "config_key": "ddl.column.float_double.forbid"
+    },
+    {
+      "rule_id": "ddl.column.json.forbid",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "column",
+      "summary": "Forbid DDL column json forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "column",
+        "forbid"
+      ],
+      "config_key": "ddl.column.json.forbid"
+    },
+    {
+      "rule_id": "ddl.column.name.contains.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "column",
+      "summary": "Require DDL column name contains require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "column",
+        "require"
+      ],
+      "config_key": "ddl.column.name.contains.require"
+    },
+    {
+      "rule_id": "ddl.column.name.keyword.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "column",
+      "summary": "Forbid DDL column name keyword forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "column",
+        "forbid"
+      ],
+      "config_key": "ddl.column.name.keyword.forbid"
+    },
+    {
+      "rule_id": "ddl.column.name.max_length",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "column",
+      "summary": "Limit DDL column name max length",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "column"
+      ],
+      "config_key": "ddl.column.name.max_length"
+    },
+    {
+      "rule_id": "ddl.column.name.pattern.require",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "column",
+      "summary": "Require DDL column name pattern require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "column",
+        "require"
+      ],
+      "config_key": "ddl.column.name.pattern.require"
+    },
+    {
+      "rule_id": "ddl.column.name.prefix.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "column",
+      "summary": "Require DDL column name prefix require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "column",
+        "require"
+      ],
+      "config_key": "ddl.column.name.prefix.require"
+    },
+    {
+      "rule_id": "ddl.column.name.suffix.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "column",
+      "summary": "Require DDL column name suffix require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "column",
+        "require"
+      ],
+      "config_key": "ddl.column.name.suffix.require"
+    },
+    {
+      "rule_id": "ddl.column.not_null.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "column",
+      "summary": "Require DDL column not null require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "column",
+        "require"
+      ],
+      "config_key": "ddl.column.not_null.require"
+    },
+    {
+      "rule_id": "ddl.column.timestamp.forbid",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "column",
+      "summary": "Forbid DDL column timestamp forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "column",
+        "forbid"
+      ],
+      "config_key": "ddl.column.timestamp.forbid"
+    },
+    {
+      "rule_id": "ddl.column.varchar.max_length",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "column",
+      "summary": "Limit DDL column varchar max length",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "column"
+      ],
+      "config_key": "ddl.column.varchar.max_length"
+    },
+    {
+      "rule_id": "ddl.constraint.check.name.contains.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "constraint",
+      "summary": "Require DDL constraint check name contains require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "constraint",
+        "require"
+      ],
+      "config_key": "ddl.constraint.check.name.contains.require"
+    },
+    {
+      "rule_id": "ddl.constraint.check.name.prefix.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "constraint",
+      "summary": "Require DDL constraint check name prefix require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "constraint",
+        "require"
+      ],
+      "config_key": "ddl.constraint.check.name.prefix.require"
+    },
+    {
+      "rule_id": "ddl.constraint.check.name.suffix.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "constraint",
+      "summary": "Require DDL constraint check name suffix require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "constraint",
+        "require"
+      ],
+      "config_key": "ddl.constraint.check.name.suffix.require"
+    },
+    {
+      "rule_id": "ddl.constraint.foreign_key.name.contains.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "constraint",
+      "summary": "Require DDL constraint foreign key name contains require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "constraint",
+        "require"
+      ],
+      "config_key": "ddl.constraint.foreign_key.name.contains.require"
+    },
+    {
+      "rule_id": "ddl.constraint.foreign_key.name.prefix.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "constraint",
+      "summary": "Require DDL constraint foreign key name prefix require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "constraint",
+        "require"
+      ],
+      "config_key": "ddl.constraint.foreign_key.name.prefix.require"
+    },
+    {
+      "rule_id": "ddl.constraint.foreign_key.name.suffix.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "constraint",
+      "summary": "Require DDL constraint foreign key name suffix require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "constraint",
+        "require"
+      ],
+      "config_key": "ddl.constraint.foreign_key.name.suffix.require"
+    },
+    {
+      "rule_id": "ddl.constraint.primary_key.name.contains.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "constraint",
+      "summary": "Require DDL constraint primary key name contains require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "constraint",
+        "require"
+      ],
+      "config_key": "ddl.constraint.primary_key.name.contains.require"
+    },
+    {
+      "rule_id": "ddl.constraint.primary_key.name.prefix.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "constraint",
+      "summary": "Require DDL constraint primary key name prefix require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "constraint",
+        "require"
+      ],
+      "config_key": "ddl.constraint.primary_key.name.prefix.require"
+    },
+    {
+      "rule_id": "ddl.constraint.primary_key.name.suffix.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "constraint",
+      "summary": "Require DDL constraint primary key name suffix require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "constraint",
+        "require"
+      ],
+      "config_key": "ddl.constraint.primary_key.name.suffix.require"
+    },
+    {
+      "rule_id": "ddl.constraint.unique_key.name.contains.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "constraint",
+      "summary": "Require DDL constraint unique key name contains require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "constraint",
+        "require"
+      ],
+      "config_key": "ddl.constraint.unique_key.name.contains.require"
+    },
+    {
+      "rule_id": "ddl.constraint.unique_key.name.prefix.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "constraint",
+      "summary": "Require DDL constraint unique key name prefix require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "constraint",
+        "require"
+      ],
+      "config_key": "ddl.constraint.unique_key.name.prefix.require"
+    },
+    {
+      "rule_id": "ddl.constraint.unique_key.name.suffix.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "constraint",
+      "summary": "Require DDL constraint unique key name suffix require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "constraint",
+        "require"
+      ],
+      "config_key": "ddl.constraint.unique_key.name.suffix.require"
+    },
+    {
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "index",
+      "summary": "Require DDL create index columns exists require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "index",
+        "require"
+      ],
+      "config_key": "ddl.create_index.columns.exists.require"
+    },
+    {
+      "rule_id": "ddl.create_index.notice",
+      "level": "notice",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "index",
+      "summary": "Check DDL create index notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "index",
+        "notice"
+      ],
+      "config_key": "ddl.create_index.notice"
+    },
+    {
+      "rule_id": "ddl.create_placement_policy.notice",
+      "level": "notice",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "resource_management",
+      "summary": "Check DDL create placement policy notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "resource_management",
+        "notice"
+      ],
+      "config_key": "ddl.create_placement_policy.notice"
+    },
+    {
+      "rule_id": "ddl.create_procedure.notice",
+      "level": "notice",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "procedure",
+      "summary": "Check DDL create procedure notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "procedure",
+        "notice"
+      ],
+      "config_key": "ddl.create_procedure.notice"
+    },
+    {
+      "rule_id": "ddl.create_role.notice",
+      "level": "notice",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "user_management",
+      "summary": "Check DDL create role notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "user_management",
+        "notice"
+      ],
+      "config_key": "ddl.create_role.notice"
+    },
+    {
+      "rule_id": "ddl.create_sequence.notice",
+      "level": "notice",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "sequence",
+      "summary": "Check DDL create sequence notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "sequence",
+        "notice"
+      ],
+      "config_key": "ddl.create_sequence.notice"
+    },
+    {
+      "rule_id": "ddl.create_user.notice",
+      "level": "notice",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "user_management",
+      "summary": "Check DDL create user notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "user_management",
+        "notice"
+      ],
+      "config_key": "ddl.create_user.notice"
+    },
+    {
+      "rule_id": "ddl.database.create.notice",
+      "level": "notice",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "database",
+      "summary": "Check DDL database create notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "database",
+        "notice"
+      ],
+      "config_key": "ddl.database.create.notice"
+    },
+    {
+      "rule_id": "ddl.database.drop.warn",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "database",
+      "summary": "Warn on DDL database drop warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "database",
+        "warn"
+      ],
+      "config_key": "ddl.database.drop.warn"
+    },
+    {
+      "rule_id": "ddl.drop_index.notice",
+      "level": "notice",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "index",
+      "summary": "Check DDL drop index notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "index",
+        "notice"
+      ],
+      "config_key": "ddl.drop_index.notice"
+    },
+    {
+      "rule_id": "ddl.drop_placement_policy.notice",
+      "level": "notice",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "resource_management",
+      "summary": "Check DDL drop placement policy notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "resource_management",
+        "notice"
+      ],
+      "config_key": "ddl.drop_placement_policy.notice"
+    },
+    {
+      "rule_id": "ddl.drop_procedure.notice",
+      "level": "notice",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "procedure",
+      "summary": "Check DDL drop procedure notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "procedure",
+        "notice"
+      ],
+      "config_key": "ddl.drop_procedure.notice"
+    },
+    {
+      "rule_id": "ddl.drop_resource_group.notice",
+      "level": "notice",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "resource_management",
+      "summary": "Check DDL drop resource group notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "resource_management",
+        "notice"
+      ],
+      "config_key": "ddl.drop_resource_group.notice"
+    },
+    {
+      "rule_id": "ddl.drop_role.notice",
+      "level": "notice",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "user_management",
+      "summary": "Check DDL drop role notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "user_management",
+        "notice"
+      ],
+      "config_key": "ddl.drop_role.notice"
+    },
+    {
+      "rule_id": "ddl.drop_sequence.notice",
+      "level": "notice",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "sequence",
+      "summary": "Check DDL drop sequence notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "sequence",
+        "notice"
+      ],
+      "config_key": "ddl.drop_sequence.notice"
+    },
+    {
+      "rule_id": "ddl.drop_user.notice",
+      "level": "notice",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "user_management",
+      "summary": "Check DDL drop user notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "user_management",
+        "notice"
+      ],
+      "config_key": "ddl.drop_user.notice"
+    },
+    {
+      "rule_id": "ddl.grant.notice",
+      "level": "notice",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "privilege",
+      "summary": "Check DDL grant notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "privilege",
+        "notice"
+      ],
+      "config_key": "ddl.grant.notice"
+    },
+    {
+      "rule_id": "ddl.index.columns.max_count",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "index",
+      "summary": "Limit DDL index columns max count",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "index"
+      ],
+      "config_key": "ddl.index.columns.max_count"
+    },
+    {
+      "rule_id": "ddl.index.duplicate.forbid",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "index",
+      "summary": "Forbid DDL index duplicate forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "index",
+        "forbid"
+      ],
+      "config_key": "ddl.index.duplicate.forbid"
+    },
+    {
+      "rule_id": "ddl.index.fulltext.contains.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "index",
+      "summary": "Require DDL index fulltext contains require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "index",
+        "require"
+      ],
+      "config_key": "ddl.index.fulltext.contains.require"
+    },
+    {
+      "rule_id": "ddl.index.fulltext.prefix.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "index",
+      "summary": "Require DDL index fulltext prefix require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "index",
+        "require"
+      ],
+      "config_key": "ddl.index.fulltext.prefix.require"
+    },
+    {
+      "rule_id": "ddl.index.fulltext.suffix.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "index",
+      "summary": "Require DDL index fulltext suffix require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "index",
+        "require"
+      ],
+      "config_key": "ddl.index.fulltext.suffix.require"
+    },
+    {
+      "rule_id": "ddl.index.key_length.max_bytes.require",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "index",
+      "summary": "Require DDL index key length max bytes require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "index",
+        "require"
+      ],
+      "config_key": "ddl.index.key_length.max_bytes.require"
+    },
+    {
+      "rule_id": "ddl.index.name.keyword.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "index",
+      "summary": "Forbid DDL index name keyword forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "index",
+        "forbid"
+      ],
+      "config_key": "ddl.index.name.keyword.forbid"
+    },
+    {
+      "rule_id": "ddl.index.name.pattern.require",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "index",
+      "summary": "Require DDL index name pattern require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "index",
+        "require"
+      ],
+      "config_key": "ddl.index.name.pattern.require"
+    },
+    {
+      "rule_id": "ddl.index.redundant_left_prefix.forbid",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "index",
+      "summary": "Forbid DDL index redundant left prefix forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "index",
+        "forbid"
+      ],
+      "config_key": "ddl.index.redundant_left_prefix.forbid"
+    },
+    {
+      "rule_id": "ddl.index.redundant_unique_overlap.forbid",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "index",
+      "summary": "Forbid DDL index redundant unique overlap forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "index",
+        "forbid"
+      ],
+      "config_key": "ddl.index.redundant_unique_overlap.forbid"
+    },
+    {
+      "rule_id": "ddl.index.secondary.contains.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "index",
+      "summary": "Require DDL index secondary contains require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "index",
+        "require"
+      ],
+      "config_key": "ddl.index.secondary.contains.require"
+    },
+    {
+      "rule_id": "ddl.index.secondary.prefix.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "index",
+      "summary": "Require DDL index secondary prefix require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "index",
+        "require"
+      ],
+      "config_key": "ddl.index.secondary.prefix.require"
+    },
+    {
+      "rule_id": "ddl.index.secondary.suffix.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "index",
+      "summary": "Require DDL index secondary suffix require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "index",
+        "require"
+      ],
+      "config_key": "ddl.index.secondary.suffix.require"
+    },
+    {
+      "rule_id": "ddl.index.total.max_count",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "index",
+      "summary": "Limit DDL index total max count",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "index"
+      ],
+      "config_key": "ddl.index.total.max_count"
+    },
+    {
+      "rule_id": "ddl.index.unique.contains.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "index",
+      "summary": "Require DDL index unique contains require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "index",
+        "require"
+      ],
+      "config_key": "ddl.index.unique.contains.require"
+    },
+    {
+      "rule_id": "ddl.index.unique.prefix.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "index",
+      "summary": "Require DDL index unique prefix require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "index",
+        "require"
+      ],
+      "config_key": "ddl.index.unique.prefix.require"
+    },
+    {
+      "rule_id": "ddl.index.unique.suffix.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "index",
+      "summary": "Require DDL index unique suffix require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "index",
+        "require"
+      ],
+      "config_key": "ddl.index.unique.suffix.require"
+    },
+    {
+      "rule_id": "ddl.pg.alter.add_check.not_valid.require",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Require DDL pg alter add check not valid require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "require"
+      ],
+      "config_key": "ddl.pg.alter.add_check.not_valid.require"
+    },
+    {
+      "rule_id": "ddl.pg.alter.add_column.non_null_default.rewrite.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Warn on DDL pg alter add column non null default rewrite warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "warn"
+      ],
+      "config_key": "ddl.pg.alter.add_column.non_null_default.rewrite.warn"
+    },
+    {
+      "rule_id": "ddl.pg.alter.add_column.non_null_no_default.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Warn on DDL pg alter add column non null no default warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "warn"
+      ],
+      "config_key": "ddl.pg.alter.add_column.non_null_no_default.warn"
+    },
+    {
+      "rule_id": "ddl.pg.alter.add_column.nullable.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter add column nullable notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.add_column.nullable.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.add_exclusion_constraint.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter add exclusion constraint notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.add_exclusion_constraint.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.add_identity.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter add identity notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.add_identity.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.add_inherit.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter add inherit notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.add_inherit.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.add_of_type.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter add of type notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.add_of_type.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.add_unique_constraint.concurrent_index.advisory",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter add unique constraint concurrent index advisory",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "advisory"
+      ],
+      "config_key": "ddl.pg.alter.add_unique_constraint.concurrent_index.advisory"
+    },
+    {
+      "rule_id": "ddl.pg.alter.attach_partition.advisory",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter attach partition advisory",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "advisory"
+      ],
+      "config_key": "ddl.pg.alter.attach_partition.advisory"
+    },
+    {
+      "rule_id": "ddl.pg.alter.cluster_on.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter cluster on notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.cluster_on.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.constraint_deferrable.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter constraint deferrable notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.constraint_deferrable.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.constraint_initially_deferred.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter constraint initially deferred notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.constraint_initially_deferred.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.detach_partition.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Warn on DDL pg alter detach partition warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "warn"
+      ],
+      "config_key": "ddl.pg.alter.detach_partition.warn"
+    },
+    {
+      "rule_id": "ddl.pg.alter.detach_partition_finalize.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter detach partition finalize notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.detach_partition_finalize.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.disable_rls.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "rls",
+      "summary": "Warn on DDL pg alter disable rls warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "rls",
+        "warn"
+      ],
+      "config_key": "ddl.pg.alter.disable_rls.warn"
+    },
+    {
+      "rule_id": "ddl.pg.alter.disable_rule.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Warn on DDL pg alter disable rule warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "warn"
+      ],
+      "config_key": "ddl.pg.alter.disable_rule.warn"
+    },
+    {
+      "rule_id": "ddl.pg.alter.disable_trigger.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Warn on DDL pg alter disable trigger warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "warn"
+      ],
+      "config_key": "ddl.pg.alter.disable_trigger.warn"
+    },
+    {
+      "rule_id": "ddl.pg.alter.drop_column.advisory",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter drop column advisory",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "advisory"
+      ],
+      "config_key": "ddl.pg.alter.drop_column.advisory"
+    },
+    {
+      "rule_id": "ddl.pg.alter.drop_constraint.advisory",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter drop constraint advisory",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "advisory"
+      ],
+      "config_key": "ddl.pg.alter.drop_constraint.advisory"
+    },
+    {
+      "rule_id": "ddl.pg.alter.drop_inherit.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter drop inherit notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.drop_inherit.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.drop_of_type.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter drop of type notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.drop_of_type.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.enable_always_rule.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter enable always rule notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.enable_always_rule.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.enable_always_trigger.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter enable always trigger notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.enable_always_trigger.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.enable_replica_rule.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter enable replica rule notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.enable_replica_rule.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.enable_replica_trigger.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter enable replica trigger notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.enable_replica_trigger.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.enable_rls.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "rls",
+      "summary": "Check DDL pg alter enable rls notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "rls",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.enable_rls.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.enable_rule.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter enable rule notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.enable_rule.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.enable_trigger.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter enable trigger notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.enable_trigger.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.force_rls.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "rls",
+      "summary": "Check DDL pg alter force rls notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "rls",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.force_rls.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.move_all_tablespace.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter move all tablespace notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.move_all_tablespace.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.no_force_rls.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "rls",
+      "summary": "Check DDL pg alter no force rls notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "rls",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.no_force_rls.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.not_valid_constraint.validate.require",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Require DDL pg alter not valid constraint validate require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "require"
+      ],
+      "config_key": "ddl.pg.alter.not_valid_constraint.validate.require"
+    },
+    {
+      "rule_id": "ddl.pg.alter.owner.advisory",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter owner advisory",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "advisory"
+      ],
+      "config_key": "ddl.pg.alter.owner.advisory"
+    },
+    {
+      "rule_id": "ddl.pg.alter.replica_identity_full.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Warn on DDL pg alter replica identity full warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "warn"
+      ],
+      "config_key": "ddl.pg.alter.replica_identity_full.warn"
+    },
+    {
+      "rule_id": "ddl.pg.alter.replica_identity_nothing.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Warn on DDL pg alter replica identity nothing warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "warn"
+      ],
+      "config_key": "ddl.pg.alter.replica_identity_nothing.warn"
+    },
+    {
+      "rule_id": "ddl.pg.alter.replica_identity_using_index.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter replica identity using index notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.replica_identity_using_index.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.reset_column_options.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter reset column options notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.reset_column_options.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.reset_reloptions.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter reset reloptions notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.reset_reloptions.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.set_access_method.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Warn on DDL pg alter set access method warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "warn"
+      ],
+      "config_key": "ddl.pg.alter.set_access_method.warn"
+    },
+    {
+      "rule_id": "ddl.pg.alter.set_column_compression.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter set column compression notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.set_column_compression.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.set_column_options.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter set column options notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.set_column_options.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.set_column_statistics.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter set column statistics notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.set_column_statistics.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.set_column_storage.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter set column storage notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.set_column_storage.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.set_data_type.rewrite.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Warn on DDL pg alter set data type rewrite warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "warn"
+      ],
+      "config_key": "ddl.pg.alter.set_data_type.rewrite.warn"
+    },
+    {
+      "rule_id": "ddl.pg.alter.set_expression.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter set expression notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.set_expression.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.set_logged.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter set logged notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.set_logged.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.set_reloptions.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Warn on DDL pg alter set reloptions warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "warn"
+      ],
+      "config_key": "ddl.pg.alter.set_reloptions.warn"
+    },
+    {
+      "rule_id": "ddl.pg.alter.set_schema.advisory",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter set schema advisory",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "advisory"
+      ],
+      "config_key": "ddl.pg.alter.set_schema.advisory"
+    },
+    {
+      "rule_id": "ddl.pg.alter.set_tablespace.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter set tablespace notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.set_tablespace.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.set_unlogged.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter set unlogged notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.set_unlogged.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.set_without_cluster.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter set without cluster notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter.set_without_cluster.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter.validate_constraint.advisory",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL pg alter validate constraint advisory",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "alter_table",
+        "advisory"
+      ],
+      "config_key": "ddl.pg.alter.validate_constraint.advisory"
+    },
+    {
+      "rule_id": "ddl.pg.alter_aggregate.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "aggregate",
+      "summary": "Check DDL pg alter aggregate notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "aggregate",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_aggregate.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_collation.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "collation",
+      "summary": "Check DDL pg alter collation notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "collation",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_collation.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_conversion.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "conversion",
+      "summary": "Check DDL pg alter conversion notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "conversion",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_conversion.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_domain.constraint.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "domain",
+      "summary": "Check DDL pg alter domain constraint notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "domain",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_domain.constraint.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_domain.default.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "domain",
+      "summary": "Check DDL pg alter domain default notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "domain",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_domain.default.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_domain.not_null.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "domain",
+      "summary": "Check DDL pg alter domain not null notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "domain",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_domain.not_null.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_domain.rename.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "domain",
+      "summary": "Check DDL pg alter domain rename notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "domain",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_domain.rename.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_event_trigger.disable.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "event_trigger",
+      "summary": "Warn on DDL pg alter event trigger disable warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "event_trigger",
+        "warn"
+      ],
+      "config_key": "ddl.pg.alter_event_trigger.disable.warn"
+    },
+    {
+      "rule_id": "ddl.pg.alter_event_trigger.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "event_trigger",
+      "summary": "Check DDL pg alter event trigger notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "event_trigger",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_event_trigger.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_extension.add_member.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "extension",
+      "summary": "Check DDL pg alter extension add member notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "extension",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_extension.add_member.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_extension.drop_member.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "extension",
+      "summary": "Warn on DDL pg alter extension drop member warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "extension",
+        "warn"
+      ],
+      "config_key": "ddl.pg.alter_extension.drop_member.warn"
+    },
+    {
+      "rule_id": "ddl.pg.alter_extension.set_schema.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "extension",
+      "summary": "Check DDL pg alter extension set schema notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "extension",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_extension.set_schema.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_extension.update.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "extension",
+      "summary": "Check DDL pg alter extension update notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "extension",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_extension.update.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_foreign_data_wrapper.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "foreign_data_wrapper",
+      "summary": "Check DDL pg alter foreign data wrapper notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "foreign_data_wrapper",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_foreign_data_wrapper.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_foreign_server.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "foreign_server",
+      "summary": "Check DDL pg alter foreign server notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "foreign_server",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_foreign_server.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_foreign_table.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "foreign_table",
+      "summary": "Check DDL pg alter foreign table notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "foreign_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_foreign_table.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_index.rename.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "index",
+      "summary": "Check DDL pg alter index rename notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "index",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_index.rename.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_index.set_tablespace.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "index",
+      "summary": "Check DDL pg alter index set tablespace notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "index",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_index.set_tablespace.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_large_object.owner.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "large_object",
+      "summary": "Check DDL pg alter large object owner notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "large_object",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_large_object.owner.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_materialized_view.rename.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "materialized_view",
+      "summary": "Check DDL pg alter materialized view rename notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "materialized_view",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_materialized_view.rename.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_materialized_view.set_schema.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "materialized_view",
+      "summary": "Check DDL pg alter materialized view set schema notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "materialized_view",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_materialized_view.set_schema.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_operator.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "operator",
+      "summary": "Check DDL pg alter operator notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "operator",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_operator.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_operator_class.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "operator_class",
+      "summary": "Check DDL pg alter operator class notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "operator_class",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_operator_class.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_operator_family.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "operator_family",
+      "summary": "Check DDL pg alter operator family notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "operator_family",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_operator_family.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_policy.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "rls",
+      "summary": "Check DDL pg alter policy notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "rls",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_policy.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_publication.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "publication",
+      "summary": "Check DDL pg alter publication notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "publication",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_publication.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_rule.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "rewrite_rule",
+      "summary": "Check DDL pg alter rule notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "rewrite_rule",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_rule.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_schema.owner.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "schema",
+      "summary": "Check DDL pg alter schema owner notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "schema",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_schema.owner.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_schema.rename.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "schema",
+      "summary": "Check DDL pg alter schema rename notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "schema",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_schema.rename.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_sequence.cycle.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "sequence",
+      "summary": "Warn on DDL pg alter sequence cycle warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "sequence",
+        "warn"
+      ],
+      "config_key": "ddl.pg.alter_sequence.cycle.warn"
+    },
+    {
+      "rule_id": "ddl.pg.alter_sequence.restart.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "sequence",
+      "summary": "Warn on DDL pg alter sequence restart warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "sequence",
+        "warn"
+      ],
+      "config_key": "ddl.pg.alter_sequence.restart.warn"
+    },
+    {
+      "rule_id": "ddl.pg.alter_statistics.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "statistics",
+      "summary": "Check DDL pg alter statistics notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "statistics",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_statistics.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_subscription.disable.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "subscription",
+      "summary": "Warn on DDL pg alter subscription disable warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "subscription",
+        "warn"
+      ],
+      "config_key": "ddl.pg.alter_subscription.disable.warn"
+    },
+    {
+      "rule_id": "ddl.pg.alter_subscription.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "subscription",
+      "summary": "Check DDL pg alter subscription notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "subscription",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_subscription.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_text_search_configuration.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "text_search",
+      "summary": "Check DDL pg alter text search configuration notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "text_search",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_text_search_configuration.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_text_search_dictionary.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "text_search",
+      "summary": "Check DDL pg alter text search dictionary notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "text_search",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_text_search_dictionary.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_text_search_parser.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "text_search",
+      "summary": "Check DDL pg alter text search parser notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "text_search",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_text_search_parser.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_text_search_template.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "text_search",
+      "summary": "Check DDL pg alter text search template notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "text_search",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_text_search_template.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_type.add_attribute.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "type",
+      "summary": "Check DDL pg alter type add attribute notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "type",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_type.add_attribute.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_type.add_value.advisory",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "type",
+      "summary": "Check DDL pg alter type add value advisory",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "type",
+        "advisory"
+      ],
+      "config_key": "ddl.pg.alter_type.add_value.advisory"
+    },
+    {
+      "rule_id": "ddl.pg.alter_type.add_value.position.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "type",
+      "summary": "Check DDL pg alter type add value position notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "type",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_type.add_value.position.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_type.alter_attribute_type.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "type",
+      "summary": "Warn on DDL pg alter type alter attribute type warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "type",
+        "warn"
+      ],
+      "config_key": "ddl.pg.alter_type.alter_attribute_type.warn"
+    },
+    {
+      "rule_id": "ddl.pg.alter_type.composite_rename.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "type",
+      "summary": "Check DDL pg alter type composite rename notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "type",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_type.composite_rename.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_type.composite_set_schema.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "type",
+      "summary": "Check DDL pg alter type composite set schema notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "type",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_type.composite_set_schema.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_type.drop_attribute.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "type",
+      "summary": "Warn on DDL pg alter type drop attribute warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "type",
+        "warn"
+      ],
+      "config_key": "ddl.pg.alter_type.drop_attribute.warn"
+    },
+    {
+      "rule_id": "ddl.pg.alter_type.rename_attribute.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "type",
+      "summary": "Check DDL pg alter type rename attribute notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "type",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_type.rename_attribute.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_user_mapping.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "user_mapping",
+      "summary": "Check DDL pg alter user mapping notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "user_mapping",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_user_mapping.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_view.rename.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "view",
+      "summary": "Check DDL pg alter view rename notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "view",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_view.rename.notice"
+    },
+    {
+      "rule_id": "ddl.pg.alter_view.set_schema.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "view",
+      "summary": "Check DDL pg alter view set schema notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "view",
+        "notice"
+      ],
+      "config_key": "ddl.pg.alter_view.set_schema.notice"
+    },
+    {
+      "rule_id": "ddl.pg.comment_on.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "annotation",
+      "summary": "Check DDL pg comment on notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "annotation",
+        "notice"
+      ],
+      "config_key": "ddl.pg.comment_on.notice"
+    },
+    {
+      "rule_id": "ddl.pg.comment_on.remove.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "annotation",
+      "summary": "Check DDL pg comment on remove notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "annotation",
+        "notice"
+      ],
+      "config_key": "ddl.pg.comment_on.remove.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_access_method.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "access_method",
+      "summary": "Check DDL pg create access method notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "access_method",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_access_method.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_aggregate.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "aggregate",
+      "summary": "Check DDL pg create aggregate notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "aggregate",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_aggregate.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_collation.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "collation",
+      "summary": "Check DDL pg create collation notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "collation",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_collation.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_constraint_trigger.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "trigger",
+      "summary": "Warn on DDL pg create constraint trigger warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "trigger",
+        "warn"
+      ],
+      "config_key": "ddl.pg.create_constraint_trigger.warn"
+    },
+    {
+      "rule_id": "ddl.pg.create_conversion.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "conversion",
+      "summary": "Check DDL pg create conversion notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "conversion",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_conversion.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_domain.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "domain",
+      "summary": "Check DDL pg create domain notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "domain",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_domain.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_event_trigger.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "event_trigger",
+      "summary": "Check DDL pg create event trigger notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "event_trigger",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_event_trigger.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_extension.cascade.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "extension",
+      "summary": "Warn on DDL pg create extension cascade warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "extension",
+        "warn"
+      ],
+      "config_key": "ddl.pg.create_extension.cascade.warn"
+    },
+    {
+      "rule_id": "ddl.pg.create_extension.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "extension",
+      "summary": "Check DDL pg create extension notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "extension",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_extension.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_foreign_data_wrapper.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "foreign_data_wrapper",
+      "summary": "Check DDL pg create foreign data wrapper notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "foreign_data_wrapper",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_foreign_data_wrapper.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_foreign_server.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "foreign_server",
+      "summary": "Check DDL pg create foreign server notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "foreign_server",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_foreign_server.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_foreign_table.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "foreign_table",
+      "summary": "Check DDL pg create foreign table notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "foreign_table",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_foreign_table.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_function.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "function",
+      "summary": "Check DDL pg create function notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "function",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_function.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_function.security_definer.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "function",
+      "summary": "Warn on DDL pg create function security definer warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "function",
+        "warn"
+      ],
+      "config_key": "ddl.pg.create_function.security_definer.warn"
+    },
+    {
+      "rule_id": "ddl.pg.create_index.concurrently.require",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "index",
+      "summary": "Require DDL pg create index concurrently require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "index",
+        "require"
+      ],
+      "config_key": "ddl.pg.create_index.concurrently.require"
+    },
+    {
+      "rule_id": "ddl.pg.create_operator.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "operator",
+      "summary": "Check DDL pg create operator notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "operator",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_operator.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_operator_class.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "operator_class",
+      "summary": "Check DDL pg create operator class notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "operator_class",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_operator_class.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_operator_family.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "operator_family",
+      "summary": "Check DDL pg create operator family notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "operator_family",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_operator_family.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_or_replace_function.advisory",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "function",
+      "summary": "Check DDL pg create or replace function advisory",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "function",
+        "advisory"
+      ],
+      "config_key": "ddl.pg.create_or_replace_function.advisory"
+    },
+    {
+      "rule_id": "ddl.pg.create_or_replace_view.advisory",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "view",
+      "summary": "Check DDL pg create or replace view advisory",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "view",
+        "advisory"
+      ],
+      "config_key": "ddl.pg.create_or_replace_view.advisory"
+    },
+    {
+      "rule_id": "ddl.pg.create_policy.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "rls",
+      "summary": "Check DDL pg create policy notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "rls",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_policy.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_procedure.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "procedure",
+      "summary": "Check DDL pg create procedure notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "procedure",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_procedure.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_publication.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "publication",
+      "summary": "Check DDL pg create publication notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "publication",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_publication.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_rule.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "rewrite_rule",
+      "summary": "Check DDL pg create rule notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "rewrite_rule",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_rule.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_schema.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "schema",
+      "summary": "Check DDL pg create schema notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "schema",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_schema.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_sequence.cycle.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "sequence",
+      "summary": "Warn on DDL pg create sequence cycle warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "sequence",
+        "warn"
+      ],
+      "config_key": "ddl.pg.create_sequence.cycle.warn"
+    },
+    {
+      "rule_id": "ddl.pg.create_statistics.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "statistics",
+      "summary": "Check DDL pg create statistics notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "statistics",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_statistics.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_subscription.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "subscription",
+      "summary": "Check DDL pg create subscription notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "subscription",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_subscription.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_temp_view.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "view",
+      "summary": "Check DDL pg create temp view notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "view",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_temp_view.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_text_search_configuration.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "text_search",
+      "summary": "Check DDL pg create text search configuration notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "text_search",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_text_search_configuration.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_text_search_dictionary.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "text_search",
+      "summary": "Check DDL pg create text search dictionary notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "text_search",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_text_search_dictionary.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_text_search_parser.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "text_search",
+      "summary": "Check DDL pg create text search parser notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "text_search",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_text_search_parser.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_text_search_template.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "text_search",
+      "summary": "Check DDL pg create text search template notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "text_search",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_text_search_template.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_transform.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "transform",
+      "summary": "Check DDL pg create transform notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "transform",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_transform.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_trigger.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "trigger",
+      "summary": "Check DDL pg create trigger notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "trigger",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_trigger.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_type.composite.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "type",
+      "summary": "Check DDL pg create type composite notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "type",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_type.composite.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_type.enum.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "type",
+      "summary": "Check DDL pg create type enum notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "type",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_type.enum.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_user_mapping.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "user_mapping",
+      "summary": "Check DDL pg create user mapping notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "user_mapping",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_user_mapping.notice"
+    },
+    {
+      "rule_id": "ddl.pg.create_view.check_option.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "view",
+      "summary": "Check DDL pg create view check option notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "view",
+        "notice"
+      ],
+      "config_key": "ddl.pg.create_view.check_option.notice"
+    },
+    {
+      "rule_id": "ddl.pg.drop_access_method.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "access_method",
+      "summary": "Warn on DDL pg drop access method warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "access_method",
+        "warn"
+      ],
+      "config_key": "ddl.pg.drop_access_method.warn"
+    },
+    {
+      "rule_id": "ddl.pg.drop_aggregate.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "aggregate",
+      "summary": "Warn on DDL pg drop aggregate warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "aggregate",
+        "warn"
+      ],
+      "config_key": "ddl.pg.drop_aggregate.warn"
+    },
+    {
+      "rule_id": "ddl.pg.drop_collation.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "collation",
+      "summary": "Warn on DDL pg drop collation warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "collation",
+        "warn"
+      ],
+      "config_key": "ddl.pg.drop_collation.warn"
+    },
+    {
+      "rule_id": "ddl.pg.drop_conversion.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "conversion",
+      "summary": "Warn on DDL pg drop conversion warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "conversion",
+        "warn"
+      ],
+      "config_key": "ddl.pg.drop_conversion.warn"
+    },
+    {
+      "rule_id": "ddl.pg.drop_domain.advisory",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "domain",
+      "summary": "Check DDL pg drop domain advisory",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "domain",
+        "advisory"
+      ],
+      "config_key": "ddl.pg.drop_domain.advisory"
+    },
+    {
+      "rule_id": "ddl.pg.drop_domain.cascade.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "domain",
+      "summary": "Warn on DDL pg drop domain cascade warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "domain",
+        "warn"
+      ],
+      "config_key": "ddl.pg.drop_domain.cascade.warn"
+    },
+    {
+      "rule_id": "ddl.pg.drop_event_trigger.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "event_trigger",
+      "summary": "Warn on DDL pg drop event trigger warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "event_trigger",
+        "warn"
+      ],
+      "config_key": "ddl.pg.drop_event_trigger.warn"
+    },
+    {
+      "rule_id": "ddl.pg.drop_extension.advisory",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "extension",
+      "summary": "Check DDL pg drop extension advisory",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "extension",
+        "advisory"
+      ],
+      "config_key": "ddl.pg.drop_extension.advisory"
+    },
+    {
+      "rule_id": "ddl.pg.drop_extension.cascade.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "extension",
+      "summary": "Warn on DDL pg drop extension cascade warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "extension",
+        "warn"
+      ],
+      "config_key": "ddl.pg.drop_extension.cascade.warn"
+    },
+    {
+      "rule_id": "ddl.pg.drop_foreign_data_wrapper.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "foreign_data_wrapper",
+      "summary": "Warn on DDL pg drop foreign data wrapper warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "foreign_data_wrapper",
+        "warn"
+      ],
+      "config_key": "ddl.pg.drop_foreign_data_wrapper.warn"
+    },
+    {
+      "rule_id": "ddl.pg.drop_foreign_server.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "foreign_server",
+      "summary": "Warn on DDL pg drop foreign server warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "foreign_server",
+        "warn"
+      ],
+      "config_key": "ddl.pg.drop_foreign_server.warn"
+    },
+    {
+      "rule_id": "ddl.pg.drop_foreign_table.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "foreign_table",
+      "summary": "Warn on DDL pg drop foreign table warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "foreign_table",
+        "warn"
+      ],
+      "config_key": "ddl.pg.drop_foreign_table.warn"
+    },
+    {
+      "rule_id": "ddl.pg.drop_function.advisory",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "function",
+      "summary": "Check DDL pg drop function advisory",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "function",
+        "advisory"
+      ],
+      "config_key": "ddl.pg.drop_function.advisory"
+    },
+    {
+      "rule_id": "ddl.pg.drop_index.advisory",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "index",
+      "summary": "Check DDL pg drop index advisory",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "index",
+        "advisory"
+      ],
+      "config_key": "ddl.pg.drop_index.advisory"
+    },
+    {
+      "rule_id": "ddl.pg.drop_materialized_view.advisory",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "materialized_view",
+      "summary": "Check DDL pg drop materialized view advisory",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "materialized_view",
+        "advisory"
+      ],
+      "config_key": "ddl.pg.drop_materialized_view.advisory"
+    },
+    {
+      "rule_id": "ddl.pg.drop_materialized_view.cascade.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "materialized_view",
+      "summary": "Warn on DDL pg drop materialized view cascade warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "materialized_view",
+        "warn"
+      ],
+      "config_key": "ddl.pg.drop_materialized_view.cascade.warn"
+    },
+    {
+      "rule_id": "ddl.pg.drop_operator.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "operator",
+      "summary": "Warn on DDL pg drop operator warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "operator",
+        "warn"
+      ],
+      "config_key": "ddl.pg.drop_operator.warn"
+    },
+    {
+      "rule_id": "ddl.pg.drop_operator_class.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "operator_class",
+      "summary": "Warn on DDL pg drop operator class warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "operator_class",
+        "warn"
+      ],
+      "config_key": "ddl.pg.drop_operator_class.warn"
+    },
+    {
+      "rule_id": "ddl.pg.drop_operator_family.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "operator_family",
+      "summary": "Warn on DDL pg drop operator family warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "operator_family",
+        "warn"
+      ],
+      "config_key": "ddl.pg.drop_operator_family.warn"
+    },
+    {
+      "rule_id": "ddl.pg.drop_policy.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "rls",
+      "summary": "Warn on DDL pg drop policy warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "rls",
+        "warn"
+      ],
+      "config_key": "ddl.pg.drop_policy.warn"
+    },
+    {
+      "rule_id": "ddl.pg.drop_procedure.advisory",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "procedure",
+      "summary": "Check DDL pg drop procedure advisory",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "procedure",
+        "advisory"
+      ],
+      "config_key": "ddl.pg.drop_procedure.advisory"
+    },
+    {
+      "rule_id": "ddl.pg.drop_publication.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "publication",
+      "summary": "Warn on DDL pg drop publication warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "publication",
+        "warn"
+      ],
+      "config_key": "ddl.pg.drop_publication.warn"
+    },
+    {
+      "rule_id": "ddl.pg.drop_rule.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "rewrite_rule",
+      "summary": "Warn on DDL pg drop rule warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "rewrite_rule",
+        "warn"
+      ],
+      "config_key": "ddl.pg.drop_rule.warn"
+    },
+    {
+      "rule_id": "ddl.pg.drop_schema.advisory",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "schema",
+      "summary": "Check DDL pg drop schema advisory",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "schema",
+        "advisory"
+      ],
+      "config_key": "ddl.pg.drop_schema.advisory"
+    },
+    {
+      "rule_id": "ddl.pg.drop_schema.cascade.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "schema",
+      "summary": "Warn on DDL pg drop schema cascade warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "schema",
+        "warn"
+      ],
+      "config_key": "ddl.pg.drop_schema.cascade.warn"
+    },
+    {
+      "rule_id": "ddl.pg.drop_sequence.advisory",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "sequence",
+      "summary": "Check DDL pg drop sequence advisory",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "sequence",
+        "advisory"
+      ],
+      "config_key": "ddl.pg.drop_sequence.advisory"
+    },
+    {
+      "rule_id": "ddl.pg.drop_sequence.cascade.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "sequence",
+      "summary": "Warn on DDL pg drop sequence cascade warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "sequence",
+        "warn"
+      ],
+      "config_key": "ddl.pg.drop_sequence.cascade.warn"
+    },
+    {
+      "rule_id": "ddl.pg.drop_statistics.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "statistics",
+      "summary": "Warn on DDL pg drop statistics warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "statistics",
+        "warn"
+      ],
+      "config_key": "ddl.pg.drop_statistics.warn"
+    },
+    {
+      "rule_id": "ddl.pg.drop_subscription.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "subscription",
+      "summary": "Warn on DDL pg drop subscription warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "subscription",
+        "warn"
+      ],
+      "config_key": "ddl.pg.drop_subscription.warn"
+    },
+    {
+      "rule_id": "ddl.pg.drop_text_search_configuration.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "text_search",
+      "summary": "Warn on DDL pg drop text search configuration warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "text_search",
+        "warn"
+      ],
+      "config_key": "ddl.pg.drop_text_search_configuration.warn"
+    },
+    {
+      "rule_id": "ddl.pg.drop_text_search_dictionary.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "text_search",
+      "summary": "Warn on DDL pg drop text search dictionary warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "text_search",
+        "warn"
+      ],
+      "config_key": "ddl.pg.drop_text_search_dictionary.warn"
+    },
+    {
+      "rule_id": "ddl.pg.drop_text_search_parser.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "text_search",
+      "summary": "Warn on DDL pg drop text search parser warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "text_search",
+        "warn"
+      ],
+      "config_key": "ddl.pg.drop_text_search_parser.warn"
+    },
+    {
+      "rule_id": "ddl.pg.drop_text_search_template.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "text_search",
+      "summary": "Warn on DDL pg drop text search template warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "text_search",
+        "warn"
+      ],
+      "config_key": "ddl.pg.drop_text_search_template.warn"
+    },
+    {
+      "rule_id": "ddl.pg.drop_transform.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "transform",
+      "summary": "Warn on DDL pg drop transform warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "transform",
+        "warn"
+      ],
+      "config_key": "ddl.pg.drop_transform.warn"
+    },
+    {
+      "rule_id": "ddl.pg.drop_trigger.advisory",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "trigger",
+      "summary": "Check DDL pg drop trigger advisory",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "trigger",
+        "advisory"
+      ],
+      "config_key": "ddl.pg.drop_trigger.advisory"
+    },
+    {
+      "rule_id": "ddl.pg.drop_type.advisory",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "type",
+      "summary": "Check DDL pg drop type advisory",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "type",
+        "advisory"
+      ],
+      "config_key": "ddl.pg.drop_type.advisory"
+    },
+    {
+      "rule_id": "ddl.pg.drop_type.cascade.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "type",
+      "summary": "Warn on DDL pg drop type cascade warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "type",
+        "warn"
+      ],
+      "config_key": "ddl.pg.drop_type.cascade.warn"
+    },
+    {
+      "rule_id": "ddl.pg.drop_user_mapping.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "user_mapping",
+      "summary": "Warn on DDL pg drop user mapping warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "user_mapping",
+        "warn"
+      ],
+      "config_key": "ddl.pg.drop_user_mapping.warn"
+    },
+    {
+      "rule_id": "ddl.pg.drop_view.cascade.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "view",
+      "summary": "Warn on DDL pg drop view cascade warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "view",
+        "warn"
+      ],
+      "config_key": "ddl.pg.drop_view.cascade.warn"
+    },
+    {
+      "rule_id": "ddl.pg.grant.table_privilege.all.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "privilege",
+      "summary": "Warn on DDL pg grant table privilege all warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "privilege",
+        "warn"
+      ],
+      "config_key": "ddl.pg.grant.table_privilege.all.warn"
+    },
+    {
+      "rule_id": "ddl.pg.grant.table_privilege.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "privilege",
+      "summary": "Check DDL pg grant table privilege notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "privilege",
+        "notice"
+      ],
+      "config_key": "ddl.pg.grant.table_privilege.notice"
+    },
+    {
+      "rule_id": "ddl.pg.refresh_materialized_view.concurrently.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "materialized_view",
+      "summary": "Warn on DDL pg refresh materialized view concurrently warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "materialized_view",
+        "warn"
+      ],
+      "config_key": "ddl.pg.refresh_materialized_view.concurrently.warn"
+    },
+    {
+      "rule_id": "ddl.pg.refresh_materialized_view.no_data.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "materialized_view",
+      "summary": "Check DDL pg refresh materialized view no data notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "materialized_view",
+        "notice"
+      ],
+      "config_key": "ddl.pg.refresh_materialized_view.no_data.notice"
+    },
+    {
+      "rule_id": "ddl.pg.revoke.table_privilege.cascade.warn",
+      "level": "warning",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "privilege",
+      "summary": "Warn on DDL pg revoke table privilege cascade warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "privilege",
+        "warn"
+      ],
+      "config_key": "ddl.pg.revoke.table_privilege.cascade.warn"
+    },
+    {
+      "rule_id": "ddl.pg.revoke.table_privilege.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "privilege",
+      "summary": "Check DDL pg revoke table privilege notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "privilege",
+        "notice"
+      ],
+      "config_key": "ddl.pg.revoke.table_privilege.notice"
+    },
+    {
+      "rule_id": "ddl.pg.security_label.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "annotation",
+      "summary": "Check DDL pg security label notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "annotation",
+        "notice"
+      ],
+      "config_key": "ddl.pg.security_label.notice"
+    },
+    {
+      "rule_id": "ddl.pg.security_label.remove.notice",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "annotation",
+      "summary": "Check DDL pg security label remove notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "annotation",
+        "notice"
+      ],
+      "config_key": "ddl.pg.security_label.remove.notice"
+    },
+    {
+      "rule_id": "ddl.pg.table.foreign_key.cross_schema.advisory",
+      "level": "notice",
+      "dialect": "postgresql",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Check DDL pg table foreign key cross schema advisory",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "postgresql",
+        "table",
+        "advisory"
+      ],
+      "config_key": "ddl.pg.table.foreign_key.cross_schema.advisory"
+    },
+    {
+      "rule_id": "ddl.rename_table.notice",
+      "level": "notice",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Check DDL rename table notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table",
+        "notice"
+      ],
+      "config_key": "ddl.rename_table.notice"
+    },
+    {
+      "rule_id": "ddl.revoke.notice",
+      "level": "notice",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "privilege",
+      "summary": "Check DDL revoke notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "privilege",
+        "notice"
+      ],
+      "config_key": "ddl.revoke.notice"
+    },
+    {
+      "rule_id": "ddl.table.audit_columns.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Require DDL table audit columns require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table",
+        "require"
+      ],
+      "config_key": "ddl.table.audit_columns.require"
+    },
+    {
+      "rule_id": "ddl.table.auto_increment.init_value.require",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Require DDL table auto increment init value require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table",
+        "require"
+      ],
+      "config_key": "ddl.table.auto_increment.init_value.require"
+    },
+    {
+      "rule_id": "ddl.table.charset.allowlist",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Restrict DDL table charset allowlist",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table"
+      ],
+      "config_key": "ddl.table.charset.allowlist"
+    },
+    {
+      "rule_id": "ddl.table.collation.allowlist",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Restrict DDL table collation allowlist",
+      "enabled": false,
+      "tags": [
+        "ddl",
+        "common",
+        "table"
+      ],
+      "config_key": "ddl.table.collation.allowlist"
+    },
+    {
+      "rule_id": "ddl.table.columns.min_count",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Check DDL table columns min count",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table"
+      ],
+      "config_key": "ddl.table.columns.min_count"
+    },
+    {
+      "rule_id": "ddl.table.comment.max_length",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Limit DDL table comment max length",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table"
+      ],
+      "config_key": "ddl.table.comment.max_length"
+    },
+    {
+      "rule_id": "ddl.table.comment.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Require DDL table comment require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table",
+        "require"
+      ],
+      "config_key": "ddl.table.comment.require"
+    },
+    {
+      "rule_id": "ddl.table.create_as.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Forbid DDL table create as forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table",
+        "forbid"
+      ],
+      "config_key": "ddl.table.create_as.forbid"
+    },
+    {
+      "rule_id": "ddl.table.create_like.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Forbid DDL table create like forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table",
+        "forbid"
+      ],
+      "config_key": "ddl.table.create_like.forbid"
+    },
+    {
+      "rule_id": "ddl.table.denylist.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Forbid DDL table denylist forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table",
+        "forbid"
+      ],
+      "config_key": "ddl.table.denylist.forbid"
+    },
+    {
+      "rule_id": "ddl.table.drop.adaptive_hash.warn",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Warn on DDL table drop adaptive hash warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table",
+        "warn"
+      ],
+      "config_key": "ddl.table.drop.adaptive_hash.warn"
+    },
+    {
+      "rule_id": "ddl.table.drop.exists.require",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Require DDL table drop exists require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table",
+        "require"
+      ],
+      "config_key": "ddl.table.drop.exists.require"
+    },
+    {
+      "rule_id": "ddl.table.drop.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Forbid DDL table drop forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table",
+        "forbid"
+      ],
+      "config_key": "ddl.table.drop.forbid"
+    },
+    {
+      "rule_id": "ddl.table.drop.rows.max_count",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Limit DDL table drop rows max count",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table"
+      ],
+      "config_key": "ddl.table.drop.rows.max_count"
+    },
+    {
+      "rule_id": "ddl.table.engine.allowlist",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Restrict DDL table engine allowlist",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table"
+      ],
+      "config_key": "ddl.table.engine.allowlist"
+    },
+    {
+      "rule_id": "ddl.table.exists.alter.require",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Require DDL table exists alter require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table",
+        "require"
+      ],
+      "config_key": "ddl.table.exists.alter.require"
+    },
+    {
+      "rule_id": "ddl.table.exists.create.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Forbid DDL table exists create forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table",
+        "forbid"
+      ],
+      "config_key": "ddl.table.exists.create.forbid"
+    },
+    {
+      "rule_id": "ddl.table.foreign_key.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Forbid DDL table foreign key forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table",
+        "forbid"
+      ],
+      "config_key": "ddl.table.foreign_key.forbid"
+    },
+    {
+      "rule_id": "ddl.table.name.contains.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Require DDL table name contains require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table",
+        "require"
+      ],
+      "config_key": "ddl.table.name.contains.require"
+    },
+    {
+      "rule_id": "ddl.table.name.keyword.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Forbid DDL table name keyword forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table",
+        "forbid"
+      ],
+      "config_key": "ddl.table.name.keyword.forbid"
+    },
+    {
+      "rule_id": "ddl.table.name.max_length",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Limit DDL table name max length",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table"
+      ],
+      "config_key": "ddl.table.name.max_length"
+    },
+    {
+      "rule_id": "ddl.table.name.pattern.require",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Require DDL table name pattern require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table",
+        "require"
+      ],
+      "config_key": "ddl.table.name.pattern.require"
+    },
+    {
+      "rule_id": "ddl.table.name.prefix.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Require DDL table name prefix require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table",
+        "require"
+      ],
+      "config_key": "ddl.table.name.prefix.require"
+    },
+    {
+      "rule_id": "ddl.table.name.suffix.require",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Require DDL table name suffix require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table",
+        "require"
+      ],
+      "config_key": "ddl.table.name.suffix.require"
+    },
+    {
+      "rule_id": "ddl.table.partition.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Forbid DDL table partition forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table",
+        "forbid"
+      ],
+      "config_key": "ddl.table.partition.forbid"
+    },
+    {
+      "rule_id": "ddl.table.primary_key.auto_increment.require",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Require DDL table primary key auto increment require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table",
+        "require"
+      ],
+      "config_key": "ddl.table.primary_key.auto_increment.require"
+    },
+    {
+      "rule_id": "ddl.table.primary_key.bigint.require",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Require DDL table primary key bigint require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table",
+        "require"
+      ],
+      "config_key": "ddl.table.primary_key.bigint.require"
+    },
+    {
+      "rule_id": "ddl.table.primary_key.columns.max_count",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Limit DDL table primary key columns max count",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table"
+      ],
+      "config_key": "ddl.table.primary_key.columns.max_count"
+    },
+    {
+      "rule_id": "ddl.table.primary_key.not_null.require",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Require DDL table primary key not null require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table",
+        "require"
+      ],
+      "config_key": "ddl.table.primary_key.not_null.require"
+    },
+    {
+      "rule_id": "ddl.table.primary_key.require",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Require DDL table primary key require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table",
+        "require"
+      ],
+      "config_key": "ddl.table.primary_key.require"
+    },
+    {
+      "rule_id": "ddl.table.primary_key.unsigned.require",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Require DDL table primary key unsigned require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table",
+        "require"
+      ],
+      "config_key": "ddl.table.primary_key.unsigned.require"
+    },
+    {
+      "rule_id": "ddl.table.row_format.allowlist",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Restrict DDL table row format allowlist",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table"
+      ],
+      "config_key": "ddl.table.row_format.allowlist"
+    },
+    {
+      "rule_id": "ddl.table.row_size.max_bytes.require",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Require DDL table row size max bytes require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table",
+        "require"
+      ],
+      "config_key": "ddl.table.row_size.max_bytes.require"
+    },
+    {
+      "rule_id": "ddl.table.truncate.adaptive_hash.warn",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Warn on DDL table truncate adaptive hash warn",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table",
+        "warn"
+      ],
+      "config_key": "ddl.table.truncate.adaptive_hash.warn"
+    },
+    {
+      "rule_id": "ddl.table.truncate.exists.require",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Require DDL table truncate exists require",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table",
+        "require"
+      ],
+      "config_key": "ddl.table.truncate.exists.require"
+    },
+    {
+      "rule_id": "ddl.table.truncate.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Forbid DDL table truncate forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table",
+        "forbid"
+      ],
+      "config_key": "ddl.table.truncate.forbid"
+    },
+    {
+      "rule_id": "ddl.table.truncate.rows.max_count",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "table",
+      "summary": "Limit DDL table truncate rows max count",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "table"
+      ],
+      "config_key": "ddl.table.truncate.rows.max_count"
+    },
+    {
+      "rule_id": "ddl.tidb.alter_table.placement_policy.notice",
+      "level": "notice",
+      "dialect": "tidb",
+      "kind": "ddl",
+      "category": "alter_table",
+      "summary": "Check DDL tidb alter table placement policy notice",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "tidb",
+        "alter_table",
+        "notice"
+      ],
+      "config_key": "ddl.tidb.alter_table.placement_policy.notice"
+    },
+    {
+      "rule_id": "ddl.view.create.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "view",
+      "summary": "Forbid DDL view create forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "view",
+        "forbid"
+      ],
+      "config_key": "ddl.view.create.forbid"
+    },
+    {
+      "rule_id": "ddl.view.drop.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "ddl",
+      "category": "view",
+      "summary": "Forbid DDL view drop forbid",
+      "enabled": true,
+      "tags": [
+        "ddl",
+        "common",
+        "view",
+        "forbid"
+      ],
+      "config_key": "ddl.view.drop.forbid"
+    },
+    {
+      "rule_id": "dml.impact.estimate",
+      "level": "notice",
+      "dialect": "common",
+      "kind": "dml",
+      "category": "dml_safety",
+      "summary": "Check DML impact estimate",
+      "enabled": false,
+      "tags": [
+        "dml",
+        "common",
+        "dml_safety"
+      ],
+      "config_key": "dml.impact.estimate"
+    },
+    {
+      "rule_id": "dml.impact.ratio.max_percent",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "dml",
+      "category": "dml_safety",
+      "summary": "Check DML impact ratio max percent",
+      "enabled": false,
+      "tags": [
+        "dml",
+        "common",
+        "dml_safety"
+      ],
+      "config_key": "dml.impact.ratio.max_percent"
+    },
+    {
+      "rule_id": "dml.impact.rows.max_count",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "dml",
+      "category": "dml_safety",
+      "summary": "Limit DML impact rows max count",
+      "enabled": false,
+      "tags": [
+        "dml",
+        "common",
+        "dml_safety"
+      ],
+      "config_key": "dml.impact.rows.max_count"
+    },
+    {
+      "rule_id": "dml.insert.on_duplicate.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "dml",
+      "category": "dml_safety",
+      "summary": "Forbid DML insert on duplicate forbid",
+      "enabled": true,
+      "tags": [
+        "dml",
+        "common",
+        "dml_safety",
+        "forbid"
+      ],
+      "config_key": "dml.insert.on_duplicate.forbid"
+    },
+    {
+      "rule_id": "dml.insert.rows.max_count",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "dml",
+      "category": "dml_safety",
+      "summary": "Limit DML insert rows max count",
+      "enabled": true,
+      "tags": [
+        "dml",
+        "common",
+        "dml_safety"
+      ],
+      "config_key": "dml.insert.rows.max_count"
+    },
+    {
+      "rule_id": "dml.insert.select.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "dml",
+      "category": "dml_safety",
+      "summary": "Forbid DML insert select forbid",
+      "enabled": true,
+      "tags": [
+        "dml",
+        "common",
+        "dml_safety",
+        "forbid"
+      ],
+      "config_key": "dml.insert.select.forbid"
+    },
+    {
+      "rule_id": "dml.join.on.require",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "dml",
+      "category": "dml_safety",
+      "summary": "Require DML join on require",
+      "enabled": true,
+      "tags": [
+        "dml",
+        "common",
+        "dml_safety",
+        "require"
+      ],
+      "config_key": "dml.join.on.require"
+    },
+    {
+      "rule_id": "dml.limit.forbid",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "dml",
+      "category": "dml_safety",
+      "summary": "Forbid DML limit forbid",
+      "enabled": true,
+      "tags": [
+        "dml",
+        "common",
+        "dml_safety",
+        "forbid"
+      ],
+      "config_key": "dml.limit.forbid"
+    },
+    {
+      "rule_id": "dml.order_by.forbid",
+      "level": "warning",
+      "dialect": "common",
+      "kind": "dml",
+      "category": "dml_safety",
+      "summary": "Forbid DML order by forbid",
+      "enabled": true,
+      "tags": [
+        "dml",
+        "common",
+        "dml_safety",
+        "forbid"
+      ],
+      "config_key": "dml.order_by.forbid"
+    },
+    {
+      "rule_id": "dml.replace.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "dml",
+      "category": "dml_safety",
+      "summary": "Forbid DML replace forbid",
+      "enabled": true,
+      "tags": [
+        "dml",
+        "common",
+        "dml_safety",
+        "forbid"
+      ],
+      "config_key": "dml.replace.forbid"
+    },
+    {
+      "rule_id": "dml.subquery.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "dml",
+      "category": "dml_safety",
+      "summary": "Forbid DML subquery forbid",
+      "enabled": true,
+      "tags": [
+        "dml",
+        "common",
+        "dml_safety",
+        "forbid"
+      ],
+      "config_key": "dml.subquery.forbid"
+    },
+    {
+      "rule_id": "dml.table.denylist.forbid",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "dml",
+      "category": "dml_safety",
+      "summary": "Forbid DML table denylist forbid",
+      "enabled": true,
+      "tags": [
+        "dml",
+        "common",
+        "dml_safety",
+        "forbid"
+      ],
+      "config_key": "dml.table.denylist.forbid"
+    },
+    {
+      "rule_id": "dml.table.exists.require",
+      "level": "blocker",
+      "dialect": "mysql,tidb",
+      "kind": "dml",
+      "category": "dml_safety",
+      "summary": "Require DML table exists require",
+      "enabled": true,
+      "tags": [
+        "dml",
+        "mysql",
+        "tidb",
+        "dml_safety",
+        "require"
+      ],
+      "config_key": "dml.table.exists.require"
+    },
+    {
+      "rule_id": "dml.where.require",
+      "level": "blocker",
+      "dialect": "common",
+      "kind": "dml",
+      "category": "dml_safety",
+      "summary": "Require DML where require",
+      "enabled": true,
+      "tags": [
+        "dml",
+        "common",
+        "dml_safety",
+        "require"
+      ],
+      "config_key": "dml.where.require"
+    }
+  ]
+}

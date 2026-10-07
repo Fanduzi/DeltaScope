@@ -1,0 +1,1 @@
+go test -count=1 ./pkg/deltascope ./internal/interfaces/http ./internal/interfaces/cli ./internal/interfaces/mcp

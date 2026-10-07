@@ -1,0 +1,10 @@
+deltascope: go1.26.1
+	path	github.com/Fanduzi/DeltaScope/cmd/deltascope
+	mod	github.com/Fanduzi/DeltaScope	v0.511.2-0.20261007111214-25c4eaa26fea+dirty	
+	dep	github.com/coreos/go-semver	v0.3.1	h1:yi21YpKnrx1gt5R+la8n5WgS0kCrsPp33dmEyHReZr4=
+	dep	github.com/fsnotify/fsnotify	v1.9.0	h1:2Ml+OJNzbYCTzsxtv8vKSFD9PbJjmhYF14k/jKC7S9k=
+	dep	github.com/go-sql-driver/mysql	v1.7.1	h1:lUIinVbN1DY0xBg0eMOzmmtGoHwWBbvnWubQUrtU8EI=
+	dep	github.com/go-viper/mapstructure/v2	v2.5.0	h1:vM5IJoUAy3d7zRSVtIwQgBj7BiWtMPfmPEgAXnvj1Ro=
+	dep	github.com/jackc/pgpassfile	v1.0.0	h1:/6Hmqy13Ss2zCq62VdNG8tM1wchn8zjSGOBJ6icpsIM=
+git HEAD at build time: 25c4eaa26fea9dbb0d649d5a3dd66c450d99c992 (worktree dirty via pre-existing untracked env dirs)
+7c75d0ae385ff7cecab0bcaa8d9e8c5e2aed8869b0e11dacbe0de6b56f3dcfa9  deltascope

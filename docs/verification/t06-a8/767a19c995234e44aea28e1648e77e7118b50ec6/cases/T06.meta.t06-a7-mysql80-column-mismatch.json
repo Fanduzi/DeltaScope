@@ -1,0 +1,411 @@
+{
+  "case_id": "T06.meta.t06-a7-mysql80-column-mismatch",
+  "kind": "cli_metadata",
+  "cli_case": "t06-a7-mysql80-column-mismatch",
+  "anchor": "mysql80",
+  "dialect": "mysql",
+  "input_sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE latin1_bin);",
+  "policy_profile": "t06-a7-column-match-isolated",
+  "policy_path": "/private/tmp/ds-t06-a8-golden/T06/golden-policy-t06-a7-column-match-isolated.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "schema": "golden"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "statement_sql": [
+      "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE latin1_bin);"
+    ],
+    "statement_indices": [
+      0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.column.charset_collation.match.require",
+        "level": "blocker"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 0,
+        "rule_id": "ddl.column.charset_collation.match.require",
+        "metadata": {
+          "table": "t",
+          "column": "c",
+          "charset": "utf8mb4",
+          "collation": "latin1_bin"
+        }
+      }
+    ],
+    "finding_locations": [
+      {
+        "index": 0,
+        "line": 1,
+        "column": 1
+      }
+    ],
+    "finding_message": "column \"c\" collation \"latin1_bin\" must match charset \"utf8mb4\"",
+    "instance_facts": {
+      "sql_require_primary_key": "OFF",
+      "sql_generate_invisible_primary_key": "OFF",
+      "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:8.0.46",
+      "image_digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+      "container": "deltascope-ddl-golden-mysql80",
+      "reachable": true,
+      "version": "8.0.46"
+    },
+    "setup": [
+      {
+        "name": "ensure t absent",
+        "sql": "DROP TABLE IF EXISTS t",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "verify": [
+          {
+            "assert": "t absent before audit",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ]
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit did not create t",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "0",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      }
+    ],
+    "execute": [
+      {
+        "name": "driver rejects the mismatched collation",
+        "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE latin1_bin);",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1253 (42000) at line 1: COLLATION 'latin1_bin' is not valid for CHARACTER SET 'utf8mb4'",
+        "verify": [
+          {
+            "assert": "t absent after rejected create",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ]
+      }
+    ],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "drop fixture",
+        "sql": "DROP TABLE IF EXISTS t",
+        "rc": 0,
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "verify": [
+          {
+            "assert": "no residual t",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ]
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE latin1_bin);\",\"normalized_sql\":\"CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE latin1_bin)\",\"findings\":[{\"rule_id\":\"ddl.column.charset_collation.match.require\",\"level\":\"blocker\",\"message\":\"column \\\"c\\\" collation \\\"latin1_bin\\\" must match charset \\\"utf8mb4\\\"\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"choose a collation whose prefix matches the configured charset\",\"metadata\":{\"charset\":\"utf8mb4\",\"collation\":\"latin1_bin\",\"column\":\"c\",\"table\":\"t\"},\"explanation\":{\"summary\":\"Require DDL column charset collation match require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"choose a collation whose prefix matches the configured charset\"}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.0.46\",\"major\":8,\"minor\":0,\"patch\":46,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE latin1_bin);",
+          "normalized_sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE latin1_bin)",
+          "findings": [
+            {
+              "rule_id": "ddl.column.charset_collation.match.require",
+              "level": "blocker",
+              "message": "column \"c\" collation \"latin1_bin\" must match charset \"utf8mb4\"",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "choose a collation whose prefix matches the configured charset",
+              "metadata": {
+                "charset": "utf8mb4",
+                "collation": "latin1_bin",
+                "column": "c",
+                "table": "t"
+              },
+              "explanation": {
+                "summary": "Require DDL column charset collation match require",
+                "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "choose a collation whose prefix matches the configured charset"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.46",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "8.0.46"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      }
+    },
+    "instance_facts": {
+      "sql_require_primary_key": "OFF",
+      "sql_generate_invisible_primary_key": "OFF",
+      "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.46' expected_contains='8.0.46'"
+    },
+    {
+      "name": "setup ensure t absent return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "setup ensure t absent: t absent before audit",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "instance fact sql_require_primary_key",
+      "ok": true,
+      "detail": "sql_require_primary_key='OFF' expected='OFF'"
+    },
+    {
+      "name": "instance fact sql_generate_invisible_primary_key",
+      "ok": true,
+      "detail": "sql_generate_invisible_primary_key='OFF' expected='OFF'"
+    },
+    {
+      "name": "instance fact show_gipk_in_create_table_and_information_schema",
+      "ok": true,
+      "detail": "show_gipk_in_create_table_and_information_schema='ON' expected='ON'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=1"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE latin1_bin);'] expected=['CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE latin1_bin);']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.column.charset_collation.match.require', 'blocker')] expected=[(0, 'ddl.column.charset_collation.match.require', 'blocker')]"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.column.charset_collation.match.require')",
+      "ok": true,
+      "detail": "findings=[{'charset': 'utf8mb4', 'collation': 'latin1_bin', 'column': 'c', 'table': 't'}] expected_subset={'table': 't', 'column': 'c', 'charset': 'utf8mb4', 'collation': 'latin1_bin'}"
+    },
+    {
+      "name": "finding location index=0",
+      "ok": true,
+      "detail": "locations=[{'line': 1, 'column': 1}] expected={'index': 0, 'line': 1, 'column': 1}"
+    },
+    {
+      "name": "fail_on_triggered",
+      "ok": true,
+      "detail": "fail_on_triggered=True"
+    },
+    {
+      "name": "post-verify audit did not create t",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute driver rejects the mismatched collation return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"mysql: [Warning] Using a password on the command line interface can be insecure.\\nERROR 1253 (42000) at line 1: COLLATION 'latin1_bin' is not valid for CHARACTER SET 'utf8mb4'\""
+    },
+    {
+      "name": "execute driver rejects the mismatched collation stderr marker",
+      "ok": true,
+      "detail": "ERROR 1253"
+    },
+    {
+      "name": "execute driver rejects the mismatched collation: t absent after rejected create",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "teardown drop fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "teardown drop fixture: no residual t",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ds-t06-a8-golden/T06/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE latin1_bin);",
+    "--config",
+    "/private/tmp/ds-t06-a8-golden/T06/golden-policy-t06-a7-column-match-isolated.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23380",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T06_GOLDEN_PW",
+    "--schema",
+    "golden",
+    "--fail-on",
+    "blocker"
+  ]
+}

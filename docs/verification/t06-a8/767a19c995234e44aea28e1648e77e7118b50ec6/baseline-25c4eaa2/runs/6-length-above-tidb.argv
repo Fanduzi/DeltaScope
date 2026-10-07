@@ -1,0 +1,1 @@
+/tmp/ds-t06-a8/deltascope audit --dialect tidb --sql 'CREATE TABLE t (c INT) COMMENT='123456789';' --config policies/P_LENGTH.yaml --format json --fail-on blocker
