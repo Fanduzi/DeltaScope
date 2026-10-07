@@ -9,6 +9,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"unicode/utf8"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
@@ -41,7 +42,7 @@ func (r tableCommentMaxLengthRule) Evaluate(ctx context.Context, statement spec.
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
-	actual := len(statement.DDL.Table.Comment)
+	actual := utf8.RuneCountInString(statement.DDL.Table.Comment)
 	if actual == 0 || actual <= r.limit {
 		return nil, nil
 	}

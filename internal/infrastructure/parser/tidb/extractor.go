@@ -1,6 +1,6 @@
 // Package tidbparser extracts parser-neutral statements from TiDB AST nodes.
 // input: TiDB parser statement nodes and parser-neutral dialect metadata
-// output: extractor-backed parsed statements for the application layer, including MutationTargets and mutation-target-only DML tables, normalized ALTER index/constraint actions, multi-target DDL Targets for DROP/RENAME/ALTER-rename, temporary-table scope facts, typed and unextracted column-option facts, primary-key metadata, inline PRIMARY KEY presence on column-change facts, and if_exists/if_not_exists option markers for conditional-existence derivation
+// output: extractor-backed parsed statements for the application layer, including MutationTargets and mutation-target-only DML tables, normalized ALTER index/constraint actions, multi-target DDL Targets for DROP/RENAME/ALTER-rename, temporary-table scope facts, typed and unextracted column-option facts, primary-key metadata, inline PRIMARY KEY presence on column-change facts, parser-decoded COMMENT string content (no SQL quote wrapping), and if_exists/if_not_exists option markers for conditional-existence derivation
 // pos: infrastructure extraction adapter between TiDB AST and domain spec
 // note: if this file changes, update this header and module README.md.
 package tidbparser
@@ -651,9 +651,7 @@ func extractColumn(col *ast.ColumnDef) spec.Column {
 		case ast.ColumnOptionCollate:
 			column.Collation = strings.ToLower(option.StrValue)
 		case ast.ColumnOptionComment:
-			if option.Expr != nil {
-				column.Comment = normalizedExprText(option.Expr)
-			}
+			column.Comment = decodedStringValue(option.Expr)
 		case ast.ColumnOptionNotNull:
 			column.NotNull = true
 		case ast.ColumnOptionPrimaryKey:
@@ -1539,6 +1537,19 @@ func exprIsNullLiteral(expr ast.ExprNode) bool {
 		return false
 	}
 	return valueExpr.GetValue() == nil
+}
+
+// decodedStringValue returns the parser-decoded string content of a literal
+// expression — no SQL quoting, no re-escaping, no trimming. Non-string or
+// non-literal expressions (including nil) yield ""; they never become
+// comment content through fmt.Sprint.
+func decodedStringValue(expr ast.ExprNode) string {
+	if valueExpr, ok := expr.(ast.ValueExpr); ok {
+		if value, ok := valueExpr.GetValue().(string); ok {
+			return value
+		}
+	}
+	return ""
 }
 
 func normalizedExprText(expr ast.ExprNode) string {

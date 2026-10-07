@@ -2574,6 +2574,44 @@ def t06_a7_column_sql(declared):
         return "CREATE TABLE t (c VARCHAR(16) " + declared + ");"
     return "CREATE TABLE t (c VARCHAR(16));"
 
+# T06-A8 (issue #85): comment declaration fidelity. Column.Comment stores the
+# parser-decoded string content (no SQL quote wrapping), the table comment
+# max_length rule counts Unicode code points (utf8.RuneCountInString), and the
+# derived CREATE shape carries Table.Comment. The anchored cases pin the raw
+# stored comment plus its CHAR_LENGTH/OCTET_LENGTH/HEX triple so a missing row
+# or a NULL can never pass as an empty string, and SET NAMES utf8mb4 makes the
+# multibyte delivery encoding an explicit recorded fact.
+T06_A8_TABLE_PROFILE = "t06-a8-table-comment-required"
+T06_A8_COLUMN_PROFILE = "t06-a8-column-comment-required"
+T06_A8_LENGTH_PROFILE = "t06-a8-table-comment-length"
+T06_A8_TABLE_RULE = "ddl.table.comment.require"
+T06_A8_COLUMN_RULE = "ddl.column.comment.require"
+T06_A8_LENGTH_RULE = "ddl.table.comment.max_length"
+T06_A8_TABLE_MESSAGE = "table comment is required"
+T06_A8_COLUMN_MESSAGE = 'column "c" must include a comment'
+T06_A8_LENGTH_MESSAGE = "table comment must not exceed 8 characters"
+T06_A8_TABLE_COMMENT_STATS = (
+    "SELECT CONCAT_WS(':', CHAR_LENGTH(TABLE_COMMENT), "
+    "OCTET_LENGTH(TABLE_COMMENT), HEX(TABLE_COMMENT)) "
+    "FROM information_schema.TABLES "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'"
+)
+T06_A8_COLUMN_COMMENT_STATS = (
+    "SELECT CONCAT_WS(':', CHAR_LENGTH(COLUMN_COMMENT), "
+    "OCTET_LENGTH(COLUMN_COMMENT), HEX(COLUMN_COMMENT)) "
+    "FROM information_schema.COLUMNS "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'"
+)
+T06_A8_TABLE_COMMENT_RAW = (
+    "SET NAMES utf8mb4; SELECT TABLE_COMMENT FROM information_schema.TABLES "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'"
+)
+T06_A8_COLUMN_COMMENT_RAW = (
+    "SET NAMES utf8mb4; SELECT COLUMN_COMMENT FROM information_schema.COLUMNS "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'"
+)
+T06_A8_DELIVER_CHARSET = "SET NAMES utf8mb4; SELECT @@character_set_client; "
+
 T06_ANCHORS = {
     "mysql57": {
         "service": "mysql57",
@@ -2693,8 +2731,14 @@ T06_SYNTAX_NEGATIVE = {
 def t06_a1_contract():
     """Frozen T06 oracle (issue #85): the accepted A1 32-case subset, the
     A2 24-case subset, the A3 16-case subset, the A4 12-case subset, the
-    A5 40-case subset, and the A7 64-case subset — 188 cases total. A1
-    baseline cases reuse the T02 batch verbatim; the offline controls pin
+    A5 40-case subset, the A7 64-case subset, and the A8 40-case subset —
+    228 cases total. The A8 subset pins comment declaration fidelity: a
+    24-case offline matrix isolates the two presence rules and the
+    code-point length rule across both dialects, and 16 anchored roles
+    prove stored comments arrive losslessly (raw text plus
+    CHAR_LENGTH/OCTET_LENGTH/HEX) even when the policy rejects the audit.
+
+    A1 baseline cases reuse the T02 batch verbatim; the offline controls pin
     the isolated policy profiles; the anchored cases pin the
     information_schema structure oracle.
 
@@ -3030,6 +3074,70 @@ def t06_a1_contract():
         for variant, profile, sql, finding in a7_table_matrix:
             case = {
                 "id": f"t06-a7-{dialect}-{variant}",
+                "dialect": dialect,
+                "sql": sql,
+                "args": ["--fail-on", "blocker"],
+            }
+            if profile:
+                case["policy"] = profile
+                case["expect"] = audit_expect(
+                    sql, finding is not None, loaded=1, finding=finding)
+            else:
+                case["expect"] = audit_expect(sql, False)
+            cli_cases.append(case)
+
+    # T06-A8 (issue #85): twelve offline roles pin comment declaration
+    # semantics — presence rules stay per-field (a table comment never
+    # satisfies the column rule and vice versa), explicit empty and
+    # whitespace-only column comments are "missing" because the require rule
+    # trims the decoded content, and the max_length rule counts code points
+    # so a three-rune Chinese comment is under the limit where nine UTF-8
+    # bytes used to reject it.
+    a8_table_finding = {
+        "rule_id": T06_A8_TABLE_RULE,
+        "message": T06_A8_TABLE_MESSAGE,
+        "metadata": {"table": "t"},
+    }
+    a8_column_finding = {
+        "rule_id": T06_A8_COLUMN_RULE,
+        "message": T06_A8_COLUMN_MESSAGE,
+        "metadata": {"table": "t", "column": "c"},
+    }
+    a8_length_finding = {
+        "rule_id": T06_A8_LENGTH_RULE,
+        "message": T06_A8_LENGTH_MESSAGE,
+        "metadata": {"table": "t", "limit": 8, "actual": 9},
+    }
+    a8_matrix = (
+        ("table-missing", T06_A8_TABLE_PROFILE,
+         "CREATE TABLE t (c INT);", a8_table_finding),
+        ("table-present", T06_A8_TABLE_PROFILE,
+         "CREATE TABLE t (c INT) COMMENT='中文注';", None),
+        ("column-missing", T06_A8_COLUMN_PROFILE,
+         "CREATE TABLE t (c INT);", a8_column_finding),
+        ("column-present", T06_A8_COLUMN_PROFILE,
+         "CREATE TABLE t (c INT COMMENT '中文注');", None),
+        ("column-empty", T06_A8_COLUMN_PROFILE,
+         "CREATE TABLE t (c INT COMMENT '');", a8_column_finding),
+        ("column-blank", T06_A8_COLUMN_PROFILE,
+         "CREATE TABLE t (c INT COMMENT '   ');", a8_column_finding),
+        ("length-at", T06_A8_LENGTH_PROFILE,
+         "CREATE TABLE t (c INT) COMMENT='12345678';", None),
+        ("length-above", T06_A8_LENGTH_PROFILE,
+         "CREATE TABLE t (c INT) COMMENT='123456789';", a8_length_finding),
+        ("length-multibyte", T06_A8_LENGTH_PROFILE,
+         "CREATE TABLE t (c INT) COMMENT='中文注';", None),
+        ("length-multibyte-at", T06_A8_LENGTH_PROFILE,
+         "CREATE TABLE t (c INT) COMMENT='中文注中文注ab';", None),
+        ("length-multibyte-above", T06_A8_LENGTH_PROFILE,
+         "CREATE TABLE t (c INT) COMMENT='中文注中文注abc';", a8_length_finding),
+        ("length-off", None,
+         "CREATE TABLE t (c INT) COMMENT='123456789';", None),
+    )
+    for dialect in ("mysql", "tidb"):
+        for variant, profile, sql, finding in a8_matrix:
+            case = {
+                "id": f"t06-a8-{dialect}-{variant}",
                 "dialect": dialect,
                 "sql": sql,
                 "args": ["--fail-on", "blocker"],
@@ -3830,6 +3938,130 @@ def t06_a1_contract():
                 ]
             metadata_cases.append(case)
 
+        # T06-A8 (issue #85): four anchored roles prove comment content is a
+        # decoded string fact, not SQL literal text — the driver replays the
+        # same audited CREATE under an explicit utf8mb4 session (recorded via
+        # @@character_set_client stdout) and the structure oracle pins the
+        # raw comment plus CHAR_LENGTH/OCTET_LENGTH/HEX so a missing row can
+        # never masquerade as an empty comment. The expected HEX constants
+        # below are frozen UTF-8 encodings of the declared literals, never
+        # derived from product output.
+        a8_metadata_specs = (
+            {
+                "variant": "column-empty",
+                "policy": T06_A8_COLUMN_PROFILE,
+                "sql": "CREATE TABLE t (c INT COMMENT '');",
+                "expect_reject": True,
+                "finding": a8_column_finding,
+                "column_row": "c:int:1:YES",
+                "table_comment": "",
+                "table_stats": "0:0:",
+                "column_comment": "",
+                "column_stats": "0:0:",
+            },
+            {
+                "variant": "column-decoded",
+                "policy": T06_A8_COLUMN_PROFILE,
+                "sql": ("CREATE TABLE t (c INT COMMENT 'it''s 中文') "
+                        "COMMENT='表注';"),
+                "expect_reject": False,
+                "finding": None,
+                "column_row": "c:int:1:YES",
+                "table_comment": "表注",
+                "table_stats": "2:6:E8A1A8E6B3A8",
+                "column_comment": "it's 中文",
+                "column_stats": "7:11:6974277320E4B8ADE69687",
+            },
+            {
+                "variant": "table-rune-at",
+                "policy": T06_A8_LENGTH_PROFILE,
+                "sql": ("CREATE TABLE t (c INT COMMENT 'col') "
+                        "COMMENT='中文注中文注ab';"),
+                "expect_reject": False,
+                "finding": None,
+                "column_row": "c:int:1:YES",
+                "table_comment": "中文注中文注ab",
+                "table_stats": "8:20:E4B8ADE69687E6B3A8E4B8ADE69687E6B3A86162",
+                "column_comment": "col",
+                "column_stats": "3:3:636F6C",
+            },
+            {
+                "variant": "table-rune-above",
+                "policy": T06_A8_LENGTH_PROFILE,
+                "sql": ("CREATE TABLE t (c INT COMMENT 'col') "
+                        "COMMENT='中文注中文注abc';"),
+                "expect_reject": True,
+                "finding": a8_length_finding,
+                "column_row": "c:int:1:YES",
+                "table_comment": "中文注中文注abc",
+                "table_stats": "9:21:E4B8ADE69687E6B3A8E4B8ADE69687E6B3A8616263",
+                "column_comment": "col",
+                "column_stats": "3:3:636F6C",
+            },
+        )
+        for spec_row in a8_metadata_specs:
+            expect = audit_expect(
+                spec_row["sql"], spec_row["expect_reject"], loaded=1,
+                finding=spec_row["finding"])
+            if anchor_key in ("mysql80", "mysql84"):
+                expect["instance_facts"] = dict(T06_GIPK_FACTS)
+            structure_rows = [
+                verify("exactly one user table", T06_TABLE_COUNT, "1"),
+                verify("exactly one user column", T06_COLUMN_COUNT, "1"),
+                verify("column c identity", T06_COLUMN_ROW,
+                       spec_row["column_row"]),
+                verify("raw table comment", T06_A8_TABLE_COMMENT_RAW,
+                       spec_row["table_comment"]),
+                verify("table comment chars:octets:hex",
+                       T06_A8_TABLE_COMMENT_STATS, spec_row["table_stats"]),
+                verify("raw column comment", T06_A8_COLUMN_COMMENT_RAW,
+                       spec_row["column_comment"]),
+                verify("column comment chars:octets:hex",
+                       T06_A8_COLUMN_COMMENT_STATS, spec_row["column_stats"]),
+                verify("primary key constraint count", T06_PK_CONSTRAINT, "0"),
+                verify("primary index part count", T06_PK_PARTS, "0"),
+            ]
+            if anchor_key != "tidb85":
+                structure_rows.append(verify("storage engine", T06_ENGINE, "InnoDB"))
+            metadata_cases.append({
+                "id": f"t06-a8-{anchor_key}-{spec_row['variant']}",
+                "anchor": anchor_key,
+                "dialect": dialect,
+                "sql": spec_row["sql"],
+                "policy": spec_row["policy"],
+                "connect": dict(connects[anchor_key]),
+                "args": ["--fail-on", "blocker"],
+                "setup": [
+                    {
+                        "name": "ensure t absent",
+                        "sql": "DROP TABLE IF EXISTS t",
+                        "expect_rc": 0,
+                        "verify": [verify("t absent before audit", T06_TABLE_COUNT, "0")],
+                    },
+                ],
+                "expect": expect,
+                "post_verify": [
+                    verify("audit did not create t", T06_TABLE_COUNT, "0"),
+                ],
+                "execute": [
+                    {
+                        "name": "driver applies the audited create",
+                        "sql": T06_A8_DELIVER_CHARSET + spec_row["sql"],
+                        "expect_rc": 0,
+                        "stdout_contains": ["utf8mb4"],
+                    },
+                ],
+                "structure": structure_rows,
+                "teardown": [
+                    {
+                        "name": "drop fixture",
+                        "sql": "DROP TABLE IF EXISTS t",
+                        "expect_rc": 0,
+                        "verify": [verify("no residual t", T06_TABLE_COUNT, "0")],
+                    },
+                ],
+            })
+
     required_case_ids = (
         [f"T06.db.{anchor}.{kind}" for anchor in T06_ANCHORS for kind in ("ddl", "syntax_negative")]
         + [f"T06.cli.{spec['id']}" for spec in cli_cases]
@@ -3943,6 +4175,33 @@ def t06_a1_contract():
                     },
                 }
             },
+            # T06-A8: three single-rule comment isolations. The require
+            # rules keep their real `required` param and the length rule
+            # keeps `limit` — shipped defaults stay untouched.
+            T06_A8_TABLE_PROFILE: {
+                "enable": {
+                    T06_A8_TABLE_RULE: {
+                        "enabled": True, "level": "blocker",
+                        "params": {"required": True},
+                    },
+                }
+            },
+            T06_A8_COLUMN_PROFILE: {
+                "enable": {
+                    T06_A8_COLUMN_RULE: {
+                        "enabled": True, "level": "blocker",
+                        "params": {"required": True},
+                    },
+                }
+            },
+            T06_A8_LENGTH_PROFILE: {
+                "enable": {
+                    T06_A8_LENGTH_RULE: {
+                        "enabled": True, "level": "blocker",
+                        "params": {"limit": 8},
+                    },
+                }
+            },
         },
         "anchors": T06_ANCHORS,
         "ddl_steps": T06_DDL_STEPS,
@@ -4027,7 +4286,7 @@ def t06_a1_manifest_failures(manifest):
         failures.append("T06-A1 baseline syntax_negative changed")
     required = manifest.get("required_case_ids") or []
     if required != contract["required_case_ids"]:
-        failures.append("T06-A1 required_case_ids differ from the frozen 188-case denominator")
+        failures.append("T06-A1 required_case_ids differ from the frozen 228-case denominator")
     for field, kind in (("cli_cases", "cli"), ("metadata_cases", "meta")):
         declared_list = [spec.get("id") for spec in manifest.get(field) or []]
         declared = {spec.get("id"): spec for spec in manifest.get(field) or []}

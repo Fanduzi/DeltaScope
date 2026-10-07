@@ -284,7 +284,7 @@ rules:
 | 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
 |---------|------|:--------:|:--------------:|
 | `ddl.table.comment.require` | 表必须拥有非空的 COMMENT | warning | 否 |
-| `ddl.table.comment.max_length` | 表的 COMMENT 不得超过字符数限制 | warning | 否 |
+| `ddl.table.comment.max_length` | 表的 COMMENT 不得超过 Unicode 码点数限制 | warning | 否 |
 | `ddl.table.name.max_length` | 表名长度限制 | blocker | 否 |
 | `ddl.table.name.pattern.require` | 表名必须符合命名规则（默认：字母数字加下划线） | blocker | 否 |
 | `ddl.table.name.keyword.forbid` | 表名不得使用 SQL 保留关键字 | blocker | 否 |

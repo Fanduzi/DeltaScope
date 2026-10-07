@@ -464,7 +464,7 @@ func TestAuditSQLT05A6SameNameAddUsesTheNewDefinition(t *testing.T) {
 			}
 			enriched := enrichA3(t, t05A6ReaddSQL, dialect, &t05AbsentProvider{})
 			old := enriched[1].Metadata.TargetTable.FindColumn("obsolete")
-			if old == nil || !old.Unsigned || old.DefaultValue != "7" || old.Comment != "'retired'" {
+			if old == nil || !old.Unsigned || old.DefaultValue != "7" || old.Comment != "retired" {
 				t.Fatalf("DROP pre-state obsolete = %+v", old)
 			}
 			if enriched[2].Metadata.TargetTable.FindColumn("obsolete") != nil {
@@ -486,7 +486,7 @@ func TestAuditSQLT05A6SameNameAddUsesTheNewDefinition(t *testing.T) {
 			if idx == nil || len(idx.Columns) != 1 || idx.Columns[0] != "obsolete" {
 				t.Fatalf("idx_readded = %+v", probed[5].Metadata.TargetTable.Indexes)
 			}
-			if old.DefaultValue != "7" || old.Comment != "'retired'" {
+			if old.DefaultValue != "7" || old.Comment != "retired" {
 				t.Fatalf("later statements rewrote the DROP pre-state obsolete to %+v", old)
 			}
 		})

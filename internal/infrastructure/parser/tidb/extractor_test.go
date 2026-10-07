@@ -59,7 +59,7 @@ func TestExtractorCreateTableCapturesStructuralFacts(t *testing.T) {
 		t.Fatalf("expected created_at timestamp facts, got %#v", createdAt)
 	}
 	note := stmt.DDL.Columns[4]
-	if note.Comment != "'memo'" {
+	if note.Comment != "memo" {
 		t.Fatalf("expected note column comment, got %#v", note)
 	}
 

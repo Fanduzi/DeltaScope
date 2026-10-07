@@ -519,8 +519,8 @@ func TestExtractMapsAlterTable(t *testing.T) {
 		if !addColumn.Column.Definition.NotNull || !addColumn.Column.Definition.HasDefault || addColumn.Column.Definition.DefaultValue != "0" {
 			t.Fatalf("expected add column defaults/not-null metadata, got %+v", *addColumn.Column.Definition)
 		}
-		if addColumn.Column.Definition.Comment != "'age'" {
-			t.Fatalf("expected add column comment 'age', got %q", addColumn.Column.Definition.Comment)
+		if addColumn.Column.Definition.Comment != "age" {
+			t.Fatalf("expected add column comment age, got %q", addColumn.Column.Definition.Comment)
 		}
 
 		dropColumn := stmt.DDL.Alter[1]

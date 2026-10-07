@@ -70,7 +70,7 @@ This is not a whole-statement no-op, a promise that a procedure exists or can ex
 | `ddl.table.name.pattern.require` | Table name does not match the required naming pattern | ✓ | ✗ | warning |
 | `ddl.table.name.keyword.forbid` | Table name is a reserved SQL keyword | ✓ | ✗ | blocker |
 | `ddl.table.comment.require` | Table is missing a COMMENT clause | ✓ | ✗ | warning |
-| `ddl.table.comment.max_length` | Table comment exceeds the maximum allowed length | ✓ | ✗ | warning |
+| `ddl.table.comment.max_length` | Table comment exceeds the maximum allowed Unicode code-point length | ✓ | ✗ | warning |
 | `ddl.table.engine.allowlist` | Storage engine is not on the permitted list | ✓ | ✗ | blocker |
 | `ddl.table.charset.allowlist` | Table character set is not on the permitted list | ✓ | ✗ | blocker |
 | `ddl.table.collation.allowlist` | Table collation is not on the permitted list (rule ships disabled) | ✓ | ✗ | blocker |

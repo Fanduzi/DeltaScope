@@ -286,7 +286,7 @@ These rules evaluate properties of the `CREATE TABLE` statement as a whole.
 | Rule ID | Description | Default Level | Metadata Required |
 |---------|-------------|:-------------:|:-----------------:|
 | `ddl.table.comment.require` | Table must have a non-empty COMMENT | warning | No |
-| `ddl.table.comment.max_length` | Table COMMENT must not exceed character limit | warning | No |
+| `ddl.table.comment.max_length` | Table COMMENT must not exceed the Unicode code-point limit | warning | No |
 | `ddl.table.name.max_length` | Table name length limit | blocker | No |
 | `ddl.table.name.pattern.require` | Table name must match pattern (default: alphanumeric + underscore) | blocker | No |
 | `ddl.table.name.keyword.forbid` | Table name must not be a reserved SQL keyword | blocker | No |

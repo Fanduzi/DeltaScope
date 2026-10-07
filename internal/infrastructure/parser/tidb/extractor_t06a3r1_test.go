@@ -64,8 +64,8 @@ func TestT06A3R1DuplicateDefaultIsolation(t *testing.T) {
 			t06a3CheckDefault(t, t06a3Column(t, statement, "b"), true, "NULL", true)
 			c := t06a3Column(t, statement, "c")
 			t06a3CheckDefault(t, c, true, "NULL", true)
-			if c.Comment != "'x'" {
-				t.Fatalf("c.Comment = %q, want COMMENT preserved across a later DEFAULT", c.Comment)
+			if c.Comment != "x" {
+				t.Fatalf("c.Comment = %q, want decoded COMMENT content preserved across a later DEFAULT", c.Comment)
 			}
 			// A non-DEFAULT option after DEFAULT must not clear the recorded
 			// default (NOT NULL written after DEFAULT NULL).

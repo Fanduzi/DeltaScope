@@ -21,7 +21,7 @@
 | `ddl.table.name.pattern.require` | 表名不符合要求的命名规范 | ✓ | ✗ | warning |
 | `ddl.table.name.keyword.forbid` | 表名是 SQL 保留关键字 | ✓ | ✗ | blocker |
 | `ddl.table.comment.require` | 表缺少 COMMENT 子句 | ✓ | ✗ | warning |
-| `ddl.table.comment.max_length` | 表注释超过允许的最大长度 | ✓ | ✗ | warning |
+| `ddl.table.comment.max_length` | 表注释超过允许的最大 Unicode 码点长度 | ✓ | ✗ | warning |
 | `ddl.table.engine.allowlist` | 存储引擎不在允许列表中 | ✓ | ✗ | blocker |
 | `ddl.table.charset.allowlist` | 表字符集不在允许列表中 | ✓ | ✗ | blocker |
 | `ddl.table.collation.allowlist` | 表排序规则不在允许列表中（规则默认禁用） | ✓ | ✗ | blocker |

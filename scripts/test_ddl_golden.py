@@ -2111,6 +2111,8 @@ def t06_contract_tests(tmp):
         ddl_golden.T06_A5_CHAR_RULE, ddl_golden.T06_A5_VARCHAR_RULE,
         ddl_golden.T06_A7_CS_RULE, ddl_golden.T06_A7_CC_RULE,
         ddl_golden.T06_A7_CM_RULE, ddl_golden.T06_A7_TC_RULE,
+        ddl_golden.T06_A8_TABLE_RULE, ddl_golden.T06_A8_COLUMN_RULE,
+        ddl_golden.T06_A8_LENGTH_RULE,
         "ddl.table.exists.create.forbid", "ddl.table.exists.alter.require",
         "ddl.alter.drop_column.exists.require", "ddl.create_index.columns.exists.require")]})
     binary.write_text("#!/bin/sh\nprintf '%s' '" + catalog + "'\n")
@@ -2126,7 +2128,8 @@ def t06_contract_tests(tmp):
 
     def step_records(steps):
         return [{"name": s["name"], "sql": s["sql"], "rc": s.get("expect_rc", 0),
-                 "stdout": "", "stderr": " ".join(s.get("stderr_contains") or []),
+                 "stdout": " ".join(s.get("stdout_contains") or []),
+                 "stderr": " ".join(s.get("stderr_contains") or []),
                  "verify": query_records(s.get("verify", []))} for s in steps]
 
     for key, anchor in manifest["anchors"].items():
@@ -2480,7 +2483,7 @@ def t06_contract_tests(tmp):
     donors = {v: copy.deepcopy(by_id(a, f"T06.meta.t06-mysql84-{v}"))
               for v in ("no-pk", "inline-pk", "table-pk")}
     for item in list(a["cases"]):
-        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-", "t06-a7-")):
+        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-", "t06-a7-", "t06-a8-")):
             slot(a, item["case_id"], donors[item["cli_case"].split("-", 2)[2]])
     run("t06 all metadata slots refilled variant-wise rejected", a, "identity")
 
@@ -2491,7 +2494,7 @@ def t06_contract_tests(tmp):
     run("t06 metadata slot filled by offline record rejected", a, "identity")
     a = copy.deepcopy(artifact)
     for item in list(a["cases"]):
-        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-", "t06-a7-")):
+        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-", "t06-a7-", "t06-a8-")):
             variant = item["cli_case"].split("-", 2)[2]
             dialect = "tidb" if item["anchor"] == "tidb85" else "mysql"
             slot(a, item["case_id"], by_id(a, f"T06.cli.t06-{dialect}-{variant}"))
@@ -3212,6 +3215,181 @@ def t06_contract_tests(tmp):
                            if s["id"] != "t06-a7-tidb85-table-allowed"]
     m["required_case_ids"].remove(victim)
     run("t06a7 case deleted on both sides rejected", a, "T06-A1", m)
+
+    # --- T06-A8 additions: comment content, code-point length, and the
+    # anchored raw/CHAR_LENGTH/OCTET_LENGTH/HEX oracle on the 228-case set.
+    # Every mutation names a real regression mode from the contract: the
+    # old quoted-column/byte-count behavior resurging, require findings
+    # swapped between scopes, comment content forged, or the driver replay
+    # skipped after a product reject.
+
+    def t06a8(suffix):
+        candidate = copy.deepcopy(artifact)
+        case = next(item for item in candidate["cases"]
+                    if item.get("cli_case") == "t06-a8-" + suffix)
+        return candidate, case
+
+    # An explicit empty or whitespace-only column comment must stay a
+    # require blocker: recording the old pass behavior fails.
+    for victim in ("mysql-column-empty", "mysql-column-blank"):
+        a, c = t06a8(victim)
+        parsed = c["actual"]["parsed"]
+        parsed["verdict"] = "pass"
+        parsed["fail_on_triggered"] = False
+        parsed["summary"]["blockers"] = 0
+        parsed["statements"][0]["findings"] = []
+        c["actual"]["exit"] = 0
+        update_stdout(c)
+        run(f"t06a8 {victim} recorded as old pass rejected", a, "verdict")
+
+    # The length rule counts code points: reporting three runes as nine
+    # bytes over the limit, rejecting the at-limit 8, or letting the
+    # nine-rune comment through are all the old boundary resurfacing.
+    a, c = t06a8("mysql-length-multibyte")
+    parsed = c["actual"]["parsed"]
+    parsed["verdict"] = "reject"
+    parsed["fail_on_triggered"] = True
+    parsed["summary"]["blockers"] = 1
+    parsed["statements"][0]["findings"].append({
+        "rule_id": ddl_golden.T06_A8_LENGTH_RULE, "level": "blocker",
+        "message": ddl_golden.T06_A8_LENGTH_MESSAGE, "statement_kind": "ddl",
+        "metadata": {"table": "t", "limit": 8, "actual": 9},
+        "location": {"line": 1, "column": 1}})
+    c["actual"]["exit"] = 1
+    update_stdout(c)
+    run("t06a8 three runes reported as nine bytes rejected", a, "verdict")
+    a, c = t06a8("mysql-length-at")
+    parsed = c["actual"]["parsed"]
+    parsed["verdict"] = "reject"
+    parsed["fail_on_triggered"] = True
+    parsed["summary"]["blockers"] = 1
+    c["actual"]["exit"] = 1
+    update_stdout(c)
+    run("t06a8 at-limit length recorded as reject rejected", a, "verdict")
+    a, c = t06a8("mysql-length-above")
+    parsed = c["actual"]["parsed"]
+    parsed["verdict"] = "pass"
+    parsed["fail_on_triggered"] = False
+    parsed["summary"]["blockers"] = 0
+    parsed["statements"][0]["findings"] = []
+    c["actual"]["exit"] = 0
+    update_stdout(c)
+    run("t06a8 above-limit length recorded as pass rejected", a, "verdict")
+    a, c = t06a8("mysql84-table-rune-above")
+    c["actual"]["parsed"]["statements"][0]["findings"][0]["metadata"]["actual"] = 21
+    update_stdout(c)
+    run("t06a8 rune count recorded as byte count rejected", a, "finding identity")
+
+    # Table and column require are different rules with different metadata:
+    # swapping them is not a comment finding, just a wrong rule.
+    a, c = t06a8("mysql-table-missing")
+    c["actual"]["parsed"]["statements"][0]["findings"][0]["rule_id"] = ddl_golden.T06_A8_COLUMN_RULE
+    c["actual"]["parsed"]["statements"][0]["findings"][0]["metadata"] = {
+        "table": "t", "column": "c"}
+    update_stdout(c)
+    run("t06a8 table finding reported as column rule rejected", a, "finding")
+    a, c = t06a8("mysql-column-missing")
+    c["actual"]["parsed"]["statements"][0]["findings"][0]["rule_id"] = ddl_golden.T06_A8_TABLE_RULE
+    c["actual"]["parsed"]["statements"][0]["findings"][0]["metadata"] = {"table": "t"}
+    update_stdout(c)
+    run("t06a8 column finding reported as table rule rejected", a, "finding")
+
+    # Stored comment content is exact: extra SQL quotes, a dropped inner
+    # apostrophe, or trimmed padding are all corrupted content.
+    for forged, label in (
+            ("'it's 中文'", "comment re-quoted"),
+            ("its 中文", "inner apostrophe dropped")):
+        a, c = t06a8("mysql84-column-decoded")
+        for record in c["actual"]["structure"]:
+            if record["assert"] == "raw column comment":
+                record["output"] = forged
+        run(f"t06a8 {label} rejected", a, "structure")
+    a, c = t06a8("mysql84-table-rune-at")
+    for record in c["actual"]["structure"]:
+        if record["assert"] == "raw table comment":
+            record["output"] = "中文注中文注ab "
+    run("t06a8 trailing space added to comment rejected", a, "structure")
+
+    # CHAR_LENGTH and OCTET_LENGTH are different fields, and the HEX is the
+    # frozen UTF-8 bytes — mojibake or a swapped pair is not the oracle.
+    a, c = t06a8("mysql84-table-rune-at")
+    for record in c["actual"]["structure"]:
+        if record["assert"] == "table comment chars:octets:hex":
+            record["output"] = "20:8:E4B8ADE69687E6B3A8E4B8ADE69687E6B3A86162"
+    run("t06a8 chars and octets swapped rejected", a, "structure")
+    a, c = t06a8("mysql84-column-decoded")
+    for record in c["actual"]["structure"]:
+        if record["assert"] == "column comment chars:octets:hex":
+            record["output"] = "7:11:6974273F20E4B8ADE69687"
+    run("t06a8 comment hex mangled rejected", a, "structure")
+
+    # A product reject never skips the native replay: the driver still
+    # applies the CREATE and the structure oracle still proves the stored
+    # comment.
+    a, c = t06a8("mysql84-column-empty")
+    c["actual"]["execute"] = []
+    run("t06a8 product reject skipped driver replay rejected", a, "execute")
+    a, c = t06a8("mysql84-table-rune-above")
+    c["actual"]["execute"] = []
+    run("t06a8 length reject skipped driver replay rejected", a, "execute")
+
+    # Removing the absence/structure/cleanup legs on both sides still
+    # violates the frozen contract.
+    a = copy.deepcopy(artifact)
+    m = copy.deepcopy(manifest)
+    for item in a["cases"]:
+        if item.get("cli_case") == "t06-a8-mysql84-table-rune-at":
+            item["actual"]["structure"] = [
+                r for r in item["actual"]["structure"]
+                if r["assert"] != "table comment chars:octets:hex"]
+    for spec in m["metadata_cases"]:
+        if spec["id"] == "t06-a8-mysql84-table-rune-at":
+            spec["structure"] = [q for q in spec["structure"]
+                                 if q["assert"] != "table comment chars:octets:hex"]
+    run("t06a8 comment stats query deleted on both sides rejected", a, "T06-A1", m)
+    a = copy.deepcopy(artifact)
+    m = copy.deepcopy(manifest)
+    for item in a["cases"]:
+        if item.get("cli_case") == "t06-a8-mysql84-column-empty":
+            item["actual"]["setup"][0]["verify"] = []
+            item["actual"]["teardown"][0]["verify"] = []
+            item["actual"]["post_verify"] = []
+    for spec in m["metadata_cases"]:
+        if spec["id"] == "t06-a8-mysql84-column-empty":
+            spec["setup"][0]["verify"] = []
+            spec["teardown"][0]["verify"] = []
+            spec["post_verify"] = []
+    run("t06a8 absence and cleanup queries deleted rejected", a, "T06-A1", m)
+
+    # Same-variant defenses: cross-anchor donor reuse, a metadata slot
+    # demoted to an offline record, profile identity swaps, and a case
+    # deleted on both sides.
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.meta.t06-a8-mysql57-table-rune-at",
+         by_id(a, "T06.meta.t06-a8-mysql84-table-rune-at"))
+    run("t06a8 mysql84 record re-keyed as mysql57 rejected", a, "identity")
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.meta.t06-a8-tidb85-column-empty",
+         by_id(a, "T06.cli.t06-a8-tidb-column-empty"))
+    run("t06a8 metadata slot demoted to offline record rejected", a, "identity")
+    a, c = t06a8("mysql-table-missing")
+    c["policy_profile"] = ddl_golden.T06_A8_COLUMN_PROFILE
+    run("t06a8 table case under column profile rejected", a, "identity")
+    a, c = t06a8("mysql-length-above")
+    m = copy.deepcopy(manifest)
+    next(s for s in m["cli_cases"] if s["id"] == c["cli_case"])["policy"] = "all-rules-disabled"
+    c["policy_profile"] = "all-rules-disabled"
+    run("t06a8 length profile swapped for all-off rejected", a, "T06-A1", m)
+    a = copy.deepcopy(artifact)
+    m = copy.deepcopy(manifest)
+    victim = "T06.meta.t06-a8-tidb85-column-empty"
+    a["cases"] = [x for x in a["cases"] if x["case_id"] != victim]
+    a["executed_count"] = len(a["cases"])
+    a["required_case_ids"].remove(victim)
+    m["metadata_cases"] = [s for s in m["metadata_cases"]
+                           if s["id"] != "t06-a8-tidb85-column-empty"]
+    m["required_case_ids"].remove(victim)
+    run("t06a8 case deleted on both sides rejected", a, "T06-A1", m)
 
     return results
 

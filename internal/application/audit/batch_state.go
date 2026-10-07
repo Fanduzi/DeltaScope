@@ -1,6 +1,6 @@
 // Package audit orchestrates audit use cases at the application layer.
 // input: request context, ordered statements, optional metadata provider, the request's already-resolved version identity, and parse-failure positions for one audit request
-// output: request-local ordered table facts (unknown / known-absent / known-present, per-collection member knowledge) feeding per-statement pre-state snapshots
+// output: request-local ordered table facts (unknown / known-absent / known-present, per-collection member knowledge, including the declared table comment on complete CREATE-derived shapes) feeding per-statement pre-state snapshots
 // pos: prospective schema-state ownership for the first migration path — the effective (dialect, schema, table) identity drives provider reads, keys, writes, and invalidation; unsupported or executable-but-unmodeled effects settle before kind dispatch; deterministic conditional transitions update derived facts, including the bounded single-pair RENAME identity migration onto a known-absent destination, a bounded single-target DROP identity retirement, an ordinary single-column MODIFY definition replacement, a precise single CHANGE COLUMN or RENAME COLUMN identity migration, and an ordinary dependency-free single-column DROP COLUMN that removes only that column, keeps unrelated members, and clears the accepted MODIFY statistic set; each tombstones loaded dependents that the transition cannot keep; a non-precise MODIFY, CHANGE, RENAME, or DROP COLUMN tombstones every named table identity and the loaded dependents of those identities, a precise replacement is withheld when a loaded foreign key cannot be recomputed, an unsupported RENAME version withholds publication, and cancellation is checked before publishing effects; unaudited, unbound, or contaminated operations invalidate them; recognized CREATE/DROP PROCEDURE statements preserve outer table facts while keeping their own audit evidence
 // note: if this file changes, update this header and module README.md.
 package audit
@@ -445,7 +445,7 @@ func fullyAuditedCreateTable(dialect spec.Dialect, statement spec.Statement) boo
 func derivedCreateShape(schema, table string, ddl *spec.DDL) *spec.TableSnapshot {
 	snapshot := &spec.TableSnapshot{
 		Schema:      schema,
-		Table:       &spec.Table{Schema: schema, Name: table},
+		Table:       &spec.Table{Schema: schema, Name: table, Comment: ddl.Table.Comment},
 		Exists:      true,
 		Columns:     make([]spec.Column, 0, len(ddl.Columns)),
 		Indexes:     make([]spec.Index, 0, len(ddl.Indexes)),

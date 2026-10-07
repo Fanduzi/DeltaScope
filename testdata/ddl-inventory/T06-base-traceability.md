@@ -1,4 +1,4 @@
-# T06 base CREATE TABLE traceability (issue #85, slices A1+A2+A3+A4+A5+A7)
+# T06 base CREATE TABLE traceability (issue #85, slices A1+A2+A3+A4+A5+A7+A8)
 
 Scope: the `mysql.create-table` and `tidb.create-table` inventory rows owned by
 T06. This file maps each #85 acceptance dimension to the normalized spec
@@ -9,8 +9,8 @@ tasks are listed as deferred, not silently absorbed.
 Status vocabulary:
 
 - **golden-proven (this slice)** — pinned by `testdata/ddl-golden/T06.json`
-  (188 cases: 10 baseline + 74 offline controls + 104 anchored structure proofs)
-  and/or the `T06A1`/`T06A2`/`T06A3`/`T06A4`/`T06A5`/`T06A7` Go regression tests.
+  (228 cases: 10 baseline + 98 offline controls + 120 anchored structure proofs)
+  and/or the `T06A1`/`T06A2`/`T06A3`/`T06A4`/`T06A5`/`T06A7`/`T06A8` Go regression tests.
 - **earlier evidence** — covered by pre-T06 artifacts (T02–T05 golden runs,
   sql-corpus fixtures, catalog examples); not re-proven by this slice.
 - **not proven** — the field/rule exists but no dedicated evidence pins the
@@ -19,7 +19,7 @@ Status vocabulary:
 
 ## Row ownership
 
-| Inventory row | Status in inventory | T06-A1/A2/A3/A4/A5/A7 addition |
+| Inventory row | Status in inventory | T06-A1/A2/A3/A4/A5/A7/A8 addition |
 |---|---|---|
 | `mysql.create-table` | `semantically_checked` | `file:testdata/ddl-golden/T06.json` + this file appended to `acceptance.refs` |
 | `tidb.create-table` | `semantically_checked` | same |
@@ -51,7 +51,7 @@ Neighboring rows share the CREATE TABLE grammar but stay with their owners:
 | Temporal columns | `DefaultIsCurrentTimestamp`, `OnUpdateCurrentTimestamp` | `ddl.column.timestamp.forbid` | corpus fixtures | **earlier evidence** — temporal default/version semantics not yet pinned per anchor |
 | AUTO_INCREMENT | `Column.AutoIncrement` | `ddl.table.auto_increment.init_value.require`, `ddl.table.primary_key.auto_increment.require` | corpus fixtures | **earlier evidence** |
 | Charset / collation | `Column.Charset`, `Column.Collation`, `DDL.Options["collate"]` | `ddl.column.charset.allowlist`, `ddl.column.collation.allowlist`, `ddl.column.charset_collation.match.require`, `ddl.table.charset.allowlist`, `ddl.table.collation.allowlist` (new, default-disabled) | `T06.json` `t06-a7-*` 32 cli + 32 meta cases: each column rule isolated (allow/deny/off), match pair/single/empty/mismatch/`required=false`, table collate allowed/denied/missing under both `require_explicit` values; anchored roles pin `CHARACTER_SET_NAME`/`COLLATION_NAME`/`TABLE_COLLATION` as resolved facts distinct from declared fields, `latin1` octets (16) vs `utf8mb4` (64), and the utf8mb4+latin1_bin driver ERROR 1253 negative; `TestT06A7*` Go tests; corpus fixtures | **golden-proven (A7)** — declared-declaration facts only; native collation catalog completeness, ordering behavior, and ALTER-side governance are not claimed |
-| Comments | `Column.Comment`, `DDL.Options["comment"]` | `ddl.table.comment.require`, `ddl.table.comment.max_length`, `ddl.column.comment.require`, `ddl.table.audit_columns.require` | corpus fixtures | **earlier evidence** |
+| Comments | `Table.Comment`, `Column.Comment` (parser-decoded content, no SQL quote wrap), `DDL.Options["comment"]`, derived-shape `Table.Comment` | `ddl.table.comment.require`, `ddl.table.comment.max_length` (Unicode code points), `ddl.column.comment.require`, `ddl.table.audit_columns.require` | `T06.json` `t06-a8-*` 24 cli + 16 meta cases: per-field require isolation (missing/empty/blank), code-point length boundaries (ASCII 8/9, `中文注`=3, 8/9-rune at/above), all-off control; anchored roles pin raw comment + `CHAR_LENGTH`/`OCTET_LENGTH`/`HEX` under recorded `utf8mb4` session (`it''s 中文`→`it's 中文`, `表注`, `中文注中文注ab[c]`) including product-reject+driver-success cases; `TestT06A8*` Go tests | **golden-proven (A8)** — column-comment length policy and comment provenance (`HasComment`) are not claimed |
 | Common table options | `DDL.Options`, `DDL.UnextractedOptions` | `ddl.table.engine.allowlist`, `ddl.table.row_format.allowlist`, `ddl.table.partition.forbid`, `ddl.table.create_as.forbid`, `ddl.table.create_like.forbid` | corpus fixtures; `T06.json` ENGINE structure assertion on MySQL anchors | **earlier evidence** — option enumeration completeness belongs to T15 |
 | GIPK absence on MySQL 8.0/8.4 | `instance_facts` reads | — (fixture facts, not findings) | `T06.json` `expect.instance_facts` on `mysql80`/`mysql84` cases (`sql_require_primary_key`/`sql_generate_invisible_primary_key` OFF, `show_gipk_in_create_table_and_information_schema` ON) | **golden-proven (this slice)** |
 

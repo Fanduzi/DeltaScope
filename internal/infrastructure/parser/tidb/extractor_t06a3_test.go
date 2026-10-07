@@ -99,8 +99,8 @@ func TestT06A3DefaultLiteralPreservation(t *testing.T) {
 	if !columns[2].HasDefault || !columns[2].DefaultIsCurrentTimestamp || columns[2].DefaultIsNull {
 		t.Fatalf("timestamp column = %+v, want CURRENT_TIMESTAMP kept non-null default", columns[2])
 	}
-	if columns[3].Comment != "'note'" || columns[3].HasDefault {
-		t.Fatalf("comment column = %+v, want COMMENT preserved without a default", columns[3])
+	if columns[3].Comment != "note" || columns[3].HasDefault {
+		t.Fatalf("comment column = %+v, want decoded COMMENT content without a default", columns[3])
 	}
 }
 
