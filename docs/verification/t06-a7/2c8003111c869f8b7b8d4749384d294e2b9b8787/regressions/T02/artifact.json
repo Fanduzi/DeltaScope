@@ -1,0 +1,1163 @@
+{
+  "task_id": "T02",
+  "issue": "https://github.com/Fanduzi/DeltaScope/issues/81",
+  "head_sha": "2c8003111c869f8b7b8d4749384d294e2b9b8787",
+  "generated_at": "2026-10-07T11:03:48.479212+00:00",
+  "cli": {
+    "path": "/private/tmp/ds-t06-a7-final/T02/bin/deltascope",
+    "sha256": "294d75d697b69c2afbba8531c8da0b6f037ca79bbb2b66a6a86ea0d9c1ce60ae",
+    "build": {
+      "command": "CGO_ENABLED=0 go build -o <artifact>/deltascope ./cmd/deltascope",
+      "cgo_enabled": "0",
+      "go_version": "go1.26.1",
+      "built_at": "2026-10-07T11:03:31.419593+00:00",
+      "head_sha": "2c8003111c869f8b7b8d4749384d294e2b9b8787"
+    }
+  },
+  "policy_profile": {
+    "profile": "all-rules-disabled",
+    "path": "/private/tmp/ds-t06-a7-final/T02/golden-policy.yaml",
+    "sha256": "766404f8895acc3eb3dbc10c2cd45e2587c1f8f64075a4ee324edd1046409add",
+    "catalog_rules": 381,
+    "enabled_rules": {},
+    "disabled_rules": 381
+  },
+  "policies": [
+    {
+      "profile": "all-rules-disabled",
+      "path": "/private/tmp/ds-t06-a7-final/T02/golden-policy.yaml",
+      "sha256": "766404f8895acc3eb3dbc10c2cd45e2587c1f8f64075a4ee324edd1046409add",
+      "catalog_rules": 381,
+      "enabled_rules": {},
+      "disabled_rules": 381
+    }
+  ],
+  "required_case_ids": [
+    "T02.db.mysql57.ddl",
+    "T02.db.mysql57.syntax_negative",
+    "T02.db.mysql80.ddl",
+    "T02.db.mysql80.syntax_negative",
+    "T02.db.mysql84.ddl",
+    "T02.db.mysql84.syntax_negative",
+    "T02.db.tidb85.ddl",
+    "T02.db.tidb85.syntax_negative",
+    "T02.cli.mysql",
+    "T02.cli.tidb"
+  ],
+  "cases": [
+    {
+      "case_id": "T02.db.mysql57.ddl",
+      "kind": "db_ddl",
+      "anchor": "mysql57",
+      "input_sql": [
+        "CREATE TABLE golden_t (id INT PRIMARY KEY)",
+        "ALTER TABLE golden_t ADD COLUMN c INT",
+        "DROP TABLE golden_t"
+      ],
+      "expected": {
+        "steps": [
+          {
+            "name": "create",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "table exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+                "expect": "1"
+              },
+              {
+                "assert": "primary key exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+                "expect": "1"
+              }
+            ]
+          },
+          {
+            "name": "alter",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "column c exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND COLUMN_NAME='c'",
+                "expect": "1"
+              }
+            ]
+          },
+          {
+            "name": "drop",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "table absent",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+                "expect": "0"
+              }
+            ]
+          }
+        ]
+      },
+      "actual": {
+        "steps": [
+          {
+            "name": "create",
+            "sql": "CREATE TABLE golden_t (id INT PRIMARY KEY)",
+            "verify": [
+              {
+                "assert": "table exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+                "rc": 0,
+                "output": "1",
+                "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+              },
+              {
+                "assert": "primary key exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+                "rc": 0,
+                "output": "1",
+                "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          },
+          {
+            "name": "alter",
+            "sql": "ALTER TABLE golden_t ADD COLUMN c INT",
+            "verify": [
+              {
+                "assert": "column c exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND COLUMN_NAME='c'",
+                "rc": 0,
+                "output": "1",
+                "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          },
+          {
+            "name": "drop",
+            "sql": "DROP TABLE golden_t",
+            "verify": [
+              {
+                "assert": "table absent",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+                "rc": 0,
+                "output": "0",
+                "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ],
+        "database": {
+          "product": "mysql",
+          "image": "mysql:5.7.44",
+          "image_digest": "mysql@sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb",
+          "container": "deltascope-ddl-golden-mysql57",
+          "reachable": true,
+          "version": "5.7.44"
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='5.7.44' expected_contains='5.7.44'"
+        },
+        {
+          "name": "create return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+        },
+        {
+          "name": "create: table exists",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "create: primary key exists",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "alter return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+        },
+        {
+          "name": "alter: column c exists",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "drop return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+        },
+        {
+          "name": "drop: table absent",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T02.db.mysql57.syntax_negative",
+      "kind": "db_syntax_negative",
+      "anchor": "mysql57",
+      "input_sql": "CREATE TABLE golden_broken (",
+      "expected": {
+        "rc_nonzero": true,
+        "error_class": "1064",
+        "forbidden_markers": [
+          "ERROR 1045",
+          "ERROR 1044",
+          "ERROR 1049",
+          "ERROR 1142",
+          "ERROR 1143",
+          "ERROR 2002",
+          "ERROR 2003",
+          "ERROR 2005",
+          "Access denied",
+          "Unknown database",
+          "Can't connect",
+          "Connection refused",
+          "already exists"
+        ]
+      },
+      "actual": {
+        "rc": 1,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '' at line 1",
+        "error_class": "1064"
+      },
+      "assertions": [
+        {
+          "name": "nonzero syntax failure",
+          "ok": true,
+          "detail": "rc=1"
+        },
+        {
+          "name": "expected error class",
+          "ok": true,
+          "detail": "error_class='1064' expected='1064'"
+        },
+        {
+          "name": "no permission/connection/object-conflict markers",
+          "ok": true,
+          "detail": "forbidden markers found: []"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T02.db.mysql80.ddl",
+      "kind": "db_ddl",
+      "anchor": "mysql80",
+      "input_sql": [
+        "CREATE TABLE golden_t (id INT PRIMARY KEY)",
+        "ALTER TABLE golden_t ADD COLUMN c INT",
+        "DROP TABLE golden_t"
+      ],
+      "expected": {
+        "steps": [
+          {
+            "name": "create",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "table exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+                "expect": "1"
+              },
+              {
+                "assert": "primary key exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+                "expect": "1"
+              }
+            ]
+          },
+          {
+            "name": "alter",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "column c exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND COLUMN_NAME='c'",
+                "expect": "1"
+              }
+            ]
+          },
+          {
+            "name": "drop",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "table absent",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+                "expect": "0"
+              }
+            ]
+          }
+        ]
+      },
+      "actual": {
+        "steps": [
+          {
+            "name": "create",
+            "sql": "CREATE TABLE golden_t (id INT PRIMARY KEY)",
+            "verify": [
+              {
+                "assert": "table exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+                "rc": 0,
+                "output": "1",
+                "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+              },
+              {
+                "assert": "primary key exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+                "rc": 0,
+                "output": "1",
+                "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          },
+          {
+            "name": "alter",
+            "sql": "ALTER TABLE golden_t ADD COLUMN c INT",
+            "verify": [
+              {
+                "assert": "column c exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND COLUMN_NAME='c'",
+                "rc": 0,
+                "output": "1",
+                "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          },
+          {
+            "name": "drop",
+            "sql": "DROP TABLE golden_t",
+            "verify": [
+              {
+                "assert": "table absent",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+                "rc": 0,
+                "output": "0",
+                "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ],
+        "database": {
+          "product": "mysql",
+          "image": "mysql:8.0.46",
+          "image_digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+          "container": "deltascope-ddl-golden-mysql80",
+          "reachable": true,
+          "version": "8.0.46"
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.46' expected_contains='8.0.46'"
+        },
+        {
+          "name": "create return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+        },
+        {
+          "name": "create: table exists",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "create: primary key exists",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "alter return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+        },
+        {
+          "name": "alter: column c exists",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "drop return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+        },
+        {
+          "name": "drop: table absent",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T02.db.mysql80.syntax_negative",
+      "kind": "db_syntax_negative",
+      "anchor": "mysql80",
+      "input_sql": "CREATE TABLE golden_broken (",
+      "expected": {
+        "rc_nonzero": true,
+        "error_class": "1064",
+        "forbidden_markers": [
+          "ERROR 1045",
+          "ERROR 1044",
+          "ERROR 1049",
+          "ERROR 1142",
+          "ERROR 1143",
+          "ERROR 2002",
+          "ERROR 2003",
+          "ERROR 2005",
+          "Access denied",
+          "Unknown database",
+          "Can't connect",
+          "Connection refused",
+          "already exists"
+        ]
+      },
+      "actual": {
+        "rc": 1,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '' at line 1",
+        "error_class": "1064"
+      },
+      "assertions": [
+        {
+          "name": "nonzero syntax failure",
+          "ok": true,
+          "detail": "rc=1"
+        },
+        {
+          "name": "expected error class",
+          "ok": true,
+          "detail": "error_class='1064' expected='1064'"
+        },
+        {
+          "name": "no permission/connection/object-conflict markers",
+          "ok": true,
+          "detail": "forbidden markers found: []"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T02.db.mysql84.ddl",
+      "kind": "db_ddl",
+      "anchor": "mysql84",
+      "input_sql": [
+        "CREATE TABLE golden_t (id INT PRIMARY KEY)",
+        "ALTER TABLE golden_t ADD COLUMN c INT",
+        "DROP TABLE golden_t"
+      ],
+      "expected": {
+        "steps": [
+          {
+            "name": "create",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "table exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+                "expect": "1"
+              },
+              {
+                "assert": "primary key exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+                "expect": "1"
+              }
+            ]
+          },
+          {
+            "name": "alter",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "column c exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND COLUMN_NAME='c'",
+                "expect": "1"
+              }
+            ]
+          },
+          {
+            "name": "drop",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "table absent",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+                "expect": "0"
+              }
+            ]
+          }
+        ]
+      },
+      "actual": {
+        "steps": [
+          {
+            "name": "create",
+            "sql": "CREATE TABLE golden_t (id INT PRIMARY KEY)",
+            "verify": [
+              {
+                "assert": "table exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+                "rc": 0,
+                "output": "1",
+                "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+              },
+              {
+                "assert": "primary key exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+                "rc": 0,
+                "output": "1",
+                "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          },
+          {
+            "name": "alter",
+            "sql": "ALTER TABLE golden_t ADD COLUMN c INT",
+            "verify": [
+              {
+                "assert": "column c exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND COLUMN_NAME='c'",
+                "rc": 0,
+                "output": "1",
+                "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          },
+          {
+            "name": "drop",
+            "sql": "DROP TABLE golden_t",
+            "verify": [
+              {
+                "assert": "table absent",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+                "rc": 0,
+                "output": "0",
+                "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ],
+        "database": {
+          "product": "mysql",
+          "image": "mysql:8.4.10",
+          "image_digest": "mysql@sha256:c592c15aaf4a1961e15d82eb31ea5987dda862d1c4b1e93424438c0e91dc1f8d",
+          "container": "deltascope-ddl-golden-mysql84",
+          "reachable": true,
+          "version": "8.4.10"
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.4.10' expected_contains='8.4.10'"
+        },
+        {
+          "name": "create return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+        },
+        {
+          "name": "create: table exists",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "create: primary key exists",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "alter return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+        },
+        {
+          "name": "alter: column c exists",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "drop return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+        },
+        {
+          "name": "drop: table absent",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T02.db.mysql84.syntax_negative",
+      "kind": "db_syntax_negative",
+      "anchor": "mysql84",
+      "input_sql": "CREATE TABLE golden_broken (",
+      "expected": {
+        "rc_nonzero": true,
+        "error_class": "1064",
+        "forbidden_markers": [
+          "ERROR 1045",
+          "ERROR 1044",
+          "ERROR 1049",
+          "ERROR 1142",
+          "ERROR 1143",
+          "ERROR 2002",
+          "ERROR 2003",
+          "ERROR 2005",
+          "Access denied",
+          "Unknown database",
+          "Can't connect",
+          "Connection refused",
+          "already exists"
+        ]
+      },
+      "actual": {
+        "rc": 1,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '' at line 1",
+        "error_class": "1064"
+      },
+      "assertions": [
+        {
+          "name": "nonzero syntax failure",
+          "ok": true,
+          "detail": "rc=1"
+        },
+        {
+          "name": "expected error class",
+          "ok": true,
+          "detail": "error_class='1064' expected='1064'"
+        },
+        {
+          "name": "no permission/connection/object-conflict markers",
+          "ok": true,
+          "detail": "forbidden markers found: []"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T02.db.tidb85.ddl",
+      "kind": "db_ddl",
+      "anchor": "tidb85",
+      "input_sql": [
+        "CREATE TABLE golden_t (id INT PRIMARY KEY)",
+        "ALTER TABLE golden_t ADD COLUMN c INT",
+        "DROP TABLE golden_t"
+      ],
+      "expected": {
+        "steps": [
+          {
+            "name": "create",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "table exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+                "expect": "1"
+              },
+              {
+                "assert": "primary key exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+                "expect": "1"
+              }
+            ]
+          },
+          {
+            "name": "alter",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "column c exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND COLUMN_NAME='c'",
+                "expect": "1"
+              }
+            ]
+          },
+          {
+            "name": "drop",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "table absent",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+                "expect": "0"
+              }
+            ]
+          }
+        ]
+      },
+      "actual": {
+        "steps": [
+          {
+            "name": "create",
+            "sql": "CREATE TABLE golden_t (id INT PRIMARY KEY)",
+            "verify": [
+              {
+                "assert": "table exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              },
+              {
+                "assert": "primary key exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "alter",
+            "sql": "ALTER TABLE golden_t ADD COLUMN c INT",
+            "verify": [
+              {
+                "assert": "column c exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND COLUMN_NAME='c'",
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "drop",
+            "sql": "DROP TABLE golden_t",
+            "verify": [
+              {
+                "assert": "table absent",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+                "rc": 0,
+                "output": "0",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "database": {
+          "product": "tidb",
+          "image": "pingcap/tidb:v8.5.0",
+          "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+          "container": "deltascope-ddl-golden-tidb85",
+          "reachable": true,
+          "version": "8.0.11-TiDB-v8.5.0"
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+        },
+        {
+          "name": "fixture database created",
+          "ok": true,
+          "detail": "CREATE DATABASE rc=0 stderr=''"
+        },
+        {
+          "name": "create return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "create: table exists",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "create: primary key exists",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "alter return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "alter: column c exists",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "drop return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "drop: table absent",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T02.db.tidb85.syntax_negative",
+      "kind": "db_syntax_negative",
+      "anchor": "tidb85",
+      "input_sql": "CREATE TABLE golden_broken (",
+      "expected": {
+        "rc_nonzero": true,
+        "error_class": "1064",
+        "forbidden_markers": [
+          "ERROR 1045",
+          "ERROR 1044",
+          "ERROR 1049",
+          "ERROR 1142",
+          "ERROR 1143",
+          "ERROR 2002",
+          "ERROR 2003",
+          "ERROR 2005",
+          "Access denied",
+          "Unknown database",
+          "Can't connect",
+          "Connection refused",
+          "already exists"
+        ]
+      },
+      "actual": {
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 28 near \"\"",
+        "error_class": "1064"
+      },
+      "assertions": [
+        {
+          "name": "nonzero syntax failure",
+          "ok": true,
+          "detail": "rc=1"
+        },
+        {
+          "name": "expected error class",
+          "ok": true,
+          "detail": "error_class='1064' expected='1064'"
+        },
+        {
+          "name": "no permission/connection/object-conflict markers",
+          "ok": true,
+          "detail": "forbidden markers found: []"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T02.cli.mysql",
+      "kind": "cli_audit",
+      "cli_case": "mysql",
+      "dialect": "mysql",
+      "input_sql": "CREATE TABLE golden_t (id INT PRIMARY KEY); ALTER TABLE golden_t ADD COLUMN c INT; DROP TABLE golden_t;",
+      "policy_profile": "all-rules-disabled",
+      "policy_path": "/private/tmp/ds-t06-a7-final/T02/golden-policy.yaml",
+      "command": [
+        "/private/tmp/ds-t06-a7-final/T02/bin/deltascope",
+        "audit",
+        "--dialect",
+        "mysql",
+        "--sql",
+        "CREATE TABLE golden_t (id INT PRIMARY KEY); ALTER TABLE golden_t ADD COLUMN c INT; DROP TABLE golden_t;",
+        "--config",
+        "/private/tmp/ds-t06-a7-final/T02/golden-policy.yaml",
+        "--format",
+        "json"
+      ],
+      "expected": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 3,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0
+      },
+      "actual": {
+        "exit": 0,
+        "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":3,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE golden_t (id INT PRIMARY KEY);\",\"normalized_sql\":\"CREATE TABLE golden_t (id INT PRIMARY KEY)\",\"coverage\":{\"status\":\"complete\"}},{\"index\":1,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE golden_t ADD COLUMN c INT;\",\"normalized_sql\":\"ALTER TABLE golden_t ADD COLUMN c INT\",\"coverage\":{\"status\":\"complete\"}},{\"index\":2,\"kind\":\"ddl\",\"raw_sql\":\"DROP TABLE golden_t;\",\"normalized_sql\":\"DROP TABLE golden_t\",\"coverage\":{\"status\":\"complete\"}}],\"fail_on_triggered\":false,\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "pass",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 3,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "CREATE TABLE golden_t (id INT PRIMARY KEY);",
+              "normalized_sql": "CREATE TABLE golden_t (id INT PRIMARY KEY)",
+              "coverage": {
+                "status": "complete"
+              }
+            },
+            {
+              "index": 1,
+              "kind": "ddl",
+              "raw_sql": "ALTER TABLE golden_t ADD COLUMN c INT;",
+              "normalized_sql": "ALTER TABLE golden_t ADD COLUMN c INT",
+              "coverage": {
+                "status": "complete"
+              }
+            },
+            {
+              "index": 2,
+              "kind": "ddl",
+              "raw_sql": "DROP TABLE golden_t;",
+              "normalized_sql": "DROP TABLE golden_t",
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "fail_on_triggered": false,
+          "context": {
+            "mode": "offline",
+            "dialect": "mysql",
+            "dialect_source": "flag",
+            "note": "existence not checked (no database connection)",
+            "unproven": [
+              "column_exists",
+              "table_exists"
+            ]
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": null,
+          "observed_canonical": null,
+          "resolved": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='pass'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=3 expected=3"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T02.cli.tidb",
+      "kind": "cli_audit",
+      "cli_case": "tidb",
+      "dialect": "tidb",
+      "input_sql": "CREATE TABLE golden_t (id INT PRIMARY KEY); ALTER TABLE golden_t ADD COLUMN c INT; DROP TABLE golden_t;",
+      "policy_profile": "all-rules-disabled",
+      "policy_path": "/private/tmp/ds-t06-a7-final/T02/golden-policy.yaml",
+      "command": [
+        "/private/tmp/ds-t06-a7-final/T02/bin/deltascope",
+        "audit",
+        "--dialect",
+        "tidb",
+        "--sql",
+        "CREATE TABLE golden_t (id INT PRIMARY KEY); ALTER TABLE golden_t ADD COLUMN c INT; DROP TABLE golden_t;",
+        "--config",
+        "/private/tmp/ds-t06-a7-final/T02/golden-policy.yaml",
+        "--format",
+        "json"
+      ],
+      "expected": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 3,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0
+      },
+      "actual": {
+        "exit": 0,
+        "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":3,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE golden_t (id INT PRIMARY KEY);\",\"normalized_sql\":\"CREATE TABLE golden_t (id INT PRIMARY KEY)\",\"coverage\":{\"status\":\"complete\"}},{\"index\":1,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE golden_t ADD COLUMN c INT;\",\"normalized_sql\":\"ALTER TABLE golden_t ADD COLUMN c INT\",\"coverage\":{\"status\":\"complete\"}},{\"index\":2,\"kind\":\"ddl\",\"raw_sql\":\"DROP TABLE golden_t;\",\"normalized_sql\":\"DROP TABLE golden_t\",\"coverage\":{\"status\":\"complete\"}}],\"fail_on_triggered\":false,\"context\":{\"mode\":\"offline\",\"dialect\":\"tidb\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "pass",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 3,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "CREATE TABLE golden_t (id INT PRIMARY KEY);",
+              "normalized_sql": "CREATE TABLE golden_t (id INT PRIMARY KEY)",
+              "coverage": {
+                "status": "complete"
+              }
+            },
+            {
+              "index": 1,
+              "kind": "ddl",
+              "raw_sql": "ALTER TABLE golden_t ADD COLUMN c INT;",
+              "normalized_sql": "ALTER TABLE golden_t ADD COLUMN c INT",
+              "coverage": {
+                "status": "complete"
+              }
+            },
+            {
+              "index": 2,
+              "kind": "ddl",
+              "raw_sql": "DROP TABLE golden_t;",
+              "normalized_sql": "DROP TABLE golden_t",
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "fail_on_triggered": false,
+          "context": {
+            "mode": "offline",
+            "dialect": "tidb",
+            "dialect_source": "flag",
+            "note": "existence not checked (no database connection)",
+            "unproven": [
+              "column_exists",
+              "table_exists"
+            ]
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": null,
+          "observed_canonical": null,
+          "resolved": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='pass'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=3 expected=3"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        }
+      ],
+      "status": "pass"
+    }
+  ],
+  "executed_count": 10,
+  "cleanup": {
+    "compose_down_rc": 0,
+    "compose_down_stderr": "Container deltascope-ddl-golden-mysql80 Stopping \n Container deltascope-ddl-golden-mysql84 Stopping \n Container deltascope-ddl-golden-mysql57 Stopping \n Container deltascope-ddl-golden-tidb85-client Stopping \n Container deltascope-ddl-golden-mysql84 Stopped \n Container deltascope-ddl-golden-mysql84 Removing \n Container deltascope-ddl-golden-mysql84 Removed \n Container deltascope-ddl-golden-mysql80 Stopped \n Container deltascope-ddl-golden-mysql80 Removing \n Container deltascope-ddl-golden-mysql80 Removed \n Container deltascope-ddl-golden-mysql57 Stopped \n Container deltascope-ddl-golden-mysql57 Removing \n Container deltascope-ddl-golden-mysql57 Removed \n Container deltascope-ddl-golden-tidb85-client Stopped \n Container deltascope-ddl-golden-tidb85-client Removing \n Container deltascope-ddl-golden-tidb85-client Removed \n Container deltascope-ddl-golden-tidb85 Stopping \n Container deltascope-ddl-golden-tidb85 Stopped \n Container deltascope-ddl-golden-tidb85 Removing \n Container deltascope-ddl-golden-tidb85 Removed \n Network deltascope-ddl-golden_default Removing \n Network deltascope-ddl-golden_default Removed",
+    "residual_containers": []
+  },
+  "container_health": {
+    "deltascope-ddl-golden-mysql57": "healthy",
+    "deltascope-ddl-golden-mysql80": "healthy",
+    "deltascope-ddl-golden-mysql84": "healthy",
+    "deltascope-ddl-golden-tidb85": "healthy",
+    "deltascope-ddl-golden-tidb85-client": "healthy"
+  }
+}

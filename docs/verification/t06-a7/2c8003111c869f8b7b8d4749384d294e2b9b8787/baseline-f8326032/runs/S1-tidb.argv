@@ -1,0 +1,1 @@
+/tmp/ds-t06-a7/deltascope audit --dialect tidb --config /tmp/ds-t06-a7/policies/P_ALL.yaml --format json --fail-on blocker --sql "CREATE TABLE t (   c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin ); "

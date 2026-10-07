@@ -1,0 +1,54 @@
+{
+  "case_id": "T04.clierr.t04b-malformed-target",
+  "kind": "cli_error",
+  "cli_case": "t04b-malformed-target",
+  "dialect": "mysql",
+  "input_sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+  "policy_profile": "t04b-key-length-isolated",
+  "policy_path": "/private/tmp/ds-t06-a7-final/T04/golden-policy-t04b-key-length-isolated.yaml",
+  "command": [
+    "/private/tmp/ds-t06-a7-final/T04/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+    "--config",
+    "/private/tmp/ds-t06-a7-final/T04/golden-policy-t04b-key-length-isolated.yaml",
+    "--format",
+    "json",
+    "--target-version",
+    "8.4"
+  ],
+  "expected": {
+    "exit": 2,
+    "stderr_contains": [
+      "target_version"
+    ]
+  },
+  "actual": {
+    "exit": 2,
+    "stdout": "",
+    "stderr": "target_version must match [v]MAJOR.MINOR.PATCH: \"8.4\"\n",
+    "version_evidence": {
+      "target_raw": "8.4",
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=2 expected=2"
+    },
+    {
+      "name": "stderr contains 'target_version'",
+      "ok": true,
+      "detail": "stderr='target_version must match [v]MAJOR.MINOR.PATCH: \"8.4\"' marker='target_version'"
+    }
+  ],
+  "status": "pass"
+}

@@ -1,0 +1,155 @@
+{
+  "id": "S1",
+  "sql": "CREATE TABLE t (\n  c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin\n);",
+  "tables": [
+    {
+      "ast_type": "*ast.CreateTableStmt",
+      "ast_table_options": null,
+      "columns": [
+        {
+          "name": "c",
+          "ft_type_string": "varchar(16) CHARACTER SET utf8mb4",
+          "ft_flen": 16,
+          "ft_decimal": -1,
+          "ft_charset": "utf8mb4",
+          "ft_collate": "",
+          "ft_flag": 0,
+          "col_option_types": [
+            "*ast.ColumnOption:12"
+          ],
+          "spec_charset": "utf8mb4",
+          "spec_collate": "utf8mb4_bin",
+          "spec_type": "varchar(16) character set utf8mb4",
+          "spec_length": 16
+        }
+      ],
+      "spec_options": {},
+      "spec_unextracted_options": null
+    }
+  ],
+  "warnings": []
+}
+{
+  "id": "S2",
+  "sql": "CREATE TABLE t (c VARCHAR(16) COLLATE utf8mb4_bin);",
+  "tables": [
+    {
+      "ast_type": "*ast.CreateTableStmt",
+      "ast_table_options": null,
+      "columns": [
+        {
+          "name": "c",
+          "ft_type_string": "varchar(16)",
+          "ft_flen": 16,
+          "ft_decimal": -1,
+          "ft_charset": "",
+          "ft_collate": "",
+          "ft_flag": 0,
+          "col_option_types": [
+            "*ast.ColumnOption:12"
+          ],
+          "spec_charset": "",
+          "spec_collate": "utf8mb4_bin",
+          "spec_type": "varchar(16)",
+          "spec_length": 16
+        }
+      ],
+      "spec_options": {},
+      "spec_unextracted_options": null
+    }
+  ],
+  "warnings": []
+}
+{
+  "id": "S3",
+  "sql": "CREATE TABLE t (\n  c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE latin1_swedish_ci\n);",
+  "tables": [
+    {
+      "ast_type": "*ast.CreateTableStmt",
+      "ast_table_options": null,
+      "columns": [
+        {
+          "name": "c",
+          "ft_type_string": "varchar(16) CHARACTER SET utf8mb4",
+          "ft_flen": 16,
+          "ft_decimal": -1,
+          "ft_charset": "utf8mb4",
+          "ft_collate": "",
+          "ft_flag": 0,
+          "col_option_types": [
+            "*ast.ColumnOption:12"
+          ],
+          "spec_charset": "utf8mb4",
+          "spec_collate": "latin1_swedish_ci",
+          "spec_type": "varchar(16) character set utf8mb4",
+          "spec_length": 16
+        }
+      ],
+      "spec_options": {},
+      "spec_unextracted_options": null
+    }
+  ],
+  "warnings": []
+}
+{
+  "id": "S4",
+  "sql": "CREATE TABLE t (c INT) COLLATE=utf8mb4_bin;",
+  "tables": [
+    {
+      "ast_type": "*ast.CreateTableStmt",
+      "ast_table_options": [
+        "*ast.TableOption:3"
+      ],
+      "columns": [
+        {
+          "name": "c",
+          "ft_type_string": "int(11)",
+          "ft_flen": -1,
+          "ft_decimal": -1,
+          "ft_charset": "",
+          "ft_collate": "",
+          "ft_flag": 0,
+          "col_option_types": null,
+          "spec_charset": "",
+          "spec_collate": "",
+          "spec_type": "int(11)",
+          "spec_length": -1
+        }
+      ],
+      "spec_options": {
+        "collate": "utf8mb4_bin"
+      },
+      "spec_unextracted_options": null
+    }
+  ],
+  "warnings": []
+}
+{
+  "id": "B1",
+  "sql": "CREATE TABLE t (c VARCHAR(16));",
+  "tables": [
+    {
+      "ast_type": "*ast.CreateTableStmt",
+      "ast_table_options": null,
+      "columns": [
+        {
+          "name": "c",
+          "ft_type_string": "varchar(16)",
+          "ft_flen": 16,
+          "ft_decimal": -1,
+          "ft_charset": "",
+          "ft_collate": "",
+          "ft_flag": 0,
+          "col_option_types": null,
+          "spec_charset": "",
+          "spec_collate": "",
+          "spec_type": "varchar(16)",
+          "spec_length": 16
+        }
+      ],
+      "spec_options": {},
+      "spec_unextracted_options": null
+    }
+  ],
+  "warnings": []
+}

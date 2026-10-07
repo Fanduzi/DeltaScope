@@ -1,0 +1,574 @@
+{
+  "case_id": "T05.meta.t05-a3-mysql84-drop-recreate-old-column",
+  "kind": "cli_metadata",
+  "cli_case": "t05-a3-mysql84-drop-recreate-old-column",
+  "anchor": "mysql84",
+  "dialect": "mysql",
+  "input_sql": "CREATE TABLE t (old_c INT PRIMARY KEY); DROP TABLE t; CREATE TABLE t (id INT PRIMARY KEY); ALTER TABLE t ADD COLUMN c INT; CREATE INDEX idx_c ON t(c); CREATE INDEX ix_old ON t(old_c);",
+  "policy_profile": "t05-drop-recreate-isolated",
+  "policy_path": "/private/tmp/ds-t06-a7-final/T05/golden-policy-t05-drop-recreate-isolated.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T05_GOLDEN_PW"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 6,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete",
+      "complete",
+      "complete",
+      "complete",
+      "complete",
+      "complete"
+    ],
+    "statement_sql": [
+      "CREATE TABLE t (old_c INT PRIMARY KEY);",
+      "DROP TABLE t;",
+      "CREATE TABLE t (id INT PRIMARY KEY);",
+      "ALTER TABLE t ADD COLUMN c INT;",
+      "CREATE INDEX idx_c ON t(c);",
+      "CREATE INDEX ix_old ON t(old_c);"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 5,
+    "statement_indices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "finding_entries": [
+      {
+        "index": 5,
+        "rule_id": "ddl.create_index.columns.exists.require",
+        "level": "blocker"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 5,
+        "rule_id": "ddl.create_index.columns.exists.require",
+        "metadata": {
+          "schema": "golden",
+          "table": "t",
+          "index": "ix_old",
+          "column": "old_c",
+          "exists": false
+        }
+      }
+    ]
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:8.4.10",
+      "image_digest": "mysql@sha256:c592c15aaf4a1961e15d82eb31ea5987dda862d1c4b1e93424438c0e91dc1f8d",
+      "container": "deltascope-ddl-golden-mysql84",
+      "reachable": true,
+      "version": "8.4.10"
+    },
+    "setup": [
+      {
+        "name": "ensure t absent",
+        "sql": "DROP TABLE IF EXISTS t",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "verify": [
+          {
+            "assert": "t absent before audit",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ]
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit did not create t",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "0",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      }
+    ],
+    "execute": [
+      {
+        "name": "driver statement 0",
+        "sql": "CREATE TABLE t (old_c INT PRIMARY KEY)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "name": "driver statement 1",
+        "sql": "DROP TABLE t",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "verify": [
+          {
+            "assert": "t absent between DROP and CREATE",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ]
+      },
+      {
+        "name": "driver statement 2",
+        "sql": "CREATE TABLE t (id INT PRIMARY KEY)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "name": "driver statement 3",
+        "sql": "ALTER TABLE t ADD COLUMN c INT",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "name": "driver statement 4",
+        "sql": "CREATE INDEX idx_c ON t(c)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "name": "driver statement 5",
+        "sql": "CREATE INDEX ix_old ON t(old_c)",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1072 (42000) at line 1: Key column 'old_c' doesn't exist in table"
+      }
+    ],
+    "structure": [
+      {
+        "assert": "new t exists",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "1",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "new columns exactly id and c",
+        "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME,':',DATA_TYPE) ORDER BY ORDINAL_POSITION SEPARATOR ',') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "id:int,c:int",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "old_c is absent",
+        "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='old_c'",
+        "rc": 0,
+        "output": "0",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "new primary key exactly id",
+        "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+        "rc": 0,
+        "output": "id",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "new idx_c exactly c",
+        "sql": "SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR ',') FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='idx_c'",
+        "rc": 0,
+        "output": "c",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "only the two new indexes",
+        "sql": "SELECT COUNT(DISTINCT INDEX_NAME) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "2",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      }
+    ],
+    "teardown": [
+      {
+        "name": "drop fixture",
+        "sql": "DROP TABLE IF EXISTS t",
+        "rc": 0,
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "verify": [
+          {
+            "assert": "no residual t",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ]
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":6,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t (old_c INT PRIMARY KEY);\",\"normalized_sql\":\"CREATE TABLE t (old_c INT PRIMARY KEY)\",\"coverage\":{\"status\":\"complete\"}},{\"index\":1,\"kind\":\"ddl\",\"raw_sql\":\"DROP TABLE t;\",\"normalized_sql\":\"DROP TABLE t\",\"coverage\":{\"status\":\"complete\"}},{\"index\":2,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t (id INT PRIMARY KEY);\",\"normalized_sql\":\"CREATE TABLE t (id INT PRIMARY KEY)\",\"coverage\":{\"status\":\"complete\"}},{\"index\":3,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t ADD COLUMN c INT;\",\"normalized_sql\":\"ALTER TABLE t ADD COLUMN c INT\",\"coverage\":{\"status\":\"complete\"}},{\"index\":4,\"kind\":\"ddl\",\"raw_sql\":\"CREATE INDEX idx_c ON t(c);\",\"normalized_sql\":\"CREATE INDEX idx_c ON t(c)\",\"coverage\":{\"status\":\"complete\"}},{\"index\":5,\"kind\":\"ddl\",\"raw_sql\":\"CREATE INDEX ix_old ON t(old_c);\",\"normalized_sql\":\"CREATE INDEX ix_old ON t(old_c)\",\"findings\":[{\"rule_id\":\"ddl.create_index.columns.exists.require\",\"level\":\"blocker\",\"message\":\"column \\\"old_c\\\" referenced by index \\\"ix_old\\\" does not exist on table \\\"t\\\"\",\"statement_index\":5,\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":152},\"suggestion\":\"fix the index column list or create the missing column before adding the index\",\"metadata\":{\"column\":\"old_c\",\"exists\":false,\"index\":\"ix_old\",\"schema\":\"golden\",\"table\":\"t\"},\"explanation\":{\"summary\":\"Require DDL create index columns exists require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"fix the index column list or create the missing column before adding the index\"}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.4.10\",\"major\":8,\"minor\":4,\"patch\":10,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":5,\"applicable\":5,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 6,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t (old_c INT PRIMARY KEY);",
+          "normalized_sql": "CREATE TABLE t (old_c INT PRIMARY KEY)",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 1,
+          "kind": "ddl",
+          "raw_sql": "DROP TABLE t;",
+          "normalized_sql": "DROP TABLE t",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 2,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t (id INT PRIMARY KEY);",
+          "normalized_sql": "CREATE TABLE t (id INT PRIMARY KEY)",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 3,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t ADD COLUMN c INT;",
+          "normalized_sql": "ALTER TABLE t ADD COLUMN c INT",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 4,
+          "kind": "ddl",
+          "raw_sql": "CREATE INDEX idx_c ON t(c);",
+          "normalized_sql": "CREATE INDEX idx_c ON t(c)",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 5,
+          "kind": "ddl",
+          "raw_sql": "CREATE INDEX ix_old ON t(old_c);",
+          "normalized_sql": "CREATE INDEX ix_old ON t(old_c)",
+          "findings": [
+            {
+              "rule_id": "ddl.create_index.columns.exists.require",
+              "level": "blocker",
+              "message": "column \"old_c\" referenced by index \"ix_old\" does not exist on table \"t\"",
+              "statement_index": 5,
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 152
+              },
+              "suggestion": "fix the index column list or create the missing column before adding the index",
+              "metadata": {
+                "column": "old_c",
+                "exists": false,
+                "index": "ix_old",
+                "schema": "golden",
+                "table": "t"
+              },
+              "explanation": {
+                "summary": "Require DDL create index columns exists require",
+                "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "fix the index column list or create the missing column before adding the index"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "8.4.10",
+        "major": 8,
+        "minor": 4,
+        "patch": 10,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 5,
+        "applicable": 5,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.4.10",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "8.4.10"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "8.4.10",
+        "major": 8,
+        "minor": 4,
+        "patch": 10,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.4.10' expected_contains='8.4.10'"
+    },
+    {
+      "name": "setup ensure t absent return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "setup ensure t absent: t absent before audit",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=6 expected=6"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=5"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0, 1, 2, 3, 4, 5]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete', 'complete', 'complete', 'complete', 'complete', 'complete']"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['CREATE TABLE t (old_c INT PRIMARY KEY);', 'DROP TABLE t;', 'CREATE TABLE t (id INT PRIMARY KEY);', 'ALTER TABLE t ADD COLUMN c INT;', 'CREATE INDEX idx_c ON t(c);', 'CREATE INDEX ix_old ON t(old_c);'] expected=['CREATE TABLE t (old_c INT PRIMARY KEY);', 'DROP TABLE t;', 'CREATE TABLE t (id INT PRIMARY KEY);', 'ALTER TABLE t ADD COLUMN c INT;', 'CREATE INDEX idx_c ON t(c);', 'CREATE INDEX ix_old ON t(old_c);']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(5, 'ddl.create_index.columns.exists.require', 'blocker')] expected=[(5, 'ddl.create_index.columns.exists.require', 'blocker')]"
+    },
+    {
+      "name": "finding metadata (5, 'ddl.create_index.columns.exists.require')",
+      "ok": true,
+      "detail": "findings=[{'column': 'old_c', 'exists': False, 'index': 'ix_old', 'schema': 'golden', 'table': 't'}] expected_subset={'schema': 'golden', 'table': 't', 'index': 'ix_old', 'column': 'old_c', 'exists': False}"
+    },
+    {
+      "name": "fail_on_triggered",
+      "ok": true,
+      "detail": "fail_on_triggered=True"
+    },
+    {
+      "name": "post-verify audit did not create t",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute driver statement 0 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "execute driver statement 1 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "execute driver statement 1: t absent between DROP and CREATE",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute driver statement 2 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "execute driver statement 3 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "execute driver statement 4 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "execute driver statement 5 return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"mysql: [Warning] Using a password on the command line interface can be insecure.\\nERROR 1072 (42000) at line 1: Key column 'old_c' doesn't exist in table\""
+    },
+    {
+      "name": "execute driver statement 5 stderr marker",
+      "ok": true,
+      "detail": "ERROR 1072"
+    },
+    {
+      "name": "execute driver statement 5 stderr marker",
+      "ok": true,
+      "detail": "old_c"
+    },
+    {
+      "name": "structure new t exists",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "structure new columns exactly id and c",
+      "ok": true,
+      "detail": "rc=0 output='id:int,c:int' expected='id:int,c:int'"
+    },
+    {
+      "name": "structure old_c is absent",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "structure new primary key exactly id",
+      "ok": true,
+      "detail": "rc=0 output='id' expected='id'"
+    },
+    {
+      "name": "structure new idx_c exactly c",
+      "ok": true,
+      "detail": "rc=0 output='c' expected='c'"
+    },
+    {
+      "name": "structure only the two new indexes",
+      "ok": true,
+      "detail": "rc=0 output='2' expected='2'"
+    },
+    {
+      "name": "teardown drop fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "teardown drop fixture: no residual t",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ds-t06-a7-final/T05/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "CREATE TABLE t (old_c INT PRIMARY KEY); DROP TABLE t; CREATE TABLE t (id INT PRIMARY KEY); ALTER TABLE t ADD COLUMN c INT; CREATE INDEX idx_c ON t(c); CREATE INDEX ix_old ON t(old_c);",
+    "--config",
+    "/private/tmp/ds-t06-a7-final/T05/golden-policy-t05-drop-recreate-isolated.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23384",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T05_GOLDEN_PW",
+    "--schema",
+    "golden",
+    "--fail-on",
+    "warning"
+  ]
+}

@@ -1,0 +1,239 @@
+{
+  "case_id": "T06.cli.t06-a7-tidb-table-required",
+  "kind": "cli_audit",
+  "cli_case": "t06-a7-tidb-table-required",
+  "dialect": "tidb",
+  "input_sql": "CREATE TABLE t (c INT);",
+  "policy_profile": "t06-a7-table-collation-required",
+  "policy_path": "/private/tmp/ds-t06-a7-final/T06/golden-policy-t06-a7-table-collation-required.yaml",
+  "command": [
+    "/private/tmp/ds-t06-a7-final/T06/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "CREATE TABLE t (c INT);",
+    "--config",
+    "/private/tmp/ds-t06-a7-final/T06/golden-policy-t06-a7-table-collation-required.yaml",
+    "--format",
+    "json",
+    "--fail-on",
+    "blocker"
+  ],
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "statement_sql": [
+      "CREATE TABLE t (c INT);"
+    ],
+    "statement_indices": [
+      0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.table.collation.allowlist",
+        "level": "blocker"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 0,
+        "rule_id": "ddl.table.collation.allowlist",
+        "metadata": {
+          "table": "t",
+          "option": "collate",
+          "actual": "",
+          "allowed": [
+            "utf8mb4_bin"
+          ]
+        }
+      }
+    ],
+    "finding_locations": [
+      {
+        "index": 0,
+        "line": 1,
+        "column": 1
+      }
+    ],
+    "finding_message": "table collation must be one of [utf8mb4_bin]"
+  },
+  "actual": {
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t (c INT);\",\"normalized_sql\":\"CREATE TABLE t (c INT)\",\"findings\":[{\"rule_id\":\"ddl.table.collation.allowlist\",\"level\":\"blocker\",\"message\":\"table collation must be one of [utf8mb4_bin]\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"set an explicit collation from the allowed list\",\"metadata\":{\"actual\":\"\",\"allowed\":[\"utf8mb4_bin\"],\"option\":\"collate\",\"table\":\"t\"},\"explanation\":{\"summary\":\"Restrict DDL table collation allowlist\",\"why\":\"The statement uses a value outside the shipped allowlist for this rule.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"set an explicit collation from the allowed list\"}}],\"coverage\":{\"status\":\"complete\"}}],\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"tidb\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t (c INT);",
+          "normalized_sql": "CREATE TABLE t (c INT)",
+          "findings": [
+            {
+              "rule_id": "ddl.table.collation.allowlist",
+              "level": "blocker",
+              "message": "table collation must be one of [utf8mb4_bin]",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "set an explicit collation from the allowed list",
+              "metadata": {
+                "actual": "",
+                "allowed": [
+                  "utf8mb4_bin"
+                ],
+                "option": "collate",
+                "table": "t"
+              },
+              "explanation": {
+                "summary": "Restrict DDL table collation allowlist",
+                "why": "The statement uses a value outside the shipped allowlist for this rule.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "set an explicit collation from the allowed list"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "offline",
+        "dialect": "tidb",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=1"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['CREATE TABLE t (c INT);'] expected=['CREATE TABLE t (c INT);']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.table.collation.allowlist', 'blocker')] expected=[(0, 'ddl.table.collation.allowlist', 'blocker')]"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.table.collation.allowlist')",
+      "ok": true,
+      "detail": "findings=[{'actual': '', 'allowed': ['utf8mb4_bin'], 'option': 'collate', 'table': 't'}] expected_subset={'table': 't', 'option': 'collate', 'actual': '', 'allowed': ['utf8mb4_bin']}"
+    },
+    {
+      "name": "finding location index=0",
+      "ok": true,
+      "detail": "locations=[{'line': 1, 'column': 1}] expected={'index': 0, 'line': 1, 'column': 1}"
+    },
+    {
+      "name": "fail_on_triggered",
+      "ok": true,
+      "detail": "fail_on_triggered=True"
+    }
+  ],
+  "status": "pass"
+}

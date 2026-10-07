@@ -1,0 +1,1 @@
+deltascope audit --dialect tidb --sql 'CREATE TABLE t (c INT) COLLATE=utf8mb4_bin;' --config policies/golden-policy-all-off.yaml --format json --fail-on blocker

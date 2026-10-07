@@ -1,0 +1,160 @@
+=== RUN   TestT06A7RuleParamsContract
+=== RUN   TestT06A7RuleParamsContract/multi_value_allows
+=== RUN   TestT06A7RuleParamsContract/values_non_list_errors
+=== RUN   TestT06A7RuleParamsContract/require_explicit_non_bool_errors
+--- PASS: TestT06A7RuleParamsContract (0.00s)
+    --- PASS: TestT06A7RuleParamsContract/multi_value_allows (0.00s)
+    --- PASS: TestT06A7RuleParamsContract/values_non_list_errors (0.00s)
+    --- PASS: TestT06A7RuleParamsContract/require_explicit_non_bool_errors (0.00s)
+=== RUN   TestT06A7RuleAppliesTo
+--- PASS: TestT06A7RuleAppliesTo (0.00s)
+=== RUN   TestT06A7RuleFindingContract
+=== RUN   TestT06A7RuleFindingContract/denied
+=== RUN   TestT06A7RuleFindingContract/undeclared
+--- PASS: TestT06A7RuleFindingContract (0.00s)
+    --- PASS: TestT06A7RuleFindingContract/denied (0.00s)
+    --- PASS: TestT06A7RuleFindingContract/undeclared (0.00s)
+=== RUN   TestT06A7RuleDefaultDisabled
+--- PASS: TestT06A7RuleDefaultDisabled (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	0.550s
+=== RUN   TestT06A7ColumnAllowlistIsolation
+=== RUN   TestT06A7ColumnAllowlistIsolation/mysql/charset_allowed
+=== RUN   TestT06A7ColumnAllowlistIsolation/mysql/charset_denied
+=== RUN   TestT06A7ColumnAllowlistIsolation/mysql/charset_off
+=== RUN   TestT06A7ColumnAllowlistIsolation/mysql/collation_allowed
+=== RUN   TestT06A7ColumnAllowlistIsolation/mysql/collation_denied
+=== RUN   TestT06A7ColumnAllowlistIsolation/mysql/collation_off
+=== RUN   TestT06A7ColumnAllowlistIsolation/tidb/charset_allowed
+=== RUN   TestT06A7ColumnAllowlistIsolation/tidb/charset_denied
+=== RUN   TestT06A7ColumnAllowlistIsolation/tidb/charset_off
+=== RUN   TestT06A7ColumnAllowlistIsolation/tidb/collation_allowed
+=== RUN   TestT06A7ColumnAllowlistIsolation/tidb/collation_denied
+=== RUN   TestT06A7ColumnAllowlistIsolation/tidb/collation_off
+--- PASS: TestT06A7ColumnAllowlistIsolation (0.04s)
+    --- PASS: TestT06A7ColumnAllowlistIsolation/mysql/charset_allowed (0.00s)
+    --- PASS: TestT06A7ColumnAllowlistIsolation/mysql/charset_denied (0.00s)
+    --- PASS: TestT06A7ColumnAllowlistIsolation/mysql/charset_off (0.00s)
+    --- PASS: TestT06A7ColumnAllowlistIsolation/mysql/collation_allowed (0.00s)
+    --- PASS: TestT06A7ColumnAllowlistIsolation/mysql/collation_denied (0.00s)
+    --- PASS: TestT06A7ColumnAllowlistIsolation/mysql/collation_off (0.00s)
+    --- PASS: TestT06A7ColumnAllowlistIsolation/tidb/charset_allowed (0.00s)
+    --- PASS: TestT06A7ColumnAllowlistIsolation/tidb/charset_denied (0.00s)
+    --- PASS: TestT06A7ColumnAllowlistIsolation/tidb/charset_off (0.00s)
+    --- PASS: TestT06A7ColumnAllowlistIsolation/tidb/collation_allowed (0.00s)
+    --- PASS: TestT06A7ColumnAllowlistIsolation/tidb/collation_denied (0.00s)
+    --- PASS: TestT06A7ColumnAllowlistIsolation/tidb/collation_off (0.00s)
+=== RUN   TestT06A7ColumnMatchShapes
+=== RUN   TestT06A7ColumnMatchShapes/mysql/pair
+=== RUN   TestT06A7ColumnMatchShapes/mysql/collate_only
+=== RUN   TestT06A7ColumnMatchShapes/mysql/charset_only
+=== RUN   TestT06A7ColumnMatchShapes/mysql/both_empty
+=== RUN   TestT06A7ColumnMatchShapes/mysql/mismatch
+=== RUN   TestT06A7ColumnMatchShapes/mysql/required_false_silent
+=== RUN   TestT06A7ColumnMatchShapes/mysql/off
+=== RUN   TestT06A7ColumnMatchShapes/tidb/pair
+=== RUN   TestT06A7ColumnMatchShapes/tidb/collate_only
+=== RUN   TestT06A7ColumnMatchShapes/tidb/charset_only
+=== RUN   TestT06A7ColumnMatchShapes/tidb/both_empty
+=== RUN   TestT06A7ColumnMatchShapes/tidb/mismatch
+=== RUN   TestT06A7ColumnMatchShapes/tidb/required_false_silent
+=== RUN   TestT06A7ColumnMatchShapes/tidb/off
+--- PASS: TestT06A7ColumnMatchShapes (0.04s)
+    --- PASS: TestT06A7ColumnMatchShapes/mysql/pair (0.00s)
+    --- PASS: TestT06A7ColumnMatchShapes/mysql/collate_only (0.00s)
+    --- PASS: TestT06A7ColumnMatchShapes/mysql/charset_only (0.00s)
+    --- PASS: TestT06A7ColumnMatchShapes/mysql/both_empty (0.00s)
+    --- PASS: TestT06A7ColumnMatchShapes/mysql/mismatch (0.00s)
+    --- PASS: TestT06A7ColumnMatchShapes/mysql/required_false_silent (0.00s)
+    --- PASS: TestT06A7ColumnMatchShapes/mysql/off (0.00s)
+    --- PASS: TestT06A7ColumnMatchShapes/tidb/pair (0.00s)
+    --- PASS: TestT06A7ColumnMatchShapes/tidb/collate_only (0.00s)
+    --- PASS: TestT06A7ColumnMatchShapes/tidb/charset_only (0.00s)
+    --- PASS: TestT06A7ColumnMatchShapes/tidb/both_empty (0.00s)
+    --- PASS: TestT06A7ColumnMatchShapes/tidb/mismatch (0.00s)
+    --- PASS: TestT06A7ColumnMatchShapes/tidb/required_false_silent (0.00s)
+    --- PASS: TestT06A7ColumnMatchShapes/tidb/off (0.00s)
+=== RUN   TestT06A7ColumnAttribution
+=== RUN   TestT06A7ColumnAttribution/mysql/mixed_columns
+=== RUN   TestT06A7ColumnAttribution/mysql/statement_owner
+=== RUN   TestT06A7ColumnAttribution/tidb/mixed_columns
+=== RUN   TestT06A7ColumnAttribution/tidb/statement_owner
+--- PASS: TestT06A7ColumnAttribution (0.01s)
+    --- PASS: TestT06A7ColumnAttribution/mysql/mixed_columns (0.00s)
+    --- PASS: TestT06A7ColumnAttribution/mysql/statement_owner (0.00s)
+    --- PASS: TestT06A7ColumnAttribution/tidb/mixed_columns (0.00s)
+    --- PASS: TestT06A7ColumnAttribution/tidb/statement_owner (0.00s)
+=== RUN   TestT06A7TableCollateAllOffComplete
+=== RUN   TestT06A7TableCollateAllOffComplete/mysql
+=== RUN   TestT06A7TableCollateAllOffComplete/tidb
+--- PASS: TestT06A7TableCollateAllOffComplete (0.00s)
+    --- PASS: TestT06A7TableCollateAllOffComplete/mysql (0.00s)
+    --- PASS: TestT06A7TableCollateAllOffComplete/tidb (0.00s)
+=== RUN   TestT06A7TableCollationRule
+=== RUN   TestT06A7TableCollationRule/mysql/allowed
+=== RUN   TestT06A7TableCollationRule/mysql/allowed_case_insensitive
+=== RUN   TestT06A7TableCollationRule/mysql/denied
+=== RUN   TestT06A7TableCollationRule/mysql/undeclared_optional_silent
+=== RUN   TestT06A7TableCollationRule/mysql/undeclared_required_finding
+=== RUN   TestT06A7TableCollationRule/mysql/off
+=== RUN   TestT06A7TableCollationRule/tidb/allowed
+=== RUN   TestT06A7TableCollationRule/tidb/allowed_case_insensitive
+=== RUN   TestT06A7TableCollationRule/tidb/denied
+=== RUN   TestT06A7TableCollationRule/tidb/undeclared_optional_silent
+=== RUN   TestT06A7TableCollationRule/tidb/undeclared_required_finding
+=== RUN   TestT06A7TableCollationRule/tidb/off
+--- PASS: TestT06A7TableCollationRule (0.02s)
+    --- PASS: TestT06A7TableCollationRule/mysql/allowed (0.00s)
+    --- PASS: TestT06A7TableCollationRule/mysql/allowed_case_insensitive (0.00s)
+    --- PASS: TestT06A7TableCollationRule/mysql/denied (0.00s)
+    --- PASS: TestT06A7TableCollationRule/mysql/undeclared_optional_silent (0.00s)
+    --- PASS: TestT06A7TableCollationRule/mysql/undeclared_required_finding (0.00s)
+    --- PASS: TestT06A7TableCollationRule/mysql/off (0.00s)
+    --- PASS: TestT06A7TableCollationRule/tidb/allowed (0.00s)
+    --- PASS: TestT06A7TableCollationRule/tidb/allowed_case_insensitive (0.00s)
+    --- PASS: TestT06A7TableCollationRule/tidb/denied (0.00s)
+    --- PASS: TestT06A7TableCollationRule/tidb/undeclared_optional_silent (0.00s)
+    --- PASS: TestT06A7TableCollationRule/tidb/undeclared_required_finding (0.00s)
+    --- PASS: TestT06A7TableCollationRule/tidb/off (0.00s)
+=== RUN   TestT06A7TableCollationVsColumnRules
+=== RUN   TestT06A7TableCollationVsColumnRules/mysql/column_collate_not_table
+=== RUN   TestT06A7TableCollationVsColumnRules/mysql/table_collate_not_column
+=== RUN   TestT06A7TableCollationVsColumnRules/tidb/column_collate_not_table
+=== RUN   TestT06A7TableCollationVsColumnRules/tidb/table_collate_not_column
+--- PASS: TestT06A7TableCollationVsColumnRules (0.01s)
+    --- PASS: TestT06A7TableCollationVsColumnRules/mysql/column_collate_not_table (0.00s)
+    --- PASS: TestT06A7TableCollationVsColumnRules/mysql/table_collate_not_column (0.00s)
+    --- PASS: TestT06A7TableCollationVsColumnRules/tidb/column_collate_not_table (0.00s)
+    --- PASS: TestT06A7TableCollationVsColumnRules/tidb/table_collate_not_column (0.00s)
+=== RUN   TestT06A7SchemaBoundariesPreserved
+=== RUN   TestT06A7SchemaBoundariesPreserved/mysql/create_database
+=== RUN   TestT06A7SchemaBoundariesPreserved/mysql/alter_database
+=== RUN   TestT06A7SchemaBoundariesPreserved/tidb/create_database
+=== RUN   TestT06A7SchemaBoundariesPreserved/tidb/alter_database
+--- PASS: TestT06A7SchemaBoundariesPreserved (0.01s)
+    --- PASS: TestT06A7SchemaBoundariesPreserved/mysql/create_database (0.00s)
+    --- PASS: TestT06A7SchemaBoundariesPreserved/mysql/alter_database (0.00s)
+    --- PASS: TestT06A7SchemaBoundariesPreserved/tidb/create_database (0.00s)
+    --- PASS: TestT06A7SchemaBoundariesPreserved/tidb/alter_database (0.00s)
+=== RUN   TestT06A7CoexistingUnauditedAspects
+--- PASS: TestT06A7CoexistingUnauditedAspects (0.00s)
+=== RUN   TestT06A7SourceFacts
+--- PASS: TestT06A7SourceFacts (0.00s)
+=== RUN   TestT06A7DerivedStateCarriesCollate
+=== RUN   TestT06A7DerivedStateCarriesCollate/mysql
+=== RUN   TestT06A7DerivedStateCarriesCollate/tidb
+--- PASS: TestT06A7DerivedStateCarriesCollate (0.00s)
+    --- PASS: TestT06A7DerivedStateCarriesCollate/mysql (0.00s)
+    --- PASS: TestT06A7DerivedStateCarriesCollate/tidb (0.00s)
+=== RUN   TestT06A7ScopeAndErrors
+=== RUN   TestT06A7ScopeAndErrors/mysql/alter_unaffected
+=== RUN   TestT06A7ScopeAndErrors/mysql/bad_params_channel
+=== RUN   TestT06A7ScopeAndErrors/tidb/alter_unaffected
+=== RUN   TestT06A7ScopeAndErrors/tidb/bad_params_channel
+--- PASS: TestT06A7ScopeAndErrors (0.01s)
+    --- PASS: TestT06A7ScopeAndErrors/mysql/alter_unaffected (0.00s)
+    --- PASS: TestT06A7ScopeAndErrors/mysql/bad_params_channel (0.00s)
+    --- PASS: TestT06A7ScopeAndErrors/tidb/alter_unaffected (0.00s)
+    --- PASS: TestT06A7ScopeAndErrors/tidb/bad_params_channel (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	1.169s

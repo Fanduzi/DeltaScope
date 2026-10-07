@@ -1,0 +1,275 @@
+{
+  "case_id": "T04.meta.t04b-mysql84-4k-page-blocker",
+  "kind": "cli_metadata",
+  "cli_case": "t04b-mysql84-4k-page-blocker",
+  "anchor": "mysql84-4k",
+  "dialect": "mysql",
+  "input_sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+  "policy_profile": "t04b-key-length-isolated",
+  "policy_path": "/private/tmp/ds-t06-a7-final/T04/golden-policy-t04b-key-length-isolated.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23394,
+    "user": "root",
+    "password_env": "DS_T04_GOLDEN_PW",
+    "schema": "golden"
+  },
+  "expected": {
+    "exit": 0,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.index.key_length.max_bytes.require",
+        "level": "blocker"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 0,
+        "rule_id": "ddl.index.key_length.max_bytes.require",
+        "metadata": {
+          "limit": 768
+        }
+      }
+    ],
+    "fail_on_triggered": false,
+    "version": {
+      "product": "mysql",
+      "version": "8.4.10",
+      "source": "observed",
+      "validated_range": true
+    },
+    "instance_facts": {
+      "innodb_page_size": 4096
+    }
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:8.4.10",
+      "image_digest": "mysql@sha256:c592c15aaf4a1961e15d82eb31ea5987dda862d1c4b1e93424438c0e91dc1f8d",
+      "container": "deltascope-ddl-golden-mysql84-4k",
+      "reachable": true,
+      "version": "8.4.10"
+    },
+    "setup": [],
+    "post_verify": [],
+    "execute": [],
+    "structure": [],
+    "teardown": [],
+    "exit": 0,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;\",\"normalized_sql\":\"CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC\",\"findings\":[{\"rule_id\":\"ddl.index.key_length.max_bytes.require\",\"level\":\"blocker\",\"message\":\"index \\\"idx_c\\\" estimated key length exceeds 768 bytes (1022)\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"reduce indexed column lengths, add explicit prefix lengths, or review large-prefix compatibility explicitly\",\"metadata\":{\"charset\":\"utf8mb4\",\"columns\":[\"c\"],\"estimated_bytes\":1022,\"index\":\"idx_c\",\"limit\":768,\"table\":\"t\"},\"explanation\":{\"summary\":\"Require DDL index key length max bytes require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"reduce indexed column lengths, add explicit prefix lengths, or review large-prefix compatibility explicitly\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.4.10\",\"major\":8,\"minor\":4,\"patch\":10,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+          "normalized_sql": "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC",
+          "findings": [
+            {
+              "rule_id": "ddl.index.key_length.max_bytes.require",
+              "level": "blocker",
+              "message": "index \"idx_c\" estimated key length exceeds 768 bytes (1022)",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "reduce indexed column lengths, add explicit prefix lengths, or review large-prefix compatibility explicitly",
+              "metadata": {
+                "charset": "utf8mb4",
+                "columns": [
+                  "c"
+                ],
+                "estimated_bytes": 1022,
+                "index": "idx_c",
+                "limit": 768,
+                "table": "t"
+              },
+              "explanation": {
+                "summary": "Require DDL index key length max bytes require",
+                "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+                "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                "suggestion": "reduce indexed column lengths, add explicit prefix lengths, or review large-prefix compatibility explicitly",
+                "metadata": {
+                  "status": "available",
+                  "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                }
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "8.4.10",
+        "major": 8,
+        "minor": 4,
+        "patch": 10,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.4.10",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "8.4.10"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "8.4.10",
+        "major": 8,
+        "minor": 4,
+        "patch": 10,
+        "source": "observed",
+        "validated_range": true
+      }
+    },
+    "instance_facts": {
+      "innodb_page_size": 4096
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.4.10' expected_contains='8.4.10'"
+    },
+    {
+      "name": "instance fact innodb_page_size",
+      "ok": true,
+      "detail": "innodb_page_size=4096 expected=4096"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.index.key_length.max_bytes.require', 'blocker')] expected=[(0, 'ddl.index.key_length.max_bytes.require', 'blocker')]"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.index.key_length.max_bytes.require')",
+      "ok": true,
+      "detail": "findings=[{'charset': 'utf8mb4', 'columns': ['c'], 'estimated_bytes': 1022, 'index': 'idx_c', 'limit': 768, 'table': 't'}] expected_subset={'limit': 768}"
+    },
+    {
+      "name": "fail_on_triggered",
+      "ok": true,
+      "detail": "fail_on_triggered=False"
+    },
+    {
+      "name": "version identity",
+      "ok": true,
+      "detail": "version={'product': 'mysql', 'version': '8.4.10', 'major': 8, 'minor': 4, 'patch': 10, 'source': 'observed', 'validated_range': True} expected={'product': 'mysql', 'version': '8.4.10', 'source': 'observed', 'validated_range': True}"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ds-t06-a7-final/T04/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "CREATE TABLE t (c VARCHAR(255) CHARACTER SET utf8mb4, KEY idx_c (c)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+    "--config",
+    "/private/tmp/ds-t06-a7-final/T04/golden-policy-t04b-key-length-isolated.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23394",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T04_GOLDEN_PW",
+    "--schema",
+    "golden",
+    "--fail-on",
+    "none"
+  ]
+}

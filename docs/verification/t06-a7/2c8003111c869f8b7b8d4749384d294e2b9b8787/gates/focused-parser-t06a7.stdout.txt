@@ -1,0 +1,34 @@
+=== RUN   TestT06A7DeclaredCharsetCollationFields
+=== RUN   TestT06A7DeclaredCharsetCollationFields/mysql/pair
+=== RUN   TestT06A7DeclaredCharsetCollationFields/mysql/collate_only
+=== RUN   TestT06A7DeclaredCharsetCollationFields/mysql/charset_only
+=== RUN   TestT06A7DeclaredCharsetCollationFields/mysql/mismatched
+=== RUN   TestT06A7DeclaredCharsetCollationFields/mysql/undeclared
+=== RUN   TestT06A7DeclaredCharsetCollationFields/tidb/pair
+=== RUN   TestT06A7DeclaredCharsetCollationFields/tidb/collate_only
+=== RUN   TestT06A7DeclaredCharsetCollationFields/tidb/charset_only
+=== RUN   TestT06A7DeclaredCharsetCollationFields/tidb/mismatched
+=== RUN   TestT06A7DeclaredCharsetCollationFields/tidb/undeclared
+--- PASS: TestT06A7DeclaredCharsetCollationFields (0.00s)
+    --- PASS: TestT06A7DeclaredCharsetCollationFields/mysql/pair (0.00s)
+    --- PASS: TestT06A7DeclaredCharsetCollationFields/mysql/collate_only (0.00s)
+    --- PASS: TestT06A7DeclaredCharsetCollationFields/mysql/charset_only (0.00s)
+    --- PASS: TestT06A7DeclaredCharsetCollationFields/mysql/mismatched (0.00s)
+    --- PASS: TestT06A7DeclaredCharsetCollationFields/mysql/undeclared (0.00s)
+    --- PASS: TestT06A7DeclaredCharsetCollationFields/tidb/pair (0.00s)
+    --- PASS: TestT06A7DeclaredCharsetCollationFields/tidb/collate_only (0.00s)
+    --- PASS: TestT06A7DeclaredCharsetCollationFields/tidb/charset_only (0.00s)
+    --- PASS: TestT06A7DeclaredCharsetCollationFields/tidb/mismatched (0.00s)
+    --- PASS: TestT06A7DeclaredCharsetCollationFields/tidb/undeclared (0.00s)
+=== RUN   TestT06A7TableCollateOptionField
+=== RUN   TestT06A7TableCollateOptionField/mysql/declared
+=== RUN   TestT06A7TableCollateOptionField/mysql/undeclared
+=== RUN   TestT06A7TableCollateOptionField/tidb/declared
+=== RUN   TestT06A7TableCollateOptionField/tidb/undeclared
+--- PASS: TestT06A7TableCollateOptionField (0.00s)
+    --- PASS: TestT06A7TableCollateOptionField/mysql/declared (0.00s)
+    --- PASS: TestT06A7TableCollateOptionField/mysql/undeclared (0.00s)
+    --- PASS: TestT06A7TableCollateOptionField/tidb/declared (0.00s)
+    --- PASS: TestT06A7TableCollateOptionField/tidb/undeclared (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	0.517s

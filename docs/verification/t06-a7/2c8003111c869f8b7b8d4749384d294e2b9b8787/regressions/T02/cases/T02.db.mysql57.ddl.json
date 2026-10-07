@@ -1,0 +1,162 @@
+{
+  "case_id": "T02.db.mysql57.ddl",
+  "kind": "db_ddl",
+  "anchor": "mysql57",
+  "input_sql": [
+    "CREATE TABLE golden_t (id INT PRIMARY KEY)",
+    "ALTER TABLE golden_t ADD COLUMN c INT",
+    "DROP TABLE golden_t"
+  ],
+  "expected": {
+    "steps": [
+      {
+        "name": "create",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "table exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+            "expect": "1"
+          },
+          {
+            "assert": "primary key exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+            "expect": "1"
+          }
+        ]
+      },
+      {
+        "name": "alter",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "column c exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND COLUMN_NAME='c'",
+            "expect": "1"
+          }
+        ]
+      },
+      {
+        "name": "drop",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "table absent",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+            "expect": "0"
+          }
+        ]
+      }
+    ]
+  },
+  "actual": {
+    "steps": [
+      {
+        "name": "create",
+        "sql": "CREATE TABLE golden_t (id INT PRIMARY KEY)",
+        "verify": [
+          {
+            "assert": "table exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+            "rc": 0,
+            "output": "1",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          },
+          {
+            "assert": "primary key exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+            "rc": 0,
+            "output": "1",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "name": "alter",
+        "sql": "ALTER TABLE golden_t ADD COLUMN c INT",
+        "verify": [
+          {
+            "assert": "column c exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND COLUMN_NAME='c'",
+            "rc": 0,
+            "output": "1",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "name": "drop",
+        "sql": "DROP TABLE golden_t",
+        "verify": [
+          {
+            "assert": "table absent",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      }
+    ],
+    "database": {
+      "product": "mysql",
+      "image": "mysql:5.7.44",
+      "image_digest": "mysql@sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb",
+      "container": "deltascope-ddl-golden-mysql57",
+      "reachable": true,
+      "version": "5.7.44"
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='5.7.44' expected_contains='5.7.44'"
+    },
+    {
+      "name": "create return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "create: table exists",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "create: primary key exists",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "alter return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "alter: column c exists",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "drop return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "drop: table absent",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    }
+  ],
+  "status": "pass"
+}

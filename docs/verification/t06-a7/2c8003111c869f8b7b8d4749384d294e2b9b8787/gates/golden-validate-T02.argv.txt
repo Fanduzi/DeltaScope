@@ -1,0 +1,1 @@
+python3 scripts/ddl_golden.py validate --artifact docs/verification/t06-a7/2c8003111c869f8b7b8d4749384d294e2b9b8787/regressions/T02/artifact.json

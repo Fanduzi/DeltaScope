@@ -1,0 +1,367 @@
+{
+  "case_id": "T05.cli.t05-a5-mysql-rename-offline-900",
+  "kind": "cli_audit",
+  "cli_case": "t05-a5-mysql-rename-offline-900",
+  "dialect": "mysql",
+  "input_sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t RENAME COLUMN c TO c2; ALTER TABLE t MODIFY COLUMN c2 VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; CREATE INDEX idx_c2 ON t(c2);",
+  "policy_profile": "t05-a5-column-identity-isolated",
+  "policy_path": "/private/tmp/ds-t06-a7-final/T05/golden-policy-t05-a5-column-identity-isolated.yaml",
+  "command": [
+    "/private/tmp/ds-t06-a7-final/T05/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL); ALTER TABLE t RENAME COLUMN c TO c2; ALTER TABLE t MODIFY COLUMN c2 VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL; CREATE INDEX idx_c2 ON t(c2);",
+    "--config",
+    "/private/tmp/ds-t06-a7-final/T05/golden-policy-t05-a5-column-identity-isolated.yaml",
+    "--format",
+    "json",
+    "--fail-on",
+    "blocker",
+    "--target-version",
+    "9.0.0"
+  ],
+  "expected": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 4,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+      "unverified",
+      "unverified",
+      "unverified",
+      "unverified"
+    ],
+    "statement_sql": [
+      "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+      "ALTER TABLE t RENAME COLUMN c TO c2;",
+      "ALTER TABLE t MODIFY COLUMN c2 VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+      "CREATE INDEX idx_c2 ON t(c2);"
+    ],
+    "evidence_gaps": 6,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 11,
+    "statement_indices": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "evidence_gap_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.table.exists.create.forbid",
+        "reason_code": "unknown_table_state",
+        "required_facts": [
+          "target_table.existence"
+        ]
+      },
+      {
+        "index": 1,
+        "rule_id": "ddl.alter.rename_column.version.require",
+        "reason_code": "target_version_out_of_validated_range",
+        "required_facts": [
+          "target.version.validated_range"
+        ]
+      },
+      {
+        "index": 2,
+        "rule_id": "ddl.alter.modify_column.compatibility.require",
+        "reason_code": "missing_source_column",
+        "required_facts": [
+          "source_column.definition"
+        ]
+      },
+      {
+        "index": 2,
+        "rule_id": "ddl.table.exists.alter.require",
+        "reason_code": "unknown_table_state",
+        "required_facts": [
+          "target_table.existence"
+        ]
+      },
+      {
+        "index": 2,
+        "rule_id": "ddl.alter.modify_column.exists.require",
+        "reason_code": "unknown_table_state",
+        "required_facts": [
+          "target_table.columns",
+          "target_table.existence"
+        ]
+      },
+      {
+        "index": 3,
+        "rule_id": "ddl.create_index.columns.exists.require",
+        "reason_code": "unknown_table_state",
+        "required_facts": [
+          "target_table.columns",
+          "target_table.existence"
+        ]
+      }
+    ]
+  },
+  "actual": {
+    "exit": 0,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":4,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);\",\"normalized_sql\":\"CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)\",\"evidence_gaps\":[{\"rule_id\":\"ddl.table.exists.create.forbid\",\"reason_code\":\"unknown_table_state\",\"required_facts\":[\"target_table.existence\"]}],\"coverage\":{\"status\":\"unverified\"}},{\"index\":1,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t RENAME COLUMN c TO c2;\",\"normalized_sql\":\"ALTER TABLE t RENAME COLUMN c TO c2\",\"evidence_gaps\":[{\"rule_id\":\"ddl.alter.rename_column.version.require\",\"reason_code\":\"target_version_out_of_validated_range\",\"required_facts\":[\"target.version.validated_range\"]}],\"coverage\":{\"status\":\"unverified\"}},{\"index\":2,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t MODIFY COLUMN c2 VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;\",\"normalized_sql\":\"ALTER TABLE t MODIFY COLUMN c2 VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL\",\"evidence_gaps\":[{\"rule_id\":\"ddl.alter.modify_column.compatibility.require\",\"reason_code\":\"missing_source_column\",\"required_facts\":[\"source_column.definition\"]},{\"rule_id\":\"ddl.table.exists.alter.require\",\"reason_code\":\"unknown_table_state\",\"required_facts\":[\"target_table.existence\"]},{\"rule_id\":\"ddl.alter.modify_column.exists.require\",\"reason_code\":\"unknown_table_state\",\"required_facts\":[\"target_table.columns\",\"target_table.existence\"]}],\"coverage\":{\"status\":\"unverified\"}},{\"index\":3,\"kind\":\"ddl\",\"raw_sql\":\"CREATE INDEX idx_c2 ON t(c2);\",\"normalized_sql\":\"CREATE INDEX idx_c2 ON t(c2)\",\"evidence_gaps\":[{\"rule_id\":\"ddl.create_index.columns.exists.require\",\"reason_code\":\"unknown_table_state\",\"required_facts\":[\"target_table.columns\",\"target_table.existence\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"9.0.0\",\"major\":9,\"minor\":0,\"patch\":0,\"source\":\"target\",\"validated_range\":false},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":11,\"applicable\":8,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "unverified"
+      },
+      "summary": {
+        "statements": 4,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);",
+          "normalized_sql": "CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL)",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.table.exists.create.forbid",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "target_table.existence"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        },
+        {
+          "index": 1,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t RENAME COLUMN c TO c2;",
+          "normalized_sql": "ALTER TABLE t RENAME COLUMN c TO c2",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.alter.rename_column.version.require",
+              "reason_code": "target_version_out_of_validated_range",
+              "required_facts": [
+                "target.version.validated_range"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        },
+        {
+          "index": 2,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t MODIFY COLUMN c2 VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;",
+          "normalized_sql": "ALTER TABLE t MODIFY COLUMN c2 VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.alter.modify_column.compatibility.require",
+              "reason_code": "missing_source_column",
+              "required_facts": [
+                "source_column.definition"
+              ]
+            },
+            {
+              "rule_id": "ddl.table.exists.alter.require",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "target_table.existence"
+              ]
+            },
+            {
+              "rule_id": "ddl.alter.modify_column.exists.require",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "target_table.columns",
+                "target_table.existence"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        },
+        {
+          "index": 3,
+          "kind": "ddl",
+          "raw_sql": "CREATE INDEX idx_c2 ON t(c2);",
+          "normalized_sql": "CREATE INDEX idx_c2 ON t(c2)",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.create_index.columns.exists.require",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "target_table.columns",
+                "target_table.existence"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "9.0.0",
+        "major": 9,
+        "minor": 0,
+        "patch": 0,
+        "source": "target",
+        "validated_range": false
+      },
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 11,
+        "applicable": 8,
+        "skipped": []
+      },
+      "context": {
+        "mode": "offline",
+        "dialect": "mysql",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": "9.0.0",
+      "target_canonical": "9.0.0",
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": {
+        "product": "mysql",
+        "version": "9.0.0",
+        "major": 9,
+        "minor": 0,
+        "patch": 0,
+        "source": "target",
+        "validated_range": false
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=4 expected=4"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=11"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0, 1, 2, 3]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='unverified'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['unverified', 'unverified', 'unverified', 'unverified']"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);', 'ALTER TABLE t RENAME COLUMN c TO c2;', 'ALTER TABLE t MODIFY COLUMN c2 VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;', 'CREATE INDEX idx_c2 ON t(c2);'] expected=['CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL);', 'ALTER TABLE t RENAME COLUMN c TO c2;', 'ALTER TABLE t MODIFY COLUMN c2 VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL;', 'CREATE INDEX idx_c2 ON t(c2);']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=6"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[(0, 'ddl.table.exists.create.forbid', 'unknown_table_state'), (1, 'ddl.alter.rename_column.version.require', 'target_version_out_of_validated_range'), (2, 'ddl.alter.modify_column.compatibility.require', 'missing_source_column'), (2, 'ddl.alter.modify_column.exists.require', 'unknown_table_state'), (2, 'ddl.table.exists.alter.require', 'unknown_table_state'), (3, 'ddl.create_index.columns.exists.require', 'unknown_table_state')] expected=[(0, 'ddl.table.exists.create.forbid', 'unknown_table_state'), (1, 'ddl.alter.rename_column.version.require', 'target_version_out_of_validated_range'), (2, 'ddl.alter.modify_column.compatibility.require', 'missing_source_column'), (2, 'ddl.alter.modify_column.exists.require', 'unknown_table_state'), (2, 'ddl.table.exists.alter.require', 'unknown_table_state'), (3, 'ddl.create_index.columns.exists.require', 'unknown_table_state')]"
+    },
+    {
+      "name": "evidence gap required_facts (0, 'ddl.table.exists.create.forbid', 'unknown_table_state')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.table.exists.create.forbid', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.existence']}, {'rule_id': 'ddl.alter.rename_column.version.require', 'reason_code': 'target_version_out_of_validated_range', 'required_facts': ['target.version.validated_range']}, {'rule_id': 'ddl.alter.modify_column.compatibility.require', 'reason_code': 'missing_source_column', 'required_facts': ['source_column.definition']}, {'rule_id': 'ddl.table.exists.alter.require', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.existence']}, {'rule_id': 'ddl.alter.modify_column.exists.require', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.columns', 'target_table.existence']}, {'rule_id': 'ddl.create_index.columns.exists.require', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.columns', 'target_table.existence']}] expected_facts=['target_table.existence']"
+    },
+    {
+      "name": "evidence gap required_facts (1, 'ddl.alter.rename_column.version.require', 'target_version_out_of_validated_range')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.table.exists.create.forbid', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.existence']}, {'rule_id': 'ddl.alter.rename_column.version.require', 'reason_code': 'target_version_out_of_validated_range', 'required_facts': ['target.version.validated_range']}, {'rule_id': 'ddl.alter.modify_column.compatibility.require', 'reason_code': 'missing_source_column', 'required_facts': ['source_column.definition']}, {'rule_id': 'ddl.table.exists.alter.require', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.existence']}, {'rule_id': 'ddl.alter.modify_column.exists.require', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.columns', 'target_table.existence']}, {'rule_id': 'ddl.create_index.columns.exists.require', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.columns', 'target_table.existence']}] expected_facts=['target.version.validated_range']"
+    },
+    {
+      "name": "evidence gap required_facts (2, 'ddl.alter.modify_column.compatibility.require', 'missing_source_column')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.table.exists.create.forbid', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.existence']}, {'rule_id': 'ddl.alter.rename_column.version.require', 'reason_code': 'target_version_out_of_validated_range', 'required_facts': ['target.version.validated_range']}, {'rule_id': 'ddl.alter.modify_column.compatibility.require', 'reason_code': 'missing_source_column', 'required_facts': ['source_column.definition']}, {'rule_id': 'ddl.table.exists.alter.require', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.existence']}, {'rule_id': 'ddl.alter.modify_column.exists.require', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.columns', 'target_table.existence']}, {'rule_id': 'ddl.create_index.columns.exists.require', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.columns', 'target_table.existence']}] expected_facts=['source_column.definition']"
+    },
+    {
+      "name": "evidence gap required_facts (2, 'ddl.table.exists.alter.require', 'unknown_table_state')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.table.exists.create.forbid', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.existence']}, {'rule_id': 'ddl.alter.rename_column.version.require', 'reason_code': 'target_version_out_of_validated_range', 'required_facts': ['target.version.validated_range']}, {'rule_id': 'ddl.alter.modify_column.compatibility.require', 'reason_code': 'missing_source_column', 'required_facts': ['source_column.definition']}, {'rule_id': 'ddl.table.exists.alter.require', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.existence']}, {'rule_id': 'ddl.alter.modify_column.exists.require', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.columns', 'target_table.existence']}, {'rule_id': 'ddl.create_index.columns.exists.require', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.columns', 'target_table.existence']}] expected_facts=['target_table.existence']"
+    },
+    {
+      "name": "evidence gap required_facts (2, 'ddl.alter.modify_column.exists.require', 'unknown_table_state')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.table.exists.create.forbid', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.existence']}, {'rule_id': 'ddl.alter.rename_column.version.require', 'reason_code': 'target_version_out_of_validated_range', 'required_facts': ['target.version.validated_range']}, {'rule_id': 'ddl.alter.modify_column.compatibility.require', 'reason_code': 'missing_source_column', 'required_facts': ['source_column.definition']}, {'rule_id': 'ddl.table.exists.alter.require', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.existence']}, {'rule_id': 'ddl.alter.modify_column.exists.require', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.columns', 'target_table.existence']}, {'rule_id': 'ddl.create_index.columns.exists.require', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.columns', 'target_table.existence']}] expected_facts=['target_table.columns', 'target_table.existence']"
+    },
+    {
+      "name": "evidence gap required_facts (3, 'ddl.create_index.columns.exists.require', 'unknown_table_state')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.table.exists.create.forbid', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.existence']}, {'rule_id': 'ddl.alter.rename_column.version.require', 'reason_code': 'target_version_out_of_validated_range', 'required_facts': ['target.version.validated_range']}, {'rule_id': 'ddl.alter.modify_column.compatibility.require', 'reason_code': 'missing_source_column', 'required_facts': ['source_column.definition']}, {'rule_id': 'ddl.table.exists.alter.require', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.existence']}, {'rule_id': 'ddl.alter.modify_column.exists.require', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.columns', 'target_table.existence']}, {'rule_id': 'ddl.create_index.columns.exists.require', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.columns', 'target_table.existence']}] expected_facts=['target_table.columns', 'target_table.existence']"
+    },
+    {
+      "name": "no gap encoded as finding",
+      "ok": true,
+      "detail": "findings carrying gap shape=[]"
+    },
+    {
+      "name": "fail_on_triggered",
+      "ok": true,
+      "detail": "fail_on_triggered=False"
+    }
+  ],
+  "status": "pass"
+}

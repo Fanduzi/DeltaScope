@@ -1,0 +1,782 @@
+rules:
+  "ddl.alter.add_column.exists.forbid":
+    enabled: false
+  "ddl.alter.add_column.notice":
+    enabled: false
+  "ddl.alter.add_constraint.notice":
+    enabled: false
+  "ddl.alter.add_index.columns.max_count":
+    enabled: false
+  "ddl.alter.add_index.duplicate.forbid":
+    enabled: false
+  "ddl.alter.add_index.exists.forbid":
+    enabled: false
+  "ddl.alter.add_index.fulltext.contains.require":
+    enabled: false
+  "ddl.alter.add_index.fulltext.prefix.require":
+    enabled: false
+  "ddl.alter.add_index.fulltext.suffix.require":
+    enabled: false
+  "ddl.alter.add_index.redundant_left_prefix.forbid":
+    enabled: false
+  "ddl.alter.add_index.redundant_unique_overlap.forbid":
+    enabled: false
+  "ddl.alter.add_index.secondary.contains.require":
+    enabled: false
+  "ddl.alter.add_index.secondary.prefix.require":
+    enabled: false
+  "ddl.alter.add_index.secondary.suffix.require":
+    enabled: false
+  "ddl.alter.add_index.unique.contains.require":
+    enabled: false
+  "ddl.alter.add_index.unique.prefix.require":
+    enabled: false
+  "ddl.alter.add_index.unique.suffix.require":
+    enabled: false
+  "ddl.alter.change_column.compatibility.require":
+    enabled: true
+    level: blocker
+    params:
+      required: true
+  "ddl.alter.change_column.exists.require":
+    enabled: true
+    level: blocker
+  "ddl.alter.change_column.explicit_auto_increment_change.forbid":
+    enabled: false
+  "ddl.alter.change_column.explicit_default_change.forbid":
+    enabled: false
+  "ddl.alter.change_column.explicit_nullability_change.forbid":
+    enabled: false
+  "ddl.alter.change_column.forbid":
+    enabled: false
+  "ddl.alter.change_column.target.exists.forbid":
+    enabled: true
+    level: blocker
+  "ddl.alter.change_column.target_type_family.allowlist":
+    enabled: false
+  "ddl.alter.drop_column.exists.require":
+    enabled: false
+  "ddl.alter.drop_column.forbid":
+    enabled: false
+  "ddl.alter.drop_column.notice":
+    enabled: false
+  "ddl.alter.drop_default.explicit_default_change.forbid":
+    enabled: false
+  "ddl.alter.drop_default.forbid":
+    enabled: false
+  "ddl.alter.drop_expression.forbid":
+    enabled: false
+  "ddl.alter.drop_foreign_key.notice":
+    enabled: false
+  "ddl.alter.drop_identity.forbid":
+    enabled: false
+  "ddl.alter.drop_index.exists.require":
+    enabled: false
+  "ddl.alter.drop_index.forbid":
+    enabled: false
+  "ddl.alter.drop_index.notice":
+    enabled: false
+  "ddl.alter.drop_not_null.explicit_nullability_change.forbid":
+    enabled: false
+  "ddl.alter.drop_not_null.forbid":
+    enabled: false
+  "ddl.alter.drop_primary_key.exists.require":
+    enabled: false
+  "ddl.alter.drop_primary_key.forbid":
+    enabled: false
+  "ddl.alter.merge.mysql.require":
+    enabled: false
+  "ddl.alter.merge.tidb.require":
+    enabled: false
+  "ddl.alter.modify_column.compatibility.require":
+    enabled: true
+    level: blocker
+    params:
+      required: true
+  "ddl.alter.modify_column.exists.require":
+    enabled: true
+    level: blocker
+  "ddl.alter.modify_column.explicit_auto_increment_change.forbid":
+    enabled: false
+  "ddl.alter.modify_column.explicit_default_change.forbid":
+    enabled: false
+  "ddl.alter.modify_column.explicit_nullability_change.forbid":
+    enabled: false
+  "ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory":
+    enabled: false
+  "ddl.alter.modify_column.forbid":
+    enabled: false
+  "ddl.alter.modify_column.notice":
+    enabled: false
+  "ddl.alter.modify_column.target_type_family.allowlist":
+    enabled: false
+  "ddl.alter.rename_column.exists.require":
+    enabled: true
+    level: blocker
+  "ddl.alter.rename_column.forbid":
+    enabled: false
+  "ddl.alter.rename_column.target.exists.forbid":
+    enabled: true
+    level: blocker
+  "ddl.alter.rename_column.version.require":
+    enabled: true
+    level: blocker
+    params:
+      required: true
+  "ddl.alter.rename_index.exists.require":
+    enabled: false
+  "ddl.alter.rename_index.forbid":
+    enabled: false
+  "ddl.alter.rename_table.forbid":
+    enabled: false
+  "ddl.alter.set_data_type.forbid":
+    enabled: false
+  "ddl.alter.set_default.explicit_default_change.forbid":
+    enabled: false
+  "ddl.alter.set_default.forbid":
+    enabled: false
+  "ddl.alter.set_generated.forbid":
+    enabled: false
+  "ddl.alter.set_not_null.explicit_nullability_change.forbid":
+    enabled: false
+  "ddl.alter.set_not_null.forbid":
+    enabled: false
+  "ddl.alter.table_option.compatibility.require":
+    enabled: false
+  "ddl.alter_database.notice":
+    enabled: false
+  "ddl.alter_placement_policy.notice":
+    enabled: false
+  "ddl.alter_sequence.notice":
+    enabled: false
+  "ddl.alter_user.notice":
+    enabled: false
+  "ddl.column.bit.forbid":
+    enabled: false
+  "ddl.column.blob_text.forbid":
+    enabled: false
+  "ddl.column.char.max_length":
+    enabled: false
+  "ddl.column.charset.allowlist":
+    enabled: false
+  "ddl.column.charset_collation.match.require":
+    enabled: false
+  "ddl.column.collation.allowlist":
+    enabled: false
+  "ddl.column.comment.require":
+    enabled: false
+  "ddl.column.default.require":
+    enabled: false
+  "ddl.column.float_double.forbid":
+    enabled: false
+  "ddl.column.json.forbid":
+    enabled: false
+  "ddl.column.name.contains.require":
+    enabled: false
+  "ddl.column.name.keyword.forbid":
+    enabled: false
+  "ddl.column.name.max_length":
+    enabled: false
+  "ddl.column.name.pattern.require":
+    enabled: false
+  "ddl.column.name.prefix.require":
+    enabled: false
+  "ddl.column.name.suffix.require":
+    enabled: false
+  "ddl.column.not_null.require":
+    enabled: false
+  "ddl.column.timestamp.forbid":
+    enabled: false
+  "ddl.column.varchar.max_length":
+    enabled: false
+  "ddl.constraint.check.name.contains.require":
+    enabled: false
+  "ddl.constraint.check.name.prefix.require":
+    enabled: false
+  "ddl.constraint.check.name.suffix.require":
+    enabled: false
+  "ddl.constraint.foreign_key.name.contains.require":
+    enabled: false
+  "ddl.constraint.foreign_key.name.prefix.require":
+    enabled: false
+  "ddl.constraint.foreign_key.name.suffix.require":
+    enabled: false
+  "ddl.constraint.primary_key.name.contains.require":
+    enabled: false
+  "ddl.constraint.primary_key.name.prefix.require":
+    enabled: false
+  "ddl.constraint.primary_key.name.suffix.require":
+    enabled: false
+  "ddl.constraint.unique_key.name.contains.require":
+    enabled: false
+  "ddl.constraint.unique_key.name.prefix.require":
+    enabled: false
+  "ddl.constraint.unique_key.name.suffix.require":
+    enabled: false
+  "ddl.create_index.columns.exists.require":
+    enabled: true
+    level: blocker
+    params:
+      required: true
+  "ddl.create_index.notice":
+    enabled: false
+  "ddl.create_placement_policy.notice":
+    enabled: false
+  "ddl.create_procedure.notice":
+    enabled: false
+  "ddl.create_role.notice":
+    enabled: false
+  "ddl.create_sequence.notice":
+    enabled: false
+  "ddl.create_user.notice":
+    enabled: false
+  "ddl.database.create.notice":
+    enabled: false
+  "ddl.database.drop.warn":
+    enabled: false
+  "ddl.drop_index.notice":
+    enabled: false
+  "ddl.drop_placement_policy.notice":
+    enabled: false
+  "ddl.drop_procedure.notice":
+    enabled: false
+  "ddl.drop_resource_group.notice":
+    enabled: false
+  "ddl.drop_role.notice":
+    enabled: false
+  "ddl.drop_sequence.notice":
+    enabled: false
+  "ddl.drop_user.notice":
+    enabled: false
+  "ddl.grant.notice":
+    enabled: false
+  "ddl.index.columns.max_count":
+    enabled: false
+  "ddl.index.duplicate.forbid":
+    enabled: false
+  "ddl.index.fulltext.contains.require":
+    enabled: false
+  "ddl.index.fulltext.prefix.require":
+    enabled: false
+  "ddl.index.fulltext.suffix.require":
+    enabled: false
+  "ddl.index.key_length.max_bytes.require":
+    enabled: false
+  "ddl.index.name.keyword.forbid":
+    enabled: false
+  "ddl.index.name.pattern.require":
+    enabled: false
+  "ddl.index.redundant_left_prefix.forbid":
+    enabled: false
+  "ddl.index.redundant_unique_overlap.forbid":
+    enabled: false
+  "ddl.index.secondary.contains.require":
+    enabled: false
+  "ddl.index.secondary.prefix.require":
+    enabled: false
+  "ddl.index.secondary.suffix.require":
+    enabled: false
+  "ddl.index.total.max_count":
+    enabled: false
+  "ddl.index.unique.contains.require":
+    enabled: false
+  "ddl.index.unique.prefix.require":
+    enabled: false
+  "ddl.index.unique.suffix.require":
+    enabled: false
+  "ddl.pg.alter.add_check.not_valid.require":
+    enabled: false
+  "ddl.pg.alter.add_column.non_null_default.rewrite.warn":
+    enabled: false
+  "ddl.pg.alter.add_column.non_null_no_default.warn":
+    enabled: false
+  "ddl.pg.alter.add_column.nullable.notice":
+    enabled: false
+  "ddl.pg.alter.add_exclusion_constraint.notice":
+    enabled: false
+  "ddl.pg.alter.add_identity.notice":
+    enabled: false
+  "ddl.pg.alter.add_inherit.notice":
+    enabled: false
+  "ddl.pg.alter.add_of_type.notice":
+    enabled: false
+  "ddl.pg.alter.add_unique_constraint.concurrent_index.advisory":
+    enabled: false
+  "ddl.pg.alter.attach_partition.advisory":
+    enabled: false
+  "ddl.pg.alter.cluster_on.notice":
+    enabled: false
+  "ddl.pg.alter.constraint_deferrable.notice":
+    enabled: false
+  "ddl.pg.alter.constraint_initially_deferred.notice":
+    enabled: false
+  "ddl.pg.alter.detach_partition.warn":
+    enabled: false
+  "ddl.pg.alter.detach_partition_finalize.notice":
+    enabled: false
+  "ddl.pg.alter.disable_rls.warn":
+    enabled: false
+  "ddl.pg.alter.disable_rule.warn":
+    enabled: false
+  "ddl.pg.alter.disable_trigger.warn":
+    enabled: false
+  "ddl.pg.alter.drop_column.advisory":
+    enabled: false
+  "ddl.pg.alter.drop_constraint.advisory":
+    enabled: false
+  "ddl.pg.alter.drop_inherit.notice":
+    enabled: false
+  "ddl.pg.alter.drop_of_type.notice":
+    enabled: false
+  "ddl.pg.alter.enable_always_rule.notice":
+    enabled: false
+  "ddl.pg.alter.enable_always_trigger.notice":
+    enabled: false
+  "ddl.pg.alter.enable_replica_rule.notice":
+    enabled: false
+  "ddl.pg.alter.enable_replica_trigger.notice":
+    enabled: false
+  "ddl.pg.alter.enable_rls.notice":
+    enabled: false
+  "ddl.pg.alter.enable_rule.notice":
+    enabled: false
+  "ddl.pg.alter.enable_trigger.notice":
+    enabled: false
+  "ddl.pg.alter.force_rls.notice":
+    enabled: false
+  "ddl.pg.alter.move_all_tablespace.notice":
+    enabled: false
+  "ddl.pg.alter.no_force_rls.notice":
+    enabled: false
+  "ddl.pg.alter.not_valid_constraint.validate.require":
+    enabled: false
+  "ddl.pg.alter.owner.advisory":
+    enabled: false
+  "ddl.pg.alter.replica_identity_full.warn":
+    enabled: false
+  "ddl.pg.alter.replica_identity_nothing.warn":
+    enabled: false
+  "ddl.pg.alter.replica_identity_using_index.notice":
+    enabled: false
+  "ddl.pg.alter.reset_column_options.notice":
+    enabled: false
+  "ddl.pg.alter.reset_reloptions.notice":
+    enabled: false
+  "ddl.pg.alter.set_access_method.warn":
+    enabled: false
+  "ddl.pg.alter.set_column_compression.notice":
+    enabled: false
+  "ddl.pg.alter.set_column_options.notice":
+    enabled: false
+  "ddl.pg.alter.set_column_statistics.notice":
+    enabled: false
+  "ddl.pg.alter.set_column_storage.notice":
+    enabled: false
+  "ddl.pg.alter.set_data_type.rewrite.warn":
+    enabled: false
+  "ddl.pg.alter.set_expression.notice":
+    enabled: false
+  "ddl.pg.alter.set_logged.notice":
+    enabled: false
+  "ddl.pg.alter.set_reloptions.warn":
+    enabled: false
+  "ddl.pg.alter.set_schema.advisory":
+    enabled: false
+  "ddl.pg.alter.set_tablespace.notice":
+    enabled: false
+  "ddl.pg.alter.set_unlogged.notice":
+    enabled: false
+  "ddl.pg.alter.set_without_cluster.notice":
+    enabled: false
+  "ddl.pg.alter.validate_constraint.advisory":
+    enabled: false
+  "ddl.pg.alter_aggregate.notice":
+    enabled: false
+  "ddl.pg.alter_collation.notice":
+    enabled: false
+  "ddl.pg.alter_conversion.notice":
+    enabled: false
+  "ddl.pg.alter_domain.constraint.notice":
+    enabled: false
+  "ddl.pg.alter_domain.default.notice":
+    enabled: false
+  "ddl.pg.alter_domain.not_null.notice":
+    enabled: false
+  "ddl.pg.alter_domain.rename.notice":
+    enabled: false
+  "ddl.pg.alter_event_trigger.disable.warn":
+    enabled: false
+  "ddl.pg.alter_event_trigger.notice":
+    enabled: false
+  "ddl.pg.alter_extension.add_member.notice":
+    enabled: false
+  "ddl.pg.alter_extension.drop_member.warn":
+    enabled: false
+  "ddl.pg.alter_extension.set_schema.notice":
+    enabled: false
+  "ddl.pg.alter_extension.update.notice":
+    enabled: false
+  "ddl.pg.alter_foreign_data_wrapper.notice":
+    enabled: false
+  "ddl.pg.alter_foreign_server.notice":
+    enabled: false
+  "ddl.pg.alter_foreign_table.notice":
+    enabled: false
+  "ddl.pg.alter_index.rename.notice":
+    enabled: false
+  "ddl.pg.alter_index.set_tablespace.notice":
+    enabled: false
+  "ddl.pg.alter_large_object.owner.notice":
+    enabled: false
+  "ddl.pg.alter_materialized_view.rename.notice":
+    enabled: false
+  "ddl.pg.alter_materialized_view.set_schema.notice":
+    enabled: false
+  "ddl.pg.alter_operator.notice":
+    enabled: false
+  "ddl.pg.alter_operator_class.notice":
+    enabled: false
+  "ddl.pg.alter_operator_family.notice":
+    enabled: false
+  "ddl.pg.alter_policy.notice":
+    enabled: false
+  "ddl.pg.alter_publication.notice":
+    enabled: false
+  "ddl.pg.alter_rule.notice":
+    enabled: false
+  "ddl.pg.alter_schema.owner.notice":
+    enabled: false
+  "ddl.pg.alter_schema.rename.notice":
+    enabled: false
+  "ddl.pg.alter_sequence.cycle.warn":
+    enabled: false
+  "ddl.pg.alter_sequence.restart.warn":
+    enabled: false
+  "ddl.pg.alter_statistics.notice":
+    enabled: false
+  "ddl.pg.alter_subscription.disable.warn":
+    enabled: false
+  "ddl.pg.alter_subscription.notice":
+    enabled: false
+  "ddl.pg.alter_text_search_configuration.notice":
+    enabled: false
+  "ddl.pg.alter_text_search_dictionary.notice":
+    enabled: false
+  "ddl.pg.alter_text_search_parser.notice":
+    enabled: false
+  "ddl.pg.alter_text_search_template.notice":
+    enabled: false
+  "ddl.pg.alter_type.add_attribute.notice":
+    enabled: false
+  "ddl.pg.alter_type.add_value.advisory":
+    enabled: false
+  "ddl.pg.alter_type.add_value.position.notice":
+    enabled: false
+  "ddl.pg.alter_type.alter_attribute_type.warn":
+    enabled: false
+  "ddl.pg.alter_type.composite_rename.notice":
+    enabled: false
+  "ddl.pg.alter_type.composite_set_schema.notice":
+    enabled: false
+  "ddl.pg.alter_type.drop_attribute.warn":
+    enabled: false
+  "ddl.pg.alter_type.rename_attribute.notice":
+    enabled: false
+  "ddl.pg.alter_user_mapping.notice":
+    enabled: false
+  "ddl.pg.alter_view.rename.notice":
+    enabled: false
+  "ddl.pg.alter_view.set_schema.notice":
+    enabled: false
+  "ddl.pg.comment_on.notice":
+    enabled: false
+  "ddl.pg.comment_on.remove.notice":
+    enabled: false
+  "ddl.pg.create_access_method.notice":
+    enabled: false
+  "ddl.pg.create_aggregate.notice":
+    enabled: false
+  "ddl.pg.create_collation.notice":
+    enabled: false
+  "ddl.pg.create_constraint_trigger.warn":
+    enabled: false
+  "ddl.pg.create_conversion.notice":
+    enabled: false
+  "ddl.pg.create_domain.notice":
+    enabled: false
+  "ddl.pg.create_event_trigger.notice":
+    enabled: false
+  "ddl.pg.create_extension.cascade.warn":
+    enabled: false
+  "ddl.pg.create_extension.notice":
+    enabled: false
+  "ddl.pg.create_foreign_data_wrapper.notice":
+    enabled: false
+  "ddl.pg.create_foreign_server.notice":
+    enabled: false
+  "ddl.pg.create_foreign_table.notice":
+    enabled: false
+  "ddl.pg.create_function.notice":
+    enabled: false
+  "ddl.pg.create_function.security_definer.warn":
+    enabled: false
+  "ddl.pg.create_index.concurrently.require":
+    enabled: false
+  "ddl.pg.create_operator.notice":
+    enabled: false
+  "ddl.pg.create_operator_class.notice":
+    enabled: false
+  "ddl.pg.create_operator_family.notice":
+    enabled: false
+  "ddl.pg.create_or_replace_function.advisory":
+    enabled: false
+  "ddl.pg.create_or_replace_view.advisory":
+    enabled: false
+  "ddl.pg.create_policy.notice":
+    enabled: false
+  "ddl.pg.create_procedure.notice":
+    enabled: false
+  "ddl.pg.create_publication.notice":
+    enabled: false
+  "ddl.pg.create_rule.notice":
+    enabled: false
+  "ddl.pg.create_schema.notice":
+    enabled: false
+  "ddl.pg.create_sequence.cycle.warn":
+    enabled: false
+  "ddl.pg.create_statistics.notice":
+    enabled: false
+  "ddl.pg.create_subscription.notice":
+    enabled: false
+  "ddl.pg.create_temp_view.notice":
+    enabled: false
+  "ddl.pg.create_text_search_configuration.notice":
+    enabled: false
+  "ddl.pg.create_text_search_dictionary.notice":
+    enabled: false
+  "ddl.pg.create_text_search_parser.notice":
+    enabled: false
+  "ddl.pg.create_text_search_template.notice":
+    enabled: false
+  "ddl.pg.create_transform.notice":
+    enabled: false
+  "ddl.pg.create_trigger.notice":
+    enabled: false
+  "ddl.pg.create_type.composite.notice":
+    enabled: false
+  "ddl.pg.create_type.enum.notice":
+    enabled: false
+  "ddl.pg.create_user_mapping.notice":
+    enabled: false
+  "ddl.pg.create_view.check_option.notice":
+    enabled: false
+  "ddl.pg.drop_access_method.warn":
+    enabled: false
+  "ddl.pg.drop_aggregate.warn":
+    enabled: false
+  "ddl.pg.drop_collation.warn":
+    enabled: false
+  "ddl.pg.drop_conversion.warn":
+    enabled: false
+  "ddl.pg.drop_domain.advisory":
+    enabled: false
+  "ddl.pg.drop_domain.cascade.warn":
+    enabled: false
+  "ddl.pg.drop_event_trigger.warn":
+    enabled: false
+  "ddl.pg.drop_extension.advisory":
+    enabled: false
+  "ddl.pg.drop_extension.cascade.warn":
+    enabled: false
+  "ddl.pg.drop_foreign_data_wrapper.warn":
+    enabled: false
+  "ddl.pg.drop_foreign_server.warn":
+    enabled: false
+  "ddl.pg.drop_foreign_table.warn":
+    enabled: false
+  "ddl.pg.drop_function.advisory":
+    enabled: false
+  "ddl.pg.drop_index.advisory":
+    enabled: false
+  "ddl.pg.drop_materialized_view.advisory":
+    enabled: false
+  "ddl.pg.drop_materialized_view.cascade.warn":
+    enabled: false
+  "ddl.pg.drop_operator.warn":
+    enabled: false
+  "ddl.pg.drop_operator_class.warn":
+    enabled: false
+  "ddl.pg.drop_operator_family.warn":
+    enabled: false
+  "ddl.pg.drop_policy.warn":
+    enabled: false
+  "ddl.pg.drop_procedure.advisory":
+    enabled: false
+  "ddl.pg.drop_publication.warn":
+    enabled: false
+  "ddl.pg.drop_rule.warn":
+    enabled: false
+  "ddl.pg.drop_schema.advisory":
+    enabled: false
+  "ddl.pg.drop_schema.cascade.warn":
+    enabled: false
+  "ddl.pg.drop_sequence.advisory":
+    enabled: false
+  "ddl.pg.drop_sequence.cascade.warn":
+    enabled: false
+  "ddl.pg.drop_statistics.warn":
+    enabled: false
+  "ddl.pg.drop_subscription.warn":
+    enabled: false
+  "ddl.pg.drop_text_search_configuration.warn":
+    enabled: false
+  "ddl.pg.drop_text_search_dictionary.warn":
+    enabled: false
+  "ddl.pg.drop_text_search_parser.warn":
+    enabled: false
+  "ddl.pg.drop_text_search_template.warn":
+    enabled: false
+  "ddl.pg.drop_transform.warn":
+    enabled: false
+  "ddl.pg.drop_trigger.advisory":
+    enabled: false
+  "ddl.pg.drop_type.advisory":
+    enabled: false
+  "ddl.pg.drop_type.cascade.warn":
+    enabled: false
+  "ddl.pg.drop_user_mapping.warn":
+    enabled: false
+  "ddl.pg.drop_view.cascade.warn":
+    enabled: false
+  "ddl.pg.grant.table_privilege.all.warn":
+    enabled: false
+  "ddl.pg.grant.table_privilege.notice":
+    enabled: false
+  "ddl.pg.refresh_materialized_view.concurrently.warn":
+    enabled: false
+  "ddl.pg.refresh_materialized_view.no_data.notice":
+    enabled: false
+  "ddl.pg.revoke.table_privilege.cascade.warn":
+    enabled: false
+  "ddl.pg.revoke.table_privilege.notice":
+    enabled: false
+  "ddl.pg.security_label.notice":
+    enabled: false
+  "ddl.pg.security_label.remove.notice":
+    enabled: false
+  "ddl.pg.table.foreign_key.cross_schema.advisory":
+    enabled: false
+  "ddl.rename_table.notice":
+    enabled: false
+  "ddl.revoke.notice":
+    enabled: false
+  "ddl.table.audit_columns.require":
+    enabled: false
+  "ddl.table.auto_increment.init_value.require":
+    enabled: false
+  "ddl.table.charset.allowlist":
+    enabled: false
+  "ddl.table.collation.allowlist":
+    enabled: false
+  "ddl.table.columns.min_count":
+    enabled: false
+  "ddl.table.comment.max_length":
+    enabled: false
+  "ddl.table.comment.require":
+    enabled: false
+  "ddl.table.create_as.forbid":
+    enabled: false
+  "ddl.table.create_like.forbid":
+    enabled: false
+  "ddl.table.denylist.forbid":
+    enabled: false
+  "ddl.table.drop.adaptive_hash.warn":
+    enabled: false
+  "ddl.table.drop.exists.require":
+    enabled: false
+  "ddl.table.drop.forbid":
+    enabled: false
+  "ddl.table.drop.rows.max_count":
+    enabled: false
+  "ddl.table.engine.allowlist":
+    enabled: false
+  "ddl.table.exists.alter.require":
+    enabled: true
+    level: blocker
+  "ddl.table.exists.create.forbid":
+    enabled: true
+    level: blocker
+  "ddl.table.foreign_key.forbid":
+    enabled: false
+  "ddl.table.name.contains.require":
+    enabled: false
+  "ddl.table.name.keyword.forbid":
+    enabled: false
+  "ddl.table.name.max_length":
+    enabled: false
+  "ddl.table.name.pattern.require":
+    enabled: false
+  "ddl.table.name.prefix.require":
+    enabled: false
+  "ddl.table.name.suffix.require":
+    enabled: false
+  "ddl.table.partition.forbid":
+    enabled: false
+  "ddl.table.primary_key.auto_increment.require":
+    enabled: false
+  "ddl.table.primary_key.bigint.require":
+    enabled: false
+  "ddl.table.primary_key.columns.max_count":
+    enabled: false
+  "ddl.table.primary_key.not_null.require":
+    enabled: false
+  "ddl.table.primary_key.require":
+    enabled: false
+  "ddl.table.primary_key.unsigned.require":
+    enabled: false
+  "ddl.table.row_format.allowlist":
+    enabled: false
+  "ddl.table.row_size.max_bytes.require":
+    enabled: false
+  "ddl.table.truncate.adaptive_hash.warn":
+    enabled: false
+  "ddl.table.truncate.exists.require":
+    enabled: false
+  "ddl.table.truncate.forbid":
+    enabled: false
+  "ddl.table.truncate.rows.max_count":
+    enabled: false
+  "ddl.tidb.alter_table.placement_policy.notice":
+    enabled: false
+  "ddl.view.create.forbid":
+    enabled: false
+  "ddl.view.drop.forbid":
+    enabled: false
+  "dml.impact.estimate":
+    enabled: false
+  "dml.impact.ratio.max_percent":
+    enabled: false
+  "dml.impact.rows.max_count":
+    enabled: false
+  "dml.insert.on_duplicate.forbid":
+    enabled: false
+  "dml.insert.rows.max_count":
+    enabled: false
+  "dml.insert.select.forbid":
+    enabled: false
+  "dml.join.on.require":
+    enabled: false
+  "dml.limit.forbid":
+    enabled: false
+  "dml.order_by.forbid":
+    enabled: false
+  "dml.replace.forbid":
+    enabled: false
+  "dml.subquery.forbid":
+    enabled: false
+  "dml.table.denylist.forbid":
+    enabled: false
+  "dml.table.exists.require":
+    enabled: false
+  "dml.where.require":
+    enabled: false

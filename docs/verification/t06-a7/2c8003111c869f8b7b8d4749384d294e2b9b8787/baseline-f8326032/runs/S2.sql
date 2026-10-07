@@ -1,0 +1,1 @@
+CREATE TABLE t (c VARCHAR(16) COLLATE utf8mb4_bin);

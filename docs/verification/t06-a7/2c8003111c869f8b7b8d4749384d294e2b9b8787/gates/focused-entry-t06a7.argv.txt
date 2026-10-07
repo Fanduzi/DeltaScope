@@ -1,0 +1,1 @@
+go test -count=1 ./pkg/deltascope ./internal/interfaces/http ./internal/interfaces/mcp -run T06A7 -v
