@@ -114,6 +114,7 @@ const (
 	ruleIDTableCommentMaxLength                              = "ddl.table.comment.max_length"
 	ruleIDTableEngineAllowlist                               = "ddl.table.engine.allowlist"
 	ruleIDTableCharsetAllowlist                              = "ddl.table.charset.allowlist"
+	ruleIDTableCollationAllowlist                            = "ddl.table.collation.allowlist"
 	ruleIDTableRowFormatAllowlist                            = "ddl.table.row_format.allowlist"
 	ruleIDTableAutoIncrementInitValueRequire                 = "ddl.table.auto_increment.init_value.require"
 	ruleIDTableRowSizeMaxBytesRequire                        = "ddl.table.row_size.max_bytes.require"

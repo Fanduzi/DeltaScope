@@ -290,6 +290,7 @@ rules:
 | `ddl.table.name.keyword.forbid` | 表名不得使用 SQL 保留关键字 | blocker | 否 |
 | `ddl.table.engine.allowlist` | 存储引擎必须在允许列表中（默认：InnoDB） | blocker | 否 |
 | `ddl.table.charset.allowlist` | 表的默认字符集必须在允许列表中 | blocker | 否 |
+| `ddl.table.collation.allowlist` | 表排序规则必须在允许列表中（默认禁用；默认列表：utf8mb4_bin） | blocker | 否 |
 | `ddl.table.row_format.allowlist` | ROW_FORMAT 必须在允许列表中（默认：DYNAMIC） | blocker | 否 |
 | `ddl.table.auto_increment.init_value.require` | AUTO_INCREMENT 初始值必须符合要求 | blocker | 否 |
 | `ddl.table.columns.min_count` | 表至少需要 N 列 | blocker | 否 |
@@ -302,7 +303,7 @@ rules:
 
 **PostgreSQL 主键可用性（v0.37.0、v0.39.0）：** `ddl.table.primary_key.bigint.require` 和 `ddl.table.primary_key.columns.max_count` 现在适用于 PostgreSQL `CREATE TABLE` 语句（v0.37.0）和 `ALTER TABLE ... ADD CONSTRAINT ... PRIMARY KEY` 语句（v0.39.0）。`ddl.table.primary_key.not_null.require` 对 PostgreSQL 不产生稳定负例，因为 PK 列被有效视为 NOT NULL。
 
-**默认策略方言隔离（v0.43.0）：** 从 v0.43.0 开始，设置 `--dialect postgresql` 时自动跳过 MySQL-family 规则，包括 `ddl.table.primary_key.unsigned.require`、`ddl.table.primary_key.auto_increment.require`、`ddl.table.primary_key.not_null.require`、`ddl.table.engine.allowlist`、`ddl.table.charset.allowlist`、`ddl.table.row_format.allowlist`、`ddl.table.auto_increment.init_value.require`、`ddl.table.partition.forbid`、`ddl.table.create_as.forbid`、`ddl.table.create_like.forbid`、`ddl.column.charset.allowlist`、`ddl.column.collation.allowlist`、`ddl.column.charset_collation.match.require`、`ddl.alter.change_column.forbid`、`ddl.alter.modify_column.forbid`，以及审计列检查中的 `ON UPDATE CURRENT_TIMESTAMP` 建议。反过来，MySQL/TiDB 审核排除所有 `ddl.pg.*` 和 PostgreSQL-only 方言门控规则。隔离在规则 `AppliesTo` 门控层实现。
+**默认策略方言隔离（v0.43.0）：** 从 v0.43.0 开始，设置 `--dialect postgresql` 时自动跳过 MySQL-family 规则，包括 `ddl.table.primary_key.unsigned.require`、`ddl.table.primary_key.auto_increment.require`、`ddl.table.primary_key.not_null.require`、`ddl.table.engine.allowlist`、`ddl.table.charset.allowlist`、`ddl.table.collation.allowlist`、`ddl.table.row_format.allowlist`、`ddl.table.auto_increment.init_value.require`、`ddl.table.partition.forbid`、`ddl.table.create_as.forbid`、`ddl.table.create_like.forbid`、`ddl.column.charset.allowlist`、`ddl.column.collation.allowlist`、`ddl.column.charset_collation.match.require`、`ddl.alter.change_column.forbid`、`ddl.alter.modify_column.forbid`，以及审计列检查中的 `ON UPDATE CURRENT_TIMESTAMP` 建议。反过来，MySQL/TiDB 审核排除所有 `ddl.pg.*` 和 PostgreSQL-only 方言门控规则。隔离在规则 `AppliesTo` 门控层实现。
 | `ddl.table.audit_columns.require` | 表必须包含审计时间戳列 | warning | 否 |
 | `ddl.table.foreign_key.forbid` | 禁止使用 FOREIGN KEY 约束 | blocker | 否 |
 | `ddl.table.partition.forbid` | 禁止使用分区表 | blocker | 否 |

@@ -2537,6 +2537,43 @@ T06_A5_CHARSET = (
     "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'"
 )
 
+# T06-A7 (issue #85): column charset/collation isolation plus the new
+# table-level COLLATE allowlist. The column rules stay untouched — the
+# proof isolates each of the three on its own profile; the table rule
+# reads the declared table option and is a team policy boundary, never a
+# native collation catalog check.
+T06_A7_CS_PROFILE = "t06-a7-column-charset-isolated"
+T06_A7_CC_PROFILE = "t06-a7-column-collation-isolated"
+T06_A7_CM_PROFILE = "t06-a7-column-match-isolated"
+T06_A7_TC_PROFILE = "t06-a7-table-collation-optional"
+T06_A7_TCR_PROFILE = "t06-a7-table-collation-required"
+T06_A7_CS_RULE = "ddl.column.charset.allowlist"
+T06_A7_CC_RULE = "ddl.column.collation.allowlist"
+T06_A7_CM_RULE = "ddl.column.charset_collation.match.require"
+T06_A7_TC_RULE = "ddl.table.collation.allowlist"
+T06_A7_CS_MESSAGE = 'column "c" uses unsupported charset "latin1"'
+T06_A7_CC_MESSAGE = 'column "c" uses unsupported collation "utf8mb4_general_ci"'
+T06_A7_CM_TOGETHER_MESSAGE = (
+    'column "c" must specify charset and collation together'
+)
+T06_A7_CM_MISMATCH_MESSAGE = (
+    'column "c" collation "latin1_swedish_ci" must match charset "utf8mb4"'
+)
+T06_A7_CM_MISMATCH_ANCHOR_MESSAGE = (
+    'column "c" collation "latin1_bin" must match charset "utf8mb4"'
+)
+T06_A7_TC_MESSAGE = "table collation must be one of [utf8mb4_bin]"
+T06_A7_TABLE_COLLATION = (
+    "SELECT TABLE_COLLATION FROM information_schema.TABLES "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'"
+)
+
+
+def t06_a7_column_sql(declared):
+    if declared:
+        return "CREATE TABLE t (c VARCHAR(16) " + declared + ");"
+    return "CREATE TABLE t (c VARCHAR(16));"
+
 T06_ANCHORS = {
     "mysql57": {
         "service": "mysql57",
@@ -2655,11 +2692,11 @@ T06_SYNTAX_NEGATIVE = {
 
 def t06_a1_contract():
     """Frozen T06 oracle (issue #85): the accepted A1 32-case subset, the
-    A2 24-case subset, the A3 16-case subset, the A4 12-case subset, and
-    the A5 40-case subset — 124 cases total. A1 baseline cases reuse the
-    T02 batch verbatim; the offline controls pin the isolated policy
-    profiles; the anchored cases pin the information_schema structure
-    oracle.
+    A2 24-case subset, the A3 16-case subset, the A4 12-case subset, the
+    A5 40-case subset, and the A7 64-case subset — 188 cases total. A1
+    baseline cases reuse the T02 batch verbatim; the offline controls pin
+    the isolated policy profiles; the anchored cases pin the
+    information_schema structure oracle.
 
     The A2 subset pins primary-key member nullability normalization: legal
     table-level and composite members pass the isolated not-null rule, while
@@ -2891,6 +2928,119 @@ def t06_a1_contract():
                     case["policy"] = a5_profiles[keyword]
                     case["expect"] = audit_expect(sql, False, loaded=1)
                 cli_cases.append(case)
+
+    # T06-A7 (issue #85): sixteen offline roles on each dialect pin the
+    # column charset/collation rules in isolation and the new table
+    # collation allowlist under both require_explicit values plus the
+    # all-off control. The "off" cells bind the manifest's default
+    # all-rules-disabled policy — capability classification no longer
+    # depends on an enabled rule finding the declared option.
+    a7_charset_finding = {
+        "rule_id": T06_A7_CS_RULE,
+        "message": T06_A7_CS_MESSAGE,
+        "metadata": {
+            "table": "t", "column": "c", "field": "charset",
+            "value": "latin1", "allowed": ["utf8mb4"],
+        },
+    }
+    a7_collation_finding = {
+        "rule_id": T06_A7_CC_RULE,
+        "message": T06_A7_CC_MESSAGE,
+        "metadata": {
+            "table": "t", "column": "c", "field": "collation",
+            "value": "utf8mb4_general_ci", "allowed": ["utf8mb4_bin"],
+        },
+    }
+    a7_together_finding = {
+        "rule_id": T06_A7_CM_RULE,
+        "message": T06_A7_CM_TOGETHER_MESSAGE,
+        "metadata": {
+            "table": "t", "column": "c", "charset": "",
+            "collation": "utf8mb4_bin",
+        },
+    }
+    a7_mismatch_finding = {
+        "rule_id": T06_A7_CM_RULE,
+        "message": T06_A7_CM_MISMATCH_MESSAGE,
+        "metadata": {
+            "table": "t", "column": "c", "charset": "utf8mb4",
+            "collation": "latin1_swedish_ci",
+        },
+    }
+    a7_table_finding = {
+        "rule_id": T06_A7_TC_RULE,
+        "message": T06_A7_TC_MESSAGE,
+        "metadata": {
+            "table": "t", "option": "collate",
+            "actual": "utf8mb4_general_ci", "allowed": ["utf8mb4_bin"],
+        },
+    }
+    a7_table_required_finding = {
+        "rule_id": T06_A7_TC_RULE,
+        "message": T06_A7_TC_MESSAGE,
+        "metadata": {
+            "table": "t", "option": "collate",
+            "actual": "", "allowed": ["utf8mb4_bin"],
+        },
+    }
+    a7_column_matrix = (
+        ("cs-ok", T06_A7_CS_PROFILE, "CHARACTER SET utf8mb4 COLLATE utf8mb4_bin", None),
+        ("cs-denied", T06_A7_CS_PROFILE, "CHARACTER SET latin1 COLLATE latin1_bin",
+         a7_charset_finding),
+        ("cs-off", None, "CHARACTER SET latin1 COLLATE latin1_bin", None),
+        ("cc-ok", T06_A7_CC_PROFILE, "CHARACTER SET utf8mb4 COLLATE utf8mb4_bin", None),
+        ("cc-denied", T06_A7_CC_PROFILE, "CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci",
+         a7_collation_finding),
+        ("cc-off", None, "CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci", None),
+        ("match-pair", T06_A7_CM_PROFILE, "CHARACTER SET utf8mb4 COLLATE utf8mb4_bin", None),
+        ("match-single", T06_A7_CM_PROFILE, "COLLATE utf8mb4_bin",
+         a7_together_finding),
+        ("match-empty", T06_A7_CM_PROFILE, None, None),
+        ("match-mismatch", T06_A7_CM_PROFILE,
+         "CHARACTER SET utf8mb4 COLLATE latin1_swedish_ci", a7_mismatch_finding),
+        ("match-off", None, "CHARACTER SET utf8mb4 COLLATE latin1_swedish_ci", None),
+    )
+    a7_table_matrix = (
+        ("table-ok", T06_A7_TC_PROFILE,
+         "CREATE TABLE t (c INT) COLLATE=utf8mb4_bin;", None),
+        ("table-denied", T06_A7_TC_PROFILE,
+         "CREATE TABLE t (c INT) COLLATE=utf8mb4_general_ci;", a7_table_finding),
+        ("table-empty", T06_A7_TC_PROFILE, "CREATE TABLE t (c INT);", None),
+        ("table-required", T06_A7_TCR_PROFILE,
+         "CREATE TABLE t (c INT);", a7_table_required_finding),
+        ("table-off", None,
+         "CREATE TABLE t (c INT) COLLATE=utf8mb4_general_ci;", None),
+    )
+    for dialect in ("mysql", "tidb"):
+        for variant, profile, declared, finding in a7_column_matrix:
+            sql = t06_a7_column_sql(declared)
+            case = {
+                "id": f"t06-a7-{dialect}-{variant}",
+                "dialect": dialect,
+                "sql": sql,
+                "args": ["--fail-on", "blocker"],
+            }
+            if profile:
+                case["policy"] = profile
+                case["expect"] = audit_expect(
+                    sql, finding is not None, loaded=1, finding=finding)
+            else:
+                case["expect"] = audit_expect(sql, False)
+            cli_cases.append(case)
+        for variant, profile, sql, finding in a7_table_matrix:
+            case = {
+                "id": f"t06-a7-{dialect}-{variant}",
+                "dialect": dialect,
+                "sql": sql,
+                "args": ["--fail-on", "blocker"],
+            }
+            if profile:
+                case["policy"] = profile
+                case["expect"] = audit_expect(
+                    sql, finding is not None, loaded=1, finding=finding)
+            else:
+                case["expect"] = audit_expect(sql, False)
+            cli_cases.append(case)
 
     connects = {
         "mysql57": {
@@ -3480,6 +3630,206 @@ def t06_a1_contract():
                     ],
                 })
 
+        # T06-A7 (issue #85): eight anchored roles separate product-side
+        # declared-declaration facts from the native resolved metadata —
+        # an empty product field is "not declared", never an observed
+        # server default. The mismatch case is a true native negative
+        # (ERROR 1253, table stays absent); every other role proves the
+        # driver replay succeeds even under a product reject, because a
+        # team policy is not a database refusal.
+        a7_metadata_specs = (
+            {
+                "variant": "column-pair",
+                "policy": T06_A7_CS_PROFILE,
+                "sql": ("CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 "
+                        "COLLATE utf8mb4_bin) CHARACTER SET utf8mb4 "
+                        "COLLATE=utf8mb4_general_ci;"),
+                "expect_reject": False,
+                "finding": None,
+                "native_rc": 0,
+                "column_row": "c:varchar:1:YES",
+                "length_pair": "16:64",
+                "column_cc": "utf8mb4:utf8mb4_bin",
+                "table_collate": "utf8mb4_general_ci",
+            },
+            {
+                "variant": "column-charset-denied",
+                "policy": T06_A7_CS_PROFILE,
+                "sql": ("CREATE TABLE t (c VARCHAR(16) CHARACTER SET latin1 "
+                        "COLLATE latin1_bin) CHARACTER SET utf8mb4 "
+                        "COLLATE=utf8mb4_bin;"),
+                "expect_reject": True,
+                "finding": a7_charset_finding,
+                "native_rc": 0,
+                "column_row": "c:varchar:1:YES",
+                "length_pair": "16:16",
+                "column_cc": "latin1:latin1_bin",
+                "table_collate": "utf8mb4_bin",
+            },
+            {
+                "variant": "column-collation-denied",
+                "policy": T06_A7_CC_PROFILE,
+                "sql": ("CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 "
+                        "COLLATE utf8mb4_general_ci) CHARACTER SET utf8mb4 "
+                        "COLLATE=utf8mb4_bin;"),
+                "expect_reject": True,
+                "finding": a7_collation_finding,
+                "native_rc": 0,
+                "column_row": "c:varchar:1:YES",
+                "length_pair": "16:64",
+                "column_cc": "utf8mb4:utf8mb4_general_ci",
+                "table_collate": "utf8mb4_bin",
+            },
+            {
+                "variant": "column-partial",
+                "policy": T06_A7_CM_PROFILE,
+                "sql": ("CREATE TABLE t (c VARCHAR(16) COLLATE utf8mb4_bin) "
+                        "CHARACTER SET latin1 COLLATE=latin1_bin;"),
+                "expect_reject": True,
+                "finding": a7_together_finding,
+                "native_rc": 0,
+                "column_row": "c:varchar:1:YES",
+                "length_pair": "16:64",
+                "column_cc": "utf8mb4:utf8mb4_bin",
+                "table_collate": "latin1_bin",
+            },
+            {
+                "variant": "column-mismatch",
+                "policy": T06_A7_CM_PROFILE,
+                "sql": ("CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 "
+                        "COLLATE latin1_bin);"),
+                "expect_reject": True,
+                "finding": {
+                    "rule_id": T06_A7_CM_RULE,
+                    "message": T06_A7_CM_MISMATCH_ANCHOR_MESSAGE,
+                    "metadata": {
+                        "table": "t", "column": "c", "charset": "utf8mb4",
+                        "collation": "latin1_bin",
+                    },
+                },
+                "native_rc": 1,
+                "native_stderr": ["ERROR 1253"],
+                "column_row": None,
+                "length_pair": None,
+                "column_cc": None,
+                "table_collate": None,
+            },
+            {
+                "variant": "table-allowed",
+                "policy": T06_A7_TC_PROFILE,
+                "sql": "CREATE TABLE t (c VARCHAR(16)) COLLATE=utf8mb4_bin;",
+                "expect_reject": False,
+                "finding": None,
+                "native_rc": 0,
+                "column_row": "c:varchar:1:YES",
+                "length_pair": "16:64",
+                "column_cc": "utf8mb4:utf8mb4_bin",
+                "table_collate": "utf8mb4_bin",
+            },
+            {
+                "variant": "table-denied",
+                "policy": T06_A7_TC_PROFILE,
+                "sql": "CREATE TABLE t (c VARCHAR(16)) COLLATE=utf8mb4_general_ci;",
+                "expect_reject": True,
+                "finding": a7_table_finding,
+                "native_rc": 0,
+                "column_row": "c:varchar:1:YES",
+                "length_pair": "16:64",
+                "column_cc": "utf8mb4:utf8mb4_general_ci",
+                "table_collate": "utf8mb4_general_ci",
+            },
+            {
+                "variant": "table-inheritance",
+                "policy": T06_A7_CM_PROFILE,
+                "sql": ("CREATE TABLE t (c VARCHAR(16)) CHARACTER SET utf8mb4 "
+                        "COLLATE=utf8mb4_bin;"),
+                "expect_reject": False,
+                "finding": None,
+                "native_rc": 0,
+                "column_row": "c:varchar:1:YES",
+                "length_pair": "16:64",
+                "column_cc": "utf8mb4:utf8mb4_bin",
+                "table_collate": "utf8mb4_bin",
+            },
+        )
+        for spec_row in a7_metadata_specs:
+            expect = audit_expect(
+                spec_row["sql"], spec_row["expect_reject"], loaded=1,
+                finding=spec_row["finding"])
+            if anchor_key in ("mysql80", "mysql84"):
+                expect["instance_facts"] = dict(T06_GIPK_FACTS)
+            case = {
+                "id": f"t06-a7-{anchor_key}-{spec_row['variant']}",
+                "anchor": anchor_key,
+                "dialect": dialect,
+                "sql": spec_row["sql"],
+                "policy": spec_row["policy"],
+                "connect": dict(connects[anchor_key]),
+                "args": ["--fail-on", "blocker"],
+                "setup": [
+                    {
+                        "name": "ensure t absent",
+                        "sql": "DROP TABLE IF EXISTS t",
+                        "expect_rc": 0,
+                        "verify": [verify("t absent before audit", T06_TABLE_COUNT, "0")],
+                    },
+                ],
+                "expect": expect,
+                "post_verify": [
+                    verify("audit did not create t", T06_TABLE_COUNT, "0"),
+                ],
+                "teardown": [
+                    {
+                        "name": "drop fixture",
+                        "sql": "DROP TABLE IF EXISTS t",
+                        "expect_rc": 0,
+                        "verify": [verify("no residual t", T06_TABLE_COUNT, "0")],
+                    },
+                ],
+            }
+            if spec_row["native_rc"] == 0:
+                case["execute"] = [
+                    {
+                        "name": "driver applies the audited create",
+                        "sql": spec_row["sql"],
+                        "expect_rc": 0,
+                    },
+                ]
+                structure_rows = [
+                    verify("exactly one user table", T06_TABLE_COUNT, "1"),
+                    verify("exactly one user column", T06_COLUMN_COUNT, "1"),
+                    verify("column c identity", T06_COLUMN_ROW,
+                           spec_row["column_row"]),
+                    verify(
+                        "declared chars and octets are independent fields",
+                        T06_A5_LENGTH_PAIR, spec_row["length_pair"]),
+                    verify(
+                        "resolved column charset and collation",
+                        T06_A5_CHARSET, spec_row["column_cc"]),
+                    verify(
+                        "resolved table collation",
+                        T06_A7_TABLE_COLLATION, spec_row["table_collate"]),
+                    verify("primary key constraint count", T06_PK_CONSTRAINT, "0"),
+                    verify("primary index part count", T06_PK_PARTS, "0"),
+                ]
+                if anchor_key != "tidb85":
+                    structure_rows.append(verify("storage engine", T06_ENGINE, "InnoDB"))
+                case["structure"] = structure_rows
+            else:
+                case["execute"] = [
+                    {
+                        "name": "driver rejects the mismatched collation",
+                        "sql": spec_row["sql"],
+                        "expect_rc": 1,
+                        "stderr_contains": list(spec_row["native_stderr"]),
+                        "verify": [
+                            verify("t absent after rejected create",
+                                   T06_TABLE_COUNT, "0"),
+                        ],
+                    },
+                ]
+            metadata_cases.append(case)
+
     required_case_ids = (
         [f"T06.db.{anchor}.{kind}" for anchor in T06_ANCHORS for kind in ("ddl", "syntax_negative")]
         + [f"T06.cli.{spec['id']}" for spec in cli_cases]
@@ -3543,6 +3893,54 @@ def t06_a1_contract():
             T06_A5_VARCHAR_PROFILE: {
                 "enable": {
                     T06_A5_VARCHAR_RULE: {"enabled": True, "level": "blocker", "params": {"limit": 8}},
+                }
+            },
+            # T06-A7: three single-rule column isolations plus the new
+            # table collation allowlist under both require_explicit
+            # values. The column rules keep their real parameter names —
+            # charset/collation allowlists take `values`, the match rule
+            # takes `required` — and the table rule ships disabled in the
+            # default policy, so these profiles enable it explicitly.
+            T06_A7_CS_PROFILE: {
+                "enable": {
+                    T06_A7_CS_RULE: {
+                        "enabled": True, "level": "blocker",
+                        "params": {"values": ["utf8mb4"]},
+                    },
+                }
+            },
+            T06_A7_CC_PROFILE: {
+                "enable": {
+                    T06_A7_CC_RULE: {
+                        "enabled": True, "level": "blocker",
+                        "params": {"values": ["utf8mb4_bin"]},
+                    },
+                }
+            },
+            T06_A7_CM_PROFILE: {
+                "enable": {
+                    T06_A7_CM_RULE: {
+                        "enabled": True, "level": "blocker",
+                        "params": {"required": True},
+                    },
+                }
+            },
+            T06_A7_TC_PROFILE: {
+                "enable": {
+                    T06_A7_TC_RULE: {
+                        "enabled": True, "level": "blocker",
+                        "params": {"values": ["utf8mb4_bin"],
+                                   "require_explicit": False},
+                    },
+                }
+            },
+            T06_A7_TCR_PROFILE: {
+                "enable": {
+                    T06_A7_TC_RULE: {
+                        "enabled": True, "level": "blocker",
+                        "params": {"values": ["utf8mb4_bin"],
+                                   "require_explicit": True},
+                    },
                 }
             },
         },
@@ -3629,7 +4027,7 @@ def t06_a1_manifest_failures(manifest):
         failures.append("T06-A1 baseline syntax_negative changed")
     required = manifest.get("required_case_ids") or []
     if required != contract["required_case_ids"]:
-        failures.append("T06-A1 required_case_ids differ from the frozen 124-case denominator")
+        failures.append("T06-A1 required_case_ids differ from the frozen 188-case denominator")
     for field, kind in (("cli_cases", "cli"), ("metadata_cases", "meta")):
         declared_list = [spec.get("id") for spec in manifest.get(field) or []]
         declared = {spec.get("id"): spec for spec in manifest.get(field) or []}

@@ -73,6 +73,7 @@ This is not a whole-statement no-op, a promise that a procedure exists or can ex
 | `ddl.table.comment.max_length` | Table comment exceeds the maximum allowed length | ✓ | ✗ | warning |
 | `ddl.table.engine.allowlist` | Storage engine is not on the permitted list | ✓ | ✗ | blocker |
 | `ddl.table.charset.allowlist` | Table character set is not on the permitted list | ✓ | ✗ | blocker |
+| `ddl.table.collation.allowlist` | Table collation is not on the permitted list (rule ships disabled) | ✓ | ✗ | blocker |
 | `ddl.table.row_format.allowlist` | ROW_FORMAT value is not on the permitted list | ✓ | ✗ | warning |
 | `ddl.table.auto_increment.init_value.require` | AUTO_INCREMENT initial value does not meet the required minimum | ✓ | ✗ | warning |
 | `ddl.table.columns.min_count` | Table has fewer columns than the required minimum | ✓ | ✗ | blocker |

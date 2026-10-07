@@ -508,6 +508,35 @@ rules:
 
 ---
 
+### `ddl.table.collation.allowlist`
+
+要求表级 `COLLATE=<name>` 选项在许可列表内。默认策略中**已禁用**——启用后用于治理 `CREATE TABLE` 上声明的表排序规则（仅限 MySQL/TiDB）。
+
+- **默认**：已禁用，级别 `blocker`
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `values` | `[]string` | `["utf8mb4_bin"]` | 允许使用的排序规则列表（大小写不敏感） |
+| `require_explicit` | `bool` | `true` | 设为 `true` 时，未声明 `COLLATE` 也会触发 |
+
+**触发示例：**
+```sql
+CREATE TABLE t (id INT) COLLATE=utf8mb4_general_ci;
+```
+
+**YAML 配置示例：**
+```yaml
+rules:
+  ddl.table.collation.allowlist:
+    enabled: true
+    level: blocker
+    params:
+      values: [utf8mb4_bin]
+      require_explicit: true
+```
+
+---
+
 ### `ddl.table.row_format.allowlist`
 
 要求表的行格式（row format）在许可列表内。

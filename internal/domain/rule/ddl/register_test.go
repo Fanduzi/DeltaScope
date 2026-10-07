@@ -25,6 +25,7 @@ var defaultPolicyDialectHygieneRegistryMySQLFamilyOnlyRuleIDs = []string{
 	"ddl.table.primary_key.auto_increment.require",
 	"ddl.table.engine.allowlist",
 	"ddl.table.charset.allowlist",
+	"ddl.table.collation.allowlist",
 	"ddl.table.row_format.allowlist",
 	"ddl.column.charset.allowlist",
 	"ddl.column.collation.allowlist",

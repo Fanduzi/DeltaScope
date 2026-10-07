@@ -477,6 +477,37 @@ rules:
 
 ---
 
+#### ddl.table.collation.allowlist
+
+Requires the table-level `COLLATE=<name>` option to be in a configured allowlist. Ships **disabled** in the default policy — enable it to govern the declared table collation on `CREATE TABLE` (MySQL/TiDB only).
+
+**Default:** `enabled: false`, `level: blocker`
+
+**Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `values` | []string | `["utf8mb4_bin"]` | Allowed collation names (case-insensitive) |
+| `require_explicit` | bool | `true` | When `true`, fires when `COLLATE` is omitted entirely |
+
+**Trigger example:**
+```sql
+CREATE TABLE t (id INT) COLLATE=utf8mb4_general_ci;
+```
+
+**Config example:**
+```yaml
+rules:
+  ddl.table.collation.allowlist:
+    enabled: true
+    level: blocker
+    params:
+      values: [utf8mb4_bin]
+      require_explicit: true
+```
+
+---
+
 #### ddl.table.row_format.allowlist
 
 Requires the table `ROW_FORMAT` to be in a configured allowlist.

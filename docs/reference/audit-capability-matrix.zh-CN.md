@@ -24,6 +24,7 @@
 | `ddl.table.comment.max_length` | 表注释超过允许的最大长度 | ✓ | ✗ | warning |
 | `ddl.table.engine.allowlist` | 存储引擎不在允许列表中 | ✓ | ✗ | blocker |
 | `ddl.table.charset.allowlist` | 表字符集不在允许列表中 | ✓ | ✗ | blocker |
+| `ddl.table.collation.allowlist` | 表排序规则不在允许列表中（规则默认禁用） | ✓ | ✗ | blocker |
 | `ddl.table.row_format.allowlist` | ROW_FORMAT 值不在允许列表中 | ✓ | ✗ | warning |
 | `ddl.table.auto_increment.init_value.require` | AUTO_INCREMENT 初始值不满足要求的最小值 | ✓ | ✗ | warning |
 | `ddl.table.columns.min_count` | 表的列数少于要求的最小列数 | ✓ | ✗ | blocker |

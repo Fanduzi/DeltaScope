@@ -113,6 +113,7 @@ func isMySQLFamilyOnlyRule(ruleID string) bool {
 		"ddl.table.primary_key.auto_increment.require",
 		"ddl.table.engine.allowlist",
 		"ddl.table.charset.allowlist",
+		"ddl.table.collation.allowlist",
 		"ddl.table.row_format.allowlist",
 		"ddl.table.auto_increment.init_value.require",
 		"ddl.table.row_size.max_bytes.require",

@@ -4,11 +4,10 @@ category: ddl
 expect:
   parse_ok: true
   unsupported:
-    count: 4
+    count: 3
     include:
       - create_table_select
       - create_table.index.fulltext
-      - create_table.option.collate
       - alter_table.add_index.fulltext
   findings:
     include:
@@ -89,6 +88,7 @@ expect:
       - ddl.table.audit_columns.require
       - ddl.table.auto_increment.init_value.require
       - ddl.table.charset.allowlist
+      - ddl.table.collation.allowlist
       - ddl.table.columns.min_count
       - ddl.table.comment.max_length
       - ddl.table.comment.require
@@ -137,6 +137,9 @@ config:
     ddl.table.charset.allowlist:
       enabled: true
       params: {values: [utf8mb4], require_explicit: true}
+    ddl.table.collation.allowlist:
+      enabled: true
+      params: {values: [utf8mb4_bin], require_explicit: true}
     ddl.table.row_format.allowlist:
       enabled: true
       params: {values: [DYNAMIC], require_explicit: true}

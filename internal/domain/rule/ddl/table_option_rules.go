@@ -90,7 +90,7 @@ func (r tableOptionAllowlistRule) ID() string { return r.ruleID }
 func (r tableOptionAllowlistRule) AppliesTo(statement spec.Statement) bool {
 	if statement.Dialect == spec.DialectPostgreSQL {
 		switch r.ruleID {
-		case ruleIDTableEngineAllowlist, ruleIDTableCharsetAllowlist, ruleIDTableRowFormatAllowlist:
+		case ruleIDTableEngineAllowlist, ruleIDTableCharsetAllowlist, ruleIDTableCollationAllowlist, ruleIDTableRowFormatAllowlist:
 			return false
 		}
 	}

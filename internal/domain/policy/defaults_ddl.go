@@ -480,6 +480,14 @@ func ddlCoreRules() map[string]RulePolicy {
 				"values": []string{"utf8", "utf8mb4"},
 			},
 		},
+		"ddl.table.collation.allowlist": {
+			Enabled: false,
+			Level:   rule.LevelBlocker,
+			Params: map[string]any{
+				"values":           []string{"utf8mb4_bin"},
+				"require_explicit": true,
+			},
+		},
 		"ddl.table.row_format.allowlist": {
 			Enabled: true,
 			Level:   rule.LevelBlocker,

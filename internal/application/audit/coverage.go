@@ -132,9 +132,10 @@ func extractedOptionGap(dialect spec.Dialect, op spec.DDLOperation, name string)
 		// create-table charset allowlist consumes it there.
 		return op == spec.DDLOperationCreateSchema || op == spec.DDLOperationAlterSchema, false
 	case "collate":
-		// Collation is extracted but unchecked on schema ops and create table.
+		// Collation is extracted but unchecked on schema ops; the create-table
+		// collation allowlist consumes it there.
 		switch op {
-		case spec.DDLOperationCreateSchema, spec.DDLOperationAlterSchema, spec.DDLOperationCreateTable:
+		case spec.DDLOperationCreateSchema, spec.DDLOperationAlterSchema:
 			return true, false
 		}
 	case "has_options":

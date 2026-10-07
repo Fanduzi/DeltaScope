@@ -1,7 +1,7 @@
 {
  "task_id": "T06",
  "issue": "https://github.com/Fanduzi/DeltaScope/issues/85",
- "description": "CREATE TABLE base semantics (issue #85 T06-A1/A2/A3/A4/A5): the accepted 56-case primary-key/nullability/default-presence subset plus 16 DEFAULT NULL cases, 12 provider default-identity cases, and 40 declared CHAR/VARCHAR length cases \u2014 the CLI matrix pins the presence contract across four default spellings, the representation oracle binds COLUMN_DEFAULT NULL flags and raw bytes per anchor, the null-drop-state path proves a sibling SQL NULL default stays out of the drop-column projection, the provider setup-first cases prove a stored 'NULL' literal can no longer masquerade as SQL NULL when the live snapshot feeds the ordered drop state, and the length cases pin the declared-character threshold contract (16-cell offline matrix plus 24 anchored cases whose structure oracle records CHARACTER_MAXIMUM_LENGTH and CHARACTER_OCTET_LENGTH as independent fields).",
+ "description": "CREATE TABLE base semantics (issue #85 T06-A1/A2/A3/A4/A5/A7): the accepted 56-case primary-key/nullability/default-presence subset plus 16 DEFAULT NULL cases, 12 provider default-identity cases, 40 declared CHAR/VARCHAR length cases, and 64 charset/collation cases \u2014 the A7 offline matrix isolates the three column rules and the new table collation allowlist across both dialects, while the anchored roles separate declared-declaration facts from native resolved metadata (TABLE_COLLATION vs COLUMN_COLLATION) including the ERROR 1253 mismatch negative.",
  "policy_profile": "all-rules-disabled",
  "policy": {
   "profiles": {
@@ -114,6 +114,71 @@
       "level": "blocker",
       "params": {
        "limit": 8
+      }
+     }
+    }
+   },
+   "t06-a7-column-charset-isolated": {
+    "enable": {
+     "ddl.column.charset.allowlist": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "values": [
+        "utf8mb4"
+       ]
+      }
+     }
+    }
+   },
+   "t06-a7-column-collation-isolated": {
+    "enable": {
+     "ddl.column.collation.allowlist": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "values": [
+        "utf8mb4_bin"
+       ]
+      }
+     }
+    }
+   },
+   "t06-a7-column-match-isolated": {
+    "enable": {
+     "ddl.column.charset_collation.match.require": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "required": true
+      }
+     }
+    }
+   },
+   "t06-a7-table-collation-optional": {
+    "enable": {
+     "ddl.table.collation.allowlist": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "values": [
+        "utf8mb4_bin"
+       ],
+       "require_explicit": false
+      }
+     }
+    }
+   },
+   "t06-a7-table-collation-required": {
+    "enable": {
+     "ddl.table.collation.allowlist": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "values": [
+        "utf8mb4_bin"
+       ],
+       "require_explicit": true
       }
      }
     }
@@ -1854,6 +1919,1326 @@
     ],
     "statement_sql": [
      "CREATE TABLE t (c VARCHAR(9));"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "t06-a7-mysql-cs-ok",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a7-column-charset-isolated",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   }
+  },
+  {
+   "id": "t06-a7-mysql-cs-denied",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET latin1 COLLATE latin1_bin);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a7-column-charset-isolated",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET latin1 COLLATE latin1_bin);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset.allowlist",
+      "metadata": {
+       "table": "t",
+       "column": "c",
+       "field": "charset",
+       "value": "latin1",
+       "allowed": [
+        "utf8mb4"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c\" uses unsupported charset \"latin1\""
+   }
+  },
+  {
+   "id": "t06-a7-mysql-cs-off",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET latin1 COLLATE latin1_bin);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET latin1 COLLATE latin1_bin);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "t06-a7-mysql-cc-ok",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a7-column-collation-isolated",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   }
+  },
+  {
+   "id": "t06-a7-mysql-cc-denied",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a7-column-collation-isolated",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.collation.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.collation.allowlist",
+      "metadata": {
+       "table": "t",
+       "column": "c",
+       "field": "collation",
+       "value": "utf8mb4_general_ci",
+       "allowed": [
+        "utf8mb4_bin"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c\" uses unsupported collation \"utf8mb4_general_ci\""
+   }
+  },
+  {
+   "id": "t06-a7-mysql-cc-off",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "t06-a7-mysql-match-pair",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a7-column-match-isolated",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   }
+  },
+  {
+   "id": "t06-a7-mysql-match-single",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16) COLLATE utf8mb4_bin);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a7-column-match-isolated",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) COLLATE utf8mb4_bin);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset_collation.match.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset_collation.match.require",
+      "metadata": {
+       "table": "t",
+       "column": "c",
+       "charset": "",
+       "collation": "utf8mb4_bin"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c\" must specify charset and collation together"
+   }
+  },
+  {
+   "id": "t06-a7-mysql-match-empty",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16));",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a7-column-match-isolated",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16));"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   }
+  },
+  {
+   "id": "t06-a7-mysql-match-mismatch",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE latin1_swedish_ci);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a7-column-match-isolated",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE latin1_swedish_ci);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset_collation.match.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset_collation.match.require",
+      "metadata": {
+       "table": "t",
+       "column": "c",
+       "charset": "utf8mb4",
+       "collation": "latin1_swedish_ci"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c\" collation \"latin1_swedish_ci\" must match charset \"utf8mb4\""
+   }
+  },
+  {
+   "id": "t06-a7-mysql-match-off",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE latin1_swedish_ci);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE latin1_swedish_ci);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "t06-a7-mysql-table-ok",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) COLLATE=utf8mb4_bin;",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a7-table-collation-optional",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) COLLATE=utf8mb4_bin;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   }
+  },
+  {
+   "id": "t06-a7-mysql-table-denied",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) COLLATE=utf8mb4_general_ci;",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a7-table-collation-optional",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) COLLATE=utf8mb4_general_ci;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.collation.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.collation.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "collate",
+       "actual": "utf8mb4_general_ci",
+       "allowed": [
+        "utf8mb4_bin"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table collation must be one of [utf8mb4_bin]"
+   }
+  },
+  {
+   "id": "t06-a7-mysql-table-empty",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a7-table-collation-optional",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   }
+  },
+  {
+   "id": "t06-a7-mysql-table-required",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a7-table-collation-required",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.collation.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.collation.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "collate",
+       "actual": "",
+       "allowed": [
+        "utf8mb4_bin"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table collation must be one of [utf8mb4_bin]"
+   }
+  },
+  {
+   "id": "t06-a7-mysql-table-off",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) COLLATE=utf8mb4_general_ci;",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) COLLATE=utf8mb4_general_ci;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "t06-a7-tidb-cs-ok",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a7-column-charset-isolated",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   }
+  },
+  {
+   "id": "t06-a7-tidb-cs-denied",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET latin1 COLLATE latin1_bin);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a7-column-charset-isolated",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET latin1 COLLATE latin1_bin);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset.allowlist",
+      "metadata": {
+       "table": "t",
+       "column": "c",
+       "field": "charset",
+       "value": "latin1",
+       "allowed": [
+        "utf8mb4"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c\" uses unsupported charset \"latin1\""
+   }
+  },
+  {
+   "id": "t06-a7-tidb-cs-off",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET latin1 COLLATE latin1_bin);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET latin1 COLLATE latin1_bin);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "t06-a7-tidb-cc-ok",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a7-column-collation-isolated",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   }
+  },
+  {
+   "id": "t06-a7-tidb-cc-denied",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a7-column-collation-isolated",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.collation.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.collation.allowlist",
+      "metadata": {
+       "table": "t",
+       "column": "c",
+       "field": "collation",
+       "value": "utf8mb4_general_ci",
+       "allowed": [
+        "utf8mb4_bin"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c\" uses unsupported collation \"utf8mb4_general_ci\""
+   }
+  },
+  {
+   "id": "t06-a7-tidb-cc-off",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "t06-a7-tidb-match-pair",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a7-column-match-isolated",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   }
+  },
+  {
+   "id": "t06-a7-tidb-match-single",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(16) COLLATE utf8mb4_bin);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a7-column-match-isolated",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) COLLATE utf8mb4_bin);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset_collation.match.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset_collation.match.require",
+      "metadata": {
+       "table": "t",
+       "column": "c",
+       "charset": "",
+       "collation": "utf8mb4_bin"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c\" must specify charset and collation together"
+   }
+  },
+  {
+   "id": "t06-a7-tidb-match-empty",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(16));",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a7-column-match-isolated",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16));"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   }
+  },
+  {
+   "id": "t06-a7-tidb-match-mismatch",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE latin1_swedish_ci);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a7-column-match-isolated",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE latin1_swedish_ci);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset_collation.match.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset_collation.match.require",
+      "metadata": {
+       "table": "t",
+       "column": "c",
+       "charset": "utf8mb4",
+       "collation": "latin1_swedish_ci"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c\" collation \"latin1_swedish_ci\" must match charset \"utf8mb4\""
+   }
+  },
+  {
+   "id": "t06-a7-tidb-match-off",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE latin1_swedish_ci);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE latin1_swedish_ci);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "t06-a7-tidb-table-ok",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c INT) COLLATE=utf8mb4_bin;",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a7-table-collation-optional",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) COLLATE=utf8mb4_bin;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   }
+  },
+  {
+   "id": "t06-a7-tidb-table-denied",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c INT) COLLATE=utf8mb4_general_ci;",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a7-table-collation-optional",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) COLLATE=utf8mb4_general_ci;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.collation.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.collation.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "collate",
+       "actual": "utf8mb4_general_ci",
+       "allowed": [
+        "utf8mb4_bin"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table collation must be one of [utf8mb4_bin]"
+   }
+  },
+  {
+   "id": "t06-a7-tidb-table-empty",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c INT);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a7-table-collation-optional",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   }
+  },
+  {
+   "id": "t06-a7-tidb-table-required",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c INT);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a7-table-collation-required",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.collation.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.collation.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "collate",
+       "actual": "",
+       "allowed": [
+        "utf8mb4_bin"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table collation must be one of [utf8mb4_bin]"
+   }
+  },
+  {
+   "id": "t06-a7-tidb-table-off",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c INT) COLLATE=utf8mb4_general_ci;",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) COLLATE=utf8mb4_general_ci;"
     ],
     "statement_indices": [
      0
@@ -4301,6 +5686,1144 @@
        "expect": "0"
       }
      ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a7-mysql57-column-pair",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin) CHARACTER SET utf8mb4 COLLATE=utf8mb4_general_ci;",
+   "policy": "t06-a7-column-charset-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin) CHARACTER SET utf8mb4 COLLATE=utf8mb4_general_ci;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin) CHARACTER SET utf8mb4 COLLATE=utf8mb4_general_ci;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:varchar:1:YES"
+    },
+    {
+     "assert": "declared chars and octets are independent fields",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "16:64"
+    },
+    {
+     "assert": "resolved column charset and collation",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_SET_NAME, COLLATION_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "utf8mb4:utf8mb4_bin"
+    },
+    {
+     "assert": "resolved table collation",
+     "sql": "SELECT TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "utf8mb4_general_ci"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ]
+  },
+  {
+   "id": "t06-a7-mysql57-column-charset-denied",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET latin1 COLLATE latin1_bin) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;",
+   "policy": "t06-a7-column-charset-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET latin1 COLLATE latin1_bin) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset.allowlist",
+      "metadata": {
+       "table": "t",
+       "column": "c",
+       "field": "charset",
+       "value": "latin1",
+       "allowed": [
+        "utf8mb4"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c\" uses unsupported charset \"latin1\""
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET latin1 COLLATE latin1_bin) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:varchar:1:YES"
+    },
+    {
+     "assert": "declared chars and octets are independent fields",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "16:16"
+    },
+    {
+     "assert": "resolved column charset and collation",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_SET_NAME, COLLATION_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "latin1:latin1_bin"
+    },
+    {
+     "assert": "resolved table collation",
+     "sql": "SELECT TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "utf8mb4_bin"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ]
+  },
+  {
+   "id": "t06-a7-mysql57-column-collation-denied",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;",
+   "policy": "t06-a7-column-collation-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.collation.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.collation.allowlist",
+      "metadata": {
+       "table": "t",
+       "column": "c",
+       "field": "collation",
+       "value": "utf8mb4_general_ci",
+       "allowed": [
+        "utf8mb4_bin"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c\" uses unsupported collation \"utf8mb4_general_ci\""
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:varchar:1:YES"
+    },
+    {
+     "assert": "declared chars and octets are independent fields",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "16:64"
+    },
+    {
+     "assert": "resolved column charset and collation",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_SET_NAME, COLLATION_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "utf8mb4:utf8mb4_general_ci"
+    },
+    {
+     "assert": "resolved table collation",
+     "sql": "SELECT TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "utf8mb4_bin"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ]
+  },
+  {
+   "id": "t06-a7-mysql57-column-partial",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16) COLLATE utf8mb4_bin) CHARACTER SET latin1 COLLATE=latin1_bin;",
+   "policy": "t06-a7-column-match-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) COLLATE utf8mb4_bin) CHARACTER SET latin1 COLLATE=latin1_bin;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset_collation.match.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset_collation.match.require",
+      "metadata": {
+       "table": "t",
+       "column": "c",
+       "charset": "",
+       "collation": "utf8mb4_bin"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c\" must specify charset and collation together"
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c VARCHAR(16) COLLATE utf8mb4_bin) CHARACTER SET latin1 COLLATE=latin1_bin;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:varchar:1:YES"
+    },
+    {
+     "assert": "declared chars and octets are independent fields",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "16:64"
+    },
+    {
+     "assert": "resolved column charset and collation",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_SET_NAME, COLLATION_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "utf8mb4:utf8mb4_bin"
+    },
+    {
+     "assert": "resolved table collation",
+     "sql": "SELECT TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "latin1_bin"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ]
+  },
+  {
+   "id": "t06-a7-mysql57-column-mismatch",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE latin1_bin);",
+   "policy": "t06-a7-column-match-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE latin1_bin);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset_collation.match.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset_collation.match.require",
+      "metadata": {
+       "table": "t",
+       "column": "c",
+       "charset": "utf8mb4",
+       "collation": "latin1_bin"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c\" collation \"latin1_bin\" must match charset \"utf8mb4\""
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver rejects the mismatched collation",
+     "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE latin1_bin);",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1253"
+     ],
+     "verify": [
+      {
+       "assert": "t absent after rejected create",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a7-mysql57-table-allowed",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16)) COLLATE=utf8mb4_bin;",
+   "policy": "t06-a7-table-collation-optional",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16)) COLLATE=utf8mb4_bin;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c VARCHAR(16)) COLLATE=utf8mb4_bin;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:varchar:1:YES"
+    },
+    {
+     "assert": "declared chars and octets are independent fields",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "16:64"
+    },
+    {
+     "assert": "resolved column charset and collation",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_SET_NAME, COLLATION_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "utf8mb4:utf8mb4_bin"
+    },
+    {
+     "assert": "resolved table collation",
+     "sql": "SELECT TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "utf8mb4_bin"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ]
+  },
+  {
+   "id": "t06-a7-mysql57-table-denied",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16)) COLLATE=utf8mb4_general_ci;",
+   "policy": "t06-a7-table-collation-optional",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16)) COLLATE=utf8mb4_general_ci;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.collation.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.collation.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "collate",
+       "actual": "utf8mb4_general_ci",
+       "allowed": [
+        "utf8mb4_bin"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table collation must be one of [utf8mb4_bin]"
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c VARCHAR(16)) COLLATE=utf8mb4_general_ci;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:varchar:1:YES"
+    },
+    {
+     "assert": "declared chars and octets are independent fields",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "16:64"
+    },
+    {
+     "assert": "resolved column charset and collation",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_SET_NAME, COLLATION_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "utf8mb4:utf8mb4_general_ci"
+    },
+    {
+     "assert": "resolved table collation",
+     "sql": "SELECT TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "utf8mb4_general_ci"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ]
+  },
+  {
+   "id": "t06-a7-mysql57-table-inheritance",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16)) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;",
+   "policy": "t06-a7-column-match-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16)) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c VARCHAR(16)) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:varchar:1:YES"
+    },
+    {
+     "assert": "declared chars and octets are independent fields",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "16:64"
+    },
+    {
+     "assert": "resolved column charset and collation",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_SET_NAME, COLLATION_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "utf8mb4:utf8mb4_bin"
+    },
+    {
+     "assert": "resolved table collation",
+     "sql": "SELECT TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "utf8mb4_bin"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
     }
    ]
   },
@@ -6835,6 +9358,1184 @@
    ]
   },
   {
+   "id": "t06-a7-mysql80-column-pair",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin) CHARACTER SET utf8mb4 COLLATE=utf8mb4_general_ci;",
+   "policy": "t06-a7-column-charset-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin) CHARACTER SET utf8mb4 COLLATE=utf8mb4_general_ci;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin) CHARACTER SET utf8mb4 COLLATE=utf8mb4_general_ci;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:varchar:1:YES"
+    },
+    {
+     "assert": "declared chars and octets are independent fields",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "16:64"
+    },
+    {
+     "assert": "resolved column charset and collation",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_SET_NAME, COLLATION_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "utf8mb4:utf8mb4_bin"
+    },
+    {
+     "assert": "resolved table collation",
+     "sql": "SELECT TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "utf8mb4_general_ci"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ]
+  },
+  {
+   "id": "t06-a7-mysql80-column-charset-denied",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET latin1 COLLATE latin1_bin) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;",
+   "policy": "t06-a7-column-charset-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET latin1 COLLATE latin1_bin) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset.allowlist",
+      "metadata": {
+       "table": "t",
+       "column": "c",
+       "field": "charset",
+       "value": "latin1",
+       "allowed": [
+        "utf8mb4"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c\" uses unsupported charset \"latin1\"",
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET latin1 COLLATE latin1_bin) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:varchar:1:YES"
+    },
+    {
+     "assert": "declared chars and octets are independent fields",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "16:16"
+    },
+    {
+     "assert": "resolved column charset and collation",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_SET_NAME, COLLATION_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "latin1:latin1_bin"
+    },
+    {
+     "assert": "resolved table collation",
+     "sql": "SELECT TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "utf8mb4_bin"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ]
+  },
+  {
+   "id": "t06-a7-mysql80-column-collation-denied",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;",
+   "policy": "t06-a7-column-collation-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.collation.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.collation.allowlist",
+      "metadata": {
+       "table": "t",
+       "column": "c",
+       "field": "collation",
+       "value": "utf8mb4_general_ci",
+       "allowed": [
+        "utf8mb4_bin"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c\" uses unsupported collation \"utf8mb4_general_ci\"",
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:varchar:1:YES"
+    },
+    {
+     "assert": "declared chars and octets are independent fields",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "16:64"
+    },
+    {
+     "assert": "resolved column charset and collation",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_SET_NAME, COLLATION_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "utf8mb4:utf8mb4_general_ci"
+    },
+    {
+     "assert": "resolved table collation",
+     "sql": "SELECT TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "utf8mb4_bin"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ]
+  },
+  {
+   "id": "t06-a7-mysql80-column-partial",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16) COLLATE utf8mb4_bin) CHARACTER SET latin1 COLLATE=latin1_bin;",
+   "policy": "t06-a7-column-match-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) COLLATE utf8mb4_bin) CHARACTER SET latin1 COLLATE=latin1_bin;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset_collation.match.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset_collation.match.require",
+      "metadata": {
+       "table": "t",
+       "column": "c",
+       "charset": "",
+       "collation": "utf8mb4_bin"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c\" must specify charset and collation together",
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c VARCHAR(16) COLLATE utf8mb4_bin) CHARACTER SET latin1 COLLATE=latin1_bin;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:varchar:1:YES"
+    },
+    {
+     "assert": "declared chars and octets are independent fields",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "16:64"
+    },
+    {
+     "assert": "resolved column charset and collation",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_SET_NAME, COLLATION_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "utf8mb4:utf8mb4_bin"
+    },
+    {
+     "assert": "resolved table collation",
+     "sql": "SELECT TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "latin1_bin"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ]
+  },
+  {
+   "id": "t06-a7-mysql80-column-mismatch",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE latin1_bin);",
+   "policy": "t06-a7-column-match-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE latin1_bin);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset_collation.match.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset_collation.match.require",
+      "metadata": {
+       "table": "t",
+       "column": "c",
+       "charset": "utf8mb4",
+       "collation": "latin1_bin"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c\" collation \"latin1_bin\" must match charset \"utf8mb4\"",
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver rejects the mismatched collation",
+     "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE latin1_bin);",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1253"
+     ],
+     "verify": [
+      {
+       "assert": "t absent after rejected create",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a7-mysql80-table-allowed",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16)) COLLATE=utf8mb4_bin;",
+   "policy": "t06-a7-table-collation-optional",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16)) COLLATE=utf8mb4_bin;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c VARCHAR(16)) COLLATE=utf8mb4_bin;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:varchar:1:YES"
+    },
+    {
+     "assert": "declared chars and octets are independent fields",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "16:64"
+    },
+    {
+     "assert": "resolved column charset and collation",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_SET_NAME, COLLATION_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "utf8mb4:utf8mb4_bin"
+    },
+    {
+     "assert": "resolved table collation",
+     "sql": "SELECT TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "utf8mb4_bin"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ]
+  },
+  {
+   "id": "t06-a7-mysql80-table-denied",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16)) COLLATE=utf8mb4_general_ci;",
+   "policy": "t06-a7-table-collation-optional",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16)) COLLATE=utf8mb4_general_ci;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.collation.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.collation.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "collate",
+       "actual": "utf8mb4_general_ci",
+       "allowed": [
+        "utf8mb4_bin"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table collation must be one of [utf8mb4_bin]",
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c VARCHAR(16)) COLLATE=utf8mb4_general_ci;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:varchar:1:YES"
+    },
+    {
+     "assert": "declared chars and octets are independent fields",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "16:64"
+    },
+    {
+     "assert": "resolved column charset and collation",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_SET_NAME, COLLATION_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "utf8mb4:utf8mb4_general_ci"
+    },
+    {
+     "assert": "resolved table collation",
+     "sql": "SELECT TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "utf8mb4_general_ci"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ]
+  },
+  {
+   "id": "t06-a7-mysql80-table-inheritance",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16)) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;",
+   "policy": "t06-a7-column-match-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16)) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c VARCHAR(16)) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:varchar:1:YES"
+    },
+    {
+     "assert": "declared chars and octets are independent fields",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "16:64"
+    },
+    {
+     "assert": "resolved column charset and collation",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_SET_NAME, COLLATION_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "utf8mb4:utf8mb4_bin"
+    },
+    {
+     "assert": "resolved table collation",
+     "sql": "SELECT TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "utf8mb4_bin"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ]
+  },
+  {
    "id": "t06-mysql84-no-pk",
    "anchor": "mysql84",
    "dialect": "mysql",
@@ -9365,6 +13066,1184 @@
    ]
   },
   {
+   "id": "t06-a7-mysql84-column-pair",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin) CHARACTER SET utf8mb4 COLLATE=utf8mb4_general_ci;",
+   "policy": "t06-a7-column-charset-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin) CHARACTER SET utf8mb4 COLLATE=utf8mb4_general_ci;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin) CHARACTER SET utf8mb4 COLLATE=utf8mb4_general_ci;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:varchar:1:YES"
+    },
+    {
+     "assert": "declared chars and octets are independent fields",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "16:64"
+    },
+    {
+     "assert": "resolved column charset and collation",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_SET_NAME, COLLATION_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "utf8mb4:utf8mb4_bin"
+    },
+    {
+     "assert": "resolved table collation",
+     "sql": "SELECT TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "utf8mb4_general_ci"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ]
+  },
+  {
+   "id": "t06-a7-mysql84-column-charset-denied",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET latin1 COLLATE latin1_bin) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;",
+   "policy": "t06-a7-column-charset-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET latin1 COLLATE latin1_bin) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset.allowlist",
+      "metadata": {
+       "table": "t",
+       "column": "c",
+       "field": "charset",
+       "value": "latin1",
+       "allowed": [
+        "utf8mb4"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c\" uses unsupported charset \"latin1\"",
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET latin1 COLLATE latin1_bin) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:varchar:1:YES"
+    },
+    {
+     "assert": "declared chars and octets are independent fields",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "16:16"
+    },
+    {
+     "assert": "resolved column charset and collation",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_SET_NAME, COLLATION_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "latin1:latin1_bin"
+    },
+    {
+     "assert": "resolved table collation",
+     "sql": "SELECT TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "utf8mb4_bin"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ]
+  },
+  {
+   "id": "t06-a7-mysql84-column-collation-denied",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;",
+   "policy": "t06-a7-column-collation-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.collation.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.collation.allowlist",
+      "metadata": {
+       "table": "t",
+       "column": "c",
+       "field": "collation",
+       "value": "utf8mb4_general_ci",
+       "allowed": [
+        "utf8mb4_bin"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c\" uses unsupported collation \"utf8mb4_general_ci\"",
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:varchar:1:YES"
+    },
+    {
+     "assert": "declared chars and octets are independent fields",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "16:64"
+    },
+    {
+     "assert": "resolved column charset and collation",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_SET_NAME, COLLATION_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "utf8mb4:utf8mb4_general_ci"
+    },
+    {
+     "assert": "resolved table collation",
+     "sql": "SELECT TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "utf8mb4_bin"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ]
+  },
+  {
+   "id": "t06-a7-mysql84-column-partial",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16) COLLATE utf8mb4_bin) CHARACTER SET latin1 COLLATE=latin1_bin;",
+   "policy": "t06-a7-column-match-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) COLLATE utf8mb4_bin) CHARACTER SET latin1 COLLATE=latin1_bin;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset_collation.match.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset_collation.match.require",
+      "metadata": {
+       "table": "t",
+       "column": "c",
+       "charset": "",
+       "collation": "utf8mb4_bin"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c\" must specify charset and collation together",
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c VARCHAR(16) COLLATE utf8mb4_bin) CHARACTER SET latin1 COLLATE=latin1_bin;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:varchar:1:YES"
+    },
+    {
+     "assert": "declared chars and octets are independent fields",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "16:64"
+    },
+    {
+     "assert": "resolved column charset and collation",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_SET_NAME, COLLATION_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "utf8mb4:utf8mb4_bin"
+    },
+    {
+     "assert": "resolved table collation",
+     "sql": "SELECT TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "latin1_bin"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ]
+  },
+  {
+   "id": "t06-a7-mysql84-column-mismatch",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE latin1_bin);",
+   "policy": "t06-a7-column-match-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE latin1_bin);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset_collation.match.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset_collation.match.require",
+      "metadata": {
+       "table": "t",
+       "column": "c",
+       "charset": "utf8mb4",
+       "collation": "latin1_bin"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c\" collation \"latin1_bin\" must match charset \"utf8mb4\"",
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver rejects the mismatched collation",
+     "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE latin1_bin);",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1253"
+     ],
+     "verify": [
+      {
+       "assert": "t absent after rejected create",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a7-mysql84-table-allowed",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16)) COLLATE=utf8mb4_bin;",
+   "policy": "t06-a7-table-collation-optional",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16)) COLLATE=utf8mb4_bin;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c VARCHAR(16)) COLLATE=utf8mb4_bin;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:varchar:1:YES"
+    },
+    {
+     "assert": "declared chars and octets are independent fields",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "16:64"
+    },
+    {
+     "assert": "resolved column charset and collation",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_SET_NAME, COLLATION_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "utf8mb4:utf8mb4_bin"
+    },
+    {
+     "assert": "resolved table collation",
+     "sql": "SELECT TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "utf8mb4_bin"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ]
+  },
+  {
+   "id": "t06-a7-mysql84-table-denied",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16)) COLLATE=utf8mb4_general_ci;",
+   "policy": "t06-a7-table-collation-optional",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16)) COLLATE=utf8mb4_general_ci;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.collation.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.collation.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "collate",
+       "actual": "utf8mb4_general_ci",
+       "allowed": [
+        "utf8mb4_bin"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table collation must be one of [utf8mb4_bin]",
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c VARCHAR(16)) COLLATE=utf8mb4_general_ci;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:varchar:1:YES"
+    },
+    {
+     "assert": "declared chars and octets are independent fields",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "16:64"
+    },
+    {
+     "assert": "resolved column charset and collation",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_SET_NAME, COLLATION_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "utf8mb4:utf8mb4_general_ci"
+    },
+    {
+     "assert": "resolved table collation",
+     "sql": "SELECT TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "utf8mb4_general_ci"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ]
+  },
+  {
+   "id": "t06-a7-mysql84-table-inheritance",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16)) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;",
+   "policy": "t06-a7-column-match-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16)) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c VARCHAR(16)) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:varchar:1:YES"
+    },
+    {
+     "assert": "declared chars and octets are independent fields",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "16:64"
+    },
+    {
+     "assert": "resolved column charset and collation",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_SET_NAME, COLLATION_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "utf8mb4:utf8mb4_bin"
+    },
+    {
+     "assert": "resolved table collation",
+     "sql": "SELECT TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "utf8mb4_bin"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ]
+  },
+  {
    "id": "t06-tidb85-no-pk",
    "anchor": "tidb85",
    "dialect": "tidb",
@@ -11712,6 +16591,1093 @@
      ]
     }
    ]
+  },
+  {
+   "id": "t06-a7-tidb85-column-pair",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin) CHARACTER SET utf8mb4 COLLATE=utf8mb4_general_ci;",
+   "policy": "t06-a7-column-charset-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin) CHARACTER SET utf8mb4 COLLATE=utf8mb4_general_ci;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin) CHARACTER SET utf8mb4 COLLATE=utf8mb4_general_ci;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:varchar:1:YES"
+    },
+    {
+     "assert": "declared chars and octets are independent fields",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "16:64"
+    },
+    {
+     "assert": "resolved column charset and collation",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_SET_NAME, COLLATION_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "utf8mb4:utf8mb4_bin"
+    },
+    {
+     "assert": "resolved table collation",
+     "sql": "SELECT TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "utf8mb4_general_ci"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    }
+   ]
+  },
+  {
+   "id": "t06-a7-tidb85-column-charset-denied",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET latin1 COLLATE latin1_bin) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;",
+   "policy": "t06-a7-column-charset-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET latin1 COLLATE latin1_bin) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset.allowlist",
+      "metadata": {
+       "table": "t",
+       "column": "c",
+       "field": "charset",
+       "value": "latin1",
+       "allowed": [
+        "utf8mb4"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c\" uses unsupported charset \"latin1\""
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET latin1 COLLATE latin1_bin) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:varchar:1:YES"
+    },
+    {
+     "assert": "declared chars and octets are independent fields",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "16:16"
+    },
+    {
+     "assert": "resolved column charset and collation",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_SET_NAME, COLLATION_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "latin1:latin1_bin"
+    },
+    {
+     "assert": "resolved table collation",
+     "sql": "SELECT TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "utf8mb4_bin"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    }
+   ]
+  },
+  {
+   "id": "t06-a7-tidb85-column-collation-denied",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;",
+   "policy": "t06-a7-column-collation-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.collation.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.collation.allowlist",
+      "metadata": {
+       "table": "t",
+       "column": "c",
+       "field": "collation",
+       "value": "utf8mb4_general_ci",
+       "allowed": [
+        "utf8mb4_bin"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c\" uses unsupported collation \"utf8mb4_general_ci\""
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:varchar:1:YES"
+    },
+    {
+     "assert": "declared chars and octets are independent fields",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "16:64"
+    },
+    {
+     "assert": "resolved column charset and collation",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_SET_NAME, COLLATION_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "utf8mb4:utf8mb4_general_ci"
+    },
+    {
+     "assert": "resolved table collation",
+     "sql": "SELECT TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "utf8mb4_bin"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    }
+   ]
+  },
+  {
+   "id": "t06-a7-tidb85-column-partial",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(16) COLLATE utf8mb4_bin) CHARACTER SET latin1 COLLATE=latin1_bin;",
+   "policy": "t06-a7-column-match-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) COLLATE utf8mb4_bin) CHARACTER SET latin1 COLLATE=latin1_bin;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset_collation.match.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset_collation.match.require",
+      "metadata": {
+       "table": "t",
+       "column": "c",
+       "charset": "",
+       "collation": "utf8mb4_bin"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c\" must specify charset and collation together"
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c VARCHAR(16) COLLATE utf8mb4_bin) CHARACTER SET latin1 COLLATE=latin1_bin;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:varchar:1:YES"
+    },
+    {
+     "assert": "declared chars and octets are independent fields",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "16:64"
+    },
+    {
+     "assert": "resolved column charset and collation",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_SET_NAME, COLLATION_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "utf8mb4:utf8mb4_bin"
+    },
+    {
+     "assert": "resolved table collation",
+     "sql": "SELECT TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "latin1_bin"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    }
+   ]
+  },
+  {
+   "id": "t06-a7-tidb85-column-mismatch",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE latin1_bin);",
+   "policy": "t06-a7-column-match-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE latin1_bin);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset_collation.match.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.charset_collation.match.require",
+      "metadata": {
+       "table": "t",
+       "column": "c",
+       "charset": "utf8mb4",
+       "collation": "latin1_bin"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c\" collation \"latin1_bin\" must match charset \"utf8mb4\""
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver rejects the mismatched collation",
+     "sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET utf8mb4 COLLATE latin1_bin);",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1253"
+     ],
+     "verify": [
+      {
+       "assert": "t absent after rejected create",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a7-tidb85-table-allowed",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(16)) COLLATE=utf8mb4_bin;",
+   "policy": "t06-a7-table-collation-optional",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16)) COLLATE=utf8mb4_bin;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c VARCHAR(16)) COLLATE=utf8mb4_bin;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:varchar:1:YES"
+    },
+    {
+     "assert": "declared chars and octets are independent fields",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "16:64"
+    },
+    {
+     "assert": "resolved column charset and collation",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_SET_NAME, COLLATION_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "utf8mb4:utf8mb4_bin"
+    },
+    {
+     "assert": "resolved table collation",
+     "sql": "SELECT TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "utf8mb4_bin"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    }
+   ]
+  },
+  {
+   "id": "t06-a7-tidb85-table-denied",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(16)) COLLATE=utf8mb4_general_ci;",
+   "policy": "t06-a7-table-collation-optional",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16)) COLLATE=utf8mb4_general_ci;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.collation.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.collation.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "collate",
+       "actual": "utf8mb4_general_ci",
+       "allowed": [
+        "utf8mb4_bin"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table collation must be one of [utf8mb4_bin]"
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c VARCHAR(16)) COLLATE=utf8mb4_general_ci;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:varchar:1:YES"
+    },
+    {
+     "assert": "declared chars and octets are independent fields",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "16:64"
+    },
+    {
+     "assert": "resolved column charset and collation",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_SET_NAME, COLLATION_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "utf8mb4:utf8mb4_general_ci"
+    },
+    {
+     "assert": "resolved table collation",
+     "sql": "SELECT TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "utf8mb4_general_ci"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    }
+   ]
+  },
+  {
+   "id": "t06-a7-tidb85-table-inheritance",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(16)) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;",
+   "policy": "t06-a7-column-match-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16)) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c VARCHAR(16)) CHARACTER SET utf8mb4 COLLATE=utf8mb4_bin;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:varchar:1:YES"
+    },
+    {
+     "assert": "declared chars and octets are independent fields",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "16:64"
+    },
+    {
+     "assert": "resolved column charset and collation",
+     "sql": "SELECT CONCAT_WS(':', CHARACTER_SET_NAME, COLLATION_NAME) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'",
+     "expect": "utf8mb4:utf8mb4_bin"
+    },
+    {
+     "assert": "resolved table collation",
+     "sql": "SELECT TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "utf8mb4_bin"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    }
+   ]
   }
  ],
  "required_case_ids": [
@@ -11767,6 +17733,38 @@
   "T06.cli.t06-a5-tidb-varchar-at",
   "T06.cli.t06-a5-tidb-varchar-above",
   "T06.cli.t06-a5-tidb-varchar-off",
+  "T06.cli.t06-a7-mysql-cs-ok",
+  "T06.cli.t06-a7-mysql-cs-denied",
+  "T06.cli.t06-a7-mysql-cs-off",
+  "T06.cli.t06-a7-mysql-cc-ok",
+  "T06.cli.t06-a7-mysql-cc-denied",
+  "T06.cli.t06-a7-mysql-cc-off",
+  "T06.cli.t06-a7-mysql-match-pair",
+  "T06.cli.t06-a7-mysql-match-single",
+  "T06.cli.t06-a7-mysql-match-empty",
+  "T06.cli.t06-a7-mysql-match-mismatch",
+  "T06.cli.t06-a7-mysql-match-off",
+  "T06.cli.t06-a7-mysql-table-ok",
+  "T06.cli.t06-a7-mysql-table-denied",
+  "T06.cli.t06-a7-mysql-table-empty",
+  "T06.cli.t06-a7-mysql-table-required",
+  "T06.cli.t06-a7-mysql-table-off",
+  "T06.cli.t06-a7-tidb-cs-ok",
+  "T06.cli.t06-a7-tidb-cs-denied",
+  "T06.cli.t06-a7-tidb-cs-off",
+  "T06.cli.t06-a7-tidb-cc-ok",
+  "T06.cli.t06-a7-tidb-cc-denied",
+  "T06.cli.t06-a7-tidb-cc-off",
+  "T06.cli.t06-a7-tidb-match-pair",
+  "T06.cli.t06-a7-tidb-match-single",
+  "T06.cli.t06-a7-tidb-match-empty",
+  "T06.cli.t06-a7-tidb-match-mismatch",
+  "T06.cli.t06-a7-tidb-match-off",
+  "T06.cli.t06-a7-tidb-table-ok",
+  "T06.cli.t06-a7-tidb-table-denied",
+  "T06.cli.t06-a7-tidb-table-empty",
+  "T06.cli.t06-a7-tidb-table-required",
+  "T06.cli.t06-a7-tidb-table-off",
   "T06.meta.t06-mysql57-no-pk",
   "T06.meta.t06-mysql57-inline-pk",
   "T06.meta.t06-mysql57-table-pk",
@@ -11785,6 +17783,14 @@
   "T06.meta.t06-a5-mysql57-varchar-below",
   "T06.meta.t06-a5-mysql57-varchar-at",
   "T06.meta.t06-a5-mysql57-varchar-above",
+  "T06.meta.t06-a7-mysql57-column-pair",
+  "T06.meta.t06-a7-mysql57-column-charset-denied",
+  "T06.meta.t06-a7-mysql57-column-collation-denied",
+  "T06.meta.t06-a7-mysql57-column-partial",
+  "T06.meta.t06-a7-mysql57-column-mismatch",
+  "T06.meta.t06-a7-mysql57-table-allowed",
+  "T06.meta.t06-a7-mysql57-table-denied",
+  "T06.meta.t06-a7-mysql57-table-inheritance",
   "T06.meta.t06-mysql80-no-pk",
   "T06.meta.t06-mysql80-inline-pk",
   "T06.meta.t06-mysql80-table-pk",
@@ -11803,6 +17809,14 @@
   "T06.meta.t06-a5-mysql80-varchar-below",
   "T06.meta.t06-a5-mysql80-varchar-at",
   "T06.meta.t06-a5-mysql80-varchar-above",
+  "T06.meta.t06-a7-mysql80-column-pair",
+  "T06.meta.t06-a7-mysql80-column-charset-denied",
+  "T06.meta.t06-a7-mysql80-column-collation-denied",
+  "T06.meta.t06-a7-mysql80-column-partial",
+  "T06.meta.t06-a7-mysql80-column-mismatch",
+  "T06.meta.t06-a7-mysql80-table-allowed",
+  "T06.meta.t06-a7-mysql80-table-denied",
+  "T06.meta.t06-a7-mysql80-table-inheritance",
   "T06.meta.t06-mysql84-no-pk",
   "T06.meta.t06-mysql84-inline-pk",
   "T06.meta.t06-mysql84-table-pk",
@@ -11821,6 +17835,14 @@
   "T06.meta.t06-a5-mysql84-varchar-below",
   "T06.meta.t06-a5-mysql84-varchar-at",
   "T06.meta.t06-a5-mysql84-varchar-above",
+  "T06.meta.t06-a7-mysql84-column-pair",
+  "T06.meta.t06-a7-mysql84-column-charset-denied",
+  "T06.meta.t06-a7-mysql84-column-collation-denied",
+  "T06.meta.t06-a7-mysql84-column-partial",
+  "T06.meta.t06-a7-mysql84-column-mismatch",
+  "T06.meta.t06-a7-mysql84-table-allowed",
+  "T06.meta.t06-a7-mysql84-table-denied",
+  "T06.meta.t06-a7-mysql84-table-inheritance",
   "T06.meta.t06-tidb85-no-pk",
   "T06.meta.t06-tidb85-inline-pk",
   "T06.meta.t06-tidb85-table-pk",
@@ -11838,6 +17860,14 @@
   "T06.meta.t06-a5-tidb85-char-above",
   "T06.meta.t06-a5-tidb85-varchar-below",
   "T06.meta.t06-a5-tidb85-varchar-at",
-  "T06.meta.t06-a5-tidb85-varchar-above"
+  "T06.meta.t06-a5-tidb85-varchar-above",
+  "T06.meta.t06-a7-tidb85-column-pair",
+  "T06.meta.t06-a7-tidb85-column-charset-denied",
+  "T06.meta.t06-a7-tidb85-column-collation-denied",
+  "T06.meta.t06-a7-tidb85-column-partial",
+  "T06.meta.t06-a7-tidb85-column-mismatch",
+  "T06.meta.t06-a7-tidb85-table-allowed",
+  "T06.meta.t06-a7-tidb85-table-denied",
+  "T06.meta.t06-a7-tidb85-table-inheritance"
  ]
 }

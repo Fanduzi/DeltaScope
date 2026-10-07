@@ -2109,6 +2109,8 @@ def t06_contract_tests(tmp):
     catalog = json.dumps({"rules": [{"rule_id": rid} for rid in (
         ddl_golden.T06_PK_RULE, ddl_golden.T06_PK_NN_RULE, ddl_golden.T06_DEFAULT_RULE,
         ddl_golden.T06_A5_CHAR_RULE, ddl_golden.T06_A5_VARCHAR_RULE,
+        ddl_golden.T06_A7_CS_RULE, ddl_golden.T06_A7_CC_RULE,
+        ddl_golden.T06_A7_CM_RULE, ddl_golden.T06_A7_TC_RULE,
         "ddl.table.exists.create.forbid", "ddl.table.exists.alter.require",
         "ddl.alter.drop_column.exists.require", "ddl.create_index.columns.exists.require")]})
     binary.write_text("#!/bin/sh\nprintf '%s' '" + catalog + "'\n")
@@ -2478,7 +2480,7 @@ def t06_contract_tests(tmp):
     donors = {v: copy.deepcopy(by_id(a, f"T06.meta.t06-mysql84-{v}"))
               for v in ("no-pk", "inline-pk", "table-pk")}
     for item in list(a["cases"]):
-        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-")):
+        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-", "t06-a7-")):
             slot(a, item["case_id"], donors[item["cli_case"].split("-", 2)[2]])
     run("t06 all metadata slots refilled variant-wise rejected", a, "identity")
 
@@ -2489,7 +2491,7 @@ def t06_contract_tests(tmp):
     run("t06 metadata slot filled by offline record rejected", a, "identity")
     a = copy.deepcopy(artifact)
     for item in list(a["cases"]):
-        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-")):
+        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-", "t06-a7-")):
             variant = item["cli_case"].split("-", 2)[2]
             dialect = "tidb" if item["anchor"] == "tidb85" else "mysql"
             slot(a, item["case_id"], by_id(a, f"T06.cli.t06-{dialect}-{variant}"))
@@ -3049,6 +3051,167 @@ def t06_contract_tests(tmp):
                            if s["id"] != "t06-a5-tidb85-varchar-above"]
     m["required_case_ids"].remove(victim)
     run("t06a5 case deleted on both sides rejected", a, "T06-A1", m)
+
+    # --- T06-A7 additions: column charset/collation isolation plus the new
+    # table collation allowlist on the 188-case set. Every mutation names a
+    # real failure mode from the implementation contract: finding identity
+    # swaps, capability-vs-policy confusion, oracle column/table swap,
+    # declared-vs-inherited conflation, and the usual identity defenses.
+
+    def t06a7(suffix):
+        candidate = copy.deepcopy(artifact)
+        case = next(item for item in candidate["cases"]
+                    if item.get("cli_case") == "t06-a7-" + suffix)
+        return candidate, case
+
+    # The two column allowlists are independent roles: a charset-denied
+    # record may not carry the collation rule's finding and vice versa.
+    a, c = t06a7("mysql-cs-denied")
+    c["actual"]["parsed"]["statements"][0]["findings"][0]["rule_id"] = ddl_golden.T06_A7_CC_RULE
+    update_stdout(c)
+    run("t06a7 charset finding reported as collation rule rejected", a, "finding identity")
+    a, c = t06a7("mysql-cc-denied")
+    c["actual"]["parsed"]["statements"][0]["findings"][0]["rule_id"] = ddl_golden.T06_A7_CS_RULE
+    update_stdout(c)
+    run("t06a7 collation finding reported as charset rule rejected", a, "finding identity")
+
+    # A single-declaration reject may not be recorded as a pass.
+    a, c = t06a7("mysql-match-single")
+    parsed = c["actual"]["parsed"]
+    parsed["verdict"] = "pass"
+    parsed["fail_on_triggered"] = False
+    parsed["summary"]["blockers"] = 0
+    parsed["statements"][0]["findings"] = []
+    c["actual"]["exit"] = 0
+    update_stdout(c)
+    run("t06a7 single-declaration reject recorded as pass rejected", a, "T06-A1")
+
+    # A native success may not be recorded as a driver failure.
+    a, c = t06a7("mysql84-table-allowed")
+    c["actual"]["execute"][0]["rc"] = 1
+    run("t06a7 native success recorded as failure rejected", a, "execute")
+
+    # The mismatch negative binds ERROR 1253 — an unknown-collation or
+    # permission error is not the mismatch oracle.
+    a, c = t06a7("mysql84-column-mismatch")
+    c["actual"]["execute"][0]["stderr"] = "ERROR 1273 (HY000): Unknown collation: 'latin1_bin'"
+    run("t06a7 unknown-collation error substituted for mismatch rejected", a, "execute")
+    a, c = t06a7("tidb85-column-mismatch")
+    c["actual"]["execute"][0]["stderr"] = "ERROR 1044 (42000): Access denied for user"
+    run("t06a7 permission error substituted for mismatch rejected", a, "execute")
+
+    # TABLE_COLLATION and COLUMN_COLLATION are different fields.
+    a, c = t06a7("mysql84-column-pair")
+    for record in c["actual"]["structure"]:
+        if record["assert"] == "resolved table collation":
+            record["output"] = "utf8mb4_bin"
+    run("t06a7 column collation recorded as table collation rejected", a, "structure")
+    a, c = t06a7("mysql84-column-pair")
+    for record in c["actual"]["structure"]:
+        if record["assert"] == "resolved column charset and collation":
+            record["output"] = "utf8mb4:utf8mb4_general_ci"
+    run("t06a7 table collation recorded as column collation rejected", a, "structure")
+
+    # A resolved inherited value is not the declared source field: the
+    # table-inheritance case declares no column options, so refilling its
+    # slot with the explicitly declared column-pair record conflates the
+    # two proof roles.
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.meta.t06-a7-mysql57-table-inheritance",
+         by_id(a, "T06.meta.t06-a7-mysql57-column-pair"))
+    run("t06a7 inherited record replaced by explicit declaration rejected", a, "identity")
+
+    # The table rule reads the table option, never a column collation:
+    # carrying the column collation allowlist's rule_id in the table slot
+    # is a different rule, and a column-shaped metadata map is a different
+    # finding.
+    a, c = t06a7("mysql-table-denied")
+    c["actual"]["parsed"]["statements"][0]["findings"][0]["rule_id"] = ddl_golden.T06_A7_CC_RULE
+    update_stdout(c)
+    run("t06a7 table rule reported as column collation rule rejected", a, "finding identity")
+    a, c = t06a7("mysql-table-denied")
+    c["actual"]["parsed"]["statements"][0]["findings"][0]["metadata"] = {
+        "table": "t", "column": "c", "field": "collation",
+        "value": "utf8mb4_general_ci", "allowed": ["utf8mb4_bin"]}
+    update_stdout(c)
+    run("t06a7 table finding carrying column metadata rejected", a, "finding identity")
+
+    # The declared table COLLATE is audited semantics now: smuggling the
+    # retired unaudited-option evidence back into a passing record, or
+    # restoring incomplete coverage under the all-off control, is the old
+    # boundary, not the new contract.
+    a, c = t06a7("mysql-table-ok")
+    c["actual"]["parsed"]["unsupported"].append({
+        "feature": "create_table.option.collate", "index": 0,
+        "reason": "parsed by the shared parser but not covered by audited semantics",
+        "sql": c["actual"]["parsed"]["statements"][0]["raw_sql"]})
+    update_stdout(c)
+    run("t06a7 retired unsupported evidence reappearing rejected", a, "unsupported")
+    a, c = t06a7("mysql-table-off")
+    parsed = c["actual"]["parsed"]
+    parsed["coverage"]["status"] = "incomplete"
+    parsed["statements"][0]["coverage"]["status"] = "incomplete"
+    parsed["verdict"] = "review"
+    parsed["unsupported"].append({
+        "feature": "create_table.option.collate", "index": 0,
+        "reason": "parsed by the shared parser but not covered by audited semantics",
+        "sql": parsed["statements"][0]["raw_sql"]})
+    update_stdout(c)
+    run("t06a7 disabled rule restoring incomplete coverage rejected", a, "coverage")
+
+    # Schema-level boundaries are untouched: a CREATE DATABASE record may
+    # not be laundered through a CREATE TABLE slot.
+    a, c = t06a7("mysql-table-ok")
+    original_sql = c["input_sql"]
+    c["input_sql"] = "CREATE DATABASE t COLLATE=utf8mb4_bin;"
+    c["command"][c["command"].index(original_sql)] = c["input_sql"]
+    c["actual"]["parsed"]["statements"][0]["raw_sql"] = c["input_sql"]
+    c["actual"]["parsed"]["statements"][0]["normalized_sql"] = c["input_sql"][:-1]
+    c["actual"]["parsed"]["unsupported"].append({
+        "feature": "create_schema.option.collate", "index": 0,
+        "reason": "parsed by the shared parser but not covered by audited semantics",
+        "sql": c["input_sql"]})
+    update_stdout(c)
+    run("t06a7 schema-boundary statement smuggled into table slot rejected", a, "sql")
+
+    # The frozen profiles bind exact rule ids, params, and require_explicit.
+    m = copy.deepcopy(manifest)
+    m["policy"]["profiles"][ddl_golden.T06_A7_TC_PROFILE]["enable"][
+        ddl_golden.T06_A7_TC_RULE]["params"]["require_explicit"] = True
+    run("t06a7 optional profile carrying require_explicit rejected", artifact, "T06-A1", m)
+    m = copy.deepcopy(manifest)
+    m["policy"]["profiles"][ddl_golden.T06_A7_CS_PROFILE]["enable"][
+        ddl_golden.T06_A7_CS_RULE]["params"]["values"] = ["latin1"]
+    run("t06a7 charset profile allowlist weakened rejected", artifact, "T06-A1", m)
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.cli.t06-a7-mysql-table-ok",
+         by_id(a, "T06.cli.t06-a7-mysql-table-empty"))
+    run("t06a7 same-profile pass record swapped rejected", a, "identity")
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.cli.t06-a7-mysql-table-empty",
+         by_id(a, "T06.cli.t06-a7-mysql-table-required"))
+    run("t06a7 optional slot filled by required record rejected", a, "identity")
+
+    # Same-variant defenses: cross-anchor donor reuse, metadata slots
+    # demoted to offline records, and case deletion on both sides.
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.meta.t06-a7-mysql57-table-allowed",
+         by_id(a, "T06.meta.t06-a7-mysql84-table-allowed"))
+    run("t06a7 mysql84 record re-keyed as mysql57 rejected", a, "identity")
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.meta.t06-a7-tidb85-table-allowed",
+         by_id(a, "T06.cli.t06-a7-tidb-table-ok"))
+    run("t06a7 metadata slot demoted to offline record rejected", a, "identity")
+    a = copy.deepcopy(artifact)
+    m = copy.deepcopy(manifest)
+    victim = "T06.meta.t06-a7-tidb85-table-allowed"
+    a["cases"] = [x for x in a["cases"] if x["case_id"] != victim]
+    a["executed_count"] = len(a["cases"])
+    a["required_case_ids"].remove(victim)
+    m["metadata_cases"] = [s for s in m["metadata_cases"]
+                           if s["id"] != "t06-a7-tidb85-table-allowed"]
+    m["required_case_ids"].remove(victim)
+    run("t06a7 case deleted on both sides rejected", a, "T06-A1", m)
 
     return results
 

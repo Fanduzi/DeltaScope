@@ -1772,6 +1772,13 @@ rules:
     params:
       values: [utf8 utf8mb4]
 
+  ddl.table.collation.allowlist:
+    enabled: false
+    level: blocker
+    params:
+      values: [utf8mb4_bin]
+      require_explicit: true
+
   ddl.table.columns.min_count:
     enabled: true
     level: blocker

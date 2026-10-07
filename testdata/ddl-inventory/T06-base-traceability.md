@@ -1,4 +1,4 @@
-# T06 base CREATE TABLE traceability (issue #85, slices A1+A2+A3+A4+A5)
+# T06 base CREATE TABLE traceability (issue #85, slices A1+A2+A3+A4+A5+A7)
 
 Scope: the `mysql.create-table` and `tidb.create-table` inventory rows owned by
 T06. This file maps each #85 acceptance dimension to the normalized spec
@@ -9,8 +9,8 @@ tasks are listed as deferred, not silently absorbed.
 Status vocabulary:
 
 - **golden-proven (this slice)** — pinned by `testdata/ddl-golden/T06.json`
-  (124 cases: 10 baseline + 42 offline controls + 72 anchored structure proofs)
-  and/or the `T06A1`/`T06A2`/`T06A3`/`T06A4`/`T06A5` Go regression tests.
+  (188 cases: 10 baseline + 74 offline controls + 104 anchored structure proofs)
+  and/or the `T06A1`/`T06A2`/`T06A3`/`T06A4`/`T06A5`/`T06A7` Go regression tests.
 - **earlier evidence** — covered by pre-T06 artifacts (T02–T05 golden runs,
   sql-corpus fixtures, catalog examples); not re-proven by this slice.
 - **not proven** — the field/rule exists but no dedicated evidence pins the
@@ -19,7 +19,7 @@ Status vocabulary:
 
 ## Row ownership
 
-| Inventory row | Status in inventory | T06-A1/A2/A3/A4/A5 addition |
+| Inventory row | Status in inventory | T06-A1/A2/A3/A4/A5/A7 addition |
 |---|---|---|
 | `mysql.create-table` | `semantically_checked` | `file:testdata/ddl-golden/T06.json` + this file appended to `acceptance.refs` |
 | `tidb.create-table` | `semantically_checked` | same |
@@ -50,7 +50,7 @@ Neighboring rows share the CREATE TABLE grammar but stay with their owners:
 | NULL / literal defaults beyond PK members | `Column.NotNull`, `HasDefault`, `DefaultValue`, `DefaultKind`, `DefaultIsNull` | `ddl.column.not_null.require`, `ddl.column.default.require` | corpus fixtures; `T06.json` `IS_NULLABLE` structure assertions | **earlier evidence** — expression defaults are T07 |
 | Temporal columns | `DefaultIsCurrentTimestamp`, `OnUpdateCurrentTimestamp` | `ddl.column.timestamp.forbid` | corpus fixtures | **earlier evidence** — temporal default/version semantics not yet pinned per anchor |
 | AUTO_INCREMENT | `Column.AutoIncrement` | `ddl.table.auto_increment.init_value.require`, `ddl.table.primary_key.auto_increment.require` | corpus fixtures | **earlier evidence** |
-| Charset / collation | `Column.Charset`, `Column.Collation`, `DDL.Options` entries | `ddl.column.charset.allowlist`, `ddl.column.collation.allowlist`, `ddl.column.charset_collation.match.require`, `ddl.table.charset.allowlist` | corpus fixtures | **earlier evidence** |
+| Charset / collation | `Column.Charset`, `Column.Collation`, `DDL.Options["collate"]` | `ddl.column.charset.allowlist`, `ddl.column.collation.allowlist`, `ddl.column.charset_collation.match.require`, `ddl.table.charset.allowlist`, `ddl.table.collation.allowlist` (new, default-disabled) | `T06.json` `t06-a7-*` 32 cli + 32 meta cases: each column rule isolated (allow/deny/off), match pair/single/empty/mismatch/`required=false`, table collate allowed/denied/missing under both `require_explicit` values; anchored roles pin `CHARACTER_SET_NAME`/`COLLATION_NAME`/`TABLE_COLLATION` as resolved facts distinct from declared fields, `latin1` octets (16) vs `utf8mb4` (64), and the utf8mb4+latin1_bin driver ERROR 1253 negative; `TestT06A7*` Go tests; corpus fixtures | **golden-proven (A7)** — declared-declaration facts only; native collation catalog completeness, ordering behavior, and ALTER-side governance are not claimed |
 | Comments | `Column.Comment`, `DDL.Options["comment"]` | `ddl.table.comment.require`, `ddl.table.comment.max_length`, `ddl.column.comment.require`, `ddl.table.audit_columns.require` | corpus fixtures | **earlier evidence** |
 | Common table options | `DDL.Options`, `DDL.UnextractedOptions` | `ddl.table.engine.allowlist`, `ddl.table.row_format.allowlist`, `ddl.table.partition.forbid`, `ddl.table.create_as.forbid`, `ddl.table.create_like.forbid` | corpus fixtures; `T06.json` ENGINE structure assertion on MySQL anchors | **earlier evidence** — option enumeration completeness belongs to T15 |
 | GIPK absence on MySQL 8.0/8.4 | `instance_facts` reads | — (fixture facts, not findings) | `T06.json` `expect.instance_facts` on `mysql80`/`mysql84` cases (`sql_require_primary_key`/`sql_generate_invisible_primary_key` OFF, `show_gipk_in_create_table_and_information_schema` ON) | **golden-proven (this slice)** |
@@ -91,6 +91,16 @@ Neighboring rows share the CREATE TABLE grammar but stay with their owners:
   outcome; no length-known flag was added. Bare `VARCHAR` and `CHAR BYTE`
   are recorded as real parser refusals, and the `CHARACTER`/`CHAR VARYING`
   aliases carry no A5 evidence.
+- A7 keeps the declaration layer and the native resolution layer separate:
+  an empty `Column.Charset`/`Column.Collation` is "not declared", never an
+  observed server default — the anchored oracles prove the same statements
+  resolve to `utf8mb4`/`utf8mb4_bin` via table-level inheritance. No
+  inheritance inference was added to the extractor or the T05 state model.
+- `CREATE DATABASE`/`ALTER DATABASE` collate stays unaudited boundary
+  evidence (`create_schema.option.collate`/`alter_schema.option.collate`);
+  `ALTER TABLE` collation governance is T15/#94 scope; collation catalog
+  completeness and ordering semantics are not claimed anywhere in this
+  slice.
 
 ## What this slice does NOT claim
 

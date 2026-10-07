@@ -322,6 +322,9 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDTableCharsetAllowlist, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newTableOptionAllowlistRule(ruleIDTableCharsetAllowlist, "charset", "charset", []string{"utf8", "utf8mb4"}, rule.LevelBlocker, cfg)
 		}},
+		{ruleID: ruleIDTableCollationAllowlist, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newTableOptionAllowlistRule(ruleIDTableCollationAllowlist, "collate", "collation", []string{"utf8mb4_bin"}, rule.LevelBlocker, cfg)
+		}},
 		{ruleID: ruleIDTableRowFormatAllowlist, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newTableOptionAllowlistRule(ruleIDTableRowFormatAllowlist, "row_format", "row format", []string{"DYNAMIC"}, rule.LevelBlocker, cfg)
 		}},

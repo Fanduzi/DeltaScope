@@ -199,6 +199,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.table.engine.allowlist`
 - `ddl.table.row_size.max_bytes.require`
 - `ddl.table.charset.allowlist`
+- `ddl.table.collation.allowlist`
 - `ddl.table.row_format.allowlist`
 - `ddl.table.auto_increment.init_value.require`
 - `ddl.table.foreign_key.forbid`
