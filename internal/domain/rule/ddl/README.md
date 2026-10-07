@@ -51,6 +51,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | identifier_rules_test.go | Verifies create-table identifier-pattern, reserved-keyword, and reusable naming primitive behavior |
 | index_rules_test.go | Verifies create-table index governance rules |
 | type_family_rules_test.go | Verifies create-table type-family, char-length, and charset/collation rules |
+| type_family_rules_t06a5_test.go | Verifies the T06-A5 declared-length contract at the rule layer: `limit>=1` constructor bounds with no policy-side database maximum, shipped default levels (char warning, varchar blocker) plus explicit blocker override, CHAR/VARCHAR type-gate exclusivity over INT/TEXT/BINARY/VARBINARY shapes, and the CREATE-only scope (ALTER ADD/MODIFY COLUMN never applicable — ALTER length policy stays with #87/T08) |
 | alter_rules_test.go | Verifies action-level ALTER TABLE restriction rules |
 | mysql_tidb_alter_action_rules.go | Implements MySQL/TiDB ALTER TABLE action notices, including hypothetical DROP COLUMN wording that does not claim the column exists |
 | mysql_tidb_alter_action_rules_test.go | Verifies DROP COLUMN notice copy stays hypothetical and does not assert live-schema existence |

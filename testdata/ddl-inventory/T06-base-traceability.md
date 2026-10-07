@@ -1,4 +1,4 @@
-# T06 base CREATE TABLE traceability (issue #85, slices A1+A2+A3+A4)
+# T06 base CREATE TABLE traceability (issue #85, slices A1+A2+A3+A4+A5)
 
 Scope: the `mysql.create-table` and `tidb.create-table` inventory rows owned by
 T06. This file maps each #85 acceptance dimension to the normalized spec
@@ -9,8 +9,8 @@ tasks are listed as deferred, not silently absorbed.
 Status vocabulary:
 
 - **golden-proven (this slice)** — pinned by `testdata/ddl-golden/T06.json`
-  (84 cases: 10 baseline + 26 offline controls + 48 anchored structure proofs)
-  and/or the `T06A1`/`T06A2`/`T06A3`/`T06A4` Go regression tests.
+  (124 cases: 10 baseline + 42 offline controls + 72 anchored structure proofs)
+  and/or the `T06A1`/`T06A2`/`T06A3`/`T06A4`/`T06A5` Go regression tests.
 - **earlier evidence** — covered by pre-T06 artifacts (T02–T05 golden runs,
   sql-corpus fixtures, catalog examples); not re-proven by this slice.
 - **not proven** — the field/rule exists but no dedicated evidence pins the
@@ -19,7 +19,7 @@ Status vocabulary:
 
 ## Row ownership
 
-| Inventory row | Status in inventory | T06-A1/A2/A3/A4 addition |
+| Inventory row | Status in inventory | T06-A1/A2/A3/A4/A5 addition |
 |---|---|---|
 | `mysql.create-table` | `semantically_checked` | `file:testdata/ddl-golden/T06.json` + this file appended to `acceptance.refs` |
 | `tidb.create-table` | `semantically_checked` | same |
@@ -40,7 +40,7 @@ Neighboring rows share the CREATE TABLE grammar but stay with their owners:
 | PK fact consumed by follower statements | `applyCreateTable` → `TableSnapshot.PrimaryKey`/`HasPrimaryKey` | state layer (T05), not a rule | `TestT06A1PrimaryKeyPreStateConsumption`; T05 golden manifests | **golden-proven (this slice, consumption seam)** |
 | Policy on/off is independent of legality | policy `enabled`/`params.required` | `ddl.table.primary_key.require` | `T06.json` `t06-*-rule-off` / `t06-*-required-false` cli cases; anchored no-PK cases show product reject + driver success | **golden-proven (this slice)** |
 | Type family presence (INT etc.) | `Column.Type` | `ddl.column.blob_text.forbid`, `ddl.column.json.forbid`, `ddl.column.bit.forbid`, `ddl.column.float_double.forbid`, `ddl.column.timestamp.forbid`, `ddl.table.primary_key.bigint.require`, `ddl.table.primary_key.unsigned.require` | corpus `findings`/`metadata` fixtures; catalog examples; `T06.json` structure oracle pins `DATA_TYPE=int` | **earlier evidence** — per-type-family version matrix not yet pinned |
-| Length / precision | `Column.Length` (and type args) | `ddl.column.char.max_length`, `ddl.column.varchar.max_length`, `ddl.table.row_size.max_bytes.require` | corpus fixtures; catalog examples | **earlier evidence** |
+| Length / precision | `Column.Length` (and type args) | `ddl.column.char.max_length`, `ddl.column.varchar.max_length`, `ddl.table.row_size.max_bytes.require` | `T06.json` `t06-a5-*` 16 cli + 24 meta cases pin declared CHAR/VARCHAR lengths against `limit=8` (7/8/9 + all-off control, exact `limit`/`actual` metadata, post-audit absence + native replay on both, `CHARACTER_MAXIMUM_LENGTH=N`/`CHARACTER_OCTET_LENGTH=4*N`/`utf8mb4_bin` oracle); `TestT06A5*` Go tests; corpus fixtures; catalog examples | **partially golden-proven (A5)** — declared CHAR/VARCHAR character length on CREATE only; DECIMAL precision/scale, other type args, `row_size`/`key_length` byte estimation, and ALTER-side length policy (#87/T08) stay earlier evidence |
 | PK member implied NOT NULL (inline + table-level + composite) | `Column.NotNull` normalized in `extractCreateTable`; `DDL.PrimaryKey.Columns` binding | `ddl.table.primary_key.not_null.require`, `ddl.column.not_null.require` | `T06.json` `t06-a2-*` 8 cli + 16 meta cases (`IS_NULLABLE=NO`, ordered `b:1,a:2` members, ERROR 1171 negatives); `TestT06A2*` Go tests | **golden-proven (A2)** |
 | Explicit NULL on PK member keeps the declaration conflict | `ColumnOptionNull` → member `NotNull=false` | `ddl.table.primary_key.not_null.require` | `t06-a2-*-explicit-null-{table,inline}` meta cases (product reject + driver ERROR 1171 + absence); `primary_key_explicit_null` corpus fixtures | **golden-proven (A2)** |
 | DEFAULT clause presence (absent vs explicit `DEFAULT NULL`) | `HasDefault`, `DefaultValue`, `DefaultIsNull` | `ddl.column.default.require` | `T06.json` `t06-a2-*-no-default`/`default-null` + `t06-a3-{mysql\|tidb}-{no-default,sql-null,text-null,text-nil}` cli cases; `TestT06A3*` | **golden-proven (A3)** — SQL `NULL` records `DefaultValue="NULL"` + `DefaultIsNull=true` from the typed AST datum; `'NULL'`/`'<nil>'` keep quoted text with `DefaultIsNull=false` |
@@ -83,6 +83,14 @@ Neighboring rows share the CREATE TABLE grammar but stay with their owners:
   NULL" vs "omitted nullability" is only observable on primary-key members.
 - No stored-body or generated/expression semantics enter this slice
   (T07/T27–T30).
+- The two length rules are CREATE-only: `ALTER TABLE ... ADD/MODIFY COLUMN`
+  length policy consistency is #87/T08 scope, asserted at the rule-method
+  layer by `TestT06A5LengthRulesIgnoreAlterActions`, not widened here.
+- Bare `CHAR` records the parser sentinel `UnspecifiedLength` (-1) and
+  `CHAR(0)` records 0 — two distinct facts sharing only the under-limit
+  outcome; no length-known flag was added. Bare `VARCHAR` and `CHAR BYTE`
+  are recorded as real parser refusals, and the `CHARACTER`/`CHAR VARYING`
+  aliases carry no A5 evidence.
 
 ## What this slice does NOT claim
 
@@ -90,4 +98,9 @@ Neighboring rows share the CREATE TABLE grammar but stay with their owners:
 unchanged; the new refs record that the primary-key-presence path now has
 four-anchor product/database split evidence. No status was widened, no gap was
 relabeled to notice/unsupported to shrink the denominator, and #85 remains
-open — this slice covers one dimension, not the row.
+open — this slice covers one dimension, not the row. A5 extends the same
+discipline to the declared-length dimension: a policy `blocker` on
+`CHAR(9)`/`VARCHAR(9)` under `limit=8` is a team threshold verdict, never a
+claim that the four anchors reject the DDL — every anchored case records the
+product rejection and the driver-side native CREATE success as two
+independent facts (`docs/decisions/2026-10-07-ddl-character-length-policy-proof.md`).

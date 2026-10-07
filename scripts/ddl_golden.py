@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: task manifest testdata/ddl-golden/<TASK>.json, docker/ddl-golden-compose.yaml, freshly built deltascope CLI
-# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest, including synchronous execute verification and the frozen T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1 oracles
+# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest, including synchronous execute verification and the frozen T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1–A5 oracles
 # pos: DDL golden-path runner and artifact validator behind `make ddl-golden TASK=Txx ARTIFACT_DIR=...`
 # note: if this file changes, update this header and module README.md.
 """DeltaScope DDL golden-path runner (milestone T02/#81, T04/#83).
@@ -2505,6 +2505,38 @@ T06_A4_AFTER_DROP_C_DEFAULTS_AB = "a:1:-,b:1:-,d:0:3C6E696C3E"
 T06_A4_AFTER_DROP_D_DEFAULTS_C = "a:1:-,b:1:-,c:1:-"
 T06_A4_FINAL_INDEXES = "PRIMARY:id:1,idx_b:b:1"
 
+# T06-A5 (issue #85): declared CHAR/VARCHAR length vs policy threshold.
+# The rules compare the declared character count — never bytes, stored data,
+# or an index/row-size limit — so every case pins the policy boundary at
+# N∈{7,8,9} under limit=8, and the anchored metadata cases pin the catalog's
+# two independent length fields (CHARACTER_MAXIMUM_LENGTH=N characters,
+# CHARACTER_OCTET_LENGTH=4*N bytes under utf8mb4).
+T06_A5_CHAR_PROFILE = "t06-a5-char-length-isolated"
+T06_A5_VARCHAR_PROFILE = "t06-a5-varchar-length-isolated"
+T06_A5_CHAR_RULE = "ddl.column.char.max_length"
+T06_A5_VARCHAR_RULE = "ddl.column.varchar.max_length"
+T06_A5_CHAR_MESSAGE = 'char column "c" must not exceed 8 characters'
+T06_A5_VARCHAR_MESSAGE = 'varchar column "c" must not exceed 8 characters'
+
+
+def t06_a5_sql(keyword, n, anchored):
+    if anchored:
+        return (f"CREATE TABLE t (c {keyword}({n}) "
+                "CHARACTER SET utf8mb4 COLLATE utf8mb4_bin);")
+    return f"CREATE TABLE t (c {keyword}({n}));"
+
+
+T06_A5_LENGTH_PAIR = (
+    "SELECT CONCAT_WS(':', CHARACTER_MAXIMUM_LENGTH, CHARACTER_OCTET_LENGTH) "
+    "FROM information_schema.COLUMNS "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'"
+)
+T06_A5_CHARSET = (
+    "SELECT CONCAT_WS(':', CHARACTER_SET_NAME, COLLATION_NAME) "
+    "FROM information_schema.COLUMNS "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='c'"
+)
+
 T06_ANCHORS = {
     "mysql57": {
         "service": "mysql57",
@@ -2623,10 +2655,11 @@ T06_SYNTAX_NEGATIVE = {
 
 def t06_a1_contract():
     """Frozen T06 oracle (issue #85): the accepted A1 32-case subset, the
-    A2 24-case subset, and the A3 16-case subset, 72 cases total. A1
-    baseline cases reuse the T02 batch verbatim; the offline controls pin
-    the isolated policy profiles; the anchored cases pin the
-    information_schema structure oracle.
+    A2 24-case subset, the A3 16-case subset, the A4 12-case subset, and
+    the A5 40-case subset — 124 cases total. A1 baseline cases reuse the
+    T02 batch verbatim; the offline controls pin the isolated policy
+    profiles; the anchored cases pin the information_schema structure
+    oracle.
 
     The A2 subset pins primary-key member nullability normalization: legal
     table-level and composite members pass the isolated not-null rule, while
@@ -2640,6 +2673,20 @@ def t06_a1_contract():
     stored `b` as SQL NULL and `c`/`d` as strings, and a three-statement
     CREATE→DROP COLUMN→CREATE INDEX path proves a sibling DEFAULT NULL no
     longer poisons the drop-column state projection.
+
+    The A4 subset pins provider default-identity: the physical fixture lives
+    in setup, so the audited DROP+INDEX batch can only be answered from the
+    live information_schema snapshot — a stored 'NULL'/'<nil>' literal keeps
+    the conservative unknown_table_state gap while a stored SQL NULL stays
+    precise.
+
+    The A5 subset pins declared CHAR/VARCHAR length policy: a 16-cell offline
+    matrix (2 types × 2 dialects × {below,at,above,off}) plus 24 anchored
+    metadata cases prove the threshold compares declared characters, the
+    product never executes the audited CREATE (post_verify), and the driver
+    replay always succeeds — even for the rejected N=9 — with
+    CHARACTER_MAXIMUM_LENGTH=N and CHARACTER_OCTET_LENGTH=4·N recorded as two
+    independent facts.
 
     MySQL 8.0/8.4 cases additionally record the GIPK-related server variables
     so a server-generated invisible primary key can never masquerade as a
@@ -2811,6 +2858,39 @@ def t06_a1_contract():
                 "expect": audit_expect(sql, rejects, loaded=1,
                                        finding=a3_default_finding if rejects else None),
             })
+
+    # T06-A5 (issue #85): declared-length threshold proof. The 16-cell
+    # offline matrix pins 7/8/9 under limit=8 plus the all-off control for
+    # both types and dialects; the "off" case intentionally carries no
+    # policy key so it binds the manifest's all-rules-disabled default.
+    a5_findings = {
+        "CHAR": {"rule_id": T06_A5_CHAR_RULE,
+                 "message": T06_A5_CHAR_MESSAGE,
+                 "metadata": {"table": "t", "column": "c", "limit": 8, "actual": 9}},
+        "VARCHAR": {"rule_id": T06_A5_VARCHAR_RULE,
+                    "message": T06_A5_VARCHAR_MESSAGE,
+                    "metadata": {"table": "t", "column": "c", "limit": 8, "actual": 9}},
+    }
+    a5_profiles = {"CHAR": T06_A5_CHAR_PROFILE, "VARCHAR": T06_A5_VARCHAR_PROFILE}
+    for dialect in ("mysql", "tidb"):
+        for keyword in ("CHAR", "VARCHAR"):
+            for variant, n in (("below", 7), ("at", 8), ("above", 9), ("off", 9)):
+                sql = t06_a5_sql(keyword, n, anchored=False)
+                case = {
+                    "id": f"t06-a5-{dialect}-{keyword.lower()}-{variant}",
+                    "dialect": dialect,
+                    "sql": sql,
+                    "args": ["--fail-on", "blocker"],
+                }
+                if variant == "off":
+                    case["expect"] = audit_expect(sql, False)
+                elif variant == "above":
+                    case["policy"] = a5_profiles[keyword]
+                    case["expect"] = audit_expect(sql, True, loaded=1, finding=a5_findings[keyword])
+                else:
+                    case["policy"] = a5_profiles[keyword]
+                    case["expect"] = audit_expect(sql, False, loaded=1)
+                cli_cases.append(case)
 
     connects = {
         "mysql57": {
@@ -3319,6 +3399,87 @@ def t06_a1_contract():
                 ],
             })
 
+        # T06-A5 (issue #85): declared-length policy on a live connection.
+        # The audited CREATE declares N under utf8mb4; the policy boundary
+        # (reject for N=9, pass for 7/8) must coexist with the native CREATE
+        # always succeeding — a team policy is not a database refusal. The
+        # post-audit catalog proves the product never executed the DDL, then
+        # the driver replays it and the structure oracle pins characters vs
+        # octets as two independent fields.
+        for kind_key, keyword, rule_id, profile, message in (
+            ("char", "CHAR", T06_A5_CHAR_RULE, T06_A5_CHAR_PROFILE, T06_A5_CHAR_MESSAGE),
+            ("varchar", "VARCHAR", T06_A5_VARCHAR_RULE, T06_A5_VARCHAR_PROFILE, T06_A5_VARCHAR_MESSAGE),
+        ):
+            for variant, n in (("below", 7), ("at", 8), ("above", 9)):
+                sql = t06_a5_sql(keyword, n, anchored=True)
+                expect = audit_expect(sql, n > 8, loaded=1, finding={
+                    "rule_id": rule_id,
+                    "message": message,
+                    "metadata": {"table": "t", "column": "c", "limit": 8, "actual": 9},
+                } if n > 8 else None)
+                if anchor_key in ("mysql80", "mysql84"):
+                    expect["instance_facts"] = dict(T06_GIPK_FACTS)
+                structure_rows = [
+                    verify("exactly one user table", T06_TABLE_COUNT, "1"),
+                    verify("exactly one user column", T06_COLUMN_COUNT, "1"),
+                    verify(
+                        "column c identity",
+                        T06_COLUMN_ROW,
+                        f"c:{kind_key}:1:YES",
+                    ),
+                    verify(
+                        "declared chars and octets are independent fields",
+                        T06_A5_LENGTH_PAIR,
+                        f"{n}:{4 * n}",
+                    ),
+                    verify(
+                        "utf8mb4 charset and binary collation",
+                        T06_A5_CHARSET,
+                        "utf8mb4:utf8mb4_bin",
+                    ),
+                    verify("primary key constraint count", T06_PK_CONSTRAINT, "0"),
+                    verify("primary index part count", T06_PK_PARTS, "0"),
+                ]
+                if anchor_key != "tidb85":
+                    structure_rows.append(verify("storage engine", T06_ENGINE, "InnoDB"))
+                metadata_cases.append({
+                    "id": f"t06-a5-{anchor_key}-{kind_key}-{variant}",
+                    "anchor": anchor_key,
+                    "dialect": dialect,
+                    "sql": sql,
+                    "policy": profile,
+                    "connect": dict(connects[anchor_key]),
+                    "args": ["--fail-on", "blocker"],
+                    "setup": [
+                        {
+                            "name": "ensure t absent",
+                            "sql": "DROP TABLE IF EXISTS t",
+                            "expect_rc": 0,
+                            "verify": [verify("t absent before audit", T06_TABLE_COUNT, "0")],
+                        },
+                    ],
+                    "expect": expect,
+                    "post_verify": [
+                        verify("audit did not create t", T06_TABLE_COUNT, "0"),
+                    ],
+                    "execute": [
+                        {
+                            "name": "driver applies the audited create",
+                            "sql": sql,
+                            "expect_rc": 0,
+                        },
+                    ],
+                    "structure": structure_rows,
+                    "teardown": [
+                        {
+                            "name": "drop fixture",
+                            "sql": "DROP TABLE IF EXISTS t",
+                            "expect_rc": 0,
+                            "verify": [verify("no residual t", T06_TABLE_COUNT, "0")],
+                        },
+                    ],
+                })
+
     required_case_ids = (
         [f"T06.db.{anchor}.{kind}" for anchor in T06_ANCHORS for kind in ("ddl", "syntax_negative")]
         + [f"T06.cli.{spec['id']}" for spec in cli_cases]
@@ -3368,6 +3529,20 @@ def t06_a1_contract():
                     "ddl.create_index.columns.exists.require": {
                         "enabled": True, "level": "blocker", "params": {"required": True}
                     },
+                }
+            },
+            # T06-A5: exactly one declared-length rule at limit=8 so a
+            # blocker can only come from the rule under test. The shipped
+            # defaults (char warning/limit 64, varchar blocker/limit 16383)
+            # stay untouched — these profiles only isolate.
+            T06_A5_CHAR_PROFILE: {
+                "enable": {
+                    T06_A5_CHAR_RULE: {"enabled": True, "level": "blocker", "params": {"limit": 8}},
+                }
+            },
+            T06_A5_VARCHAR_PROFILE: {
+                "enable": {
+                    T06_A5_VARCHAR_RULE: {"enabled": True, "level": "blocker", "params": {"limit": 8}},
                 }
             },
         },
@@ -3454,7 +3629,7 @@ def t06_a1_manifest_failures(manifest):
         failures.append("T06-A1 baseline syntax_negative changed")
     required = manifest.get("required_case_ids") or []
     if required != contract["required_case_ids"]:
-        failures.append("T06-A1 required_case_ids differ from the frozen 72-case denominator")
+        failures.append("T06-A1 required_case_ids differ from the frozen 124-case denominator")
     for field, kind in (("cli_cases", "cli"), ("metadata_cases", "meta")):
         declared_list = [spec.get("id") for spec in manifest.get(field) or []]
         declared = {spec.get("id"): spec for spec in manifest.get(field) or []}

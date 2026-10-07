@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: synthetic ddl-golden artifacts and manifests built in a temp directory
-# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1 mutation coverage
+# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1/A2/A3/A4/A5 mutation coverage
 # pos: offline negative tests for scripts/ddl_golden.py validation (no Docker required)
 # note: if this file changes, update this header and module README.md.
 """Validator contract tests for scripts/ddl_golden.py.
@@ -2108,6 +2108,7 @@ def t06_contract_tests(tmp):
     binary = directory / "deltascope"
     catalog = json.dumps({"rules": [{"rule_id": rid} for rid in (
         ddl_golden.T06_PK_RULE, ddl_golden.T06_PK_NN_RULE, ddl_golden.T06_DEFAULT_RULE,
+        ddl_golden.T06_A5_CHAR_RULE, ddl_golden.T06_A5_VARCHAR_RULE,
         "ddl.table.exists.create.forbid", "ddl.table.exists.alter.require",
         "ddl.alter.drop_column.exists.require", "ddl.create_index.columns.exists.require")]})
     binary.write_text("#!/bin/sh\nprintf '%s' '" + catalog + "'\n")
@@ -2477,7 +2478,7 @@ def t06_contract_tests(tmp):
     donors = {v: copy.deepcopy(by_id(a, f"T06.meta.t06-mysql84-{v}"))
               for v in ("no-pk", "inline-pk", "table-pk")}
     for item in list(a["cases"]):
-        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-")):
+        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-")):
             slot(a, item["case_id"], donors[item["cli_case"].split("-", 2)[2]])
     run("t06 all metadata slots refilled variant-wise rejected", a, "identity")
 
@@ -2488,7 +2489,7 @@ def t06_contract_tests(tmp):
     run("t06 metadata slot filled by offline record rejected", a, "identity")
     a = copy.deepcopy(artifact)
     for item in list(a["cases"]):
-        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-")):
+        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-")):
             variant = item["cli_case"].split("-", 2)[2]
             dialect = "tidb" if item["anchor"] == "tidb85" else "mysql"
             slot(a, item["case_id"], by_id(a, f"T06.cli.t06-{dialect}-{variant}"))
@@ -2866,6 +2867,188 @@ def t06_contract_tests(tmp):
                            if s["id"] != "t06-a4-tidb85-drop-d-null-control"]
     m["required_case_ids"].remove(victim)
     run("t06a4 case deleted on both sides rejected", a, "T06-A1", m)
+
+    # --- T06-A5 additions: declared CHAR/VARCHAR length roles on the 124-case set ---
+
+    def t06a5(suffix):
+        candidate = copy.deepcopy(artifact)
+        case = next(item for item in candidate["cases"]
+                    if item.get("cli_case") == "t06-a5-" + suffix)
+        return candidate, case
+
+    # Threshold boundary: an at-limit declaration may never be reported as
+    # over-limit, and an over-limit declaration may never be reported safe.
+    a, c = t06a5("mysql-varchar-at")
+    parsed = c["actual"]["parsed"]
+    parsed["verdict"] = "reject"
+    parsed["fail_on_triggered"] = True
+    c["actual"]["exit"] = 1
+    parsed["statements"][0]["findings"].append({
+        "rule_id": ddl_golden.T06_A5_VARCHAR_RULE, "level": "blocker",
+        "message": ddl_golden.T06_A5_VARCHAR_MESSAGE, "statement_kind": "ddl",
+        "location": {"line": 1, "column": 1},
+        "metadata": {"table": "t", "column": "c", "limit": 8, "actual": 8}})
+    parsed["summary"]["blockers"] = 1
+    update_stdout(c)
+    run("t06a5 at-limit recorded as over-limit rejected", a, "T06-A1")
+    a, c = t06a5("mysql-varchar-above")
+    parsed = c["actual"]["parsed"]
+    parsed["verdict"] = "pass"
+    parsed["fail_on_triggered"] = False
+    c["actual"]["exit"] = 0
+    parsed["statements"][0]["findings"] = []
+    parsed["summary"]["blockers"] = 0
+    update_stdout(c)
+    run("t06a5 over-limit recorded as safe rejected", a, "T06-A1")
+
+    # Finding identity is exact: limit/actual are not interchangeable, the
+    # char/varchar rules do not trade places, and the column/statement
+    # attribution may not drift.
+    a, c = t06a5("mysql84-varchar-above")
+    c["actual"]["parsed"]["statements"][0]["findings"][0]["metadata"] = {
+        "table": "t", "column": "c", "limit": 9, "actual": 8}
+    update_stdout(c)
+    run("t06a5 limit/actual swapped rejected", a, "finding identity mismatch")
+    a, c = t06a5("mysql84-varchar-above")
+    c["actual"]["parsed"]["statements"][0]["findings"][0]["metadata"] = {}
+    update_stdout(c)
+    run("t06a5 finding metadata removed rejected", a, "finding identity mismatch")
+    a, c = t06a5("mysql84-char-above")
+    finding = c["actual"]["parsed"]["statements"][0]["findings"][0]
+    finding["rule_id"] = ddl_golden.T06_A5_VARCHAR_RULE
+    finding["message"] = ddl_golden.T06_A5_VARCHAR_MESSAGE
+    update_stdout(c)
+    run("t06a5 char slot carrying varchar rule rejected", a, "finding identity mismatch")
+    a, c = t06a5("mysql84-varchar-above")
+    c["actual"]["parsed"]["statements"][0]["findings"][0]["metadata"]["column"] = "c2"
+    update_stdout(c)
+    run("t06a5 finding column misattributed rejected", a, "finding identity mismatch")
+    a, c = t06a5("mysql84-varchar-above")
+    c["actual"]["parsed"]["statements"][0]["findings"][0]["statement_index"] = 1
+    update_stdout(c)
+    run("t06a5 finding statement misattributed rejected", a, "finding identity mismatch")
+
+    # The off slot is a distinct role from the on slot, and char records can
+    # never stand in for varchar records.
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.cli.t06-a5-mysql-varchar-off", by_id(a, "T06.cli.t06-a5-mysql-varchar-above"))
+    run("t06a5 above record in off slot rejected", a, "identity")
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.cli.t06-a5-mysql-varchar-above", by_id(a, "T06.cli.t06-a5-mysql-varchar-off"))
+    run("t06a5 off record in above slot rejected", a, "identity")
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.cli.t06-a5-tidb-varchar-above", by_id(a, "T06.cli.t06-a5-tidb-char-above"))
+    run("t06a5 char record in varchar slot rejected", a, "identity")
+
+    # The isolated profiles' rule identity, limit, and level are frozen.
+    m = copy.deepcopy(manifest)
+    m["policy"]["profiles"][ddl_golden.T06_A5_VARCHAR_PROFILE]["enable"][
+        ddl_golden.T06_A5_VARCHAR_RULE]["params"]["limit"] = 9
+    run("t06a5 isolated profile limit weakened rejected", artifact, "T06-A1", m)
+    m = copy.deepcopy(manifest)
+    m["policy"]["profiles"][ddl_golden.T06_A5_CHAR_PROFILE]["enable"][
+        ddl_golden.T06_A5_CHAR_RULE]["level"] = "warning"
+    run("t06a5 isolated profile level weakened rejected", artifact, "T06-A1", m)
+    m = copy.deepcopy(manifest)
+    profile = m["policy"]["profiles"][ddl_golden.T06_A5_CHAR_PROFILE]
+    profile["enable"] = {ddl_golden.T06_A5_VARCHAR_RULE:
+                         profile["enable"].pop(ddl_golden.T06_A5_CHAR_RULE)}
+    run("t06a5 char profile bound to varchar rule rejected", artifact, "T06-A1", m)
+
+    # The structure oracle binds characters and octets as independent fields:
+    # recording the octet count as the character count, a wrong collation,
+    # or a wrong DATA_TYPE is not the declared proof.
+    a, c = t06a5("mysql84-varchar-at")
+    for record in c["actual"]["structure"]:
+        if record["assert"] == "declared chars and octets are independent fields":
+            record["output"] = "32:32"
+    run("t06a5 characters recorded as octets rejected", a, "structure")
+    a, c = t06a5("mysql84-varchar-at")
+    for record in c["actual"]["structure"]:
+        if record["assert"] == "utf8mb4 charset and binary collation":
+            record["output"] = "utf8mb4:utf8mb4_general_ci"
+    run("t06a5 collation recorded as general_ci rejected", a, "structure")
+    a, c = t06a5("mysql84-char-above")
+    for record in c["actual"]["structure"]:
+        if record["assert"] == "column c identity":
+            record["output"] = "c:varchar:1:YES"
+    run("t06a5 char recorded as varchar data type rejected", a, "structure")
+
+    # A policy rejection never excuses skipping the native replay, and a
+    # driver failure may not be reported as success.
+    a, c = t06a5("mysql84-varchar-above")
+    c["actual"]["execute"] = []
+    run("t06a5 rejected product skipped native replay rejected", a, "execute")
+    a, c = t06a5("mysql84-varchar-above")
+    c["actual"]["execute"][0]["rc"] = 1
+    run("t06a5 driver failure disguised as success rejected", a, "execute")
+
+    # Removing the oracle legs on both sides still violates the frozen
+    # contract: the chars/octets query, the post-audit absence check, the
+    # pre-audit absence verify, and the teardown residue check all stay.
+    a = copy.deepcopy(artifact)
+    m = copy.deepcopy(manifest)
+    for item in a["cases"]:
+        if item.get("cli_case") == "t06-a5-mysql84-varchar-above":
+            item["actual"]["structure"] = [
+                r for r in item["actual"]["structure"]
+                if r["assert"] != "declared chars and octets are independent fields"]
+    for spec in m["metadata_cases"]:
+        if spec["id"] == "t06-a5-mysql84-varchar-above":
+            spec["structure"] = [q for q in spec["structure"]
+                                 if q["assert"] != "declared chars and octets are independent fields"]
+    run("t06a5 chars/octets query deleted on both sides rejected", a, "T06-A1", m)
+    a = copy.deepcopy(artifact)
+    m = copy.deepcopy(manifest)
+    for item in a["cases"]:
+        if item.get("cli_case") == "t06-a5-mysql84-varchar-above":
+            item["actual"]["post_verify"] = []
+    for spec in m["metadata_cases"]:
+        if spec["id"] == "t06-a5-mysql84-varchar-above":
+            spec["post_verify"] = []
+    run("t06a5 post-audit absence check deleted rejected", a, "T06-A1", m)
+    a = copy.deepcopy(artifact)
+    m = copy.deepcopy(manifest)
+    for item in a["cases"]:
+        if item.get("cli_case") == "t06-a5-mysql84-varchar-above":
+            item["actual"]["setup"][0]["verify"] = []
+    for spec in m["metadata_cases"]:
+        if spec["id"] == "t06-a5-mysql84-varchar-above":
+            spec["setup"][0]["verify"] = []
+    run("t06a5 pre-audit absence verify deleted rejected", a, "T06-A1", m)
+    a = copy.deepcopy(artifact)
+    m = copy.deepcopy(manifest)
+    for item in a["cases"]:
+        if item.get("cli_case") == "t06-a5-mysql84-varchar-above":
+            item["actual"]["teardown"][0]["verify"] = []
+    for spec in m["metadata_cases"]:
+        if spec["id"] == "t06-a5-mysql84-varchar-above":
+            spec["teardown"][0]["verify"] = []
+    run("t06a5 teardown residue check deleted rejected", a, "T06-A1", m)
+
+    # The new roles share the rebind/demote/profile-swap/both-sides-delete
+    # defenses.
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.meta.t06-a5-mysql57-varchar-above",
+         by_id(a, "T06.meta.t06-a5-mysql84-varchar-above"))
+    run("t06a5 mysql84 record re-keyed as mysql57 rejected", a, "identity")
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.meta.t06-a5-tidb85-varchar-above",
+         by_id(a, "T06.cli.t06-a5-tidb-varchar-above"))
+    run("t06a5 metadata slot demoted to offline record rejected", a, "identity")
+    a, c = t06a5("mysql84-char-above")
+    c["policy_profile"] = ddl_golden.T06_A5_VARCHAR_PROFILE
+    run("t06a5 char case under varchar profile rejected", a, "identity")
+    a = copy.deepcopy(artifact)
+    m = copy.deepcopy(manifest)
+    victim = "T06.meta.t06-a5-tidb85-varchar-above"
+    a["cases"] = [x for x in a["cases"] if x["case_id"] != victim]
+    a["executed_count"] = len(a["cases"])
+    a["required_case_ids"].remove(victim)
+    m["metadata_cases"] = [s for s in m["metadata_cases"]
+                           if s["id"] != "t06-a5-tidb85-varchar-above"]
+    m["required_case_ids"].remove(victim)
+    run("t06a5 case deleted on both sides rejected", a, "T06-A1", m)
 
     return results
 
