@@ -99,6 +99,7 @@ Normalized statement specifications used as the stable input for rule evaluation
   - `DefaultIsNull`
   - `DefaultIsCurrentTimestamp`
   - `OnUpdateCurrentTimestamp`
+- `Column` default facts are source-layered, not provenance claims: on the input-AST path `HasDefault` marks an explicit `DEFAULT` clause, literals keep their quoting in `DefaultValue`, and `DefaultIsNull` records the typed `DEFAULT NULL`; on the MySQL/TiDB metadata path `HasDefault` marks a non-NULL `COLUMN_DEFAULT`, `DefaultValue` is the stored representation verbatim, and `DefaultIsNull` is never set — a NULL catalog value cannot distinguish an omitted clause from an explicit `DEFAULT NULL`, and neither field may be read as recovering the original declaration (issue #85 T06-A4).
 - `DDL` also carries create-table shape flags for:
   - `CREATE TABLE ... LIKE`
   - `CREATE TABLE ... AS SELECT`

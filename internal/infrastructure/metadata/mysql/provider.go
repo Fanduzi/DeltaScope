@@ -1,6 +1,6 @@
 // Package mysqlmeta implements metadata-aware audit adapters over the MySQL protocol.
 // input: sql.DB access plus connection configs, version/schema/table lookup requests, and MySQL/TiDB metadata queries
-// output: normalized instance facts with explicit known bits (innodb_page_size, 5.7 large-prefix, TiDB max-index-length via all-rows SHOW CONFIG verification — read failures propagate as provider errors, only absent/ambiguous values stay unknown), dialect detection, schema discovery, and table snapshots with preserved index cardinality for application-level audit enrichment
+// output: normalized instance facts with explicit known bits (innodb_page_size, 5.7 large-prefix, TiDB max-index-length via all-rows SHOW CONFIG verification — read failures propagate as provider errors, only absent/ambiguous values stay unknown), dialect detection, schema discovery, and table snapshots with preserved index cardinality and stored-representation default facts (COLUMN_DEFAULT IS NOT NULL → HasDefault with verbatim DefaultValue bytes; NULL rows and literal "null" text never set DefaultIsNull on this path) for application-level audit enrichment
 // pos: infrastructure metadata adapter between database/sql and domain metadata specs
 // note: if this file changes, update this header and module README.md.
 package mysqlmeta
@@ -394,9 +394,11 @@ func (p *Provider) loadColumns(ctx context.Context, snapshot *spec.TableSnapshot
 		if defaultValue.Valid && strings.EqualFold(defaultValue.String, "current_timestamp") {
 			column.DefaultIsCurrentTimestamp = true
 		}
-		if defaultValue.Valid && strings.EqualFold(defaultValue.String, "null") {
-			column.DefaultIsNull = true
-		}
+		// A non-NULL COLUMN_DEFAULT is always a stored representation, never
+		// proof of a SQL NULL default: the text "null" is the string literal
+		// 'null', while a real DEFAULT NULL surfaces as a NULL row. A NULL
+		// column_default also cannot distinguish an omitted DEFAULT clause
+		// from an explicit DEFAULT NULL, so neither sets DefaultIsNull here.
 		if strings.Contains(strings.ToLower(extra), "on update current_timestamp") {
 			column.OnUpdateCurrentTimestamp = true
 		}

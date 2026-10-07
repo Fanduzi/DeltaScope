@@ -241,15 +241,24 @@ type Table struct {
 
 // Column describes a table column.
 type Column struct {
-	Name                      string         `json:"name"`
-	Type                      string         `json:"type,omitempty"`
-	Length                    int            `json:"length,omitempty"`
-	Charset                   string         `json:"charset,omitempty"`
-	Collation                 string         `json:"collation,omitempty"`
-	Comment                   string         `json:"comment,omitempty"`
-	Unsigned                  bool           `json:"unsigned,omitempty"`
-	NotNull                   bool           `json:"not_null,omitempty"`
-	AutoIncrement             bool           `json:"auto_increment,omitempty"`
+	Name          string `json:"name"`
+	Type          string `json:"type,omitempty"`
+	Length        int    `json:"length,omitempty"`
+	Charset       string `json:"charset,omitempty"`
+	Collation     string `json:"collation,omitempty"`
+	Comment       string `json:"comment,omitempty"`
+	Unsigned      bool   `json:"unsigned,omitempty"`
+	NotNull       bool   `json:"not_null,omitempty"`
+	AutoIncrement bool   `json:"auto_increment,omitempty"`
+	// HasDefault and DefaultValue mean different facts by source: on the
+	// input-AST path HasDefault marks an explicit DEFAULT clause and
+	// literals keep their quoting; on the MySQL/TiDB metadata path
+	// HasDefault marks a non-NULL COLUMN_DEFAULT and DefaultValue is the
+	// stored representation verbatim. Neither may be read as recovering
+	// the original declaration, and DefaultIsNull is only asserted by the
+	// AST path — a NULL COLUMN_DEFAULT cannot distinguish an omitted
+	// clause from an explicit DEFAULT NULL, so the metadata path never
+	// sets it.
 	HasDefault                bool           `json:"has_default,omitempty"`
 	DefaultValue              string         `json:"default_value,omitempty"`
 	DefaultKind               string         `json:"default_kind,omitempty"`

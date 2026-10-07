@@ -1,7 +1,7 @@
 {
  "task_id": "T06",
  "issue": "https://github.com/Fanduzi/DeltaScope/issues/85",
- "description": "CREATE TABLE base semantics (issue #85 T06-A1/A2/A3): the accepted 56-case primary-key/nullability/default-presence subset plus 16 DEFAULT NULL cases \u2014 the CLI matrix pins the presence contract across four default spellings, the representation oracle binds COLUMN_DEFAULT NULL flags and raw bytes per anchor, and the null-drop-state path proves a sibling SQL NULL default stays out of the drop-column projection.",
+ "description": "CREATE TABLE base semantics (issue #85 T06-A1/A2/A3/A4): the accepted 56-case primary-key/nullability/default-presence subset plus 16 DEFAULT NULL cases and 12 provider default-identity cases \u2014 the CLI matrix pins the presence contract across four default spellings, the representation oracle binds COLUMN_DEFAULT NULL flags and raw bytes per anchor, the null-drop-state path proves a sibling SQL NULL default stays out of the drop-column projection, and the provider setup-first cases prove a stored 'NULL' literal can no longer masquerade as SQL NULL when the live snapshot feeds the ordered drop state.",
  "policy_profile": "all-rules-disabled",
  "policy": {
   "profiles": {
@@ -56,6 +56,27 @@
       "level": "blocker",
       "params": {}
      },
+     "ddl.table.exists.alter.require": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {}
+     },
+     "ddl.alter.drop_column.exists.require": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {}
+     },
+     "ddl.create_index.columns.exists.require": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "required": true
+      }
+     }
+    }
+   },
+   "t06-a4-provider-defaults-isolated": {
+    "enable": {
      "ddl.table.exists.alter.require": {
       "enabled": true,
       "level": "blocker",
@@ -2363,6 +2384,511 @@
    ]
   },
   {
+   "id": "t06-a4-mysql57-drop-d-text-null",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t06_a4_defaults DROP COLUMN d;\nCREATE INDEX idx_b ON t06_a4_defaults(b);",
+   "policy": "t06-a4-provider-defaults-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure fixture absent",
+     "sql": "DROP TABLE IF EXISTS t06_a4_defaults",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "fixture absent before setup",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "driver builds the audited initial state",
+     "sql": "CREATE TABLE t06_a4_defaults (id INT PRIMARY KEY, a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '<nil>');",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "five columns in declared order",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES,d:varchar:5:YES"
+      },
+      {
+       "assert": "default null flags and raw bytes",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+       "expect": "a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "complete",
+     "unverified"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t06_a4_defaults DROP COLUMN d;",
+     "CREATE INDEX idx_b ON t06_a4_defaults(b);"
+    ],
+    "statement_indices": [
+     0,
+     1
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 1,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.columns",
+       "target_table.existence"
+      ]
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 3
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not change columns",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES,d:varchar:5:YES"
+    },
+    {
+     "assert": "audit did not change defaults",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+     "expect": "a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E"
+    },
+    {
+     "assert": "audit kept primary key member",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+     "expect": "id:1"
+    },
+    {
+     "assert": "audit did not create idx_b",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='idx_b'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver drops d",
+     "sql": "ALTER TABLE t06_a4_defaults DROP COLUMN d;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "d dropped, order pinned",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES"
+      },
+      {
+       "assert": "remaining defaults unchanged",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+       "expect": "a:1:-,b:1:-,c:0:4E554C4C"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    },
+    {
+     "name": "driver creates index idx_b on b",
+     "sql": "CREATE INDEX idx_b ON t06_a4_defaults(b);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "1"
+    },
+    {
+     "assert": "final columns after replay",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES"
+    },
+    {
+     "assert": "indexes PRIMARY(id) and idx_b(b)",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', INDEX_NAME, COLUMN_NAME, SEQ_IN_INDEX) ORDER BY BINARY INDEX_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "PRIMARY:id:1,idx_b:b:1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t06_a4_defaults",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual fixture",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a4-mysql57-drop-c-text-nil",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t06_a4_defaults DROP COLUMN c;\nCREATE INDEX idx_b ON t06_a4_defaults(b);",
+   "policy": "t06-a4-provider-defaults-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure fixture absent",
+     "sql": "DROP TABLE IF EXISTS t06_a4_defaults",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "fixture absent before setup",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "driver builds the audited initial state",
+     "sql": "CREATE TABLE t06_a4_defaults (id INT PRIMARY KEY, a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '<nil>');",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "five columns in declared order",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES,d:varchar:5:YES"
+      },
+      {
+       "assert": "default null flags and raw bytes",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+       "expect": "a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "complete",
+     "unverified"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t06_a4_defaults DROP COLUMN c;",
+     "CREATE INDEX idx_b ON t06_a4_defaults(b);"
+    ],
+    "statement_indices": [
+     0,
+     1
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 1,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.columns",
+       "target_table.existence"
+      ]
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 3
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not change columns",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES,d:varchar:5:YES"
+    },
+    {
+     "assert": "audit did not change defaults",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+     "expect": "a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E"
+    },
+    {
+     "assert": "audit kept primary key member",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+     "expect": "id:1"
+    },
+    {
+     "assert": "audit did not create idx_b",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='idx_b'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver drops c",
+     "sql": "ALTER TABLE t06_a4_defaults DROP COLUMN c;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "c dropped, order pinned",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,d:varchar:4:YES"
+      },
+      {
+       "assert": "remaining defaults unchanged",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+       "expect": "a:1:-,b:1:-,d:0:3C6E696C3E"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    },
+    {
+     "name": "driver creates index idx_b on b",
+     "sql": "CREATE INDEX idx_b ON t06_a4_defaults(b);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "1"
+    },
+    {
+     "assert": "final columns after replay",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,d:varchar:4:YES"
+    },
+    {
+     "assert": "indexes PRIMARY(id) and idx_b(b)",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', INDEX_NAME, COLUMN_NAME, SEQ_IN_INDEX) ORDER BY BINARY INDEX_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "PRIMARY:id:1,idx_b:b:1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t06_a4_defaults",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual fixture",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a4-mysql57-drop-d-null-control",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t06_a4_defaults DROP COLUMN d;\nCREATE INDEX idx_b ON t06_a4_defaults(b);",
+   "policy": "t06-a4-provider-defaults-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure fixture absent",
+     "sql": "DROP TABLE IF EXISTS t06_a4_defaults",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "fixture absent before setup",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "driver builds the audited initial state",
+     "sql": "CREATE TABLE t06_a4_defaults (id INT PRIMARY KEY, a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT NULL, d VARCHAR(8) DEFAULT '<nil>');",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "five columns in declared order",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES,d:varchar:5:YES"
+      },
+      {
+       "assert": "default null flags and raw bytes",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+       "expect": "a:1:-,b:1:-,c:1:-,d:0:3C6E696C3E"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t06_a4_defaults DROP COLUMN d;",
+     "CREATE INDEX idx_b ON t06_a4_defaults(b);"
+    ],
+    "statement_indices": [
+     0,
+     1
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 3
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not change columns",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES,d:varchar:5:YES"
+    },
+    {
+     "assert": "audit did not change defaults",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+     "expect": "a:1:-,b:1:-,c:1:-,d:0:3C6E696C3E"
+    },
+    {
+     "assert": "audit kept primary key member",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+     "expect": "id:1"
+    },
+    {
+     "assert": "audit did not create idx_b",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='idx_b'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver drops d",
+     "sql": "ALTER TABLE t06_a4_defaults DROP COLUMN d;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "d dropped, order pinned",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES"
+      },
+      {
+       "assert": "remaining defaults unchanged",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+       "expect": "a:1:-,b:1:-,c:1:-"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    },
+    {
+     "name": "driver creates index idx_b on b",
+     "sql": "CREATE INDEX idx_b ON t06_a4_defaults(b);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "1"
+    },
+    {
+     "assert": "final columns after replay",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES"
+    },
+    {
+     "assert": "indexes PRIMARY(id) and idx_b(b)",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', INDEX_NAME, COLUMN_NAME, SEQ_IN_INDEX) ORDER BY BINARY INDEX_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "PRIMARY:id:1,idx_b:b:1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t06_a4_defaults",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual fixture",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
    "id": "t06-mysql80-no-pk",
    "anchor": "mysql80",
    "dialect": "mysql",
@@ -3538,6 +4064,526 @@
       {
        "assert": "no residual t",
        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a4-mysql80-drop-d-text-null",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t06_a4_defaults DROP COLUMN d;\nCREATE INDEX idx_b ON t06_a4_defaults(b);",
+   "policy": "t06-a4-provider-defaults-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure fixture absent",
+     "sql": "DROP TABLE IF EXISTS t06_a4_defaults",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "fixture absent before setup",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "driver builds the audited initial state",
+     "sql": "CREATE TABLE t06_a4_defaults (id INT PRIMARY KEY, a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '<nil>');",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "five columns in declared order",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES,d:varchar:5:YES"
+      },
+      {
+       "assert": "default null flags and raw bytes",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+       "expect": "a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "complete",
+     "unverified"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t06_a4_defaults DROP COLUMN d;",
+     "CREATE INDEX idx_b ON t06_a4_defaults(b);"
+    ],
+    "statement_indices": [
+     0,
+     1
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 1,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.columns",
+       "target_table.existence"
+      ]
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 3,
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not change columns",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES,d:varchar:5:YES"
+    },
+    {
+     "assert": "audit did not change defaults",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+     "expect": "a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E"
+    },
+    {
+     "assert": "audit kept primary key member",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+     "expect": "id:1"
+    },
+    {
+     "assert": "audit did not create idx_b",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='idx_b'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver drops d",
+     "sql": "ALTER TABLE t06_a4_defaults DROP COLUMN d;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "d dropped, order pinned",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES"
+      },
+      {
+       "assert": "remaining defaults unchanged",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+       "expect": "a:1:-,b:1:-,c:0:4E554C4C"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    },
+    {
+     "name": "driver creates index idx_b on b",
+     "sql": "CREATE INDEX idx_b ON t06_a4_defaults(b);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "1"
+    },
+    {
+     "assert": "final columns after replay",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES"
+    },
+    {
+     "assert": "indexes PRIMARY(id) and idx_b(b)",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', INDEX_NAME, COLUMN_NAME, SEQ_IN_INDEX) ORDER BY BINARY INDEX_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "PRIMARY:id:1,idx_b:b:1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t06_a4_defaults",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual fixture",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a4-mysql80-drop-c-text-nil",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t06_a4_defaults DROP COLUMN c;\nCREATE INDEX idx_b ON t06_a4_defaults(b);",
+   "policy": "t06-a4-provider-defaults-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure fixture absent",
+     "sql": "DROP TABLE IF EXISTS t06_a4_defaults",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "fixture absent before setup",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "driver builds the audited initial state",
+     "sql": "CREATE TABLE t06_a4_defaults (id INT PRIMARY KEY, a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '<nil>');",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "five columns in declared order",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES,d:varchar:5:YES"
+      },
+      {
+       "assert": "default null flags and raw bytes",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+       "expect": "a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "complete",
+     "unverified"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t06_a4_defaults DROP COLUMN c;",
+     "CREATE INDEX idx_b ON t06_a4_defaults(b);"
+    ],
+    "statement_indices": [
+     0,
+     1
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 1,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.columns",
+       "target_table.existence"
+      ]
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 3,
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not change columns",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES,d:varchar:5:YES"
+    },
+    {
+     "assert": "audit did not change defaults",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+     "expect": "a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E"
+    },
+    {
+     "assert": "audit kept primary key member",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+     "expect": "id:1"
+    },
+    {
+     "assert": "audit did not create idx_b",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='idx_b'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver drops c",
+     "sql": "ALTER TABLE t06_a4_defaults DROP COLUMN c;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "c dropped, order pinned",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,d:varchar:4:YES"
+      },
+      {
+       "assert": "remaining defaults unchanged",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+       "expect": "a:1:-,b:1:-,d:0:3C6E696C3E"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    },
+    {
+     "name": "driver creates index idx_b on b",
+     "sql": "CREATE INDEX idx_b ON t06_a4_defaults(b);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "1"
+    },
+    {
+     "assert": "final columns after replay",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,d:varchar:4:YES"
+    },
+    {
+     "assert": "indexes PRIMARY(id) and idx_b(b)",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', INDEX_NAME, COLUMN_NAME, SEQ_IN_INDEX) ORDER BY BINARY INDEX_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "PRIMARY:id:1,idx_b:b:1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t06_a4_defaults",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual fixture",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a4-mysql80-drop-d-null-control",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t06_a4_defaults DROP COLUMN d;\nCREATE INDEX idx_b ON t06_a4_defaults(b);",
+   "policy": "t06-a4-provider-defaults-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure fixture absent",
+     "sql": "DROP TABLE IF EXISTS t06_a4_defaults",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "fixture absent before setup",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "driver builds the audited initial state",
+     "sql": "CREATE TABLE t06_a4_defaults (id INT PRIMARY KEY, a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT NULL, d VARCHAR(8) DEFAULT '<nil>');",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "five columns in declared order",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES,d:varchar:5:YES"
+      },
+      {
+       "assert": "default null flags and raw bytes",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+       "expect": "a:1:-,b:1:-,c:1:-,d:0:3C6E696C3E"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t06_a4_defaults DROP COLUMN d;",
+     "CREATE INDEX idx_b ON t06_a4_defaults(b);"
+    ],
+    "statement_indices": [
+     0,
+     1
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 3,
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not change columns",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES,d:varchar:5:YES"
+    },
+    {
+     "assert": "audit did not change defaults",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+     "expect": "a:1:-,b:1:-,c:1:-,d:0:3C6E696C3E"
+    },
+    {
+     "assert": "audit kept primary key member",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+     "expect": "id:1"
+    },
+    {
+     "assert": "audit did not create idx_b",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='idx_b'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver drops d",
+     "sql": "ALTER TABLE t06_a4_defaults DROP COLUMN d;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "d dropped, order pinned",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES"
+      },
+      {
+       "assert": "remaining defaults unchanged",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+       "expect": "a:1:-,b:1:-,c:1:-"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    },
+    {
+     "name": "driver creates index idx_b on b",
+     "sql": "CREATE INDEX idx_b ON t06_a4_defaults(b);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "1"
+    },
+    {
+     "assert": "final columns after replay",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES"
+    },
+    {
+     "assert": "indexes PRIMARY(id) and idx_b(b)",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', INDEX_NAME, COLUMN_NAME, SEQ_IN_INDEX) ORDER BY BINARY INDEX_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "PRIMARY:id:1,idx_b:b:1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t06_a4_defaults",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual fixture",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
        "expect": "0"
       }
      ]
@@ -4727,6 +5773,526 @@
    ]
   },
   {
+   "id": "t06-a4-mysql84-drop-d-text-null",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t06_a4_defaults DROP COLUMN d;\nCREATE INDEX idx_b ON t06_a4_defaults(b);",
+   "policy": "t06-a4-provider-defaults-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure fixture absent",
+     "sql": "DROP TABLE IF EXISTS t06_a4_defaults",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "fixture absent before setup",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "driver builds the audited initial state",
+     "sql": "CREATE TABLE t06_a4_defaults (id INT PRIMARY KEY, a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '<nil>');",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "five columns in declared order",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES,d:varchar:5:YES"
+      },
+      {
+       "assert": "default null flags and raw bytes",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+       "expect": "a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "complete",
+     "unverified"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t06_a4_defaults DROP COLUMN d;",
+     "CREATE INDEX idx_b ON t06_a4_defaults(b);"
+    ],
+    "statement_indices": [
+     0,
+     1
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 1,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.columns",
+       "target_table.existence"
+      ]
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 3,
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not change columns",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES,d:varchar:5:YES"
+    },
+    {
+     "assert": "audit did not change defaults",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+     "expect": "a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E"
+    },
+    {
+     "assert": "audit kept primary key member",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+     "expect": "id:1"
+    },
+    {
+     "assert": "audit did not create idx_b",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='idx_b'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver drops d",
+     "sql": "ALTER TABLE t06_a4_defaults DROP COLUMN d;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "d dropped, order pinned",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES"
+      },
+      {
+       "assert": "remaining defaults unchanged",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+       "expect": "a:1:-,b:1:-,c:0:4E554C4C"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    },
+    {
+     "name": "driver creates index idx_b on b",
+     "sql": "CREATE INDEX idx_b ON t06_a4_defaults(b);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "1"
+    },
+    {
+     "assert": "final columns after replay",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES"
+    },
+    {
+     "assert": "indexes PRIMARY(id) and idx_b(b)",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', INDEX_NAME, COLUMN_NAME, SEQ_IN_INDEX) ORDER BY BINARY INDEX_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "PRIMARY:id:1,idx_b:b:1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t06_a4_defaults",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual fixture",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a4-mysql84-drop-c-text-nil",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t06_a4_defaults DROP COLUMN c;\nCREATE INDEX idx_b ON t06_a4_defaults(b);",
+   "policy": "t06-a4-provider-defaults-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure fixture absent",
+     "sql": "DROP TABLE IF EXISTS t06_a4_defaults",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "fixture absent before setup",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "driver builds the audited initial state",
+     "sql": "CREATE TABLE t06_a4_defaults (id INT PRIMARY KEY, a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '<nil>');",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "five columns in declared order",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES,d:varchar:5:YES"
+      },
+      {
+       "assert": "default null flags and raw bytes",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+       "expect": "a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "complete",
+     "unverified"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t06_a4_defaults DROP COLUMN c;",
+     "CREATE INDEX idx_b ON t06_a4_defaults(b);"
+    ],
+    "statement_indices": [
+     0,
+     1
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 1,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.columns",
+       "target_table.existence"
+      ]
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 3,
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not change columns",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES,d:varchar:5:YES"
+    },
+    {
+     "assert": "audit did not change defaults",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+     "expect": "a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E"
+    },
+    {
+     "assert": "audit kept primary key member",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+     "expect": "id:1"
+    },
+    {
+     "assert": "audit did not create idx_b",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='idx_b'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver drops c",
+     "sql": "ALTER TABLE t06_a4_defaults DROP COLUMN c;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "c dropped, order pinned",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,d:varchar:4:YES"
+      },
+      {
+       "assert": "remaining defaults unchanged",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+       "expect": "a:1:-,b:1:-,d:0:3C6E696C3E"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    },
+    {
+     "name": "driver creates index idx_b on b",
+     "sql": "CREATE INDEX idx_b ON t06_a4_defaults(b);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "1"
+    },
+    {
+     "assert": "final columns after replay",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,d:varchar:4:YES"
+    },
+    {
+     "assert": "indexes PRIMARY(id) and idx_b(b)",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', INDEX_NAME, COLUMN_NAME, SEQ_IN_INDEX) ORDER BY BINARY INDEX_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "PRIMARY:id:1,idx_b:b:1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t06_a4_defaults",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual fixture",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a4-mysql84-drop-d-null-control",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t06_a4_defaults DROP COLUMN d;\nCREATE INDEX idx_b ON t06_a4_defaults(b);",
+   "policy": "t06-a4-provider-defaults-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure fixture absent",
+     "sql": "DROP TABLE IF EXISTS t06_a4_defaults",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "fixture absent before setup",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "driver builds the audited initial state",
+     "sql": "CREATE TABLE t06_a4_defaults (id INT PRIMARY KEY, a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT NULL, d VARCHAR(8) DEFAULT '<nil>');",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "five columns in declared order",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES,d:varchar:5:YES"
+      },
+      {
+       "assert": "default null flags and raw bytes",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+       "expect": "a:1:-,b:1:-,c:1:-,d:0:3C6E696C3E"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t06_a4_defaults DROP COLUMN d;",
+     "CREATE INDEX idx_b ON t06_a4_defaults(b);"
+    ],
+    "statement_indices": [
+     0,
+     1
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 3,
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not change columns",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES,d:varchar:5:YES"
+    },
+    {
+     "assert": "audit did not change defaults",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+     "expect": "a:1:-,b:1:-,c:1:-,d:0:3C6E696C3E"
+    },
+    {
+     "assert": "audit kept primary key member",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+     "expect": "id:1"
+    },
+    {
+     "assert": "audit did not create idx_b",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='idx_b'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver drops d",
+     "sql": "ALTER TABLE t06_a4_defaults DROP COLUMN d;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "d dropped, order pinned",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES"
+      },
+      {
+       "assert": "remaining defaults unchanged",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+       "expect": "a:1:-,b:1:-,c:1:-"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    },
+    {
+     "name": "driver creates index idx_b on b",
+     "sql": "CREATE INDEX idx_b ON t06_a4_defaults(b);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "1"
+    },
+    {
+     "assert": "final columns after replay",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES"
+    },
+    {
+     "assert": "indexes PRIMARY(id) and idx_b(b)",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', INDEX_NAME, COLUMN_NAME, SEQ_IN_INDEX) ORDER BY BINARY INDEX_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "PRIMARY:id:1,idx_b:b:1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t06_a4_defaults",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual fixture",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
    "id": "t06-tidb85-no-pk",
    "anchor": "tidb85",
    "dialect": "tidb",
@@ -5819,6 +7385,505 @@
      ]
     }
    ]
+  },
+  {
+   "id": "t06-a4-tidb85-drop-d-text-null",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t06_a4_defaults DROP COLUMN d;\nCREATE INDEX idx_b ON t06_a4_defaults(b);",
+   "policy": "t06-a4-provider-defaults-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure fixture absent",
+     "sql": "DROP TABLE IF EXISTS t06_a4_defaults",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "fixture absent before setup",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "driver builds the audited initial state",
+     "sql": "CREATE TABLE t06_a4_defaults (id INT PRIMARY KEY, a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '<nil>');",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "five columns in declared order",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES,d:varchar:5:YES"
+      },
+      {
+       "assert": "default null flags and raw bytes",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+       "expect": "a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "complete",
+     "unverified"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t06_a4_defaults DROP COLUMN d;",
+     "CREATE INDEX idx_b ON t06_a4_defaults(b);"
+    ],
+    "statement_indices": [
+     0,
+     1
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 1,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.columns",
+       "target_table.existence"
+      ]
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 3
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not change columns",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES,d:varchar:5:YES"
+    },
+    {
+     "assert": "audit did not change defaults",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+     "expect": "a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E"
+    },
+    {
+     "assert": "audit kept primary key member",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+     "expect": "id:1"
+    },
+    {
+     "assert": "audit did not create idx_b",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='idx_b'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver drops d",
+     "sql": "ALTER TABLE t06_a4_defaults DROP COLUMN d;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "d dropped, order pinned",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES"
+      },
+      {
+       "assert": "remaining defaults unchanged",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+       "expect": "a:1:-,b:1:-,c:0:4E554C4C"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    },
+    {
+     "name": "driver creates index idx_b on b",
+     "sql": "CREATE INDEX idx_b ON t06_a4_defaults(b);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "1"
+    },
+    {
+     "assert": "final columns after replay",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES"
+    },
+    {
+     "assert": "indexes PRIMARY(id) and idx_b(b)",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', INDEX_NAME, COLUMN_NAME, SEQ_IN_INDEX) ORDER BY BINARY INDEX_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "PRIMARY:id:1,idx_b:b:1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t06_a4_defaults",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual fixture",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a4-tidb85-drop-c-text-nil",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t06_a4_defaults DROP COLUMN c;\nCREATE INDEX idx_b ON t06_a4_defaults(b);",
+   "policy": "t06-a4-provider-defaults-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure fixture absent",
+     "sql": "DROP TABLE IF EXISTS t06_a4_defaults",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "fixture absent before setup",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "driver builds the audited initial state",
+     "sql": "CREATE TABLE t06_a4_defaults (id INT PRIMARY KEY, a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '<nil>');",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "five columns in declared order",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES,d:varchar:5:YES"
+      },
+      {
+       "assert": "default null flags and raw bytes",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+       "expect": "a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "complete",
+     "unverified"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t06_a4_defaults DROP COLUMN c;",
+     "CREATE INDEX idx_b ON t06_a4_defaults(b);"
+    ],
+    "statement_indices": [
+     0,
+     1
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 1,
+      "rule_id": "ddl.create_index.columns.exists.require",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.columns",
+       "target_table.existence"
+      ]
+     }
+    ],
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 3
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not change columns",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES,d:varchar:5:YES"
+    },
+    {
+     "assert": "audit did not change defaults",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+     "expect": "a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E"
+    },
+    {
+     "assert": "audit kept primary key member",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+     "expect": "id:1"
+    },
+    {
+     "assert": "audit did not create idx_b",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='idx_b'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver drops c",
+     "sql": "ALTER TABLE t06_a4_defaults DROP COLUMN c;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "c dropped, order pinned",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,d:varchar:4:YES"
+      },
+      {
+       "assert": "remaining defaults unchanged",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+       "expect": "a:1:-,b:1:-,d:0:3C6E696C3E"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    },
+    {
+     "name": "driver creates index idx_b on b",
+     "sql": "CREATE INDEX idx_b ON t06_a4_defaults(b);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "1"
+    },
+    {
+     "assert": "final columns after replay",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,d:varchar:4:YES"
+    },
+    {
+     "assert": "indexes PRIMARY(id) and idx_b(b)",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', INDEX_NAME, COLUMN_NAME, SEQ_IN_INDEX) ORDER BY BINARY INDEX_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "PRIMARY:id:1,idx_b:b:1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t06_a4_defaults",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual fixture",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a4-tidb85-drop-d-null-control",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t06_a4_defaults DROP COLUMN d;\nCREATE INDEX idx_b ON t06_a4_defaults(b);",
+   "policy": "t06-a4-provider-defaults-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure fixture absent",
+     "sql": "DROP TABLE IF EXISTS t06_a4_defaults",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "fixture absent before setup",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "driver builds the audited initial state",
+     "sql": "CREATE TABLE t06_a4_defaults (id INT PRIMARY KEY, a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT NULL, d VARCHAR(8) DEFAULT '<nil>');",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "five columns in declared order",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES,d:varchar:5:YES"
+      },
+      {
+       "assert": "default null flags and raw bytes",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+       "expect": "a:1:-,b:1:-,c:1:-,d:0:3C6E696C3E"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete"
+    ],
+    "statement_sql": [
+     "ALTER TABLE t06_a4_defaults DROP COLUMN d;",
+     "CREATE INDEX idx_b ON t06_a4_defaults(b);"
+    ],
+    "statement_indices": [
+     0,
+     1
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 3
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not change columns",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES,d:varchar:5:YES"
+    },
+    {
+     "assert": "audit did not change defaults",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+     "expect": "a:1:-,b:1:-,c:1:-,d:0:3C6E696C3E"
+    },
+    {
+     "assert": "audit kept primary key member",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+     "expect": "id:1"
+    },
+    {
+     "assert": "audit did not create idx_b",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='idx_b'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver drops d",
+     "sql": "ALTER TABLE t06_a4_defaults DROP COLUMN d;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "d dropped, order pinned",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES"
+      },
+      {
+       "assert": "remaining defaults unchanged",
+       "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND COLUMN_NAME <> 'id'",
+       "expect": "a:1:-,b:1:-,c:1:-"
+      },
+      {
+       "assert": "primary key member",
+       "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+       "expect": "id:1"
+      }
+     ]
+    },
+    {
+     "name": "driver creates index idx_b on b",
+     "sql": "CREATE INDEX idx_b ON t06_a4_defaults(b);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "1"
+    },
+    {
+     "assert": "final columns after replay",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES"
+    },
+    {
+     "assert": "indexes PRIMARY(id) and idx_b(b)",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', INDEX_NAME, COLUMN_NAME, SEQ_IN_INDEX) ORDER BY BINARY INDEX_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+     "expect": "PRIMARY:id:1,idx_b:b:1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t06_a4_defaults",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual fixture",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
   }
  ],
  "required_case_ids": [
@@ -5867,6 +7932,9 @@
   "T06.meta.t06-a2-mysql57-explicit-null-inline",
   "T06.meta.t06-a3-mysql57-default-representation",
   "T06.meta.t06-a3-mysql57-null-drop-state",
+  "T06.meta.t06-a4-mysql57-drop-d-text-null",
+  "T06.meta.t06-a4-mysql57-drop-c-text-nil",
+  "T06.meta.t06-a4-mysql57-drop-d-null-control",
   "T06.meta.t06-mysql80-no-pk",
   "T06.meta.t06-mysql80-inline-pk",
   "T06.meta.t06-mysql80-table-pk",
@@ -5876,6 +7944,9 @@
   "T06.meta.t06-a2-mysql80-explicit-null-inline",
   "T06.meta.t06-a3-mysql80-default-representation",
   "T06.meta.t06-a3-mysql80-null-drop-state",
+  "T06.meta.t06-a4-mysql80-drop-d-text-null",
+  "T06.meta.t06-a4-mysql80-drop-c-text-nil",
+  "T06.meta.t06-a4-mysql80-drop-d-null-control",
   "T06.meta.t06-mysql84-no-pk",
   "T06.meta.t06-mysql84-inline-pk",
   "T06.meta.t06-mysql84-table-pk",
@@ -5885,6 +7956,9 @@
   "T06.meta.t06-a2-mysql84-explicit-null-inline",
   "T06.meta.t06-a3-mysql84-default-representation",
   "T06.meta.t06-a3-mysql84-null-drop-state",
+  "T06.meta.t06-a4-mysql84-drop-d-text-null",
+  "T06.meta.t06-a4-mysql84-drop-c-text-nil",
+  "T06.meta.t06-a4-mysql84-drop-d-null-control",
   "T06.meta.t06-tidb85-no-pk",
   "T06.meta.t06-tidb85-inline-pk",
   "T06.meta.t06-tidb85-table-pk",
@@ -5893,6 +7967,9 @@
   "T06.meta.t06-a2-tidb85-explicit-null-table",
   "T06.meta.t06-a2-tidb85-explicit-null-inline",
   "T06.meta.t06-a3-tidb85-default-representation",
-  "T06.meta.t06-a3-tidb85-null-drop-state"
+  "T06.meta.t06-a3-tidb85-null-drop-state",
+  "T06.meta.t06-a4-tidb85-drop-d-text-null",
+  "T06.meta.t06-a4-tidb85-drop-c-text-nil",
+  "T06.meta.t06-a4-tidb85-drop-d-null-control"
  ]
 }

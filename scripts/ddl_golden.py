@@ -2429,6 +2429,82 @@ T06_A3_INDEX_ROWS = (
     "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'"
 )
 
+# T06-A4 (issue #85): provider default-identity fix. The physical CREATE lives
+# in setup — the audited SQL is only DROP COLUMN + CREATE INDEX — so the live
+# information_schema snapshot (not the input AST) is what feeds the ordered
+# drop-column state. That is what exercises the mysql/tidb provider fix:
+# stored literal 'NULL' must not masquerade as SQL NULL.
+T06_A4_PROFILE = "t06-a4-provider-defaults-isolated"
+T06_A4_TABLE = "t06_a4_defaults"
+T06_A4_SETUP_AB_SQL = (
+    "CREATE TABLE t06_a4_defaults (id INT PRIMARY KEY, a VARCHAR(8), "
+    "b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', "
+    "d VARCHAR(8) DEFAULT '<nil>');"
+)
+# The C control initial state only differs in column c's declaration:
+# DEFAULT NULL instead of the 'NULL' string literal.
+T06_A4_SETUP_C_SQL = (
+    "CREATE TABLE t06_a4_defaults (id INT PRIMARY KEY, a VARCHAR(8), "
+    "b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT NULL, "
+    "d VARCHAR(8) DEFAULT '<nil>');"
+)
+T06_A4_DROP_D_STATEMENTS = [
+    "ALTER TABLE t06_a4_defaults DROP COLUMN d;",
+    "CREATE INDEX idx_b ON t06_a4_defaults(b);",
+]
+T06_A4_DROP_C_STATEMENTS = [
+    "ALTER TABLE t06_a4_defaults DROP COLUMN c;",
+    "CREATE INDEX idx_b ON t06_a4_defaults(b);",
+]
+T06_A4_DROP_D_SQL = "\n".join(T06_A4_DROP_D_STATEMENTS)
+T06_A4_DROP_C_SQL = "\n".join(T06_A4_DROP_C_STATEMENTS)
+T06_A4_TABLE_COUNT = (
+    "SELECT COUNT(*) FROM information_schema.TABLES "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'"
+)
+T06_A4_COLUMN_ROWS = (
+    "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) "
+    "ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'"
+)
+# The frozen oracle covers the four varchar probes only; id carries no default
+# in any variant and is pinned separately via the column-order and PRIMARY
+# member queries. `1` = COLUMN_DEFAULT IS NULL, `-` is only this query's
+# unambiguous display for the SQL NULL datum, not a stored value.
+T06_A4_DEFAULT_ROWS = (
+    "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, "
+    "IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) "
+    "FROM information_schema.COLUMNS "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' "
+    "AND COLUMN_NAME <> 'id'"
+)
+T06_A4_PK_MEMBER = (
+    "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' AND INDEX_NAME='PRIMARY' "
+    "ORDER BY SEQ_IN_INDEX"
+)
+T06_A4_INDEX_ROWS = (
+    "SELECT GROUP_CONCAT(CONCAT_WS(':', INDEX_NAME, COLUMN_NAME, SEQ_IN_INDEX) "
+    "ORDER BY BINARY INDEX_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults'"
+)
+T06_A4_IDX_B_COUNT = (
+    "SELECT COUNT(*) FROM information_schema.STATISTICS "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t06_a4_defaults' "
+    "AND INDEX_NAME='idx_b'"
+)
+# Frozen oracle rows (issue #85): A/B initial defaults store literal 'NULL' on
+# c; the C control stores SQL NULL. Mid-drop rows drop one probe each.
+T06_A4_SETUP_COLUMNS = "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES,d:varchar:5:YES"
+T06_A4_SETUP_DEFAULTS_AB = "a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E"
+T06_A4_SETUP_DEFAULTS_C = "a:1:-,b:1:-,c:1:-,d:0:3C6E696C3E"
+T06_A4_AFTER_DROP_D_COLUMNS = "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,c:varchar:4:YES"
+T06_A4_AFTER_DROP_C_COLUMNS = "id:int:1:NO,a:varchar:2:YES,b:varchar:3:YES,d:varchar:4:YES"
+T06_A4_AFTER_DROP_D_DEFAULTS_AB = "a:1:-,b:1:-,c:0:4E554C4C"
+T06_A4_AFTER_DROP_C_DEFAULTS_AB = "a:1:-,b:1:-,d:0:3C6E696C3E"
+T06_A4_AFTER_DROP_D_DEFAULTS_C = "a:1:-,b:1:-,c:1:-"
+T06_A4_FINAL_INDEXES = "PRIMARY:id:1,idx_b:b:1"
+
 T06_ANCHORS = {
     "mysql57": {
         "service": "mysql57",
@@ -3094,6 +3170,155 @@ def t06_a1_contract():
             ],
         })
 
+        # T06-A4 (issue #85): provider default-identity on a live snapshot.
+        # Unlike every earlier metadata case the physical CREATE lives in
+        # setup, so the audited batch can only be answered from the real
+        # information_schema read — the input AST carries no defaults at all.
+        # Variants: drop-d-text-null = A (stored 'NULL' sibling stays
+        # conservative → review/unverified), drop-c-text-nil = B (drop the
+        # literal column itself, '<nil>' sibling also conservative), and
+        # drop-d-null-control = C (stored SQL NULL sibling → pass/complete).
+        for variant, setup_sql, setup_defaults, drop_sql, drop_statements, dropped, remaining_columns, remaining_defaults, expect in (
+            (
+                "drop-d-text-null", T06_A4_SETUP_AB_SQL, T06_A4_SETUP_DEFAULTS_AB,
+                T06_A4_DROP_D_SQL, T06_A4_DROP_D_STATEMENTS, "d",
+                T06_A4_AFTER_DROP_D_COLUMNS, T06_A4_AFTER_DROP_D_DEFAULTS_AB,
+                {
+                    "exit": 0,
+                    "verdict": "review",
+                    "statements": 2,
+                    "findings": 0,
+                    "diagnostics": 0,
+                    "unsupported": 0,
+                    "coverage": "unverified",
+                    "statement_coverage": ["complete", "unverified"],
+                    "statement_sql": list(T06_A4_DROP_D_STATEMENTS),
+                    "statement_indices": [0, 1],
+                    "evidence_gaps": 1,
+                    "evidence_gap_entries": [{
+                        "index": 1,
+                        "rule_id": "ddl.create_index.columns.exists.require",
+                        "reason_code": "unknown_table_state",
+                        "required_facts": ["target_table.columns", "target_table.existence"],
+                    }],
+                    "fail_on_triggered": False,
+                    "rule_summary_loaded": 3,
+                },
+            ),
+            (
+                "drop-c-text-nil", T06_A4_SETUP_AB_SQL, T06_A4_SETUP_DEFAULTS_AB,
+                T06_A4_DROP_C_SQL, T06_A4_DROP_C_STATEMENTS, "c",
+                T06_A4_AFTER_DROP_C_COLUMNS, T06_A4_AFTER_DROP_C_DEFAULTS_AB,
+                {
+                    "exit": 0,
+                    "verdict": "review",
+                    "statements": 2,
+                    "findings": 0,
+                    "diagnostics": 0,
+                    "unsupported": 0,
+                    "coverage": "unverified",
+                    "statement_coverage": ["complete", "unverified"],
+                    "statement_sql": list(T06_A4_DROP_C_STATEMENTS),
+                    "statement_indices": [0, 1],
+                    "evidence_gaps": 1,
+                    "evidence_gap_entries": [{
+                        "index": 1,
+                        "rule_id": "ddl.create_index.columns.exists.require",
+                        "reason_code": "unknown_table_state",
+                        "required_facts": ["target_table.columns", "target_table.existence"],
+                    }],
+                    "fail_on_triggered": False,
+                    "rule_summary_loaded": 3,
+                },
+            ),
+            (
+                "drop-d-null-control", T06_A4_SETUP_C_SQL, T06_A4_SETUP_DEFAULTS_C,
+                T06_A4_DROP_D_SQL, T06_A4_DROP_D_STATEMENTS, "d",
+                T06_A4_AFTER_DROP_D_COLUMNS, T06_A4_AFTER_DROP_D_DEFAULTS_C,
+                {
+                    "exit": 0,
+                    "verdict": "pass",
+                    "statements": 2,
+                    "findings": 0,
+                    "diagnostics": 0,
+                    "unsupported": 0,
+                    "coverage": "complete",
+                    "statement_coverage": ["complete", "complete"],
+                    "statement_sql": list(T06_A4_DROP_D_STATEMENTS),
+                    "statement_indices": [0, 1],
+                    "evidence_gaps": 0,
+                    "fail_on_triggered": False,
+                    "rule_summary_loaded": 3,
+                },
+            ),
+        ):
+            if anchor_key in ("mysql80", "mysql84"):
+                expect["instance_facts"] = dict(T06_GIPK_FACTS)
+            metadata_cases.append({
+                "id": f"t06-a4-{anchor_key}-{variant}",
+                "anchor": anchor_key,
+                "dialect": dialect,
+                "sql": drop_sql,
+                "policy": T06_A4_PROFILE,
+                "connect": dict(connects[anchor_key]),
+                "args": ["--fail-on", "blocker"],
+                "setup": [
+                    {
+                        "name": "ensure fixture absent",
+                        "sql": f"DROP TABLE IF EXISTS {T06_A4_TABLE}",
+                        "expect_rc": 0,
+                        "verify": [verify("fixture absent before setup", T06_A4_TABLE_COUNT, "0")],
+                    },
+                    {
+                        "name": "driver builds the audited initial state",
+                        "sql": setup_sql,
+                        "expect_rc": 0,
+                        "verify": [
+                            verify("five columns in declared order", T06_A4_COLUMN_ROWS, T06_A4_SETUP_COLUMNS),
+                            verify("default null flags and raw bytes", T06_A4_DEFAULT_ROWS, setup_defaults),
+                            verify("primary key member", T06_A4_PK_MEMBER, "id:1"),
+                        ],
+                    },
+                ],
+                "expect": expect,
+                "post_verify": [
+                    verify("audit did not change columns", T06_A4_COLUMN_ROWS, T06_A4_SETUP_COLUMNS),
+                    verify("audit did not change defaults", T06_A4_DEFAULT_ROWS, setup_defaults),
+                    verify("audit kept primary key member", T06_A4_PK_MEMBER, "id:1"),
+                    verify("audit did not create idx_b", T06_A4_IDX_B_COUNT, "0"),
+                ],
+                "execute": [
+                    {
+                        "name": f"driver drops {dropped}",
+                        "sql": drop_statements[0],
+                        "expect_rc": 0,
+                        "verify": [
+                            verify(f"{dropped} dropped, order pinned", T06_A4_COLUMN_ROWS, remaining_columns),
+                            verify("remaining defaults unchanged", T06_A4_DEFAULT_ROWS, remaining_defaults),
+                            verify("primary key member", T06_A4_PK_MEMBER, "id:1"),
+                        ],
+                    },
+                    {
+                        "name": "driver creates index idx_b on b",
+                        "sql": drop_statements[1],
+                        "expect_rc": 0,
+                    },
+                ],
+                "structure": [
+                    verify("exactly one user table", T06_A4_TABLE_COUNT, "1"),
+                    verify("final columns after replay", T06_A4_COLUMN_ROWS, remaining_columns),
+                    verify("indexes PRIMARY(id) and idx_b(b)", T06_A4_INDEX_ROWS, T06_A4_FINAL_INDEXES),
+                ],
+                "teardown": [
+                    {
+                        "name": "drop fixture",
+                        "sql": f"DROP TABLE IF EXISTS {T06_A4_TABLE}",
+                        "expect_rc": 0,
+                        "verify": [verify("no residual fixture", T06_A4_TABLE_COUNT, "0")],
+                    },
+                ],
+            })
+
     required_case_ids = (
         [f"T06.db.{anchor}.{kind}" for anchor in T06_ANCHORS for kind in ("ddl", "syntax_negative")]
         + [f"T06.cli.{spec['id']}" for spec in cli_cases]
@@ -3126,6 +3351,18 @@ def t06_a1_contract():
             T06_A3_DROP_PROFILE: {
                 "enable": {
                     "ddl.table.exists.create.forbid": {"enabled": True, "level": "blocker", "params": {}},
+                    "ddl.table.exists.alter.require": {"enabled": True, "level": "blocker", "params": {}},
+                    "ddl.alter.drop_column.exists.require": {"enabled": True, "level": "blocker", "params": {}},
+                    "ddl.create_index.columns.exists.require": {
+                        "enabled": True, "level": "blocker", "params": {"required": True}
+                    },
+                }
+            },
+            # T06-A4: exactly the three blockers the implementation card
+            # freezes — no create.forbid, since the audited input no longer
+            # contains a CREATE at all.
+            T06_A4_PROFILE: {
+                "enable": {
                     "ddl.table.exists.alter.require": {"enabled": True, "level": "blocker", "params": {}},
                     "ddl.alter.drop_column.exists.require": {"enabled": True, "level": "blocker", "params": {}},
                     "ddl.create_index.columns.exists.require": {

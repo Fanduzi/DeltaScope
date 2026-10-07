@@ -2170,6 +2170,11 @@ def t06_contract_tests(tmp):
             if location is not None:
                 finding["location"] = {"line": location["line"], "column": location["column"]}
             statements[entry["index"]]["findings"].append(finding)
+        for entry in expected.get("evidence_gap_entries", []):
+            gap = {"rule_id": entry["rule_id"], "reason_code": entry["reason_code"]}
+            if "required_facts" in entry:
+                gap["required_facts"] = list(entry["required_facts"])
+            statements[entry["index"]]["evidence_gaps"].append(gap)
         blockers = sum(len(s["findings"]) for s in statements)
         parsed = {"verdict": expected["verdict"], "coverage": {"status": expected["coverage"]},
                   "statements": statements,
@@ -2472,7 +2477,7 @@ def t06_contract_tests(tmp):
     donors = {v: copy.deepcopy(by_id(a, f"T06.meta.t06-mysql84-{v}"))
               for v in ("no-pk", "inline-pk", "table-pk")}
     for item in list(a["cases"]):
-        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-")):
+        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-")):
             slot(a, item["case_id"], donors[item["cli_case"].split("-", 2)[2]])
     run("t06 all metadata slots refilled variant-wise rejected", a, "identity")
 
@@ -2483,7 +2488,7 @@ def t06_contract_tests(tmp):
     run("t06 metadata slot filled by offline record rejected", a, "identity")
     a = copy.deepcopy(artifact)
     for item in list(a["cases"]):
-        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-")):
+        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-")):
             variant = item["cli_case"].split("-", 2)[2]
             dialect = "tidb" if item["anchor"] == "tidb85" else "mysql"
             slot(a, item["case_id"], by_id(a, f"T06.cli.t06-{dialect}-{variant}"))
@@ -2722,6 +2727,145 @@ def t06_contract_tests(tmp):
                            if s["id"] != "t06-a3-tidb85-null-drop-state"]
     m["required_case_ids"].remove(victim)
     run("t06a3 case deleted on both sides rejected", a, "T06-A1", m)
+
+    # --- T06-A4 additions: provider default-identity on live snapshots ---
+
+    def t06a4(suffix):
+        candidate = copy.deepcopy(artifact)
+        case = next(item for item in candidate["cases"]
+                    if item.get("cli_case") == "t06-a4-" + suffix)
+        return candidate, case
+
+    # The pre-fix outcome may never come back: restoring A to the old
+    # pass/complete with no gap is precisely the defect this slice removes.
+    a, c = t06a4("mysql84-drop-d-text-null")
+    parsed = c["actual"]["parsed"]
+    parsed["verdict"] = "pass"
+    parsed["coverage"]["status"] = "complete"
+    for statement in parsed["statements"]:
+        statement["coverage"]["status"] = "complete"
+        statement["evidence_gaps"] = []
+    update_stdout(c)
+    run("t06a4 A restored to old pass/complete rejected", a, "evidence gap")
+
+    # The review gap is not decorative: deleting it while keeping the honest
+    # review/unverified verdict still violates the frozen entry oracle.
+    a, c = t06a4("mysql84-drop-c-text-nil")
+    c["actual"]["parsed"]["statements"][1]["evidence_gaps"] = []
+    update_stdout(c)
+    run("t06a4 B gap deleted but review kept rejected", a, "evidence gap")
+
+    # Gap attribution and required_facts order are part of the contract.
+    a, c = t06a4("mysql84-drop-d-text-null")
+    c["actual"]["parsed"]["statements"][1]["evidence_gaps"][0]["required_facts"] = [
+        "target_table.existence", "target_table.columns"]
+    update_stdout(c)
+    run("t06a4 required_facts order swapped rejected", a, "required_facts")
+    a, c = t06a4("mysql84-drop-d-text-null")
+    parsed = c["actual"]["parsed"]
+    gap = parsed["statements"][1]["evidence_gaps"].pop()
+    parsed["statements"][0]["evidence_gaps"].append(gap)
+    update_stdout(c)
+    run("t06a4 gap misattributed to statement 0 rejected", a, "evidence gap")
+
+    # A/B vs C roles are identity-bound: the C control record can never stand
+    # in for a conservative slot, nor the reverse.
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.meta.t06-a4-mysql84-drop-d-text-null",
+         by_id(a, "T06.meta.t06-a4-mysql84-drop-d-null-control"))
+    run("t06a4 null-control record in text-null slot rejected", a, "identity")
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.meta.t06-a4-mysql84-drop-d-null-control",
+         by_id(a, "T06.meta.t06-a4-mysql84-drop-d-text-null"))
+    run("t06a4 text-null record in null-control slot rejected", a, "identity")
+
+    # The frozen catalog oracle distinguishes stored bytes byte-for-byte:
+    # recording c's literal 'NULL' as a SQL NULL datum is the provider bug
+    # this slice removes — it may never appear in setup or post_verify rows.
+    a, c = t06a4("mysql84-drop-d-text-null")
+    for step in c["actual"]["setup"]:
+        for record in step.get("verify") or []:
+            if record["assert"] == "default null flags and raw bytes":
+                record["output"] = "a:1:-,b:1:-,c:1:-,d:0:3C6E696C3E"
+    run("t06a4 literal bytes recorded as SQL NULL rejected", a, "setup")
+    a, c = t06a4("mysql84-drop-d-null-control")
+    for record in c["actual"]["post_verify"]:
+        if record["assert"] == "audit did not change defaults":
+            record["output"] = "a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E"
+    run("t06a4 SQL NULL recorded as literal bytes rejected", a, "post_verify")
+
+    # The physical CREATE must live in setup — dropping that step or moving it
+    # into the audited input degrades the case to the already-accepted
+    # AST-derived path and proves nothing about the provider.
+    a = copy.deepcopy(artifact)
+    m = copy.deepcopy(manifest)
+    for item in a["cases"]:
+        if item.get("cli_case") == "t06-a4-mysql84-drop-d-text-null":
+            item["actual"]["setup"] = item["actual"]["setup"][:1]
+    for spec in m["metadata_cases"]:
+        if spec["id"] == "t06-a4-mysql84-drop-d-text-null":
+            spec["setup"] = spec["setup"][:1]
+    run("t06a4 setup CREATE step missing on both sides rejected", a, "T06-A1", m)
+    a, c = t06a4("mysql84-drop-d-text-null")
+    c["input_sql"] = ddl_golden.T06_A4_SETUP_AB_SQL + " " + c["input_sql"]
+    c["actual"]["parsed"]["statements"].insert(0, {
+        "index": 0, "kind": "ddl", "raw_sql": ddl_golden.T06_A4_SETUP_AB_SQL,
+        "normalized_sql": ddl_golden.T06_A4_SETUP_AB_SQL[:-1],
+        "coverage": {"status": "complete"}, "findings": [], "evidence_gaps": []})
+    update_stdout(c)
+    run("t06a4 setup CREATE moved into audited input rejected", a, "statement")
+
+    # The post-audit unchanged queries prove the product never executed the
+    # audited DROP/INDEX: removing them on both sides leaves that unproven.
+    a = copy.deepcopy(artifact)
+    m = copy.deepcopy(manifest)
+    for item in a["cases"]:
+        if item.get("cli_case") == "t06-a4-mysql84-drop-d-text-null":
+            item["actual"]["post_verify"] = []
+    for spec in m["metadata_cases"]:
+        if spec["id"] == "t06-a4-mysql84-drop-d-text-null":
+            spec["post_verify"] = []
+    run("t06a4 post-audit unchanged queries deleted rejected", a, "T06-A1", m)
+
+    # The mid-state check between the driver DROP and the driver CREATE INDEX
+    # pins the remaining column set before the index lands.
+    a = copy.deepcopy(artifact)
+    m = copy.deepcopy(manifest)
+    for item in a["cases"]:
+        if item.get("cli_case") == "t06-a4-mysql84-drop-c-text-nil":
+            for step in item["actual"]["execute"]:
+                if step["name"] == "driver drops c":
+                    step["verify"] = []
+    for spec in m["metadata_cases"]:
+        if spec["id"] == "t06-a4-mysql84-drop-c-text-nil":
+            for step in spec["execute"]:
+                if step["name"] == "driver drops c":
+                    step["verify"] = []
+    run("t06a4 mid-drop structure check deleted on both sides rejected", a, "T06-A1", m)
+
+    # The new roles share the rebind/demote/profile-swap/both-sides-delete
+    # defenses.
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.meta.t06-a4-mysql57-drop-d-text-null",
+         by_id(a, "T06.meta.t06-a4-mysql84-drop-d-text-null"))
+    run("t06a4 mysql84 record re-keyed as mysql57 rejected", a, "identity")
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.meta.t06-a4-tidb85-drop-c-text-nil",
+         by_id(a, "T06.cli.t06-mysql-no-pk"))
+    run("t06a4 metadata slot demoted to offline record rejected", a, "identity")
+    a, c = t06a4("mysql84-drop-d-text-null")
+    c["policy_profile"] = ddl_golden.T06_A3_DROP_PROFILE
+    run("t06a4 provider profile swapped rejected", a, "identity")
+    a = copy.deepcopy(artifact)
+    m = copy.deepcopy(manifest)
+    victim = "T06.meta.t06-a4-tidb85-drop-d-null-control"
+    a["cases"] = [x for x in a["cases"] if x["case_id"] != victim]
+    a["executed_count"] = len(a["cases"])
+    a["required_case_ids"].remove(victim)
+    m["metadata_cases"] = [s for s in m["metadata_cases"]
+                           if s["id"] != "t06-a4-tidb85-drop-d-null-control"]
+    m["required_case_ids"].remove(victim)
+    run("t06a4 case deleted on both sides rejected", a, "T06-A1", m)
 
     return results
 
