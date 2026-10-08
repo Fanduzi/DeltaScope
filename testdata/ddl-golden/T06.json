@@ -1,7 +1,7 @@
 {
  "task_id": "T06",
  "issue": "https://github.com/Fanduzi/DeltaScope/issues/85",
- "description": "CREATE TABLE base semantics (issue #85 T06-A1/A2/A3/A4/A5/A7/A8): the accepted 56-case primary-key/nullability/default-presence subset plus 16 DEFAULT NULL cases, 12 provider default-identity cases, 40 declared CHAR/VARCHAR length cases, 64 charset/collation cases, and 40 comment-fidelity cases — the A8 offline matrix isolates the two comment presence rules and the code-point table-comment length rule across both dialects, while the anchored roles pin stored comment content as raw text plus CHAR_LENGTH/OCTET_LENGTH/HEX under an explicit utf8mb4 session.",
+ "description": "CREATE TABLE base semantics (issue #85 T06-A1/A2/A3/A4/A5/A7/A8/A9): the accepted 56-case primary-key/nullability/default-presence subset plus 16 DEFAULT NULL cases, 12 provider default-identity cases, 40 declared CHAR/VARCHAR length cases, 64 charset/collation cases, 40 comment-fidelity cases, and 28 explicit audit-time-column role cases — the A9 offline matrix isolates ddl.table.audit_columns.require under a single blocker profile across both dialects including NOW() synonym spellings and the two-finding missing-both shape, while the anchored roles pin stored per-column current-timestamp defaults, normalized ON UPDATE EXTRA markers, and PK membership regardless of the policy verdict.",
  "policy_profile": "all-rules-disabled",
  "policy": {
   "profiles": {
@@ -212,6 +212,17 @@
       "level": "blocker",
       "params": {
        "limit": 8
+      }
+     }
+    }
+   },
+   "t06-a9-audit-columns-isolated": {
+    "enable": {
+     "ddl.table.audit_columns.require": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "required": true
       }
      }
     }
@@ -4314,6 +4325,610 @@
     ],
     "statement_sql": [
      "CREATE TABLE t (c INT) COMMENT='123456789';"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "t06-a9-mysql-complete-pair",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a9-audit-columns-isolated",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   }
+  },
+  {
+   "id": "t06-a9-mysql-missing-created",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a9-audit-columns-isolated",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "metadata": {
+       "table": "t",
+       "kind": "created"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table should include a created-time audit column with DEFAULT CURRENT_TIMESTAMP"
+   }
+  },
+  {
+   "id": "t06-a9-mysql-missing-updated",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a9-audit-columns-isolated",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "metadata": {
+       "table": "t",
+       "kind": "updated"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table should include an updated-time audit column with DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+   }
+  },
+  {
+   "id": "t06-a9-mysql-missing-both",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a9-audit-columns-isolated",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "level": "blocker"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "metadata": {
+       "table": "t",
+       "kind": "created"
+      }
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "metadata": {
+       "table": "t",
+       "kind": "updated"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     },
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "level": "blocker",
+      "message": "table should include a created-time audit column with DEFAULT CURRENT_TIMESTAMP",
+      "metadata": {
+       "table": "t",
+       "kind": "created"
+      },
+      "line": 1,
+      "column": 1
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "level": "blocker",
+      "message": "table should include an updated-time audit column with DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+      "metadata": {
+       "table": "t",
+       "kind": "updated"
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a9-mysql-now-spelling",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT NOW(), updated_at DATETIME NOT NULL DEFAULT NOW() ON UPDATE NOW());",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a9-audit-columns-isolated",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT NOW(), updated_at DATETIME NOT NULL DEFAULT NOW() ON UPDATE NOW());"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   }
+  },
+  {
+   "id": "t06-a9-mysql-disabled",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "t06-a9-tidb-complete-pair",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a9-audit-columns-isolated",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   }
+  },
+  {
+   "id": "t06-a9-tidb-missing-created",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a9-audit-columns-isolated",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "metadata": {
+       "table": "t",
+       "kind": "created"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table should include a created-time audit column with DEFAULT CURRENT_TIMESTAMP"
+   }
+  },
+  {
+   "id": "t06-a9-tidb-missing-updated",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a9-audit-columns-isolated",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "metadata": {
+       "table": "t",
+       "kind": "updated"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table should include an updated-time audit column with DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+   }
+  },
+  {
+   "id": "t06-a9-tidb-missing-both",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a9-audit-columns-isolated",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "level": "blocker"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "metadata": {
+       "table": "t",
+       "kind": "created"
+      }
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "metadata": {
+       "table": "t",
+       "kind": "updated"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     },
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "level": "blocker",
+      "message": "table should include a created-time audit column with DEFAULT CURRENT_TIMESTAMP",
+      "metadata": {
+       "table": "t",
+       "kind": "created"
+      },
+      "line": 1,
+      "column": 1
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "level": "blocker",
+      "message": "table should include an updated-time audit column with DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+      "metadata": {
+       "table": "t",
+       "kind": "updated"
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a9-tidb-now-spelling",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT NOW(), updated_at DATETIME NOT NULL DEFAULT NOW() ON UPDATE NOW());",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "policy": "t06-a9-audit-columns-isolated",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT NOW(), updated_at DATETIME NOT NULL DEFAULT NOW() ON UPDATE NOW());"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   }
+  },
+  {
+   "id": "t06-a9-tidb-disabled",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY);"
     ],
     "statement_indices": [
      0
@@ -8478,6 +9093,632 @@
     {
      "assert": "primary index part count",
      "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a9-mysql57-complete-pair",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);",
+   "policy": "t06-a9-audit-columns-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);",
+     "expect_rc": 0
+    },
+    {
+     "name": "raw column rows observation",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, COALESCE(DATETIME_PRECISION,'<null>'), COALESCE(COLUMN_DEFAULT,'<null>'), EXTRA) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly expected columns",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "3"
+    },
+    {
+     "assert": "ordered column identity",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, IFNULL(DATETIME_PRECISION,'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int:1:NO:-,created_at:datetime:2:NO:0,updated_at:datetime:3:NO:0"
+    },
+    {
+     "assert": "created_at default is frozen CURRENT_TIMESTAMP spelling",
+     "sql": "SELECT LOWER(COALESCE(COLUMN_DEFAULT,'<null>')) IN ('current_timestamp','current_timestamp()','current_timestamp(0)') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='created_at'",
+     "expect": "1"
+    },
+    {
+     "assert": "created_at extra normalized",
+     "sql": "SELECT TRIM(REPLACE(REPLACE(REPLACE(LOWER(EXTRA),'default_generated',''),'(0)',''),'()','')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='created_at'",
+     "expect": ""
+    },
+    {
+     "assert": "updated_at default is frozen CURRENT_TIMESTAMP spelling",
+     "sql": "SELECT LOWER(COALESCE(COLUMN_DEFAULT,'<null>')) IN ('current_timestamp','current_timestamp()','current_timestamp(0)') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='updated_at'",
+     "expect": "1"
+    },
+    {
+     "assert": "updated_at extra normalized",
+     "sql": "SELECT TRIM(REPLACE(REPLACE(REPLACE(LOWER(EXTRA),'default_generated',''),'(0)',''),'()','')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='updated_at'",
+     "expect": "on update current_timestamp"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary key member order",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+     "expect": "id:1"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a9-mysql57-missing-created",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);",
+   "policy": "t06-a9-audit-columns-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "metadata": {
+       "table": "t",
+       "kind": "created"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table should include a created-time audit column with DEFAULT CURRENT_TIMESTAMP"
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);",
+     "expect_rc": 0
+    },
+    {
+     "name": "raw column rows observation",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, COALESCE(DATETIME_PRECISION,'<null>'), COALESCE(COLUMN_DEFAULT,'<null>'), EXTRA) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly expected columns",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "2"
+    },
+    {
+     "assert": "ordered column identity",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, IFNULL(DATETIME_PRECISION,'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int:1:NO:-,updated_at:datetime:2:NO:0"
+    },
+    {
+     "assert": "updated_at default is frozen CURRENT_TIMESTAMP spelling",
+     "sql": "SELECT LOWER(COALESCE(COLUMN_DEFAULT,'<null>')) IN ('current_timestamp','current_timestamp()','current_timestamp(0)') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='updated_at'",
+     "expect": "1"
+    },
+    {
+     "assert": "updated_at extra normalized",
+     "sql": "SELECT TRIM(REPLACE(REPLACE(REPLACE(LOWER(EXTRA),'default_generated',''),'(0)',''),'()','')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='updated_at'",
+     "expect": "on update current_timestamp"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary key member order",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+     "expect": "id:1"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a9-mysql57-missing-updated",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP);",
+   "policy": "t06-a9-audit-columns-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "metadata": {
+       "table": "t",
+       "kind": "updated"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table should include an updated-time audit column with DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP);",
+     "expect_rc": 0
+    },
+    {
+     "name": "raw column rows observation",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, COALESCE(DATETIME_PRECISION,'<null>'), COALESCE(COLUMN_DEFAULT,'<null>'), EXTRA) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly expected columns",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "2"
+    },
+    {
+     "assert": "ordered column identity",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, IFNULL(DATETIME_PRECISION,'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int:1:NO:-,created_at:datetime:2:NO:0"
+    },
+    {
+     "assert": "created_at default is frozen CURRENT_TIMESTAMP spelling",
+     "sql": "SELECT LOWER(COALESCE(COLUMN_DEFAULT,'<null>')) IN ('current_timestamp','current_timestamp()','current_timestamp(0)') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='created_at'",
+     "expect": "1"
+    },
+    {
+     "assert": "created_at extra normalized",
+     "sql": "SELECT TRIM(REPLACE(REPLACE(REPLACE(LOWER(EXTRA),'default_generated',''),'(0)',''),'()','')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='created_at'",
+     "expect": ""
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary key member order",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+     "expect": "id:1"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a9-mysql57-now-spelling",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT NOW(), updated_at DATETIME NOT NULL DEFAULT NOW() ON UPDATE NOW());",
+   "policy": "t06-a9-audit-columns-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT NOW(), updated_at DATETIME NOT NULL DEFAULT NOW() ON UPDATE NOW());"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT NOW(), updated_at DATETIME NOT NULL DEFAULT NOW() ON UPDATE NOW());",
+     "expect_rc": 0
+    },
+    {
+     "name": "raw column rows observation",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, COALESCE(DATETIME_PRECISION,'<null>'), COALESCE(COLUMN_DEFAULT,'<null>'), EXTRA) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly expected columns",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "3"
+    },
+    {
+     "assert": "ordered column identity",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, IFNULL(DATETIME_PRECISION,'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int:1:NO:-,created_at:datetime:2:NO:0,updated_at:datetime:3:NO:0"
+    },
+    {
+     "assert": "created_at default is frozen CURRENT_TIMESTAMP spelling",
+     "sql": "SELECT LOWER(COALESCE(COLUMN_DEFAULT,'<null>')) IN ('current_timestamp','current_timestamp()','current_timestamp(0)') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='created_at'",
+     "expect": "1"
+    },
+    {
+     "assert": "created_at extra normalized",
+     "sql": "SELECT TRIM(REPLACE(REPLACE(REPLACE(LOWER(EXTRA),'default_generated',''),'(0)',''),'()','')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='created_at'",
+     "expect": ""
+    },
+    {
+     "assert": "updated_at default is frozen CURRENT_TIMESTAMP spelling",
+     "sql": "SELECT LOWER(COALESCE(COLUMN_DEFAULT,'<null>')) IN ('current_timestamp','current_timestamp()','current_timestamp(0)') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='updated_at'",
+     "expect": "1"
+    },
+    {
+     "assert": "updated_at extra normalized",
+     "sql": "SELECT TRIM(REPLACE(REPLACE(REPLACE(LOWER(EXTRA),'default_generated',''),'(0)',''),'()','')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='updated_at'",
+     "expect": "on update current_timestamp"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary key member order",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+     "expect": "id:1"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
      "expect": "0"
     },
     {
@@ -12829,6 +14070,652 @@
    ]
   },
   {
+   "id": "t06-a9-mysql80-complete-pair",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);",
+   "policy": "t06-a9-audit-columns-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);",
+     "expect_rc": 0
+    },
+    {
+     "name": "raw column rows observation",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, COALESCE(DATETIME_PRECISION,'<null>'), COALESCE(COLUMN_DEFAULT,'<null>'), EXTRA) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly expected columns",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "3"
+    },
+    {
+     "assert": "ordered column identity",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, IFNULL(DATETIME_PRECISION,'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int:1:NO:-,created_at:datetime:2:NO:0,updated_at:datetime:3:NO:0"
+    },
+    {
+     "assert": "created_at default is frozen CURRENT_TIMESTAMP spelling",
+     "sql": "SELECT LOWER(COALESCE(COLUMN_DEFAULT,'<null>')) IN ('current_timestamp','current_timestamp()','current_timestamp(0)') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='created_at'",
+     "expect": "1"
+    },
+    {
+     "assert": "created_at extra normalized",
+     "sql": "SELECT TRIM(REPLACE(REPLACE(REPLACE(LOWER(EXTRA),'default_generated',''),'(0)',''),'()','')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='created_at'",
+     "expect": ""
+    },
+    {
+     "assert": "updated_at default is frozen CURRENT_TIMESTAMP spelling",
+     "sql": "SELECT LOWER(COALESCE(COLUMN_DEFAULT,'<null>')) IN ('current_timestamp','current_timestamp()','current_timestamp(0)') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='updated_at'",
+     "expect": "1"
+    },
+    {
+     "assert": "updated_at extra normalized",
+     "sql": "SELECT TRIM(REPLACE(REPLACE(REPLACE(LOWER(EXTRA),'default_generated',''),'(0)',''),'()','')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='updated_at'",
+     "expect": "on update current_timestamp"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary key member order",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+     "expect": "id:1"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a9-mysql80-missing-created",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);",
+   "policy": "t06-a9-audit-columns-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "metadata": {
+       "table": "t",
+       "kind": "created"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table should include a created-time audit column with DEFAULT CURRENT_TIMESTAMP",
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);",
+     "expect_rc": 0
+    },
+    {
+     "name": "raw column rows observation",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, COALESCE(DATETIME_PRECISION,'<null>'), COALESCE(COLUMN_DEFAULT,'<null>'), EXTRA) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly expected columns",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "2"
+    },
+    {
+     "assert": "ordered column identity",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, IFNULL(DATETIME_PRECISION,'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int:1:NO:-,updated_at:datetime:2:NO:0"
+    },
+    {
+     "assert": "updated_at default is frozen CURRENT_TIMESTAMP spelling",
+     "sql": "SELECT LOWER(COALESCE(COLUMN_DEFAULT,'<null>')) IN ('current_timestamp','current_timestamp()','current_timestamp(0)') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='updated_at'",
+     "expect": "1"
+    },
+    {
+     "assert": "updated_at extra normalized",
+     "sql": "SELECT TRIM(REPLACE(REPLACE(REPLACE(LOWER(EXTRA),'default_generated',''),'(0)',''),'()','')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='updated_at'",
+     "expect": "on update current_timestamp"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary key member order",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+     "expect": "id:1"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a9-mysql80-missing-updated",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP);",
+   "policy": "t06-a9-audit-columns-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "metadata": {
+       "table": "t",
+       "kind": "updated"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table should include an updated-time audit column with DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP);",
+     "expect_rc": 0
+    },
+    {
+     "name": "raw column rows observation",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, COALESCE(DATETIME_PRECISION,'<null>'), COALESCE(COLUMN_DEFAULT,'<null>'), EXTRA) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly expected columns",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "2"
+    },
+    {
+     "assert": "ordered column identity",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, IFNULL(DATETIME_PRECISION,'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int:1:NO:-,created_at:datetime:2:NO:0"
+    },
+    {
+     "assert": "created_at default is frozen CURRENT_TIMESTAMP spelling",
+     "sql": "SELECT LOWER(COALESCE(COLUMN_DEFAULT,'<null>')) IN ('current_timestamp','current_timestamp()','current_timestamp(0)') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='created_at'",
+     "expect": "1"
+    },
+    {
+     "assert": "created_at extra normalized",
+     "sql": "SELECT TRIM(REPLACE(REPLACE(REPLACE(LOWER(EXTRA),'default_generated',''),'(0)',''),'()','')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='created_at'",
+     "expect": ""
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary key member order",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+     "expect": "id:1"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a9-mysql80-now-spelling",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT NOW(), updated_at DATETIME NOT NULL DEFAULT NOW() ON UPDATE NOW());",
+   "policy": "t06-a9-audit-columns-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT NOW(), updated_at DATETIME NOT NULL DEFAULT NOW() ON UPDATE NOW());"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT NOW(), updated_at DATETIME NOT NULL DEFAULT NOW() ON UPDATE NOW());",
+     "expect_rc": 0
+    },
+    {
+     "name": "raw column rows observation",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, COALESCE(DATETIME_PRECISION,'<null>'), COALESCE(COLUMN_DEFAULT,'<null>'), EXTRA) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly expected columns",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "3"
+    },
+    {
+     "assert": "ordered column identity",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, IFNULL(DATETIME_PRECISION,'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int:1:NO:-,created_at:datetime:2:NO:0,updated_at:datetime:3:NO:0"
+    },
+    {
+     "assert": "created_at default is frozen CURRENT_TIMESTAMP spelling",
+     "sql": "SELECT LOWER(COALESCE(COLUMN_DEFAULT,'<null>')) IN ('current_timestamp','current_timestamp()','current_timestamp(0)') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='created_at'",
+     "expect": "1"
+    },
+    {
+     "assert": "created_at extra normalized",
+     "sql": "SELECT TRIM(REPLACE(REPLACE(REPLACE(LOWER(EXTRA),'default_generated',''),'(0)',''),'()','')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='created_at'",
+     "expect": ""
+    },
+    {
+     "assert": "updated_at default is frozen CURRENT_TIMESTAMP spelling",
+     "sql": "SELECT LOWER(COALESCE(COLUMN_DEFAULT,'<null>')) IN ('current_timestamp','current_timestamp()','current_timestamp(0)') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='updated_at'",
+     "expect": "1"
+    },
+    {
+     "assert": "updated_at extra normalized",
+     "sql": "SELECT TRIM(REPLACE(REPLACE(REPLACE(LOWER(EXTRA),'default_generated',''),'(0)',''),'()','')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='updated_at'",
+     "expect": "on update current_timestamp"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary key member order",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+     "expect": "id:1"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
    "id": "t06-mysql84-no-pk",
    "anchor": "mysql84",
    "dialect": "mysql",
@@ -17156,6 +19043,652 @@
    ]
   },
   {
+   "id": "t06-a9-mysql84-complete-pair",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);",
+   "policy": "t06-a9-audit-columns-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);",
+     "expect_rc": 0
+    },
+    {
+     "name": "raw column rows observation",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, COALESCE(DATETIME_PRECISION,'<null>'), COALESCE(COLUMN_DEFAULT,'<null>'), EXTRA) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly expected columns",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "3"
+    },
+    {
+     "assert": "ordered column identity",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, IFNULL(DATETIME_PRECISION,'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int:1:NO:-,created_at:datetime:2:NO:0,updated_at:datetime:3:NO:0"
+    },
+    {
+     "assert": "created_at default is frozen CURRENT_TIMESTAMP spelling",
+     "sql": "SELECT LOWER(COALESCE(COLUMN_DEFAULT,'<null>')) IN ('current_timestamp','current_timestamp()','current_timestamp(0)') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='created_at'",
+     "expect": "1"
+    },
+    {
+     "assert": "created_at extra normalized",
+     "sql": "SELECT TRIM(REPLACE(REPLACE(REPLACE(LOWER(EXTRA),'default_generated',''),'(0)',''),'()','')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='created_at'",
+     "expect": ""
+    },
+    {
+     "assert": "updated_at default is frozen CURRENT_TIMESTAMP spelling",
+     "sql": "SELECT LOWER(COALESCE(COLUMN_DEFAULT,'<null>')) IN ('current_timestamp','current_timestamp()','current_timestamp(0)') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='updated_at'",
+     "expect": "1"
+    },
+    {
+     "assert": "updated_at extra normalized",
+     "sql": "SELECT TRIM(REPLACE(REPLACE(REPLACE(LOWER(EXTRA),'default_generated',''),'(0)',''),'()','')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='updated_at'",
+     "expect": "on update current_timestamp"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary key member order",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+     "expect": "id:1"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a9-mysql84-missing-created",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);",
+   "policy": "t06-a9-audit-columns-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "metadata": {
+       "table": "t",
+       "kind": "created"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table should include a created-time audit column with DEFAULT CURRENT_TIMESTAMP",
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);",
+     "expect_rc": 0
+    },
+    {
+     "name": "raw column rows observation",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, COALESCE(DATETIME_PRECISION,'<null>'), COALESCE(COLUMN_DEFAULT,'<null>'), EXTRA) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly expected columns",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "2"
+    },
+    {
+     "assert": "ordered column identity",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, IFNULL(DATETIME_PRECISION,'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int:1:NO:-,updated_at:datetime:2:NO:0"
+    },
+    {
+     "assert": "updated_at default is frozen CURRENT_TIMESTAMP spelling",
+     "sql": "SELECT LOWER(COALESCE(COLUMN_DEFAULT,'<null>')) IN ('current_timestamp','current_timestamp()','current_timestamp(0)') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='updated_at'",
+     "expect": "1"
+    },
+    {
+     "assert": "updated_at extra normalized",
+     "sql": "SELECT TRIM(REPLACE(REPLACE(REPLACE(LOWER(EXTRA),'default_generated',''),'(0)',''),'()','')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='updated_at'",
+     "expect": "on update current_timestamp"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary key member order",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+     "expect": "id:1"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a9-mysql84-missing-updated",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP);",
+   "policy": "t06-a9-audit-columns-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "metadata": {
+       "table": "t",
+       "kind": "updated"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table should include an updated-time audit column with DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP",
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP);",
+     "expect_rc": 0
+    },
+    {
+     "name": "raw column rows observation",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, COALESCE(DATETIME_PRECISION,'<null>'), COALESCE(COLUMN_DEFAULT,'<null>'), EXTRA) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly expected columns",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "2"
+    },
+    {
+     "assert": "ordered column identity",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, IFNULL(DATETIME_PRECISION,'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int:1:NO:-,created_at:datetime:2:NO:0"
+    },
+    {
+     "assert": "created_at default is frozen CURRENT_TIMESTAMP spelling",
+     "sql": "SELECT LOWER(COALESCE(COLUMN_DEFAULT,'<null>')) IN ('current_timestamp','current_timestamp()','current_timestamp(0)') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='created_at'",
+     "expect": "1"
+    },
+    {
+     "assert": "created_at extra normalized",
+     "sql": "SELECT TRIM(REPLACE(REPLACE(REPLACE(LOWER(EXTRA),'default_generated',''),'(0)',''),'()','')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='created_at'",
+     "expect": ""
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary key member order",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+     "expect": "id:1"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a9-mysql84-now-spelling",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT NOW(), updated_at DATETIME NOT NULL DEFAULT NOW() ON UPDATE NOW());",
+   "policy": "t06-a9-audit-columns-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT NOW(), updated_at DATETIME NOT NULL DEFAULT NOW() ON UPDATE NOW());"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT NOW(), updated_at DATETIME NOT NULL DEFAULT NOW() ON UPDATE NOW());",
+     "expect_rc": 0
+    },
+    {
+     "name": "raw column rows observation",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, COALESCE(DATETIME_PRECISION,'<null>'), COALESCE(COLUMN_DEFAULT,'<null>'), EXTRA) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly expected columns",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "3"
+    },
+    {
+     "assert": "ordered column identity",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, IFNULL(DATETIME_PRECISION,'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int:1:NO:-,created_at:datetime:2:NO:0,updated_at:datetime:3:NO:0"
+    },
+    {
+     "assert": "created_at default is frozen CURRENT_TIMESTAMP spelling",
+     "sql": "SELECT LOWER(COALESCE(COLUMN_DEFAULT,'<null>')) IN ('current_timestamp','current_timestamp()','current_timestamp(0)') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='created_at'",
+     "expect": "1"
+    },
+    {
+     "assert": "created_at extra normalized",
+     "sql": "SELECT TRIM(REPLACE(REPLACE(REPLACE(LOWER(EXTRA),'default_generated',''),'(0)',''),'()','')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='created_at'",
+     "expect": ""
+    },
+    {
+     "assert": "updated_at default is frozen CURRENT_TIMESTAMP spelling",
+     "sql": "SELECT LOWER(COALESCE(COLUMN_DEFAULT,'<null>')) IN ('current_timestamp','current_timestamp()','current_timestamp(0)') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='updated_at'",
+     "expect": "1"
+    },
+    {
+     "assert": "updated_at extra normalized",
+     "sql": "SELECT TRIM(REPLACE(REPLACE(REPLACE(LOWER(EXTRA),'default_generated',''),'(0)',''),'()','')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='updated_at'",
+     "expect": "on update current_timestamp"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary key member order",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+     "expect": "id:1"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
    "id": "t06-tidb85-no-pk",
    "anchor": "tidb85",
    "dialect": "tidb",
@@ -21161,6 +23694,604 @@
      ]
     }
    ]
+  },
+  {
+   "id": "t06-a9-tidb85-complete-pair",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);",
+   "policy": "t06-a9-audit-columns-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);",
+     "expect_rc": 0
+    },
+    {
+     "name": "raw column rows observation",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, COALESCE(DATETIME_PRECISION,'<null>'), COALESCE(COLUMN_DEFAULT,'<null>'), EXTRA) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly expected columns",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "3"
+    },
+    {
+     "assert": "ordered column identity",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, IFNULL(DATETIME_PRECISION,'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int:1:NO:-,created_at:datetime:2:NO:0,updated_at:datetime:3:NO:0"
+    },
+    {
+     "assert": "created_at default is frozen CURRENT_TIMESTAMP spelling",
+     "sql": "SELECT LOWER(COALESCE(COLUMN_DEFAULT,'<null>')) IN ('current_timestamp','current_timestamp()','current_timestamp(0)') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='created_at'",
+     "expect": "1"
+    },
+    {
+     "assert": "created_at extra normalized",
+     "sql": "SELECT TRIM(REPLACE(REPLACE(REPLACE(LOWER(EXTRA),'default_generated',''),'(0)',''),'()','')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='created_at'",
+     "expect": ""
+    },
+    {
+     "assert": "updated_at default is frozen CURRENT_TIMESTAMP spelling",
+     "sql": "SELECT LOWER(COALESCE(COLUMN_DEFAULT,'<null>')) IN ('current_timestamp','current_timestamp()','current_timestamp(0)') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='updated_at'",
+     "expect": "1"
+    },
+    {
+     "assert": "updated_at extra normalized",
+     "sql": "SELECT TRIM(REPLACE(REPLACE(REPLACE(LOWER(EXTRA),'default_generated',''),'(0)',''),'()','')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='updated_at'",
+     "expect": "on update current_timestamp"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary key member order",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+     "expect": "id:1"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a9-tidb85-missing-created",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);",
+   "policy": "t06-a9-audit-columns-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "metadata": {
+       "table": "t",
+       "kind": "created"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table should include a created-time audit column with DEFAULT CURRENT_TIMESTAMP"
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);",
+     "expect_rc": 0
+    },
+    {
+     "name": "raw column rows observation",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, COALESCE(DATETIME_PRECISION,'<null>'), COALESCE(COLUMN_DEFAULT,'<null>'), EXTRA) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly expected columns",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "2"
+    },
+    {
+     "assert": "ordered column identity",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, IFNULL(DATETIME_PRECISION,'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int:1:NO:-,updated_at:datetime:2:NO:0"
+    },
+    {
+     "assert": "updated_at default is frozen CURRENT_TIMESTAMP spelling",
+     "sql": "SELECT LOWER(COALESCE(COLUMN_DEFAULT,'<null>')) IN ('current_timestamp','current_timestamp()','current_timestamp(0)') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='updated_at'",
+     "expect": "1"
+    },
+    {
+     "assert": "updated_at extra normalized",
+     "sql": "SELECT TRIM(REPLACE(REPLACE(REPLACE(LOWER(EXTRA),'default_generated',''),'(0)',''),'()','')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='updated_at'",
+     "expect": "on update current_timestamp"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary key member order",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+     "expect": "id:1"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a9-tidb85-missing-updated",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP);",
+   "policy": "t06-a9-audit-columns-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.audit_columns.require",
+      "metadata": {
+       "table": "t",
+       "kind": "updated"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table should include an updated-time audit column with DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP);",
+     "expect_rc": 0
+    },
+    {
+     "name": "raw column rows observation",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, COALESCE(DATETIME_PRECISION,'<null>'), COALESCE(COLUMN_DEFAULT,'<null>'), EXTRA) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly expected columns",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "2"
+    },
+    {
+     "assert": "ordered column identity",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, IFNULL(DATETIME_PRECISION,'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int:1:NO:-,created_at:datetime:2:NO:0"
+    },
+    {
+     "assert": "created_at default is frozen CURRENT_TIMESTAMP spelling",
+     "sql": "SELECT LOWER(COALESCE(COLUMN_DEFAULT,'<null>')) IN ('current_timestamp','current_timestamp()','current_timestamp(0)') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='created_at'",
+     "expect": "1"
+    },
+    {
+     "assert": "created_at extra normalized",
+     "sql": "SELECT TRIM(REPLACE(REPLACE(REPLACE(LOWER(EXTRA),'default_generated',''),'(0)',''),'()','')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='created_at'",
+     "expect": ""
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary key member order",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+     "expect": "id:1"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a9-tidb85-now-spelling",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT NOW(), updated_at DATETIME NOT NULL DEFAULT NOW() ON UPDATE NOW());",
+   "policy": "t06-a9-audit-columns-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT NOW(), updated_at DATETIME NOT NULL DEFAULT NOW() ON UPDATE NOW());"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT NOW(), updated_at DATETIME NOT NULL DEFAULT NOW() ON UPDATE NOW());",
+     "expect_rc": 0
+    },
+    {
+     "name": "raw column rows observation",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, COALESCE(DATETIME_PRECISION,'<null>'), COALESCE(COLUMN_DEFAULT,'<null>'), EXTRA) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly expected columns",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "3"
+    },
+    {
+     "assert": "ordered column identity",
+     "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, IFNULL(DATETIME_PRECISION,'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "id:int:1:NO:-,created_at:datetime:2:NO:0,updated_at:datetime:3:NO:0"
+    },
+    {
+     "assert": "created_at default is frozen CURRENT_TIMESTAMP spelling",
+     "sql": "SELECT LOWER(COALESCE(COLUMN_DEFAULT,'<null>')) IN ('current_timestamp','current_timestamp()','current_timestamp(0)') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='created_at'",
+     "expect": "1"
+    },
+    {
+     "assert": "created_at extra normalized",
+     "sql": "SELECT TRIM(REPLACE(REPLACE(REPLACE(LOWER(EXTRA),'default_generated',''),'(0)',''),'()','')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='created_at'",
+     "expect": ""
+    },
+    {
+     "assert": "updated_at default is frozen CURRENT_TIMESTAMP spelling",
+     "sql": "SELECT LOWER(COALESCE(COLUMN_DEFAULT,'<null>')) IN ('current_timestamp','current_timestamp()','current_timestamp(0)') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='updated_at'",
+     "expect": "1"
+    },
+    {
+     "assert": "updated_at extra normalized",
+     "sql": "SELECT TRIM(REPLACE(REPLACE(REPLACE(LOWER(EXTRA),'default_generated',''),'(0)',''),'()','')) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='updated_at'",
+     "expect": "on update current_timestamp"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "1"
+    },
+    {
+     "assert": "primary key member order",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+     "expect": "id:1"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
   }
  ],
  "required_case_ids": [
@@ -21272,6 +24403,18 @@
   "T06.cli.t06-a8-tidb-length-multibyte-at",
   "T06.cli.t06-a8-tidb-length-multibyte-above",
   "T06.cli.t06-a8-tidb-length-off",
+  "T06.cli.t06-a9-mysql-complete-pair",
+  "T06.cli.t06-a9-mysql-missing-created",
+  "T06.cli.t06-a9-mysql-missing-updated",
+  "T06.cli.t06-a9-mysql-missing-both",
+  "T06.cli.t06-a9-mysql-now-spelling",
+  "T06.cli.t06-a9-mysql-disabled",
+  "T06.cli.t06-a9-tidb-complete-pair",
+  "T06.cli.t06-a9-tidb-missing-created",
+  "T06.cli.t06-a9-tidb-missing-updated",
+  "T06.cli.t06-a9-tidb-missing-both",
+  "T06.cli.t06-a9-tidb-now-spelling",
+  "T06.cli.t06-a9-tidb-disabled",
   "T06.meta.t06-mysql57-no-pk",
   "T06.meta.t06-mysql57-inline-pk",
   "T06.meta.t06-mysql57-table-pk",
@@ -21302,6 +24445,10 @@
   "T06.meta.t06-a8-mysql57-column-decoded",
   "T06.meta.t06-a8-mysql57-table-rune-at",
   "T06.meta.t06-a8-mysql57-table-rune-above",
+  "T06.meta.t06-a9-mysql57-complete-pair",
+  "T06.meta.t06-a9-mysql57-missing-created",
+  "T06.meta.t06-a9-mysql57-missing-updated",
+  "T06.meta.t06-a9-mysql57-now-spelling",
   "T06.meta.t06-mysql80-no-pk",
   "T06.meta.t06-mysql80-inline-pk",
   "T06.meta.t06-mysql80-table-pk",
@@ -21332,6 +24479,10 @@
   "T06.meta.t06-a8-mysql80-column-decoded",
   "T06.meta.t06-a8-mysql80-table-rune-at",
   "T06.meta.t06-a8-mysql80-table-rune-above",
+  "T06.meta.t06-a9-mysql80-complete-pair",
+  "T06.meta.t06-a9-mysql80-missing-created",
+  "T06.meta.t06-a9-mysql80-missing-updated",
+  "T06.meta.t06-a9-mysql80-now-spelling",
   "T06.meta.t06-mysql84-no-pk",
   "T06.meta.t06-mysql84-inline-pk",
   "T06.meta.t06-mysql84-table-pk",
@@ -21362,6 +24513,10 @@
   "T06.meta.t06-a8-mysql84-column-decoded",
   "T06.meta.t06-a8-mysql84-table-rune-at",
   "T06.meta.t06-a8-mysql84-table-rune-above",
+  "T06.meta.t06-a9-mysql84-complete-pair",
+  "T06.meta.t06-a9-mysql84-missing-created",
+  "T06.meta.t06-a9-mysql84-missing-updated",
+  "T06.meta.t06-a9-mysql84-now-spelling",
   "T06.meta.t06-tidb85-no-pk",
   "T06.meta.t06-tidb85-inline-pk",
   "T06.meta.t06-tidb85-table-pk",
@@ -21391,6 +24546,10 @@
   "T06.meta.t06-a8-tidb85-column-empty",
   "T06.meta.t06-a8-tidb85-column-decoded",
   "T06.meta.t06-a8-tidb85-table-rune-at",
-  "T06.meta.t06-a8-tidb85-table-rune-above"
+  "T06.meta.t06-a8-tidb85-table-rune-above",
+  "T06.meta.t06-a9-tidb85-complete-pair",
+  "T06.meta.t06-a9-tidb85-missing-created",
+  "T06.meta.t06-a9-tidb85-missing-updated",
+  "T06.meta.t06-a9-tidb85-now-spelling"
  ]
 }

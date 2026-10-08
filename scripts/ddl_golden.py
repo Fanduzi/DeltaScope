@@ -2612,6 +2612,69 @@ T06_A8_COLUMN_COMMENT_RAW = (
 )
 T06_A8_DELIVER_CHARSET = "SET NAMES utf8mb4; SELECT @@character_set_client; "
 
+# T06-A9 (issue #85): explicit audit-time-column roles. The rule recognizes
+# roles from typed facts — time-like type + DefaultIsCurrentTimestamp, plus
+# OnUpdateCurrentTimestamp for the updated role — never from column names.
+# The anchored oracle does not compare version-rendered catalog text for the
+# temporal attributes: it asserts semantic booleans computed in SQL (a frozen
+# lowercased CURRENT_TIMESTAMP whitelist for the default, a normalized EXTRA
+# for the ON UPDATE marker) while a raw ordered column row is still recorded
+# for human inspection. fsp stays 0 throughout; `current_timestamp(3)` or any
+# unknown rendering fails the whitelist by construction.
+T06_A9_PROFILE = "t06-a9-audit-columns-isolated"
+T06_A9_RULE = "ddl.table.audit_columns.require"
+T06_A9_CREATED_MESSAGE = (
+    "table should include a created-time audit column with DEFAULT CURRENT_TIMESTAMP"
+)
+T06_A9_UPDATED_MESSAGE = (
+    "table should include an updated-time audit column "
+    "with DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+)
+# Ordered column identity is deterministic across anchors: DATA_TYPE and
+# IS_NULLABLE render identically on all four, and DATETIME_PRECISION is 0 for
+# the declared DATETIME columns and NULL (pinned as '-') for INT.
+T06_A9_COLUMN_LIST = (
+    "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, "
+    "ORDINAL_POSITION, IS_NULLABLE, IFNULL(DATETIME_PRECISION,'-')) "
+    "ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'"
+)
+# Raw rows are recorded verbatim (execute observation step) — never asserted
+# — so per-version catalog rendering stays inspectable without relaxing the
+# semantic oracle.
+T06_A9_COLUMN_RAW_ROWS = (
+    "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, "
+    "ORDINAL_POSITION, IS_NULLABLE, COALESCE(DATETIME_PRECISION,'<null>'), "
+    "COALESCE(COLUMN_DEFAULT,'<null>'), EXTRA) ORDER BY ORDINAL_POSITION "
+    "SEPARATOR '|') FROM information_schema.COLUMNS "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'"
+)
+
+
+def t06_a9_column_default_ok(column):
+    """Semantic boolean: the stored default is a frozen zero-precision
+    CURRENT_TIMESTAMP spelling (SQL NULL, literals, fsp>0 and unknown
+    expressions all fail)."""
+    return (
+        "SELECT LOWER(COALESCE(COLUMN_DEFAULT,'<null>')) IN "
+        "('current_timestamp','current_timestamp()','current_timestamp(0)') "
+        "FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' "
+        f"AND TABLE_NAME='t' AND COLUMN_NAME='{column}'"
+    )
+
+
+def t06_a9_extra_normalized(column):
+    """EXTRA minus the known generated-default marker and zero-precision
+    parentheses: created columns normalize to empty, updated columns to
+    exactly 'on update current_timestamp'."""
+    return (
+        "SELECT TRIM(REPLACE(REPLACE(REPLACE(LOWER(EXTRA),"
+        "'default_generated',''),'(0)',''),'()','')) "
+        "FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' "
+        f"AND TABLE_NAME='t' AND COLUMN_NAME='{column}'"
+    )
+
+
 T06_ANCHORS = {
     "mysql57": {
         "service": "mysql57",
@@ -2731,12 +2794,21 @@ T06_SYNTAX_NEGATIVE = {
 def t06_a1_contract():
     """Frozen T06 oracle (issue #85): the accepted A1 32-case subset, the
     A2 24-case subset, the A3 16-case subset, the A4 12-case subset, the
-    A5 40-case subset, the A7 64-case subset, and the A8 40-case subset —
-    228 cases total. The A8 subset pins comment declaration fidelity: a
-    24-case offline matrix isolates the two presence rules and the
-    code-point length rule across both dialects, and 16 anchored roles
-    prove stored comments arrive losslessly (raw text plus
+    A5 40-case subset, the A7 64-case subset, the A8 40-case subset, and the
+    A9 28-case subset — 256 cases total. The A8 subset pins comment
+    declaration fidelity: a 24-case offline matrix isolates the two presence
+    rules and the code-point length rule across both dialects, and 16
+    anchored roles prove stored comments arrive losslessly (raw text plus
     CHAR_LENGTH/OCTET_LENGTH/HEX) even when the policy rejects the audit.
+
+    The A9 subset pins explicit audit-time-column roles under a single
+    isolated profile: a 12-case offline matrix covers the complete pair, each
+    single-role miss, the two-finding missing-both shape (the frozen
+    expectation is a complete finding-entry multiset), the NOW() synonym
+    spellings, and the all-off control; 16 anchored roles prove the driver
+    stores the declared columns — per-column default whitelist booleans,
+    normalized EXTRA markers, PK membership, engine — regardless of the
+    product policy verdict.
 
     A1 baseline cases reuse the T02 batch verbatim; the offline controls pin
     the isolated policy profiles; the anchored cases pin the
@@ -2794,17 +2866,40 @@ def t06_a1_contract():
         if loaded is not None:
             expect["rule_summary_loaded"] = loaded
         if rejects:
-            rule_id = (finding or {}).get("rule_id") or T06_PK_RULE
-            metadata = (finding or {}).get("metadata") or {"table": "t"}
+            items = finding if isinstance(finding, list) else [finding or {}]
+            expect["findings"] = len(items)
             expect["finding_entries"] = [
-                {"index": 0, "rule_id": rule_id, "level": "blocker"}
+                {"index": 0,
+                 "rule_id": item.get("rule_id") or T06_PK_RULE,
+                 "level": "blocker"}
+                for item in items
             ]
             expect["finding_metadata"] = [
-                {"index": 0, "rule_id": rule_id, "metadata": metadata}
+                {"index": 0,
+                 "rule_id": item.get("rule_id") or T06_PK_RULE,
+                 "metadata": item.get("metadata") or {"table": "t"}}
+                for item in items
             ]
-            expect["finding_locations"] = [{"index": 0, "line": 1, "column": 1}]
-            expect["finding_message"] = (finding or {}).get(
-                "message") or "primary key is required"
+            expect["finding_locations"] = [
+                {"index": 0, "line": 1, "column": 1} for _ in items
+            ]
+            if len(items) == 1:
+                expect["finding_message"] = items[0].get(
+                    "message") or "primary key is required"
+            else:
+                # Multi-finding cases pin complete entries as a multiset —
+                # statement index, rule_id, level, message, the whole
+                # metadata map, and location per entry — so two findings on
+                # one rule can never be merged or cross-swapped.
+                expect["finding_entries_full"] = [
+                    {"index": 0,
+                     "rule_id": item.get("rule_id") or T06_PK_RULE,
+                     "level": "blocker",
+                     "message": item.get("message") or "primary key is required",
+                     "metadata": item.get("metadata") or {"table": "t"},
+                     "line": 1, "column": 1}
+                    for item in items
+                ]
         return expect
 
     baseline_expect = {
@@ -3148,6 +3243,61 @@ def t06_a1_contract():
                     sql, finding is not None, loaded=1, finding=finding)
             else:
                 case["expect"] = audit_expect(sql, False)
+            cli_cases.append(case)
+
+    # T06-A9 (issue #85): explicit audit-time-column roles. The six frozen
+    # inputs pin role attribution from extracted facts — complete pair,
+    # each single-role miss, the two-finding missing-both shape, the NOW()
+    # synonym spellings, and the all-off control. missing-both is the first
+    # T06 case whose frozen expectation is a two-entry finding multiset.
+    a9_created_finding = {
+        "rule_id": T06_A9_RULE,
+        "message": T06_A9_CREATED_MESSAGE,
+        "metadata": {"table": "t", "kind": "created"},
+    }
+    a9_updated_finding = {
+        "rule_id": T06_A9_RULE,
+        "message": T06_A9_UPDATED_MESSAGE,
+        "metadata": {"table": "t", "kind": "updated"},
+    }
+    a9_matrix = (
+        ("complete-pair",
+         "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL "
+         "DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT "
+         "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);",
+         None),
+        ("missing-created",
+         "CREATE TABLE t (id INT PRIMARY KEY, updated_at DATETIME NOT NULL "
+         "DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);",
+         a9_created_finding),
+        ("missing-updated",
+         "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL "
+         "DEFAULT CURRENT_TIMESTAMP);",
+         a9_updated_finding),
+        ("missing-both",
+         "CREATE TABLE t (id INT PRIMARY KEY);",
+         [a9_created_finding, a9_updated_finding]),
+        ("now-spelling",
+         "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL "
+         "DEFAULT NOW(), updated_at DATETIME NOT NULL DEFAULT NOW() "
+         "ON UPDATE NOW());",
+         None),
+        ("disabled", "CREATE TABLE t (id INT PRIMARY KEY);", None),
+    )
+    for dialect in ("mysql", "tidb"):
+        for variant, sql, finding in a9_matrix:
+            case = {
+                "id": f"t06-a9-{dialect}-{variant}",
+                "dialect": dialect,
+                "sql": sql,
+                "args": ["--fail-on", "blocker"],
+            }
+            if variant == "disabled":
+                case["expect"] = audit_expect(sql, False)
+            else:
+                case["policy"] = T06_A9_PROFILE
+                case["expect"] = audit_expect(
+                    sql, finding is not None, loaded=1, finding=finding)
             cli_cases.append(case)
 
     connects = {
@@ -4062,6 +4212,134 @@ def t06_a1_contract():
                 ],
             })
 
+        # T06-A9 (issue #85): four anchored roles prove the driver stores the
+        # declared audit columns — the product policy verdict (including the
+        # single-role rejects B/C) never substitutes for native execution.
+        # The oracle pins semantic booleans (frozen CURRENT_TIMESTAMP default
+        # whitelist, normalized EXTRA for the ON UPDATE marker) while the raw
+        # ordered column rows are recorded verbatim as an observation step.
+        a9_pair_sql = (
+            "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL "
+            "DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT "
+            "CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);"
+        )
+        a9_metadata_specs = (
+            {
+                "variant": "complete-pair",
+                "sql": a9_pair_sql,
+                "expect_reject": False,
+                "finding": None,
+                "column_list": "id:int:1:NO:-,created_at:datetime:2:NO:0,updated_at:datetime:3:NO:0",
+                "column_count": "3",
+                "roles": (("created_at", ""), ("updated_at", "on update current_timestamp")),
+            },
+            {
+                "variant": "missing-created",
+                "sql": ("CREATE TABLE t (id INT PRIMARY KEY, updated_at "
+                        "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP "
+                        "ON UPDATE CURRENT_TIMESTAMP);"),
+                "expect_reject": True,
+                "finding": a9_created_finding,
+                "column_list": "id:int:1:NO:-,updated_at:datetime:2:NO:0",
+                "column_count": "2",
+                "roles": (("updated_at", "on update current_timestamp"),),
+            },
+            {
+                "variant": "missing-updated",
+                "sql": ("CREATE TABLE t (id INT PRIMARY KEY, created_at "
+                        "DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP);"),
+                "expect_reject": True,
+                "finding": a9_updated_finding,
+                "column_list": "id:int:1:NO:-,created_at:datetime:2:NO:0",
+                "column_count": "2",
+                "roles": (("created_at", ""),),
+            },
+            {
+                "variant": "now-spelling",
+                "sql": ("CREATE TABLE t (id INT PRIMARY KEY, created_at "
+                        "DATETIME NOT NULL DEFAULT NOW(), updated_at "
+                        "DATETIME NOT NULL DEFAULT NOW() ON UPDATE NOW());"),
+                "expect_reject": False,
+                "finding": None,
+                "column_list": "id:int:1:NO:-,created_at:datetime:2:NO:0,updated_at:datetime:3:NO:0",
+                "column_count": "3",
+                "roles": (("created_at", ""), ("updated_at", "on update current_timestamp")),
+            },
+        )
+        for spec_row in a9_metadata_specs:
+            expect = audit_expect(
+                spec_row["sql"], spec_row["expect_reject"], loaded=1,
+                finding=spec_row["finding"])
+            if anchor_key in ("mysql80", "mysql84"):
+                expect["instance_facts"] = dict(T06_GIPK_FACTS)
+            structure_rows = [
+                verify("exactly one user table", T06_TABLE_COUNT, "1"),
+                verify("exactly expected columns", T06_COLUMN_COUNT,
+                       spec_row["column_count"]),
+                verify("ordered column identity", T06_A9_COLUMN_LIST,
+                       spec_row["column_list"]),
+            ]
+            for column, want_extra in spec_row["roles"]:
+                structure_rows += [
+                    verify(f"{column} default is frozen CURRENT_TIMESTAMP spelling",
+                           t06_a9_column_default_ok(column), "1"),
+                    verify(f"{column} extra normalized", t06_a9_extra_normalized(column),
+                           want_extra),
+                ]
+            structure_rows += [
+                verify("primary key constraint count", T06_PK_CONSTRAINT, "1"),
+                verify("primary index part count", T06_PK_PARTS, "1"),
+                verify("primary key member order", T06_PK_MEMBER, "id:1"),
+                verify("no extra indexes",
+                       "SELECT COUNT(*) FROM information_schema.STATISTICS "
+                       "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+                       "0"),
+            ]
+            if anchor_key != "tidb85":
+                structure_rows.append(verify("storage engine", T06_ENGINE, "InnoDB"))
+            metadata_cases.append({
+                "id": f"t06-a9-{anchor_key}-{spec_row['variant']}",
+                "anchor": anchor_key,
+                "dialect": dialect,
+                "sql": spec_row["sql"],
+                "policy": T06_A9_PROFILE,
+                "connect": dict(connects[anchor_key]),
+                "args": ["--fail-on", "blocker"],
+                "setup": [
+                    {
+                        "name": "ensure t absent",
+                        "sql": "DROP TABLE IF EXISTS t",
+                        "expect_rc": 0,
+                        "verify": [verify("t absent before audit", T06_TABLE_COUNT, "0")],
+                    },
+                ],
+                "expect": expect,
+                "post_verify": [
+                    verify("audit did not create t", T06_TABLE_COUNT, "0"),
+                ],
+                "execute": [
+                    {
+                        "name": "driver applies the audited create",
+                        "sql": spec_row["sql"],
+                        "expect_rc": 0,
+                    },
+                    {
+                        "name": "raw column rows observation",
+                        "sql": T06_A9_COLUMN_RAW_ROWS,
+                        "expect_rc": 0,
+                    },
+                ],
+                "structure": structure_rows,
+                "teardown": [
+                    {
+                        "name": "drop fixture",
+                        "sql": "DROP TABLE IF EXISTS t",
+                        "expect_rc": 0,
+                        "verify": [verify("no residual t", T06_TABLE_COUNT, "0")],
+                    },
+                ],
+            })
+
     required_case_ids = (
         [f"T06.db.{anchor}.{kind}" for anchor in T06_ANCHORS for kind in ("ddl", "syntax_negative")]
         + [f"T06.cli.{spec['id']}" for spec in cli_cases]
@@ -4202,6 +4480,16 @@ def t06_a1_contract():
                     },
                 }
             },
+            # T06-A9: exactly the audit-columns rule at blocker — the frozen
+            # two-role contract cannot be masked by any other rule.
+            T06_A9_PROFILE: {
+                "enable": {
+                    T06_A9_RULE: {
+                        "enabled": True, "level": "blocker",
+                        "params": {"required": True},
+                    },
+                }
+            },
         },
         "anchors": T06_ANCHORS,
         "ddl_steps": T06_DDL_STEPS,
@@ -4286,7 +4574,7 @@ def t06_a1_manifest_failures(manifest):
         failures.append("T06-A1 baseline syntax_negative changed")
     required = manifest.get("required_case_ids") or []
     if required != contract["required_case_ids"]:
-        failures.append("T06-A1 required_case_ids differ from the frozen 228-case denominator")
+        failures.append("T06-A1 required_case_ids differ from the frozen 256-case denominator")
     for field, kind in (("cli_cases", "cli"), ("metadata_cases", "meta")):
         declared_list = [spec.get("id") for spec in manifest.get(field) or []]
         declared = {spec.get("id"): spec for spec in manifest.get(field) or []}
@@ -4360,25 +4648,56 @@ def t06_a1_artifact_failures(artifact, manifest):
         summary = parsed.get("summary") or {}
         rejects = spec["expect"]["exit"] == 1
         if rejects:
-            if len(findings) != 1:
-                failures.append(f"T06-A1 {case_id}: findings {len(findings)} != 1")
+            entries_full = spec["expect"].get("finding_entries_full")
+            if entries_full is not None:
+                # Multi-finding contract (T06-A9): compare complete finding
+                # entries as a multiset — statement index, statement kind,
+                # rule, level, message, exact metadata map, and location per
+                # entry. Ordering is normalized but multiplicities are
+                # preserved, so duplicated or collapsed entries still fail.
+                def canon(entry):
+                    loc = entry.get("location") or {}
+                    meta = tuple(sorted((entry.get("metadata") or {}).items()))
+                    return (
+                        entry.get("statement_index", entry.get("index", 0)),
+                        entry.get("statement_kind", "ddl"),
+                        entry.get("rule_id"), entry.get("level"),
+                        entry.get("message"),
+                        loc.get("line", entry.get("line")),
+                        loc.get("column", entry.get("column")),
+                        meta,
+                    )
+                got = sorted(canon(f) for f in findings)
+                want = sorted(canon(e) for e in entries_full)
+                if got != want:
+                    failures.append(
+                        f"T06-A1 {case_id}: finding multiset mismatch: got {got!r} want {want!r}")
+                if len(findings) != len(entries_full):
+                    failures.append(
+                        f"T06-A1 {case_id}: findings {len(findings)} != {len(entries_full)}")
+                if summary.get("blockers") != len(entries_full) or \
+                        summary.get("warnings") != 0 or summary.get("notices") != 0:
+                    failures.append(f"T06-A1 {case_id}: summary counters mismatch: {summary!r}")
             else:
-                finding = findings[0]
-                location = finding.get("location") or {}
-                metadata = finding.get("metadata") or {}
-                want_rule = (spec["expect"].get("finding_entries") or [{}])[0].get("rule_id")
-                want_message = spec["expect"].get("finding_message")
-                want_meta = (spec["expect"].get("finding_metadata") or [{}])[0].get("metadata") or {}
-                if (finding.get("rule_id") != want_rule
-                        or finding.get("level") != "blocker"
-                        or finding.get("message") != want_message
-                        or finding.get("statement_index", 0) != 0
-                        or finding.get("statement_kind") != "ddl"
-                        or location.get("line") != 1 or location.get("column") != 1
-                        or any(metadata.get(k) != v for k, v in want_meta.items())):
-                    failures.append(f"T06-A1 {case_id}: finding identity mismatch: {finding!r}")
-            if summary.get("blockers") != 1 or summary.get("warnings") != 0 or summary.get("notices") != 0:
-                failures.append(f"T06-A1 {case_id}: summary counters mismatch: {summary!r}")
+                if len(findings) != 1:
+                    failures.append(f"T06-A1 {case_id}: findings {len(findings)} != 1")
+                else:
+                    finding = findings[0]
+                    location = finding.get("location") or {}
+                    metadata = finding.get("metadata") or {}
+                    want_rule = (spec["expect"].get("finding_entries") or [{}])[0].get("rule_id")
+                    want_message = spec["expect"].get("finding_message")
+                    want_meta = (spec["expect"].get("finding_metadata") or [{}])[0].get("metadata") or {}
+                    if (finding.get("rule_id") != want_rule
+                            or finding.get("level") != "blocker"
+                            or finding.get("message") != want_message
+                            or finding.get("statement_index", 0) != 0
+                            or finding.get("statement_kind") != "ddl"
+                            or location.get("line") != 1 or location.get("column") != 1
+                            or any(metadata.get(k) != v for k, v in want_meta.items())):
+                        failures.append(f"T06-A1 {case_id}: finding identity mismatch: {finding!r}")
+                if summary.get("blockers") != 1 or summary.get("warnings") != 0 or summary.get("notices") != 0:
+                    failures.append(f"T06-A1 {case_id}: summary counters mismatch: {summary!r}")
         else:
             if findings:
                 failures.append(f"T06-A1 {case_id}: pass case carries findings {findings!r}")

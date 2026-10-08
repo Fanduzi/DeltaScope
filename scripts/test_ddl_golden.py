@@ -2112,7 +2112,7 @@ def t06_contract_tests(tmp):
         ddl_golden.T06_A7_CS_RULE, ddl_golden.T06_A7_CC_RULE,
         ddl_golden.T06_A7_CM_RULE, ddl_golden.T06_A7_TC_RULE,
         ddl_golden.T06_A8_TABLE_RULE, ddl_golden.T06_A8_COLUMN_RULE,
-        ddl_golden.T06_A8_LENGTH_RULE,
+        ddl_golden.T06_A8_LENGTH_RULE, ddl_golden.T06_A9_RULE,
         "ddl.table.exists.create.forbid", "ddl.table.exists.alter.require",
         "ddl.alter.drop_column.exists.require", "ddl.create_index.columns.exists.require")]})
     binary.write_text("#!/bin/sh\nprintf '%s' '" + catalog + "'\n")
@@ -2166,16 +2166,31 @@ def t06_contract_tests(tmp):
         finding_metadata = {(e["index"], e["rule_id"]): e["metadata"]
                             for e in expected.get("finding_metadata", [])}
         finding_locations = {e["index"]: e for e in expected.get("finding_locations", [])}
-        for entry in expected.get("finding_entries", []):
-            location = finding_locations.get(entry["index"])
-            finding = {
-                "rule_id": entry["rule_id"], "level": entry["level"],
-                "message": expected.get("finding_message", "primary key is required"),
-                "statement_kind": "ddl",
-                "metadata": copy.deepcopy(finding_metadata.get((entry["index"], entry["rule_id"]), {}))}
-            if location is not None:
-                finding["location"] = {"line": location["line"], "column": location["column"]}
-            statements[entry["index"]]["findings"].append(finding)
+        entries_full = expected.get("finding_entries_full")
+        if entries_full is not None:
+            # Multi-finding contract: each entry carries its own message,
+            # metadata map, and location, so same-rule findings with
+            # different roles stay distinct (finding_metadata keyed by
+            # (index, rule_id) would collapse them).
+            for entry in entries_full:
+                finding = {
+                    "rule_id": entry["rule_id"], "level": entry["level"],
+                    "message": entry["message"],
+                    "statement_kind": entry.get("statement_kind", "ddl"),
+                    "location": {"line": entry["line"], "column": entry["column"]},
+                    "metadata": copy.deepcopy(entry["metadata"])}
+                statements[entry["index"]]["findings"].append(finding)
+        else:
+            for entry in expected.get("finding_entries", []):
+                location = finding_locations.get(entry["index"])
+                finding = {
+                    "rule_id": entry["rule_id"], "level": entry["level"],
+                    "message": expected.get("finding_message", "primary key is required"),
+                    "statement_kind": "ddl",
+                    "metadata": copy.deepcopy(finding_metadata.get((entry["index"], entry["rule_id"]), {}))}
+                if location is not None:
+                    finding["location"] = {"line": location["line"], "column": location["column"]}
+                statements[entry["index"]]["findings"].append(finding)
         for entry in expected.get("evidence_gap_entries", []):
             gap = {"rule_id": entry["rule_id"], "reason_code": entry["reason_code"]}
             if "required_facts" in entry:
@@ -2483,7 +2498,7 @@ def t06_contract_tests(tmp):
     donors = {v: copy.deepcopy(by_id(a, f"T06.meta.t06-mysql84-{v}"))
               for v in ("no-pk", "inline-pk", "table-pk")}
     for item in list(a["cases"]):
-        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-", "t06-a7-", "t06-a8-")):
+        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-", "t06-a7-", "t06-a8-", "t06-a9-")):
             slot(a, item["case_id"], donors[item["cli_case"].split("-", 2)[2]])
     run("t06 all metadata slots refilled variant-wise rejected", a, "identity")
 
@@ -2494,7 +2509,7 @@ def t06_contract_tests(tmp):
     run("t06 metadata slot filled by offline record rejected", a, "identity")
     a = copy.deepcopy(artifact)
     for item in list(a["cases"]):
-        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-", "t06-a7-", "t06-a8-")):
+        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-", "t06-a7-", "t06-a8-", "t06-a9-")):
             variant = item["cli_case"].split("-", 2)[2]
             dialect = "tidb" if item["anchor"] == "tidb85" else "mysql"
             slot(a, item["case_id"], by_id(a, f"T06.cli.t06-{dialect}-{variant}"))
@@ -3390,6 +3405,169 @@ def t06_contract_tests(tmp):
                            if s["id"] != "t06-a8-tidb85-column-empty"]
     m["required_case_ids"].remove(victim)
     run("t06a8 case deleted on both sides rejected", a, "T06-A1", m)
+
+    # --- T06-A9 additions: explicit audit-time-column roles under the
+    # isolated blocker profile on the 256-case set. Every mutation names a
+    # real regression mode from the contract: the two-finding missing-both
+    # shape collapsed or cross-swapped, a role smuggled into global findings,
+    # the disabled/miss verdicts forged, or the anchored default/EXTRA
+    # structure oracle forged after a product reject.
+
+    def t06a9(suffix):
+        candidate = copy.deepcopy(artifact)
+        case = next(item for item in candidate["cases"]
+                    if item.get("cli_case") == "t06-a9-" + suffix)
+        return candidate, case
+
+    def a9_structure_entry(case, needle):
+        return next(s for s in case["actual"]["structure"]
+                    if needle in s["assert"])
+
+    # The missing-both record must keep both complete findings: collapsing
+    # to one, duplicating one role, or cross-swapping message vs kind all
+    # break the frozen entry multiset.
+    a, c = t06a9("mysql-missing-both")
+    c["actual"]["parsed"]["statements"][0]["findings"].pop()
+    c["actual"]["parsed"]["summary"]["blockers"] = 1
+    update_stdout(c)
+    run("t06a9 missing-both collapsed to one finding rejected", a, "missing-both")
+
+    a, c = t06a9("mysql-missing-both")
+    for f in c["actual"]["parsed"]["statements"][0]["findings"]:
+        f["message"] = ("table should include a created-time audit column "
+                        "with DEFAULT CURRENT_TIMESTAMP")
+        f["metadata"]["kind"] = "created"
+    update_stdout(c)
+    run("t06a9 missing-both recorded as two created rejected", a, "missing-both")
+
+    a, c = t06a9("mysql-missing-both")
+    findings = c["actual"]["parsed"]["statements"][0]["findings"]
+    findings[0]["metadata"]["kind"], findings[1]["metadata"]["kind"] = \
+        findings[1]["metadata"]["kind"], findings[0]["metadata"]["kind"]
+    update_stdout(c)
+    run("t06a9 finding kinds cross-swapped rejected", a, "missing-both")
+
+    a, c = t06a9("tidb-missing-both")
+    parsed = c["actual"]["parsed"]
+    parsed["global_findings"].append(parsed["statements"][0]["findings"].pop())
+    update_stdout(c)
+    run("t06a9 finding smuggled into global rejected", a, "missing-both")
+
+    # A recorded pass must not stand in for the reject roles: missing-created
+    # forged as clean, or the now-spelling case regaining a stale finding.
+    a, c = t06a9("mysql-missing-created")
+    parsed = c["actual"]["parsed"]
+    parsed["verdict"] = "pass"
+    parsed["statements"][0]["findings"] = []
+    parsed["summary"]["blockers"] = 0
+    parsed["fail_on_triggered"] = False
+    c["actual"]["exit"] = 0
+    update_stdout(c)
+    run("t06a9 missing-created recorded as pass rejected", a, "missing-created")
+
+    a, c = t06a9("tidb-now-spelling")
+    parsed = c["actual"]["parsed"]
+    parsed["statements"][0]["findings"].append(
+        copy.deepcopy(by_id(a, "T06.cli.t06-a9-tidb-missing-created")
+                      ["actual"]["parsed"]["statements"][0]["findings"][0]))
+    parsed["verdict"] = "reject"
+    parsed["summary"]["blockers"] = 1
+    parsed["fail_on_triggered"] = True
+    c["actual"]["exit"] = 1
+    update_stdout(c)
+    run("t06a9 now-spelling recorded with stale finding rejected", a, "now-spelling")
+
+    # The disabled control must stay clean even when the record claims a
+    # blocker fired under the all-off profile.
+    a, c = t06a9("mysql-disabled")
+    parsed = c["actual"]["parsed"]
+    parsed["statements"][0]["findings"].append(
+        copy.deepcopy(by_id(a, "T06.cli.t06-a9-mysql-missing-both")
+                      ["actual"]["parsed"]["statements"][0]["findings"][0]))
+    parsed["verdict"] = "reject"
+    parsed["summary"]["blockers"] = 1
+    parsed["fail_on_triggered"] = True
+    c["actual"]["exit"] = 1
+    update_stdout(c)
+    run("t06a9 disabled control forged with finding rejected", a, "disabled")
+
+    # Profile identity swaps: running the missing-both SQL under the all-off
+    # profile (or recording that profile on the case) breaks the frozen
+    # contract even when the recorded result looks self-consistent.
+    a, c = t06a9("mysql-missing-both")
+    m = copy.deepcopy(manifest)
+    next(s for s in m["cli_cases"]
+         if s["id"] == c["cli_case"])["policy"] = "all-rules-disabled"
+    c["policy_profile"] = "all-rules-disabled"
+    run("t06a9 isolated profile swapped for all-off rejected", a, "T06-A1", m)
+
+    # Anchored structure oracle mutations: the driver table missing ON
+    # UPDATE, the two roles swapped, both columns claiming the updated role,
+    # and an fsp=3 default smuggled past the zero-precision whitelist.
+    a, c = t06a9("mysql84-complete-pair")
+    a9_structure_entry(c, "updated_at extra normalized")["output"] = ""
+    run("t06a9 stored table missing ON UPDATE rejected", a, "structure")
+
+    a, c = t06a9("mysql84-complete-pair")
+    a9_structure_entry(c, "created_at extra normalized")["output"] = \
+        "on update current_timestamp"
+    a9_structure_entry(c, "updated_at extra normalized")["output"] = ""
+    run("t06a9 created/updated roles swapped in storage rejected", a, "structure")
+
+    a, c = t06a9("mysql80-complete-pair")
+    a9_structure_entry(c, "created_at extra normalized")["output"] = \
+        "on update current_timestamp"
+    run("t06a9 both columns claiming updated role rejected", a, "structure")
+
+    a, c = t06a9("mysql57-complete-pair")
+    a9_structure_entry(c, "ordered column identity")["output"] = \
+        "id:int:1:NO:-,created_at:datetime:2:NO:3,updated_at:datetime:3:NO:3"
+    run("t06a9 fsp=3 stored columns smuggled past rejected", a, "structure")
+
+    a, c = t06a9("mysql84-missing-created")
+    a9_structure_entry(c, "updated_at extra normalized")["output"] = \
+        "on update current_timestamp(3)"
+    run("t06a9 non-zero-precision ON UPDATE marker rejected", a, "structure")
+
+    # A product-reject anchored case that never replays the CREATE has no
+    # structural evidence at all.
+    a, c = t06a9("tidb85-missing-updated")
+    c["actual"]["execute"] = []
+    run("t06a9 product reject skipped driver replay rejected", a, "execute")
+
+    # Deleting structure queries on both sides still fails: the frozen
+    # contract pins the exact query list, not the count alone.
+    a, c = t06a9("mysql57-complete-pair")
+    m = copy.deepcopy(manifest)
+    dropped = "updated_at extra normalized"
+    c["actual"]["structure"] = [s for s in c["actual"]["structure"]
+                                if s["assert"] != dropped]
+    for spec in m["metadata_cases"]:
+        if spec["id"] == "t06-a9-mysql57-complete-pair":
+            spec["structure"] = [s for s in spec["structure"]
+                                 if s["assert"] != dropped]
+    run("t06a9 structure query deleted on both sides rejected", a, "T06-A1", m)
+
+    # Same-variant defenses: cross-anchor donor reuse, a metadata slot
+    # demoted to an offline record, and a case deleted on both sides.
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.meta.t06-a9-mysql57-complete-pair",
+         by_id(a, "T06.meta.t06-a9-mysql84-complete-pair"))
+    run("t06a9 mysql84 record re-keyed as mysql57 rejected", a, "identity")
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.meta.t06-a9-tidb85-now-spelling",
+         by_id(a, "T06.cli.t06-a9-tidb-now-spelling"))
+    run("t06a9 metadata slot demoted to offline record rejected", a, "identity")
+    a = copy.deepcopy(artifact)
+    m = copy.deepcopy(manifest)
+    victim = "T06.meta.t06-a9-tidb85-missing-created"
+    a["cases"] = [x for x in a["cases"] if x["case_id"] != victim]
+    a["executed_count"] = len(a["cases"])
+    a["required_case_ids"].remove(victim)
+    m["metadata_cases"] = [s for s in m["metadata_cases"]
+                           if s["id"] != "t06-a9-tidb85-missing-created"]
+    m["required_case_ids"].remove(victim)
+    run("t06a9 case deleted on both sides rejected", a, "T06-A1", m)
 
     return results
 
