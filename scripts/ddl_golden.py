@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: task manifest testdata/ddl-golden/<TASK>.json, docker/ddl-golden-compose.yaml, freshly built deltascope CLI
-# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest, including synchronous execute verification and the frozen T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1–A5 oracles
+# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest, including synchronous execute verification and the frozen T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1–A9 oracles
 # pos: DDL golden-path runner and artifact validator behind `make ddl-golden TASK=Txx ARTIFACT_DIR=...`
 # note: if this file changes, update this header and module README.md.
 """DeltaScope DDL golden-path runner (milestone T02/#81, T04/#83).
@@ -556,7 +556,8 @@ def cli_case_expect_checks(parsed, rc, expect):
             for pos, f in enumerate(all_findings):
                 if pos in consumed:
                     continue
-                meta = f.get("metadata") or {}
+                meta = f.get("metadata")
+                meta = meta if isinstance(meta, dict) else {}
                 if (f.get("statement_index", 0), f.get("rule_id")) == key and all(meta.get(k) == v for k, v in e["metadata"].items()):
                     consumed.add(pos)
                     found = True
@@ -571,8 +572,9 @@ def cli_case_expect_checks(parsed, rc, expect):
             idx = e.get("index", 0)
             found = any(
                 f.get("statement_index", 0) == idx
-                and (f.get("location") or {}).get("line") == e.get("line")
-                and (f.get("location") or {}).get("column") == e.get("column")
+                and isinstance(f.get("location"), dict)
+                and f["location"].get("line") == e.get("line")
+                and f["location"].get("column") == e.get("column")
                 for f in all_findings
             )
             checks.append((
@@ -2663,16 +2665,90 @@ def t06_a9_column_default_ok(column):
     )
 
 
-def t06_a9_extra_normalized(column):
-    """EXTRA minus the known generated-default marker and zero-precision
-    parentheses: created columns normalize to empty, updated columns to
-    exactly 'on update current_timestamp'."""
+T06_A9_EXTRA_CREATED_WHITELIST = ("", "default_generated")
+T06_A9_EXTRA_UPDATED_WHITELIST = (
+    "on update current_timestamp",
+    "on update current_timestamp()",
+    "on update current_timestamp(0)",
+    "default_generated on update current_timestamp",
+    "default_generated on update current_timestamp()",
+    "default_generated on update current_timestamp(0)",
+)
+# Distinctive marker emitted for any EXTRA text outside the frozen
+# whitelist — it cannot satisfy either audit-column role, so malformed or
+# unknown catalog text can never be "repaired" into a passing shape.
+T06_A9_EXTRA_SENTINEL = "<unrecognized-extra>"
+
+
+def t06_a9_extra_case(expr):
+    """CASE folding an EXTRA value into the frozen role marker: '' for a
+    created column, 'on update current_timestamp' for an updated column,
+    and the sentinel for everything else. The complete lower-cased text
+    must match a whitelist entry exactly — no substring deletion, token
+    removal, or whitespace merging ever rewrites unknown text."""
+    created = "(" + ",".join(f"'{v}'" for v in T06_A9_EXTRA_CREATED_WHITELIST) + ")"
+    updated = "(" + ",".join(f"'{v}'" for v in T06_A9_EXTRA_UPDATED_WHITELIST) + ")"
     return (
-        "SELECT TRIM(REPLACE(REPLACE(REPLACE(LOWER(EXTRA),"
-        "'default_generated',''),'(0)',''),'()','')) "
+        f"CASE WHEN LOWER({expr}) IN {created} THEN '' "
+        f"WHEN LOWER({expr}) IN {updated} THEN 'on update current_timestamp' "
+        f"ELSE '{T06_A9_EXTRA_SENTINEL}' END"
+    )
+
+
+def t06_a9_extra_normalized(column):
+    """Stored EXTRA of a DATETIME column folded through the strict
+    whitelist CASE — the same expression the literal control SELECTs."""
+    return (
+        "SELECT " + t06_a9_extra_case("EXTRA") + " "
         "FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' "
         f"AND TABLE_NAME='t' AND COLUMN_NAME='{column}'"
     )
+
+
+# Read-only scalar control: the whitelist CASE over fixed literals —
+# every legal spelling for both roles, then a battery of malformed texts
+# that substring-replacement oracles used to accept. The same CASE
+# expression as t06_a9_extra_normalized is applied to each literal.
+T06_A9_EXTRA_LITERALS = (
+    "", "default_generated", "DEFAULT_GENERATED",
+    "on update current_timestamp",
+    "ON UPDATE CURRENT_TIMESTAMP()",
+    "on update current_timestamp(0)",
+    "default_generated on update current_timestamp",
+    "default_generated ON UPDATE current_timestamp()",
+    "default_generated on update current_timestamp(0)",
+    "DEFAULT_GENERATED()",
+    "DEFAULT_GENERATEDDEFAULT_GENERATED",
+    "()",
+    "on update CURRENT_TIMESTAMP(0)()",
+    "on update current_default_generatedtimestamp",
+    "on update curr()ent_timestamp",
+    "on update current_timestamp(3)",
+    "stored generated",
+)
+T06_A9_EXTRA_LITERAL_SQL = (
+    "SELECT CONCAT_WS('|',"
+    + ",".join(
+        t06_a9_extra_case("NULL" if lit is None else "'" + lit + "'")
+        for lit in (*T06_A9_EXTRA_LITERALS, None))
+    + ")"
+)
+
+
+def t06_a9_extra_literal_expect():
+    """Frozen CONCAT_WS output for the literal control — computed from
+    the same whitelist constants the CASE expression embeds."""
+    parts = []
+    for lit in T06_A9_EXTRA_LITERALS:
+        lowered = lit.lower()
+        if lowered in T06_A9_EXTRA_CREATED_WHITELIST:
+            parts.append("")
+        elif lowered in T06_A9_EXTRA_UPDATED_WHITELIST:
+            parts.append("on update current_timestamp")
+        else:
+            parts.append(T06_A9_EXTRA_SENTINEL)
+    parts.append(T06_A9_EXTRA_SENTINEL)  # SQL NULL literal
+    return "|".join(parts)
 
 
 T06_ANCHORS = {
@@ -4294,6 +4370,12 @@ def t06_a1_contract():
                        "SELECT COUNT(*) FROM information_schema.STATISTICS "
                        "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
                        "0"),
+                # Read-only scalar control: the same whitelist CASE over
+                # legal and malformed literals must emit the frozen join —
+                # proves the strict query, not a Python-side test oracle.
+                verify("extra whitelist literal control",
+                       T06_A9_EXTRA_LITERAL_SQL,
+                       t06_a9_extra_literal_expect()),
             ]
             if anchor_key != "tidb85":
                 structure_rows.append(verify("storage engine", T06_ENGINE, "InnoDB"))
@@ -4655,20 +4737,74 @@ def t06_a1_artifact_failures(artifact, manifest):
                 # rule, level, message, exact metadata map, and location per
                 # entry. Ordering is normalized but multiplicities are
                 # preserved, so duplicated or collapsed entries still fail.
-                def canon(entry):
-                    loc = entry.get("location") or {}
-                    meta = tuple(sorted((entry.get("metadata") or {}).items()))
+                # Expected entries keep the frozen manifest shorthand
+                # (index/line/column at top level); actual findings are
+                # validated strictly — statement_kind must be present and
+                # exactly "ddl", location must be a real object carrying
+                # integer line/column, metadata must be a real map, and a
+                # present statement_index must agree with its enclosing
+                # statement (the omitempty-absent field stays legal as the
+                # enclosing statement's index). No missing actual field is
+                # ever back-filled from a default.
+                indexed_findings = [
+                    (s.get("index"), f)
+                    for s in statements
+                    for f in (s.get("findings") or [])
+                ]
+                for stmt_index, finding in indexed_findings:
+                    if not isinstance(finding, dict):
+                        failures.append(
+                            f"T06-A1 {case_id}: finding is not an object: {finding!r}")
+                        continue
+                    if finding.get("statement_kind") != "ddl":
+                        failures.append(
+                            f"T06-A1 {case_id}: finding statement_kind must be present "
+                            f"and 'ddl': {finding!r}")
+                    if ("statement_index" in finding
+                            and finding["statement_index"] != stmt_index):
+                        failures.append(
+                            f"T06-A1 {case_id}: finding statement_index "
+                            f"{finding['statement_index']!r} disagrees with enclosing "
+                            f"statement {stmt_index!r}")
+                    location = finding.get("location")
+                    if (not isinstance(location, dict)
+                            or not isinstance(location.get("line"), int)
+                            or not isinstance(location.get("column"), int)):
+                        failures.append(
+                            f"T06-A1 {case_id}: finding location missing or "
+                            f"malformed: {location!r}")
+                    if not isinstance(finding.get("metadata"), dict):
+                        failures.append(
+                            f"T06-A1 {case_id}: finding metadata missing or "
+                            f"non-object: {finding.get('metadata')!r}")
+
+                def canon_expect(entry):
                     return (
-                        entry.get("statement_index", entry.get("index", 0)),
-                        entry.get("statement_kind", "ddl"),
+                        entry.get("index", 0), "ddl",
                         entry.get("rule_id"), entry.get("level"),
                         entry.get("message"),
-                        loc.get("line", entry.get("line")),
-                        loc.get("column", entry.get("column")),
-                        meta,
+                        entry.get("line"), entry.get("column"),
+                        tuple(sorted((entry.get("metadata") or {}).items())),
                     )
-                got = sorted(canon(f) for f in findings)
-                want = sorted(canon(e) for e in entries_full)
+
+                def canon_actual(pair):
+                    stmt_index, finding = pair
+                    if not isinstance(finding, dict):
+                        return ("__malformed__", repr(finding))
+                    location = finding.get("location")
+                    metadata = finding.get("metadata")
+                    return (
+                        finding.get("statement_index", stmt_index),
+                        finding.get("statement_kind"),
+                        finding.get("rule_id"), finding.get("level"),
+                        finding.get("message"),
+                        location.get("line") if isinstance(location, dict) else None,
+                        location.get("column") if isinstance(location, dict) else None,
+                        tuple(sorted(metadata.items()))
+                        if isinstance(metadata, dict) else None,
+                    )
+                got = sorted(repr(canon_actual(p)) for p in indexed_findings)
+                want = sorted(repr(canon_expect(e)) for e in entries_full)
                 if got != want:
                     failures.append(
                         f"T06-A1 {case_id}: finding multiset mismatch: got {got!r} want {want!r}")

@@ -80,5 +80,36 @@ governance, `DefaultValue` text for function defaults (empty by design —
 
 - `go test -count=1 ./internal/infrastructure/parser/tidb ./internal/domain/rule/ddl ./internal/application/audit -run T06A9 -v` — 6 regression groups green.
 - `go test` on `pkg/deltascope` and `internal/interfaces/http` — entry representatives green.
-- `make ddl-golden-validator-test` — 375 contract cases, 0 failures, including 18 new A9 mutations.
+- `make ddl-golden-validator-test` — 385 contract cases, 0 failures, including 18 A9 mutations and 10 T06-A9-R1 tightening controls.
 - `make ddl-golden TASK=T06` — 256/256 on the four frozen anchors; per-case raw `COLUMN_DEFAULT`/`EXTRA`/`DATETIME_PRECISION` rows preserved in the artifact.
+
+## Revision T06-A9-R1 — strict finding identity and EXTRA whitelist
+
+Two proof-oracle weaknesses were found in review and fixed without
+touching production code:
+
+- **Actual findings can no longer borrow defaults.** The multi-finding
+  canon previously applied `entry.get("statement_kind", "ddl")` to real
+  output, so a fabricated finding with no `statement_kind` was silently
+  treated as `"ddl"`. Expected manifest entries keep their compact
+  shorthand, but actual findings are now validated strictly:
+  `statement_kind` must be present and exactly `"ddl"`, `location` must
+  be a real object carrying integer `line`/`column`, `metadata` must be
+  a real map, and a present `statement_index` must agree with its
+  enclosing statement (the omitempty-absent zero stays legal). Multiset
+  comparison still normalizes ordering while preserving multiplicity and
+  the message↔`metadata.kind` pairing.
+- **The EXTRA oracle is a whole-text whitelist, not substring repair.**
+  The old query deleted `default_generated`, `(0)`, and `()` anywhere in
+  the text, which would "normalize" malformed strings such as
+  `DEFAULT_GENERATED()` or `on update curr()ent_timestamp` into passing
+  shapes. The query now folds the complete lower-cased text through a
+  SQL `CASE`: created accepts exactly `''`/`'default_generated'`,
+  updated accepts the six zero-precision `on update current_timestamp`
+  spellings, and anything else — SQL NULL, fsp=3, duplicated markers,
+  extra parentheses, unknown `GENERATED` markers — maps to a sentinel
+  that satisfies neither role. The same `CASE` expression runs as a
+  read-only literal control on every anchor, so legality is proven by
+  the shipped query itself. The earlier artifact keeps its old query
+  text and SHA as historical evidence; only new runs execute the strict
+  query.

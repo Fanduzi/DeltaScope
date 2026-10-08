@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: synthetic ddl-golden artifacts and manifests built in a temp directory
-# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1/A2/A3/A4/A5 mutation coverage
+# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1/A2/A3/A4/A5/A7/A8/A9 mutation coverage
 # pos: offline negative tests for scripts/ddl_golden.py validation (no Docker required)
 # note: if this file changes, update this header and module README.md.
 """Validator contract tests for scripts/ddl_golden.py.
@@ -3568,6 +3568,90 @@ def t06_contract_tests(tmp):
                            if s["id"] != "t06-a9-tidb85-missing-created"]
     m["required_case_ids"].remove(victim)
     run("t06a9 case deleted on both sides rejected", a, "T06-A1", m)
+
+    # --- T06-A9-R1 additions: actual finding identity is strict. Expected
+    # manifest entries keep the compact shorthand, but a recorded finding
+    # that is missing, empties, or mistypes statement_kind is rejected —
+    # never defaulted to "ddl". Ordering stays free, multiplicities and
+    # message/kind pairing stay bound, and statement_index defaults to the
+    # enclosing statement only because the omitempty contract omits zero.
+
+    # Missing statement_kind on one or on both actual findings must fail.
+    a, c = t06a9("mysql-missing-both")
+    del c["actual"]["parsed"]["statements"][0]["findings"][0]["statement_kind"]
+    update_stdout(c)
+    run("t06a9r1 one finding missing statement_kind rejected", a, "missing-both")
+
+    a, c = t06a9("tidb-missing-both")
+    for finding in c["actual"]["parsed"]["statements"][0]["findings"]:
+        del finding["statement_kind"]
+    update_stdout(c)
+    run("t06a9r1 both findings missing statement_kind rejected", a, "missing-both")
+
+    # Empty and wrong statement_kind values fail the same contract.
+    a, c = t06a9("mysql-missing-both")
+    c["actual"]["parsed"]["statements"][0]["findings"][0]["statement_kind"] = ""
+    update_stdout(c)
+    run("t06a9r1 empty statement_kind rejected", a, "missing-both")
+
+    a, c = t06a9("mysql-missing-both")
+    c["actual"]["parsed"]["statements"][0]["findings"][1]["statement_kind"] = "dml"
+    update_stdout(c)
+    run("t06a9r1 wrong statement_kind rejected", a, "missing-both")
+
+    # Multiset semantics: reordering the complete entries is legal, and an
+    # explicit statement_index equal to the enclosing statement (the legal
+    # omitempty-zero form) is legal.
+    a, c = t06a9("mysql-missing-both")
+    c["actual"]["parsed"]["statements"][0]["findings"].reverse()
+    update_stdout(c)
+    run("t06a9r1 finding order swapped still passes", a)
+
+    a, c = t06a9("mysql-missing-both")
+    for finding in c["actual"]["parsed"]["statements"][0]["findings"]:
+        finding["statement_index"] = 0
+    update_stdout(c)
+    run("t06a9r1 explicit zero statement_index passes", a)
+
+    # Wrong statement attribution and malformed field types are never
+    # coerced back into the frozen entries.
+    a, c = t06a9("mysql-missing-both")
+    c["actual"]["parsed"]["statements"][0]["findings"][0]["statement_index"] = 5
+    update_stdout(c)
+    run("t06a9r1 nonzero statement attribution rejected", a, "missing-both")
+
+    a, c = t06a9("tidb-missing-both")
+    c["actual"]["parsed"]["statements"][0]["findings"][0]["statement_kind"] = 0
+    c["actual"]["parsed"]["statements"][0]["findings"][1]["location"] = "1:1"
+    c["actual"]["parsed"]["statements"][0]["findings"][1]["metadata"] = ["created"]
+    update_stdout(c)
+    run("t06a9r1 malformed finding field types rejected", a, "missing-both")
+
+    # --- T06-A9-R2 additions: the EXTRA oracle is a whole-text whitelist.
+    # Rolling the recorded query back to the old permissive REPLACE shape
+    # is a structure identity mismatch, and rolling manifest and artifact
+    # back together still fails the frozen contract.
+
+    old_extra_query = (
+        "SELECT TRIM(REPLACE(REPLACE(REPLACE(LOWER(EXTRA),"
+        "'default_generated',''),'(0)',''),'()','')) "
+        "FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' "
+        "AND TABLE_NAME='t' AND COLUMN_NAME='updated_at'")
+
+    a, c = t06a9("mysql84-complete-pair")
+    a9_structure_entry(c, "updated_at extra normalized")["sql"] = old_extra_query
+    run("t06a9r2 artifact reverted to REPLACE query rejected", a, "structure")
+
+    a, c = t06a9("mysql84-complete-pair")
+    m = copy.deepcopy(manifest)
+    a9_structure_entry(c, "updated_at extra normalized")["sql"] = old_extra_query
+    for spec in m["metadata_cases"]:
+        if spec["id"] == "t06-a9-mysql84-complete-pair":
+            for entry in spec["structure"]:
+                if entry["assert"] == "updated_at extra normalized":
+                    entry["sql"] = old_extra_query
+    run("t06a9r2 manifest+artifact reverted to REPLACE query rejected",
+        a, "T06-A1", m)
 
     return results
 
