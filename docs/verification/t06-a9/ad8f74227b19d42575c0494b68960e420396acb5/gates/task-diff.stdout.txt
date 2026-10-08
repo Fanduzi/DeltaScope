@@ -1,0 +1,819 @@
+ ...6-10-08-ddl-explicit-audit-time-column-proof.md |    33 +-
+ .../README.md                                      |   106 +
+ .../T06-manifest.json                              | 24555 ++++++
+ .../anchors.json                                   |   380 +
+ .../artifact.json                                  | 83974 +++++++++++++++++++
+ .../baseline-3c8bac8b/build-identity.txt           |    48 +
+ .../baseline-3c8bac8b/catalog.err                  |     0
+ .../baseline-3c8bac8b/catalog.json                 |  6083 ++
+ .../baseline-3c8bac8b/policies/P_OFF.yaml          |   763 +
+ .../baseline-3c8bac8b/policies/P_ON.yaml           |   766 +
+ .../baseline-3c8bac8b/probe-output.jsonl           |    13 +
+ .../baseline-3c8bac8b/probe/go.mod                 |    22 +
+ .../baseline-3c8bac8b/probe/go.sum                 |    69 +
+ .../baseline-3c8bac8b/probe/main.go                |   118 +
+ .../runs/A-complete-pair-mysql.argv                |     1 +
+ .../runs/A-complete-pair-mysql.rc                  |     1 +
+ .../runs/A-complete-pair-mysql.stderr              |     0
+ .../runs/A-complete-pair-mysql.stdout.json         |     1 +
+ .../runs/A-complete-pair-tidb.argv                 |     1 +
+ .../baseline-3c8bac8b/runs/A-complete-pair-tidb.rc |     1 +
+ .../runs/A-complete-pair-tidb.stderr               |     0
+ .../runs/A-complete-pair-tidb.stdout.json          |     1 +
+ .../baseline-3c8bac8b/runs/A-complete-pair.policy  |     1 +
+ .../runs/B-missing-created-mysql.argv              |     1 +
+ .../runs/B-missing-created-mysql.rc                |     1 +
+ .../runs/B-missing-created-mysql.stderr            |     0
+ .../runs/B-missing-created-mysql.stdout.json       |     1 +
+ .../runs/B-missing-created-tidb.argv               |     1 +
+ .../runs/B-missing-created-tidb.rc                 |     1 +
+ .../runs/B-missing-created-tidb.stderr             |     0
+ .../runs/B-missing-created-tidb.stdout.json        |     1 +
+ .../runs/B-missing-created.policy                  |     1 +
+ .../runs/C-missing-updated-mysql.argv              |     1 +
+ .../runs/C-missing-updated-mysql.rc                |     1 +
+ .../runs/C-missing-updated-mysql.stderr            |     0
+ .../runs/C-missing-updated-mysql.stdout.json       |     1 +
+ .../runs/C-missing-updated-tidb.argv               |     1 +
+ .../runs/C-missing-updated-tidb.rc                 |     1 +
+ .../runs/C-missing-updated-tidb.stderr             |     0
+ .../runs/C-missing-updated-tidb.stdout.json        |     1 +
+ .../runs/C-missing-updated.policy                  |     1 +
+ .../runs/D-missing-both-mysql.argv                 |     1 +
+ .../baseline-3c8bac8b/runs/D-missing-both-mysql.rc |     1 +
+ .../runs/D-missing-both-mysql.stderr               |     0
+ .../runs/D-missing-both-mysql.stdout.json          |     1 +
+ .../runs/D-missing-both-tidb.argv                  |     1 +
+ .../baseline-3c8bac8b/runs/D-missing-both-tidb.rc  |     1 +
+ .../runs/D-missing-both-tidb.stderr                |     0
+ .../runs/D-missing-both-tidb.stdout.json           |     1 +
+ .../baseline-3c8bac8b/runs/D-missing-both.policy   |     1 +
+ .../runs/E-now-spelling-mysql.argv                 |     1 +
+ .../baseline-3c8bac8b/runs/E-now-spelling-mysql.rc |     1 +
+ .../runs/E-now-spelling-mysql.stderr               |     0
+ .../runs/E-now-spelling-mysql.stdout.json          |     1 +
+ .../runs/E-now-spelling-tidb.argv                  |     1 +
+ .../baseline-3c8bac8b/runs/E-now-spelling-tidb.rc  |     1 +
+ .../runs/E-now-spelling-tidb.stderr                |     0
+ .../runs/E-now-spelling-tidb.stdout.json           |     1 +
+ .../baseline-3c8bac8b/runs/E-now-spelling.policy   |     1 +
+ .../baseline-3c8bac8b/runs/F-disabled-mysql.argv   |     1 +
+ .../baseline-3c8bac8b/runs/F-disabled-mysql.rc     |     1 +
+ .../baseline-3c8bac8b/runs/F-disabled-mysql.stderr |     0
+ .../runs/F-disabled-mysql.stdout.json              |     1 +
+ .../baseline-3c8bac8b/runs/F-disabled-tidb.argv    |     1 +
+ .../baseline-3c8bac8b/runs/F-disabled-tidb.rc      |     1 +
+ .../baseline-3c8bac8b/runs/F-disabled-tidb.stderr  |     0
+ .../runs/F-disabled-tidb.stdout.json               |     1 +
+ .../baseline-3c8bac8b/runs/F-disabled.policy       |     1 +
+ .../baseline-3c8bac8b/sql/A-complete-pair.sql      |     5 +
+ .../baseline-3c8bac8b/sql/B-missing-created.sql    |     4 +
+ .../baseline-3c8bac8b/sql/C-missing-updated.sql    |     4 +
+ .../baseline-3c8bac8b/sql/D-missing-both.sql       |     1 +
+ .../baseline-3c8bac8b/sql/E-now-spelling.sql       |     5 +
+ .../baseline-3c8bac8b/sql/F-disabled.sql           |     1 +
+ .../build-identity.txt                             |    44 +
+ .../cases/T06.cli.mysql.json                       |   179 +
+ .../cases/T06.cli.t06-a2-mysql-default-null.json   |   168 +
+ .../cases/T06.cli.t06-a2-mysql-no-default.json     |   233 +
+ .../T06.cli.t06-a2-mysql-table-composite.json      |   168 +
+ .../cases/T06.cli.t06-a2-mysql-table-single.json   |   168 +
+ .../cases/T06.cli.t06-a2-tidb-default-null.json    |   168 +
+ .../cases/T06.cli.t06-a2-tidb-no-default.json      |   233 +
+ .../cases/T06.cli.t06-a2-tidb-table-composite.json |   168 +
+ .../cases/T06.cli.t06-a2-tidb-table-single.json    |   168 +
+ .../cases/T06.cli.t06-a3-mysql-no-default.json     |   233 +
+ .../cases/T06.cli.t06-a3-mysql-sql-null.json       |   168 +
+ .../cases/T06.cli.t06-a3-mysql-text-nil.json       |   168 +
+ .../cases/T06.cli.t06-a3-mysql-text-null.json      |   168 +
+ .../cases/T06.cli.t06-a3-tidb-no-default.json      |   233 +
+ .../cases/T06.cli.t06-a3-tidb-sql-null.json        |   168 +
+ .../cases/T06.cli.t06-a3-tidb-text-nil.json        |   168 +
+ .../cases/T06.cli.t06-a3-tidb-text-null.json       |   168 +
+ .../cases/T06.cli.t06-a5-mysql-char-above.json     |   235 +
+ .../cases/T06.cli.t06-a5-mysql-char-at.json        |   168 +
+ .../cases/T06.cli.t06-a5-mysql-char-below.json     |   168 +
+ .../cases/T06.cli.t06-a5-mysql-char-off.json       |   157 +
+ .../cases/T06.cli.t06-a5-mysql-varchar-above.json  |   235 +
+ .../cases/T06.cli.t06-a5-mysql-varchar-at.json     |   168 +
+ .../cases/T06.cli.t06-a5-mysql-varchar-below.json  |   168 +
+ .../cases/T06.cli.t06-a5-mysql-varchar-off.json    |   157 +
+ .../cases/T06.cli.t06-a5-tidb-char-above.json      |   235 +
+ .../cases/T06.cli.t06-a5-tidb-char-at.json         |   168 +
+ .../cases/T06.cli.t06-a5-tidb-char-below.json      |   168 +
+ .../cases/T06.cli.t06-a5-tidb-char-off.json        |   157 +
+ .../cases/T06.cli.t06-a5-tidb-varchar-above.json   |   235 +
+ .../cases/T06.cli.t06-a5-tidb-varchar-at.json      |   168 +
+ .../cases/T06.cli.t06-a5-tidb-varchar-below.json   |   168 +
+ .../cases/T06.cli.t06-a5-tidb-varchar-off.json     |   157 +
+ .../cases/T06.cli.t06-a7-mysql-cc-denied.json      |   241 +
+ .../cases/T06.cli.t06-a7-mysql-cc-off.json         |   157 +
+ .../cases/T06.cli.t06-a7-mysql-cc-ok.json          |   168 +
+ .../cases/T06.cli.t06-a7-mysql-cs-denied.json      |   241 +
+ .../cases/T06.cli.t06-a7-mysql-cs-off.json         |   157 +
+ .../cases/T06.cli.t06-a7-mysql-cs-ok.json          |   168 +
+ .../cases/T06.cli.t06-a7-mysql-match-empty.json    |   168 +
+ .../cases/T06.cli.t06-a7-mysql-match-mismatch.json |   235 +
+ .../cases/T06.cli.t06-a7-mysql-match-off.json      |   157 +
+ .../cases/T06.cli.t06-a7-mysql-match-pair.json     |   168 +
+ .../cases/T06.cli.t06-a7-mysql-match-single.json   |   235 +
+ .../cases/T06.cli.t06-a7-mysql-table-denied.json   |   239 +
+ .../cases/T06.cli.t06-a7-mysql-table-empty.json    |   168 +
+ .../cases/T06.cli.t06-a7-mysql-table-off.json      |   157 +
+ .../cases/T06.cli.t06-a7-mysql-table-ok.json       |   168 +
+ .../cases/T06.cli.t06-a7-mysql-table-required.json |   239 +
+ .../cases/T06.cli.t06-a7-tidb-cc-denied.json       |   241 +
+ .../cases/T06.cli.t06-a7-tidb-cc-off.json          |   157 +
+ .../cases/T06.cli.t06-a7-tidb-cc-ok.json           |   168 +
+ .../cases/T06.cli.t06-a7-tidb-cs-denied.json       |   241 +
+ .../cases/T06.cli.t06-a7-tidb-cs-off.json          |   157 +
+ .../cases/T06.cli.t06-a7-tidb-cs-ok.json           |   168 +
+ .../cases/T06.cli.t06-a7-tidb-match-empty.json     |   168 +
+ .../cases/T06.cli.t06-a7-tidb-match-mismatch.json  |   235 +
+ .../cases/T06.cli.t06-a7-tidb-match-off.json       |   157 +
+ .../cases/T06.cli.t06-a7-tidb-match-pair.json      |   168 +
+ .../cases/T06.cli.t06-a7-tidb-match-single.json    |   235 +
+ .../cases/T06.cli.t06-a7-tidb-table-denied.json    |   239 +
+ .../cases/T06.cli.t06-a7-tidb-table-empty.json     |   168 +
+ .../cases/T06.cli.t06-a7-tidb-table-off.json       |   157 +
+ .../cases/T06.cli.t06-a7-tidb-table-ok.json        |   168 +
+ .../cases/T06.cli.t06-a7-tidb-table-required.json  |   239 +
+ .../cases/T06.cli.t06-a8-mysql-column-blank.json   |   231 +
+ .../cases/T06.cli.t06-a8-mysql-column-empty.json   |   231 +
+ .../cases/T06.cli.t06-a8-mysql-column-missing.json |   231 +
+ .../cases/T06.cli.t06-a8-mysql-column-present.json |   168 +
+ .../cases/T06.cli.t06-a8-mysql-length-above.json   |   233 +
+ .../cases/T06.cli.t06-a8-mysql-length-at.json      |   168 +
+ ...06.cli.t06-a8-mysql-length-multibyte-above.json |   233 +
+ .../T06.cli.t06-a8-mysql-length-multibyte-at.json  |   168 +
+ .../T06.cli.t06-a8-mysql-length-multibyte.json     |   168 +
+ .../cases/T06.cli.t06-a8-mysql-length-off.json     |   157 +
+ .../cases/T06.cli.t06-a8-mysql-table-missing.json  |   229 +
+ .../cases/T06.cli.t06-a8-mysql-table-present.json  |   168 +
+ .../cases/T06.cli.t06-a8-tidb-column-blank.json    |   231 +
+ .../cases/T06.cli.t06-a8-tidb-column-empty.json    |   231 +
+ .../cases/T06.cli.t06-a8-tidb-column-missing.json  |   231 +
+ .../cases/T06.cli.t06-a8-tidb-column-present.json  |   168 +
+ .../cases/T06.cli.t06-a8-tidb-length-above.json    |   233 +
+ .../cases/T06.cli.t06-a8-tidb-length-at.json       |   168 +
+ ...T06.cli.t06-a8-tidb-length-multibyte-above.json |   233 +
+ .../T06.cli.t06-a8-tidb-length-multibyte-at.json   |   168 +
+ .../T06.cli.t06-a8-tidb-length-multibyte.json      |   168 +
+ .../cases/T06.cli.t06-a8-tidb-length-off.json      |   157 +
+ .../cases/T06.cli.t06-a8-tidb-table-missing.json   |   229 +
+ .../cases/T06.cli.t06-a8-tidb-table-present.json   |   168 +
+ .../cases/T06.cli.t06-a9-mysql-complete-pair.json  |   168 +
+ .../cases/T06.cli.t06-a9-mysql-disabled.json       |   157 +
+ .../cases/T06.cli.t06-a9-mysql-missing-both.json   |   305 +
+ .../T06.cli.t06-a9-mysql-missing-created.json      |   231 +
+ .../T06.cli.t06-a9-mysql-missing-updated.json      |   231 +
+ .../cases/T06.cli.t06-a9-mysql-now-spelling.json   |   168 +
+ .../cases/T06.cli.t06-a9-tidb-complete-pair.json   |   168 +
+ .../cases/T06.cli.t06-a9-tidb-disabled.json        |   157 +
+ .../cases/T06.cli.t06-a9-tidb-missing-both.json    |   305 +
+ .../cases/T06.cli.t06-a9-tidb-missing-created.json |   231 +
+ .../cases/T06.cli.t06-a9-tidb-missing-updated.json |   231 +
+ .../cases/T06.cli.t06-a9-tidb-now-spelling.json    |   168 +
+ .../cases/T06.cli.t06-mysql-inline-pk.json         |   168 +
+ .../cases/T06.cli.t06-mysql-no-pk.json             |   229 +
+ .../cases/T06.cli.t06-mysql-required-false.json    |   168 +
+ .../cases/T06.cli.t06-mysql-rule-off.json          |   157 +
+ .../cases/T06.cli.t06-mysql-table-pk.json          |   168 +
+ .../cases/T06.cli.t06-tidb-inline-pk.json          |   168 +
+ .../cases/T06.cli.t06-tidb-no-pk.json              |   229 +
+ .../cases/T06.cli.t06-tidb-required-false.json     |   168 +
+ .../cases/T06.cli.t06-tidb-rule-off.json           |   157 +
+ .../cases/T06.cli.t06-tidb-table-pk.json           |   168 +
+ .../cases/T06.cli.tidb.json                        |   179 +
+ .../cases/T06.db.mysql57.ddl.json                  |   162 +
+ .../cases/T06.db.mysql57.syntax_negative.json      |    49 +
+ .../cases/T06.db.mysql80.ddl.json                  |   162 +
+ .../cases/T06.db.mysql80.syntax_negative.json      |    49 +
+ .../cases/T06.db.mysql84.ddl.json                  |   162 +
+ .../cases/T06.db.mysql84.syntax_negative.json      |    49 +
+ .../cases/T06.db.tidb85.ddl.json                   |   167 +
+ .../cases/T06.db.tidb85.syntax_negative.json       |    49 +
+ ...6.meta.t06-a2-mysql57-explicit-null-inline.json |   382 +
+ ...06.meta.t06-a2-mysql57-explicit-null-table.json |   382 +
+ .../T06.meta.t06-a2-mysql57-table-composite.json   |   385 +
+ .../T06.meta.t06-a2-mysql57-table-single.json      |   385 +
+ ...6.meta.t06-a2-mysql80-explicit-null-inline.json |   407 +
+ ...06.meta.t06-a2-mysql80-explicit-null-table.json |   407 +
+ .../T06.meta.t06-a2-mysql80-table-composite.json   |   410 +
+ .../T06.meta.t06-a2-mysql80-table-single.json      |   410 +
+ ...6.meta.t06-a2-mysql84-explicit-null-inline.json |   407 +
+ ...06.meta.t06-a2-mysql84-explicit-null-table.json |   407 +
+ .../T06.meta.t06-a2-mysql84-table-composite.json   |   410 +
+ .../T06.meta.t06-a2-mysql84-table-single.json      |   410 +
+ ...06.meta.t06-a2-tidb85-explicit-null-inline.json |   379 +
+ ...T06.meta.t06-a2-tidb85-explicit-null-table.json |   379 +
+ .../T06.meta.t06-a2-tidb85-table-composite.json    |   370 +
+ .../cases/T06.meta.t06-a2-tidb85-table-single.json |   370 +
+ ...meta.t06-a3-mysql57-default-representation.json |   438 +
+ .../T06.meta.t06-a3-mysql57-null-drop-state.json   |   461 +
+ ...meta.t06-a3-mysql80-default-representation.json |   463 +
+ .../T06.meta.t06-a3-mysql80-null-drop-state.json   |   486 +
+ ...meta.t06-a3-mysql84-default-representation.json |   463 +
+ .../T06.meta.t06-a3-mysql84-null-drop-state.json   |   486 +
+ ....meta.t06-a3-tidb85-default-representation.json |   435 +
+ .../T06.meta.t06-a3-tidb85-null-drop-state.json    |   458 +
+ .../T06.meta.t06-a4-mysql57-drop-c-text-nil.json   |   521 +
+ ...06.meta.t06-a4-mysql57-drop-d-null-control.json |   485 +
+ .../T06.meta.t06-a4-mysql57-drop-d-text-null.json  |   521 +
+ .../T06.meta.t06-a4-mysql80-drop-c-text-nil.json   |   546 +
+ ...06.meta.t06-a4-mysql80-drop-d-null-control.json |   510 +
+ .../T06.meta.t06-a4-mysql80-drop-d-text-null.json  |   546 +
+ .../T06.meta.t06-a4-mysql84-drop-c-text-nil.json   |   546 +
+ ...06.meta.t06-a4-mysql84-drop-d-null-control.json |   510 +
+ .../T06.meta.t06-a4-mysql84-drop-d-text-null.json  |   546 +
+ .../T06.meta.t06-a4-tidb85-drop-c-text-nil.json    |   518 +
+ ...T06.meta.t06-a4-tidb85-drop-d-null-control.json |   482 +
+ .../T06.meta.t06-a4-tidb85-drop-d-text-null.json   |   518 +
+ .../cases/T06.meta.t06-a5-mysql57-char-above.json  |   464 +
+ .../cases/T06.meta.t06-a5-mysql57-char-at.json     |   397 +
+ .../cases/T06.meta.t06-a5-mysql57-char-below.json  |   397 +
+ .../T06.meta.t06-a5-mysql57-varchar-above.json     |   464 +
+ .../cases/T06.meta.t06-a5-mysql57-varchar-at.json  |   397 +
+ .../T06.meta.t06-a5-mysql57-varchar-below.json     |   397 +
+ .../cases/T06.meta.t06-a5-mysql80-char-above.json  |   489 +
+ .../cases/T06.meta.t06-a5-mysql80-char-at.json     |   422 +
+ .../cases/T06.meta.t06-a5-mysql80-char-below.json  |   422 +
+ .../T06.meta.t06-a5-mysql80-varchar-above.json     |   489 +
+ .../cases/T06.meta.t06-a5-mysql80-varchar-at.json  |   422 +
+ .../T06.meta.t06-a5-mysql80-varchar-below.json     |   422 +
+ .../cases/T06.meta.t06-a5-mysql84-char-above.json  |   489 +
+ .../cases/T06.meta.t06-a5-mysql84-char-at.json     |   422 +
+ .../cases/T06.meta.t06-a5-mysql84-char-below.json  |   422 +
+ .../T06.meta.t06-a5-mysql84-varchar-above.json     |   489 +
+ .../cases/T06.meta.t06-a5-mysql84-varchar-at.json  |   422 +
+ .../T06.meta.t06-a5-mysql84-varchar-below.json     |   422 +
+ .../cases/T06.meta.t06-a5-tidb85-char-above.json   |   449 +
+ .../cases/T06.meta.t06-a5-tidb85-char-at.json      |   382 +
+ .../cases/T06.meta.t06-a5-tidb85-char-below.json   |   382 +
+ .../T06.meta.t06-a5-tidb85-varchar-above.json      |   449 +
+ .../cases/T06.meta.t06-a5-tidb85-varchar-at.json   |   382 +
+ .../T06.meta.t06-a5-tidb85-varchar-below.json      |   382 +
+ ....meta.t06-a7-mysql57-column-charset-denied.json |   482 +
+ ...eta.t06-a7-mysql57-column-collation-denied.json |   482 +
+ .../T06.meta.t06-a7-mysql57-column-mismatch.json   |   386 +
+ .../cases/T06.meta.t06-a7-mysql57-column-pair.json |   409 +
+ .../T06.meta.t06-a7-mysql57-column-partial.json    |   476 +
+ .../T06.meta.t06-a7-mysql57-table-allowed.json     |   409 +
+ .../T06.meta.t06-a7-mysql57-table-denied.json      |   480 +
+ .../T06.meta.t06-a7-mysql57-table-inheritance.json |   409 +
+ ....meta.t06-a7-mysql80-column-charset-denied.json |   507 +
+ ...eta.t06-a7-mysql80-column-collation-denied.json |   507 +
+ .../T06.meta.t06-a7-mysql80-column-mismatch.json   |   411 +
+ .../cases/T06.meta.t06-a7-mysql80-column-pair.json |   434 +
+ .../T06.meta.t06-a7-mysql80-column-partial.json    |   501 +
+ .../T06.meta.t06-a7-mysql80-table-allowed.json     |   434 +
+ .../T06.meta.t06-a7-mysql80-table-denied.json      |   505 +
+ .../T06.meta.t06-a7-mysql80-table-inheritance.json |   434 +
+ ....meta.t06-a7-mysql84-column-charset-denied.json |   507 +
+ ...eta.t06-a7-mysql84-column-collation-denied.json |   507 +
+ .../T06.meta.t06-a7-mysql84-column-mismatch.json   |   411 +
+ .../cases/T06.meta.t06-a7-mysql84-column-pair.json |   434 +
+ .../T06.meta.t06-a7-mysql84-column-partial.json    |   501 +
+ .../T06.meta.t06-a7-mysql84-table-allowed.json     |   434 +
+ .../T06.meta.t06-a7-mysql84-table-denied.json      |   505 +
+ .../T06.meta.t06-a7-mysql84-table-inheritance.json |   434 +
+ ...6.meta.t06-a7-tidb85-column-charset-denied.json |   467 +
+ ...meta.t06-a7-tidb85-column-collation-denied.json |   467 +
+ .../T06.meta.t06-a7-tidb85-column-mismatch.json    |   383 +
+ .../cases/T06.meta.t06-a7-tidb85-column-pair.json  |   394 +
+ .../T06.meta.t06-a7-tidb85-column-partial.json     |   461 +
+ .../T06.meta.t06-a7-tidb85-table-allowed.json      |   394 +
+ .../cases/T06.meta.t06-a7-tidb85-table-denied.json |   465 +
+ .../T06.meta.t06-a7-tidb85-table-inheritance.json  |   394 +
+ .../T06.meta.t06-a8-mysql57-column-decoded.json    |   426 +
+ .../T06.meta.t06-a8-mysql57-column-empty.json      |   489 +
+ .../T06.meta.t06-a8-mysql57-table-rune-above.json  |   491 +
+ .../T06.meta.t06-a8-mysql57-table-rune-at.json     |   426 +
+ .../T06.meta.t06-a8-mysql80-column-decoded.json    |   451 +
+ .../T06.meta.t06-a8-mysql80-column-empty.json      |   514 +
+ .../T06.meta.t06-a8-mysql80-table-rune-above.json  |   516 +
+ .../T06.meta.t06-a8-mysql80-table-rune-at.json     |   451 +
+ .../T06.meta.t06-a8-mysql84-column-decoded.json    |   451 +
+ .../T06.meta.t06-a8-mysql84-column-empty.json      |   514 +
+ .../T06.meta.t06-a8-mysql84-table-rune-above.json  |   516 +
+ .../T06.meta.t06-a8-mysql84-table-rune-at.json     |   451 +
+ .../T06.meta.t06-a8-tidb85-column-decoded.json     |   411 +
+ .../cases/T06.meta.t06-a8-tidb85-column-empty.json |   474 +
+ .../T06.meta.t06-a8-tidb85-table-rune-above.json   |   476 +
+ .../T06.meta.t06-a8-tidb85-table-rune-at.json      |   411 +
+ .../T06.meta.t06-a9-mysql57-complete-pair.json     |   457 +
+ .../T06.meta.t06-a9-mysql57-missing-created.json   |   496 +
+ .../T06.meta.t06-a9-mysql57-missing-updated.json   |   496 +
+ .../T06.meta.t06-a9-mysql57-now-spelling.json      |   457 +
+ .../T06.meta.t06-a9-mysql80-complete-pair.json     |   482 +
+ .../T06.meta.t06-a9-mysql80-missing-created.json   |   521 +
+ .../T06.meta.t06-a9-mysql80-missing-updated.json   |   521 +
+ .../T06.meta.t06-a9-mysql80-now-spelling.json      |   482 +
+ .../T06.meta.t06-a9-mysql84-complete-pair.json     |   482 +
+ .../T06.meta.t06-a9-mysql84-missing-created.json   |   521 +
+ .../T06.meta.t06-a9-mysql84-missing-updated.json   |   521 +
+ .../T06.meta.t06-a9-mysql84-now-spelling.json      |   482 +
+ .../T06.meta.t06-a9-tidb85-complete-pair.json      |   442 +
+ .../T06.meta.t06-a9-tidb85-missing-created.json    |   481 +
+ .../T06.meta.t06-a9-tidb85-missing-updated.json    |   481 +
+ .../cases/T06.meta.t06-a9-tidb85-now-spelling.json |   442 +
+ .../cases/T06.meta.t06-mysql57-inline-pk.json      |   385 +
+ .../cases/T06.meta.t06-mysql57-no-pk.json          |   434 +
+ .../cases/T06.meta.t06-mysql57-table-pk.json       |   385 +
+ .../cases/T06.meta.t06-mysql80-inline-pk.json      |   410 +
+ .../cases/T06.meta.t06-mysql80-no-pk.json          |   459 +
+ .../cases/T06.meta.t06-mysql80-table-pk.json       |   410 +
+ .../cases/T06.meta.t06-mysql84-inline-pk.json      |   410 +
+ .../cases/T06.meta.t06-mysql84-no-pk.json          |   459 +
+ .../cases/T06.meta.t06-mysql84-table-pk.json       |   410 +
+ .../cases/T06.meta.t06-tidb85-inline-pk.json       |   370 +
+ .../cases/T06.meta.t06-tidb85-no-pk.json           |   419 +
+ .../cases/T06.meta.t06-tidb85-table-pk.json        |   370 +
+ .../gates/ddl-coverage-catalog-test.argv.txt       |     1 +
+ .../gates/ddl-coverage-catalog-test.rc.txt         |     1 +
+ .../gates/ddl-coverage-catalog-test.stderr.txt     |     0
+ .../gates/ddl-coverage-catalog-test.stdout.txt     |     2 +
+ .../gates/ddl-golden-T06.argv.txt                  |     1 +
+ .../gates/ddl-golden-T06.rc.txt                    |     1 +
+ .../gates/ddl-golden-T06.stderr.txt                |     0
+ .../gates/ddl-golden-T06.stdout.txt                |     4 +
+ .../gates/ddl-golden-validator-test.argv.txt       |     1 +
+ .../gates/ddl-golden-validator-test.rc.txt         |     1 +
+ .../gates/ddl-golden-validator-test.stderr.txt     |     0
+ .../gates/ddl-golden-validator-test.stdout.txt     |   376 +
+ .../gates/ddl-inventory-gate.argv.txt              |     1 +
+ .../gates/ddl-inventory-gate.rc.txt                |     1 +
+ .../gates/ddl-inventory-gate.stderr.txt            |     0
+ .../gates/ddl-inventory-gate.stdout.txt            |     2 +
+ .../gates/decision-record-gate.argv.txt            |     1 +
+ .../gates/decision-record-gate.rc.txt              |     1 +
+ .../gates/decision-record-gate.stderr.txt          |     0
+ .../gates/decision-record-gate.stdout.txt          |     2 +
+ .../gates/docs-example-gates.argv.txt              |     1 +
+ .../gates/docs-example-gates.rc.txt                |     1 +
+ .../gates/docs-example-gates.stderr.txt            |     0
+ .../gates/docs-example-gates.stdout.txt            |     1 +
+ .../gates/focused-entries.argv.txt                 |     1 +
+ .../gates/focused-entries.rc.txt                   |     1 +
+ .../gates/focused-entries.stderr.txt               |     0
+ .../gates/focused-entries.stdout.txt               |    40 +
+ .../gates/focused-t06a9.argv.txt                   |     1 +
+ .../gates/focused-t06a9.rc.txt                     |     1 +
+ .../gates/focused-t06a9.stderr.txt                 |     0
+ .../gates/focused-t06a9.stdout.txt                 |   141 +
+ .../gates/gofmt-check.argv.txt                     |     1 +
+ .../gates/gofmt-check.rc.txt                       |     1 +
+ .../gates/gofmt-check.stderr.txt                   |     0
+ .../gates/gofmt-check.stdout.txt                   |     0
+ .../gates/golden-validate.argv.txt                 |     1 +
+ .../gates/golden-validate.rc.txt                   |     1 +
+ .../gates/golden-validate.stderr.txt               |     0
+ .../gates/golden-validate.stdout.txt               |     1 +
+ .../gates/make-test.argv.txt                       |     1 +
+ .../gates/make-test.rc.txt                         |     1 +
+ .../gates/make-test.stderr.txt                     |     0
+ .../gates/make-test.stdout.txt                     |    43 +
+ .../gates/pg-unit-test-gates.argv.txt              |     1 +
+ .../gates/pg-unit-test-gates.rc.txt                |     1 +
+ .../gates/pg-unit-test-gates.stderr.txt            |     0
+ .../gates/pg-unit-test-gates.stdout.txt            |     8 +
+ .../gates/sql-corpus-gates.argv.txt                |     1 +
+ .../gates/sql-corpus-gates.rc.txt                  |     1 +
+ .../gates/sql-corpus-gates.stderr.txt              |     0
+ .../gates/sql-corpus-gates.stdout.txt              |     2 +
+ .../gates/task-diff.argv.txt                       |     1 +
+ .../gates/task-diff.rc.txt                         |     1 +
+ .../gates/task-diff.stderr.txt                     |     0
+ .../gates/task-diff.stdout.txt                     |    14 +
+ .../policies/golden-policy-all-off.yaml            |   763 +
+ ...en-policy-t06-a2-default-presence-isolated.yaml |   766 +
+ ...lden-policy-t06-a2-pk-nullability-isolated.yaml |   766 +
+ ...den-policy-t06-a3-null-drop-state-isolated.yaml |   769 +
+ ...n-policy-t06-a4-provider-defaults-isolated.yaml |   768 +
+ .../golden-policy-t06-a5-char-length-isolated.yaml |   766 +
+ ...lden-policy-t06-a5-varchar-length-isolated.yaml |   766 +
+ ...lden-policy-t06-a7-column-charset-isolated.yaml |   766 +
+ ...en-policy-t06-a7-column-collation-isolated.yaml |   766 +
+ ...golden-policy-t06-a7-column-match-isolated.yaml |   766 +
+ ...den-policy-t06-a7-table-collation-optional.yaml |   767 +
+ ...den-policy-t06-a7-table-collation-required.yaml |   767 +
+ ...lden-policy-t06-a8-column-comment-required.yaml |   766 +
+ .../golden-policy-t06-a8-table-comment-length.yaml |   766 +
+ ...olden-policy-t06-a8-table-comment-required.yaml |   766 +
+ ...olden-policy-t06-a9-audit-columns-isolated.yaml |   766 +
+ .../golden-policy-t06-pk-presence-isolated.yaml    |   766 +
+ .../golden-policy-t06-pk-required-false.yaml       |   766 +
+ scripts/README.md                                  |     4 +-
+ scripts/ddl_golden.py                              |   174 +-
+ scripts/test_ddl_golden.py                         |    86 +-
+ testdata/ddl-golden/T06.json                       |   128 +-
+ 409 files changed, 215196 insertions(+), 47 deletions(-)
+M	docs/decisions/2026-10-08-ddl-explicit-audit-time-column-proof.md
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/README.md
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/T06-manifest.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/anchors.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/artifact.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/build-identity.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/catalog.err
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/catalog.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/policies/P_OFF.yaml
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/policies/P_ON.yaml
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/probe-output.jsonl
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/probe/go.mod
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/probe/go.sum
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/probe/main.go
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/A-complete-pair-mysql.argv
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/A-complete-pair-mysql.rc
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/A-complete-pair-mysql.stderr
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/A-complete-pair-mysql.stdout.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/A-complete-pair-tidb.argv
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/A-complete-pair-tidb.rc
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/A-complete-pair-tidb.stderr
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/A-complete-pair-tidb.stdout.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/A-complete-pair.policy
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/B-missing-created-mysql.argv
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/B-missing-created-mysql.rc
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/B-missing-created-mysql.stderr
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/B-missing-created-mysql.stdout.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/B-missing-created-tidb.argv
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/B-missing-created-tidb.rc
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/B-missing-created-tidb.stderr
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/B-missing-created-tidb.stdout.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/B-missing-created.policy
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/C-missing-updated-mysql.argv
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/C-missing-updated-mysql.rc
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/C-missing-updated-mysql.stderr
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/C-missing-updated-mysql.stdout.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/C-missing-updated-tidb.argv
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/C-missing-updated-tidb.rc
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/C-missing-updated-tidb.stderr
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/C-missing-updated-tidb.stdout.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/C-missing-updated.policy
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/D-missing-both-mysql.argv
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/D-missing-both-mysql.rc
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/D-missing-both-mysql.stderr
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/D-missing-both-mysql.stdout.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/D-missing-both-tidb.argv
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/D-missing-both-tidb.rc
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/D-missing-both-tidb.stderr
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/D-missing-both-tidb.stdout.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/D-missing-both.policy
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/E-now-spelling-mysql.argv
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/E-now-spelling-mysql.rc
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/E-now-spelling-mysql.stderr
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/E-now-spelling-mysql.stdout.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/E-now-spelling-tidb.argv
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/E-now-spelling-tidb.rc
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/E-now-spelling-tidb.stderr
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/E-now-spelling-tidb.stdout.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/E-now-spelling.policy
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/F-disabled-mysql.argv
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/F-disabled-mysql.rc
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/F-disabled-mysql.stderr
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/F-disabled-mysql.stdout.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/F-disabled-tidb.argv
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/F-disabled-tidb.rc
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/F-disabled-tidb.stderr
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/F-disabled-tidb.stdout.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/runs/F-disabled.policy
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/sql/A-complete-pair.sql
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/sql/B-missing-created.sql
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/sql/C-missing-updated.sql
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/sql/D-missing-both.sql
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/sql/E-now-spelling.sql
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/sql/F-disabled.sql
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/build-identity.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.mysql.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a2-mysql-default-null.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a2-mysql-no-default.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a2-mysql-table-composite.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a2-mysql-table-single.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a2-tidb-default-null.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a2-tidb-no-default.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a2-tidb-table-composite.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a2-tidb-table-single.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a3-mysql-no-default.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a3-mysql-sql-null.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a3-mysql-text-nil.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a3-mysql-text-null.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a3-tidb-no-default.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a3-tidb-sql-null.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a3-tidb-text-nil.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a3-tidb-text-null.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a5-mysql-char-above.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a5-mysql-char-at.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a5-mysql-char-below.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a5-mysql-char-off.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a5-mysql-varchar-above.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a5-mysql-varchar-at.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a5-mysql-varchar-below.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a5-mysql-varchar-off.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a5-tidb-char-above.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a5-tidb-char-at.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a5-tidb-char-below.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a5-tidb-char-off.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a5-tidb-varchar-above.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a5-tidb-varchar-at.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a5-tidb-varchar-below.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a5-tidb-varchar-off.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-mysql-cc-denied.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-mysql-cc-off.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-mysql-cc-ok.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-mysql-cs-denied.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-mysql-cs-off.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-mysql-cs-ok.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-mysql-match-empty.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-mysql-match-mismatch.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-mysql-match-off.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-mysql-match-pair.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-mysql-match-single.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-mysql-table-denied.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-mysql-table-empty.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-mysql-table-off.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-mysql-table-ok.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-mysql-table-required.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-tidb-cc-denied.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-tidb-cc-off.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-tidb-cc-ok.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-tidb-cs-denied.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-tidb-cs-off.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-tidb-cs-ok.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-tidb-match-empty.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-tidb-match-mismatch.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-tidb-match-off.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-tidb-match-pair.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-tidb-match-single.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-tidb-table-denied.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-tidb-table-empty.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-tidb-table-off.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-tidb-table-ok.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a7-tidb-table-required.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a8-mysql-column-blank.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a8-mysql-column-empty.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a8-mysql-column-missing.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a8-mysql-column-present.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a8-mysql-length-above.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a8-mysql-length-at.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a8-mysql-length-multibyte-above.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a8-mysql-length-multibyte-at.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a8-mysql-length-multibyte.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a8-mysql-length-off.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a8-mysql-table-missing.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a8-mysql-table-present.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a8-tidb-column-blank.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a8-tidb-column-empty.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a8-tidb-column-missing.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a8-tidb-column-present.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a8-tidb-length-above.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a8-tidb-length-at.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a8-tidb-length-multibyte-above.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a8-tidb-length-multibyte-at.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a8-tidb-length-multibyte.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a8-tidb-length-off.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a8-tidb-table-missing.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a8-tidb-table-present.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a9-mysql-complete-pair.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a9-mysql-disabled.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a9-mysql-missing-both.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a9-mysql-missing-created.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a9-mysql-missing-updated.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a9-mysql-now-spelling.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a9-tidb-complete-pair.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a9-tidb-disabled.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a9-tidb-missing-both.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a9-tidb-missing-created.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a9-tidb-missing-updated.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-a9-tidb-now-spelling.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-mysql-inline-pk.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-mysql-no-pk.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-mysql-required-false.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-mysql-rule-off.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-mysql-table-pk.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-tidb-inline-pk.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-tidb-no-pk.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-tidb-required-false.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-tidb-rule-off.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.t06-tidb-table-pk.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.cli.tidb.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.db.mysql57.ddl.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.db.mysql57.syntax_negative.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.db.mysql80.ddl.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.db.mysql80.syntax_negative.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.db.mysql84.ddl.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.db.mysql84.syntax_negative.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.db.tidb85.ddl.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.db.tidb85.syntax_negative.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a2-mysql57-explicit-null-inline.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a2-mysql57-explicit-null-table.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a2-mysql57-table-composite.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a2-mysql57-table-single.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a2-mysql80-explicit-null-inline.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a2-mysql80-explicit-null-table.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a2-mysql80-table-composite.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a2-mysql80-table-single.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a2-mysql84-explicit-null-inline.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a2-mysql84-explicit-null-table.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a2-mysql84-table-composite.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a2-mysql84-table-single.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a2-tidb85-explicit-null-inline.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a2-tidb85-explicit-null-table.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a2-tidb85-table-composite.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a2-tidb85-table-single.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a3-mysql57-default-representation.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a3-mysql57-null-drop-state.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a3-mysql80-default-representation.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a3-mysql80-null-drop-state.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a3-mysql84-default-representation.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a3-mysql84-null-drop-state.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a3-tidb85-default-representation.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a3-tidb85-null-drop-state.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a4-mysql57-drop-c-text-nil.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a4-mysql57-drop-d-null-control.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a4-mysql57-drop-d-text-null.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a4-mysql80-drop-c-text-nil.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a4-mysql80-drop-d-null-control.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a4-mysql80-drop-d-text-null.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a4-mysql84-drop-c-text-nil.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a4-mysql84-drop-d-null-control.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a4-mysql84-drop-d-text-null.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a4-tidb85-drop-c-text-nil.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a4-tidb85-drop-d-null-control.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a4-tidb85-drop-d-text-null.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a5-mysql57-char-above.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a5-mysql57-char-at.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a5-mysql57-char-below.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a5-mysql57-varchar-above.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a5-mysql57-varchar-at.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a5-mysql57-varchar-below.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a5-mysql80-char-above.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a5-mysql80-char-at.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a5-mysql80-char-below.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a5-mysql80-varchar-above.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a5-mysql80-varchar-at.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a5-mysql80-varchar-below.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a5-mysql84-char-above.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a5-mysql84-char-at.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a5-mysql84-char-below.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a5-mysql84-varchar-above.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a5-mysql84-varchar-at.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a5-mysql84-varchar-below.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a5-tidb85-char-above.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a5-tidb85-char-at.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a5-tidb85-char-below.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a5-tidb85-varchar-above.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a5-tidb85-varchar-at.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a5-tidb85-varchar-below.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-mysql57-column-charset-denied.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-mysql57-column-collation-denied.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-mysql57-column-mismatch.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-mysql57-column-pair.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-mysql57-column-partial.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-mysql57-table-allowed.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-mysql57-table-denied.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-mysql57-table-inheritance.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-mysql80-column-charset-denied.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-mysql80-column-collation-denied.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-mysql80-column-mismatch.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-mysql80-column-pair.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-mysql80-column-partial.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-mysql80-table-allowed.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-mysql80-table-denied.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-mysql80-table-inheritance.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-mysql84-column-charset-denied.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-mysql84-column-collation-denied.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-mysql84-column-mismatch.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-mysql84-column-pair.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-mysql84-column-partial.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-mysql84-table-allowed.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-mysql84-table-denied.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-mysql84-table-inheritance.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-tidb85-column-charset-denied.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-tidb85-column-collation-denied.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-tidb85-column-mismatch.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-tidb85-column-pair.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-tidb85-column-partial.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-tidb85-table-allowed.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-tidb85-table-denied.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a7-tidb85-table-inheritance.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a8-mysql57-column-decoded.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a8-mysql57-column-empty.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a8-mysql57-table-rune-above.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a8-mysql57-table-rune-at.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a8-mysql80-column-decoded.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a8-mysql80-column-empty.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a8-mysql80-table-rune-above.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a8-mysql80-table-rune-at.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a8-mysql84-column-decoded.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a8-mysql84-column-empty.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a8-mysql84-table-rune-above.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a8-mysql84-table-rune-at.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a8-tidb85-column-decoded.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a8-tidb85-column-empty.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a8-tidb85-table-rune-above.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a8-tidb85-table-rune-at.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a9-mysql57-complete-pair.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a9-mysql57-missing-created.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a9-mysql57-missing-updated.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a9-mysql57-now-spelling.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a9-mysql80-complete-pair.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a9-mysql80-missing-created.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a9-mysql80-missing-updated.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a9-mysql80-now-spelling.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a9-mysql84-complete-pair.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a9-mysql84-missing-created.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a9-mysql84-missing-updated.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a9-mysql84-now-spelling.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a9-tidb85-complete-pair.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a9-tidb85-missing-created.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a9-tidb85-missing-updated.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-a9-tidb85-now-spelling.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-mysql57-inline-pk.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-mysql57-no-pk.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-mysql57-table-pk.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-mysql80-inline-pk.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-mysql80-no-pk.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-mysql80-table-pk.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-mysql84-inline-pk.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-mysql84-no-pk.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-mysql84-table-pk.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-tidb85-inline-pk.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-tidb85-no-pk.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/cases/T06.meta.t06-tidb85-table-pk.json
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/ddl-coverage-catalog-test.argv.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/ddl-coverage-catalog-test.rc.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/ddl-coverage-catalog-test.stderr.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/ddl-coverage-catalog-test.stdout.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/ddl-golden-T06.argv.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/ddl-golden-T06.rc.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/ddl-golden-T06.stderr.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/ddl-golden-T06.stdout.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/ddl-golden-validator-test.argv.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/ddl-golden-validator-test.rc.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/ddl-golden-validator-test.stderr.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/ddl-golden-validator-test.stdout.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/ddl-inventory-gate.argv.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/ddl-inventory-gate.rc.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/ddl-inventory-gate.stderr.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/ddl-inventory-gate.stdout.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/decision-record-gate.argv.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/decision-record-gate.rc.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/decision-record-gate.stderr.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/decision-record-gate.stdout.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/docs-example-gates.argv.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/docs-example-gates.rc.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/docs-example-gates.stderr.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/docs-example-gates.stdout.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/focused-entries.argv.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/focused-entries.rc.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/focused-entries.stderr.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/focused-entries.stdout.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/focused-t06a9.argv.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/focused-t06a9.rc.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/focused-t06a9.stderr.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/focused-t06a9.stdout.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/gofmt-check.argv.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/gofmt-check.rc.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/gofmt-check.stderr.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/gofmt-check.stdout.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/golden-validate.argv.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/golden-validate.rc.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/golden-validate.stderr.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/golden-validate.stdout.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/make-test.argv.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/make-test.rc.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/make-test.stderr.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/make-test.stdout.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/pg-unit-test-gates.argv.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/pg-unit-test-gates.rc.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/pg-unit-test-gates.stderr.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/pg-unit-test-gates.stdout.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/sql-corpus-gates.argv.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/sql-corpus-gates.rc.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/sql-corpus-gates.stderr.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/sql-corpus-gates.stdout.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/task-diff.argv.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/task-diff.rc.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/task-diff.stderr.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/gates/task-diff.stdout.txt
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/policies/golden-policy-all-off.yaml
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/policies/golden-policy-t06-a2-default-presence-isolated.yaml
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/policies/golden-policy-t06-a2-pk-nullability-isolated.yaml
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/policies/golden-policy-t06-a3-null-drop-state-isolated.yaml
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/policies/golden-policy-t06-a4-provider-defaults-isolated.yaml
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/policies/golden-policy-t06-a5-char-length-isolated.yaml
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/policies/golden-policy-t06-a5-varchar-length-isolated.yaml
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/policies/golden-policy-t06-a7-column-charset-isolated.yaml
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/policies/golden-policy-t06-a7-column-collation-isolated.yaml
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/policies/golden-policy-t06-a7-column-match-isolated.yaml
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/policies/golden-policy-t06-a7-table-collation-optional.yaml
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/policies/golden-policy-t06-a7-table-collation-required.yaml
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/policies/golden-policy-t06-a8-column-comment-required.yaml
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/policies/golden-policy-t06-a8-table-comment-length.yaml
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/policies/golden-policy-t06-a8-table-comment-required.yaml
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/policies/golden-policy-t06-a9-audit-columns-isolated.yaml
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/policies/golden-policy-t06-pk-presence-isolated.yaml
+A	docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/policies/golden-policy-t06-pk-required-false.yaml
+M	scripts/README.md
+M	scripts/ddl_golden.py
+M	scripts/test_ddl_golden.py
+M	testdata/ddl-golden/T06.json

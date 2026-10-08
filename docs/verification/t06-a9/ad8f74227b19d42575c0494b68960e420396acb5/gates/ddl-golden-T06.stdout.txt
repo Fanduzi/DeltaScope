@@ -1,0 +1,4 @@
+[ddl-golden] task=T06 head=ad8f74227b19 cases=256 passed=256 assertions=6179
+[ddl-golden] artifact=/private/tmp/ds-t06-a9-r1/golden/T06/artifact.json
+[ddl-golden] PASS
+(observed terminal tail; complete per-case stdout/stderr/rc live under cases/ and artifact.json)

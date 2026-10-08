@@ -1,0 +1,7 @@
+== control ==
+[ddl-golden] artifact valid
+control rc=0
+
+== mutant: statement_kind dropped (mysql x1, tidb x2) ==
+[ddl-golden] artifact valid
+mutant rc=0
