@@ -1,0 +1,1 @@
+gofmt -l internal/infrastructure/parser/tidb/extractor_t06a9_test.go internal/application/audit/coverage_t06a9_test.go pkg/deltascope/audit_columns_t06a9_test.go internal/interfaces/http/audit_columns_t06a9_test.go

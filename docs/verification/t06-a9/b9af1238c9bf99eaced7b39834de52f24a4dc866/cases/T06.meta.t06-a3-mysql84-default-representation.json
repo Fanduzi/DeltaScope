@@ -1,0 +1,463 @@
+{
+  "case_id": "T06.meta.t06-a3-mysql84-default-representation",
+  "kind": "cli_metadata",
+  "cli_case": "t06-a3-mysql84-default-representation",
+  "anchor": "mysql84",
+  "dialect": "mysql",
+  "input_sql": "CREATE TABLE t (a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '<nil>');",
+  "policy_profile": "t06-a2-default-presence-isolated",
+  "policy_path": "/private/tmp/ds-t06-a9-proof/T06/golden-policy-t06-a2-default-presence-isolated.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "schema": "golden"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "statement_sql": [
+      "CREATE TABLE t (a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '<nil>');"
+    ],
+    "statement_indices": [
+      0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.column.default.require",
+        "level": "blocker"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 0,
+        "rule_id": "ddl.column.default.require",
+        "metadata": {
+          "table": "t",
+          "column": "a",
+          "type": "varchar(8)"
+        }
+      }
+    ],
+    "finding_locations": [
+      {
+        "index": 0,
+        "line": 1,
+        "column": 1
+      }
+    ],
+    "finding_message": "column \"a\" should define a default value",
+    "instance_facts": {
+      "sql_require_primary_key": "OFF",
+      "sql_generate_invisible_primary_key": "OFF",
+      "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:8.4.10",
+      "image_digest": "mysql@sha256:c592c15aaf4a1961e15d82eb31ea5987dda862d1c4b1e93424438c0e91dc1f8d",
+      "container": "deltascope-ddl-golden-mysql84",
+      "reachable": true,
+      "version": "8.4.10"
+    },
+    "setup": [
+      {
+        "name": "ensure t absent",
+        "sql": "DROP TABLE IF EXISTS t",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "verify": [
+          {
+            "assert": "t absent before audit",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ]
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit did not create t",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "0",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      }
+    ],
+    "execute": [
+      {
+        "name": "driver applies the audited create",
+        "sql": "CREATE TABLE t (a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '<nil>');",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      }
+    ],
+    "structure": [
+      {
+        "assert": "exactly one user table",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "1",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "exactly four user columns",
+        "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "4",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "four varchar(8) columns in declared order",
+        "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "a:varchar:1:YES,b:varchar:2:YES,c:varchar:3:YES,d:varchar:4:YES",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "all four varchar lengths",
+        "sql": "SELECT GROUP_CONCAT(CHARACTER_MAXIMUM_LENGTH ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "8,8,8,8",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "no primary key constraint",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+        "rc": 0,
+        "output": "0",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "default null flags and raw bytes",
+        "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COLUMN_DEFAULT IS NULL, IFNULL(HEX(COLUMN_DEFAULT),'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      }
+    ],
+    "teardown": [
+      {
+        "name": "drop fixture",
+        "sql": "DROP TABLE IF EXISTS t",
+        "rc": 0,
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "verify": [
+          {
+            "assert": "no residual t",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ]
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t (a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '\\u003cnil\\u003e');\",\"normalized_sql\":\"CREATE TABLE t (a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '\\u003cnil\\u003e')\",\"findings\":[{\"rule_id\":\"ddl.column.default.require\",\"level\":\"blocker\",\"message\":\"column \\\"a\\\" should define a default value\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"add an explicit DEFAULT clause or disable the rule for this policy\",\"metadata\":{\"column\":\"a\",\"table\":\"t\",\"type\":\"varchar(8)\"},\"explanation\":{\"summary\":\"Require DDL column default require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"add an explicit DEFAULT clause or disable the rule for this policy\"}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.4.10\",\"major\":8,\"minor\":4,\"patch\":10,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t (a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '<nil>');",
+          "normalized_sql": "CREATE TABLE t (a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '<nil>')",
+          "findings": [
+            {
+              "rule_id": "ddl.column.default.require",
+              "level": "blocker",
+              "message": "column \"a\" should define a default value",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "add an explicit DEFAULT clause or disable the rule for this policy",
+              "metadata": {
+                "column": "a",
+                "table": "t",
+                "type": "varchar(8)"
+              },
+              "explanation": {
+                "summary": "Require DDL column default require",
+                "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "add an explicit DEFAULT clause or disable the rule for this policy"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "8.4.10",
+        "major": 8,
+        "minor": 4,
+        "patch": 10,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.4.10",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "8.4.10"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "8.4.10",
+        "major": 8,
+        "minor": 4,
+        "patch": 10,
+        "source": "observed",
+        "validated_range": true
+      }
+    },
+    "instance_facts": {
+      "sql_require_primary_key": "OFF",
+      "sql_generate_invisible_primary_key": "OFF",
+      "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.4.10' expected_contains='8.4.10'"
+    },
+    {
+      "name": "setup ensure t absent return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "setup ensure t absent: t absent before audit",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "instance fact sql_require_primary_key",
+      "ok": true,
+      "detail": "sql_require_primary_key='OFF' expected='OFF'"
+    },
+    {
+      "name": "instance fact sql_generate_invisible_primary_key",
+      "ok": true,
+      "detail": "sql_generate_invisible_primary_key='OFF' expected='OFF'"
+    },
+    {
+      "name": "instance fact show_gipk_in_create_table_and_information_schema",
+      "ok": true,
+      "detail": "show_gipk_in_create_table_and_information_schema='ON' expected='ON'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=1"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=[\"CREATE TABLE t (a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '<nil>');\"] expected=[\"CREATE TABLE t (a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '<nil>');\"]"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.column.default.require', 'blocker')] expected=[(0, 'ddl.column.default.require', 'blocker')]"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.column.default.require')",
+      "ok": true,
+      "detail": "findings=[{'column': 'a', 'table': 't', 'type': 'varchar(8)'}] expected_subset={'table': 't', 'column': 'a', 'type': 'varchar(8)'}"
+    },
+    {
+      "name": "finding location index=0",
+      "ok": true,
+      "detail": "locations=[{'line': 1, 'column': 1}] expected={'index': 0, 'line': 1, 'column': 1}"
+    },
+    {
+      "name": "fail_on_triggered",
+      "ok": true,
+      "detail": "fail_on_triggered=True"
+    },
+    {
+      "name": "post-verify audit did not create t",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute driver applies the audited create return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "structure exactly one user table",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "structure exactly four user columns",
+      "ok": true,
+      "detail": "rc=0 output='4' expected='4'"
+    },
+    {
+      "name": "structure four varchar(8) columns in declared order",
+      "ok": true,
+      "detail": "rc=0 output='a:varchar:1:YES,b:varchar:2:YES,c:varchar:3:YES,d:varchar:4:YES' expected='a:varchar:1:YES,b:varchar:2:YES,c:varchar:3:YES,d:varchar:4:YES'"
+    },
+    {
+      "name": "structure all four varchar lengths",
+      "ok": true,
+      "detail": "rc=0 output='8,8,8,8' expected='8,8,8,8'"
+    },
+    {
+      "name": "structure no primary key constraint",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "structure default null flags and raw bytes",
+      "ok": true,
+      "detail": "rc=0 output='a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E' expected='a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E'"
+    },
+    {
+      "name": "teardown drop fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "teardown drop fixture: no residual t",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ds-t06-a9-proof/T06/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "CREATE TABLE t (a VARCHAR(8), b VARCHAR(8) DEFAULT NULL, c VARCHAR(8) DEFAULT 'NULL', d VARCHAR(8) DEFAULT '<nil>');",
+    "--config",
+    "/private/tmp/ds-t06-a9-proof/T06/golden-policy-t06-a2-default-presence-isolated.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23384",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T06_GOLDEN_PW",
+    "--schema",
+    "golden",
+    "--fail-on",
+    "blocker"
+  ]
+}

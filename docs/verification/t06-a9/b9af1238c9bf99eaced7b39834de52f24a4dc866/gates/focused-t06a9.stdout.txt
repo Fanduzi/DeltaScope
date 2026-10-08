@@ -1,0 +1,141 @@
+=== RUN   TestT06A9TimestampSpellingNormalization
+=== RUN   TestT06A9TimestampSpellingNormalization/mysql/current_timestamp
+=== RUN   TestT06A9TimestampSpellingNormalization/mysql/current_timestamp_parens
+=== RUN   TestT06A9TimestampSpellingNormalization/mysql/now
+=== RUN   TestT06A9TimestampSpellingNormalization/mysql/localtime
+=== RUN   TestT06A9TimestampSpellingNormalization/mysql/localtimestamp
+=== RUN   TestT06A9TimestampSpellingNormalization/mysql/on_update_now
+=== RUN   TestT06A9TimestampSpellingNormalization/mysql/literal_default
+=== RUN   TestT06A9TimestampSpellingNormalization/mysql/numeric_default
+=== RUN   TestT06A9TimestampSpellingNormalization/tidb/current_timestamp
+=== RUN   TestT06A9TimestampSpellingNormalization/tidb/current_timestamp_parens
+=== RUN   TestT06A9TimestampSpellingNormalization/tidb/now
+=== RUN   TestT06A9TimestampSpellingNormalization/tidb/localtime
+=== RUN   TestT06A9TimestampSpellingNormalization/tidb/localtimestamp
+=== RUN   TestT06A9TimestampSpellingNormalization/tidb/on_update_now
+=== RUN   TestT06A9TimestampSpellingNormalization/tidb/literal_default
+=== RUN   TestT06A9TimestampSpellingNormalization/tidb/numeric_default
+--- PASS: TestT06A9TimestampSpellingNormalization (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/mysql/current_timestamp (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/mysql/current_timestamp_parens (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/mysql/now (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/mysql/localtime (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/mysql/localtimestamp (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/mysql/on_update_now (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/mysql/literal_default (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/mysql/numeric_default (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/tidb/current_timestamp (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/tidb/current_timestamp_parens (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/tidb/now (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/tidb/localtime (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/tidb/localtimestamp (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/tidb/on_update_now (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/tidb/literal_default (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/tidb/numeric_default (0.00s)
+=== RUN   TestT06A9TimestampASTNodeKind
+--- PASS: TestT06A9TimestampASTNodeKind (0.00s)
+=== RUN   TestT06A9SpecRoleFlags
+=== RUN   TestT06A9SpecRoleFlags/mysql/A-complete-pair
+=== RUN   TestT06A9SpecRoleFlags/mysql/B-missing-created
+=== RUN   TestT06A9SpecRoleFlags/mysql/C-missing-updated
+=== RUN   TestT06A9SpecRoleFlags/mysql/E-now-spelling
+=== RUN   TestT06A9SpecRoleFlags/mysql/fsp-preserved
+=== RUN   TestT06A9SpecRoleFlags/tidb/A-complete-pair
+=== RUN   TestT06A9SpecRoleFlags/tidb/B-missing-created
+=== RUN   TestT06A9SpecRoleFlags/tidb/C-missing-updated
+=== RUN   TestT06A9SpecRoleFlags/tidb/E-now-spelling
+=== RUN   TestT06A9SpecRoleFlags/tidb/fsp-preserved
+--- PASS: TestT06A9SpecRoleFlags (0.00s)
+    --- PASS: TestT06A9SpecRoleFlags/mysql/A-complete-pair (0.00s)
+    --- PASS: TestT06A9SpecRoleFlags/mysql/B-missing-created (0.00s)
+    --- PASS: TestT06A9SpecRoleFlags/mysql/C-missing-updated (0.00s)
+    --- PASS: TestT06A9SpecRoleFlags/mysql/E-now-spelling (0.00s)
+    --- PASS: TestT06A9SpecRoleFlags/mysql/fsp-preserved (0.00s)
+    --- PASS: TestT06A9SpecRoleFlags/tidb/A-complete-pair (0.00s)
+    --- PASS: TestT06A9SpecRoleFlags/tidb/B-missing-created (0.00s)
+    --- PASS: TestT06A9SpecRoleFlags/tidb/C-missing-updated (0.00s)
+    --- PASS: TestT06A9SpecRoleFlags/tidb/E-now-spelling (0.00s)
+    --- PASS: TestT06A9SpecRoleFlags/tidb/fsp-preserved (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	1.025s
+testing: warning: no tests to run
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	0.537s [no tests to run]
+=== RUN   TestT06A9RoleAttribution
+=== RUN   TestT06A9RoleAttribution/mysql/A-complete-pair
+=== RUN   TestT06A9RoleAttribution/mysql/E-now-spelling
+=== RUN   TestT06A9RoleAttribution/mysql/B-missing-created
+=== RUN   TestT06A9RoleAttribution/mysql/C-missing-updated
+=== RUN   TestT06A9RoleAttribution/mysql/D-missing-both
+=== RUN   TestT06A9RoleAttribution/mysql/updated_never_covers_created
+=== RUN   TestT06A9RoleAttribution/mysql/roles_follow_facts_not_names
+=== RUN   TestT06A9RoleAttribution/mysql/canonical_names_not_forced
+=== RUN   TestT06A9RoleAttribution/mysql/multi_statement_attribution
+=== RUN   TestT06A9RoleAttribution/tidb/A-complete-pair
+=== RUN   TestT06A9RoleAttribution/tidb/E-now-spelling
+=== RUN   TestT06A9RoleAttribution/tidb/B-missing-created
+=== RUN   TestT06A9RoleAttribution/tidb/C-missing-updated
+=== RUN   TestT06A9RoleAttribution/tidb/D-missing-both
+=== RUN   TestT06A9RoleAttribution/tidb/updated_never_covers_created
+=== RUN   TestT06A9RoleAttribution/tidb/roles_follow_facts_not_names
+=== RUN   TestT06A9RoleAttribution/tidb/canonical_names_not_forced
+=== RUN   TestT06A9RoleAttribution/tidb/multi_statement_attribution
+--- PASS: TestT06A9RoleAttribution (0.06s)
+    --- PASS: TestT06A9RoleAttribution/mysql/A-complete-pair (0.01s)
+    --- PASS: TestT06A9RoleAttribution/mysql/E-now-spelling (0.00s)
+    --- PASS: TestT06A9RoleAttribution/mysql/B-missing-created (0.00s)
+    --- PASS: TestT06A9RoleAttribution/mysql/C-missing-updated (0.00s)
+    --- PASS: TestT06A9RoleAttribution/mysql/D-missing-both (0.00s)
+    --- PASS: TestT06A9RoleAttribution/mysql/updated_never_covers_created (0.00s)
+    --- PASS: TestT06A9RoleAttribution/mysql/roles_follow_facts_not_names (0.00s)
+    --- PASS: TestT06A9RoleAttribution/mysql/canonical_names_not_forced (0.00s)
+    --- PASS: TestT06A9RoleAttribution/mysql/multi_statement_attribution (0.00s)
+    --- PASS: TestT06A9RoleAttribution/tidb/A-complete-pair (0.00s)
+    --- PASS: TestT06A9RoleAttribution/tidb/E-now-spelling (0.00s)
+    --- PASS: TestT06A9RoleAttribution/tidb/B-missing-created (0.00s)
+    --- PASS: TestT06A9RoleAttribution/tidb/C-missing-updated (0.00s)
+    --- PASS: TestT06A9RoleAttribution/tidb/D-missing-both (0.00s)
+    --- PASS: TestT06A9RoleAttribution/tidb/updated_never_covers_created (0.00s)
+    --- PASS: TestT06A9RoleAttribution/tidb/roles_follow_facts_not_names (0.00s)
+    --- PASS: TestT06A9RoleAttribution/tidb/canonical_names_not_forced (0.00s)
+    --- PASS: TestT06A9RoleAttribution/tidb/multi_statement_attribution (0.00s)
+=== RUN   TestT06A9EntryCounterControls
+=== RUN   TestT06A9EntryCounterControls/mysql/on_update_without_default
+=== RUN   TestT06A9EntryCounterControls/mysql/literal_default_not_current_timestamp
+=== RUN   TestT06A9EntryCounterControls/mysql/non_time_type_flag_does_not_count
+=== RUN   TestT06A9EntryCounterControls/tidb/on_update_without_default
+=== RUN   TestT06A9EntryCounterControls/tidb/literal_default_not_current_timestamp
+=== RUN   TestT06A9EntryCounterControls/tidb/non_time_type_flag_does_not_count
+--- PASS: TestT06A9EntryCounterControls (0.02s)
+    --- PASS: TestT06A9EntryCounterControls/mysql/on_update_without_default (0.00s)
+    --- PASS: TestT06A9EntryCounterControls/mysql/literal_default_not_current_timestamp (0.00s)
+    --- PASS: TestT06A9EntryCounterControls/mysql/non_time_type_flag_does_not_count (0.00s)
+    --- PASS: TestT06A9EntryCounterControls/tidb/on_update_without_default (0.00s)
+    --- PASS: TestT06A9EntryCounterControls/tidb/literal_default_not_current_timestamp (0.00s)
+    --- PASS: TestT06A9EntryCounterControls/tidb/non_time_type_flag_does_not_count (0.00s)
+=== RUN   TestT06A9ParamsAndDefaults
+=== RUN   TestT06A9ParamsAndDefaults/mysql/required_false_silent
+=== RUN   TestT06A9ParamsAndDefaults/mysql/disabled_silent
+=== RUN   TestT06A9ParamsAndDefaults/mysql/non_bool_required_errors
+=== RUN   TestT06A9ParamsAndDefaults/mysql/default_level_warning
+=== RUN   TestT06A9ParamsAndDefaults/tidb/required_false_silent
+=== RUN   TestT06A9ParamsAndDefaults/tidb/disabled_silent
+=== RUN   TestT06A9ParamsAndDefaults/tidb/non_bool_required_errors
+=== RUN   TestT06A9ParamsAndDefaults/tidb/default_level_warning
+--- PASS: TestT06A9ParamsAndDefaults (0.02s)
+    --- PASS: TestT06A9ParamsAndDefaults/mysql/required_false_silent (0.00s)
+    --- PASS: TestT06A9ParamsAndDefaults/mysql/disabled_silent (0.00s)
+    --- PASS: TestT06A9ParamsAndDefaults/mysql/non_bool_required_errors (0.00s)
+    --- PASS: TestT06A9ParamsAndDefaults/mysql/default_level_warning (0.00s)
+    --- PASS: TestT06A9ParamsAndDefaults/tidb/required_false_silent (0.00s)
+    --- PASS: TestT06A9ParamsAndDefaults/tidb/disabled_silent (0.00s)
+    --- PASS: TestT06A9ParamsAndDefaults/tidb/non_bool_required_errors (0.00s)
+    --- PASS: TestT06A9ParamsAndDefaults/tidb/default_level_warning (0.00s)
+=== RUN   TestT06A9DerivedStateConsumption
+=== RUN   TestT06A9DerivedStateConsumption/mysql
+=== RUN   TestT06A9DerivedStateConsumption/tidb
+--- PASS: TestT06A9DerivedStateConsumption (0.00s)
+    --- PASS: TestT06A9DerivedStateConsumption/mysql (0.00s)
+    --- PASS: TestT06A9DerivedStateConsumption/tidb (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	1.593s

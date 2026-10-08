@@ -1,0 +1,1 @@
+./deltascope audit --config policies/P_ON.yaml --dialect tidb --format json --fail-on blocker --file sql/E-now-spelling.sql

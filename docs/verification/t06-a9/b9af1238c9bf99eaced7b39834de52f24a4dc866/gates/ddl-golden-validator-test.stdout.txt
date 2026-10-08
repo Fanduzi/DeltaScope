@@ -1,0 +1,376 @@
+PASS valid control artifact passes
+PASS missing required case rejected
+PASS zero cases rejected
+PASS unreachable required DB rejected
+PASS version mismatch rejected
+PASS missing image digest rejected
+PASS stale/missing binary rejected
+PASS binary sha mismatch rejected
+PASS hand-written PASS rejected
+PASS permission-error-as-negative rejected
+PASS residual containers rejected
+PASS shrunk denominator rejected
+PASS missing expected field rejected
+PASS deleted metadata query records rejected
+PASS failed metadata query rc rejected
+PASS non-JSON CLI stdout rejected
+PASS tampered expected+actual rejected
+PASS parsed disagreeing with stdout rejected
+PASS manifest anchors + artifact shrunk together rejected
+PASS required_case_ids + artifact cases shrunk together rejected
+PASS cli dialect removed from manifest+artifact rejected
+PASS cli_cases coverage+unsupported artifact passes
+PASS cli_cases coverage downgrade rejected
+PASS cli_cases wrong unsupported feature rejected
+PASS cli_cases paired unsupported entries pass
+PASS cli_cases swapped unsupported reasons rejected
+PASS cli_cases out-of-range unsupported index rejected
+PASS cli_cases metadata pins pass
+PASS cli_cases wrong metadata rejected
+PASS t04 evidence-gap artifact passes
+PASS t04 missing evidence gap rejected
+PASS t04 wrong gap rule_id rejected
+PASS t04 wrong required_facts rejected
+PASS t04 gap smuggled as finding rejected
+PASS t04 parsed-only gap removal rejected
+PASS t04 tampered post_verify rejected
+PASS t04 password in command rejected
+PASS t04 error-case exit mismatch rejected
+PASS t04 error-case missing stderr marker rejected
+PASS t04 policy sha mismatch rejected
+PASS t04 unknown policy profile rejected
+PASS t04 tampered enabled_rules rejected
+PASS t04 emptied policy rejected
+PASS t04 re-leveled policy rejected
+PASS t04 re-paramed policy rejected
+PASS t04 wrong --config profile rejected
+PASS t04 policy without sha256 rejected
+PASS t04 mismatched metadata port rejected
+PASS t04 mismatched metadata host rejected
+PASS t04 duplicate enabled rejected
+PASS t04 duplicate level rejected
+PASS t04 duplicate params block rejected
+PASS t04 duplicate param key rejected
+PASS t04 rule before rules header rejected
+PASS t04 duplicate rules header rejected
+PASS t04b version artifact passes
+PASS t04b tampered target_raw rejected
+PASS t04b tampered target_canonical rejected
+PASS t04b canonical inconsistent with raw rejected
+PASS t04b tidb compat prefix 8.0.11 rejected
+PASS t04b request/observed conflict as success rejected
+PASS t04b out-of-range recorded complete rejected
+PASS t04b missing version_evidence rejected
+PASS t04b removed --target-version argv rejected
+PASS t04b provider error laundered as gap result rejected
+PASS t04b-r1 deleted instance_facts rejected
+PASS t04b-r1 tampered max-index-length rejected
+PASS t04b-r1 emptied instance_facts rejected
+PASS t04b-r1 mismatch without observed banner rejected
+PASS t04b-r1 mismatch canonical prefix-taken rejected
+PASS t04b-r1 product mismatch as success rejected
+PASS t04b-r1 malformed target as connection failure rejected
+PASS t04b-r1 8.0.46 missing minor=0 rejected
+PASS t04b-r1 8.5.0 missing patch rejected
+PASS t04b-r1 component/canonical drift rejected
+PASS t05 ordered-state artifact passes
+PASS t05 deleted middle statement rejected
+PASS t05 missing-column negative as pass rejected
+PASS t05 dependent-after-unsupported as complete rejected
+PASS t05 finding moved to wrong statement rejected
+PASS t05 finding metadata column changed rejected
+PASS t05 audit-before query removed rejected
+PASS t05 audit-after query altered rejected
+PASS t05 structure query removed rejected
+PASS t05 structure answer altered rejected
+PASS t05 failed fixture execute as success rejected
+PASS t05 teardown residual verify removed rejected
+PASS t05 profile name colliding with default rejected
+PASS t05 rename statement dropped rejected
+PASS t05 rename rebound at index rejected
+PASS t05 rename old source still present rejected
+PASS t05 rename destination existence flipped rejected
+PASS t05 rename destination members wrong rejected
+PASS t05 rename destination precondition dropped rejected
+PASS t05 rename execute failure as pass rejected
+PASS t05 unqualified destination in src rejected
+PASS t05 unqualified session database flipped rejected
+PASS t05 required rename case removed rejected
+PASS a3 valid synthetic control
+PASS a3 missing DROP statement rejected
+PASS a3 same-length DROP replacement rejected
+PASS a3 missing DROP execute rejected
+PASS a3 failed DROP claiming pass rejected
+PASS a3 missing intermediate verify rejected
+PASS a3 intermediate verify output mutation rejected
+PASS a3 intermediate verify rc mutation rejected
+PASS a3 intermediate verify sql mutation rejected
+PASS a3 intermediate verify assert mutation rejected
+PASS a3 intermediate verify moved after recreate rejected
+PASS a3 stale structure oracle 1 rejected
+PASS a3 stale structure oracle 2 rejected
+PASS a3 stale structure oracle 3 rejected
+PASS a3 stale structure oracle 4 rejected
+PASS a3 stale structure oracle 5 rejected
+PASS a3 missing old-column blocker rejected
+PASS a3 old-column blocker identity rejected
+PASS a3 old-column blocker wrong statement rejected
+PASS a3 nested finding owner mismatch rejected
+PASS a3 statement finding moved to global rejected
+PASS a3 unknown DROP gap deleted rejected
+PASS a3 driver success cannot erase policy blocker
+PASS a3 permission error cannot replace unknown-table error
+PASS a3 missing same-call IF EXISTS note rejected
+PASS a3 required case missing rejected
+PASS a3 manifest and artifact shrunk together rejected
+PASS a3 intermediate oracle removed on both sides rejected
+PASS a3 wrong profile cannot substitute five-rule policy
+PASS a3 DROP rule missing from profile rejected
+PASS a3 four loaded rules rejected
+PASS a3 runner queries absence before recreating
+PASS a3 runner-produced synthetic case validates
+PASS a4 valid synthetic control
+PASS a4 intermediate VARCHAR(20) statement deleted rejected
+PASS a4 intermediate 20 rewritten as 10 rejected
+PASS a4 intermediate 20 column probe rewritten as 10 rejected
+PASS a4 fourth statement disagrees with the 15 post-state rejected
+PASS a4 fourth-path shrink source no longer 20 rejected
+PASS a4 widen-then-25 uses the old 20 instead of 30 rejected
+PASS a4 shrink finding on the wrong statement rejected
+PASS a4 shrink finding on the wrong column rejected
+PASS a4 source and target lengths swapped rejected
+PASS a4 policy reject recorded as a native driver error rejected
+PASS a4 offline create gap deleted rejected
+PASS a4 offline create gap forged rejected
+PASS a4 per-step verify deleted rejected
+PASS a4 per-step verify shifted rejected
+PASS a4 omitted default and comment left behind rejected
+PASS a4 primary key not-null oracle lost rejected
+PASS a4 tidb primary-key signedness marker dropped rejected
+PASS a4 tidb primary-key signedness recorded as success rejected
+PASS a4 tidb primary-key signedness successor gap deleted rejected
+PASS a4 manifest and artifact shrunk together rejected
+PASS a4 wrong profile cannot substitute four-rule policy
+PASS a4 compatibility rule removed from profile rejected
+PASS a4 loaded rule count other than 4 rejected
+PASS a5 valid synthetic control
+PASS a5 rename statement deleted rejected
+PASS a5 rename statement shifted rejected
+PASS a5 old column still present rejected
+PASS a5 length after rename is not 10 rejected
+PASS a5 length after modify is not 20 rejected
+PASS a5 idx_c renamed instead of its columns rejected
+PASS a5 composite key order reversed rejected
+PASS a5 primary key not-null lost rejected
+PASS a5 old-name negative disguised as a permission error rejected
+PASS a5 conflict finding missing rejected
+PASS a5 conflict finding on the wrong statement rejected
+PASS a5 missing version recorded as complete rejected
+PASS a5 out-of-range version recorded as complete rejected
+PASS a5 known 5.7 recorded as supported rejected
+PASS a5 version blocker mixed into the native channel rejected
+PASS a5 profile dropped the version rule rejected
+PASS a5 profile dropped the change target rule rejected
+PASS a5 profile dropped the rename target rule rejected
+PASS a5 manifest and artifact shrunk together rejected
+PASS a5 loaded rule count other than 11 rejected
+PASS a6 valid synthetic control
+PASS a6 DROP statement deleted rejected
+PASS a6 DROP statement replaced rejected
+PASS a6 DROP statement shifted rejected
+PASS a6 DROP execute step deleted rejected
+PASS a6 failed DROP claiming pass rejected
+PASS a6 missing immediate DROP verify rejected
+PASS a6 DROP verify moved after MODIFY rejected
+PASS a6 obsolete still present rejected
+PASS a6 keep_c lost rejected
+PASS a6 column order reversed rejected
+PASS a6 length 10 recorded as 20 rejected
+PASS a6 length 20 recorded as 10 rejected
+PASS a6 primary key lost rejected
+PASS a6 unrelated index lost rejected
+PASS a6 unrelated key order reversed rejected
+PASS a6 readd reused the old definition rejected
+PASS a6 old-column finding missing rejected
+PASS a6 old-column finding on the wrong statement rejected
+PASS a6 old-column finding names the wrong column rejected
+PASS a6 old-column negative disguised as a permission error rejected
+PASS a6 offline CREATE gap deleted rejected
+PASS a6 profile dropped the drop existence rule rejected
+PASS a6 profile dropped the compatibility rule rejected
+PASS a6 profile dropped the index column rule rejected
+PASS a6 manifest and artifact shrunk together rejected
+PASS a6 manifest and artifact dropped the intermediate oracle rejected
+PASS a6 loaded rule count other than 6 rejected
+PASS t06 valid synthetic control
+PASS t06 metadata case deleted on both sides rejected
+PASS t06 anchor deleted on both sides rejected
+PASS t06 inline PK rewritten as no-PK on both sides rejected
+PASS t06 table-level PK rewritten as UNIQUE on manifest rejected
+PASS t06 no-PK recorded as pass rejected
+PASS t06 wrong finding rule_id rejected
+PASS t06 blocker downgraded to warning rejected
+PASS t06 finding metadata table swapped rejected
+PASS t06 finding attributed to another statement rejected
+PASS t06 finding message rewritten rejected
+PASS t06 normalized SQL drifted rejected
+PASS t06 parsed disagreeing with raw stdout rejected
+PASS t06 isolated profile swapped for all-off rejected
+PASS t06 isolated profile weakened to required=false rejected
+PASS t06 required-false profile strengthened to true rejected
+PASS t06 tampered policy path in command rejected
+PASS t06 product-side create claimed rejected
+PASS t06 absence re-check deleted rejected
+PASS t06 native CREATE failure reported as legal rejected
+PASS t06 primary key constraint count erased rejected
+PASS t06 primary key member renamed rejected
+PASS t06 member query deleted on both sides rejected
+PASS t06 no-PK column recorded as NOT NULL rejected
+PASS t06 teardown deleted rejected
+PASS t06 driver create step skipped rejected
+PASS t06 connectivity stderr recorded as result rejected
+PASS t06 failed cleanup accepted rejected
+PASS t06 runner reads GIPK facts on the no-PK reject path
+PASS t06 runner-produced no-PK case validates
+PASS t06 mysql84 record re-keyed as mysql57 rejected
+PASS t06 mysql84 record re-keyed as tidb85 rejected
+PASS t06 all metadata slots refilled variant-wise rejected
+PASS t06 metadata slot filled by offline record rejected
+PASS t06 all metadata slots demoted to offline records rejected
+PASS t06 required-false record in rule-off slot rejected
+PASS t06 rule-off record in required-false slot rejected
+PASS t06 duplicate executed case rejected
+PASS t06 manifest duplicate declared case id rejected
+PASS t06 manifest extra declared case rejected
+PASS t06a2 table-level slot refilled by inline record rejected
+PASS t06a2 composite members recorded still-nullable rejected
+PASS t06a2 spare recorded not-null rejected
+PASS t06a2 primary key member order reversed rejected
+PASS t06a2 explicit-null conflict recorded as pass rejected
+PASS t06a2 driver success recorded for explicit-null negative rejected
+PASS t06a2 permission error masquerading as 1171 rejected
+PASS t06a2 DEFAULT NULL recorded as missing default rejected
+PASS t06a2 absent DEFAULT recorded as pass rejected
+PASS t06a2 case deleted on both sides rejected
+PASS t06a2 mysql84 record re-keyed as mysql57 rejected
+PASS t06a2 metadata slot demoted to offline record rejected
+PASS t06a2 isolated policy profile swapped rejected
+PASS t06a3 sql-null record in no-default slot rejected
+PASS t06a3 text-null record in sql-null slot rejected
+PASS t06a3 SQL NULL recorded as literal rejected
+PASS t06a3 literal NULL recorded as SQL NULL rejected
+PASS t06a3 string literal hex swapped rejected
+PASS t06a3 literal bytes corrupted rejected
+PASS t06a3 default-probe query deleted on both sides rejected
+PASS t06a3 mid-drop column check deleted on both sides rejected
+PASS t06a3 drop-state collapsed to single statement rejected
+PASS t06a3 drop statement lost but pass rejected
+PASS t06a3 revived gap hidden under complete rejected
+PASS t06a3 mysql84 drop-state re-keyed as mysql57 rejected
+PASS t06a3 metadata slot demoted to offline record rejected
+PASS t06a3 drop-state profile swapped rejected
+PASS t06a3 case deleted on both sides rejected
+PASS t06a4 A restored to old pass/complete rejected
+PASS t06a4 B gap deleted but review kept rejected
+PASS t06a4 required_facts order swapped rejected
+PASS t06a4 gap misattributed to statement 0 rejected
+PASS t06a4 null-control record in text-null slot rejected
+PASS t06a4 text-null record in null-control slot rejected
+PASS t06a4 literal bytes recorded as SQL NULL rejected
+PASS t06a4 SQL NULL recorded as literal bytes rejected
+PASS t06a4 setup CREATE step missing on both sides rejected
+PASS t06a4 setup CREATE moved into audited input rejected
+PASS t06a4 post-audit unchanged queries deleted rejected
+PASS t06a4 mid-drop structure check deleted on both sides rejected
+PASS t06a4 mysql84 record re-keyed as mysql57 rejected
+PASS t06a4 metadata slot demoted to offline record rejected
+PASS t06a4 provider profile swapped rejected
+PASS t06a4 case deleted on both sides rejected
+PASS t06a5 at-limit recorded as over-limit rejected
+PASS t06a5 over-limit recorded as safe rejected
+PASS t06a5 limit/actual swapped rejected
+PASS t06a5 finding metadata removed rejected
+PASS t06a5 char slot carrying varchar rule rejected
+PASS t06a5 finding column misattributed rejected
+PASS t06a5 finding statement misattributed rejected
+PASS t06a5 above record in off slot rejected
+PASS t06a5 off record in above slot rejected
+PASS t06a5 char record in varchar slot rejected
+PASS t06a5 isolated profile limit weakened rejected
+PASS t06a5 isolated profile level weakened rejected
+PASS t06a5 char profile bound to varchar rule rejected
+PASS t06a5 characters recorded as octets rejected
+PASS t06a5 collation recorded as general_ci rejected
+PASS t06a5 char recorded as varchar data type rejected
+PASS t06a5 rejected product skipped native replay rejected
+PASS t06a5 driver failure disguised as success rejected
+PASS t06a5 chars/octets query deleted on both sides rejected
+PASS t06a5 post-audit absence check deleted rejected
+PASS t06a5 pre-audit absence verify deleted rejected
+PASS t06a5 teardown residue check deleted rejected
+PASS t06a5 mysql84 record re-keyed as mysql57 rejected
+PASS t06a5 metadata slot demoted to offline record rejected
+PASS t06a5 char case under varchar profile rejected
+PASS t06a5 case deleted on both sides rejected
+PASS t06a7 charset finding reported as collation rule rejected
+PASS t06a7 collation finding reported as charset rule rejected
+PASS t06a7 single-declaration reject recorded as pass rejected
+PASS t06a7 native success recorded as failure rejected
+PASS t06a7 unknown-collation error substituted for mismatch rejected
+PASS t06a7 permission error substituted for mismatch rejected
+PASS t06a7 column collation recorded as table collation rejected
+PASS t06a7 table collation recorded as column collation rejected
+PASS t06a7 inherited record replaced by explicit declaration rejected
+PASS t06a7 table rule reported as column collation rule rejected
+PASS t06a7 table finding carrying column metadata rejected
+PASS t06a7 retired unsupported evidence reappearing rejected
+PASS t06a7 disabled rule restoring incomplete coverage rejected
+PASS t06a7 schema-boundary statement smuggled into table slot rejected
+PASS t06a7 optional profile carrying require_explicit rejected
+PASS t06a7 charset profile allowlist weakened rejected
+PASS t06a7 same-profile pass record swapped rejected
+PASS t06a7 optional slot filled by required record rejected
+PASS t06a7 mysql84 record re-keyed as mysql57 rejected
+PASS t06a7 metadata slot demoted to offline record rejected
+PASS t06a7 case deleted on both sides rejected
+PASS t06a8 mysql-column-empty recorded as old pass rejected
+PASS t06a8 mysql-column-blank recorded as old pass rejected
+PASS t06a8 three runes reported as nine bytes rejected
+PASS t06a8 at-limit length recorded as reject rejected
+PASS t06a8 above-limit length recorded as pass rejected
+PASS t06a8 rune count recorded as byte count rejected
+PASS t06a8 table finding reported as column rule rejected
+PASS t06a8 column finding reported as table rule rejected
+PASS t06a8 comment re-quoted rejected
+PASS t06a8 inner apostrophe dropped rejected
+PASS t06a8 trailing space added to comment rejected
+PASS t06a8 chars and octets swapped rejected
+PASS t06a8 comment hex mangled rejected
+PASS t06a8 product reject skipped driver replay rejected
+PASS t06a8 length reject skipped driver replay rejected
+PASS t06a8 comment stats query deleted on both sides rejected
+PASS t06a8 absence and cleanup queries deleted rejected
+PASS t06a8 mysql84 record re-keyed as mysql57 rejected
+PASS t06a8 metadata slot demoted to offline record rejected
+PASS t06a8 table case under column profile rejected
+PASS t06a8 length profile swapped for all-off rejected
+PASS t06a8 case deleted on both sides rejected
+PASS t06a9 missing-both collapsed to one finding rejected
+PASS t06a9 missing-both recorded as two created rejected
+PASS t06a9 finding kinds cross-swapped rejected
+PASS t06a9 finding smuggled into global rejected
+PASS t06a9 missing-created recorded as pass rejected
+PASS t06a9 now-spelling recorded with stale finding rejected
+PASS t06a9 disabled control forged with finding rejected
+PASS t06a9 isolated profile swapped for all-off rejected
+PASS t06a9 stored table missing ON UPDATE rejected
+PASS t06a9 created/updated roles swapped in storage rejected
+PASS t06a9 both columns claiming updated role rejected
+PASS t06a9 fsp=3 stored columns smuggled past rejected
+PASS t06a9 non-zero-precision ON UPDATE marker rejected
+PASS t06a9 product reject skipped driver replay rejected
+PASS t06a9 structure query deleted on both sides rejected
+PASS t06a9 mysql84 record re-keyed as mysql57 rejected
+PASS t06a9 metadata slot demoted to offline record rejected
+PASS t06a9 case deleted on both sides rejected
+contract cases=375 failures=0

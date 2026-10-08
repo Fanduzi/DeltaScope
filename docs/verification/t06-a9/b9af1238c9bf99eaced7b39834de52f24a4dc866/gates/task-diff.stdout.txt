@@ -1,0 +1,14 @@
+docs/decisions/2026-10-08-ddl-explicit-audit-time-column-proof.md
+internal/application/audit/README.md
+internal/application/audit/coverage_t06a9_test.go
+internal/infrastructure/parser/tidb/README.md
+internal/infrastructure/parser/tidb/extractor_t06a9_test.go
+internal/interfaces/http/README.md
+internal/interfaces/http/audit_columns_t06a9_test.go
+pkg/deltascope/README.md
+pkg/deltascope/audit_columns_t06a9_test.go
+scripts/ddl_golden.py
+scripts/test_ddl_golden.py
+testdata/ddl-golden/T06.json
+testdata/ddl-inventory/T06-base-traceability.md
+testdata/ddl-inventory/inventory.yaml

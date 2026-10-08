@@ -1,0 +1,1 @@
+./deltascope audit --config policies/P_OFF.yaml --dialect mysql --format json --fail-on blocker --file sql/F-disabled.sql
