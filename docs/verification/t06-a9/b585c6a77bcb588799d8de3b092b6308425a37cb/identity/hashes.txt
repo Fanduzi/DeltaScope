@@ -1,0 +1,4 @@
+artifact sha256:
+d273a741b3651e31944aa40d48f131bd3d9c6218f1cbc0f3d4c0e751ab0cbd8f  docs/verification/t06-a9/b585c6a77bcb588799d8de3b092b6308425a37cb/golden/artifact.json
+manifest sha256:
+89086106c5b7fffda6fbed8165a054b224fd328820039067762bb5d85771280c  testdata/ddl-golden/T06.json

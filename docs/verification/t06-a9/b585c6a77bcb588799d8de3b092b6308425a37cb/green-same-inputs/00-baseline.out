@@ -1,0 +1,4 @@
+VERSION()	@@collation_connection
+8.4.10	utf8mb4_0900_ai_ci
+CHARSET(EXTRA)	COLLATION(EXTRA)
+utf8mb3	utf8mb3_general_ci

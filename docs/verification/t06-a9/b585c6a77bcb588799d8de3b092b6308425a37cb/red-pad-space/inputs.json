@@ -1,0 +1,42 @@
+[
+  {
+    "group_label": "legal-0",
+    "input": "",
+    "input_hex": ""
+  },
+  {
+    "group_label": "legal-1",
+    "input": "DEFAULT_GENERATED",
+    "input_hex": "44454641554c545f47454e455241544544"
+  },
+  {
+    "group_label": "legal-2",
+    "input": "ON UPDATE CURRENT_TIMESTAMP",
+    "input_hex": "4f4e205550444154452043555252454e545f54494d455354414d50"
+  },
+  {
+    "group_label": "legal-3",
+    "input": "DEFAULT_GENERATED on update CURRENT_TIMESTAMP(0)",
+    "input_hex": "44454641554c545f47454e455241544544206f6e207570646174652043555252454e545f54494d455354414d50283029"
+  },
+  {
+    "group_label": "illegal-0",
+    "input": " ",
+    "input_hex": "20"
+  },
+  {
+    "group_label": "illegal-1",
+    "input": "default_generated ",
+    "input_hex": "64656661756c745f67656e65726174656420"
+  },
+  {
+    "group_label": "illegal-2",
+    "input": "on update current_timestamp ",
+    "input_hex": "6f6e207570646174652063757272656e745f74696d657374616d7020"
+  },
+  {
+    "group_label": "illegal-3",
+    "input": "default_generated on update current_timestamp(0) ",
+    "input_hex": "64656661756c745f67656e657261746564206f6e207570646174652063757272656e745f74696d657374616d7028302920"
+  }
+]

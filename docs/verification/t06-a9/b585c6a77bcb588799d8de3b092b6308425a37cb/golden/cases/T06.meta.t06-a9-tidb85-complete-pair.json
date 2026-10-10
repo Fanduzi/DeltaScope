@@ -1,0 +1,478 @@
+{
+  "case_id": "T06.meta.t06-a9-tidb85-complete-pair",
+  "kind": "cli_metadata",
+  "cli_case": "t06-a9-tidb85-complete-pair",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);",
+  "policy_profile": "t06-a9-audit-columns-isolated",
+  "policy_path": "/private/tmp/ds-t06-a9-r2-final.zuabHC/T06/golden-policy-t06-a9-audit-columns-isolated.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+  },
+  "expected": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "statement_sql": [
+      "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);"
+    ],
+    "statement_indices": [
+      0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [
+      {
+        "name": "ensure t absent",
+        "sql": "DROP TABLE IF EXISTS t",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "t absent before audit",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit did not create t",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "0",
+        "stderr": ""
+      }
+    ],
+    "execute": [
+      {
+        "name": "driver applies the audited create",
+        "sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "raw column rows observation",
+        "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, COALESCE(DATETIME_PRECISION,'<null>'), COALESCE(COLUMN_DEFAULT,'<null>'), EXTRA) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "stdout": "GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, COALESCE(DATETIME_PRECISION,'<null>'), COALESCE(COLUMN_DEFAULT,'<null>'), EXTRA) ORDER BY ORDINAL_POSITION SEPARATOR '|')\nid:int:1:NO:<null>:<null>:|created_at:datetime:2:NO:0:CURRENT_TIMESTAMP:|updated_at:datetime:3:NO:0:CURRENT_TIMESTAMP:DEFAULT_GENERATED on update CURRENT_TIMESTAMP",
+        "stderr": ""
+      },
+      {
+        "name": "extra pad-space context observation",
+        "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COALESCE(HEX(EXTRA),'<null>'), CHARSET(EXTRA), COLLATION(EXTRA), COLLATION(CONCAT(EXTRA,' ')), HEX(CONCAT(EXTRA,' ')), CASE WHEN CAST(LOWER(CONCAT(EXTRA,' ')) AS BINARY) IN (CAST('' AS BINARY),CAST('default_generated' AS BINARY)) THEN '' WHEN CAST(LOWER(CONCAT(EXTRA,' ')) AS BINARY) IN (CAST('on update current_timestamp' AS BINARY),CAST('on update current_timestamp()' AS BINARY),CAST('on update current_timestamp(0)' AS BINARY),CAST('default_generated on update current_timestamp' AS BINARY),CAST('default_generated on update current_timestamp()' AS BINARY),CAST('default_generated on update current_timestamp(0)' AS BINARY)) THEN 'on update current_timestamp' ELSE '<unrecognized-extra>' END) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME IN ('created_at','updated_at')",
+        "rc": 0,
+        "stdout": "GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, COALESCE(HEX(EXTRA),'<null>'), CHARSET(EXTRA), COLLATION(EXTRA), COLLATION(CONCAT(EXTRA,' ')), HEX(CONCAT(EXTRA,' ')), CASE WHEN CAST(LOWER(CONCAT(EXTRA,' ')) AS BINARY) IN (CAST('' AS BINARY),CAST('default_generate\ncreated_at::utf8mb4:utf8mb4_bin:utf8mb4_bin:20:<unrecognized-extra>|updated_at:44454641554C545F47454E455241544544206F6E207570646174652043555252454E545F54494D455354414D50:utf8mb4:utf8mb4_bin:utf8mb4_bin:44454641554C545F47454E455241544544206F6E207570646174652043555252454E545F54494D455354414D5020:<unrecognized-extra>",
+        "stderr": ""
+      }
+    ],
+    "structure": [
+      {
+        "assert": "exactly one user table",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "1",
+        "stderr": ""
+      },
+      {
+        "assert": "exactly expected columns",
+        "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "3",
+        "stderr": ""
+      },
+      {
+        "assert": "ordered column identity",
+        "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE, IFNULL(DATETIME_PRECISION,'-')) ORDER BY ORDINAL_POSITION) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "id:int:1:NO:-,created_at:datetime:2:NO:0,updated_at:datetime:3:NO:0",
+        "stderr": ""
+      },
+      {
+        "assert": "created_at default is frozen CURRENT_TIMESTAMP spelling",
+        "sql": "SELECT LOWER(COALESCE(COLUMN_DEFAULT,'<null>')) IN ('current_timestamp','current_timestamp()','current_timestamp(0)') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='created_at'",
+        "rc": 0,
+        "output": "1",
+        "stderr": ""
+      },
+      {
+        "assert": "created_at extra normalized",
+        "sql": "SELECT CASE WHEN CAST(LOWER(EXTRA) AS BINARY) IN (CAST('' AS BINARY),CAST('default_generated' AS BINARY)) THEN '' WHEN CAST(LOWER(EXTRA) AS BINARY) IN (CAST('on update current_timestamp' AS BINARY),CAST('on update current_timestamp()' AS BINARY),CAST('on update current_timestamp(0)' AS BINARY),CAST('default_generated on update current_timestamp' AS BINARY),CAST('default_generated on update current_timestamp()' AS BINARY),CAST('default_generated on update current_timestamp(0)' AS BINARY)) THEN 'on update current_timestamp' ELSE '<unrecognized-extra>' END FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='created_at'",
+        "rc": 0,
+        "output": "",
+        "stderr": ""
+      },
+      {
+        "assert": "updated_at default is frozen CURRENT_TIMESTAMP spelling",
+        "sql": "SELECT LOWER(COALESCE(COLUMN_DEFAULT,'<null>')) IN ('current_timestamp','current_timestamp()','current_timestamp(0)') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='updated_at'",
+        "rc": 0,
+        "output": "1",
+        "stderr": ""
+      },
+      {
+        "assert": "updated_at extra normalized",
+        "sql": "SELECT CASE WHEN CAST(LOWER(EXTRA) AS BINARY) IN (CAST('' AS BINARY),CAST('default_generated' AS BINARY)) THEN '' WHEN CAST(LOWER(EXTRA) AS BINARY) IN (CAST('on update current_timestamp' AS BINARY),CAST('on update current_timestamp()' AS BINARY),CAST('on update current_timestamp(0)' AS BINARY),CAST('default_generated on update current_timestamp' AS BINARY),CAST('default_generated on update current_timestamp()' AS BINARY),CAST('default_generated on update current_timestamp(0)' AS BINARY)) THEN 'on update current_timestamp' ELSE '<unrecognized-extra>' END FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME='updated_at'",
+        "rc": 0,
+        "output": "on update current_timestamp",
+        "stderr": ""
+      },
+      {
+        "assert": "primary key constraint count",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+        "rc": 0,
+        "output": "1",
+        "stderr": ""
+      },
+      {
+        "assert": "primary index part count",
+        "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+        "rc": 0,
+        "output": "1",
+        "stderr": ""
+      },
+      {
+        "assert": "primary key member order",
+        "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, SEQ_IN_INDEX) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY' ORDER BY SEQ_IN_INDEX",
+        "rc": 0,
+        "output": "id:1",
+        "stderr": ""
+      },
+      {
+        "assert": "no extra indexes",
+        "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+        "rc": 0,
+        "output": "0",
+        "stderr": ""
+      },
+      {
+        "assert": "extra whitelist literal control",
+        "sql": "SELECT CONCAT_WS('|',CASE WHEN CAST(LOWER('') AS BINARY) IN (CAST('' AS BINARY),CAST('default_generated' AS BINARY)) THEN '' WHEN CAST(LOWER('') AS BINARY) IN (CAST('on update current_timestamp' AS BINARY),CAST('on update current_timestamp()' AS BINARY),CAST('on update current_timestamp(0)' AS BINARY),CAST('default_generated on update current_timestamp' AS BINARY),CAST('default_generated on update current_timestamp()' AS BINARY),CAST('default_generated on update current_timestamp(0)' AS BINARY)) THEN 'on update current_timestamp' ELSE '<unrecognized-extra>' END,CASE WHEN CAST(LOWER('default_generated') AS BINARY) IN (CAST('' AS BINARY),CAST('default_generated' AS BINARY)) THEN '' WHEN CAST(LOWER('default_generated') AS BINARY) IN (CAST('on update current_timestamp' AS BINARY),CAST('on update current_timestamp()' AS BINARY),CAST('on update current_timestamp(0)' AS BINARY),CAST('default_generated on update current_timestamp' AS BINARY),CAST('default_generated on update current_timestamp()' AS BINARY),CAST('default_generated on update current_timestamp(0)' AS BINARY)) THEN 'on update current_timestamp' ELSE '<unrecognized-extra>' END,CASE WHEN CAST(LOWER('DEFAULT_GENERATED') AS BINARY) IN (CAST('' AS BINARY),CAST('default_generated' AS BINARY)) THEN '' WHEN CAST(LOWER('DEFAULT_GENERATED') AS BINARY) IN (CAST('on update current_timestamp' AS BINARY),CAST('on update current_timestamp()' AS BINARY),CAST('on update current_timestamp(0)' AS BINARY),CAST('default_generated on update current_timestamp' AS BINARY),CAST('default_generated on update current_timestamp()' AS BINARY),CAST('default_generated on update current_timestamp(0)' AS BINARY)) THEN 'on update current_timestamp' ELSE '<unrecognized-extra>' END,CASE WHEN CAST(LOWER('on update current_timestamp') AS BINARY) IN (CAST('' AS BINARY),CAST('default_generated' AS BINARY)) THEN '' WHEN CAST(LOWER('on update current_timestamp') AS BINARY) IN (CAST('on update current_timestamp' AS BINARY),CAST('on update current_timestamp()' AS BINARY),CAST('on update current_timestamp(0)' AS BINARY),CAST('default_generated on update current_timestamp' AS BINARY),CAST('default_generated on update current_timestamp()' AS BINARY),CAST('default_generated on update current_timestamp(0)' AS BINARY)) THEN 'on update current_timestamp' ELSE '<unrecognized-extra>' END,CASE WHEN CAST(LOWER('ON UPDATE CURRENT_TIMESTAMP()') AS BINARY) IN (CAST('' AS BINARY),CAST('default_generated' AS BINARY)) THEN '' WHEN CAST(LOWER('ON UPDATE CURRENT_TIMESTAMP()') AS BINARY) IN (CAST('on update current_timestamp' AS BINARY),CAST('on update current_timestamp()' AS BINARY),CAST('on update current_timestamp(0)' AS BINARY),CAST('default_generated on update current_timestamp' AS BINARY),CAST('default_generated on update current_timestamp()' AS BINARY),CAST('default_generated on update current_timestamp(0)' AS BINARY)) THEN 'on update current_timestamp' ELSE '<unrecognized-extra>' END,CASE WHEN CAST(LOWER('on update current_timestamp(0)') AS BINARY) IN (CAST('' AS BINARY),CAST('default_generated' AS BINARY)) THEN '' WHEN CAST(LOWER('on update current_timestamp(0)') AS BINARY) IN (CAST('on update current_timestamp' AS BINARY),CAST('on update current_timestamp()' AS BINARY),CAST('on update current_timestamp(0)' AS BINARY),CAST('default_generated on update current_timestamp' AS BINARY),CAST('default_generated on update current_timestamp()' AS BINARY),CAST('default_generated on update current_timestamp(0)' AS BINARY)) THEN 'on update current_timestamp' ELSE '<unrecognized-extra>' END,CASE WHEN CAST(LOWER('default_generated on update current_timestamp') AS BINARY) IN (CAST('' AS BINARY),CAST('default_generated' AS BINARY)) THEN '' WHEN CAST(LOWER('default_generated on update current_timestamp') AS BINARY) IN (CAST('on update current_timestamp' AS BINARY),CAST('on update current_timestamp()' AS BINARY),CAST('on update current_timestamp(0)' AS BINARY),CAST('default_generated on update current_timestamp' AS BINARY),CAST('default_generated on update current_timestamp()' AS BINARY),CAST('default_generated on update current_timestamp(0)' AS BINARY)) THEN 'on update current_timestamp' ELSE '<unrecognized-extra>' END,CASE WHEN CAST(LOWER('default_generated ON UPDATE current_timestamp()') AS BINARY) IN (CAST('' AS BINARY),CAST('default_generated' AS BINARY)) THEN '' WHEN CAST(LOWER('default_generated ON UPDATE current_timestamp()') AS BINARY) IN (CAST('on update current_timestamp' AS BINARY),CAST('on update current_timestamp()' AS BINARY),CAST('on update current_timestamp(0)' AS BINARY),CAST('default_generated on update current_timestamp' AS BINARY),CAST('default_generated on update current_timestamp()' AS BINARY),CAST('default_generated on update current_timestamp(0)' AS BINARY)) THEN 'on update current_timestamp' ELSE '<unrecognized-extra>' END,CASE WHEN CAST(LOWER('default_generated on update current_timestamp(0)') AS BINARY) IN (CAST('' AS BINARY),CAST('default_generated' AS BINARY)) THEN '' WHEN CAST(LOWER('default_generated on update current_timestamp(0)') AS BINARY) IN (CAST('on update current_timestamp' AS BINARY),CAST('on update current_timestamp()' AS BINARY),CAST('on update current_timestamp(0)' AS BINARY),CAST('default_generated on update current_timestamp' AS BINARY),CAST('default_generated on update current_timestamp()' AS BINARY),CAST('default_generated on update current_timestamp(0)' AS BINARY)) THEN 'on update current_timestamp' ELSE '<unrecognized-extra>' END,CASE WHEN CAST(LOWER('DEFAULT_GENERATED()') AS BINARY) IN (CAST('' AS BINARY),CAST('default_generated' AS BINARY)) THEN '' WHEN CAST(LOWER('DEFAULT_GENERATED()') AS BINARY) IN (CAST('on update current_timestamp' AS BINARY),CAST('on update current_timestamp()' AS BINARY),CAST('on update current_timestamp(0)' AS BINARY),CAST('default_generated on update current_timestamp' AS BINARY),CAST('default_generated on update current_timestamp()' AS BINARY),CAST('default_generated on update current_timestamp(0)' AS BINARY)) THEN 'on update current_timestamp' ELSE '<unrecognized-extra>' END,CASE WHEN CAST(LOWER('DEFAULT_GENERATEDDEFAULT_GENERATED') AS BINARY) IN (CAST('' AS BINARY),CAST('default_generated' AS BINARY)) THEN '' WHEN CAST(LOWER('DEFAULT_GENERATEDDEFAULT_GENERATED') AS BINARY) IN (CAST('on update current_timestamp' AS BINARY),CAST('on update current_timestamp()' AS BINARY),CAST('on update current_timestamp(0)' AS BINARY),CAST('default_generated on update current_timestamp' AS BINARY),CAST('default_generated on update current_timestamp()' AS BINARY),CAST('default_generated on update current_timestamp(0)' AS BINARY)) THEN 'on update current_timestamp' ELSE '<unrecognized-extra>' END,CASE WHEN CAST(LOWER('()') AS BINARY) IN (CAST('' AS BINARY),CAST('default_generated' AS BINARY)) THEN '' WHEN CAST(LOWER('()') AS BINARY) IN (CAST('on update current_timestamp' AS BINARY),CAST('on update current_timestamp()' AS BINARY),CAST('on update current_timestamp(0)' AS BINARY),CAST('default_generated on update current_timestamp' AS BINARY),CAST('default_generated on update current_timestamp()' AS BINARY),CAST('default_generated on update current_timestamp(0)' AS BINARY)) THEN 'on update current_timestamp' ELSE '<unrecognized-extra>' END,CASE WHEN CAST(LOWER('on update CURRENT_TIMESTAMP(0)()') AS BINARY) IN (CAST('' AS BINARY),CAST('default_generated' AS BINARY)) THEN '' WHEN CAST(LOWER('on update CURRENT_TIMESTAMP(0)()') AS BINARY) IN (CAST('on update current_timestamp' AS BINARY),CAST('on update current_timestamp()' AS BINARY),CAST('on update current_timestamp(0)' AS BINARY),CAST('default_generated on update current_timestamp' AS BINARY),CAST('default_generated on update current_timestamp()' AS BINARY),CAST('default_generated on update current_timestamp(0)' AS BINARY)) THEN 'on update current_timestamp' ELSE '<unrecognized-extra>' END,CASE WHEN CAST(LOWER('on update current_default_generatedtimestamp') AS BINARY) IN (CAST('' AS BINARY),CAST('default_generated' AS BINARY)) THEN '' WHEN CAST(LOWER('on update current_default_generatedtimestamp') AS BINARY) IN (CAST('on update current_timestamp' AS BINARY),CAST('on update current_timestamp()' AS BINARY),CAST('on update current_timestamp(0)' AS BINARY),CAST('default_generated on update current_timestamp' AS BINARY),CAST('default_generated on update current_timestamp()' AS BINARY),CAST('default_generated on update current_timestamp(0)' AS BINARY)) THEN 'on update current_timestamp' ELSE '<unrecognized-extra>' END,CASE WHEN CAST(LOWER('on update curr()ent_timestamp') AS BINARY) IN (CAST('' AS BINARY),CAST('default_generated' AS BINARY)) THEN '' WHEN CAST(LOWER('on update curr()ent_timestamp') AS BINARY) IN (CAST('on update current_timestamp' AS BINARY),CAST('on update current_timestamp()' AS BINARY),CAST('on update current_timestamp(0)' AS BINARY),CAST('default_generated on update current_timestamp' AS BINARY),CAST('default_generated on update current_timestamp()' AS BINARY),CAST('default_generated on update current_timestamp(0)' AS BINARY)) THEN 'on update current_timestamp' ELSE '<unrecognized-extra>' END,CASE WHEN CAST(LOWER('on update current_timestamp(3)') AS BINARY) IN (CAST('' AS BINARY),CAST('default_generated' AS BINARY)) THEN '' WHEN CAST(LOWER('on update current_timestamp(3)') AS BINARY) IN (CAST('on update current_timestamp' AS BINARY),CAST('on update current_timestamp()' AS BINARY),CAST('on update current_timestamp(0)' AS BINARY),CAST('default_generated on update current_timestamp' AS BINARY),CAST('default_generated on update current_timestamp()' AS BINARY),CAST('default_generated on update current_timestamp(0)' AS BINARY)) THEN 'on update current_timestamp' ELSE '<unrecognized-extra>' END,CASE WHEN CAST(LOWER('stored generated') AS BINARY) IN (CAST('' AS BINARY),CAST('default_generated' AS BINARY)) THEN '' WHEN CAST(LOWER('stored generated') AS BINARY) IN (CAST('on update current_timestamp' AS BINARY),CAST('on update current_timestamp()' AS BINARY),CAST('on update current_timestamp(0)' AS BINARY),CAST('default_generated on update current_timestamp' AS BINARY),CAST('default_generated on update current_timestamp()' AS BINARY),CAST('default_generated on update current_timestamp(0)' AS BINARY)) THEN 'on update current_timestamp' ELSE '<unrecognized-extra>' END,CASE WHEN CAST(LOWER(' ') AS BINARY) IN (CAST('' AS BINARY),CAST('default_generated' AS BINARY)) THEN '' WHEN CAST(LOWER(' ') AS BINARY) IN (CAST('on update current_timestamp' AS BINARY),CAST('on update current_timestamp()' AS BINARY),CAST('on update current_timestamp(0)' AS BINARY),CAST('default_generated on update current_timestamp' AS BINARY),CAST('default_generated on update current_timestamp()' AS BINARY),CAST('default_generated on update current_timestamp(0)' AS BINARY)) THEN 'on update current_timestamp' ELSE '<unrecognized-extra>' END,CASE WHEN CAST(LOWER('default_generated ') AS BINARY) IN (CAST('' AS BINARY),CAST('default_generated' AS BINARY)) THEN '' WHEN CAST(LOWER('default_generated ') AS BINARY) IN (CAST('on update current_timestamp' AS BINARY),CAST('on update current_timestamp()' AS BINARY),CAST('on update current_timestamp(0)' AS BINARY),CAST('default_generated on update current_timestamp' AS BINARY),CAST('default_generated on update current_timestamp()' AS BINARY),CAST('default_generated on update current_timestamp(0)' AS BINARY)) THEN 'on update current_timestamp' ELSE '<unrecognized-extra>' END,CASE WHEN CAST(LOWER('on update current_timestamp ') AS BINARY) IN (CAST('' AS BINARY),CAST('default_generated' AS BINARY)) THEN '' WHEN CAST(LOWER('on update current_timestamp ') AS BINARY) IN (CAST('on update current_timestamp' AS BINARY),CAST('on update current_timestamp()' AS BINARY),CAST('on update current_timestamp(0)' AS BINARY),CAST('default_generated on update current_timestamp' AS BINARY),CAST('default_generated on update current_timestamp()' AS BINARY),CAST('default_generated on update current_timestamp(0)' AS BINARY)) THEN 'on update current_timestamp' ELSE '<unrecognized-extra>' END,CASE WHEN CAST(LOWER('default_generated on update current_timestamp(0) ') AS BINARY) IN (CAST('' AS BINARY),CAST('default_generated' AS BINARY)) THEN '' WHEN CAST(LOWER('default_generated on update current_timestamp(0) ') AS BINARY) IN (CAST('on update current_timestamp' AS BINARY),CAST('on update current_timestamp()' AS BINARY),CAST('on update current_timestamp(0)' AS BINARY),CAST('default_generated on update current_timestamp' AS BINARY),CAST('default_generated on update current_timestamp()' AS BINARY),CAST('default_generated on update current_timestamp(0)' AS BINARY)) THEN 'on update current_timestamp' ELSE '<unrecognized-extra>' END,CASE WHEN CAST(LOWER(NULL) AS BINARY) IN (CAST('' AS BINARY),CAST('default_generated' AS BINARY)) THEN '' WHEN CAST(LOWER(NULL) AS BINARY) IN (CAST('on update current_timestamp' AS BINARY),CAST('on update current_timestamp()' AS BINARY),CAST('on update current_timestamp(0)' AS BINARY),CAST('default_generated on update current_timestamp' AS BINARY),CAST('default_generated on update current_timestamp()' AS BINARY),CAST('default_generated on update current_timestamp(0)' AS BINARY)) THEN 'on update current_timestamp' ELSE '<unrecognized-extra>' END)",
+        "rc": 0,
+        "output": "|||on update current_timestamp|on update current_timestamp|on update current_timestamp|on update current_timestamp|on update current_timestamp|on update current_timestamp|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>",
+        "stderr": ""
+      },
+      {
+        "assert": "extra trailing-space catalog context",
+        "sql": "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, CASE WHEN CAST(LOWER(CONCAT(EXTRA,' ')) AS BINARY) IN (CAST('' AS BINARY),CAST('default_generated' AS BINARY)) THEN '' WHEN CAST(LOWER(CONCAT(EXTRA,' ')) AS BINARY) IN (CAST('on update current_timestamp' AS BINARY),CAST('on update current_timestamp()' AS BINARY),CAST('on update current_timestamp(0)' AS BINARY),CAST('default_generated on update current_timestamp' AS BINARY),CAST('default_generated on update current_timestamp()' AS BINARY),CAST('default_generated on update current_timestamp(0)' AS BINARY)) THEN 'on update current_timestamp' ELSE '<unrecognized-extra>' END) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND COLUMN_NAME IN ('created_at','updated_at')",
+        "rc": 0,
+        "output": "created_at:<unrecognized-extra>|updated_at:<unrecognized-extra>",
+        "stderr": ""
+      }
+    ],
+    "teardown": [
+      {
+        "name": "drop fixture",
+        "sql": "DROP TABLE IF EXISTS t",
+        "rc": 0,
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "no residual t",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "exit": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);\",\"normalized_sql\":\"CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "pass",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);",
+          "normalized_sql": "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)",
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "tidb",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "setup ensure t absent return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup ensure t absent: t absent before audit",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='pass'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=1"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);'] expected=['CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "fail_on_triggered",
+      "ok": true,
+      "detail": "fail_on_triggered=False"
+    },
+    {
+      "name": "post-verify audit did not create t",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute driver applies the audited create return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute raw column rows observation return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute extra pad-space context observation return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "structure exactly one user table",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "structure exactly expected columns",
+      "ok": true,
+      "detail": "rc=0 output='3' expected='3'"
+    },
+    {
+      "name": "structure ordered column identity",
+      "ok": true,
+      "detail": "rc=0 output='id:int:1:NO:-,created_at:datetime:2:NO:0,updated_at:datetime:3:NO:0' expected='id:int:1:NO:-,created_at:datetime:2:NO:0,updated_at:datetime:3:NO:0'"
+    },
+    {
+      "name": "structure created_at default is frozen CURRENT_TIMESTAMP spelling",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "structure created_at extra normalized",
+      "ok": true,
+      "detail": "rc=0 output='' expected=''"
+    },
+    {
+      "name": "structure updated_at default is frozen CURRENT_TIMESTAMP spelling",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "structure updated_at extra normalized",
+      "ok": true,
+      "detail": "rc=0 output='on update current_timestamp' expected='on update current_timestamp'"
+    },
+    {
+      "name": "structure primary key constraint count",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "structure primary index part count",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "structure primary key member order",
+      "ok": true,
+      "detail": "rc=0 output='id:1' expected='id:1'"
+    },
+    {
+      "name": "structure no extra indexes",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "structure extra whitelist literal control",
+      "ok": true,
+      "detail": "rc=0 output='|||on update current_timestamp|on update current_timestamp|on update current_timestamp|on update current_timestamp|on update current_timestamp|on update current_timestamp|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>' expected='|||on update current_timestamp|on update current_timestamp|on update current_timestamp|on update current_timestamp|on update current_timestamp|on update current_timestamp|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>'"
+    },
+    {
+      "name": "structure extra trailing-space catalog context",
+      "ok": true,
+      "detail": "rc=0 output='created_at:<unrecognized-extra>|updated_at:<unrecognized-extra>' expected='created_at:<unrecognized-extra>|updated_at:<unrecognized-extra>'"
+    },
+    {
+      "name": "teardown drop fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop fixture: no residual t",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ds-t06-a9-r2-final.zuabHC/T06/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "CREATE TABLE t (id INT PRIMARY KEY, created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);",
+    "--config",
+    "/private/tmp/ds-t06-a9-r2-final.zuabHC/T06/golden-policy-t06-a9-audit-columns-isolated.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "golden",
+    "--fail-on",
+    "blocker"
+  ]
+}

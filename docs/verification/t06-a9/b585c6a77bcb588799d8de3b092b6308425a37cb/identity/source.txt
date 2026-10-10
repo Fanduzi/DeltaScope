@@ -1,0 +1,17 @@
+code_sha=b585c6a77bcb588799d8de3b092b6308425a37cb
+tree_sha=2d945caa8d3594ece8bd1ceed398fb971f66dc65
+worktree_dirty=7
+
+commit=b585c6a77bcb588799d8de3b092b6308425a37cb
+date=2026-10-10 11:13:52 +0800
+subject=test(ddl): make T06-A9 EXTRA whitelist comparison byte-exact (#85)
+
+file hashes:
+4244fd62f4702ccfdf2930777a32d339d2ef9077
+31adf3d4495dfd504bfeac4de9341e61534ca256
+eeb5d3de8e5d1c2010039d40a535721644653171
+4b557d3cbdb0a93329c078608b062c89336a5bd0
+21cc612c3601573f3c8dc241f836f4c728f785ef
+
+deltascope binary (not committed):
+2080b2e4dd801d994647bbd1ffa7703bc4312acb25aebbc27fd41fbe63e69a98  /tmp/ds-t06-a9-r2-final.zuabHC/T06/bin/deltascope

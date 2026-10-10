@@ -1,0 +1,2 @@
+SELECT VERSION(), @@collation_connection;
+SELECT CHARSET(EXTRA), COLLATION(EXTRA) FROM information_schema.COLUMNS LIMIT 1;

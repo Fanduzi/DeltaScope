@@ -1,0 +1,2 @@
+charset=utf8mb3
+collation=utf8mb3_general_ci

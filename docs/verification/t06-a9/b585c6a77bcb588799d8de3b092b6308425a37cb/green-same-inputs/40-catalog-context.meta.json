@@ -1,0 +1,18 @@
+{
+  "argv": [
+    "docker",
+    "exec",
+    "-i",
+    "deltascope-ddl-golden-mysql84",
+    "mysql",
+    "-uroot",
+    "-proot",
+    "--batch",
+    "--raw",
+    "--default-character-set=utf8mb4",
+    "golden"
+  ],
+  "utc_start": "2026-10-10T02:54:04.972761+00:00",
+  "utc_end": "2026-10-10T02:54:05.012510+00:00",
+  "rc": 0
+}

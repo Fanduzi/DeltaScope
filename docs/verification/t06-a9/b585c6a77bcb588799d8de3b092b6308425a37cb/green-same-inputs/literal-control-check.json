@@ -1,0 +1,5 @@
+{
+  "expected": "|||on update current_timestamp|on update current_timestamp|on update current_timestamp|on update current_timestamp|on update current_timestamp|on update current_timestamp|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>",
+  "actual": "|||on update current_timestamp|on update current_timestamp|on update current_timestamp|on update current_timestamp|on update current_timestamp|on update current_timestamp|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>|<unrecognized-extra>",
+  "match": true
+}

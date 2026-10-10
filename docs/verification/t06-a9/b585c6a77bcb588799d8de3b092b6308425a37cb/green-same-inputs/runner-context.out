@@ -1,0 +1,3 @@
+mysql: [Warning] Using a password on the command line interface can be insecure.
+created_at:<unrecognized-extra>|updated_at:<unrecognized-extra>
+created_at:44454641554C545F47454E455241544544:utf8mb3:utf8mb3_general_ci:utf8mb3_general_ci:44454641554C545F47454E45524154454420:<unrecognized-extra>|updated_at:44454641554C545F47454E455241544544206F6E207570646174652043555252454E545F54494D455354414D50:utf8mb3:utf8mb3_general_ci:utf8mb3_general_ci:44454641554C545F47454E455241544544206F6E207570646174652043555252454E545F54494D455354414D5020:<unrecognized-extra>

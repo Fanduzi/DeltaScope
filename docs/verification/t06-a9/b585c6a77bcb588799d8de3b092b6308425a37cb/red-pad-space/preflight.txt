@@ -1,0 +1,26 @@
+Repository: /Users/fan/GolangProjects/DeltaScope
+Observed HEAD: edc5bf079c29ef9297c394cd71895912a7412720
+Requested code: ad8f74227b19d42575c0494b68960e420396acb5
+
+Observed git status --porcelain=v1:
+?? .agents/
+?? .debug-journal.md
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? docs/quality/architecture-review-2026-08-11.html
+
+Observed git worktree list:
+/Users/fan/GolangProjects/DeltaScope           edc5bf07 [milestone/mysql-tidb-ddl-completion]
+/private/tmp/ds-t05-a3-final.2K4NKO/doc-check  49a0f5bc (detached HEAD) prunable
+/private/tmp/ds-t05-a7.IrVZyg/doc-check        2dbeb3dd (detached HEAD) prunable
+/private/tmp/ds-t05-a8.7jDPXi/doc-check        c30be585 (detached HEAD) prunable
+/private/tmp/t06-a1-r1/base-tree               0d083b89 (detached HEAD) prunable
+
+Command: docker ps -a --filter label=com.docker.compose.service=mysql84 --format '{{.ID}}\t{{.Names}}\t{{.Status}}\t{{.Image}}'
+Observed error:
+Cannot connect to the Docker daemon at unix:///Users/fan/.docker/run/docker.sock. Is the docker daemon running?
+Exit code: 1
+Observed docker context show: desktop-linux
+
+BLOCKED: No SQL executed. No fixture started/stopped/deleted. No repository modifications, commits or pushes. No database results inferred. This file transcribes the preflight tool output; it is not a raw database capture.

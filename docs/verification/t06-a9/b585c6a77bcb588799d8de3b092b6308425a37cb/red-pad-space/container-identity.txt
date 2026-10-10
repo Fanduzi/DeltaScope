@@ -1,0 +1,7 @@
+container_id=96a2d2d194716334dbb1e7e66ff89c6f60465033893e35f173756d3d92b850c7
+created=2026-10-10T02:08:38.491893922Z
+status=running
+health=healthy
+image=mysql:8.4.10
+image_digest=sha256:c592c15aaf4a1961e15d82eb31ea5987dda862d1c4b1e93424438c0e91dc1f8d
+ports={"3306/tcp":[{"HostIp":"127.0.0.1","HostPort":"23384"}]}
