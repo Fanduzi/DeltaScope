@@ -26,6 +26,7 @@ TiDB-backed parser adapter for multi-statement SQL parsing, parser-warning colle
 | extractor_t06a7_test.go | Verifies the T06-A7 charset/collation fact contract: column-level CHARACTER SET lands on the FieldType while COLLATE arrives as a named column option (explicit-declaration facts only, no inferred inheritance), and table-level COLLATE lands verbatim in `DDL.Options["collate"]` |
 | extractor_t06a8_test.go | Verifies the T06-A8 comment fact contract: column COMMENT stores the parser-decoded string content — never a quoted SQL literal — repeated COMMENT options overwrite per occurrence, and ALTER column definitions share the same decoding |
 | extractor_t06a9_test.go | Verifies the T06-A9 explicit audit-time-column fact contract: the parser normalizes every accepted CURRENT_TIMESTAMP spelling (`NOW()`, `LOCALTIME`, `LOCALTIMESTAMP`, parenthesized and fractional-second forms) to one `FuncCallExpr` name, and the extractor lands the typed `DefaultIsCurrentTimestamp`/`OnUpdateCurrentTimestamp` flags the role rule consumes |
+| extractor_t06a10_test.go | Verifies the T06-A10 AUTO_INCREMENT extraction contract under both dialects: the column clause lands `Column.AutoIncrement`, the table option lands `DDL.Options["auto_increment"]` as a declared string (absent key when omitted — never defaulted), inline and table-level single-member PKs bind the same member, and the composite PK keeps both ordered members with no fabricated column flag |
 
 ## Exports
 

@@ -2807,6 +2807,80 @@ T06_A9_PAD_CONTEXT_OBS = (
 )
 T06_A9_PAD_CONTEXT_OBS_NAME = "extra pad-space context observation"
 
+# T06-A10 (issue #85): AUTO_INCREMENT declaration and init-value proof. The
+# two frozen rules stay byte-distinct facts: Column.AutoIncrement is the
+# column attribute, DDL.Options["auto_increment"] is the explicit table
+# option text — neither may fabricate the other.
+T06_A10_PK_PROFILE = "t06-a10-pk-auto-increment-isolated"
+T06_A10_INIT_PROFILE = "t06-a10-init-value-isolated"
+T06_A10_PK_RULE = "ddl.table.primary_key.auto_increment.require"
+T06_A10_INIT_RULE = "ddl.table.auto_increment.init_value.require"
+
+T06_A10_PK_AUTO_SQL = (
+    "CREATE TABLE t (id BIGINT AUTO_INCREMENT PRIMARY KEY);")
+T06_A10_PK_NO_AUTO_SQL = "CREATE TABLE t (id BIGINT PRIMARY KEY);"
+T06_A10_COMPOSITE_SQL = (
+    "CREATE TABLE t (id BIGINT NOT NULL, tenant_id INT NOT NULL, "
+    "PRIMARY KEY (id, tenant_id));")
+T06_A10_INIT_MATCH_SQL = (
+    "CREATE TABLE t (id BIGINT AUTO_INCREMENT PRIMARY KEY) AUTO_INCREMENT=8;")
+T06_A10_INIT_MISMATCH_SQL = (
+    "CREATE TABLE t (id BIGINT AUTO_INCREMENT PRIMARY KEY) AUTO_INCREMENT=9;")
+
+T06_A10_PK_FINDING = {
+    "rule_id": T06_A10_PK_RULE,
+    "message": 'primary key column "id" must use auto_increment',
+    "metadata": {"table": "t", "column": "id", "type": "bigint(20)"},
+}
+T06_A10_INIT_FINDING = {
+    "rule_id": T06_A10_INIT_RULE,
+    "message": "table auto_increment init value must be 8",
+    "metadata": {"table": "t", "required_value": 8, "actual_value": 9},
+}
+
+
+def t06_a10_extra_exact(column, want):
+    """Byte-exact EXTRA comparison under the catalog column's own collation:
+    CAST(LOWER(EXTRA) AS BINARY) = CAST('<want>' AS BINARY) with no fixed
+    length. A missing row yields no output and NULL yields '0', so neither
+    can launder as an empty-string match. This role checks the literal
+    'auto_increment' marker or the exact empty value — it never reuses the
+    A9 time-role whitelist, which is a different semantic."""
+    return (
+        "SELECT CASE WHEN CAST(LOWER(EXTRA) AS BINARY) = "
+        f"CAST('{want}' AS BINARY) THEN '1' ELSE '0' END "
+        "FROM information_schema.COLUMNS "
+        "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' "
+        f"AND COLUMN_NAME='{column}'"
+    )
+
+
+T06_A10_EXTRA_RAW = (
+    "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, "
+    "COALESCE(HEX(EXTRA),'<null>'), CHARSET(EXTRA), COLLATION(EXTRA)) "
+    "ORDER BY ORDINAL_POSITION SEPARATOR '|') "
+    "FROM information_schema.COLUMNS "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'"
+)
+T06_A10_EXTRA_RAW_NAME = "column extra raw observation"
+# Catalog allocator state is recorded verbatim, never compared to the input
+# declaration: 'value:<digits>' is the observed catalog counter (layer 2),
+# not the declared init value (layer 1) or the next allocated id (layer 3).
+T06_A10_ALLOCATOR_OBS = (
+    "SELECT CONCAT('allocator|', TABLE_SCHEMA, '|', TABLE_NAME, '|', "
+    "CASE WHEN AUTO_INCREMENT IS NULL THEN 'null' "
+    "ELSE CONCAT('value:', CAST(AUTO_INCREMENT AS CHAR)) END) AS observation "
+    "FROM information_schema.TABLES "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'"
+)
+T06_A10_ALLOCATOR_OBS_NAME = "allocator state observation"
+T06_A10_SHOW_CREATE_OBS = "SHOW CREATE TABLE golden.t"
+T06_A10_SHOW_CREATE_OBS_NAME = "show create observation"
+T06_A10_NO_SECONDARY = (
+    "SELECT COUNT(*) FROM information_schema.STATISTICS "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'"
+)
+
 
 T06_ANCHORS = {
     "mysql57": {
@@ -2928,7 +3002,8 @@ def t06_a1_contract():
     """Frozen T06 oracle (issue #85): the accepted A1 32-case subset, the
     A2 24-case subset, the A3 16-case subset, the A4 12-case subset, the
     A5 40-case subset, the A7 64-case subset, the A8 40-case subset, and the
-    A9 28-case subset — 256 cases total. The A8 subset pins comment
+    A9 28-case subset, and the A10 36-case subset — 292 cases total.
+    The A8 subset pins comment
     declaration fidelity: a 24-case offline matrix isolates the two presence
     rules and the code-point length rule across both dialects, and 16
     anchored roles prove stored comments arrive losslessly (raw text plus
@@ -2976,7 +3051,17 @@ def t06_a1_contract():
 
     MySQL 8.0/8.4 cases additionally record the GIPK-related server variables
     so a server-generated invisible primary key can never masquerade as a
-    declared PRIMARY KEY."""
+    declared PRIMARY KEY.
+
+    The A10 subset pins AUTO_INCREMENT declaration proof: a 16-case offline
+    matrix isolates the single-member PK require rule and the init-value
+    equality rule across both dialects (composite PKs skip the member check,
+    omitted table options stay silent, and neither disabled policy fires),
+    and 20 anchored roles prove the stored column carries EXTRA
+    'auto_increment' byte-exact while the driver replay succeeds even when
+    the policy rejects. The catalog allocator value and SHOW CREATE are
+    recorded as bound observations — never promoted to an oracle, never
+    equated with the declared init value or the next allocated id."""
 
     def verify(label, sql, expect):
         return {"assert": label, "sql": sql, "expect": expect}
@@ -3429,6 +3514,39 @@ def t06_a1_contract():
                 case["expect"] = audit_expect(sql, False)
             else:
                 case["policy"] = T06_A9_PROFILE
+                case["expect"] = audit_expect(
+                    sql, finding is not None, loaded=1, finding=finding)
+            cli_cases.append(case)
+
+    # T06-A10 (issue #85): the eight frozen roles pin declaration-level
+    # AUTO_INCREMENT facts under two single-rule blocker profiles. composite
+    # records "skip" semantics — the applicable PK rule finds two bound
+    # members and evaluates none — never "satisfied". pk-off/init-off reuse
+    # the all-rules-disabled default profile.
+    a10_matrix = (
+        ("pk-auto", T06_A10_PK_AUTO_SQL, T06_A10_PK_PROFILE, None),
+        ("pk-no-auto", T06_A10_PK_NO_AUTO_SQL, T06_A10_PK_PROFILE,
+         T06_A10_PK_FINDING),
+        ("composite", T06_A10_COMPOSITE_SQL, T06_A10_PK_PROFILE, None),
+        ("pk-off", T06_A10_PK_NO_AUTO_SQL, None, None),
+        ("init-match", T06_A10_INIT_MATCH_SQL, T06_A10_INIT_PROFILE, None),
+        ("init-mismatch", T06_A10_INIT_MISMATCH_SQL, T06_A10_INIT_PROFILE,
+         T06_A10_INIT_FINDING),
+        ("init-omitted", T06_A10_PK_AUTO_SQL, T06_A10_INIT_PROFILE, None),
+        ("init-off", T06_A10_INIT_MISMATCH_SQL, None, None),
+    )
+    for dialect in ("mysql", "tidb"):
+        for role, sql, profile, finding in a10_matrix:
+            case = {
+                "id": f"t06-a10-{dialect}-{role}",
+                "dialect": dialect,
+                "sql": sql,
+                "args": ["--fail-on", "blocker"],
+            }
+            if profile is None:
+                case["expect"] = audit_expect(sql, False)
+            else:
+                case["policy"] = profile
                 case["expect"] = audit_expect(
                     sql, finding is not None, loaded=1, finding=finding)
             cli_cases.append(case)
@@ -4492,6 +4610,117 @@ def t06_a1_contract():
                 ],
             })
 
+        # T06-A10 (issue #85): declaration-level AUTO_INCREMENT roles on real
+        # catalog. pk-no-auto/init-mismatch reject on the product side while
+        # the same CREATE must still succeed on the driver — a policy verdict
+        # never stands in for the server's own legality check. EXTRA uses the
+        # same byte-exact binary comparison proven in A9-R2, but checks the
+        # distinct 'auto_increment'/empty role, never the A9 time whitelist.
+        # The allocator row and SHOW CREATE are recorded observations only:
+        # the catalog counter (layer 2) is never promoted to an oracle and no
+        # next-INSERT id (layer 3) is claimed.
+        a10_meta_roles = (
+            ("pk-auto", T06_A10_PK_AUTO_SQL, T06_A10_PK_PROFILE, None, "auto"),
+            ("pk-no-auto", T06_A10_PK_NO_AUTO_SQL, T06_A10_PK_PROFILE,
+             T06_A10_PK_FINDING, "empty"),
+            ("composite", T06_A10_COMPOSITE_SQL, T06_A10_PK_PROFILE, None,
+             "composite"),
+            ("init-match", T06_A10_INIT_MATCH_SQL, T06_A10_INIT_PROFILE, None,
+             "auto"),
+            ("init-mismatch", T06_A10_INIT_MISMATCH_SQL, T06_A10_INIT_PROFILE,
+             T06_A10_INIT_FINDING, "auto"),
+        )
+        for role, sql, profile, finding, shape in a10_meta_roles:
+            expect = audit_expect(
+                sql, finding is not None, loaded=1, finding=finding)
+            if anchor_key in ("mysql80", "mysql84"):
+                expect["instance_facts"] = dict(T06_GIPK_FACTS)
+            rows = [verify("exactly one user table", T06_TABLE_COUNT, "1")]
+            if shape == "composite":
+                rows += [
+                    verify("exactly two user columns", T06_COLUMN_COUNT, "2"),
+                    verify("ordered column identity", T06_A2_COLUMN_ROWS,
+                           "id:bigint:1:NO,tenant_id:int:2:NO"),
+                    verify("id extra exactly empty",
+                           t06_a10_extra_exact("id", ""), "1"),
+                    verify("tenant_id extra exactly empty",
+                           t06_a10_extra_exact("tenant_id", ""), "1"),
+                    verify("primary key constraint count", T06_PK_CONSTRAINT,
+                           "1"),
+                    verify("primary index part count", T06_PK_PARTS, "2"),
+                    verify("primary key members in key order",
+                           T06_A2_PK_MEMBERS, "id:1,tenant_id:2"),
+                ]
+            else:
+                want_extra = "auto_increment" if shape == "auto" else ""
+                rows += [
+                    verify("exactly one user column", T06_COLUMN_COUNT, "1"),
+                    verify("column id identity", T06_COLUMN_ROW,
+                           "id:bigint:1:NO"),
+                    verify("id extra byte-exact",
+                           t06_a10_extra_exact("id", want_extra), "1"),
+                    verify("primary key constraint count", T06_PK_CONSTRAINT,
+                           "1"),
+                    verify("primary index part count", T06_PK_PARTS, "1"),
+                    verify("primary key member", T06_PK_MEMBER, "id:1"),
+                ]
+            rows.append(verify("no extra indexes", T06_A10_NO_SECONDARY, "0"))
+            if anchor_key != "tidb85":
+                rows.append(verify("storage engine", T06_ENGINE, "InnoDB"))
+            metadata_cases.append({
+                "id": f"t06-a10-{anchor_key}-{role}",
+                "anchor": anchor_key,
+                "dialect": dialect,
+                "sql": sql,
+                "policy": profile,
+                "connect": dict(connects[anchor_key]),
+                "args": ["--fail-on", "blocker"],
+                "setup": [
+                    {
+                        "name": "ensure t absent",
+                        "sql": "DROP TABLE IF EXISTS t",
+                        "expect_rc": 0,
+                        "verify": [verify("t absent before audit",
+                                          T06_TABLE_COUNT, "0")],
+                    },
+                ],
+                "expect": expect,
+                "post_verify": [
+                    verify("audit did not create t", T06_TABLE_COUNT, "0"),
+                ],
+                "execute": [
+                    {
+                        "name": "driver applies the audited create",
+                        "sql": sql,
+                        "expect_rc": 0,
+                    },
+                    {
+                        "name": T06_A10_EXTRA_RAW_NAME,
+                        "sql": T06_A10_EXTRA_RAW,
+                        "expect_rc": 0,
+                    },
+                    {
+                        "name": T06_A10_ALLOCATOR_OBS_NAME,
+                        "sql": T06_A10_ALLOCATOR_OBS,
+                        "expect_rc": 0,
+                    },
+                    {
+                        "name": T06_A10_SHOW_CREATE_OBS_NAME,
+                        "sql": T06_A10_SHOW_CREATE_OBS,
+                        "expect_rc": 0,
+                    },
+                ],
+                "structure": rows,
+                "teardown": [
+                    {
+                        "name": "drop fixture",
+                        "sql": "DROP TABLE IF EXISTS t",
+                        "expect_rc": 0,
+                        "verify": [verify("no residual t", T06_TABLE_COUNT, "0")],
+                    },
+                ],
+            })
+
     required_case_ids = (
         [f"T06.db.{anchor}.{kind}" for anchor in T06_ANCHORS for kind in ("ddl", "syntax_negative")]
         + [f"T06.cli.{spec['id']}" for spec in cli_cases]
@@ -4642,6 +4871,26 @@ def t06_a1_contract():
                     },
                 }
             },
+            # T06-A10: two single-rule isolations. The PK rule keeps its real
+            # `required` param; the init rule takes `value` (it has no
+            # `required` param) — equality against the declared table option,
+            # never a maximum.
+            T06_A10_PK_PROFILE: {
+                "enable": {
+                    T06_A10_PK_RULE: {
+                        "enabled": True, "level": "blocker",
+                        "params": {"required": True},
+                    },
+                }
+            },
+            T06_A10_INIT_PROFILE: {
+                "enable": {
+                    T06_A10_INIT_RULE: {
+                        "enabled": True, "level": "blocker",
+                        "params": {"value": 8},
+                    },
+                }
+            },
         },
         "anchors": T06_ANCHORS,
         "ddl_steps": T06_DDL_STEPS,
@@ -4726,7 +4975,7 @@ def t06_a1_manifest_failures(manifest):
         failures.append("T06-A1 baseline syntax_negative changed")
     required = manifest.get("required_case_ids") or []
     if required != contract["required_case_ids"]:
-        failures.append("T06-A1 required_case_ids differ from the frozen 256-case denominator")
+        failures.append("T06-A1 required_case_ids differ from the frozen 292-case denominator")
     for field, kind in (("cli_cases", "cli"), ("metadata_cases", "meta")):
         declared_list = [spec.get("id") for spec in manifest.get(field) or []]
         declared = {spec.get("id"): spec for spec in manifest.get(field) or []}
@@ -4930,6 +5179,86 @@ def t06_a1_artifact_failures(artifact, manifest):
     return failures
 
 
+def t06_a10_artifact_failures(artifact, manifest):
+    """T06-A10 (issue #85): the three recorded read-only observations on the
+    twenty anchored roles must be real, shaped, and bound to golden.t — not
+    merely present. The allocator row records the catalog counter verbatim
+    ('null' or 'value:<digits>') and is never compared against the declared
+    init value; SHOW CREATE is recorded but never treated as declaration
+    provenance; the raw EXTRA row must name the case's declared columns in
+    ordinal order so a missing row or a wrong target cannot launder as an
+    empty string."""
+    if manifest.get("task_id") != "T06":
+        return []
+    expected_cols = {}
+    for spec in t06_a1_contract()["metadata_cases"]:
+        local = spec["id"]
+        if not local.startswith("t06-a10-"):
+            continue
+        expected_cols[f"T06.meta.{local}"] = (
+            ("id", "tenant_id") if local.endswith("-composite") else ("id",))
+    failures = []
+    allocator_re = re.compile(r"^allocator\|golden\|t\|(null|value:[0-9]+)$")
+    for case in artifact.get("cases") or []:
+        case_id = case.get("case_id")
+        cols = expected_cols.get(case_id)
+        if cols is None:
+            continue
+        execs = (case.get("actual") or {}).get("execute") or []
+        by_name = {step.get("name"): step for step in execs}
+        raw = by_name.get(T06_A10_EXTRA_RAW_NAME)
+        if raw is None or raw.get("rc") != 0:
+            failures.append(
+                f"T06-A10 {case_id}: {T06_A10_EXTRA_RAW_NAME!r} missing or rc!=0")
+        else:
+            lines = [ln for ln in (raw.get("stdout") or "").splitlines()
+                     if ln.strip()]
+            if not lines:
+                failures.append(
+                    f"T06-A10 {case_id}: {T06_A10_EXTRA_RAW_NAME!r} produced no row")
+            else:
+                members = lines[-1].split("|")
+                names = [m.split(":", 1)[0] for m in members]
+                # The verbatim HEX must stay consistent with the byte-exact
+                # oracle: roles declaring AUTO_INCREMENT record hex-encoded
+                # 'auto_increment'; every other column records an empty hex —
+                # a NULL (<null>) or a foreign marker can never launder as
+                # the declared value.
+                want_auto = case_id.endswith(("-pk-auto", "-init-match",
+                                              "-init-mismatch"))
+                want_hex = "auto_increment".encode().hex() if want_auto else ""
+                if names != list(cols):
+                    failures.append(
+                        f"T06-A10 {case_id}: raw EXTRA members {names!r} != "
+                        f"declared {list(cols)!r}")
+                elif any(len(m.split(":")) != 4 for m in members):
+                    failures.append(
+                        f"T06-A10 {case_id}: raw EXTRA member shape broken: "
+                        f"{members!r}")
+                elif any(m.split(":")[1].lower() != want_hex for m in members):
+                    failures.append(
+                        f"T06-A10 {case_id}: raw EXTRA hex contradicts the "
+                        f"frozen byte-exact role: {members!r}")
+        alloc = by_name.get(T06_A10_ALLOCATOR_OBS_NAME)
+        if alloc is None or alloc.get("rc") != 0:
+            failures.append(
+                f"T06-A10 {case_id}: {T06_A10_ALLOCATOR_OBS_NAME!r} missing or rc!=0")
+        else:
+            lines = [ln for ln in (alloc.get("stdout") or "").splitlines()
+                     if ln.strip()]
+            if not lines or not allocator_re.match(lines[-1]):
+                failures.append(
+                    f"T06-A10 {case_id}: allocator observation {lines[-1] if lines else ''!r} "
+                    "is not 'allocator|golden|t|(null|value:<digits>)'")
+        show = by_name.get(T06_A10_SHOW_CREATE_OBS_NAME)
+        show_out = (show or {}).get("stdout") or ""
+        if show is None or show.get("rc") != 0 or "CREATE TABLE" not in show_out:
+            failures.append(
+                f"T06-A10 {case_id}: {T06_A10_SHOW_CREATE_OBS_NAME!r} missing, "
+                "rc!=0, or no CREATE TABLE output")
+    return failures
+
+
 def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
     """Re-check an emitted artifact. Returns a list of failure strings."""
     failures = []
@@ -4949,6 +5278,7 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
     failures.extend(t06_a1_manifest_failures(manifest))
     failures.extend(t06_a1_identity_failures(artifact, manifest))
     failures.extend(t06_a1_artifact_failures(artifact, manifest))
+    failures.extend(t06_a10_artifact_failures(artifact, manifest))
 
     if artifact.get("external_blocker"):
         failures.append(f"external blocker recorded: {artifact['external_blocker']}")

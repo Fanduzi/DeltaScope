@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: synthetic ddl-golden artifacts and manifests built in a temp directory
-# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1/A2/A3/A4/A5/A7/A8/A9 mutation coverage (T06-A9 includes the byte-exact EXTRA comparison mutations: plain-LOWER-IN rollback, catalog pad-space control deletion, and forged marker/sentinel outputs)
+# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1/A2/A3/A4/A5/A7/A8/A9/A10 mutation coverage (T06-A9 includes the byte-exact EXTRA comparison mutations: plain-LOWER-IN rollback, catalog pad-space control deletion, and forged marker/sentinel outputs; T06-A10 includes the AUTO_INCREMENT declaration/allocator-observation mutations)
 # pos: offline negative tests for scripts/ddl_golden.py validation (no Docker required)
 # note: if this file changes, update this header and module README.md.
 """Validator contract tests for scripts/ddl_golden.py.
@@ -2113,6 +2113,7 @@ def t06_contract_tests(tmp):
         ddl_golden.T06_A7_CM_RULE, ddl_golden.T06_A7_TC_RULE,
         ddl_golden.T06_A8_TABLE_RULE, ddl_golden.T06_A8_COLUMN_RULE,
         ddl_golden.T06_A8_LENGTH_RULE, ddl_golden.T06_A9_RULE,
+        ddl_golden.T06_A10_PK_RULE, ddl_golden.T06_A10_INIT_RULE,
         "ddl.table.exists.create.forbid", "ddl.table.exists.alter.require",
         "ddl.alter.drop_column.exists.require", "ddl.create_index.columns.exists.require")]})
     binary.write_text("#!/bin/sh\nprintf '%s' '" + catalog + "'\n")
@@ -2126,11 +2127,26 @@ def t06_contract_tests(tmp):
         return [{"assert": q["assert"], "sql": q["sql"], "rc": 0,
                  "output": q["expect"], "stderr": ""} for q in queries]
 
-    def step_records(steps):
-        return [{"name": s["name"], "sql": s["sql"], "rc": s.get("expect_rc", 0),
-                 "stdout": " ".join(s.get("stdout_contains") or []),
-                 "stderr": " ".join(s.get("stderr_contains") or []),
-                 "verify": query_records(s.get("verify", []))} for s in steps]
+    def step_records(steps, spec=None):
+        records = [{"name": s["name"], "sql": s["sql"], "rc": s.get("expect_rc", 0),
+                    "stdout": " ".join(s.get("stdout_contains") or []),
+                    "stderr": " ".join(s.get("stderr_contains") or []),
+                    "verify": query_records(s.get("verify", []))} for s in steps]
+        if spec is not None:
+            # T06-A10 record-only observation steps carry no equality oracle;
+            # seed shaped samples so the dedicated validator sees the real
+            # contract (bound target, member shape, legal null|value form).
+            for step in records:
+                if step["name"] == ddl_golden.T06_A10_EXTRA_RAW_NAME:
+                    cols = ("id", "tenant_id") if spec["id"].endswith("-composite") else ("id",)
+                    auto = "6175746F5F696E6372656D656E74" if "-no-auto" not in spec["id"] and "-composite" not in spec["id"] else ""
+                    step["stdout"] = "|".join(
+                        f"{c}:{auto}:utf8mb4:utf8mb4_0900_ai_ci" for c in cols)
+                elif step["name"] == ddl_golden.T06_A10_ALLOCATOR_OBS_NAME:
+                    step["stdout"] = "allocator|golden|t|value:42"
+                elif step["name"] == ddl_golden.T06_A10_SHOW_CREATE_OBS_NAME:
+                    step["stdout"] = "t\tCREATE TABLE `t` (`id` bigint(20)) ENGINE=InnoDB"
+        return records
 
     for key, anchor in manifest["anchors"].items():
         banner = anchor["version_contains"]
@@ -2260,7 +2276,7 @@ def t06_contract_tests(tmp):
                 if declared_facts is not None:
                     case["actual"]["instance_facts"] = dict(declared_facts)
                 for field in ("setup", "execute", "teardown"):
-                    case["actual"][field] = step_records(spec.get(field) or [])
+                    case["actual"][field] = step_records(spec.get(field) or [], spec)
                 for field in ("post_verify", "structure"):
                     case["actual"][field] = query_records(spec.get(field) or [])
             else:
@@ -2498,7 +2514,7 @@ def t06_contract_tests(tmp):
     donors = {v: copy.deepcopy(by_id(a, f"T06.meta.t06-mysql84-{v}"))
               for v in ("no-pk", "inline-pk", "table-pk")}
     for item in list(a["cases"]):
-        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-", "t06-a7-", "t06-a8-", "t06-a9-")):
+        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-", "t06-a7-", "t06-a8-", "t06-a9-", "t06-a10-")):
             slot(a, item["case_id"], donors[item["cli_case"].split("-", 2)[2]])
     run("t06 all metadata slots refilled variant-wise rejected", a, "identity")
 
@@ -2509,7 +2525,7 @@ def t06_contract_tests(tmp):
     run("t06 metadata slot filled by offline record rejected", a, "identity")
     a = copy.deepcopy(artifact)
     for item in list(a["cases"]):
-        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-", "t06-a7-", "t06-a8-", "t06-a9-")):
+        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-", "t06-a7-", "t06-a8-", "t06-a9-", "t06-a10-")):
             variant = item["cli_case"].split("-", 2)[2]
             dialect = "tidb" if item["anchor"] == "tidb85" else "mysql"
             slot(a, item["case_id"], by_id(a, f"T06.cli.t06-{dialect}-{variant}"))
@@ -3746,6 +3762,248 @@ def t06_contract_tests(tmp):
     a9_structure_entry(c, "literal control")["output"] = "|".join(parts)
     run("t06a9r2b trailing-space literal recorded as marker rejected",
         a, "literal control")
+
+    # --- T06-A10 additions (#85): single-PK auto_increment require and the
+    # explicit init-value equality policy on the 292-case set. Every
+    # mutation names a real regression mode: a missed or forged blocker, a
+    # swapped finding identity between the two rules, an equality check
+    # weakened into pass, the composite skip laundered as satisfaction, the
+    # isolated profile swapped or re-parametrized, the column attribute and
+    # the table option impersonating each other, observation steps deleted
+    # or forged (missing row as empty EXTRA, broken allocator shape, wrong
+    # target), a product reject skipping the driver CREATE, and denominator
+    # shrinkage on either side.
+
+    def t06a10(suffix):
+        candidate = copy.deepcopy(artifact)
+        case = next(item for item in candidate["cases"]
+                    if item.get("cli_case") == "t06-a10-" + suffix)
+        return candidate, case
+
+    def a10_structure_entry(case, needle):
+        return next(s for s in case["actual"]["structure"]
+                    if needle in s["assert"])
+
+    def a10_execute_step(case, needle):
+        return next(s for s in case["actual"]["execute"]
+                    if needle in s["name"])
+
+    # The missing-AUTO_INCREMENT blocker must fire exactly once on the pk
+    # rule; dropping it or recording pass launders a real reject.
+    a, c = t06a10("mysql-pk-no-auto")
+    parsed = c["actual"]["parsed"]
+    parsed["statements"][0]["findings"] = []
+    parsed["verdict"] = "pass"
+    parsed["summary"]["blockers"] = 0
+    parsed["fail_on_triggered"] = False
+    c["actual"]["exit"] = 0
+    update_stdout(c)
+    run("t06a10 pk-no-auto missed blocker rejected", a, "pk-no-auto")
+
+    # A fabricated finding on the clean pk-auto role is equally invalid.
+    a, c = t06a10("mysql-pk-auto")
+    parsed = c["actual"]["parsed"]
+    parsed["statements"][0]["findings"].append(
+        copy.deepcopy(by_id(a, "T06.cli.t06-a10-mysql-pk-no-auto")
+                      ["actual"]["parsed"]["statements"][0]["findings"][0]))
+    parsed["verdict"] = "reject"
+    parsed["summary"]["blockers"] = 1
+    parsed["fail_on_triggered"] = True
+    c["actual"]["exit"] = 1
+    update_stdout(c)
+    run("t06a10 pk-auto forged finding rejected", a, "pk-auto")
+
+    # The init equality rule: recording the match as a reject, or the
+    # mismatch as a pass, breaks the frozen verdict.
+    a, c = t06a10("mysql-init-match")
+    parsed = c["actual"]["parsed"]
+    parsed["statements"][0]["findings"].append(
+        copy.deepcopy(by_id(a, "T06.cli.t06-a10-mysql-init-mismatch")
+                      ["actual"]["parsed"]["statements"][0]["findings"][0]))
+    parsed["verdict"] = "reject"
+    parsed["summary"]["blockers"] = 1
+    parsed["fail_on_triggered"] = True
+    c["actual"]["exit"] = 1
+    update_stdout(c)
+    run("t06a10 init-match recorded as reject rejected", a, "init-match")
+
+    a, c = t06a10("tidb-init-mismatch")
+    parsed = c["actual"]["parsed"]
+    parsed["statements"][0]["findings"] = []
+    parsed["verdict"] = "pass"
+    parsed["summary"]["blockers"] = 0
+    parsed["fail_on_triggered"] = False
+    c["actual"]["exit"] = 0
+    update_stdout(c)
+    run("t06a10 init-mismatch recorded as pass rejected", a, "init-mismatch")
+
+    # Equality is exact: swapping required/actual or forcing them equal is
+    # not the 8-vs-9 finding.
+    a, c = t06a10("mysql-init-mismatch")
+    md = c["actual"]["parsed"]["statements"][0]["findings"][0]["metadata"]
+    md["required_value"], md["actual_value"] = 9, 8
+    update_stdout(c)
+    run("t06a10 required/actual values swapped rejected", a, "init-mismatch")
+
+    a, c = t06a10("mysql-init-mismatch")
+    c["actual"]["parsed"]["statements"][0]["findings"][0]["metadata"]["actual_value"] = 8
+    update_stdout(c)
+    run("t06a10 actual_value forced equal rejected", a, "init-mismatch")
+
+    # The two rules are distinct identities: an init finding cannot stand
+    # in for the pk missing-auto finding or vice versa.
+    a, c = t06a10("mysql-pk-no-auto")
+    c["actual"]["parsed"]["statements"][0]["findings"] = [
+        copy.deepcopy(by_id(a, "T06.cli.t06-a10-mysql-init-mismatch")
+                      ["actual"]["parsed"]["statements"][0]["findings"][0])]
+    update_stdout(c)
+    run("t06a10 pk finding substituted by init finding rejected", a, "pk-no-auto")
+
+    a, c = t06a10("tidb-init-mismatch")
+    c["actual"]["parsed"]["statements"][0]["findings"] = [
+        copy.deepcopy(by_id(a, "T06.cli.t06-a10-tidb-pk-no-auto")
+                      ["actual"]["parsed"]["statements"][0]["findings"][0])]
+    update_stdout(c)
+    run("t06a10 init finding substituted by pk finding rejected", a, "init-mismatch")
+
+    # The composite control skips the single-member check; recording a
+    # blocker on it, or shrinking its stored PK to one member, is a lie.
+    a, c = t06a10("mysql-composite")
+    parsed = c["actual"]["parsed"]
+    parsed["statements"][0]["findings"].append(
+        copy.deepcopy(by_id(a, "T06.cli.t06-a10-mysql-pk-no-auto")
+                      ["actual"]["parsed"]["statements"][0]["findings"][0]))
+    parsed["verdict"] = "reject"
+    parsed["summary"]["blockers"] = 1
+    parsed["fail_on_triggered"] = True
+    c["actual"]["exit"] = 1
+    update_stdout(c)
+    run("t06a10 composite forged with pk finding rejected", a, "composite")
+
+    a, c = t06a10("mysql84-composite")
+    a10_structure_entry(c, "primary index part count")["output"] = "1"
+    run("t06a10 composite stored PK shrunk to one member rejected", a, "structure")
+
+    a, c = t06a10("mysql84-composite")
+    a10_structure_entry(c, "primary key members in key order")["output"] = \
+        "tenant_id:1,id:2"
+    run("t06a10 composite member order swapped rejected", a, "structure")
+
+    a, c = t06a10("mysql84-composite")
+    a10_structure_entry(c, "id extra exactly empty")["output"] = "0"
+    run("t06a10 composite forged auto_increment EXTRA rejected", a, "extra")
+
+    # Profile identity and parametrization: the off control must stay
+    # clean, the isolated profile must not silently become all-off, and a
+    # re-parametrized init value must not launder 9 under value=8.
+    a, c = t06a10("mysql-pk-off")
+    parsed = c["actual"]["parsed"]
+    parsed["statements"][0]["findings"].append(
+        copy.deepcopy(by_id(a, "T06.cli.t06-a10-mysql-pk-no-auto")
+                      ["actual"]["parsed"]["statements"][0]["findings"][0]))
+    parsed["verdict"] = "reject"
+    parsed["summary"]["blockers"] = 1
+    parsed["fail_on_triggered"] = True
+    c["actual"]["exit"] = 1
+    update_stdout(c)
+    run("t06a10 pk-off control forged with finding rejected", a, "pk-off")
+
+    a, c = t06a10("mysql-pk-no-auto")
+    m = copy.deepcopy(manifest)
+    next(s for s in m["cli_cases"]
+         if s["id"] == c["cli_case"])["policy"] = "all-rules-disabled"
+    c["policy_profile"] = "all-rules-disabled"
+    run("t06a10 isolated pk profile swapped for all-off rejected", a, "T06-A1", m)
+
+    a, c = t06a10("mysql-init-mismatch")
+    m = copy.deepcopy(manifest)
+    m["policy"]["profiles"]["t06-a10-init-value-isolated"]["enable"][
+        "ddl.table.auto_increment.init_value.require"]["params"]["value"] = 9
+    run("t06a10 init profile re-parametrized to value=9 rejected", a, "T06-A1", m)
+
+    a, c = t06a10("mysql-init-mismatch")
+    m = copy.deepcopy(manifest)
+    m["policy"]["profiles"]["t06-a10-init-value-isolated"]["enable"][
+        "ddl.table.auto_increment.init_value.require"]["params"]["required"] = True
+    run("t06a10 init profile gained a required param rejected", a, "T06-A1", m)
+
+    # The declaration facts stay separate: the column flag finding cannot
+    # borrow the table-option identity, and the table-option finding cannot
+    # borrow the column metadata.
+    a, c = t06a10("mysql-pk-no-auto")
+    c["actual"]["parsed"]["statements"][0]["findings"][0]["metadata"]["type"] = "8"
+    update_stdout(c)
+    run("t06a10 pk finding metadata impersonates option rejected", a, "pk-no-auto")
+
+    # The record-only observations are bound and shaped: deleting one,
+    # forging the allocator shape or target, faking SHOW CREATE, or letting
+    # a missing-row read launder as empty EXTRA all fail.
+    a, c = t06a10("mysql84-pk-auto")
+    c["actual"]["execute"] = [
+        s for s in c["actual"]["execute"]
+        if s["name"] != "allocator state observation"]
+    run("t06a10 allocator observation deleted rejected", a, "allocator")
+
+    a, c = t06a10("mysql84-pk-auto")
+    a10_execute_step(c, "allocator state observation")["stdout"] = \
+        "allocator|golden|t|value:abc"
+    run("t06a10 allocator value shape broken rejected", a, "allocator")
+
+    a, c = t06a10("mysql84-pk-auto")
+    a10_execute_step(c, "allocator state observation")["stdout"] = \
+        "allocator|otherdb|t|value:8"
+    run("t06a10 allocator row bound to wrong schema rejected", a, "allocator")
+
+    a, c = t06a10("mysql84-pk-auto")
+    a10_execute_step(c, "show create observation")["stdout"] = "ok"
+    run("t06a10 show create output forged rejected", a, "show create")
+
+    a, c = t06a10("mysql84-pk-no-auto")
+    a10_execute_step(c, "column extra raw observation")["stdout"] = ""
+    run("t06a10 missing row laundered as empty extra rejected", a, "extra raw")
+
+    a, c = t06a10("mysql84-pk-auto")
+    a10_execute_step(c, "column extra raw observation")["stdout"] = \
+        "id:<null>:utf8mb4:utf8mb4_0900_ai_ci"
+    run("t06a10 NULL extra recorded as real marker rejected", a, "hex contradicts")
+
+    a, c = t06a10("tidb85-init-mismatch")
+    a10_execute_step(c, "column extra raw observation")["stdout"] = \
+        "id:6175746F5F696E6372656D656E74"  # member shape broken
+    run("t06a10 raw extra member shape broken rejected", a, "member shape")
+
+    # A product reject must never skip the driver replay: the rejected
+    # roles still execute the same CREATE on the server.
+    a, c = t06a10("mysql84-init-mismatch")
+    c["actual"]["execute"] = [
+        s for s in c["actual"]["execute"]
+        if s["name"] != "driver applies the audited create"]
+    run("t06a10 product reject skipped driver create rejected", a, "execute")
+
+    a, c = t06a10("mysql80-pk-no-auto")
+    a10_execute_step(c, "driver applies the audited create")["rc"] = 1
+    run("t06a10 driver create rc forged nonzero rejected", a, "execute")
+
+    # Denominator and identity: cross-anchor donor reuse, a metadata slot
+    # demoted to an offline record, and a case deleted on both sides.
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.meta.t06-a10-mysql57-pk-auto",
+         by_id(a, "T06.meta.t06-a10-mysql84-pk-auto"))
+    run("t06a10 mysql84 record re-keyed as mysql57 rejected", a, "identity")
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.meta.t06-a10-tidb85-init-mismatch",
+         by_id(a, "T06.cli.t06-a10-tidb-init-mismatch"))
+    run("t06a10 metadata slot demoted to offline record rejected", a, "identity")
+    a = copy.deepcopy(artifact)
+    m = copy.deepcopy(manifest)
+    victim = "T06.meta.t06-a10-mysql84-init-mismatch"
+    a["cases"] = [x for x in a["cases"] if x["case_id"] != victim]
+    a["executed_count"] = len(a["cases"])
+    a["required_case_ids"].remove(victim)
+    m["metadata_cases"] = [s for s in m["metadata_cases"]
+                           if s["id"] != "t06-a10-mysql84-init-mismatch"]
+    m["required_case_ids"].remove(victim)
+    run("t06a10 case deleted on both sides rejected", a, "T06-A1", m)
 
     return results
 
