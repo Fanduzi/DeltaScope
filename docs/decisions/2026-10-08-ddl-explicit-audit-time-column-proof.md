@@ -113,3 +113,48 @@ touching production code:
   the shipped query itself. The earlier artifact keeps its old query
   text and SHA as historical evidence; only new runs execute the strict
   query.
+
+## Revision T06-A9-R2 — byte-exact EXTRA comparison under PAD SPACE collations
+
+Targeted read-only probing on the mysql84 anchor showed the whole-text
+whitelist was still one collation subtlety short: `information_schema.COLUMNS.EXTRA`
+carries `utf8mb3_general_ci` there, a PAD SPACE collation, so
+`LOWER(expr) IN (...)` equates trailing-space text with whitelist
+entries — `' '`, `'default_generated '`, `'on update current_timestamp '`
+and `'default_generated on update current_timestamp(0) '` (each with
+exactly one trailing U+0020) all folded to real role markers instead of
+the sentinel. This was an oracle over-acceptance defect, not a product
+rule or catalog-content defect.
+
+- **The whitelist pins the comparison type, not just the list.** The
+  CASE now compares `CAST(LOWER(expr) AS BINARY)` against
+  `CAST('<entry>' AS BINARY)` constants — case folding first, then a
+  byte-exact comparison with no length padding, trimming, or charset
+  re-declaration. `BINARY` with no length is deliberate: it neither
+  truncates nor pads. SQL `NULL` still falls through to the sentinel,
+  and the two created / six updated spellings are unchanged.
+- **Literal and catalog contexts may differ in collation.** The
+  read-only literal control runs under the fixture client's session
+  collation (latin1 on the mysql anchors), while the per-column
+  normalized query and the new catalog-context control run under the
+  catalog column's own collation — `utf8mb3_general_ci` on the mysql
+  anchors, whatever each version actually reports on TiDB (recorded
+  verbatim, never hard-coded). Each of the 16 anchored cases now also
+  asserts that the strict CASE over `CONCAT(EXTRA,' ')` returns the
+  sentinel for every existing time column: one appended U+0020 on a real
+  stored EXTRA stays byte-visible. An execute-step observation records
+  the raw EXTRA, its `CHARSET`/`COLLATION`, the concatenated probe's
+  collation (proving it kept the catalog field's comparison context),
+  the concatenated bytes, and the folded result.
+- **Evidence distinction preserved.** The R1 PAD SPACE red run lives in
+  `/tmp/deltascope-t06-a9-r1-extra.IjV24Y/` (archived under the R2
+  evidence tree): group A exercised session literals, group B literals
+  converted to the observed catalog charset/collation — neither was a
+  database-produced EXTRA value. The R2 green run re-executes the same
+  inputs through the new helper.
+- **Verification.** `make ddl-golden-validator-test` — 393 contract
+  cases, 0 failures (8 new mutations: plain-`LOWER`-`IN` rollback on
+  either or both sides, catalog-context control deletion on either or
+  both sides, observation removal on both sides, and forged
+  marker/sentinel outputs). `make ddl-golden TASK=T06` re-executed the
+  full 256-case set at the R2 code SHA.

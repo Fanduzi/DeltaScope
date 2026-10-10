@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: synthetic ddl-golden artifacts and manifests built in a temp directory
-# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1/A2/A3/A4/A5/A7/A8/A9 mutation coverage
+# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1/A2/A3/A4/A5/A7/A8/A9 mutation coverage (T06-A9 includes the byte-exact EXTRA comparison mutations: plain-LOWER-IN rollback, catalog pad-space control deletion, and forged marker/sentinel outputs)
 # pos: offline negative tests for scripts/ddl_golden.py validation (no Docker required)
 # note: if this file changes, update this header and module README.md.
 """Validator contract tests for scripts/ddl_golden.py.
@@ -3652,6 +3652,100 @@ def t06_contract_tests(tmp):
                     entry["sql"] = old_extra_query
     run("t06a9r2 manifest+artifact reverted to REPLACE query rejected",
         a, "T06-A1", m)
+
+    # --- T06-A9-R2b additions (PAD SPACE hardening): the strict query now
+    # compares CAST(LOWER(x) AS BINARY) on both sides. Rolling the recorded
+    # query back to the plain LOWER(...) IN shape must fail identity, and
+    # rolling manifest+artifact back together still fails the frozen
+    # contract — the literal control alone cannot reach the catalog
+    # column's PAD SPACE collation, so the catalog-context control must
+    # also survive deletion and forgery on either side.
+
+    old_r1_extra_query = (
+        "SELECT CASE WHEN LOWER(EXTRA) IN ('','default_generated') THEN '' "
+        "WHEN LOWER(EXTRA) IN ('on update current_timestamp',"
+        "'on update current_timestamp()','on update current_timestamp(0)',"
+        "'default_generated on update current_timestamp',"
+        "'default_generated on update current_timestamp()',"
+        "'default_generated on update current_timestamp(0)') "
+        "THEN 'on update current_timestamp' ELSE '<unrecognized-extra>' END "
+        "FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' "
+        "AND TABLE_NAME='t' AND COLUMN_NAME='updated_at'")
+
+    a, c = t06a9("mysql84-complete-pair")
+    a9_structure_entry(c, "updated_at extra normalized")["sql"] = \
+        old_r1_extra_query
+    run("t06a9r2b artifact reverted to plain LOWER-IN query rejected",
+        a, "structure")
+
+    a, c = t06a9("mysql84-complete-pair")
+    m = copy.deepcopy(manifest)
+    a9_structure_entry(c, "updated_at extra normalized")["sql"] = \
+        old_r1_extra_query
+    for spec in m["metadata_cases"]:
+        if spec["id"] == "t06-a9-mysql84-complete-pair":
+            for entry in spec["structure"]:
+                if entry["assert"] == "updated_at extra normalized":
+                    entry["sql"] = old_r1_extra_query
+    run("t06a9r2b manifest+artifact reverted to LOWER-IN query rejected",
+        a, "T06-A1", m)
+
+    # The catalog-context control is a declared structure entry: dropping it
+    # artifact-side breaks the recorded step count, and dropping it on both
+    # sides still diverges from the frozen oracle.
+    pad_assert = "extra trailing-space catalog context"
+
+    a, c = t06a9("mysql84-complete-pair")
+    c["actual"]["structure"] = [
+        s for s in c["actual"]["structure"] if s["assert"] != pad_assert]
+    run("t06a9r2b catalog-context control deleted artifact-side rejected",
+        a, "structure")
+
+    a, c = t06a9("mysql84-complete-pair")
+    m = copy.deepcopy(manifest)
+    c["actual"]["structure"] = [
+        s for s in c["actual"]["structure"] if s["assert"] != pad_assert]
+    for spec in m["metadata_cases"]:
+        if spec["id"] == "t06-a9-mysql84-complete-pair":
+            spec["structure"] = [
+                s for s in spec["structure"] if s["assert"] != pad_assert]
+    run("t06a9r2b catalog-context control deleted both sides rejected",
+        a, "T06-A1", m)
+
+    a, c = t06a9("mysql84-complete-pair")
+    m = copy.deepcopy(manifest)
+    obs_name = "extra pad-space context observation"
+    c["actual"]["execute"] = [
+        s for s in c["actual"]["execute"] if s["name"] != obs_name]
+    for spec in m["metadata_cases"]:
+        if spec["id"] == "t06-a9-mysql84-complete-pair":
+            spec["execute"] = [
+                s for s in spec["execute"] if s["name"] != obs_name]
+    run("t06a9r2b pad-space observation deleted both sides rejected",
+        a, "T06-A1", m)
+
+    # Forged outputs: a trailing-space catalog value must never record a
+    # real role marker, and a legal uppercase literal must never record the
+    # sentinel. Both are output mismatches against the frozen expectation.
+    a, c = t06a9("mysql84-complete-pair")
+    a9_structure_entry(c, pad_assert)["output"] = \
+        "created_at:|updated_at:on update current_timestamp"
+    run("t06a9r2b trailing-space input recorded as role markers rejected",
+        a, "catalog context")
+
+    a, c = t06a9("mysql84-complete-pair")
+    parts = a9_structure_entry(c, "literal control")["output"].split("|")
+    parts[2] = "<unrecognized-extra>"  # 'DEFAULT_GENERATED' is legal
+    a9_structure_entry(c, "literal control")["output"] = "|".join(parts)
+    run("t06a9r2b legal uppercase literal recorded as sentinel rejected",
+        a, "literal control")
+
+    a, c = t06a9("mysql84-complete-pair")
+    parts = a9_structure_entry(c, "literal control")["output"].split("|")
+    parts[18] = "on update current_timestamp"  # 'on update current_timestamp ' is illegal
+    a9_structure_entry(c, "literal control")["output"] = "|".join(parts)
+    run("t06a9r2b trailing-space literal recorded as marker rejected",
+        a, "literal control")
 
     return results
 

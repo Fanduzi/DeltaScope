@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: task manifest testdata/ddl-golden/<TASK>.json, docker/ddl-golden-compose.yaml, freshly built deltascope CLI
-# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest, including synchronous execute verification and the frozen T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1–A9 oracles
+# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest, including synchronous execute verification and the frozen T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1–A9 oracles (the T06-A9 EXTRA whitelist compares CAST(LOWER(x) AS BINARY) byte-exact so PAD SPACE catalog collations cannot smuggle trailing-space text into a role marker)
 # pos: DDL golden-path runner and artifact validator behind `make ddl-golden TASK=Txx ARTIFACT_DIR=...`
 # note: if this file changes, update this header and module README.md.
 """DeltaScope DDL golden-path runner (milestone T02/#81, T04/#83).
@@ -2685,12 +2685,19 @@ def t06_a9_extra_case(expr):
     created column, 'on update current_timestamp' for an updated column,
     and the sentinel for everything else. The complete lower-cased text
     must match a whitelist entry exactly — no substring deletion, token
-    removal, or whitespace merging ever rewrites unknown text."""
-    created = "(" + ",".join(f"'{v}'" for v in T06_A9_EXTRA_CREATED_WHITELIST) + ")"
-    updated = "(" + ",".join(f"'{v}'" for v in T06_A9_EXTRA_UPDATED_WHITELIST) + ")"
+    removal, or whitespace merging ever rewrites unknown text. The
+    comparison is byte-exact: both sides are CAST(... AS BINARY) after
+    case folding, so PAD SPACE collations (e.g. the utf8mb3_general_ci
+    that MySQL gives information_schema.COLUMNS.EXTRA) can never equate a
+    trailing-space input with a whitelist entry."""
+    value = f"CAST(LOWER({expr}) AS BINARY)"
+    created = "(" + ",".join(
+        f"CAST('{v}' AS BINARY)" for v in T06_A9_EXTRA_CREATED_WHITELIST) + ")"
+    updated = "(" + ",".join(
+        f"CAST('{v}' AS BINARY)" for v in T06_A9_EXTRA_UPDATED_WHITELIST) + ")"
     return (
-        f"CASE WHEN LOWER({expr}) IN {created} THEN '' "
-        f"WHEN LOWER({expr}) IN {updated} THEN 'on update current_timestamp' "
+        f"CASE WHEN {value} IN {created} THEN '' "
+        f"WHEN {value} IN {updated} THEN 'on update current_timestamp' "
         f"ELSE '{T06_A9_EXTRA_SENTINEL}' END"
     )
 
@@ -2708,7 +2715,11 @@ def t06_a9_extra_normalized(column):
 # Read-only scalar control: the whitelist CASE over fixed literals —
 # every legal spelling for both roles, then a battery of malformed texts
 # that substring-replacement oracles used to accept. The same CASE
-# expression as t06_a9_extra_normalized is applied to each literal.
+# expression as t06_a9_extra_normalized is applied to each literal. The
+# last four entries each carry exactly one trailing U+0020: under PAD
+# SPACE collations (the catalog EXTRA collation on the MySQL anchors)
+# they used to compare equal to a whitelist entry — the byte-exact CASE
+# must still reject them.
 T06_A9_EXTRA_LITERALS = (
     "", "default_generated", "DEFAULT_GENERATED",
     "on update current_timestamp",
@@ -2725,6 +2736,10 @@ T06_A9_EXTRA_LITERALS = (
     "on update curr()ent_timestamp",
     "on update current_timestamp(3)",
     "stored generated",
+    " ",
+    "default_generated ",
+    "on update current_timestamp ",
+    "default_generated on update current_timestamp(0) ",
 )
 T06_A9_EXTRA_LITERAL_SQL = (
     "SELECT CONCAT_WS('|',"
@@ -2749,6 +2764,48 @@ def t06_a9_extra_literal_expect():
             parts.append(T06_A9_EXTRA_SENTINEL)
     parts.append(T06_A9_EXTRA_SENTINEL)  # SQL NULL literal
     return "|".join(parts)
+
+
+# T06-A9-R2 catalog-context control: folding the stored EXTRA through the
+# same CASE must stay byte-exact even when the input carries the catalog
+# column's own (possibly PAD SPACE) collation. Appending one U+0020 to the
+# real stored EXTRA — CONCAT(EXTRA,' ') — must always yield the sentinel;
+# under the pre-BINARY oracle PAD SPACE made it silently match a whitelist
+# entry. The GROUP_CONCAT names every existing time column so a missing
+# row, a SQL NULL, or an empty result can never pass as a rejection.
+T06_A9_PAD_CONTEXT_SQL = (
+    "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, "
+    + t06_a9_extra_case("CONCAT(EXTRA,' ')")
+    + ") ORDER BY ORDINAL_POSITION SEPARATOR '|') "
+    "FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' "
+    "AND TABLE_NAME='t' AND COLUMN_NAME IN ('created_at','updated_at')"
+)
+T06_A9_PAD_CONTEXT_ASSERT = "extra trailing-space catalog context"
+
+
+def t06_a9_pad_context_expect(roles):
+    """Frozen oracle for the catalog-context control: every existing time
+    column of this case, in ordinal order, tagged with the sentinel."""
+    return "|".join(f"{column}:{T06_A9_EXTRA_SENTINEL}"
+                    for column, _ in roles)
+
+
+# Observation (never asserted): the real stored EXTRA with its catalog
+# charset/collation, the collation the concatenated probe expression
+# actually carries, the concatenated bytes, and the folded CASE result.
+# Recording COLLATION(CONCAT(EXTRA,' ')) proves the probe really ran in
+# the catalog column's comparison context rather than a session NO PAD
+# literal context.
+T06_A9_PAD_CONTEXT_OBS = (
+    "SELECT GROUP_CONCAT(CONCAT_WS(':', COLUMN_NAME, "
+    "COALESCE(HEX(EXTRA),'<null>'), CHARSET(EXTRA), COLLATION(EXTRA), "
+    "COLLATION(CONCAT(EXTRA,' ')), HEX(CONCAT(EXTRA,' ')), "
+    + t06_a9_extra_case("CONCAT(EXTRA,' ')")
+    + ") ORDER BY ORDINAL_POSITION SEPARATOR '|') "
+    "FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' "
+    "AND TABLE_NAME='t' AND COLUMN_NAME IN ('created_at','updated_at')"
+)
+T06_A9_PAD_CONTEXT_OBS_NAME = "extra pad-space context observation"
 
 
 T06_ANCHORS = {
@@ -4376,6 +4433,14 @@ def t06_a1_contract():
                 verify("extra whitelist literal control",
                        T06_A9_EXTRA_LITERAL_SQL,
                        t06_a9_extra_literal_expect()),
+                # Catalog-context control (T06-A9-R2): the stored EXTRA of
+                # each existing time column with one appended U+0020 still
+                # folds to the sentinel — a PAD SPACE false-accept in the
+                # catalog column's own collation is caught here, where the
+                # literal control cannot reach it.
+                verify(T06_A9_PAD_CONTEXT_ASSERT,
+                       T06_A9_PAD_CONTEXT_SQL,
+                       t06_a9_pad_context_expect(spec_row["roles"])),
             ]
             if anchor_key != "tidb85":
                 structure_rows.append(verify("storage engine", T06_ENGINE, "InnoDB"))
@@ -4408,6 +4473,11 @@ def t06_a1_contract():
                     {
                         "name": "raw column rows observation",
                         "sql": T06_A9_COLUMN_RAW_ROWS,
+                        "expect_rc": 0,
+                    },
+                    {
+                        "name": T06_A9_PAD_CONTEXT_OBS_NAME,
+                        "sql": T06_A9_PAD_CONTEXT_OBS,
                         "expect_rc": 0,
                     },
                 ],
