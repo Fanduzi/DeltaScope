@@ -1,0 +1,241 @@
+{
+  "case_id": "T06.cli.t06-a7-tidb-cs-denied",
+  "kind": "cli_audit",
+  "cli_case": "t06-a7-tidb-cs-denied",
+  "dialect": "tidb",
+  "input_sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET latin1 COLLATE latin1_bin);",
+  "policy_profile": "t06-a7-column-charset-isolated",
+  "policy_path": "/private/tmp/ds-t06-a10-proof/T06/golden-policy-t06-a7-column-charset-isolated.yaml",
+  "command": [
+    "/private/tmp/ds-t06-a10-proof/T06/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "CREATE TABLE t (c VARCHAR(16) CHARACTER SET latin1 COLLATE latin1_bin);",
+    "--config",
+    "/private/tmp/ds-t06-a10-proof/T06/golden-policy-t06-a7-column-charset-isolated.yaml",
+    "--format",
+    "json",
+    "--fail-on",
+    "blocker"
+  ],
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "statement_sql": [
+      "CREATE TABLE t (c VARCHAR(16) CHARACTER SET latin1 COLLATE latin1_bin);"
+    ],
+    "statement_indices": [
+      0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.column.charset.allowlist",
+        "level": "blocker"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 0,
+        "rule_id": "ddl.column.charset.allowlist",
+        "metadata": {
+          "table": "t",
+          "column": "c",
+          "field": "charset",
+          "value": "latin1",
+          "allowed": [
+            "utf8mb4"
+          ]
+        }
+      }
+    ],
+    "finding_locations": [
+      {
+        "index": 0,
+        "line": 1,
+        "column": 1
+      }
+    ],
+    "finding_message": "column \"c\" uses unsupported charset \"latin1\""
+  },
+  "actual": {
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t (c VARCHAR(16) CHARACTER SET latin1 COLLATE latin1_bin);\",\"normalized_sql\":\"CREATE TABLE t (c VARCHAR(16) CHARACTER SET latin1 COLLATE latin1_bin)\",\"findings\":[{\"rule_id\":\"ddl.column.charset.allowlist\",\"level\":\"blocker\",\"message\":\"column \\\"c\\\" uses unsupported charset \\\"latin1\\\"\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"choose an allowed charset or remove the explicit column-level charset override\",\"metadata\":{\"allowed\":[\"utf8mb4\"],\"column\":\"c\",\"field\":\"charset\",\"table\":\"t\",\"value\":\"latin1\"},\"explanation\":{\"summary\":\"Restrict DDL column charset allowlist\",\"why\":\"The statement uses a value outside the shipped allowlist for this rule.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"choose an allowed charset or remove the explicit column-level charset override\"}}],\"coverage\":{\"status\":\"complete\"}}],\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"tidb\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET latin1 COLLATE latin1_bin);",
+          "normalized_sql": "CREATE TABLE t (c VARCHAR(16) CHARACTER SET latin1 COLLATE latin1_bin)",
+          "findings": [
+            {
+              "rule_id": "ddl.column.charset.allowlist",
+              "level": "blocker",
+              "message": "column \"c\" uses unsupported charset \"latin1\"",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "choose an allowed charset or remove the explicit column-level charset override",
+              "metadata": {
+                "allowed": [
+                  "utf8mb4"
+                ],
+                "column": "c",
+                "field": "charset",
+                "table": "t",
+                "value": "latin1"
+              },
+              "explanation": {
+                "summary": "Restrict DDL column charset allowlist",
+                "why": "The statement uses a value outside the shipped allowlist for this rule.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "choose an allowed charset or remove the explicit column-level charset override"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "offline",
+        "dialect": "tidb",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=1"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['CREATE TABLE t (c VARCHAR(16) CHARACTER SET latin1 COLLATE latin1_bin);'] expected=['CREATE TABLE t (c VARCHAR(16) CHARACTER SET latin1 COLLATE latin1_bin);']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.column.charset.allowlist', 'blocker')] expected=[(0, 'ddl.column.charset.allowlist', 'blocker')]"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.column.charset.allowlist')",
+      "ok": true,
+      "detail": "findings=[{'allowed': ['utf8mb4'], 'column': 'c', 'field': 'charset', 'table': 't', 'value': 'latin1'}] expected_subset={'table': 't', 'column': 'c', 'field': 'charset', 'value': 'latin1', 'allowed': ['utf8mb4']}"
+    },
+    {
+      "name": "finding location index=0",
+      "ok": true,
+      "detail": "locations=[{'line': 1, 'column': 1}] expected={'index': 0, 'line': 1, 'column': 1}"
+    },
+    {
+      "name": "fail_on_triggered",
+      "ok": true,
+      "detail": "fail_on_triggered=True"
+    }
+  ],
+  "status": "pass"
+}

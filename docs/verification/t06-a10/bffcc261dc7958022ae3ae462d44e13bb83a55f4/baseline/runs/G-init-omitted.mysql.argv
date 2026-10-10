@@ -1,0 +1,1 @@
+./bin/deltascope audit --dialect mysql --config policies/P_INIT.yaml --format json --fail-on blocker --file inputs/G-init-omitted.sql

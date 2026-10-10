@@ -1,0 +1,1 @@
+./bin/deltascope audit --dialect tidb --config policies/P_OFF.yaml --format json --fail-on blocker --file inputs/H-init-off.sql

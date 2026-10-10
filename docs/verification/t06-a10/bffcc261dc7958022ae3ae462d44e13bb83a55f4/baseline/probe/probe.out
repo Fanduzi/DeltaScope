@@ -1,0 +1,132 @@
+===== A-pk-auto.sql =====
+raw: CREATE TABLE t (id BIGINT AUTO_INCREMENT PRIMARY KEY);
+ast_nodes=1 warnings=[]
+  node[0] *ast.CreateTableStmt table=t ifNotExists=false
+    col[0] name=id type=bigint(20) flen=-1 unsignedFlag=false options=[ColumnOptionAutoIncrement ColumnOptionPrimaryKey(StrValue="" PrimaryKeyTp=)]
+    table_options=[]
+  extract[0][mysql] kind=ddl
+    PrimaryKey name="primary" kind=primary columns=[id]
+    Column[0]={"name":"id","type":"bigint(20)","length":-1,"not_null":true,"auto_increment":true}
+    Options={} auto_increment_present=false auto_increment_value=""
+    UnextractedOptions=[]
+  extract[0][tidb] kind=ddl
+    PrimaryKey name="primary" kind=primary columns=[id]
+    Column[0]={"name":"id","type":"bigint(20)","length":-1,"not_null":true,"auto_increment":true}
+    Options={} auto_increment_present=false auto_increment_value=""
+    UnextractedOptions=[]
+===== B-pk-no-auto.sql =====
+raw: CREATE TABLE t (id BIGINT PRIMARY KEY);
+ast_nodes=1 warnings=[]
+  node[0] *ast.CreateTableStmt table=t ifNotExists=false
+    col[0] name=id type=bigint(20) flen=-1 unsignedFlag=false options=[ColumnOptionPrimaryKey(StrValue="" PrimaryKeyTp=)]
+    table_options=[]
+  extract[0][mysql] kind=ddl
+    PrimaryKey name="primary" kind=primary columns=[id]
+    Column[0]={"name":"id","type":"bigint(20)","length":-1,"not_null":true}
+    Options={} auto_increment_present=false auto_increment_value=""
+    UnextractedOptions=[]
+  extract[0][tidb] kind=ddl
+    PrimaryKey name="primary" kind=primary columns=[id]
+    Column[0]={"name":"id","type":"bigint(20)","length":-1,"not_null":true}
+    Options={} auto_increment_present=false auto_increment_value=""
+    UnextractedOptions=[]
+===== C-composite.sql =====
+raw: CREATE TABLE t (id BIGINT NOT NULL, tenant_id INT NOT NULL, PRIMARY KEY (id, tenant_id));
+ast_nodes=1 warnings=[]
+  node[0] *ast.CreateTableStmt table=t ifNotExists=false
+    col[0] name=id type=bigint(20) flen=-1 unsignedFlag=false options=[ColumnOptionNotNull]
+    col[1] name=tenant_id type=int(11) flen=-1 unsignedFlag=false options=[ColumnOptionNotNull]
+    constraint[0] ConstraintPrimaryKey keys=id(len=-1),tenant_id(len=-1)
+    table_options=[]
+  extract[0][mysql] kind=ddl
+    PrimaryKey name="primary" kind=primary columns=[id tenant_id]
+    Column[0]={"name":"id","type":"bigint(20)","length":-1,"not_null":true}
+    Column[1]={"name":"tenant_id","type":"int(11)","length":-1,"not_null":true}
+    Options={} auto_increment_present=false auto_increment_value=""
+    UnextractedOptions=[]
+  extract[0][tidb] kind=ddl
+    PrimaryKey name="primary" kind=primary columns=[id tenant_id]
+    Column[0]={"name":"id","type":"bigint(20)","length":-1,"not_null":true}
+    Column[1]={"name":"tenant_id","type":"int(11)","length":-1,"not_null":true}
+    Options={} auto_increment_present=false auto_increment_value=""
+    UnextractedOptions=[]
+===== D-pk-off.sql =====
+raw: CREATE TABLE t (id BIGINT PRIMARY KEY);
+ast_nodes=1 warnings=[]
+  node[0] *ast.CreateTableStmt table=t ifNotExists=false
+    col[0] name=id type=bigint(20) flen=-1 unsignedFlag=false options=[ColumnOptionPrimaryKey(StrValue="" PrimaryKeyTp=)]
+    table_options=[]
+  extract[0][mysql] kind=ddl
+    PrimaryKey name="primary" kind=primary columns=[id]
+    Column[0]={"name":"id","type":"bigint(20)","length":-1,"not_null":true}
+    Options={} auto_increment_present=false auto_increment_value=""
+    UnextractedOptions=[]
+  extract[0][tidb] kind=ddl
+    PrimaryKey name="primary" kind=primary columns=[id]
+    Column[0]={"name":"id","type":"bigint(20)","length":-1,"not_null":true}
+    Options={} auto_increment_present=false auto_increment_value=""
+    UnextractedOptions=[]
+===== E-init-match.sql =====
+raw: CREATE TABLE t (id BIGINT AUTO_INCREMENT PRIMARY KEY) AUTO_INCREMENT=8;
+ast_nodes=1 warnings=[]
+  node[0] *ast.CreateTableStmt table=t ifNotExists=false
+    col[0] name=id type=bigint(20) flen=-1 unsignedFlag=false options=[ColumnOptionAutoIncrement ColumnOptionPrimaryKey(StrValue="" PrimaryKeyTp=)]
+    table_options=[TableOptionAutoIncrement(StrValue="" UintValue=8)]
+  extract[0][mysql] kind=ddl
+    PrimaryKey name="primary" kind=primary columns=[id]
+    Column[0]={"name":"id","type":"bigint(20)","length":-1,"not_null":true,"auto_increment":true}
+    Options={"auto_increment":"8"} auto_increment_present=true auto_increment_value="8"
+    UnextractedOptions=[]
+  extract[0][tidb] kind=ddl
+    PrimaryKey name="primary" kind=primary columns=[id]
+    Column[0]={"name":"id","type":"bigint(20)","length":-1,"not_null":true,"auto_increment":true}
+    Options={"auto_increment":"8"} auto_increment_present=true auto_increment_value="8"
+    UnextractedOptions=[]
+===== F-init-mismatch.sql =====
+raw: CREATE TABLE t (id BIGINT AUTO_INCREMENT PRIMARY KEY) AUTO_INCREMENT=9;
+ast_nodes=1 warnings=[]
+  node[0] *ast.CreateTableStmt table=t ifNotExists=false
+    col[0] name=id type=bigint(20) flen=-1 unsignedFlag=false options=[ColumnOptionAutoIncrement ColumnOptionPrimaryKey(StrValue="" PrimaryKeyTp=)]
+    table_options=[TableOptionAutoIncrement(StrValue="" UintValue=9)]
+  extract[0][mysql] kind=ddl
+    PrimaryKey name="primary" kind=primary columns=[id]
+    Column[0]={"name":"id","type":"bigint(20)","length":-1,"not_null":true,"auto_increment":true}
+    Options={"auto_increment":"9"} auto_increment_present=true auto_increment_value="9"
+    UnextractedOptions=[]
+  extract[0][tidb] kind=ddl
+    PrimaryKey name="primary" kind=primary columns=[id]
+    Column[0]={"name":"id","type":"bigint(20)","length":-1,"not_null":true,"auto_increment":true}
+    Options={"auto_increment":"9"} auto_increment_present=true auto_increment_value="9"
+    UnextractedOptions=[]
+===== G-init-omitted.sql =====
+raw: CREATE TABLE t (id BIGINT AUTO_INCREMENT PRIMARY KEY);
+ast_nodes=1 warnings=[]
+  node[0] *ast.CreateTableStmt table=t ifNotExists=false
+    col[0] name=id type=bigint(20) flen=-1 unsignedFlag=false options=[ColumnOptionAutoIncrement ColumnOptionPrimaryKey(StrValue="" PrimaryKeyTp=)]
+    table_options=[]
+  extract[0][mysql] kind=ddl
+    PrimaryKey name="primary" kind=primary columns=[id]
+    Column[0]={"name":"id","type":"bigint(20)","length":-1,"not_null":true,"auto_increment":true}
+    Options={} auto_increment_present=false auto_increment_value=""
+    UnextractedOptions=[]
+  extract[0][tidb] kind=ddl
+    PrimaryKey name="primary" kind=primary columns=[id]
+    Column[0]={"name":"id","type":"bigint(20)","length":-1,"not_null":true,"auto_increment":true}
+    Options={} auto_increment_present=false auto_increment_value=""
+    UnextractedOptions=[]
+===== H-init-off.sql =====
+raw: CREATE TABLE t (id BIGINT AUTO_INCREMENT PRIMARY KEY) AUTO_INCREMENT=9;
+ast_nodes=1 warnings=[]
+  node[0] *ast.CreateTableStmt table=t ifNotExists=false
+    col[0] name=id type=bigint(20) flen=-1 unsignedFlag=false options=[ColumnOptionAutoIncrement ColumnOptionPrimaryKey(StrValue="" PrimaryKeyTp=)]
+    table_options=[TableOptionAutoIncrement(StrValue="" UintValue=9)]
+  extract[0][mysql] kind=ddl
+    PrimaryKey name="primary" kind=primary columns=[id]
+    Column[0]={"name":"id","type":"bigint(20)","length":-1,"not_null":true,"auto_increment":true}
+    Options={"auto_increment":"9"} auto_increment_present=true auto_increment_value="9"
+    UnextractedOptions=[]
+  extract[0][tidb] kind=ddl
+    PrimaryKey name="primary" kind=primary columns=[id]
+    Column[0]={"name":"id","type":"bigint(20)","length":-1,"not_null":true,"auto_increment":true}
+    Options={"auto_increment":"9"} auto_increment_present=true auto_increment_value="9"
+    UnextractedOptions=[]

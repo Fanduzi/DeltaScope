@@ -1,0 +1,8 @@
+code_sha=bffcc261dc7958022ae3ae462d44e13bb83a55f4
+tree_sha=811227f1b4fa9d2a250f8506b4fa80aedfb8eb7e
+parent=1e75b3601b3c8ce55bc246c08b25961ee31f1517
+task_base=1e75b3601b3c8ce55bc246c08b25961ee31f1517
+golden_head_field=bffcc261dc7958022ae3ae462d44e13bb83a55f4
+worktree_tracked_changes=0
+go_version=go version go1.26.1 darwin/arm64
+untracked_non_evidence=6

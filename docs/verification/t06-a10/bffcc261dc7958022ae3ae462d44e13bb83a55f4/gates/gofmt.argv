@@ -1,0 +1,1 @@
+gofmt -l internal/application/audit/batch_state_t06a10_test.go internal/domain/rule/ddl/auto_increment_t06a10_test.go internal/infrastructure/metadata/mysql/provider_t06a10_test.go internal/infrastructure/parser/tidb/extractor_t06a10_test.go internal/interfaces/http/audit_auto_increment_t06a10_test.go pkg/deltascope/audit_auto_increment_t06a10_test.go 

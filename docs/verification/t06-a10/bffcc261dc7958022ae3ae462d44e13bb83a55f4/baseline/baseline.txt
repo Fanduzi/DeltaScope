@@ -1,0 +1,13 @@
+HEAD=1e75b3601b3c8ce55bc246c08b25961ee31f1517
+branch=milestone/mysql-tidb-ddl-completion
+origin/workfree=1e75b3601b3c8ce55bc246c08b25961ee31f1517
+origin/milestone=1bf503ea1f80a1d156ea00270e6390e6bd3f25f3
+evidence-parent=b585c6a77bcb588799d8de3b092b6308425a37cb
+tracked-dirty=0
+untracked:
+?? .agents/
+?? .debug-journal.md
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? docs/quality/architecture-review-2026-08-11.html

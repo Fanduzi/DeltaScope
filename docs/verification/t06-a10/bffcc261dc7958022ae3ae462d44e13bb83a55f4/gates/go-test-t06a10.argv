@@ -1,0 +1,1 @@
+go test -count=1 ./internal/infrastructure/parser/tidb ./internal/domain/rule/ddl ./internal/application/audit ./internal/infrastructure/metadata/mysql ./pkg/deltascope ./internal/interfaces/http -run T06A10 -v 

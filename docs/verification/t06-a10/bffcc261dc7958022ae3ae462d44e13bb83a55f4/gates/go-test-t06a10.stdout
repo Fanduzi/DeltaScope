@@ -1,0 +1,216 @@
+=== RUN   TestExtractorT06A10AutoIncrementFacts
+=== PAUSE TestExtractorT06A10AutoIncrementFacts
+=== CONT  TestExtractorT06A10AutoIncrementFacts
+=== RUN   TestExtractorT06A10AutoIncrementFacts/pk-auto
+=== PAUSE TestExtractorT06A10AutoIncrementFacts/pk-auto
+=== RUN   TestExtractorT06A10AutoIncrementFacts/pk-no-auto
+=== PAUSE TestExtractorT06A10AutoIncrementFacts/pk-no-auto
+=== RUN   TestExtractorT06A10AutoIncrementFacts/composite
+=== PAUSE TestExtractorT06A10AutoIncrementFacts/composite
+=== RUN   TestExtractorT06A10AutoIncrementFacts/pk-off
+=== PAUSE TestExtractorT06A10AutoIncrementFacts/pk-off
+=== RUN   TestExtractorT06A10AutoIncrementFacts/init-match
+=== PAUSE TestExtractorT06A10AutoIncrementFacts/init-match
+=== RUN   TestExtractorT06A10AutoIncrementFacts/init-mismatch
+=== PAUSE TestExtractorT06A10AutoIncrementFacts/init-mismatch
+=== RUN   TestExtractorT06A10AutoIncrementFacts/init-omitted
+=== PAUSE TestExtractorT06A10AutoIncrementFacts/init-omitted
+=== RUN   TestExtractorT06A10AutoIncrementFacts/init-off
+=== PAUSE TestExtractorT06A10AutoIncrementFacts/init-off
+=== RUN   TestExtractorT06A10AutoIncrementFacts/table-level-pk-auto
+=== PAUSE TestExtractorT06A10AutoIncrementFacts/table-level-pk-auto
+=== CONT  TestExtractorT06A10AutoIncrementFacts/pk-auto
+=== CONT  TestExtractorT06A10AutoIncrementFacts/init-mismatch
+=== CONT  TestExtractorT06A10AutoIncrementFacts/init-off
+=== CONT  TestExtractorT06A10AutoIncrementFacts/init-omitted
+=== CONT  TestExtractorT06A10AutoIncrementFacts/pk-off
+=== CONT  TestExtractorT06A10AutoIncrementFacts/table-level-pk-auto
+=== CONT  TestExtractorT06A10AutoIncrementFacts/composite
+=== CONT  TestExtractorT06A10AutoIncrementFacts/pk-no-auto
+=== CONT  TestExtractorT06A10AutoIncrementFacts/init-match
+--- PASS: TestExtractorT06A10AutoIncrementFacts (0.00s)
+    --- PASS: TestExtractorT06A10AutoIncrementFacts/table-level-pk-auto (0.00s)
+    --- PASS: TestExtractorT06A10AutoIncrementFacts/pk-auto (0.00s)
+    --- PASS: TestExtractorT06A10AutoIncrementFacts/init-omitted (0.00s)
+    --- PASS: TestExtractorT06A10AutoIncrementFacts/composite (0.00s)
+    --- PASS: TestExtractorT06A10AutoIncrementFacts/init-off (0.00s)
+    --- PASS: TestExtractorT06A10AutoIncrementFacts/pk-off (0.00s)
+    --- PASS: TestExtractorT06A10AutoIncrementFacts/init-mismatch (0.00s)
+    --- PASS: TestExtractorT06A10AutoIncrementFacts/pk-no-auto (0.00s)
+    --- PASS: TestExtractorT06A10AutoIncrementFacts/init-match (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	0.712s
+=== RUN   TestT06A10PrimaryKeyAutoIncrementBoundaries
+=== PAUSE TestT06A10PrimaryKeyAutoIncrementBoundaries
+=== RUN   TestT06A10InitValueEqualityBoundaries
+=== PAUSE TestT06A10InitValueEqualityBoundaries
+=== CONT  TestT06A10PrimaryKeyAutoIncrementBoundaries
+=== CONT  TestT06A10InitValueEqualityBoundaries
+--- PASS: TestT06A10PrimaryKeyAutoIncrementBoundaries (0.00s)
+--- PASS: TestT06A10InitValueEqualityBoundaries (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	0.921s
+=== RUN   TestT06A10StatementMatrix
+=== PAUSE TestT06A10StatementMatrix
+=== RUN   TestT06A10CompositeSkipsSingleMemberRule
+=== PAUSE TestT06A10CompositeSkipsSingleMemberRule
+=== RUN   TestT06A10DerivedPostStateCarriesDeclarationFacts
+=== PAUSE TestT06A10DerivedPostStateCarriesDeclarationFacts
+=== CONT  TestT06A10StatementMatrix
+=== CONT  TestT06A10DerivedPostStateCarriesDeclarationFacts
+=== RUN   TestT06A10StatementMatrix/mysql/pk-auto
+=== PAUSE TestT06A10StatementMatrix/mysql/pk-auto
+=== RUN   TestT06A10StatementMatrix/mysql/pk-no-auto
+=== PAUSE TestT06A10StatementMatrix/mysql/pk-no-auto
+=== RUN   TestT06A10DerivedPostStateCarriesDeclarationFacts/mysql/pk-auto
+=== CONT  TestT06A10CompositeSkipsSingleMemberRule
+=== RUN   TestT06A10StatementMatrix/mysql/composite
+=== PAUSE TestT06A10DerivedPostStateCarriesDeclarationFacts/mysql/pk-auto
+=== RUN   TestT06A10CompositeSkipsSingleMemberRule/mysql
+=== PAUSE TestT06A10CompositeSkipsSingleMemberRule/mysql
+=== RUN   TestT06A10CompositeSkipsSingleMemberRule/tidb
+=== PAUSE TestT06A10CompositeSkipsSingleMemberRule/tidb
+=== CONT  TestT06A10CompositeSkipsSingleMemberRule/tidb
+=== CONT  TestT06A10CompositeSkipsSingleMemberRule/mysql
+=== RUN   TestT06A10DerivedPostStateCarriesDeclarationFacts/mysql/init-match
+=== PAUSE TestT06A10StatementMatrix/mysql/composite
+=== PAUSE TestT06A10DerivedPostStateCarriesDeclarationFacts/mysql/init-match
+=== RUN   TestT06A10DerivedPostStateCarriesDeclarationFacts/mysql/init-mismatch
+=== PAUSE TestT06A10DerivedPostStateCarriesDeclarationFacts/mysql/init-mismatch
+=== RUN   TestT06A10DerivedPostStateCarriesDeclarationFacts/tidb/pk-auto
+=== PAUSE TestT06A10DerivedPostStateCarriesDeclarationFacts/tidb/pk-auto
+=== RUN   TestT06A10DerivedPostStateCarriesDeclarationFacts/tidb/init-match
+=== RUN   TestT06A10StatementMatrix/mysql/pk-off
+=== PAUSE TestT06A10DerivedPostStateCarriesDeclarationFacts/tidb/init-match
+=== RUN   TestT06A10DerivedPostStateCarriesDeclarationFacts/tidb/init-mismatch
+=== PAUSE TestT06A10DerivedPostStateCarriesDeclarationFacts/tidb/init-mismatch
+=== PAUSE TestT06A10StatementMatrix/mysql/pk-off
+=== CONT  TestT06A10DerivedPostStateCarriesDeclarationFacts/mysql/init-match
+=== RUN   TestT06A10StatementMatrix/mysql/init-match
+=== CONT  TestT06A10DerivedPostStateCarriesDeclarationFacts/tidb/init-mismatch
+=== CONT  TestT06A10DerivedPostStateCarriesDeclarationFacts/mysql/init-mismatch
+=== CONT  TestT06A10DerivedPostStateCarriesDeclarationFacts/mysql/pk-auto
+=== PAUSE TestT06A10StatementMatrix/mysql/init-match
+=== CONT  TestT06A10DerivedPostStateCarriesDeclarationFacts/tidb/pk-auto
+=== CONT  TestT06A10DerivedPostStateCarriesDeclarationFacts/tidb/init-match
+=== RUN   TestT06A10StatementMatrix/mysql/init-mismatch
+=== PAUSE TestT06A10StatementMatrix/mysql/init-mismatch
+=== RUN   TestT06A10StatementMatrix/mysql/init-omitted
+=== PAUSE TestT06A10StatementMatrix/mysql/init-omitted
+=== RUN   TestT06A10StatementMatrix/mysql/init-off
+=== PAUSE TestT06A10StatementMatrix/mysql/init-off
+=== RUN   TestT06A10StatementMatrix/tidb/pk-auto
+=== PAUSE TestT06A10StatementMatrix/tidb/pk-auto
+=== RUN   TestT06A10StatementMatrix/tidb/pk-no-auto
+=== PAUSE TestT06A10StatementMatrix/tidb/pk-no-auto
+=== RUN   TestT06A10StatementMatrix/tidb/composite
+=== PAUSE TestT06A10StatementMatrix/tidb/composite
+=== RUN   TestT06A10StatementMatrix/tidb/pk-off
+=== PAUSE TestT06A10StatementMatrix/tidb/pk-off
+=== RUN   TestT06A10StatementMatrix/tidb/init-match
+=== PAUSE TestT06A10StatementMatrix/tidb/init-match
+=== RUN   TestT06A10StatementMatrix/tidb/init-mismatch
+=== PAUSE TestT06A10StatementMatrix/tidb/init-mismatch
+=== RUN   TestT06A10StatementMatrix/tidb/init-omitted
+=== PAUSE TestT06A10StatementMatrix/tidb/init-omitted
+=== RUN   TestT06A10StatementMatrix/tidb/init-off
+=== PAUSE TestT06A10StatementMatrix/tidb/init-off
+=== CONT  TestT06A10StatementMatrix/mysql/pk-auto
+=== CONT  TestT06A10StatementMatrix/tidb/pk-auto
+=== CONT  TestT06A10StatementMatrix/mysql/init-match
+=== CONT  TestT06A10StatementMatrix/tidb/init-match
+=== CONT  TestT06A10StatementMatrix/mysql/pk-off
+=== CONT  TestT06A10StatementMatrix/mysql/pk-no-auto
+=== CONT  TestT06A10StatementMatrix/mysql/init-off
+=== CONT  TestT06A10StatementMatrix/mysql/composite
+--- PASS: TestT06A10DerivedPostStateCarriesDeclarationFacts (0.00s)
+    --- PASS: TestT06A10DerivedPostStateCarriesDeclarationFacts/tidb/pk-auto (0.00s)
+    --- PASS: TestT06A10DerivedPostStateCarriesDeclarationFacts/mysql/init-match (0.00s)
+    --- PASS: TestT06A10DerivedPostStateCarriesDeclarationFacts/mysql/pk-auto (0.00s)
+    --- PASS: TestT06A10DerivedPostStateCarriesDeclarationFacts/tidb/init-mismatch (0.00s)
+    --- PASS: TestT06A10DerivedPostStateCarriesDeclarationFacts/mysql/init-mismatch (0.00s)
+    --- PASS: TestT06A10DerivedPostStateCarriesDeclarationFacts/tidb/init-match (0.00s)
+=== CONT  TestT06A10StatementMatrix/mysql/init-mismatch
+=== CONT  TestT06A10StatementMatrix/mysql/init-omitted
+=== CONT  TestT06A10StatementMatrix/tidb/composite
+=== CONT  TestT06A10StatementMatrix/tidb/pk-off
+=== CONT  TestT06A10StatementMatrix/tidb/pk-no-auto
+=== CONT  TestT06A10StatementMatrix/tidb/init-omitted
+=== CONT  TestT06A10StatementMatrix/tidb/init-off
+=== CONT  TestT06A10StatementMatrix/tidb/init-mismatch
+--- PASS: TestT06A10CompositeSkipsSingleMemberRule (0.00s)
+    --- PASS: TestT06A10CompositeSkipsSingleMemberRule/tidb (0.02s)
+    --- PASS: TestT06A10CompositeSkipsSingleMemberRule/mysql (0.02s)
+--- PASS: TestT06A10StatementMatrix (0.00s)
+    --- PASS: TestT06A10StatementMatrix/mysql/pk-auto (0.01s)
+    --- PASS: TestT06A10StatementMatrix/mysql/init-match (0.02s)
+    --- PASS: TestT06A10StatementMatrix/mysql/pk-no-auto (0.01s)
+    --- PASS: TestT06A10StatementMatrix/mysql/init-off (0.01s)
+    --- PASS: TestT06A10StatementMatrix/tidb/pk-auto (0.02s)
+    --- PASS: TestT06A10StatementMatrix/mysql/init-mismatch (0.01s)
+    --- PASS: TestT06A10StatementMatrix/mysql/pk-off (0.02s)
+    --- PASS: TestT06A10StatementMatrix/mysql/composite (0.02s)
+    --- PASS: TestT06A10StatementMatrix/tidb/init-match (0.02s)
+    --- PASS: TestT06A10StatementMatrix/mysql/init-omitted (0.02s)
+    --- PASS: TestT06A10StatementMatrix/tidb/composite (0.01s)
+    --- PASS: TestT06A10StatementMatrix/tidb/pk-no-auto (0.01s)
+    --- PASS: TestT06A10StatementMatrix/tidb/pk-off (0.01s)
+    --- PASS: TestT06A10StatementMatrix/tidb/init-off (0.01s)
+    --- PASS: TestT06A10StatementMatrix/tidb/init-omitted (0.01s)
+    --- PASS: TestT06A10StatementMatrix/tidb/init-mismatch (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	1.377s
+=== RUN   TestProviderT06A10CatalogAllocatorValueWritesSnapshotOption
+=== PAUSE TestProviderT06A10CatalogAllocatorValueWritesSnapshotOption
+=== CONT  TestProviderT06A10CatalogAllocatorValueWritesSnapshotOption
+=== RUN   TestProviderT06A10CatalogAllocatorValueWritesSnapshotOption/catalog_value_lands_on_snapshot_option
+=== PAUSE TestProviderT06A10CatalogAllocatorValueWritesSnapshotOption/catalog_value_lands_on_snapshot_option
+=== RUN   TestProviderT06A10CatalogAllocatorValueWritesSnapshotOption/null_catalog_value_keeps_key_absent
+=== PAUSE TestProviderT06A10CatalogAllocatorValueWritesSnapshotOption/null_catalog_value_keeps_key_absent
+=== CONT  TestProviderT06A10CatalogAllocatorValueWritesSnapshotOption/catalog_value_lands_on_snapshot_option
+=== CONT  TestProviderT06A10CatalogAllocatorValueWritesSnapshotOption/null_catalog_value_keeps_key_absent
+--- PASS: TestProviderT06A10CatalogAllocatorValueWritesSnapshotOption (0.00s)
+    --- PASS: TestProviderT06A10CatalogAllocatorValueWritesSnapshotOption/null_catalog_value_keeps_key_absent (0.00s)
+    --- PASS: TestProviderT06A10CatalogAllocatorValueWritesSnapshotOption/catalog_value_lands_on_snapshot_option (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql	1.085s
+=== RUN   TestT06A10PrimaryKeyAutoIncrementSDK
+--- PASS: TestT06A10PrimaryKeyAutoIncrementSDK (0.00s)
+=== RUN   TestT06A10InitValueMismatchSDK
+--- PASS: TestT06A10InitValueMismatchSDK (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	1.572s
+=== RUN   TestHandlerT06A10PrimaryKeyAutoIncrement
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /healthz                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func1 (8 handlers)
+[GIN-debug] GET    /readyz                   --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func2 (8 handlers)
+[GIN-debug] GET    /version                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func3 (8 handlers)
+[GIN-debug] GET    /v1/rules                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func4 (8 handlers)
+[GIN-debug] GET    /v1/rules/:rule_id        --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func5 (8 handlers)
+[GIN-debug] GET    /v1/capabilities          --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func6 (8 handlers)
+[GIN-debug] POST   /v1/audit                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func7 (8 handlers)
+[GIN-debug] POST   /v1/query-access/analyze  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func8 (8 handlers)
+[GIN-debug] GET    /metrics                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.WrapH.func13 (8 handlers)
+2026/10/10 22:17:52 {"timestamp":"2026-10-10T14:17:52Z","level":"info","msg":"http request","method":"POST","path":"/v1/audit","status":200,"duration_ms":4,"request_id":"req-8b115bb5e42b9dd5a72735ef"}
+--- PASS: TestHandlerT06A10PrimaryKeyAutoIncrement (0.01s)
+=== RUN   TestHandlerT06A10InitValueMismatch
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /healthz                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func1 (8 handlers)
+[GIN-debug] GET    /readyz                   --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func2 (8 handlers)
+[GIN-debug] GET    /version                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func3 (8 handlers)
+[GIN-debug] GET    /v1/rules                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func4 (8 handlers)
+[GIN-debug] GET    /v1/rules/:rule_id        --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func5 (8 handlers)
+[GIN-debug] GET    /v1/capabilities          --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func6 (8 handlers)
+[GIN-debug] POST   /v1/audit                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func7 (8 handlers)
+[GIN-debug] POST   /v1/query-access/analyze  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func8 (8 handlers)
+[GIN-debug] GET    /metrics                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.WrapH.func13 (8 handlers)
+2026/10/10 22:17:52 {"timestamp":"2026-10-10T14:17:52Z","level":"info","msg":"http request","method":"POST","path":"/v1/audit","status":200,"duration_ms":3,"request_id":"req-c23ebf3a12b43b8a1bd0840b"}
+--- PASS: TestHandlerT06A10InitValueMismatch (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/http	1.530s

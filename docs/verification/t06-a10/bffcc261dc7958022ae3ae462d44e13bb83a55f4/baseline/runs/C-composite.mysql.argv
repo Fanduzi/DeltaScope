@@ -1,0 +1,1 @@
+./bin/deltascope audit --dialect mysql --config policies/P_PK.yaml --format json --fail-on blocker --file inputs/C-composite.sql
