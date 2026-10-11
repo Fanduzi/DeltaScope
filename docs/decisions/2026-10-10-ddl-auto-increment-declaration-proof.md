@@ -46,7 +46,15 @@ allocated id had no dedicated evidence.
   same `Options` key but is a *catalog observation*; and the id a future
   INSERT would return is never inferred. Anchored cases record the
   allocator value and SHOW CREATE verbatim as bound observations —
-  shape-checked, target-bound, never frozen as an oracle.
+  shape-checked, target-bound, never frozen as an oracle. R1 tightened
+  the shape check: each observation must be its step's fixed client
+  header plus exactly one data record bound to `golden.t`, so a payload
+  hidden behind extra rows, a wrong-target row ahead of the real one, a
+  header-only result, or a missing header all fail; SHOW CREATE must
+  additionally name object `t` and open `CREATE TABLE `t``. The check
+  stays structural — the allocator digits are verbatim-observed and any
+  legal `null`/`value:<digits>` record is accepted, never numerically
+  asserted against the declared init value.
 - **A policy reject and a native rejection are separate facts.** Anchored
   pk-no-auto and init-mismatch cases record the product `reject` verdict
   *and* the driver-side CREATE success; the stored column then proves

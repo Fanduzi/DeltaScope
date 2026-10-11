@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: task manifest testdata/ddl-golden/<TASK>.json, docker/ddl-golden-compose.yaml, freshly built deltascope CLI
-# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest, including synchronous execute verification and the frozen T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1–A9 oracles (the T06-A9 EXTRA whitelist compares CAST(LOWER(x) AS BINARY) byte-exact so PAD SPACE catalog collations cannot smuggle trailing-space text into a role marker)
+# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest, including synchronous execute verification and the frozen T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1–A10 oracles (the T06-A9 EXTRA whitelist compares CAST(LOWER(x) AS BINARY) byte-exact so PAD SPACE catalog collations cannot smuggle trailing-space text into a role marker; the T06-A10 observations enforce a fixed client header plus exactly one bound data record — the allocator counter is verbatim-observed, never numerically asserted)
 # pos: DDL golden-path runner and artifact validator behind `make ddl-golden TASK=Txx ARTIFACT_DIR=...`
 # note: if this file changes, update this header and module README.md.
 """DeltaScope DDL golden-path runner (milestone T02/#81, T04/#83).
@@ -2876,6 +2876,14 @@ T06_A10_ALLOCATOR_OBS = (
 T06_A10_ALLOCATOR_OBS_NAME = "allocator state observation"
 T06_A10_SHOW_CREATE_OBS = "SHOW CREATE TABLE golden.t"
 T06_A10_SHOW_CREATE_OBS_NAME = "show create observation"
+# Fixed client-side headers observed on all four anchors: the batch client
+# prints the select expression / alias as the first line, then exactly one
+# data record. Only these known headers may be skipped — an arbitrary first
+# line can never masquerade as a table header.
+T06_A10_EXTRA_RAW_HEADER = (
+    T06_A10_EXTRA_RAW.removeprefix("SELECT ").split(" FROM ", 1)[0])
+T06_A10_ALLOCATOR_OBS_HEADER = "observation"
+T06_A10_SHOW_CREATE_HEADER = "Table\tCreate Table"
 T06_A10_NO_SECONDARY = (
     "SELECT COUNT(*) FROM information_schema.STATISTICS "
     "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'"
@@ -5179,15 +5187,40 @@ def t06_a1_artifact_failures(artifact, manifest):
     return failures
 
 
+def _t06_a10_obs_record(stdout, header, case_id, name):
+    """Return the single data record that must follow the step's fixed
+    client header, or a failure string. Header equality is exact — an
+    arbitrary first line cannot masquerade as the table header; lines after
+    the header are all records (interior blanks inflate the count rather
+    than being filtered away); any count other than one is a failure, never
+    an exception."""
+    lines = [ln.rstrip("\r") for ln in (stdout or "").splitlines()]
+    if not lines:
+        return None, (f"T06-A10 {case_id}: {name!r} produced no output")
+    if lines[0] != header:
+        return None, (f"T06-A10 {case_id}: {name!r} header {lines[0]!r} "
+                      f"!= expected {header!r}")
+    records = lines[1:]
+    if len(records) != 1:
+        return None, (f"T06-A10 {case_id}: {name!r} must return exactly one "
+                      f"data record after the header, got {len(records)}: "
+                      f"{records!r}")
+    return records[0], None
+
+
 def t06_a10_artifact_failures(artifact, manifest):
     """T06-A10 (issue #85): the three recorded read-only observations on the
     twenty anchored roles must be real, shaped, and bound to golden.t — not
-    merely present. The allocator row records the catalog counter verbatim
-    ('null' or 'value:<digits>') and is never compared against the declared
-    init value; SHOW CREATE is recorded but never treated as declaration
-    provenance; the raw EXTRA row must name the case's declared columns in
-    ordinal order so a missing row or a wrong target cannot launder as an
-    empty string."""
+    merely present. Each observation is the fixed client header plus
+    exactly one data record: extra rows, missing rows, a wrong target, or a
+    forged header all fail regardless of which line carries the payload.
+    The allocator record captures the catalog counter verbatim ('null' or
+    'value:<digits>') and is never compared against the declared init
+    value; SHOW CREATE must name object 't' and open `CREATE TABLE `t``
+    while its DDL body stays opaque — never declaration provenance; the
+    raw EXTRA record must name the case's declared columns in ordinal
+    order so a missing row or a wrong target cannot launder as an empty
+    string."""
     if manifest.get("task_id") != "T06":
         return []
     expected_cols = {}
@@ -5211,13 +5244,13 @@ def t06_a10_artifact_failures(artifact, manifest):
             failures.append(
                 f"T06-A10 {case_id}: {T06_A10_EXTRA_RAW_NAME!r} missing or rc!=0")
         else:
-            lines = [ln for ln in (raw.get("stdout") or "").splitlines()
-                     if ln.strip()]
-            if not lines:
-                failures.append(
-                    f"T06-A10 {case_id}: {T06_A10_EXTRA_RAW_NAME!r} produced no row")
+            record, err = _t06_a10_obs_record(
+                raw.get("stdout"), T06_A10_EXTRA_RAW_HEADER,
+                case_id, T06_A10_EXTRA_RAW_NAME)
+            if err:
+                failures.append(err)
             else:
-                members = lines[-1].split("|")
+                members = record.split("|")
                 names = [m.split(":", 1)[0] for m in members]
                 # The verbatim HEX must stay consistent with the byte-exact
                 # oracle: roles declaring AUTO_INCREMENT record hex-encoded
@@ -5244,18 +5277,33 @@ def t06_a10_artifact_failures(artifact, manifest):
             failures.append(
                 f"T06-A10 {case_id}: {T06_A10_ALLOCATOR_OBS_NAME!r} missing or rc!=0")
         else:
-            lines = [ln for ln in (alloc.get("stdout") or "").splitlines()
-                     if ln.strip()]
-            if not lines or not allocator_re.match(lines[-1]):
+            record, err = _t06_a10_obs_record(
+                alloc.get("stdout"), T06_A10_ALLOCATOR_OBS_HEADER,
+                case_id, T06_A10_ALLOCATOR_OBS_NAME)
+            if err:
+                failures.append(err)
+            elif not allocator_re.match(record):
                 failures.append(
-                    f"T06-A10 {case_id}: allocator observation {lines[-1] if lines else ''!r} "
+                    f"T06-A10 {case_id}: allocator observation {record!r} "
                     "is not 'allocator|golden|t|(null|value:<digits>)'")
         show = by_name.get(T06_A10_SHOW_CREATE_OBS_NAME)
-        show_out = (show or {}).get("stdout") or ""
-        if show is None or show.get("rc") != 0 or "CREATE TABLE" not in show_out:
+        if show is None or show.get("rc") != 0:
             failures.append(
-                f"T06-A10 {case_id}: {T06_A10_SHOW_CREATE_OBS_NAME!r} missing, "
-                "rc!=0, or no CREATE TABLE output")
+                f"T06-A10 {case_id}: {T06_A10_SHOW_CREATE_OBS_NAME!r} missing "
+                "or rc!=0")
+        else:
+            record, err = _t06_a10_obs_record(
+                show.get("stdout"), T06_A10_SHOW_CREATE_HEADER,
+                case_id, T06_A10_SHOW_CREATE_OBS_NAME)
+            if err:
+                failures.append(err)
+            else:
+                obj, _, ddl = record.partition("\t")
+                if obj != "t" or not ddl.startswith("CREATE TABLE `t`"):
+                    failures.append(
+                        f"T06-A10 {case_id}: show create record "
+                        f"{record[:120]!r} is not bound to a CREATE TABLE "
+                        "for object `t`")
     return failures
 
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: synthetic ddl-golden artifacts and manifests built in a temp directory
-# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1/A2/A3/A4/A5/A7/A8/A9/A10 mutation coverage (T06-A9 includes the byte-exact EXTRA comparison mutations: plain-LOWER-IN rollback, catalog pad-space control deletion, and forged marker/sentinel outputs; T06-A10 includes the AUTO_INCREMENT declaration/allocator-observation mutations)
+# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1/A2/A3/A4/A5/A7/A8/A9/A10 mutation coverage (T06-A9 includes the byte-exact EXTRA comparison mutations: plain-LOWER-IN rollback, catalog pad-space control deletion, and forged marker/sentinel outputs; T06-A10 includes the AUTO_INCREMENT declaration/allocator-observation mutations plus the T06-A10-R1 record-set controls: duplicate/hidden/wrong-target/header-only/forged-header records on all three observations, and legal allocator null|value:<digits> variants staying accepted)
 # pos: offline negative tests for scripts/ddl_golden.py validation (no Docker required)
 # note: if this file changes, update this header and module README.md.
 """Validator contract tests for scripts/ddl_golden.py.
@@ -2137,15 +2137,18 @@ def t06_contract_tests(tmp):
             # seed shaped samples so the dedicated validator sees the real
             # contract (bound target, member shape, legal null|value form).
             for step in records:
+                # Samples mirror the real batch-client shape exactly: the
+                # step's fixed header line, then exactly one data record.
                 if step["name"] == ddl_golden.T06_A10_EXTRA_RAW_NAME:
                     cols = ("id", "tenant_id") if spec["id"].endswith("-composite") else ("id",)
                     auto = "6175746F5F696E6372656D656E74" if "-no-auto" not in spec["id"] and "-composite" not in spec["id"] else ""
-                    step["stdout"] = "|".join(
+                    step["stdout"] = ddl_golden.T06_A10_EXTRA_RAW_HEADER + "\n" + "|".join(
                         f"{c}:{auto}:utf8mb4:utf8mb4_0900_ai_ci" for c in cols)
                 elif step["name"] == ddl_golden.T06_A10_ALLOCATOR_OBS_NAME:
-                    step["stdout"] = "allocator|golden|t|value:42"
+                    step["stdout"] = "observation\nallocator|golden|t|value:42"
                 elif step["name"] == ddl_golden.T06_A10_SHOW_CREATE_OBS_NAME:
-                    step["stdout"] = "t\tCREATE TABLE `t` (`id` bigint(20)) ENGINE=InnoDB"
+                    step["stdout"] = ("Table\tCreate Table\nt\tCREATE TABLE `t` "
+                                      "(`id` bigint(20)) ENGINE=InnoDB")
         return records
 
     for key, anchor in manifest["anchors"].items():
@@ -3946,12 +3949,12 @@ def t06_contract_tests(tmp):
 
     a, c = t06a10("mysql84-pk-auto")
     a10_execute_step(c, "allocator state observation")["stdout"] = \
-        "allocator|golden|t|value:abc"
+        "observation\nallocator|golden|t|value:abc"
     run("t06a10 allocator value shape broken rejected", a, "allocator")
 
     a, c = t06a10("mysql84-pk-auto")
     a10_execute_step(c, "allocator state observation")["stdout"] = \
-        "allocator|otherdb|t|value:8"
+        "observation\nallocator|otherdb|t|value:8"
     run("t06a10 allocator row bound to wrong schema rejected", a, "allocator")
 
     a, c = t06a10("mysql84-pk-auto")
@@ -3962,14 +3965,15 @@ def t06_contract_tests(tmp):
     a10_execute_step(c, "column extra raw observation")["stdout"] = ""
     run("t06a10 missing row laundered as empty extra rejected", a, "extra raw")
 
+    hdr = ddl_golden.T06_A10_EXTRA_RAW_HEADER
     a, c = t06a10("mysql84-pk-auto")
     a10_execute_step(c, "column extra raw observation")["stdout"] = \
-        "id:<null>:utf8mb4:utf8mb4_0900_ai_ci"
+        hdr + "\nid:<null>:utf8mb4:utf8mb4_0900_ai_ci"
     run("t06a10 NULL extra recorded as real marker rejected", a, "hex contradicts")
 
     a, c = t06a10("tidb85-init-mismatch")
     a10_execute_step(c, "column extra raw observation")["stdout"] = \
-        "id:6175746F5F696E6372656D656E74"  # member shape broken
+        hdr + "\nid:6175746F5F696E6372656D656E74"  # member shape broken
     run("t06a10 raw extra member shape broken rejected", a, "member shape")
 
     # A product reject must never skip the driver replay: the rejected
@@ -4004,6 +4008,132 @@ def t06_contract_tests(tmp):
                            if s["id"] != "t06-a10-mysql84-init-mismatch"]
     m["required_case_ids"].remove(victim)
     run("t06a10 case deleted on both sides rejected", a, "T06-A1", m)
+
+    # --- T06-A10-R1: full record-set and object-identity checks on the
+    # three observation steps. Every mutation starts from a clean copy and
+    # only rewrites the step's stdout; the fixed header plus exactly-one-
+    # record contract makes a payload hiding behind another row, a wrong
+    # target ahead of the real row, or a missing record all fail. ---
+
+    # A. allocator: the single 'allocator|golden|t|(null|value:<digits>)'
+    # record is the whole contract — the counter is verbatim observed and
+    # never compared to the declared init value.
+    def a10_alloc(case):
+        return a10_execute_step(case, "allocator state observation")
+
+    a, c = t06a10("mysql84-init-mismatch")
+    a10_alloc(c)["stdout"] = ("observation\nallocator|golden|t|value:9\n"
+                              "allocator|golden|t|value:9")
+    run("t06a10r1 allocator duplicate identical rows rejected", a, "exactly one")
+
+    a, c = t06a10("mysql84-init-mismatch")
+    a10_alloc(c)["stdout"] = ("observation\nallocator|golden|t|value:9\n"
+                              "allocator|golden|t|value:8")
+    run("t06a10r1 allocator conflicting values rejected", a, "exactly one")
+
+    a, c = t06a10("mysql84-init-mismatch")
+    a10_alloc(c)["stdout"] = ("observation\nallocator|golden|u|value:777\n"
+                              "allocator|golden|t|value:9")
+    run("t06a10r1 allocator wrong target ahead of real row rejected", a,
+        "exactly one")
+
+    a, c = t06a10("mysql84-init-mismatch")
+    a10_alloc(c)["stdout"] = ("observation\nnot-an-observation\n"
+                              "allocator|golden|t|value:9")
+    run("t06a10r1 allocator malformed row ahead of real row rejected", a,
+        "exactly one")
+
+    a, c = t06a10("mysql84-init-mismatch")
+    a10_alloc(c)["stdout"] = "observation"
+    run("t06a10r1 allocator header without data row rejected", a, "exactly one")
+
+    a, c = t06a10("mysql84-init-mismatch")
+    a10_alloc(c)["stdout"] = "observation\nallocator|golden|u|value:8"
+    run("t06a10r1 allocator wrong table rejected", a,
+        "is not 'allocator|golden|t|")
+
+    a, c = t06a10("mysql84-init-mismatch")
+    a10_alloc(c)["stdout"] = "allocator|golden|t|value:9"
+    run("t06a10r1 allocator record without header rejected", a, "header")
+
+    # Any legal single record stays an observation: the value is never
+    # compared to the declared init value, so null/0/8/9 all pass.
+    for legal in ("null", "value:0", "value:8", "value:9"):
+        a, c = t06a10("mysql84-init-mismatch")
+        a10_alloc(c)["stdout"] = f"observation\nallocator|golden|t|{legal}"
+        run(f"t06a10r1 allocator legal {legal} accepted", a)
+
+    # B. raw EXTRA: one aggregate record naming the declared columns in
+    # ordinal order; duplicates, a wrong-member record ahead of the real
+    # one, or a header-only result all fail.
+    def a10_raw(case):
+        return a10_execute_step(case, "column extra raw observation")
+
+    composite_row = ("id::utf8mb4:utf8mb4_0900_ai_ci|"
+                     "tenant_id::utf8mb4:utf8mb4_0900_ai_ci")
+    a, c = t06a10("mysql84-composite")
+    a10_raw(c)["stdout"] = hdr + "\n" + composite_row + "\n" + composite_row
+    run("t06a10r1 raw extra duplicate payload rejected", a, "exactly one")
+
+    a, c = t06a10("mysql84-composite")
+    a10_raw(c)["stdout"] = (hdr + "\nid::utf8mb4:utf8mb4_0900_ai_ci\n"
+                            + composite_row)
+    run("t06a10r1 raw extra wrong members ahead of real row rejected", a,
+        "exactly one")
+
+    a, c = t06a10("mysql84-composite")
+    a10_raw(c)["stdout"] = hdr
+    run("t06a10r1 raw extra header without data row rejected", a, "exactly one")
+
+    a, c = t06a10("mysql84-composite")
+    a10_raw(c)["stdout"] = (hdr + "\ntenant_id::utf8mb4:utf8mb4_0900_ai_ci|"
+                            "id::utf8mb4:utf8mb4_0900_ai_ci")
+    run("t06a10r1 raw extra member order swapped rejected", a, "members")
+
+    a, c = t06a10("mysql84-composite")
+    a10_raw(c)["stdout"] = (hdr + "\nid::utf8mb4:utf8mb4_0900_ai_ci|"
+                            "tenant_id::utf8mb4:utf8mb4_0900_ai_ci|"
+                            "extra_col::utf8mb4:utf8mb4_0900_ai_ci")
+    run("t06a10r1 raw extra phantom member rejected", a, "members")
+
+    a, c = t06a10("mysql84-composite")
+    a10_raw(c)["stdout"] = composite_row
+    run("t06a10r1 raw extra record without header rejected", a, "header")
+
+    # C. SHOW CREATE: the header is 'Table\tCreate Table' and the single
+    # record must name object t with a DDL head opening `CREATE TABLE `t``;
+    # the DDL body itself stays an opaque observation.
+    def a10_show(case):
+        return a10_execute_step(case, "show create observation")
+
+    a, c = t06a10("mysql84-pk-auto")
+    a10_show(c)["stdout"] = ("Table\tCreate Table\nu\tCREATE TABLE `u` "
+                             "(`id` bigint) ENGINE=InnoDB")
+    run("t06a10r1 show create names object u rejected", a, "bound to")
+
+    a, c = t06a10("mysql84-pk-auto")
+    a10_show(c)["stdout"] = ("Table\tCreate Table\nt\tCREATE TABLE `u` "
+                             "(`id` bigint) ENGINE=InnoDB")
+    run("t06a10r1 show create ddl opens u rejected", a, "bound to")
+
+    a, c = t06a10("mysql84-pk-auto")
+    a10_show(c)["stdout"] = "Table\tCreate Table\nCREATE TABLE"
+    run("t06a10r1 show create bare keyword row rejected", a, "bound to")
+
+    a, c = t06a10("mysql84-pk-auto")
+    a10_show(c)["stdout"] = "Table\tCreate Table"
+    run("t06a10r1 show create header without data row rejected", a,
+        "exactly one")
+
+    a, c = t06a10("mysql84-pk-auto")
+    a10_show(c)["stdout"] = ("Table\tCreate Table\nt\tCREATE TABLE `t` "
+                             "(`id` bigint) ENGINE=InnoDB\nt\tCREATE TABLE "
+                             "`t` (`id` bigint) ENGINE=InnoDB")
+    run("t06a10r1 show create duplicate record rejected", a, "exactly one")
+
+    a, c = t06a10("mysql84-pk-auto")
+    a10_show(c)["stdout"] = "t\tCREATE TABLE `t` (`id` bigint) ENGINE=InnoDB"
+    run("t06a10r1 show create record without header rejected", a, "header")
 
     return results
 
