@@ -1,0 +1,9 @@
+validator_sha=0693a3dfb968f3d0b010ba2dde8d3c8f06cdafcb
+tree_sha=7b4d8c012cb758ce75647d0e214cccdf4cfd6ef6
+parent=d481948fc348a7192ecbfbe10045b34a4aeff1f8
+tested_artifact=/tmp/ds-t06-a10-proof/T06/artifact.json
+tested_artifact_head_sha=bffcc261dc7958022ae3ae462d44e13bb83a55f4
+tested_artifact_code_commit=bffcc261dc7958022ae3ae462d44e13bb83a55f4
+evidence_prior=d481948fc348a7192ecbfbe10045b34a4aeff1f8
+worktree_tracked_changes=0
+python_version=Python 3.12.12
