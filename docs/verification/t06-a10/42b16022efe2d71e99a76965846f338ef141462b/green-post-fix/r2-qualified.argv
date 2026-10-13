@@ -1,0 +1,1 @@
+python3 scripts/ddl_golden.py validate --artifact /tmp/ds-t06-a10-r2-red/r2-qualified.json

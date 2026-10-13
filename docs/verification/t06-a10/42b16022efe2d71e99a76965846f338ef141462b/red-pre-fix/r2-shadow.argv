@@ -1,0 +1,1 @@
+python3 /tmp/ds-t06-a10-r2-red/oldroot/scripts/ddl_golden.py validate --artifact /tmp/ds-t06-a10-r2-red/r2-shadow.json  # ddl_golden.py extracted verbatim from parent commit 1fd97e9d

@@ -1,0 +1,1 @@
+[ddl-golden][FAIL] T06-A10 T06.meta.t06-a10-mysql84-init-mismatch: show create record 't\tCREATE TABLE `t`.`u` (`id` bigint)' is not bound to a CREATE TABLE for object `t`

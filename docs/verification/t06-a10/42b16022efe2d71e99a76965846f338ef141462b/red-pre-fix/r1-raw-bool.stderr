@@ -1,0 +1,20 @@
+Traceback (most recent call last):
+  File "/tmp/ds-t06-a10-r2-red/oldroot/scripts/ddl_golden.py", line 5892, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/tmp/ds-t06-a10-r2-red/oldroot/scripts/ddl_golden.py", line 5888, in main
+    return cmd_validate(args)
+           ^^^^^^^^^^^^^^^^^^
+  File "/tmp/ds-t06-a10-r2-red/oldroot/scripts/ddl_golden.py", line 5866, in cmd_validate
+    failures = validate_artifact(artifact, manifest, baseline=baseline, verify_binary=not args.no_binary_check)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/ds-t06-a10-r2-red/oldroot/scripts/ddl_golden.py", line 5329, in validate_artifact
+    failures.extend(t06_a10_artifact_failures(artifact, manifest))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/ds-t06-a10-r2-red/oldroot/scripts/ddl_golden.py", line 5247, in t06_a10_artifact_failures
+    record, err = _t06_a10_obs_record(
+                  ^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/ds-t06-a10-r2-red/oldroot/scripts/ddl_golden.py", line 5197, in _t06_a10_obs_record
+    lines = [ln.rstrip("\r") for ln in (stdout or "").splitlines()]
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'bool' object has no attribute 'splitlines'

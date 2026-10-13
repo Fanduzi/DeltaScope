@@ -1,0 +1,7 @@
+ceee3f2e22b1226ef86b999c24345e2fcf1478ee9c2e37d9b4bbfc70e10f67e7  scripts/ddl_golden.py
+751e09de8002f3ce8f30daddac29ed04c542995cc96bf5edfc7bea2315e4b92b  scripts/test_ddl_golden.py
+67eed04794a04d2bf266c3d49146e80ad6558c4c07ee62a557f3142eb3431366  scripts/README.md
+202dec412bda98db4e35c189654a9781daf711e9582d34687732b1bbe8f1c3c2  docs/decisions/2026-10-10-ddl-auto-increment-declaration-proof.md
+b697d5c23b72cd7258ce0e34c8e2b649b9eb43d264acba74b4fba033932f195e  /tmp/ds-t06-a10-r2-red/oldroot/scripts/ddl_golden.py
+40ac86ea80a5cc26569192c2ef44a9af51aa593a47e1871676422ec793db49ec  /tmp/ds-t06-a10-proof/T06/artifact.json
+e9b73bfeaa84de298650d22fd70e228eaa87455ab05851679570b6a01d53980d  /tmp/ds-t06-a10-proof/T06/bin/deltascope

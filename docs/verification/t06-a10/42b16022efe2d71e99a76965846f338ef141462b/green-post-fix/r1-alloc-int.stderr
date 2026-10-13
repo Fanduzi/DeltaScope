@@ -1,0 +1,1 @@
+[ddl-golden][FAIL] T06-A10 T06.meta.t06-a10-mysql84-init-mismatch: 'allocator state observation' stdout is not a string record (got int)
