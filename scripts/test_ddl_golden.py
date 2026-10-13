@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: synthetic ddl-golden artifacts and manifests built in a temp directory
-# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1/A2/A3/A4/A5/A7/A8/A9/A10 mutation coverage (T06-A9 includes the byte-exact EXTRA comparison mutations: plain-LOWER-IN rollback, catalog pad-space control deletion, and forged marker/sentinel outputs; T06-A10 includes the AUTO_INCREMENT declaration/allocator-observation mutations plus the T06-A10-R1 record-set controls: duplicate/hidden/wrong-target/header-only/forged-header records on all three observations, and legal allocator null|value:<digits> variants staying accepted)
+# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1/A2/A3/A4/A5/A7/A8/A9/A10 mutation coverage (T06-A9 includes the byte-exact EXTRA comparison mutations: plain-LOWER-IN rollback, catalog pad-space control deletion, and forged marker/sentinel outputs; T06-A10 includes the AUTO_INCREMENT declaration/allocator-observation mutations plus the T06-A10-R1 record-set controls: duplicate/hidden/wrong-target/header-only/forged-header records on all three observations, and legal allocator null|value:<digits> variants staying accepted; T06-A10-R2 adds non-string-stdout contract failures and the complete-`t` SHOW CREATE head boundary)
 # pos: offline negative tests for scripts/ddl_golden.py validation (no Docker required)
 # note: if this file changes, update this header and module README.md.
 """Validator contract tests for scripts/ddl_golden.py.
@@ -4134,6 +4134,39 @@ def t06_contract_tests(tmp):
     a, c = t06a10("mysql84-pk-auto")
     a10_show(c)["stdout"] = "t\tCREATE TABLE `t` (`id` bigint) ENGINE=InnoDB"
     run("t06a10r1 show create record without header rejected", a, "header")
+
+    # --- T06-A10-R2: the observation stdout field is a client-captured
+    # string by contract — a non-string JSON value must return a contract
+    # failure, never an exception, and must not be coerced with str() or a
+    # default. The SHOW CREATE head must carry the complete `t` token and
+    # continue straight into the column-definition paren. ---
+
+    for obs_name in ("column extra raw observation",
+                     "allocator state observation",
+                     "show create observation"):
+        for bad in (1, True, ["bad"], {"bad": "value"}, None):
+            a, c = t06a10("mysql84-init-mismatch")
+            a10_execute_step(c, obs_name)["stdout"] = bad
+            run(f"t06a10r2 {obs_name.split()[0]} stdout {type(bad).__name__} "
+                "rejected", a, "not a string")
+        a, c = t06a10("mysql84-init-mismatch")
+        a10_execute_step(c, obs_name)["stdout"] = ""
+        run(f"t06a10r2 {obs_name.split()[0]} empty stdout rejected", a,
+            "produced no output")
+
+    a, c = t06a10("mysql84-pk-auto")
+    a10_show(c)["stdout"] = ("Table\tCreate Table\nt\tCREATE TABLE `t`.`u` "
+                             "(`id` bigint)")
+    run("t06a10r2 show create qualified name rejected", a, "bound to")
+
+    a, c = t06a10("mysql84-pk-auto")
+    a10_show(c)["stdout"] = ("Table\tCreate Table\nt\tCREATE TABLE `t``shadow` "
+                             "(`id` bigint)")
+    run("t06a10r2 show create suffixed name rejected", a, "bound to")
+
+    a, c = t06a10("mysql84-pk-auto")
+    a10_show(c)["stdout"] = "Table\tCreate Table\nt\tCREATE TABLE `t`"
+    run("t06a10r2 show create truncated head rejected", a, "bound to")
 
     return results
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: task manifest testdata/ddl-golden/<TASK>.json, docker/ddl-golden-compose.yaml, freshly built deltascope CLI
-# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest, including synchronous execute verification and the frozen T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1–A10 oracles (the T06-A9 EXTRA whitelist compares CAST(LOWER(x) AS BINARY) byte-exact so PAD SPACE catalog collations cannot smuggle trailing-space text into a role marker; the T06-A10 observations enforce a fixed client header plus exactly one bound data record — the allocator counter is verbatim-observed, never numerically asserted)
+# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest, including synchronous execute verification and the frozen T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1–A10 oracles (the T06-A9 EXTRA whitelist compares CAST(LOWER(x) AS BINARY) byte-exact so PAD SPACE catalog collations cannot smuggle trailing-space text into a role marker; the T06-A10 observations enforce a string-typed stdout carrying the fixed client header plus exactly one bound data record — the allocator counter is verbatim-observed, never numerically asserted, and SHOW CREATE must name object `t` with the head opening `CREATE TABLE `t` (` before its opaque body)
 # pos: DDL golden-path runner and artifact validator behind `make ddl-golden TASK=Txx ARTIFACT_DIR=...`
 # note: if this file changes, update this header and module README.md.
 """DeltaScope DDL golden-path runner (milestone T02/#81, T04/#83).
@@ -5189,12 +5189,17 @@ def t06_a1_artifact_failures(artifact, manifest):
 
 def _t06_a10_obs_record(stdout, header, case_id, name):
     """Return the single data record that must follow the step's fixed
-    client header, or a failure string. Header equality is exact — an
+    client header, or a failure string. The field is a client-captured
+    string by contract — any non-string value is a contract failure, never
+    coerced and never an exception. Header equality is exact — an
     arbitrary first line cannot masquerade as the table header; lines after
     the header are all records (interior blanks inflate the count rather
     than being filtered away); any count other than one is a failure, never
     an exception."""
-    lines = [ln.rstrip("\r") for ln in (stdout or "").splitlines()]
+    if not isinstance(stdout, str):
+        return None, (f"T06-A10 {case_id}: {name!r} stdout is not a "
+                      f"string record (got {type(stdout).__name__})")
+    lines = [ln.rstrip("\r") for ln in stdout.splitlines()]
     if not lines:
         return None, (f"T06-A10 {case_id}: {name!r} produced no output")
     if lines[0] != header:
@@ -5299,7 +5304,13 @@ def t06_a10_artifact_failures(artifact, manifest):
                 failures.append(err)
             else:
                 obj, _, ddl = record.partition("\t")
-                if obj != "t" or not ddl.startswith("CREATE TABLE `t`"):
+                # The object column and the complete fixed `t` token both
+                # bind the record to golden.t; the head must continue
+                # straight into the column-definition paren — qualified or
+                # suffixed names and a bare truncated head cannot stand in
+                # for the full object. Everything after `(` stays opaque.
+                if obj != "t" or not re.match(
+                        r"CREATE TABLE `t`[ \t]+\(", ddl):
                     failures.append(
                         f"T06-A10 {case_id}: show create record "
                         f"{record[:120]!r} is not bound to a CREATE TABLE "

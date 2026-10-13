@@ -54,7 +54,12 @@ allocated id had no dedicated evidence.
   additionally name object `t` and open `CREATE TABLE `t``. The check
   stays structural — the allocator digits are verbatim-observed and any
   legal `null`/`value:<digits>` record is accepted, never numerically
-  asserted against the declared init value.
+  asserted against the declared init value. R2 further bound the field
+  itself: observation stdout must be a string (a non-string value is a
+  contract failure, never an exception or a coerced text), and the SHOW
+  CREATE head must carry the complete `t` token opening `CREATE TABLE
+  `t` (` — qualified, suffixed, or truncated heads cannot stand in for
+  the full object while the body stays opaque.
 - **A policy reject and a native rejection are separate facts.** Anchored
   pk-no-auto and init-mismatch cases record the product `reject` verdict
   *and* the driver-side CREATE success; the stored column then proves
