@@ -1,0 +1,9 @@
+sha256 of evidence-bearing source at 4dc51cbd424d2e1f13a9658622820c64685da340:
+d90631d43555a84e6b8caa9fd484304b3958dc56 docs/decisions/2026-10-14-ddl-primary-key-bigint-unsigned-proof.md
+37a268d09cd83048fbbd30660f4cc15700c42fa7 scripts/ddl_golden.py
+5019cee165a90dc9df5dc3f43e0d663c75b14ac1 scripts/test_ddl_golden.py
+052ec5eae22aecdae14d9c8d958c5ffa6373d488 testdata/ddl-golden/T06.json
+8941eb830a4e201016c26de67d3cdd02a9841606 testdata/ddl-inventory/T06-base-traceability.md
+
+sha256 artifact.json: ac50cde206433d7f56a7dc979078003835bca4937da8d2c54f3886477b3983ed
+sha256 binary (not published): 3b3986fee40202ed8082a609dc612ee0d5fd9e4b2a59aaa276f16d8b28acbf7e

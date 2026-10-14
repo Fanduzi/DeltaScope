@@ -1,0 +1,26 @@
+{
+  "mysql57": {
+    "digest": "mysql@sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb",
+    "image": "mysql:5.7.44",
+    "reachable": true,
+    "version": "5.7.44"
+  },
+  "mysql80": {
+    "digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+    "image": "mysql:8.0.46",
+    "reachable": true,
+    "version": "8.0.46"
+  },
+  "mysql84": {
+    "digest": "mysql@sha256:c592c15aaf4a1961e15d82eb31ea5987dda862d1c4b1e93424438c0e91dc1f8d",
+    "image": "mysql:8.4.10",
+    "reachable": true,
+    "version": "8.4.10"
+  },
+  "tidb85": {
+    "digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+    "image": "pingcap/tidb:v8.5.0",
+    "reachable": true,
+    "version": "8.0.11-TiDB-v8.5.0"
+  }
+}

@@ -1,0 +1,129 @@
+argv: go test -count=1 ./internal/infrastructure/parser/tidb ./internal/domain/rule/ddl ./internal/application/audit -run T06A11 -v
+head: 4dc51cbd424d2e1f13a9658622820c64685da340
+=== RUN   TestExtractorT06A11PKMemberTypeAndUnsignedFacts
+=== PAUSE TestExtractorT06A11PKMemberTypeAndUnsignedFacts
+=== RUN   TestExtractorT06A11PKMemberBindsDeclaredColumn
+=== PAUSE TestExtractorT06A11PKMemberBindsDeclaredColumn
+=== RUN   TestExtractorT06A11ZerofillParserObservation
+=== PAUSE TestExtractorT06A11ZerofillParserObservation
+=== CONT  TestExtractorT06A11PKMemberTypeAndUnsignedFacts
+=== CONT  TestExtractorT06A11ZerofillParserObservation
+=== RUN   TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-pass
+=== PAUSE TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-pass
+=== RUN   TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-reject
+=== CONT  TestExtractorT06A11PKMemberBindsDeclaredColumn
+=== PAUSE TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-reject
+=== RUN   TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-composite-skip
+=== PAUSE TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-composite-skip
+=== RUN   TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-off
+=== PAUSE TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-off
+=== RUN   TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-pass
+=== PAUSE TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-pass
+=== RUN   TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-reject
+=== PAUSE TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-reject
+=== RUN   TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-composite-skip
+=== PAUSE TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-composite-skip
+=== RUN   TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-off
+=== PAUSE TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-off
+=== RUN   TestExtractorT06A11PKMemberTypeAndUnsignedFacts/table-level-single
+=== PAUSE TestExtractorT06A11PKMemberTypeAndUnsignedFacts/table-level-single
+=== RUN   TestExtractorT06A11PKMemberTypeAndUnsignedFacts/non-pk-precursor
+=== PAUSE TestExtractorT06A11PKMemberTypeAndUnsignedFacts/non-pk-precursor
+=== CONT  TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-pass
+=== CONT  TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-reject
+=== CONT  TestExtractorT06A11PKMemberTypeAndUnsignedFacts/table-level-single
+=== CONT  TestExtractorT06A11PKMemberTypeAndUnsignedFacts/non-pk-precursor
+=== CONT  TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-off
+=== CONT  TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-off
+=== CONT  TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-composite-skip
+=== CONT  TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-pass
+=== CONT  TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-composite-skip
+=== CONT  TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-reject
+--- PASS: TestExtractorT06A11PKMemberBindsDeclaredColumn (0.00s)
+--- PASS: TestExtractorT06A11PKMemberTypeAndUnsignedFacts (0.00s)
+    --- PASS: TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-reject (0.00s)
+    --- PASS: TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-reject (0.00s)
+    --- PASS: TestExtractorT06A11PKMemberTypeAndUnsignedFacts/non-pk-precursor (0.00s)
+    --- PASS: TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-pass (0.00s)
+    --- PASS: TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-off (0.00s)
+    --- PASS: TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-off (0.00s)
+    --- PASS: TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-pass (0.00s)
+    --- PASS: TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-composite-skip (0.00s)
+    --- PASS: TestExtractorT06A11PKMemberTypeAndUnsignedFacts/table-level-single (0.00s)
+    --- PASS: TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-composite-skip (0.00s)
+--- PASS: TestExtractorT06A11ZerofillParserObservation (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	1.044s
+=== RUN   TestT06A11RequiredFalseSilencesBothRules
+=== PAUSE TestT06A11RequiredFalseSilencesBothRules
+=== RUN   TestT06A11DefaultLevelAndInvalidParameter
+=== PAUSE TestT06A11DefaultLevelAndInvalidParameter
+=== RUN   TestT06A11RuleIndependence
+=== PAUSE TestT06A11RuleIndependence
+=== RUN   TestT06A11SingleMemberGateAndCompositeSkip
+=== PAUSE TestT06A11SingleMemberGateAndCompositeSkip
+=== CONT  TestT06A11RequiredFalseSilencesBothRules
+=== CONT  TestT06A11RuleIndependence
+=== CONT  TestT06A11SingleMemberGateAndCompositeSkip
+--- PASS: TestT06A11RequiredFalseSilencesBothRules (0.00s)
+=== CONT  TestT06A11DefaultLevelAndInvalidParameter
+--- PASS: TestT06A11SingleMemberGateAndCompositeSkip (0.00s)
+--- PASS: TestT06A11RuleIndependence (0.00s)
+--- PASS: TestT06A11DefaultLevelAndInvalidParameter (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	1.480s
+=== RUN   TestT06A11OfflineRoleMatrix
+=== PAUSE TestT06A11OfflineRoleMatrix
+=== RUN   TestT06A11DerivedPreStateCarriesTypeAndUnsigned
+=== PAUSE TestT06A11DerivedPreStateCarriesTypeAndUnsigned
+=== CONT  TestT06A11OfflineRoleMatrix
+=== CONT  TestT06A11DerivedPreStateCarriesTypeAndUnsigned
+=== RUN   TestT06A11OfflineRoleMatrix/mysql/bigint-pass
+=== RUN   TestT06A11DerivedPreStateCarriesTypeAndUnsigned/mysql/unsigned-pass
+=== RUN   TestT06A11DerivedPreStateCarriesTypeAndUnsigned/mysql/bigint-reject
+=== RUN   TestT06A11DerivedPreStateCarriesTypeAndUnsigned/mysql/bigint-pass
+=== RUN   TestT06A11DerivedPreStateCarriesTypeAndUnsigned/tidb/bigint-pass
+=== RUN   TestT06A11DerivedPreStateCarriesTypeAndUnsigned/tidb/unsigned-pass
+=== RUN   TestT06A11DerivedPreStateCarriesTypeAndUnsigned/tidb/bigint-reject
+--- PASS: TestT06A11DerivedPreStateCarriesTypeAndUnsigned (0.00s)
+    --- PASS: TestT06A11DerivedPreStateCarriesTypeAndUnsigned/mysql/unsigned-pass (0.00s)
+    --- PASS: TestT06A11DerivedPreStateCarriesTypeAndUnsigned/mysql/bigint-reject (0.00s)
+    --- PASS: TestT06A11DerivedPreStateCarriesTypeAndUnsigned/mysql/bigint-pass (0.00s)
+    --- PASS: TestT06A11DerivedPreStateCarriesTypeAndUnsigned/tidb/bigint-pass (0.00s)
+    --- PASS: TestT06A11DerivedPreStateCarriesTypeAndUnsigned/tidb/unsigned-pass (0.00s)
+    --- PASS: TestT06A11DerivedPreStateCarriesTypeAndUnsigned/tidb/bigint-reject (0.00s)
+=== RUN   TestT06A11OfflineRoleMatrix/mysql/bigint-reject
+=== RUN   TestT06A11OfflineRoleMatrix/mysql/bigint-composite-skip
+=== RUN   TestT06A11OfflineRoleMatrix/mysql/bigint-off
+=== RUN   TestT06A11OfflineRoleMatrix/mysql/unsigned-pass
+=== RUN   TestT06A11OfflineRoleMatrix/mysql/unsigned-reject
+=== RUN   TestT06A11OfflineRoleMatrix/mysql/unsigned-composite-skip
+=== RUN   TestT06A11OfflineRoleMatrix/mysql/unsigned-off
+=== RUN   TestT06A11OfflineRoleMatrix/tidb/bigint-pass
+=== RUN   TestT06A11OfflineRoleMatrix/tidb/bigint-reject
+=== RUN   TestT06A11OfflineRoleMatrix/tidb/bigint-composite-skip
+=== RUN   TestT06A11OfflineRoleMatrix/tidb/bigint-off
+=== RUN   TestT06A11OfflineRoleMatrix/tidb/unsigned-pass
+=== RUN   TestT06A11OfflineRoleMatrix/tidb/unsigned-reject
+=== RUN   TestT06A11OfflineRoleMatrix/tidb/unsigned-composite-skip
+=== RUN   TestT06A11OfflineRoleMatrix/tidb/unsigned-off
+--- PASS: TestT06A11OfflineRoleMatrix (0.05s)
+    --- PASS: TestT06A11OfflineRoleMatrix/mysql/bigint-pass (0.00s)
+    --- PASS: TestT06A11OfflineRoleMatrix/mysql/bigint-reject (0.00s)
+    --- PASS: TestT06A11OfflineRoleMatrix/mysql/bigint-composite-skip (0.00s)
+    --- PASS: TestT06A11OfflineRoleMatrix/mysql/bigint-off (0.00s)
+    --- PASS: TestT06A11OfflineRoleMatrix/mysql/unsigned-pass (0.00s)
+    --- PASS: TestT06A11OfflineRoleMatrix/mysql/unsigned-reject (0.00s)
+    --- PASS: TestT06A11OfflineRoleMatrix/mysql/unsigned-composite-skip (0.00s)
+    --- PASS: TestT06A11OfflineRoleMatrix/mysql/unsigned-off (0.00s)
+    --- PASS: TestT06A11OfflineRoleMatrix/tidb/bigint-pass (0.00s)
+    --- PASS: TestT06A11OfflineRoleMatrix/tidb/bigint-reject (0.00s)
+    --- PASS: TestT06A11OfflineRoleMatrix/tidb/bigint-composite-skip (0.00s)
+    --- PASS: TestT06A11OfflineRoleMatrix/tidb/bigint-off (0.00s)
+    --- PASS: TestT06A11OfflineRoleMatrix/tidb/unsigned-pass (0.00s)
+    --- PASS: TestT06A11OfflineRoleMatrix/tidb/unsigned-reject (0.00s)
+    --- PASS: TestT06A11OfflineRoleMatrix/tidb/unsigned-composite-skip (0.00s)
+    --- PASS: TestT06A11OfflineRoleMatrix/tidb/unsigned-off (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	2.013s
+rc=0

@@ -1,0 +1,40 @@
+task: T06-A11 single-member primary-key BIGINT/UNSIGNED policy proof
+issue: https://github.com/Fanduzi/DeltaScope/issues/85
+
+== source identity ==
+repo: Fanduzi/DeltaScope
+branch: milestone/mysql-tidb-ddl-completion
+code_sha (tested): 4dc51cbd424d2e1f13a9658622820c64685da340
+parent: 5330912f84d726d13bd3c6f31a06382617abc50f
+task_base (handoff origin/workfree): 5330912f84d726d13bd3c6f31a06382617abc50f
+evidence_head: recorded at evidence commit time (see git log)
+
+== build identity ==
+go version go1.26.1 darwin/arm64
+/tmp/ds-t06-a11-proof/T06/T06/bin/deltascope: go1.26.1
+	path	github.com/Fanduzi/DeltaScope/cmd/deltascope
+	mod	github.com/Fanduzi/DeltaScope	v0.511.2-0.20261014155837-4dc51cbd424d+dirty	
+	dep	github.com/coreos/go-semver	v0.3.1	h1:yi21YpKnrx1gt5R+la8n5WgS0kCrsPp33dmEyHReZr4=
+	dep	github.com/fsnotify/fsnotify	v1.9.0	h1:2Ml+OJNzbYCTzsxtv8vKSFD9PbJjmhYF14k/jKC7S9k=
+
+binary sha256: 3b3986fee40202ed8082a609dc612ee0d5fd9e4b2a59aaa276f16d8b28acbf7e
+binary path (run host only, not published): /tmp/ds-t06-a11-proof/T06/T06/bin/deltascope
+
+== worktree state at run ==
+(no tracked modifications)
+untracked (pre-existing + this evidence dir):
+?? .agents/
+?? .debug-journal.md
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? docs/quality/architecture-review-2026-08-11.html
+?? docs/verification/t06-a11/
+
+== dirty attribution ==
+module version shows +dirty: at build time the worktree had ZERO tracked
+modifications; dirt comes solely from pre-existing untracked paths
+(.agents/, .debug-journal.md, .opencode/, .pi-subagents/, .qoder/,
+docs/quality/architecture-review-2026-08-11.html). No build-time
+snapshot of the untracked set was captured, so attribution is limited
+to 'untracked files', not a specific file list.
