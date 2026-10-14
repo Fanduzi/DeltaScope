@@ -2114,6 +2114,7 @@ def t06_contract_tests(tmp):
         ddl_golden.T06_A8_TABLE_RULE, ddl_golden.T06_A8_COLUMN_RULE,
         ddl_golden.T06_A8_LENGTH_RULE, ddl_golden.T06_A9_RULE,
         ddl_golden.T06_A10_PK_RULE, ddl_golden.T06_A10_INIT_RULE,
+        ddl_golden.T06_A11_BIGINT_RULE, ddl_golden.T06_A11_UNSIGNED_RULE,
         "ddl.table.exists.create.forbid", "ddl.table.exists.alter.require",
         "ddl.alter.drop_column.exists.require", "ddl.create_index.columns.exists.require")]})
     binary.write_text("#!/bin/sh\nprintf '%s' '" + catalog + "'\n")
@@ -2149,6 +2150,24 @@ def t06_contract_tests(tmp):
                 elif step["name"] == ddl_golden.T06_A10_SHOW_CREATE_OBS_NAME:
                     step["stdout"] = ("Table\tCreate Table\nt\tCREATE TABLE `t` "
                                       "(`id` bigint(20)) ENGINE=InnoDB")
+                elif step["name"] == ddl_golden.T06_A11_TYPE_OBS_NAME:
+                    # T06-A11 record-only observation: fixed header, then one
+                    # nine-field record bound to golden.t's id column. The
+                    # COLUMN_TYPE sample picks one legal complete form per
+                    # role; real anchors may render the other whitelisted
+                    # form. EXTRA hex stays byte-empty for every role.
+                    anchor_key = spec["id"].split("-")[2]
+                    role = spec["id"][len(f"t06-a11-{anchor_key}-"):]
+                    column_type = {
+                        "bigint-pass": "bigint(20)",
+                        "bigint-reject": "int(11)",
+                        "unsigned-pass": "bigint(20) unsigned",
+                        "unsigned-reject": "bigint(20)",
+                    }[role]
+                    data_type = "int" if role == "bigint-reject" else "bigint"
+                    step["stdout"] = (ddl_golden.T06_A11_TYPE_OBS_HEADER + "\n" +
+                                      f"type|golden|t|id|{data_type}|1|NO|"
+                                      f"{column_type.encode().hex()}|")
         return records
 
     for key, anchor in manifest["anchors"].items():
@@ -2517,7 +2536,7 @@ def t06_contract_tests(tmp):
     donors = {v: copy.deepcopy(by_id(a, f"T06.meta.t06-mysql84-{v}"))
               for v in ("no-pk", "inline-pk", "table-pk")}
     for item in list(a["cases"]):
-        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-", "t06-a7-", "t06-a8-", "t06-a9-", "t06-a10-")):
+        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-", "t06-a7-", "t06-a8-", "t06-a9-", "t06-a10-", "t06-a11-")):
             slot(a, item["case_id"], donors[item["cli_case"].split("-", 2)[2]])
     run("t06 all metadata slots refilled variant-wise rejected", a, "identity")
 
@@ -2528,7 +2547,7 @@ def t06_contract_tests(tmp):
     run("t06 metadata slot filled by offline record rejected", a, "identity")
     a = copy.deepcopy(artifact)
     for item in list(a["cases"]):
-        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-", "t06-a7-", "t06-a8-", "t06-a9-", "t06-a10-")):
+        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-", "t06-a7-", "t06-a8-", "t06-a9-", "t06-a10-", "t06-a11-")):
             variant = item["cli_case"].split("-", 2)[2]
             dialect = "tidb" if item["anchor"] == "tidb85" else "mysql"
             slot(a, item["case_id"], by_id(a, f"T06.cli.t06-{dialect}-{variant}"))
@@ -4167,6 +4186,326 @@ def t06_contract_tests(tmp):
     a, c = t06a10("mysql84-pk-auto")
     a10_show(c)["stdout"] = "Table\tCreate Table\nt\tCREATE TABLE `t`"
     run("t06a10r2 show create truncated head rejected", a, "bound to")
+
+    # --- T06-A11: single-member-PK BIGINT/UNSIGNED proof. The eight offline
+    # roles pin rule/message/metadata identity per profile; the sixteen
+    # anchored roles pin the driver replay plus the bound nine-field column
+    # observation (DATA_TYPE, ordinal, nullability, hex COLUMN_TYPE inside a
+    # finite per-role whitelist, byte-empty EXTRA hex). ---
+
+    def t06a11(suffix):
+        candidate = copy.deepcopy(artifact)
+        case = next(item for item in candidate["cases"]
+                    if item.get("cli_case") == "t06-a11-" + suffix)
+        return candidate, case
+
+    def a11_structure_entry(case, needle):
+        return next(s for s in case["actual"]["structure"]
+                    if needle in s["assert"])
+
+    def a11_execute_step(case, needle):
+        return next(s for s in case["actual"]["execute"]
+                    if needle in s["name"])
+
+    def a11_obs(case):
+        return a11_execute_step(case, ddl_golden.T06_A11_TYPE_OBS_NAME)
+
+    # A missed blocker on bigint-reject or a fabricated finding on a clean
+    # pass launders a real verdict — both directions fail.
+    a, c = t06a11("mysql-bigint-reject")
+    parsed = c["actual"]["parsed"]
+    parsed["statements"][0]["findings"] = []
+    parsed["verdict"] = "pass"
+    parsed["summary"]["blockers"] = 0
+    parsed["fail_on_triggered"] = False
+    c["actual"]["exit"] = 0
+    update_stdout(c)
+    run("t06a11 bigint-reject missed blocker rejected", a, "bigint-reject")
+
+    a, c = t06a11("mysql-unsigned-reject")
+    parsed = c["actual"]["parsed"]
+    parsed["statements"][0]["findings"] = []
+    parsed["verdict"] = "pass"
+    parsed["summary"]["blockers"] = 0
+    parsed["fail_on_triggered"] = False
+    c["actual"]["exit"] = 0
+    update_stdout(c)
+    run("t06a11 unsigned-reject missed blocker rejected", a, "unsigned-reject")
+
+    a, c = t06a11("mysql-bigint-pass")
+    parsed = c["actual"]["parsed"]
+    parsed["statements"][0]["findings"].append(
+        copy.deepcopy(by_id(a, "T06.cli.t06-a11-mysql-bigint-reject")
+                      ["actual"]["parsed"]["statements"][0]["findings"][0]))
+    parsed["verdict"] = "reject"
+    parsed["summary"]["blockers"] = 1
+    parsed["fail_on_triggered"] = True
+    c["actual"]["exit"] = 1
+    update_stdout(c)
+    run("t06a11 bigint-pass forged finding rejected", a, "bigint-pass")
+
+    a, c = t06a11("tidb-unsigned-pass")
+    parsed = c["actual"]["parsed"]
+    parsed["statements"][0]["findings"].append(
+        copy.deepcopy(by_id(a, "T06.cli.t06-a11-tidb-unsigned-reject")
+                      ["actual"]["parsed"]["statements"][0]["findings"][0]))
+    parsed["verdict"] = "reject"
+    parsed["summary"]["blockers"] = 1
+    parsed["fail_on_triggered"] = True
+    c["actual"]["exit"] = 1
+    update_stdout(c)
+    run("t06a11 unsigned-pass forged finding rejected", a, "unsigned-pass")
+
+    # The two rules are distinct identities: a bigint finding cannot stand
+    # in for the unsigned finding and vice versa — rule_id, message, and
+    # metadata are bound together.
+    a, c = t06a11("mysql-bigint-reject")
+    c["actual"]["parsed"]["statements"][0]["findings"] = [
+        copy.deepcopy(by_id(a, "T06.cli.t06-a11-mysql-unsigned-reject")
+                      ["actual"]["parsed"]["statements"][0]["findings"][0])]
+    update_stdout(c)
+    run("t06a11 bigint finding substituted by unsigned rejected", a,
+        "bigint-reject")
+
+    a, c = t06a11("tidb-unsigned-reject")
+    c["actual"]["parsed"]["statements"][0]["findings"] = [
+        copy.deepcopy(by_id(a, "T06.cli.t06-a11-tidb-bigint-reject")
+                      ["actual"]["parsed"]["statements"][0]["findings"][0])]
+    update_stdout(c)
+    run("t06a11 unsigned finding substituted by bigint rejected", a,
+        "unsigned-reject")
+
+    # Metadata is part of the finding identity: the extracted type text and
+    # the bound column cannot be rewritten or re-attributed.
+    a, c = t06a11("mysql-bigint-reject")
+    c["actual"]["parsed"]["statements"][0]["findings"][0]["metadata"]["type"] = "bigint(20)"
+    update_stdout(c)
+    run("t06a11 reject metadata type rewritten rejected", a, "bigint-reject")
+
+    a, c = t06a11("mysql-bigint-reject")
+    c["actual"]["parsed"]["statements"][0]["findings"][0]["metadata"]["column"] = "tenant_id"
+    update_stdout(c)
+    run("t06a11 reject metadata column re-attributed rejected", a,
+        "bigint-reject")
+
+    # bigint-pass and unsigned-reject share one SQL: swapping the recorded
+    # policy profile between them is a role swap, not an equal-SQL alias.
+    a, c = t06a11("mysql-bigint-pass")
+    donor = by_id(a, "T06.cli.t06-a11-mysql-unsigned-reject")
+    c["policy_profile"], donor["policy_profile"] = (
+        donor["policy_profile"], c["policy_profile"])
+    run("t06a11 same-sql profiles swapped rejected", a, "policy")
+
+    # Composite roles skip the member check — recording a blocker on the
+    # composite, or shrinking its SQL to a single-column form, breaks the
+    # frozen role.
+    a, c = t06a11("mysql-bigint-composite-skip")
+    parsed = c["actual"]["parsed"]
+    parsed["statements"][0]["findings"].append(
+        copy.deepcopy(by_id(a, "T06.cli.t06-a11-mysql-bigint-reject")
+                      ["actual"]["parsed"]["statements"][0]["findings"][0]))
+    parsed["verdict"] = "reject"
+    parsed["summary"]["blockers"] = 1
+    parsed["fail_on_triggered"] = True
+    c["actual"]["exit"] = 1
+    update_stdout(c)
+    run("t06a11 composite forged with finding rejected", a, "composite")
+
+    a, c = t06a11("mysql-bigint-composite-skip")
+    donor_sql = by_id(a, "T06.cli.t06-a11-mysql-bigint-reject")["input_sql"]
+    c["input_sql"] = donor_sql
+    run("t06a11 composite sql shrunk to single column rejected", a,
+        "identity")
+
+    # The off roles stay clean: an all-disabled control cannot borrow a
+    # finding, and the isolated profile cannot silently become all-off.
+    a, c = t06a11("mysql-bigint-off")
+    parsed = c["actual"]["parsed"]
+    parsed["statements"][0]["findings"].append(
+        copy.deepcopy(by_id(a, "T06.cli.t06-a11-mysql-bigint-reject")
+                      ["actual"]["parsed"]["statements"][0]["findings"][0]))
+    parsed["verdict"] = "reject"
+    parsed["summary"]["blockers"] = 1
+    parsed["fail_on_triggered"] = True
+    c["actual"]["exit"] = 1
+    update_stdout(c)
+    run("t06a11 bigint-off control forged with finding rejected", a,
+        "bigint-off")
+
+    a, c = t06a11("mysql-unsigned-reject")
+    m = copy.deepcopy(manifest)
+    next(s for s in m["cli_cases"]
+         if s["id"] == c["cli_case"])["policy"] = "all-rules-disabled"
+    c["policy_profile"] = "all-rules-disabled"
+    run("t06a11 isolated unsigned profile swapped for all-off rejected", a,
+        "T06-A1", m)
+
+    # required=false is a different control from disabled: weakening the
+    # declared profile param must fail at the manifest boundary.
+    m = copy.deepcopy(manifest)
+    m["policy"]["profiles"]["t06-a11-pk-bigint-isolated"]["enable"][
+        "ddl.table.primary_key.bigint.require"]["params"]["required"] = False
+    run("t06a11 bigint profile required weakened rejected", artifact,
+        "T06-A1", m)
+
+    # Anchored structure oracle: native int cannot be recorded as bigint,
+    # DATA_TYPE cannot launder the unsigned property, and the stored PK
+    # member stays exactly id:1.
+    a, c = t06a11("mysql84-bigint-reject")
+    a11_structure_entry(c, "column id identity")["output"] = "id:bigint:1:NO"
+    run("t06a11 native int recorded as bigint rejected", a, "structure")
+
+    a, c = t06a11("mysql84-unsigned-pass")
+    a11_structure_entry(c, "id column_type whitelist")["output"] = "0"
+    run("t06a11 unsigned column_type outside whitelist rejected", a,
+        "structure")
+
+    a, c = t06a11("tidb85-bigint-reject")
+    a11_structure_entry(c, "id extra byte-exact")["output"] = "0"
+    run("t06a11 signed column forged with extra marker rejected", a,
+        "structure")
+
+    a, c = t06a11("mysql57-unsigned-reject")
+    a11_structure_entry(c, "primary key member")["output"] = "tenant_id:1"
+    run("t06a11 stored pk member rebound rejected", a, "structure")
+
+    # Observation record: header plus exactly one nine-field record bound to
+    # golden.t/id with role-scoped COLUMN_TYPE and byte-empty EXTRA.
+    for bad in (1, True, ["bad"], {"bad": "value"}, None):
+        a, c = t06a11("mysql84-unsigned-pass")
+        a11_obs(c)["stdout"] = bad
+        run(f"t06a11 obs stdout {type(bad).__name__} rejected", a,
+            "not a string")
+
+    a, c = t06a11("mysql84-unsigned-pass")
+    a11_obs(c)["stdout"] = ""
+    run("t06a11 obs empty stdout rejected", a, "produced no output")
+
+    a, c = t06a11("mysql84-unsigned-pass")
+    a11_obs(c)["stdout"] = (
+        "observation\ntype|golden|t|id|bigint|1|NO|"
+        + "bigint(20) unsigned".encode().hex() + "|\n"
+        "type|golden|t|id|bigint|1|NO|"
+        + "bigint(20) unsigned".encode().hex() + "|")
+    run("t06a11 obs duplicate record rejected", a, "exactly one")
+
+    a, c = t06a11("mysql84-unsigned-pass")
+    a11_obs(c)["stdout"] = "observation"
+    run("t06a11 obs header without record rejected", a, "exactly one")
+
+    a, c = t06a11("mysql84-unsigned-pass")
+    a11_obs(c)["stdout"] = (
+        "type|golden|t|id|bigint|1|NO|"
+        + "bigint(20) unsigned".encode().hex() + "|")
+    run("t06a11 obs record without header rejected", a, "header")
+
+    a, c = t06a11("mysql84-unsigned-pass")
+    a11_obs(c)["stdout"] = (
+        "observation\ntype|otherdb|t|id|bigint|1|NO|"
+        + "bigint(20) unsigned".encode().hex() + "|")
+    run("t06a11 obs bound to wrong schema rejected", a, "not bound to")
+
+    a, c = t06a11("mysql84-unsigned-pass")
+    a11_obs(c)["stdout"] = (
+        "observation\ntype|golden|t|id|bigint|1|NO|zzzz|")
+    run("t06a11 obs column_type bad hex rejected", a, "legal encoding")
+
+    # The unsigned property is a COLUMN_TYPE fact: dropping it, adding it to
+    # a signed role, or smuggling zerofill/unknown suffixes all fail the
+    # finite whitelist.
+    a, c = t06a11("mysql84-unsigned-pass")
+    a11_obs(c)["stdout"] = (
+        "observation\ntype|golden|t|id|bigint|1|NO|"
+        + "bigint(20)".encode().hex() + "|")
+    run("t06a11 unsigned dropped from column_type rejected", a, "whitelist")
+
+    a, c = t06a11("mysql84-bigint-pass")
+    a11_obs(c)["stdout"] = (
+        "observation\ntype|golden|t|id|bigint|1|NO|"
+        + "bigint(20) unsigned".encode().hex() + "|")
+    run("t06a11 signed role forged unsigned rejected", a, "whitelist")
+
+    a, c = t06a11("mysql84-unsigned-pass")
+    a11_obs(c)["stdout"] = (
+        "observation\ntype|golden|t|id|bigint|1|NO|"
+        + "bigint(20) unsigned zerofill".encode().hex() + "|")
+    run("t06a11 zerofill smuggled into column_type rejected", a, "whitelist")
+
+    # The parser renders signed BIGINT as bigint(20) for every role —
+    # broadcasting that single form over every anchored observation still
+    # fails on the roles whose whitelist excludes it.
+    a = copy.deepcopy(artifact)
+    uniform = "bigint(20)".encode().hex()
+    for case in a["cases"]:
+        if case.get("cli_case", "").startswith("t06-a11-") and \
+                case.get("kind") == "cli_metadata":
+            for step in case["actual"]["execute"]:
+                if step["name"] == ddl_golden.T06_A11_TYPE_OBS_NAME:
+                    dt = "int" if "bigint-reject" in case["cli_case"] else "bigint"
+                    step["stdout"] = ("observation\ntype|golden|t|id|" + dt +
+                                      "|1|NO|" + uniform + "|")
+    run("t06a11 uniform parser text broadcast over observations rejected",
+        a, "whitelist")
+
+    # A missing row can never launder as byte-empty EXTRA: dropping the
+    # ninth field or NULL-ing the record are distinct failures, not the
+    # empty marker.
+    a, c = t06a11("mysql84-unsigned-pass")
+    a11_obs(c)["stdout"] = (
+        "observation\ntype|golden|t|id|bigint|1|NO|"
+        + "bigint(20) unsigned".encode().hex())
+    run("t06a11 missing extra hex field laundered as empty rejected", a,
+        "9 fields")
+
+    a, c = t06a11("mysql84-unsigned-pass")
+    a11_obs(c)["stdout"] = (
+        "observation\ntype|golden|t|id|bigint|1|NO|"
+        + "bigint(20) unsigned".encode().hex() + "|NULL")
+    run("t06a11 NULL extra recorded as empty rejected", a, "byte-empty")
+
+    # A product reject never skips the driver replay: the rejected roles
+    # still CREATE successfully, and a nonzero driver rc cannot be recorded
+    # as success.
+    a, c = t06a11("mysql84-unsigned-reject")
+    c["actual"]["execute"] = [
+        s for s in c["actual"]["execute"]
+        if s["name"] != "driver applies the audited create"]
+    run("t06a11 product reject skipped driver create rejected", a, "execute")
+
+    a, c = t06a11("mysql80-bigint-reject")
+    a11_execute_step(c, "driver applies the audited create")["rc"] = 1
+    run("t06a11 driver create failure recorded as success rejected", a,
+        "execute")
+
+    a, c = t06a11("mysql84-bigint-pass")
+    c["actual"]["execute"] = [
+        s for s in c["actual"]["execute"]
+        if s["name"] != ddl_golden.T06_A11_TYPE_OBS_NAME]
+    run("t06a11 column observation step deleted rejected", a, "observation")
+
+    # Denominator and identity: a cross-anchor donor, an offline demotion,
+    # and a case deleted on both sides all fail.
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.meta.t06-a11-mysql57-unsigned-pass",
+         by_id(a, "T06.meta.t06-a11-mysql84-unsigned-pass"))
+    run("t06a11 mysql84 record re-keyed as mysql57 rejected", a, "identity")
+
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.meta.t06-a11-tidb85-unsigned-reject",
+         by_id(a, "T06.cli.t06-a11-tidb-unsigned-reject"))
+    run("t06a11 metadata slot demoted to offline record rejected", a,
+        "identity")
+
+    a = copy.deepcopy(artifact)
+    m = copy.deepcopy(manifest)
+    victim = "T06.meta.t06-a11-mysql84-unsigned-pass"
+    a["cases"] = [x for x in a["cases"] if x["case_id"] != victim]
+    a["executed_count"] = len(a["cases"])
+    a["required_case_ids"].remove(victim)
+    m["metadata_cases"] = [s for s in m["metadata_cases"]
+                           if s["id"] != "t06-a11-mysql84-unsigned-pass"]
+    m["required_case_ids"].remove(victim)
+    run("t06a11 case deleted on both sides rejected", a, "T06-A1", m)
 
     return results
 

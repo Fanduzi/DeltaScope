@@ -2889,6 +2889,85 @@ T06_A10_NO_SECONDARY = (
     "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'"
 )
 
+# T06-A11 (issue #85): single-member primary-key BIGINT/UNSIGNED policies on
+# ordinary CREATE TABLE. Two single-rule isolations — BIGINT judges the bound
+# member's base type only and never requires UNSIGNED; UNSIGNED judges
+# Column.Unsigned only and never requires BIGINT or AUTO_INCREMENT. The
+# composite roles record "skip" semantics (the member-count gate evaluates no
+# member), never "all members satisfy"; the off roles reuse the
+# all-rules-disabled default profile and are distinct from required=false.
+T06_A11_BIGINT_PROFILE = "t06-a11-pk-bigint-isolated"
+T06_A11_UNSIGNED_PROFILE = "t06-a11-pk-unsigned-isolated"
+T06_A11_BIGINT_RULE = "ddl.table.primary_key.bigint.require"
+T06_A11_UNSIGNED_RULE = "ddl.table.primary_key.unsigned.require"
+
+T06_A11_BIGINT_PASS_SQL = "CREATE TABLE t (id BIGINT PRIMARY KEY);"
+T06_A11_BIGINT_REJECT_SQL = "CREATE TABLE t (id INT PRIMARY KEY);"
+T06_A11_BIGINT_COMPOSITE_SQL = (
+    "CREATE TABLE t (id INT NOT NULL, tenant_id INT NOT NULL, "
+    "PRIMARY KEY (id, tenant_id));")
+T06_A11_UNSIGNED_PASS_SQL = "CREATE TABLE t (id BIGINT UNSIGNED PRIMARY KEY);"
+T06_A11_UNSIGNED_REJECT_SQL = "CREATE TABLE t (id BIGINT PRIMARY KEY);"
+T06_A11_UNSIGNED_COMPOSITE_SQL = (
+    "CREATE TABLE t (id BIGINT NOT NULL, tenant_id INT NOT NULL, "
+    "PRIMARY KEY (id, tenant_id));")
+
+T06_A11_BIGINT_FINDING = {
+    "rule_id": T06_A11_BIGINT_RULE,
+    "message": 'primary key column "id" must use bigint',
+    "metadata": {"table": "t", "column": "id", "type": "int(11)"},
+}
+T06_A11_UNSIGNED_FINDING = {
+    "rule_id": T06_A11_UNSIGNED_RULE,
+    "message": 'primary key column "id" must be unsigned',
+    "metadata": {"table": "t", "column": "id", "type": "bigint(20)"},
+}
+
+# Anchored COLUMN_TYPE oracle: a finite complete-form whitelist per role,
+# compared byte-exact after lower() under the catalog column's own collation —
+# never "contains bigint", never an absence-of-unsigned heuristic, and never
+# forced equal to the parser's rendered Type text. NULL, a wrong width, a
+# zerofill suffix, or any unknown complete form fails the oracle.
+T06_A11_COLUMN_TYPE_WHITELISTS = {
+    "bigint-pass": ("bigint", "bigint(20)"),
+    "bigint-reject": ("int", "int(11)"),
+    "unsigned-pass": ("bigint unsigned", "bigint(20) unsigned"),
+    "unsigned-reject": ("bigint", "bigint(20)"),
+}
+
+
+def t06_a11_column_type_exact(column, role):
+    """Finite-whitelist COLUMN_TYPE comparison for one T06-A11 role:
+    CAST(LOWER(COLUMN_TYPE) AS BINARY) IN (CAST('<form>' AS BINARY), ...) with
+    no fixed length. A missing row yields no output and NULL or an out-of-
+    whitelist rendering yields '0', so neither can launder as a pass."""
+    members = ", ".join(
+        f"CAST('{form}' AS BINARY)"
+        for form in T06_A11_COLUMN_TYPE_WHITELISTS[role])
+    return (
+        "SELECT CASE WHEN CAST(LOWER(COLUMN_TYPE) AS BINARY) "
+        f"IN ({members}) THEN '1' ELSE '0' END "
+        "FROM information_schema.COLUMNS "
+        "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' "
+        f"AND COLUMN_NAME='{column}'"
+    )
+
+
+# Bounded read-only catalog observation for A11: one record per stored column
+# carrying schema/table/name, DATA_TYPE, ordinal, nullability, and the raw
+# COLUMN_TYPE/EXTRA bytes as HEX so unsigned/zerofill/width renderings stay
+# verbatim. Recorded observation only — never declaration provenance.
+T06_A11_TYPE_OBS = (
+    "SELECT CONCAT('type|', TABLE_SCHEMA, '|', TABLE_NAME, '|', "
+    "COLUMN_NAME, '|', DATA_TYPE, '|', ORDINAL_POSITION, '|', IS_NULLABLE, "
+    "'|', HEX(COLUMN_TYPE), '|', HEX(EXTRA)) AS observation "
+    "FROM information_schema.COLUMNS "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' "
+    "ORDER BY ORDINAL_POSITION"
+)
+T06_A11_TYPE_OBS_NAME = "column type raw observation"
+T06_A11_TYPE_OBS_HEADER = "observation"
+
 
 T06_ANCHORS = {
     "mysql57": {
@@ -3547,6 +3626,47 @@ def t06_a1_contract():
         for role, sql, profile, finding in a10_matrix:
             case = {
                 "id": f"t06-a10-{dialect}-{role}",
+                "dialect": dialect,
+                "sql": sql,
+                "args": ["--fail-on", "blocker"],
+            }
+            if profile is None:
+                case["expect"] = audit_expect(sql, False)
+            else:
+                case["policy"] = profile
+                case["expect"] = audit_expect(
+                    sql, finding is not None, loaded=1, finding=finding)
+            cli_cases.append(case)
+
+    # T06-A11 (issue #85): the eight frozen roles pin single-member-PK
+    # BIGINT and UNSIGNED policies under two single-rule blocker profiles.
+    # composite-skip records the member-count gate — two bound members means
+    # Evaluate checks none — never "every member satisfies". The off roles
+    # reuse the all-rules-disabled default profile and stay distinct from
+    # required=false. bigint-pass and unsigned-reject share one SQL on
+    # purpose: the same declaration passes BIGINT policy and fails UNSIGNED
+    # policy, so role identity is bound by (sql, profile, verdict), never by
+    # SQL text alone.
+    a11_matrix = (
+        ("bigint-pass", T06_A11_BIGINT_PASS_SQL, T06_A11_BIGINT_PROFILE,
+         None),
+        ("bigint-reject", T06_A11_BIGINT_REJECT_SQL, T06_A11_BIGINT_PROFILE,
+         T06_A11_BIGINT_FINDING),
+        ("bigint-composite-skip", T06_A11_BIGINT_COMPOSITE_SQL,
+         T06_A11_BIGINT_PROFILE, None),
+        ("bigint-off", T06_A11_BIGINT_REJECT_SQL, None, None),
+        ("unsigned-pass", T06_A11_UNSIGNED_PASS_SQL,
+         T06_A11_UNSIGNED_PROFILE, None),
+        ("unsigned-reject", T06_A11_UNSIGNED_REJECT_SQL,
+         T06_A11_UNSIGNED_PROFILE, T06_A11_UNSIGNED_FINDING),
+        ("unsigned-composite-skip", T06_A11_UNSIGNED_COMPOSITE_SQL,
+         T06_A11_UNSIGNED_PROFILE, None),
+        ("unsigned-off", T06_A11_UNSIGNED_REJECT_SQL, None, None),
+    )
+    for dialect in ("mysql", "tidb"):
+        for role, sql, profile, finding in a11_matrix:
+            case = {
+                "id": f"t06-a11-{dialect}-{role}",
                 "dialect": dialect,
                 "sql": sql,
                 "args": ["--fail-on", "blocker"],
@@ -4729,6 +4849,92 @@ def t06_a1_contract():
                 ],
             })
 
+        # T06-A11 (issue #85): single-member-PK BIGINT/UNSIGNED roles on real
+        # catalog. bigint-reject/unsigned-reject fail on the product side
+        # while the same CREATE must still succeed on the driver — a policy
+        # verdict never stands in for the server's own legality check.
+        # DATA_TYPE and COLUMN_TYPE stay separate oracles: bigint+int
+        # prove the family, the finite complete-form whitelist proves the
+        # exact rendering (unsigned is a COLUMN_TYPE fact, never inferred
+        # from DATA_TYPE or the product's spec.Unsigned), and the verbatim
+        # record keeps the original bytes. EXTRA must be byte-exact empty —
+        # no auto_increment or generated marker may ride along.
+        a11_meta_roles = (
+            ("bigint-pass", T06_A11_BIGINT_PASS_SQL, T06_A11_BIGINT_PROFILE,
+             None, "bigint"),
+            ("bigint-reject", T06_A11_BIGINT_REJECT_SQL,
+             T06_A11_BIGINT_PROFILE, T06_A11_BIGINT_FINDING, "int"),
+            ("unsigned-pass", T06_A11_UNSIGNED_PASS_SQL,
+             T06_A11_UNSIGNED_PROFILE, None, "bigint"),
+            ("unsigned-reject", T06_A11_UNSIGNED_REJECT_SQL,
+             T06_A11_UNSIGNED_PROFILE, T06_A11_UNSIGNED_FINDING, "bigint"),
+        )
+        for role, sql, profile, finding, data_type in a11_meta_roles:
+            expect = audit_expect(
+                sql, finding is not None, loaded=1, finding=finding)
+            if anchor_key in ("mysql80", "mysql84"):
+                expect["instance_facts"] = dict(T06_GIPK_FACTS)
+            rows = [
+                verify("exactly one user table", T06_TABLE_COUNT, "1"),
+                verify("exactly one user column", T06_COLUMN_COUNT, "1"),
+                verify("column id identity", T06_COLUMN_ROW,
+                       f"id:{data_type}:1:NO"),
+                verify("id column_type whitelist",
+                       t06_a11_column_type_exact("id", role), "1"),
+                verify("id extra byte-exact",
+                       t06_a10_extra_exact("id", ""), "1"),
+                verify("primary key constraint count", T06_PK_CONSTRAINT,
+                       "1"),
+                verify("primary index part count", T06_PK_PARTS, "1"),
+                verify("primary key member", T06_PK_MEMBER, "id:1"),
+                verify("no extra indexes", T06_A10_NO_SECONDARY, "0"),
+            ]
+            if anchor_key != "tidb85":
+                rows.append(verify("storage engine", T06_ENGINE, "InnoDB"))
+            metadata_cases.append({
+                "id": f"t06-a11-{anchor_key}-{role}",
+                "anchor": anchor_key,
+                "dialect": dialect,
+                "sql": sql,
+                "policy": profile,
+                "connect": dict(connects[anchor_key]),
+                "args": ["--fail-on", "blocker"],
+                "setup": [
+                    {
+                        "name": "ensure t absent",
+                        "sql": "DROP TABLE IF EXISTS t",
+                        "expect_rc": 0,
+                        "verify": [verify("t absent before audit",
+                                          T06_TABLE_COUNT, "0")],
+                    },
+                ],
+                "expect": expect,
+                "post_verify": [
+                    verify("audit did not create t", T06_TABLE_COUNT, "0"),
+                ],
+                "execute": [
+                    {
+                        "name": "driver applies the audited create",
+                        "sql": sql,
+                        "expect_rc": 0,
+                    },
+                    {
+                        "name": T06_A11_TYPE_OBS_NAME,
+                        "sql": T06_A11_TYPE_OBS,
+                        "expect_rc": 0,
+                    },
+                ],
+                "structure": rows,
+                "teardown": [
+                    {
+                        "name": "drop fixture",
+                        "sql": "DROP TABLE IF EXISTS t",
+                        "expect_rc": 0,
+                        "verify": [verify("no residual t", T06_TABLE_COUNT, "0")],
+                    },
+                ],
+            })
+
     required_case_ids = (
         [f"T06.db.{anchor}.{kind}" for anchor in T06_ANCHORS for kind in ("ddl", "syntax_negative")]
         + [f"T06.cli.{spec['id']}" for spec in cli_cases]
@@ -4896,6 +5102,25 @@ def t06_a1_contract():
                     T06_A10_INIT_RULE: {
                         "enabled": True, "level": "blocker",
                         "params": {"value": 8},
+                    },
+                }
+            },
+            # T06-A11: two single-rule isolations. Each keeps its real
+            # `required` param at blocker — BIGINT never implies UNSIGNED,
+            # UNSIGNED never implies BIGINT or AUTO_INCREMENT.
+            T06_A11_BIGINT_PROFILE: {
+                "enable": {
+                    T06_A11_BIGINT_RULE: {
+                        "enabled": True, "level": "blocker",
+                        "params": {"required": True},
+                    },
+                }
+            },
+            T06_A11_UNSIGNED_PROFILE: {
+                "enable": {
+                    T06_A11_UNSIGNED_RULE: {
+                        "enabled": True, "level": "blocker",
+                        "params": {"required": True},
                     },
                 }
             },
@@ -5187,7 +5412,7 @@ def t06_a1_artifact_failures(artifact, manifest):
     return failures
 
 
-def _t06_a10_obs_record(stdout, header, case_id, name):
+def _t06_obs_record(slice_name, stdout, header, case_id, name):
     """Return the single data record that must follow the step's fixed
     client header, or a failure string. The field is a client-captured
     string by contract — any non-string value is a contract failure, never
@@ -5197,20 +5422,24 @@ def _t06_a10_obs_record(stdout, header, case_id, name):
     than being filtered away); any count other than one is a failure, never
     an exception."""
     if not isinstance(stdout, str):
-        return None, (f"T06-A10 {case_id}: {name!r} stdout is not a "
+        return None, (f"{slice_name} {case_id}: {name!r} stdout is not a "
                       f"string record (got {type(stdout).__name__})")
     lines = [ln.rstrip("\r") for ln in stdout.splitlines()]
     if not lines:
-        return None, (f"T06-A10 {case_id}: {name!r} produced no output")
+        return None, (f"{slice_name} {case_id}: {name!r} produced no output")
     if lines[0] != header:
-        return None, (f"T06-A10 {case_id}: {name!r} header {lines[0]!r} "
+        return None, (f"{slice_name} {case_id}: {name!r} header {lines[0]!r} "
                       f"!= expected {header!r}")
     records = lines[1:]
     if len(records) != 1:
-        return None, (f"T06-A10 {case_id}: {name!r} must return exactly one "
+        return None, (f"{slice_name} {case_id}: {name!r} must return exactly one "
                       f"data record after the header, got {len(records)}: "
                       f"{records!r}")
     return records[0], None
+
+
+def _t06_a10_obs_record(stdout, header, case_id, name):
+    return _t06_obs_record("T06-A10", stdout, header, case_id, name)
 
 
 def t06_a10_artifact_failures(artifact, manifest):
@@ -5318,6 +5547,88 @@ def t06_a10_artifact_failures(artifact, manifest):
     return failures
 
 
+def t06_a11_artifact_failures(artifact, manifest):
+    """T06-A11 (issue #85): the recorded read-only column observation on the
+    sixteen anchored roles must be real, shaped, and bound to golden.t — not
+    merely present. The record is the fixed client header plus exactly one
+    data record of nine pipe-separated fields:
+    type|golden|t|id|DATA_TYPE|ordinal|IS_NULLABLE|HEX(COLUMN_TYPE)|HEX(EXTRA).
+    Object binding, DATA_TYPE, ordinal=1 and NO are checked field-for-field;
+    COLUMN_TYPE is hex-decoded and must equal one of the role's finite
+    complete-form whitelist after lower() (case normalization only — no
+    trimming, no substring, no dropping of unsigned/zerofill/parens); the
+    EXTRA hex field must exist and be exactly empty — a missing field, a
+    NULL, or a missing row can never launder as the byte-empty EXTRA."""
+    if manifest.get("task_id") != "T06":
+        return []
+    expected = {}
+    for spec in t06_a1_contract()["metadata_cases"]:
+        local = spec["id"]
+        if not local.startswith("t06-a11-"):
+            continue
+        # local = t06-a11-<anchor>-<role>; the anchor segment is one of the
+        # fixed known keys, so the role is the remainder after it.
+        anchor_key = local.split("-")[2]
+        role = local[len(f"t06-a11-{anchor_key}-"):]
+        expected[f"T06.meta.{local}"] = role
+    failures = []
+    for case in artifact.get("cases") or []:
+        case_id = case.get("case_id")
+        role = expected.get(case_id)
+        if role is None:
+            continue
+        execs = (case.get("actual") or {}).get("execute") or []
+        by_name = {step.get("name"): step for step in execs}
+        obs = by_name.get(T06_A11_TYPE_OBS_NAME)
+        if obs is None or obs.get("rc") != 0:
+            failures.append(
+                f"T06-A11 {case_id}: {T06_A11_TYPE_OBS_NAME!r} missing or rc!=0")
+            continue
+        record, err = _t06_obs_record(
+            "T06-A11", obs.get("stdout"), T06_A11_TYPE_OBS_HEADER,
+            case_id, T06_A11_TYPE_OBS_NAME)
+        if err:
+            failures.append(err)
+            continue
+        # Nine fields are mandatory — a split that loses the trailing empty
+        # EXTRA hex must still count as missing, so the count is checked on
+        # the raw record, never on a filtered field list.
+        fields = record.split("|")
+        if len(fields) != 9:
+            failures.append(
+                f"T06-A11 {case_id}: observation record {record[:160]!r} "
+                f"must have 9 fields, got {len(fields)}")
+            continue
+        (marker, schema, table, column, data_type,
+         ordinal, nullable, column_type_hex, extra_hex) = fields
+        want_data = "int" if role == "bigint-reject" else "bigint"
+        if (marker, schema, table, column, data_type, ordinal, nullable) != (
+                "type", "golden", "t", "id", want_data, "1", "NO"):
+            failures.append(
+                f"T06-A11 {case_id}: observation identity "
+                f"{record[:160]!r} is not bound to "
+                f"type|golden|t|id|{want_data}|1|NO")
+            continue
+        try:
+            column_type_text = bytes.fromhex(column_type_hex).decode("ascii")
+        except ValueError:
+            failures.append(
+                f"T06-A11 {case_id}: COLUMN_TYPE hex {column_type_hex!r} is "
+                "not a complete legal encoding")
+            continue
+        whitelist = T06_A11_COLUMN_TYPE_WHITELISTS[role]
+        if column_type_text.lower() not in whitelist:
+            failures.append(
+                f"T06-A11 {case_id}: COLUMN_TYPE {column_type_text!r} is "
+                f"outside the {role} whitelist {whitelist!r}")
+            continue
+        if extra_hex != "":
+            failures.append(
+                f"T06-A11 {case_id}: EXTRA hex {extra_hex!r} is not the "
+                "byte-empty value the role declares")
+    return failures
+
+
 def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
     """Re-check an emitted artifact. Returns a list of failure strings."""
     failures = []
@@ -5338,6 +5649,7 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
     failures.extend(t06_a1_identity_failures(artifact, manifest))
     failures.extend(t06_a1_artifact_failures(artifact, manifest))
     failures.extend(t06_a10_artifact_failures(artifact, manifest))
+    failures.extend(t06_a11_artifact_failures(artifact, manifest))
 
     if artifact.get("external_blocker"):
         failures.append(f"external blocker recorded: {artifact['external_blocker']}")
