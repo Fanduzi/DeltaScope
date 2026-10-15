@@ -1,0 +1,18 @@
+== dual attribution ==
+r1_validator_sha (code under test): 30baf74da346ee6ba1efbcbc66d5b68d4bcafda7
+product/artifact sha (unchanged): 4dc51cbd424d2e1f13a9658622820c64685da340
+pre-fix validator extracted from: 451f54ca1c7e7bf64638a1979963c23194f62f83
+
+== blob ids at 30baf74da346ee6ba1efbcbc66d5b68d4bcafda7 ==
+8d5182d012d8ea644cef905ca099b37289afe993 docs/decisions/2026-10-14-ddl-primary-key-bigint-unsigned-proof.md
+58134550833558070c18d2ff8994a502d484edeb scripts/README.md
+8907b348815295fdecf1f0ddbabfc12d755fcfae scripts/ddl_golden.py
+a5ba0f7f139bcb56f0ec1b71a524c31bbd984d2f scripts/test_ddl_golden.py
+
+sha256 original artifact: ac50cde206433d7f56a7dc979078003835bca4937da8d2c54f3886477b3983ed
+sha256 original binary (not published): 3b3986fee40202ed8082a609dc612ee0d5fd9e4b2a59aaa276f16d8b28acbf7e
+binary path (run host only): /tmp/ds-t06-a11-proof/T06/T06/bin/deltascope
+
+== worktree ==
+ M .mcp.json
+untracked preserved: .agents/ .debug-journal.md .opencode/ .pi-subagents/ .qoder/ docs/quality/architecture-review-2026-08-11.html docs/verification/t06-a11/30baf74da346ee6ba1efbcbc66d5b68d4bcafda7/

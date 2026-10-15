@@ -1,0 +1,3 @@
+argv: python3 -m py_compile scripts/ddl_golden.py scripts/test_ddl_golden.py
+head: 30baf74da346ee6ba1efbcbc66d5b68d4bcafda7
+rc=0
