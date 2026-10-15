@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: synthetic ddl-golden artifacts and manifests built in a temp directory
-# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1/A2/A3/A4/A5/A7/A8/A9/A10 mutation coverage (T06-A9 includes the byte-exact EXTRA comparison mutations: plain-LOWER-IN rollback, catalog pad-space control deletion, and forged marker/sentinel outputs; T06-A10 includes the AUTO_INCREMENT declaration/allocator-observation mutations plus the T06-A10-R1 record-set controls: duplicate/hidden/wrong-target/header-only/forged-header records on all three observations, and legal allocator null|value:<digits> variants staying accepted; T06-A10-R2 adds non-string-stdout contract failures and the complete-`t` SHOW CREATE head boundary)
+# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1/A2/A3/A4/A5/A7/A8/A9/A10 mutation coverage (T06-A9 includes the byte-exact EXTRA comparison mutations: plain-LOWER-IN rollback, catalog pad-space control deletion, and forged marker/sentinel outputs; T06-A10 includes the AUTO_INCREMENT declaration/allocator-observation mutations plus the T06-A10-R1 record-set controls: duplicate/hidden/wrong-target/header-only/forged-header records on all three observations, and legal allocator null|value:<digits> variants staying accepted; T06-A10-R2 adds non-string-stdout contract failures and the complete-`t` SHOW CREATE head boundary; T06-A11 adds the BIGINT/UNSIGNED policy mutations and T06-A11-R1 adds the raw HEX-field shape boundary: whitespace-corrupted, empty, odd-length, 0x-prefixed, and non-ASCII COLUMN_TYPE hex rejected while every frozen whitelist form and upper/lower/mixed-case hex stays accepted)
 # pos: offline negative tests for scripts/ddl_golden.py validation (no Docker required)
 # note: if this file changes, update this header and module README.md.
 """Validator contract tests for scripts/ddl_golden.py.
@@ -4506,6 +4506,80 @@ def t06_contract_tests(tmp):
                            if s["id"] != "t06-a11-mysql84-unsigned-pass"]
     m["required_case_ids"].remove(victim)
     run("t06a11 case deleted on both sides rejected", a, "T06-A1", m)
+
+    # T06-A11-R1: HEX(COLUMN_TYPE) is a raw byte field — complete, consecutive
+    # two-digit hex pairs only. bytes.fromhex silently skips ASCII whitespace,
+    # so a corrupted field must be rejected by shape before decode; it is
+    # never cleaned and re-checked. The whitespace *inside* a legal type such
+    # as "bigint(20) unsigned" arrives as hex byte 20 — not as a literal space
+    # in the field.
+
+    def a11_set_obs_hex(a, case, column_type_hex, extra_hex=""):
+        a11_obs(case)["stdout"] = (
+            "observation\ntype|golden|t|id|"
+            + ("int" if "bigint-reject" in case["cli_case"] else "bigint")
+            + "|1|NO|" + column_type_hex + "|" + extra_hex)
+        return a
+
+    # Positive controls: every frozen whitelist form stays accepted for its
+    # role (encoded by us into the field — the field, not the whitelist, is
+    # what R1 checks), and upper/lower/mixed-case hex digits are all legal.
+    for anchor in ("mysql57", "mysql80", "mysql84", "tidb85"):
+        for role, forms in ddl_golden.T06_A11_COLUMN_TYPE_WHITELISTS.items():
+            for form in forms:
+                a, c = t06a11(f"{anchor}-{role}")
+                a11_set_obs_hex(a, c, form.encode().hex())
+                run(f"t06a11r1 {anchor}-{role} whitelist form {form!r} "
+                    "accepted", a)
+    a, c = t06a11("mysql57-unsigned-pass")
+    a11_set_obs_hex(a, c, "bigint(20) unsigned".encode().hex().upper())
+    run("t06a11r1 uppercase hex accepted", a)
+    a, c = t06a11("mysql57-unsigned-pass")
+    a11_set_obs_hex(a, c, "626967696E742832302920756e5369674E6544")
+    run("t06a11r1 mixed-case hex accepted", a)
+
+    # The six whitespace corruptions of the real mysql57 unsigned-pass record
+    # (H): pair-separated spaces, leading/trailing space, and tab variants.
+    h = "bigint(20) unsigned".encode().hex()
+    for label, bad in (
+            ("spaces-between-pairs",
+             " ".join(h[i:i + 2] for i in range(0, len(h), 2))),
+            ("leading-space", " " + h),
+            ("trailing-space", h + " "),
+            ("tab-between-pairs", h[:2] + "\t" + h[2:]),
+            ("leading-tab", "\t" + h),
+            ("trailing-tab", h + "\t")):
+        a, c = t06a11("mysql57-unsigned-pass")
+        a11_set_obs_hex(a, c, bad)
+        run(f"t06a11r1 whitespace {label} rejected", a, "legal encoding")
+
+    # Field-shape negatives: empty, odd length, non-hex digits, and a 0x
+    # prefix are all malformed encodings — not types to compare.
+    a, c = t06a11("mysql57-unsigned-pass")
+    a11_set_obs_hex(a, c, "")
+    run("t06a11r1 empty column_type hex rejected", a, "legal encoding")
+    a, c = t06a11("mysql57-unsigned-pass")
+    a11_set_obs_hex(a, c, h[:-1])
+    run("t06a11r1 odd-length column_type hex rejected", a, "legal encoding")
+    a, c = t06a11("mysql57-unsigned-pass")
+    a11_set_obs_hex(a, c, h[:4] + "zz" + h[6:])
+    run("t06a11r1 non-hex column_type rejected", a, "legal encoding")
+    a, c = t06a11("mysql57-unsigned-pass")
+    a11_set_obs_hex(a, c, "0x" + h)
+    run("t06a11r1 0x-prefixed column_type rejected", a, "legal encoding")
+
+    # Well-formed hex whose bytes are not ASCII, or decode to text outside
+    # the role whitelist (trailing space, wrong signedness), still fails.
+    a, c = t06a11("mysql57-unsigned-pass")
+    a11_set_obs_hex(a, c, ("bigint(20) unsigned".encode() + b"\x80").hex())
+    run("t06a11r1 non-ascii decoded column_type rejected", a,
+        "legal encoding")
+    a, c = t06a11("mysql57-unsigned-pass")
+    a11_set_obs_hex(a, c, "bigint(20) unsigned ".encode().hex())
+    run("t06a11r1 encoded trailing space rejected", a, "whitelist")
+    a, c = t06a11("mysql57-unsigned-pass")
+    a11_set_obs_hex(a, c, "bigint(20)".encode().hex())
+    run("t06a11r1 signed hex on unsigned role rejected", a, "whitelist")
 
     return results
 

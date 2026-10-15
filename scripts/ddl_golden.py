@@ -5609,6 +5609,16 @@ def t06_a11_artifact_failures(artifact, manifest):
                 f"{record[:160]!r} is not bound to "
                 f"type|golden|t|id|{want_data}|1|NO")
             continue
+        # HEX(COLUMN_TYPE) must be complete, consecutive two-digit pairs —
+        # bytes.fromhex silently skips ASCII whitespace, so a corrupted field
+        # carrying spaces/tabs would still decode into the whitelist. Reject
+        # the raw field shape first; the inner whitespace of a legal type like
+        # "bigint(20) unsigned" is encoded as byte 0x20, never literal space.
+        if not re.fullmatch(r"(?:[0-9A-Fa-f]{2})+", column_type_hex):
+            failures.append(
+                f"T06-A11 {case_id}: COLUMN_TYPE hex {column_type_hex!r} is "
+                "not a complete legal encoding")
+            continue
         try:
             column_type_text = bytes.fromhex(column_type_hex).decode("ascii")
         except ValueError:

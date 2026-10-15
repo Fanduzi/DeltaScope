@@ -95,3 +95,20 @@ shape-checked and bound, never a declaration-provenance claim.
 - `go test -count=1` on `pkg/deltascope` and `internal/interfaces/http` — SDK/HTTP representatives green.
 - `make ddl-golden-validator-test` — 507 contract cases, 0 failures, including the T06-A11 mutation group (missed/forged blockers, rule-identity substitution, profile/verdict swaps on shared SQL, composite forgery, whitelist smuggling, observation-shape forgeries, driver-replay skip, denominator shrinkage).
 - `make ddl-golden TASK=T06` — 324/324 on the four frozen anchors; per-case driver replay, verbatim nine-field column observations, and structure oracles preserved in the artifact.
+
+## R1 — raw HEX field shape (2026-10-15)
+
+The anchored observation stores `HEX(COLUMN_TYPE)`/`HEX(EXTRA)`; the
+validator originally decoded the column-type field with `bytes.fromhex`,
+which silently skips ASCII whitespace — corrupted fields carrying literal
+spaces or tabs could still decode into the whitelist. `t06_a11_artifact_
+failures` now requires `re.fullmatch(r"(?:[0-9A-Fa-f]{2})+",
+column_type_hex)` before decoding: complete, consecutive two-digit pairs,
+non-empty, any letter case. The whitespace inside a legal complete form
+like `bigint(20) unsigned` is encoded as byte `20`, never a literal space
+in the field; the byte-empty `EXTRA` field is unaffected (emptiness is
+legal there, presence is mandatory). No cleaning, no re-encoding, no
+whitelist change. Six whitespace-corruption controls on the real
+mysql57 unsigned-pass record were wrongly accepted before the fix
+(`artifact valid`) and are contract rejections after; the original
+324-case artifact at `4dc51cbd` still validates with binary check on.

@@ -4,9 +4,12 @@ Code under test: `4dc51cbd424d2e1f13a9658622820c64685da340`
 (`test(ddl): prove single-member primary-key BIGINT/UNSIGNED policies (T06-A11)`)
 
 Zero production-code changes. The slice extends the frozen T06 golden
-contract from 292 to **324 cases** — the original A1–A10 records are
-preserved byte-for-byte and still attributed to their original tested
-SHAs; 32 new records are added under two new isolated profiles:
+contract from 292 to **324 cases** — the A1–A10 contract (case
+identities, SQL, profiles, expectations) is preserved unchanged, while
+this run's 324 records were all executed fresh and belong to
+`head_sha` `4dc51cbd` (the historical run records stay in their original
+evidence directories under their own SHAs); 32 new records are added
+under two new isolated profiles:
 
 - `t06-a11-pk-bigint-isolated` — only
   `ddl.table.primary_key.bigint.require` at `blocker`,
@@ -17,7 +20,8 @@ SHAs; 32 new records are added under two new isolated profiles:
 
 ## What is proven
 
-**Product (real parser + AuditSQL + CLI, both dialects):**
+**Product (real parser + AuditSQL + CLI, both dialects):** 8 frozen
+roles × 2 dialects = 16 offline CLI runs:
 
 | Role | Input | Expected/actual |
 | --- | --- | --- |
@@ -59,7 +63,7 @@ verdict — no cross-borrowing.
 | Path | Contents |
 | --- | --- |
 | `artifact.json` | Complete 324-case run artifact (`head_sha` = tested SHA). |
-| `cases/` | All 324 per-case records (292 preserved + 32 new). |
+| `cases/` | All 324 per-case records of this run (the A1–A10 cases re-executed under their unchanged contracts, plus 32 new A11 records) — all attributed to `head_sha` `4dc51cbd`. |
 | `policies/` | The 22 generated policy files actually used (sha256-recorded in the artifact). |
 | `T06-manifest.json` | The frozen manifest as run. |
 | `anchors.json` | Anchor image/digest/version/reachable summary. |
