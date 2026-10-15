@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: task manifest testdata/ddl-golden/<TASK>.json, docker/ddl-golden-compose.yaml, freshly built deltascope CLI
-# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest, including synchronous execute verification and the frozen T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1–A10 oracles (the T06-A9 EXTRA whitelist compares CAST(LOWER(x) AS BINARY) byte-exact so PAD SPACE catalog collations cannot smuggle trailing-space text into a role marker; the T06-A10 observations enforce a string-typed stdout carrying the fixed client header plus exactly one bound data record — the allocator counter is verbatim-observed, never numerically asserted, and SHOW CREATE must name object `t` with the head opening `CREATE TABLE `t` (` before its opaque body)
+# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest, including synchronous execute verification and the frozen T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1–A12 oracles (the T06-A9 EXTRA whitelist compares CAST(LOWER(x) AS BINARY) byte-exact so PAD SPACE catalog collations cannot smuggle trailing-space text into a role marker; the T06-A10 observations enforce a string-typed stdout carrying the fixed client header plus exactly one bound data record — the allocator counter is verbatim-observed, never numerically asserted, and SHOW CREATE must name object `t` with the head opening `CREATE TABLE `t` (` before its opaque body; the T06-A11 observation additionally enforces a complete two-digit-pair HEX field shape so literal whitespace can never launder into the COLUMN_TYPE whitelist; T06-A12 pins per-column NOT NULL finding attribution, the loaded/applicable/absent rule_summary contract per role, and the ordered column-set oracle)
 # pos: DDL golden-path runner and artifact validator behind `make ddl-golden TASK=Txx ARTIFACT_DIR=...`
 # note: if this file changes, update this header and module README.md.
 """DeltaScope DDL golden-path runner (milestone T02/#81, T04/#83).
@@ -435,6 +435,9 @@ def cli_case_expect_checks(parsed, rc, expect):
     if "rule_summary_loaded" in expect:
         got = ((parsed or {}).get("rule_summary") or {}).get("loaded")
         checks.append(("loaded rule count", got == expect["rule_summary_loaded"], f"loaded={got!r}"))
+    if "rule_summary_applicable" in expect:
+        got = ((parsed or {}).get("rule_summary") or {}).get("applicable")
+        checks.append(("applicable rule count", got == expect["rule_summary_applicable"], f"applicable={got!r}"))
     if "statement_indices" in expect:
         got = [s.get("index", 0) for s in statements]
         checks.append(("statement indices", got == expect["statement_indices"], f"indices={got!r}"))
@@ -2968,6 +2971,56 @@ T06_A11_TYPE_OBS = (
 T06_A11_TYPE_OBS_NAME = "column type raw observation"
 T06_A11_TYPE_OBS_HEADER = "observation"
 
+# T06-A12 (issue #85): ordinary CREATE TABLE non-PK-column NOT NULL policy,
+# the allow_time_null exemption, and per-column finding attribution. Three
+# single-rule isolations at blocker: strict (required=true,
+# allow_time_null=false), time-allow (required=true, allow_time_null=true),
+# and not-required (required=false — loaded but inapplicable, distinct from
+# the all-rules-disabled control which never loads the rule). The shipped
+# defaults (warning, required=true, allow_time_null=true) stay untouched.
+# DATETIME and TEXT are the two exemption representatives — this slice never
+# claims the full time-like/blob-text-like type matrix.
+T06_A12_STRICT_PROFILE = "t06-a12-not-null-strict-isolated"
+T06_A12_TIME_ALLOW_PROFILE = "t06-a12-not-null-time-allow-isolated"
+T06_A12_NOT_REQUIRED_PROFILE = "t06-a12-not-null-not-required-isolated"
+T06_A12_RULE = "ddl.column.not_null.require"
+
+T06_A12_NULLABLE_SQL = "CREATE TABLE t (c INT);"
+T06_A12_NOT_NULL_SQL = "CREATE TABLE t (c INT NOT NULL);"
+T06_A12_TIME_SQL = "CREATE TABLE t (c DATETIME NULL);"
+T06_A12_TEXT_SQL = "CREATE TABLE t (payload TEXT);"
+T06_A12_MIXED_SQL = (
+    "CREATE TABLE t (ordinary INT, time_c DATETIME NULL, payload TEXT);")
+
+T06_A12_ORDINARY_FINDING = {
+    "rule_id": T06_A12_RULE,
+    "message": 'column "c" should be declared NOT NULL',
+    "metadata": {"table": "t", "column": "c", "type": "int(11)"},
+}
+T06_A12_TIME_FINDING = {
+    "rule_id": T06_A12_RULE,
+    "message": 'column "c" should be declared NOT NULL',
+    "metadata": {"table": "t", "column": "c", "type": "datetime"},
+}
+T06_A12_MIXED_FINDING = {
+    "rule_id": T06_A12_RULE,
+    "message": 'column "ordinary" should be declared NOT NULL',
+    "metadata": {"table": "t", "column": "ordinary", "type": "int(11)"},
+}
+
+# Ordered column-set oracle (issue #85 T06-A12): one GROUP_CONCAT row binds
+# schema/table/name/DATA_TYPE/ordinal/IS_NULLABLE per stored column — the
+# whole set, in ordinal order, never an aggregated row count alone. A
+# missing, reordered, or re-typed column breaks the string; the independent
+# COUNT(*) verify keeps an empty set from laundering as a NULL concat.
+T06_A12_COLUMN_SET = (
+    "SELECT GROUP_CONCAT(CONCAT(TABLE_SCHEMA, ':', TABLE_NAME, ':', "
+    "COLUMN_NAME, ':', DATA_TYPE, ':', ORDINAL_POSITION, ':', IS_NULLABLE) "
+    "ORDER BY ORDINAL_POSITION SEPARATOR '|') "
+    "FROM information_schema.COLUMNS "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'"
+)
+
 
 T06_ANCHORS = {
     "mysql57": {
@@ -3088,8 +3141,9 @@ T06_SYNTAX_NEGATIVE = {
 def t06_a1_contract():
     """Frozen T06 oracle (issue #85): the accepted A1 32-case subset, the
     A2 24-case subset, the A3 16-case subset, the A4 12-case subset, the
-    A5 40-case subset, the A7 64-case subset, the A8 40-case subset, and the
-    A9 28-case subset, and the A10 36-case subset — 292 cases total.
+    A5 40-case subset, the A7 64-case subset, the A8 40-case subset, the
+    A9 28-case subset, the A10 36-case subset, the A11 32-case subset, and
+    the A12 36-case subset — 360 cases total.
     The A8 subset pins comment
     declaration fidelity: a 24-case offline matrix isolates the two presence
     rules and the code-point length rule across both dialects, and 16
@@ -3148,12 +3202,22 @@ def t06_a1_contract():
     'auto_increment' byte-exact while the driver replay succeeds even when
     the policy rejects. The catalog allocator value and SHOW CREATE are
     recorded as bound observations — never promoted to an oracle, never
-    equated with the declared init value or the next allocated id."""
+    equated with the declared init value or the next allocated id.
+
+    The A12 subset pins ordinary non-PK-column NOT NULL policy: a 16-case
+    offline matrix isolates ddl.column.not_null.require under strict,
+    time-allow, and not-required single-rule blocker profiles plus the
+    all-off control (per-column finding attribution on the mixed table,
+    loaded/applicable per role, absent rule_summary when nothing loads),
+    and 20 anchored roles prove the ordered column set — name, DATA_TYPE,
+    ordinal, IS_NULLABLE — plus zero PK constraints and no secondary indexes
+    regardless of the policy verdict: a policy-rejected nullable column is
+    stored IS_NULLABLE=YES, and an exempted time/TEXT column is YES too."""
 
     def verify(label, sql, expect):
         return {"assert": label, "sql": sql, "expect": expect}
 
-    def audit_expect(sql, rejects, loaded=None, finding=None):
+    def audit_expect(sql, rejects, loaded=None, applicable=None, finding=None):
         expect = {
             "exit": 1 if rejects else 0,
             "verdict": "reject" if rejects else "pass",
@@ -3170,6 +3234,10 @@ def t06_a1_contract():
         }
         if loaded is not None:
             expect["rule_summary_loaded"] = loaded
+        if applicable is not None:
+            # Optional pin: loaded-but-inapplicable (required=false) vs the
+            # absent summary of the all-off control — never equated.
+            expect["rule_summary_applicable"] = applicable
         if rejects:
             items = finding if isinstance(finding, list) else [finding or {}]
             expect["findings"] = len(items)
@@ -3677,6 +3745,58 @@ def t06_a1_contract():
                 case["policy"] = profile
                 case["expect"] = audit_expect(
                     sql, finding is not None, loaded=1, finding=finding)
+            cli_cases.append(case)
+
+    # T06-A12 (issue #85): the eight frozen roles pin ordinary non-PK-column
+    # NOT NULL policy under three single-rule blocker profiles plus the
+    # all-off control. time-exempt and time-required share one SQL on purpose
+    # — the same DATETIME NULL declaration is exempt under allow_time_null and
+    # rejected without it, so role identity binds (sql, profile, verdict),
+    # never the SQL text alone. Reject roles pin the complete single finding
+    # entry through finding_entries_full, and every isolated-policy role pins
+    # loaded/applicable — required=false loads the rule but applies to
+    # nothing, while disabled records no rule_summary at all.
+    a12_matrix = (
+        ("ordinary-nullable", T06_A12_NULLABLE_SQL, T06_A12_STRICT_PROFILE,
+         T06_A12_ORDINARY_FINDING, 1),
+        ("ordinary-not-null", T06_A12_NOT_NULL_SQL, T06_A12_STRICT_PROFILE,
+         None, 1),
+        ("time-exempt", T06_A12_TIME_SQL, T06_A12_TIME_ALLOW_PROFILE,
+         None, 1),
+        ("time-required", T06_A12_TIME_SQL, T06_A12_STRICT_PROFILE,
+         T06_A12_TIME_FINDING, 1),
+        ("text-exempt", T06_A12_TEXT_SQL, T06_A12_STRICT_PROFILE,
+         None, 1),
+        ("mixed-attribution", T06_A12_MIXED_SQL, T06_A12_TIME_ALLOW_PROFILE,
+         T06_A12_MIXED_FINDING, 1),
+        ("required-false", T06_A12_NULLABLE_SQL, T06_A12_NOT_REQUIRED_PROFILE,
+         None, 0),
+        ("disabled", T06_A12_NULLABLE_SQL, None, None, None),
+    )
+    for dialect in ("mysql", "tidb"):
+        for role, sql, profile, finding, applicable in a12_matrix:
+            case = {
+                "id": f"t06-a12-{dialect}-{role}",
+                "dialect": dialect,
+                "sql": sql,
+                "args": ["--fail-on", "blocker"],
+            }
+            if profile is None:
+                case["expect"] = audit_expect(sql, False)
+            else:
+                case["policy"] = profile
+                case["expect"] = audit_expect(
+                    sql, finding is not None, loaded=1, applicable=applicable,
+                    finding=finding)
+                if finding is not None:
+                    case["expect"]["finding_entries_full"] = [{
+                        "index": 0,
+                        "rule_id": finding["rule_id"],
+                        "level": "blocker",
+                        "message": finding["message"],
+                        "metadata": dict(finding["metadata"]),
+                        "line": 1, "column": 1,
+                    }]
             cli_cases.append(case)
 
     connects = {
@@ -4935,6 +5055,98 @@ def t06_a1_contract():
                 ],
             })
 
+        # T06-A12 (issue #85): ordinary-column NOT NULL roles on real
+        # catalog. ordinary-nullable/time-required/mixed-attribution reject on
+        # the product side while the same CREATE must still succeed on the
+        # driver — a policy verdict never stands in for the server's own
+        # legality check. The structure oracle binds the complete ordered
+        # column set (name/DATA_TYPE/ordinal/IS_NULLABLE) plus independent
+        # count/PK/index checks: IS_NULLABLE=YES on a policy-rejected column
+        # is the declared fact, and an exempted time/TEXT column is YES too —
+        # neither path rewrites the stored declaration. No PK is declared in
+        # any role, so the GIPK facts are recorded on MySQL 8.0/8.4.
+        a12_meta_roles = (
+            ("ordinary-nullable", T06_A12_NULLABLE_SQL, T06_A12_STRICT_PROFILE,
+             T06_A12_ORDINARY_FINDING,
+             "1", "golden:t:c:int:1:YES"),
+            ("ordinary-not-null", T06_A12_NOT_NULL_SQL, T06_A12_STRICT_PROFILE,
+             None,
+             "1", "golden:t:c:int:1:NO"),
+            ("time-exempt", T06_A12_TIME_SQL, T06_A12_TIME_ALLOW_PROFILE,
+             None,
+             "1", "golden:t:c:datetime:1:YES"),
+            ("time-required", T06_A12_TIME_SQL, T06_A12_STRICT_PROFILE,
+             T06_A12_TIME_FINDING,
+             "1", "golden:t:c:datetime:1:YES"),
+            ("mixed-attribution", T06_A12_MIXED_SQL, T06_A12_TIME_ALLOW_PROFILE,
+             T06_A12_MIXED_FINDING,
+             "3", "golden:t:ordinary:int:1:YES|golden:t:time_c:datetime:2:YES|"
+             "golden:t:payload:text:3:YES"),
+        )
+        for role, sql, profile, finding, column_count, column_set in a12_meta_roles:
+            expect = audit_expect(
+                sql, finding is not None, loaded=1, applicable=1,
+                finding=finding)
+            if finding is not None:
+                expect["finding_entries_full"] = [{
+                    "index": 0,
+                    "rule_id": finding["rule_id"],
+                    "level": "blocker",
+                    "message": finding["message"],
+                    "metadata": dict(finding["metadata"]),
+                    "line": 1, "column": 1,
+                }]
+            if anchor_key in ("mysql80", "mysql84"):
+                expect["instance_facts"] = dict(T06_GIPK_FACTS)
+            rows = [
+                verify("exactly one user table", T06_TABLE_COUNT, "1"),
+                verify("exact user column count", T06_COLUMN_COUNT, column_count),
+                verify("ordered column set", T06_A12_COLUMN_SET, column_set),
+                verify("primary key constraint count", T06_PK_CONSTRAINT, "0"),
+                verify("primary index part count", T06_PK_PARTS, "0"),
+                verify("no extra indexes", T06_A10_NO_SECONDARY, "0"),
+            ]
+            if anchor_key != "tidb85":
+                rows.append(verify("storage engine", T06_ENGINE, "InnoDB"))
+            metadata_cases.append({
+                "id": f"t06-a12-{anchor_key}-{role}",
+                "anchor": anchor_key,
+                "dialect": dialect,
+                "sql": sql,
+                "policy": profile,
+                "connect": dict(connects[anchor_key]),
+                "args": ["--fail-on", "blocker"],
+                "setup": [
+                    {
+                        "name": "ensure t absent",
+                        "sql": "DROP TABLE IF EXISTS t",
+                        "expect_rc": 0,
+                        "verify": [verify("t absent before audit",
+                                          T06_TABLE_COUNT, "0")],
+                    },
+                ],
+                "expect": expect,
+                "post_verify": [
+                    verify("audit did not create t", T06_TABLE_COUNT, "0"),
+                ],
+                "execute": [
+                    {
+                        "name": "driver applies the audited create",
+                        "sql": sql,
+                        "expect_rc": 0,
+                    },
+                ],
+                "structure": rows,
+                "teardown": [
+                    {
+                        "name": "drop fixture",
+                        "sql": "DROP TABLE IF EXISTS t",
+                        "expect_rc": 0,
+                        "verify": [verify("no residual t", T06_TABLE_COUNT, "0")],
+                    },
+                ],
+            })
+
     required_case_ids = (
         [f"T06.db.{anchor}.{kind}" for anchor in T06_ANCHORS for kind in ("ddl", "syntax_negative")]
         + [f"T06.cli.{spec['id']}" for spec in cli_cases]
@@ -5124,6 +5336,36 @@ def t06_a1_contract():
                     },
                 }
             },
+            # T06-A12: three single-rule isolations of the same NOT NULL
+            # rule. strict and time-allow differ only in allow_time_null —
+            # the parameter is the exemption switch, never a different rule.
+            # not-required keeps the rule loaded but inapplicable, which must
+            # never be conflated with the all-off control. Shipped defaults
+            # (warning, required=true, allow_time_null=true) stay untouched.
+            T06_A12_STRICT_PROFILE: {
+                "enable": {
+                    T06_A12_RULE: {
+                        "enabled": True, "level": "blocker",
+                        "params": {"required": True, "allow_time_null": False},
+                    },
+                }
+            },
+            T06_A12_TIME_ALLOW_PROFILE: {
+                "enable": {
+                    T06_A12_RULE: {
+                        "enabled": True, "level": "blocker",
+                        "params": {"required": True, "allow_time_null": True},
+                    },
+                }
+            },
+            T06_A12_NOT_REQUIRED_PROFILE: {
+                "enable": {
+                    T06_A12_RULE: {
+                        "enabled": True, "level": "blocker",
+                        "params": {"required": False, "allow_time_null": False},
+                    },
+                }
+            },
         },
         "anchors": T06_ANCHORS,
         "ddl_steps": T06_DDL_STEPS,
@@ -5208,7 +5450,9 @@ def t06_a1_manifest_failures(manifest):
         failures.append("T06-A1 baseline syntax_negative changed")
     required = manifest.get("required_case_ids") or []
     if required != contract["required_case_ids"]:
-        failures.append("T06-A1 required_case_ids differ from the frozen 292-case denominator")
+        failures.append(
+            f"T06-A1 required_case_ids differ from the frozen "
+            f"{len(contract['required_case_ids'])}-case denominator")
     for field, kind in (("cli_cases", "cli"), ("metadata_cases", "meta")):
         declared_list = [spec.get("id") for spec in manifest.get(field) or []]
         declared = {spec.get("id"): spec for spec in manifest.get(field) or []}
@@ -5639,6 +5883,67 @@ def t06_a11_artifact_failures(artifact, manifest):
     return failures
 
 
+def t06_a12_artifact_failures(artifact, manifest):
+    """T06-A12 (issue #85): pin the per-role rule_summary contract, re-parsed
+    from the recorded raw stdout — never from a stored `parsed` blob. The six
+    isolated-profile roles carry loaded=1/applicable=1; the required=false
+    control carries loaded=1/applicable=0 (loaded but inapplicable); the
+    all-off control carries no rule_summary at all. None of these three
+    states may stand in for another."""
+    if manifest.get("task_id") != "T06":
+        return []
+    frozen = {}
+    for spec in t06_a1_contract()["cli_cases"]:
+        local = spec["id"]
+        if not local.startswith("t06-a12-"):
+            continue
+        role = local.split("-", 3)[3]
+        frozen[f"T06.cli.{local}"] = role
+    for spec in t06_a1_contract()["metadata_cases"]:
+        local = spec["id"]
+        if not local.startswith("t06-a12-"):
+            continue
+        role = local.split("-", 3)[3]
+        frozen[f"T06.meta.{local}"] = role
+    want = {
+        "ordinary-nullable": (1, 1),
+        "ordinary-not-null": (1, 1),
+        "time-exempt": (1, 1),
+        "time-required": (1, 1),
+        "text-exempt": (1, 1),
+        "mixed-attribution": (1, 1),
+        "required-false": (1, 0),
+        "disabled": None,
+    }
+    failures = []
+    for case in artifact.get("cases") or []:
+        case_id = case.get("case_id")
+        role = frozen.get(case_id)
+        if role is None:
+            continue
+        try:
+            parsed = json.loads((case.get("actual") or {}).get("stdout") or "")
+        except (json.JSONDecodeError, TypeError):
+            continue  # the generic validator already reports unparseable stdout
+        expected_summary = want[role]
+        summary = parsed.get("rule_summary")
+        if expected_summary is None:
+            if summary is not None:
+                failures.append(
+                    f"T06-A12 {case_id}: rule_summary {summary!r} must be "
+                    "absent under the all-off control")
+            continue
+        want_loaded, want_applicable = expected_summary
+        got_loaded = (summary or {}).get("loaded")
+        got_applicable = (summary or {}).get("applicable")
+        if got_loaded != want_loaded or got_applicable != want_applicable:
+            failures.append(
+                f"T06-A12 {case_id}: rule_summary loaded={got_loaded!r} "
+                f"applicable={got_applicable!r} != frozen "
+                f"{want_loaded}/{want_applicable} for role {role!r}")
+    return failures
+
+
 def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
     """Re-check an emitted artifact. Returns a list of failure strings."""
     failures = []
@@ -5660,6 +5965,7 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
     failures.extend(t06_a1_artifact_failures(artifact, manifest))
     failures.extend(t06_a10_artifact_failures(artifact, manifest))
     failures.extend(t06_a11_artifact_failures(artifact, manifest))
+    failures.extend(t06_a12_artifact_failures(artifact, manifest))
 
     if artifact.get("external_blocker"):
         failures.append(f"external blocker recorded: {artifact['external_blocker']}")

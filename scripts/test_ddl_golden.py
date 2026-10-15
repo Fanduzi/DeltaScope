@@ -2115,6 +2115,7 @@ def t06_contract_tests(tmp):
         ddl_golden.T06_A8_LENGTH_RULE, ddl_golden.T06_A9_RULE,
         ddl_golden.T06_A10_PK_RULE, ddl_golden.T06_A10_INIT_RULE,
         ddl_golden.T06_A11_BIGINT_RULE, ddl_golden.T06_A11_UNSIGNED_RULE,
+        ddl_golden.T06_A12_RULE,
         "ddl.table.exists.create.forbid", "ddl.table.exists.alter.require",
         "ddl.alter.drop_column.exists.require", "ddl.create_index.columns.exists.require")]})
     binary.write_text("#!/bin/sh\nprintf '%s' '" + catalog + "'\n")
@@ -2243,7 +2244,10 @@ def t06_contract_tests(tmp):
                   "fail_on_triggered": expected["fail_on_triggered"]}
         if "rule_summary_loaded" in expected:
             parsed["rule_summary"] = {"loaded": expected["rule_summary_loaded"],
-                                      "applicable": expected["rule_summary_loaded"], "skipped": []}
+                                      "applicable": expected.get(
+                                          "rule_summary_applicable",
+                                          expected["rule_summary_loaded"]),
+                                      "skipped": []}
         return parsed
 
     def connect_argv(connect):
@@ -2536,7 +2540,7 @@ def t06_contract_tests(tmp):
     donors = {v: copy.deepcopy(by_id(a, f"T06.meta.t06-mysql84-{v}"))
               for v in ("no-pk", "inline-pk", "table-pk")}
     for item in list(a["cases"]):
-        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-", "t06-a7-", "t06-a8-", "t06-a9-", "t06-a10-", "t06-a11-")):
+        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-", "t06-a7-", "t06-a8-", "t06-a9-", "t06-a10-", "t06-a11-", "t06-a12-")):
             slot(a, item["case_id"], donors[item["cli_case"].split("-", 2)[2]])
     run("t06 all metadata slots refilled variant-wise rejected", a, "identity")
 
@@ -2547,7 +2551,7 @@ def t06_contract_tests(tmp):
     run("t06 metadata slot filled by offline record rejected", a, "identity")
     a = copy.deepcopy(artifact)
     for item in list(a["cases"]):
-        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-", "t06-a7-", "t06-a8-", "t06-a9-", "t06-a10-", "t06-a11-")):
+        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-", "t06-a7-", "t06-a8-", "t06-a9-", "t06-a10-", "t06-a11-", "t06-a12-")):
             variant = item["cli_case"].split("-", 2)[2]
             dialect = "tidb" if item["anchor"] == "tidb85" else "mysql"
             slot(a, item["case_id"], by_id(a, f"T06.cli.t06-{dialect}-{variant}"))
@@ -4580,6 +4584,229 @@ def t06_contract_tests(tmp):
     a, c = t06a11("mysql57-unsigned-pass")
     a11_set_obs_hex(a, c, "bigint(20)".encode().hex())
     run("t06a11r1 signed hex on unsigned role rejected", a, "whitelist")
+
+    # --- T06-A12 additions: ordinary-column NOT NULL roles ---
+
+    def t06a12(suffix):
+        candidate = copy.deepcopy(artifact)
+        case = next(item for item in candidate["cases"]
+                    if item.get("cli_case") == "t06-a12-" + suffix
+                    or item.get("metadata_case") == "t06-a12-" + suffix)
+        return candidate, case
+
+    def a12_structure_entry(case, needle):
+        return next(s for s in case["actual"]["structure"]
+                    if needle in s["assert"])
+
+    def a12_execute_step(case, needle):
+        return next(s for s in case["actual"]["execute"]
+                    if needle in s["name"])
+
+    # Missed blockers on the reject roles and fabricated findings on the
+    # clean roles both launder a verdict — each direction fails.
+    for role in ("ordinary-nullable", "time-required", "mixed-attribution"):
+        a, c = t06a12(f"mysql-{role}")
+        parsed = c["actual"]["parsed"]
+        parsed["statements"][0]["findings"] = []
+        parsed["verdict"] = "pass"
+        parsed["summary"]["blockers"] = 0
+        parsed["fail_on_triggered"] = False
+        c["actual"]["exit"] = 0
+        update_stdout(c)
+        run(f"t06a12 {role} missed blocker rejected", a, role)
+
+    for role in ("ordinary-not-null", "time-exempt", "text-exempt"):
+        a, c = t06a12(f"mysql-{role}")
+        parsed = c["actual"]["parsed"]
+        parsed["statements"][0]["findings"].append(
+            copy.deepcopy(by_id(a, "T06.cli.t06-a12-mysql-ordinary-nullable")
+                          ["actual"]["parsed"]["statements"][0]["findings"][0]))
+        parsed["verdict"] = "reject"
+        parsed["summary"]["blockers"] = 1
+        parsed["fail_on_triggered"] = True
+        c["actual"]["exit"] = 1
+        update_stdout(c)
+        run(f"t06a12 {role} forged finding rejected", a, role)
+
+    # Per-column attribution: mixed-attribution must name `ordinary` — a
+    # finding bound to the exempted time or TEXT column is still one finding
+    # yet must fail, and message/metadata cannot be cross-paired.
+    for wrong_column in ("time_c", "payload"):
+        a, c = t06a12("mysql-mixed-attribution")
+        finding = c["actual"]["parsed"]["statements"][0]["findings"][0]
+        finding["message"] = f'column "{wrong_column}" should be declared NOT NULL'
+        finding["metadata"]["column"] = wrong_column
+        update_stdout(c)
+        run(f"t06a12 mixed finding re-attributed to {wrong_column} rejected",
+            a, "mixed-attribution")
+
+    a, c = t06a12("mysql-mixed-attribution")
+    finding = c["actual"]["parsed"]["statements"][0]["findings"][0]
+    finding["message"] = 'column "time_c" should be declared NOT NULL'
+    update_stdout(c)
+    run("t06a12 mixed message/metadata cross-paired rejected", a,
+        "mixed-attribution")
+
+    # time-exempt and time-required share one SQL under opposite verdicts:
+    # swapping their complete records or only the recorded profile is a role
+    # swap, never an equal-SQL alias.
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.cli.t06-a12-mysql-time-exempt",
+         by_id(a, "T06.cli.t06-a12-mysql-time-required"))
+    run("t06a12 time-exempt slot filled by time-required rejected", a,
+        "identity")
+    a = copy.deepcopy(artifact)
+    exempt = by_id(a, "T06.cli.t06-a12-mysql-time-exempt")
+    required = by_id(a, "T06.cli.t06-a12-mysql-time-required")
+    exempt["policy_profile"], required["policy_profile"] = (
+        required["policy_profile"], exempt["policy_profile"])
+    run("t06a12 same-sql profiles swapped rejected", a, "policy")
+
+    # required=false and disabled are different mechanisms over one SQL:
+    # swapping the recorded outcomes, forging applicable=1 on the
+    # not-required control, or fabricating a rule_summary on the disabled
+    # control all fail.
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.cli.t06-a12-mysql-required-false",
+         by_id(a, "T06.cli.t06-a12-mysql-disabled"))
+    run("t06a12 disabled record in required-false slot rejected", a,
+        "identity")
+    a, c = t06a12("mysql-required-false")
+    c["actual"]["parsed"]["rule_summary"]["applicable"] = 1
+    update_stdout(c)
+    run("t06a12 required-false applicable forged to 1 rejected", a,
+        "required-false")
+    a, c = t06a12("mysql-disabled")
+    c["actual"]["parsed"]["rule_summary"] = {"loaded": 0, "applicable": 0,
+                                             "skipped": []}
+    update_stdout(c)
+    run("t06a12 disabled fabricated rule_summary rejected", a, "disabled")
+    a, c = t06a12("mysql-ordinary-nullable")
+    c["actual"]["parsed"]["rule_summary"]["applicable"] = 0
+    update_stdout(c)
+    run("t06a12 isolated role applicable forged to 0 rejected", a,
+        "ordinary-nullable")
+
+    # Weakening the declared profile params must fail at the manifest
+    # boundary — the frozen profile identity, not the policy file hash.
+    m = copy.deepcopy(manifest)
+    m["policy"]["profiles"]["t06-a12-not-null-strict-isolated"]["enable"][
+        "ddl.column.not_null.require"]["params"]["allow_time_null"] = True
+    run("t06a12 strict profile allow_time_null weakened rejected", artifact,
+        "T06-A1", m)
+    m = copy.deepcopy(manifest)
+    m["policy"]["profiles"]["t06-a12-not-null-strict-isolated"]["enable"][
+        "ddl.column.not_null.require"]["params"]["required"] = False
+    run("t06a12 strict profile required weakened rejected", artifact,
+        "T06-A1", m)
+    m = copy.deepcopy(manifest)
+    m["policy"]["profiles"]["t06-a12-not-null-time-allow-isolated"]["enable"][
+        "ddl.column.not_null.require"]["params"]["allow_time_null"] = False
+    run("t06a12 time-allow profile flipped to strict rejected", artifact,
+        "T06-A1", m)
+
+    # Structure oracle: IS_NULLABLE is the stored fact — a policy-rejected
+    # nullable column recorded as NO, a NOT NULL column recorded as YES, or
+    # an exempted time column recorded as NO all fail; the ordered set pins
+    # every column, so a dropped column, a swap, or a reordered record fails.
+    a, c = t06a12("mysql84-ordinary-nullable")
+    a12_structure_entry(c, "ordered column set")["output"] = "golden:t:c:int:1:NO"
+    run("t06a12 rejected column recorded IS_NULLABLE=NO rejected", a,
+        "structure")
+
+    a, c = t06a12("mysql84-ordinary-not-null")
+    a12_structure_entry(c, "ordered column set")["output"] = "golden:t:c:int:1:YES"
+    run("t06a12 not-null column recorded IS_NULLABLE=YES rejected", a,
+        "structure")
+
+    a, c = t06a12("tidb85-time-exempt")
+    a12_structure_entry(c, "ordered column set")["output"] = (
+        "golden:t:c:datetime:1:NO")
+    run("t06a12 exempted time column forged NO rejected", a, "structure")
+
+    a, c = t06a12("mysql84-mixed-attribution")
+    a12_structure_entry(c, "ordered column set")["output"] = (
+        "golden:t:ordinary:int:1:YES|golden:t:payload:text:3:YES")
+    run("t06a12 mixed column set missing a column rejected", a, "structure")
+
+    a, c = t06a12("mysql84-mixed-attribution")
+    a12_structure_entry(c, "ordered column set")["output"] = (
+        "golden:t:time_c:datetime:1:YES|golden:t:ordinary:int:2:YES|"
+        "golden:t:payload:text:3:YES")
+    run("t06a12 mixed column order swapped rejected", a, "structure")
+
+    a, c = t06a12("mysql84-mixed-attribution")
+    a12_structure_entry(c, "ordered column set")["output"] = (
+        "golden:t:ordinary:datetime:1:YES|golden:t:time_c:int:2:YES|"
+        "golden:t:payload:text:3:YES")
+    run("t06a12 mixed column type swapped rejected", a, "structure")
+
+    a, c = t06a12("mysql84-mixed-attribution")
+    a12_structure_entry(c, "exact user column count")["output"] = "1"
+    run("t06a12 mixed column count shrunk rejected", a, "structure")
+
+    # Missing rows or an empty structure output can never launder as the
+    # ordered set — the COUNT verify and the GROUP_CONCAT verify are
+    # independent legs, and deleting one on the manifest side is caught by
+    # the declared-vs-recorded step count.
+    a, c = t06a12("mysql84-ordinary-nullable")
+    a12_structure_entry(c, "ordered column set")["output"] = ""
+    run("t06a12 empty column set output rejected", a, "structure")
+
+    a = copy.deepcopy(artifact)
+    m = copy.deepcopy(manifest)
+    victim = "t06-a12-mysql84-mixed-attribution"
+    case = by_id(a, f"T06.meta.{victim}")
+    case["actual"]["structure"] = [
+        s for s in case["actual"]["structure"]
+        if s["assert"] != "ordered column set"]
+    next(s for s in m["metadata_cases"] if s["id"] == victim)["structure"] = [
+        s for s in next(s for s in m["metadata_cases"] if s["id"] == victim)["structure"]
+        if s["assert"] != "ordered column set"]
+    run("t06a12 column-set query deleted both sides rejected", a, "T06-A1", m)
+
+    # A product reject never skips the driver replay, and a driver failure
+    # can never be recorded as a native success.
+    a, c = t06a12("mysql84-time-required")
+    c["actual"]["execute"] = [
+        s for s in c["actual"]["execute"]
+        if s["name"] != "driver applies the audited create"]
+    run("t06a12 product reject skipped driver create rejected", a, "execute")
+
+    a, c = t06a12("mysql80-ordinary-nullable")
+    a12_execute_step(c, "driver applies the audited create")["rc"] = 1
+    run("t06a12 driver create failure recorded as success rejected", a,
+        "execute")
+
+    # Denominator and identity: a cross-anchor donor, an offline demotion, a
+    # duplicated record, and a case deleted on both sides all fail.
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.meta.t06-a12-mysql57-mixed-attribution",
+         by_id(a, "T06.meta.t06-a12-mysql84-mixed-attribution"))
+    run("t06a12 mysql84 record re-keyed as mysql57 rejected", a, "identity")
+
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.meta.t06-a12-tidb85-time-required",
+         by_id(a, "T06.cli.t06-a12-tidb-time-required"))
+    run("t06a12 metadata slot demoted to offline record rejected", a,
+        "identity")
+
+    a = copy.deepcopy(artifact)
+    a["cases"].append(
+        copy.deepcopy(by_id(a, "T06.cli.t06-a12-mysql-ordinary-nullable")))
+    a["executed_count"] = len(a["cases"])
+    run("t06a12 duplicate executed case rejected", a, "duplicate")
+
+    a = copy.deepcopy(artifact)
+    m = copy.deepcopy(manifest)
+    victim = "T06.meta.t06-a12-mysql84-time-exempt"
+    a["cases"] = [x for x in a["cases"] if x["case_id"] != victim]
+    a["executed_count"] = len(a["cases"])
+    a["required_case_ids"].remove(victim)
+    m["metadata_cases"] = [s for s in m["metadata_cases"]
+                           if s["id"] != "t06-a12-mysql84-time-exempt"]
+    m["required_case_ids"].remove(victim)
+    run("t06a12 case deleted on both sides rejected", a, "T06-A1", m)
 
     return results
 
