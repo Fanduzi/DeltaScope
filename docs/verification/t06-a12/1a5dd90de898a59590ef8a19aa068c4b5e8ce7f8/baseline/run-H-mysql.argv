@@ -1,0 +1,1 @@
+/tmp/ds-t06-a12-baseline/deltascope audit --dialect mysql --config policy-off.yaml --format json --fail-on blocker --file sql-H-disabled.sql

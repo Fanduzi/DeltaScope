@@ -1,0 +1,3 @@
+argv: make docs-example-gates
+docs-examples: PASS
+rc=0

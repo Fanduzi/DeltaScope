@@ -1,0 +1,78 @@
+===== A.sql =====
+ast_nodes=1 warnings=[]
+  ast.col[0] name=c tp_str="int(11)" flen=-1 optionTps=[]
+  ast.constraints=0
+  extract[0][mysql] kind=ddl pk_nil=true
+    Column[0]={"default_cts":false,"default_is_null":false,"has_default":false,"name":"c","not_null":false,"on_update_cts":false,"type":"int(11)","unextracted":null}
+  extract[0][tidb] kind=ddl pk_nil=true
+    Column[0]={"default_cts":false,"default_is_null":false,"has_default":false,"name":"c","not_null":false,"on_update_cts":false,"type":"int(11)","unextracted":null}
+===== B.sql =====
+ast_nodes=1 warnings=[]
+  ast.col[0] name=c tp_str="int(11)" flen=-1 optionTps=[2]
+  ast.constraints=0
+  extract[0][mysql] kind=ddl pk_nil=true
+    Column[0]={"default_cts":false,"default_is_null":false,"has_default":false,"name":"c","not_null":true,"on_update_cts":false,"type":"int(11)","unextracted":null}
+  extract[0][tidb] kind=ddl pk_nil=true
+    Column[0]={"default_cts":false,"default_is_null":false,"has_default":false,"name":"c","not_null":true,"on_update_cts":false,"type":"int(11)","unextracted":null}
+===== C.sql =====
+ast_nodes=1 warnings=[]
+  ast.col[0] name=c tp_str="datetime" flen=19 optionTps=[6]
+  ast.constraints=0
+  extract[0][mysql] kind=ddl pk_nil=true
+    Column[0]={"default_cts":false,"default_is_null":false,"has_default":false,"name":"c","not_null":false,"on_update_cts":false,"type":"datetime","unextracted":null}
+  extract[0][tidb] kind=ddl pk_nil=true
+    Column[0]={"default_cts":false,"default_is_null":false,"has_default":false,"name":"c","not_null":false,"on_update_cts":false,"type":"datetime","unextracted":null}
+===== D.sql =====
+ast_nodes=1 warnings=[]
+  ast.col[0] name=c tp_str="datetime" flen=19 optionTps=[6]
+  ast.constraints=0
+  extract[0][mysql] kind=ddl pk_nil=true
+    Column[0]={"default_cts":false,"default_is_null":false,"has_default":false,"name":"c","not_null":false,"on_update_cts":false,"type":"datetime","unextracted":null}
+  extract[0][tidb] kind=ddl pk_nil=true
+    Column[0]={"default_cts":false,"default_is_null":false,"has_default":false,"name":"c","not_null":false,"on_update_cts":false,"type":"datetime","unextracted":null}
+===== E.sql =====
+ast_nodes=1 warnings=[]
+  ast.col[0] name=payload tp_str="text" flen=-1 optionTps=[]
+  ast.constraints=0
+  extract[0][mysql] kind=ddl pk_nil=true
+    Column[0]={"default_cts":false,"default_is_null":false,"has_default":false,"name":"payload","not_null":false,"on_update_cts":false,"type":"text","unextracted":null}
+  extract[0][tidb] kind=ddl pk_nil=true
+    Column[0]={"default_cts":false,"default_is_null":false,"has_default":false,"name":"payload","not_null":false,"on_update_cts":false,"type":"text","unextracted":null}
+===== F.sql =====
+ast_nodes=1 warnings=[]
+  ast.col[0] name=ordinary tp_str="int(11)" flen=-1 optionTps=[]
+  ast.col[1] name=time_c tp_str="datetime" flen=19 optionTps=[6]
+  ast.col[2] name=payload tp_str="text" flen=-1 optionTps=[]
+  ast.constraints=0
+  extract[0][mysql] kind=ddl pk_nil=true
+    Column[0]={"default_cts":false,"default_is_null":false,"has_default":false,"name":"ordinary","not_null":false,"on_update_cts":false,"type":"int(11)","unextracted":null}
+    Column[1]={"default_cts":false,"default_is_null":false,"has_default":false,"name":"time_c","not_null":false,"on_update_cts":false,"type":"datetime","unextracted":null}
+    Column[2]={"default_cts":false,"default_is_null":false,"has_default":false,"name":"payload","not_null":false,"on_update_cts":false,"type":"text","unextracted":null}
+  extract[0][tidb] kind=ddl pk_nil=true
+    Column[0]={"default_cts":false,"default_is_null":false,"has_default":false,"name":"ordinary","not_null":false,"on_update_cts":false,"type":"int(11)","unextracted":null}
+    Column[1]={"default_cts":false,"default_is_null":false,"has_default":false,"name":"time_c","not_null":false,"on_update_cts":false,"type":"datetime","unextracted":null}
+    Column[2]={"default_cts":false,"default_is_null":false,"has_default":false,"name":"payload","not_null":false,"on_update_cts":false,"type":"text","unextracted":null}
+===== G.sql =====
+ast_nodes=1 warnings=[]
+  ast.col[0] name=c tp_str="int(11)" flen=-1 optionTps=[]
+  ast.constraints=0
+  extract[0][mysql] kind=ddl pk_nil=true
+    Column[0]={"default_cts":false,"default_is_null":false,"has_default":false,"name":"c","not_null":false,"on_update_cts":false,"type":"int(11)","unextracted":null}
+  extract[0][tidb] kind=ddl pk_nil=true
+    Column[0]={"default_cts":false,"default_is_null":false,"has_default":false,"name":"c","not_null":false,"on_update_cts":false,"type":"int(11)","unextracted":null}
+===== H.sql =====
+ast_nodes=1 warnings=[]
+  ast.col[0] name=c tp_str="int(11)" flen=-1 optionTps=[]
+  ast.constraints=0
+  extract[0][mysql] kind=ddl pk_nil=true
+    Column[0]={"default_cts":false,"default_is_null":false,"has_default":false,"name":"c","not_null":false,"on_update_cts":false,"type":"int(11)","unextracted":null}
+  extract[0][tidb] kind=ddl pk_nil=true
+    Column[0]={"default_cts":false,"default_is_null":false,"has_default":false,"name":"c","not_null":false,"on_update_cts":false,"type":"int(11)","unextracted":null}
+===== P1-explicit-null.sql =====
+ast_nodes=1 warnings=[]
+  ast.col[0] name=c tp_str="int(11)" flen=-1 optionTps=[6]
+  ast.constraints=0
+  extract[0][mysql] kind=ddl pk_nil=true
+    Column[0]={"default_cts":false,"default_is_null":false,"has_default":false,"name":"c","not_null":false,"on_update_cts":false,"type":"int(11)","unextracted":null}
+  extract[0][tidb] kind=ddl pk_nil=true
+    Column[0]={"default_cts":false,"default_is_null":false,"has_default":false,"name":"c","not_null":false,"on_update_cts":false,"type":"int(11)","unextracted":null}

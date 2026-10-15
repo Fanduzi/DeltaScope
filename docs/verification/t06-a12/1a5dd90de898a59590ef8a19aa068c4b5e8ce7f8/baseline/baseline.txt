@@ -1,0 +1,17 @@
+== baseline ==
+repo: Fanduzi/DeltaScope
+branch: milestone/mysql-tidb-ddl-completion
+head: 907ce213efeae61717babc001aa098b1152a5480
+origin/workfree: 907ce213efeae61717babc001aa098b1152a5480
+parent (A11-R1 validator): 30baf74da346ee6ba1efbcbc66d5b68d4bcafda7
+
+== build ==
+build cmd: CGO_ENABLED=0 go build -o /tmp/ds-t06-a12-baseline/deltascope ./cmd/deltascope
+go version go1.26.1 darwin/arm64
+module: v0.511.2-0.20261015014039-907ce213efea+dirty
+binary sha256: 32978182e2e67f08636ff0176b112c4b3992b221d3eaa31b338a2a26010ca85b
+
+== worktree at build ==
+tracked modified: .mcp.json (external tool edit — NOT this task's change, not committed, credentials not inspected)
+untracked (pre-existing tool/env dirs): .agents/ .codex/ .cursor/ .debug-journal.md .devin/ .grok/ .opencode/ .pi-subagents/ .qoder/ docs/quality/architecture-review-2026-08-11.html
+this task modified zero repo files

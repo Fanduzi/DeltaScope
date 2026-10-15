@@ -1,0 +1,1 @@
+/tmp/ds-t06-a12-baseline/deltascope audit --dialect tidb --config policy-not-required.yaml --format json --fail-on blocker --file sql-G-required-false.sql

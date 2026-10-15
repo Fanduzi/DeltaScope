@@ -1,0 +1,10 @@
+argv: make pg-unit-test-gates
+CGO_ENABLED=1 go test -tags postgresql -count=1 ./internal/infrastructure/parser/postgresql ./internal/application/audit ./internal/application/auditmeta ./internal/interfaces/cli ./internal/interfaces/http ./internal/interfaces/mcp ./pkg/deltascope
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/postgresql	0.497s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	3.166s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/auditmeta	0.629s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/cli	2.222s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/http	2.495s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/mcp	3.781s
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	2.881s
+rc=0

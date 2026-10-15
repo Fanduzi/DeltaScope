@@ -1,0 +1,4 @@
+argv: make decision-record-gate
+./scripts/check_decision_record.sh main...HEAD
+decision-record-gate: trigger paths hit but no trigger keywords in diff, PASS
+rc=0

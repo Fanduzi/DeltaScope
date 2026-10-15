@@ -1,0 +1,16 @@
+A/mysql rc=1
+A/tidb rc=1
+B/mysql rc=0
+B/tidb rc=0
+C/mysql rc=0
+C/tidb rc=0
+D/mysql rc=1
+D/tidb rc=1
+E/mysql rc=0
+E/tidb rc=0
+F/mysql rc=1
+F/tidb rc=1
+G/mysql rc=0
+G/tidb rc=0
+H/mysql rc=0
+H/tidb rc=0

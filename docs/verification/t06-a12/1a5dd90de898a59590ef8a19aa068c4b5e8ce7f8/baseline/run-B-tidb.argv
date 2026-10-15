@@ -1,0 +1,1 @@
+/tmp/ds-t06-a12-baseline/deltascope audit --dialect tidb --config policy-strict.yaml --format json --fail-on blocker --file sql-B-ordinary-not-null.sql

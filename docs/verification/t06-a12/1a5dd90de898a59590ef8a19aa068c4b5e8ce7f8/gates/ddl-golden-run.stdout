@@ -1,0 +1,4 @@
+python3 ./scripts/ddl_golden.py run --task "T06" --artifact-dir "docs/verification/t06-a12/1a5dd90de898a59590ef8a19aa068c4b5e8ce7f8"
+[ddl-golden] task=T06 head=1a5dd90de898 cases=360 passed=360 assertions=8839
+[ddl-golden] artifact=/Users/fan/GolangProjects/DeltaScope/docs/verification/t06-a12/1a5dd90de898a59590ef8a19aa068c4b5e8ce7f8/T06/artifact.json
+[ddl-golden] PASS

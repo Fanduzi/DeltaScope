@@ -1,0 +1,27 @@
+== source identity ==
+repo: Fanduzi/DeltaScope
+branch: milestone/mysql-tidb-ddl-completion
+head_sha: 1a5dd90de898a59590ef8a19aa068c4b5e8ce7f8
+parent: 907ce213efeae61717babc001aa098b1152a5480
+code commit: 1a5dd90de898a59590ef8a19aa068c4b5e8ce7f8
+task base (prior evidence HEAD): 907ce213efeae61717babc001aa098b1152a5480
+
+== build ==
+go version go1.26.1 darwin/arm64
+build cmd: CGO_ENABLED=0 go build -o <artifact>/bin/deltascope ./cmd/deltascope
+module: v0.511.2-0.20261015173711-1a5dd90de898+dirty
+e298498a9e33eded04a84246f6cac8f42e4563988aa39a57521317df980e95e7  /tmp/ds-t06-a12-1a5dd90de898a59590ef8a19aa068c4b5e8ce7f8/deltascope
+
+== worktree at commit ==
+ M .mcp.json
+?? .agents/
+?? .codex/
+?? .cursor/
+?? .debug-journal.md
+?? .devin/
+?? .grok/
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? docs/quality/architecture-review-2026-08-11.html
+?? docs/verification/t06-a12/
