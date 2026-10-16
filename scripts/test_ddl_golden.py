@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: synthetic ddl-golden artifacts and manifests built in a temp directory
-# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1/A2/A3/A4/A5/A7/A8/A9/A10 mutation coverage (T06-A9 includes the byte-exact EXTRA comparison mutations: plain-LOWER-IN rollback, catalog pad-space control deletion, and forged marker/sentinel outputs; T06-A10 includes the AUTO_INCREMENT declaration/allocator-observation mutations plus the T06-A10-R1 record-set controls: duplicate/hidden/wrong-target/header-only/forged-header records on all three observations, and legal allocator null|value:<digits> variants staying accepted; T06-A10-R2 adds non-string-stdout contract failures and the complete-`t` SHOW CREATE head boundary; T06-A11 adds the BIGINT/UNSIGNED policy mutations and T06-A11-R1 adds the raw HEX-field shape boundary: whitespace-corrupted, empty, odd-length, 0x-prefixed, and non-ASCII COLUMN_TYPE hex rejected while every frozen whitelist form and upper/lower/mixed-case hex stays accepted)
+# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1/A2/A3/A4/A5/A7/A8/A9/A10 mutation coverage (T06-A9 includes the byte-exact EXTRA comparison mutations: plain-LOWER-IN rollback, catalog pad-space control deletion, and forged marker/sentinel outputs; T06-A10 includes the AUTO_INCREMENT declaration/allocator-observation mutations plus the T06-A10-R1 record-set controls: duplicate/hidden/wrong-target/header-only/forged-header records on all three observations, and legal allocator null|value:<digits> variants staying accepted; T06-A10-R2 adds non-string-stdout contract failures and the complete-`t` SHOW CREATE head boundary; T06-A11 adds the BIGINT/UNSIGNED policy mutations and T06-A11-R1 adds the raw HEX-field shape boundary: whitespace-corrupted, empty, odd-length, 0x-prefixed, and non-ASCII COLUMN_TYPE hex rejected while every frozen whitelist form and upper/lower/mixed-case hex stays accepted; T06-A12 adds the NOT NULL attribution and column-set mutations, and T06-A12-R1 adds the strict rule_summary shape controls: present-but-null/empty/false keys on the disabled role, missing or non-object summaries on enabled roles, missing counters, bool/float/string/null counts, and wrong per-role integer combos — all rejected through the full validate_artifact entry)
 # pos: offline negative tests for scripts/ddl_golden.py validation (no Docker required)
 # note: if this file changes, update this header and module README.md.
 """Validator contract tests for scripts/ddl_golden.py.
@@ -4807,6 +4807,74 @@ def t06_contract_tests(tmp):
                            if s["id"] != "t06-a12-mysql84-time-exempt"]
     m["required_case_ids"].remove(victim)
     run("t06a12 case deleted on both sides rejected", a, "T06-A1", m)
+
+    # --- T06-A12-R1: strict rule_summary shape ---
+    # "Absent" means the key does not exist; a summary must be a JSON object;
+    # the counters must be JSON integers — presence and typing are validated
+    # together, so no blacklist of bad values is exhaustive.
+
+    def a12_summary(case, value, remove=False):
+        parsed = case["actual"]["parsed"]
+        if remove:
+            parsed.pop("rule_summary", None)
+        else:
+            parsed["rule_summary"] = value
+        update_stdout(case)
+
+    # disabled: the key must be absent — null, empty object, empty array,
+    # and false are all forged summaries.
+    for bad in (None, {}, [], False):
+        a, c = t06a12("mysql-disabled")
+        a12_summary(c, bad)
+        run(f"t06a12r1 disabled summary {bad!r} rejected", a, "absent")
+
+    # enabled roles: a missing key, a null summary, or a non-object summary
+    # (int/bool/string/list) all reject — as failures, never exceptions.
+    for bad in ("absent", None, 1, True, "bad", [1]):
+        a, c = t06a12("mysql-ordinary-not-null")
+        a12_summary(c, bad if bad != "absent" else None, remove=bad == "absent")
+        run(f"t06a12r1 enabled summary {bad!r} rejected", a, "object")
+
+    # either counter key missing rejects.
+    for drop in ("loaded", "applicable"):
+        a, c = t06a12("mysql-ordinary-nullable")
+        del c["actual"]["parsed"]["rule_summary"][drop]
+        update_stdout(c)
+        run(f"t06a12r1 missing {drop} key rejected", a, "missing")
+
+    # non-integer counts — bool, float, string, null — reject on both keys.
+    for bad in (True, False, 1.0, 0.0, "1", "0", None):
+        for key in ("loaded", "applicable"):
+            a, c = t06a12("mysql-ordinary-nullable")
+            c["actual"]["parsed"]["rule_summary"][key] = bad
+            update_stdout(c)
+            run(f"t06a12r1 {key}={bad!r} rejected", a, "integer")
+
+    # illegal integer values and wrong role combos reject; the frozen counts
+    # are per role — time-exempt stays 1/1 and required-false stays 1/0.
+    for suffix, loaded, applicable in (
+            ("mysql-ordinary-nullable", 0, 0),
+            ("mysql-ordinary-nullable", 2, 1),
+            ("mysql-ordinary-nullable", 1, 5),
+            ("mysql-time-exempt", 1, 0),
+            ("mysql-required-false", 1, 1),
+            ("mysql-required-false", 0, 0),
+            ("tidb-ordinary-nullable", 0, 1)):
+        a, c = t06a12(suffix)
+        c["actual"]["parsed"]["rule_summary"]["loaded"] = loaded
+        c["actual"]["parsed"]["rule_summary"]["applicable"] = applicable
+        update_stdout(c)
+        run(f"t06a12r1 {suffix} {loaded}/{applicable} rejected", a, "frozen")
+
+    # The same tampering on an anchored metadata role rejects identically —
+    # the check is not cli-audit-only.
+    a, c = t06a12("mysql84-time-exempt")
+    a12_summary(c, 1)
+    run("t06a12r1 anchored non-object summary rejected", a, "time-exempt")
+    a, c = t06a12("tidb85-ordinary-nullable")
+    c["actual"]["parsed"]["rule_summary"]["loaded"] = True
+    update_stdout(c)
+    run("t06a12r1 anchored bool count rejected", a, "integer")
 
     return results
 

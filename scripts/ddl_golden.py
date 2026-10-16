@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: task manifest testdata/ddl-golden/<TASK>.json, docker/ddl-golden-compose.yaml, freshly built deltascope CLI
-# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest, including synchronous execute verification and the frozen T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1–A12 oracles (the T06-A9 EXTRA whitelist compares CAST(LOWER(x) AS BINARY) byte-exact so PAD SPACE catalog collations cannot smuggle trailing-space text into a role marker; the T06-A10 observations enforce a string-typed stdout carrying the fixed client header plus exactly one bound data record — the allocator counter is verbatim-observed, never numerically asserted, and SHOW CREATE must name object `t` with the head opening `CREATE TABLE `t` (` before its opaque body; the T06-A11 observation additionally enforces a complete two-digit-pair HEX field shape so literal whitespace can never launder into the COLUMN_TYPE whitelist; T06-A12 pins per-column NOT NULL finding attribution, the loaded/applicable/absent rule_summary contract per role, and the ordered column-set oracle)
+# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest, including synchronous execute verification and the frozen T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1–A12 oracles (the T06-A9 EXTRA whitelist compares CAST(LOWER(x) AS BINARY) byte-exact so PAD SPACE catalog collations cannot smuggle trailing-space text into a role marker; the T06-A10 observations enforce a string-typed stdout carrying the fixed client header plus exactly one bound data record — the allocator counter is verbatim-observed, never numerically asserted, and SHOW CREATE must name object `t` with the head opening `CREATE TABLE `t` (` before its opaque body; the T06-A11 observation additionally enforces a complete two-digit-pair HEX field shape so literal whitespace can never launder into the COLUMN_TYPE whitelist; T06-A12 pins per-column NOT NULL finding attribution, the loaded/applicable/absent rule_summary contract per role, and the ordered column-set oracle; T06-A12-R1 requires the absent key to be truly missing, enabled summaries to be JSON objects, and loaded/applicable to be strict JSON integers so bool/float/string/null and non-object shapes reject as failures, never == laundering or exceptions)
 # pos: DDL golden-path runner and artifact validator behind `make ddl-golden TASK=Txx ARTIFACT_DIR=...`
 # note: if this file changes, update this header and module README.md.
 """DeltaScope DDL golden-path runner (milestone T02/#81, T04/#83).
@@ -407,6 +407,20 @@ def cli_case_specs(manifest):
     ]
 
 
+def rule_summary_int_count(parsed, key):
+    """Read one rule_summary counter as a strict JSON integer. A missing key,
+    a non-object summary, or a non-integer value (bool/float/string/null)
+    reads as absent rather than crashing on .get or laundering through
+    == coercion (True == 1, 1.0 == 1 in Python)."""
+    if not isinstance(parsed, dict):
+        return None
+    summary = parsed.get("rule_summary")
+    if not isinstance(summary, dict):
+        return None
+    value = summary.get(key)
+    return value if type(value) is int else None
+
+
 def cli_case_expect_checks(parsed, rc, expect):
     """Assertion rows for one executed CLI case. Required keys are always
     checked; optional keys are checked only when the manifest declares them."""
@@ -433,10 +447,10 @@ def cli_case_expect_checks(parsed, rc, expect):
         ("no unsupported", parsed is not None and len(unsupported) == expect["unsupported"], f"unsupported={unsupported!r}"),
     ]
     if "rule_summary_loaded" in expect:
-        got = ((parsed or {}).get("rule_summary") or {}).get("loaded")
+        got = rule_summary_int_count(parsed, "loaded")
         checks.append(("loaded rule count", got == expect["rule_summary_loaded"], f"loaded={got!r}"))
     if "rule_summary_applicable" in expect:
-        got = ((parsed or {}).get("rule_summary") or {}).get("applicable")
+        got = rule_summary_int_count(parsed, "applicable")
         checks.append(("applicable rule count", got == expect["rule_summary_applicable"], f"applicable={got!r}"))
     if "statement_indices" in expect:
         got = [s.get("index", 0) for s in statements]
@@ -5926,21 +5940,43 @@ def t06_a12_artifact_failures(artifact, manifest):
         except (json.JSONDecodeError, TypeError):
             continue  # the generic validator already reports unparseable stdout
         expected_summary = want[role]
-        summary = parsed.get("rule_summary")
+        # "Absent" means the key is not present at all — a present key with a
+        # null/empty/false value is a fabricated summary, not an absent one.
+        summary_present = isinstance(parsed, dict) and "rule_summary" in parsed
+        summary = parsed.get("rule_summary") if summary_present else None
         if expected_summary is None:
-            if summary is not None:
+            if summary_present:
                 failures.append(
-                    f"T06-A12 {case_id}: rule_summary {summary!r} must be "
-                    "absent under the all-off control")
+                    f"T06-A12 {case_id}: rule_summary key must be absent "
+                    f"under the all-off control, found {summary!r}")
+            continue
+        if not summary_present:
+            failures.append(
+                f"T06-A12 {case_id}: rule_summary must be present as a JSON "
+                f"object for role {role!r}")
+            continue
+        if not isinstance(summary, dict):
+            failures.append(
+                f"T06-A12 {case_id}: rule_summary must be a JSON object for "
+                f"role {role!r}, found {summary!r}")
             continue
         want_loaded, want_applicable = expected_summary
-        got_loaded = (summary or {}).get("loaded")
-        got_applicable = (summary or {}).get("applicable")
-        if got_loaded != want_loaded or got_applicable != want_applicable:
-            failures.append(
-                f"T06-A12 {case_id}: rule_summary loaded={got_loaded!r} "
-                f"applicable={got_applicable!r} != frozen "
-                f"{want_loaded}/{want_applicable} for role {role!r}")
+        for key, want_value in (("loaded", want_loaded),
+                                ("applicable", want_applicable)):
+            if key not in summary:
+                failures.append(
+                    f"T06-A12 {case_id}: rule_summary.{key} missing for "
+                    f"role {role!r}")
+                continue
+            got = summary[key]
+            if type(got) is not int:
+                failures.append(
+                    f"T06-A12 {case_id}: rule_summary.{key}={got!r} must be a "
+                    "JSON integer (not bool/float/string/null)")
+            elif got != want_value:
+                failures.append(
+                    f"T06-A12 {case_id}: rule_summary.{key}={got} != frozen "
+                    f"{want_value} for role {role!r}")
     return failures
 
 

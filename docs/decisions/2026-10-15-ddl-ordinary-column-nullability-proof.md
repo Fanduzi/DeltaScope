@@ -95,3 +95,22 @@ handling, and any auto-rewrite of rejected declarations.
 - `go test -count=1` on `pkg/deltascope` and `internal/interfaces/http` — SDK/HTTP representatives green.
 - `make ddl-golden-validator-test` — contract cases green, including the T06-A12 mutation group (missed/forged blockers, re-attributed and cross-paired findings, same-SQL role swaps, required=false/disabled laundering, weakened profiles, IS_NULLABLE forgeries, column-set/count corruptions, skipped driver replay, denominator shrinkage).
 - `make ddl-golden TASK=T06` — 360/360 on the four frozen anchors; per-case driver replay, ordered column sets, and structure oracles preserved in the artifact.
+
+## R1 — strict `rule_summary` shape (2026-10-16)
+
+The A12 check originally compared `parsed.get("rule_summary")` values with
+`==`, which conflated an absent key with an explicit `null`, let `True`/`1.0`
+launder as the integer `1`/`0`, and crashed with `AttributeError` on truthy
+non-object summaries (`1`, `true`, `"bad"`, `[1]`). `t06_a12_artifact_
+failures` now requires: "absent" means the key does not exist on the top-level
+object (a present `null`/`{}`/`[]`/`false` is a forged summary); enabled roles
+must carry a JSON object with `loaded` and `applicable` keys; both counters
+must be JSON integers (`type(value) is int`) equal to the frozen per-role
+values. The two generic `rule_summary` count reads in
+`cli_case_expect_checks` gained the same object/integer guard via
+`rule_summary_int_count`, so malformed summaries reject as failure lists
+through the full `validate_artifact` entry — never as exceptions. Pre-fix runs
+recorded the wrong acceptances and crashes on the original 360-case artifact;
+post-fix runs reject all of them while the unchanged artifact still validates.
+No product or database behavior changed; the original artifact, binary, and
+policies were reused.
