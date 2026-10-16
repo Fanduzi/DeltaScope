@@ -1,0 +1,3 @@
+[ddl-golden][FAIL] T06-A12 T06.meta.t06-a12-mysql84-time-exempt: rule_summary must be a JSON object for role 'time-exempt', found 1
+[ddl-golden][FAIL] case T06.meta.t06-a12-mysql84-time-exempt: loaded rule count: loaded=None
+[ddl-golden][FAIL] case T06.meta.t06-a12-mysql84-time-exempt: applicable rule count: applicable=None

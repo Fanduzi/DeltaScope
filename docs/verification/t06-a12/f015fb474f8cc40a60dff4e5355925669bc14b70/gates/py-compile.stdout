@@ -1,0 +1,2 @@
+argv: python3 -m py_compile scripts/ddl_golden.py scripts/test_ddl_golden.py
+rc=0

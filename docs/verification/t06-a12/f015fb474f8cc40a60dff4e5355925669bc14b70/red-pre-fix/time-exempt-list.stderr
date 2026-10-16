@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/ddl_golden.py", line 6531, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/ddl_golden.py", line 6527, in main
+    return cmd_validate(args)
+           ^^^^^^^^^^^^^^^^^^
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/ddl_golden.py", line 6505, in cmd_validate
+    failures = validate_artifact(artifact, manifest, baseline=baseline, verify_binary=not args.no_binary_check)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/ddl_golden.py", line 5968, in validate_artifact
+    failures.extend(t06_a12_artifact_failures(artifact, manifest))
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/ddl_golden.py", line 5937, in t06_a12_artifact_failures
+    got_loaded = (summary or {}).get("loaded")
+                 ^^^^^^^^^^^^^^^^^^^
+AttributeError: 'list' object has no attribute 'get'

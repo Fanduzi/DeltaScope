@@ -1,0 +1,4 @@
+[ddl-golden][FAIL] T06-A12 T06.cli.t06-a12-mysql-required-false: rule_summary.loaded=True must be a JSON integer (not bool/float/string/null)
+[ddl-golden][FAIL] T06-A12 T06.cli.t06-a12-mysql-required-false: rule_summary.applicable=False must be a JSON integer (not bool/float/string/null)
+[ddl-golden][FAIL] case T06.cli.t06-a12-mysql-required-false: loaded rule count: loaded=None
+[ddl-golden][FAIL] case T06.cli.t06-a12-mysql-required-false: applicable rule count: applicable=None
