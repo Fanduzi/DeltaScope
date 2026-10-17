@@ -1,0 +1,17 @@
+== source identity ==
+repo: Fanduzi/DeltaScope
+branch: milestone/mysql-tidb-ddl-completion
+head_sha (evidence HEAD): a2ea0b6c89d95093c8acac151d4f5df34ccfa5e3
+parent (A13 code): 2eed4a98728e7bd0c89ef4db6b5149e5ec155252
+origin/workfree at collection: a2ea0b6c89d95093c8acac151d4f5df34ccfa5e3
+
+== build ==
+go version go1.26.1 darwin/arm64
+build cmd: CGO_ENABLED=0 go build -o /tmp/ds-t06-a14-baseline/deltascope ./cmd/deltascope
+binary version: v0.511.2-0.20261017121426-a2ea0b6c89d9+dirty (mysql, tidb)
+binary sha256: 37a2451cf8d4e4618184dfdb1733d2fc20fd332e86c771173bfa8a1419638cb7
+
+== worktree at collection ==
+ M .mcp.json              (external tool modification, untouched)
+ untracked tool dirs: .agents/ .codex/ .cursor/ .debug-journal.md .devin/ .grok/ .opencode/ .pi-subagents/ .qoder/ docs/quality/architecture-review-2026-08-11.html docs/verification/t06-a12/1a5dd90d.../T06/ (restored prior-slice runtime dir)
+ note: no build-moment snapshot; +dirty attributes to the above external state; this baseline made zero repo modifications.

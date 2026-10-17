@@ -1,0 +1,6 @@
+code_sha: ded0ed51bcbf4e34952438e53f6b08073425b800
+code_commit: test(ddl): T06-A14 table-option allowlist proof (require_explicit matrix, per-product catalog oracle)
+branch: milestone/mysql-tidb-ddl-completion
+task_base: a2ea0b6c89d95093c8acac151d4f5df34ccfa5e3
+built_by: scripts/ddl_golden.py run (inside the T06 golden runner)
+binary_path: /tmp/ds-t06-a14-proof/T06/bin/deltascope

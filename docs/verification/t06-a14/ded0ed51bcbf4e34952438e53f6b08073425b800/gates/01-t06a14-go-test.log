@@ -1,0 +1,268 @@
+=== RUN   TestExtractorT06A14TableOptions
+=== PAUSE TestExtractorT06A14TableOptions
+=== RUN   TestExtractorT06A14ColumnCharsetNotTableOption
+=== PAUSE TestExtractorT06A14ColumnCharsetNotTableOption
+=== CONT  TestExtractorT06A14TableOptions
+=== CONT  TestExtractorT06A14ColumnCharsetNotTableOption
+=== RUN   TestExtractorT06A14TableOptions/mysql/s0-omitted
+=== PAUSE TestExtractorT06A14TableOptions/mysql/s0-omitted
+=== RUN   TestExtractorT06A14ColumnCharsetNotTableOption/mysql
+=== PAUSE TestExtractorT06A14ColumnCharsetNotTableOption/mysql
+=== RUN   TestExtractorT06A14TableOptions/mysql/engine-allowed
+=== PAUSE TestExtractorT06A14TableOptions/mysql/engine-allowed
+=== RUN   TestExtractorT06A14ColumnCharsetNotTableOption/tidb
+=== RUN   TestExtractorT06A14TableOptions/mysql/engine-denied
+=== PAUSE TestExtractorT06A14TableOptions/mysql/engine-denied
+=== PAUSE TestExtractorT06A14ColumnCharsetNotTableOption/tidb
+=== RUN   TestExtractorT06A14TableOptions/mysql/charset-allowed
+=== CONT  TestExtractorT06A14ColumnCharsetNotTableOption/mysql
+=== CONT  TestExtractorT06A14ColumnCharsetNotTableOption/tidb
+=== PAUSE TestExtractorT06A14TableOptions/mysql/charset-allowed
+=== RUN   TestExtractorT06A14TableOptions/mysql/charset-denied
+=== PAUSE TestExtractorT06A14TableOptions/mysql/charset-denied
+=== RUN   TestExtractorT06A14TableOptions/mysql/rowformat-allowed
+=== PAUSE TestExtractorT06A14TableOptions/mysql/rowformat-allowed
+=== RUN   TestExtractorT06A14TableOptions/mysql/rowformat-denied
+=== PAUSE TestExtractorT06A14TableOptions/mysql/rowformat-denied
+=== RUN   TestExtractorT06A14TableOptions/tidb/s0-omitted
+=== PAUSE TestExtractorT06A14TableOptions/tidb/s0-omitted
+=== RUN   TestExtractorT06A14TableOptions/tidb/engine-allowed
+=== PAUSE TestExtractorT06A14TableOptions/tidb/engine-allowed
+=== RUN   TestExtractorT06A14TableOptions/tidb/engine-denied
+=== PAUSE TestExtractorT06A14TableOptions/tidb/engine-denied
+=== RUN   TestExtractorT06A14TableOptions/tidb/charset-allowed
+=== PAUSE TestExtractorT06A14TableOptions/tidb/charset-allowed
+=== RUN   TestExtractorT06A14TableOptions/tidb/charset-denied
+=== PAUSE TestExtractorT06A14TableOptions/tidb/charset-denied
+=== RUN   TestExtractorT06A14TableOptions/tidb/rowformat-allowed
+=== PAUSE TestExtractorT06A14TableOptions/tidb/rowformat-allowed
+=== RUN   TestExtractorT06A14TableOptions/tidb/rowformat-denied
+=== PAUSE TestExtractorT06A14TableOptions/tidb/rowformat-denied
+=== CONT  TestExtractorT06A14TableOptions/mysql/s0-omitted
+=== CONT  TestExtractorT06A14TableOptions/tidb/s0-omitted
+=== CONT  TestExtractorT06A14TableOptions/mysql/charset-denied
+=== CONT  TestExtractorT06A14TableOptions/mysql/rowformat-denied
+=== CONT  TestExtractorT06A14TableOptions/mysql/engine-denied
+=== CONT  TestExtractorT06A14TableOptions/tidb/charset-denied
+=== CONT  TestExtractorT06A14TableOptions/mysql/charset-allowed
+=== CONT  TestExtractorT06A14TableOptions/mysql/rowformat-allowed
+=== CONT  TestExtractorT06A14TableOptions/mysql/engine-allowed
+=== CONT  TestExtractorT06A14TableOptions/tidb/rowformat-denied
+=== CONT  TestExtractorT06A14TableOptions/tidb/engine-allowed
+=== CONT  TestExtractorT06A14TableOptions/tidb/rowformat-allowed
+=== CONT  TestExtractorT06A14TableOptions/tidb/engine-denied
+=== CONT  TestExtractorT06A14TableOptions/tidb/charset-allowed
+--- PASS: TestExtractorT06A14ColumnCharsetNotTableOption (0.00s)
+    --- PASS: TestExtractorT06A14ColumnCharsetNotTableOption/tidb (0.00s)
+    --- PASS: TestExtractorT06A14ColumnCharsetNotTableOption/mysql (0.00s)
+--- PASS: TestExtractorT06A14TableOptions (0.00s)
+    --- PASS: TestExtractorT06A14TableOptions/mysql/charset-denied (0.00s)
+    --- PASS: TestExtractorT06A14TableOptions/mysql/engine-denied (0.00s)
+    --- PASS: TestExtractorT06A14TableOptions/mysql/rowformat-allowed (0.00s)
+    --- PASS: TestExtractorT06A14TableOptions/mysql/charset-allowed (0.00s)
+    --- PASS: TestExtractorT06A14TableOptions/mysql/s0-omitted (0.00s)
+    --- PASS: TestExtractorT06A14TableOptions/mysql/engine-allowed (0.00s)
+    --- PASS: TestExtractorT06A14TableOptions/tidb/engine-allowed (0.00s)
+    --- PASS: TestExtractorT06A14TableOptions/tidb/rowformat-denied (0.00s)
+    --- PASS: TestExtractorT06A14TableOptions/mysql/rowformat-denied (0.00s)
+    --- PASS: TestExtractorT06A14TableOptions/tidb/rowformat-allowed (0.00s)
+    --- PASS: TestExtractorT06A14TableOptions/tidb/s0-omitted (0.00s)
+    --- PASS: TestExtractorT06A14TableOptions/tidb/charset-denied (0.00s)
+    --- PASS: TestExtractorT06A14TableOptions/tidb/engine-denied (0.00s)
+    --- PASS: TestExtractorT06A14TableOptions/tidb/charset-allowed (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	0.960s
+=== RUN   TestT06A14RoleMatrix
+=== PAUSE TestT06A14RoleMatrix
+=== RUN   TestT06A14DisabledNeverLoads
+=== PAUSE TestT06A14DisabledNeverLoads
+=== RUN   TestT06A14DefaultsAndParams
+=== PAUSE TestT06A14DefaultsAndParams
+=== RUN   TestT06A14CaseInsensitiveMembership
+=== PAUSE TestT06A14CaseInsensitiveMembership
+=== RUN   TestT06A14ApplicabilityBoundaries
+=== PAUSE TestT06A14ApplicabilityBoundaries
+=== CONT  TestT06A14RoleMatrix
+=== CONT  TestT06A14ApplicabilityBoundaries
+=== CONT  TestT06A14CaseInsensitiveMembership
+=== CONT  TestT06A14DefaultsAndParams
+=== RUN   TestT06A14DefaultsAndParams/engine/fallback
+=== PAUSE TestT06A14DefaultsAndParams/engine/fallback
+=== RUN   TestT06A14DefaultsAndParams/charset/fallback
+=== PAUSE TestT06A14DefaultsAndParams/charset/fallback
+=== RUN   TestT06A14DefaultsAndParams/row-format/fallback
+=== CONT  TestT06A14DisabledNeverLoads
+--- PASS: TestT06A14CaseInsensitiveMembership (0.00s)
+=== RUN   TestT06A14RoleMatrix/engine/allowed-strict
+=== RUN   TestT06A14ApplicabilityBoundaries/engine/alter
+=== PAUSE TestT06A14DefaultsAndParams/row-format/fallback
+--- PASS: TestT06A14DisabledNeverLoads (0.00s)
+=== RUN   TestT06A14DefaultsAndParams/non-string_values_element_rejected
+=== PAUSE TestT06A14DefaultsAndParams/non-string_values_element_rejected
+=== RUN   TestT06A14DefaultsAndParams/scalar_values_rejected
+=== RUN   TestT06A14ApplicabilityBoundaries/engine/postgresql
+=== PAUSE TestT06A14DefaultsAndParams/scalar_values_rejected
+=== RUN   TestT06A14DefaultsAndParams/non-bool_require_explicit_rejected
+=== PAUSE TestT06A14DefaultsAndParams/non-bool_require_explicit_rejected
+=== CONT  TestT06A14DefaultsAndParams/engine/fallback
+=== RUN   TestT06A14RoleMatrix/engine/denied-strict
+=== CONT  TestT06A14DefaultsAndParams/non-string_values_element_rejected
+=== RUN   TestT06A14ApplicabilityBoundaries/charset/alter
+=== RUN   TestT06A14ApplicabilityBoundaries/charset/postgresql
+=== CONT  TestT06A14DefaultsAndParams/scalar_values_rejected
+=== CONT  TestT06A14DefaultsAndParams/row-format/fallback
+=== CONT  TestT06A14DefaultsAndParams/charset/fallback
+=== CONT  TestT06A14DefaultsAndParams/non-bool_require_explicit_rejected
+=== RUN   TestT06A14ApplicabilityBoundaries/row-format/alter
+--- PASS: TestT06A14DefaultsAndParams (0.00s)
+    --- PASS: TestT06A14DefaultsAndParams/engine/fallback (0.00s)
+    --- PASS: TestT06A14DefaultsAndParams/non-string_values_element_rejected (0.00s)
+    --- PASS: TestT06A14DefaultsAndParams/scalar_values_rejected (0.00s)
+    --- PASS: TestT06A14DefaultsAndParams/row-format/fallback (0.00s)
+    --- PASS: TestT06A14DefaultsAndParams/charset/fallback (0.00s)
+    --- PASS: TestT06A14DefaultsAndParams/non-bool_require_explicit_rejected (0.00s)
+=== RUN   TestT06A14ApplicabilityBoundaries/row-format/postgresql
+--- PASS: TestT06A14ApplicabilityBoundaries (0.00s)
+    --- PASS: TestT06A14ApplicabilityBoundaries/engine/alter (0.00s)
+    --- PASS: TestT06A14ApplicabilityBoundaries/engine/postgresql (0.00s)
+    --- PASS: TestT06A14ApplicabilityBoundaries/charset/alter (0.00s)
+    --- PASS: TestT06A14ApplicabilityBoundaries/charset/postgresql (0.00s)
+    --- PASS: TestT06A14ApplicabilityBoundaries/row-format/alter (0.00s)
+    --- PASS: TestT06A14ApplicabilityBoundaries/row-format/postgresql (0.00s)
+=== RUN   TestT06A14RoleMatrix/engine/omitted-strict
+=== RUN   TestT06A14RoleMatrix/engine/omitted-optional
+=== RUN   TestT06A14RoleMatrix/engine/denied-optional
+=== RUN   TestT06A14RoleMatrix/charset/allowed-strict
+=== RUN   TestT06A14RoleMatrix/charset/denied-strict
+=== RUN   TestT06A14RoleMatrix/charset/omitted-strict
+=== RUN   TestT06A14RoleMatrix/charset/omitted-optional
+=== RUN   TestT06A14RoleMatrix/charset/denied-optional
+=== RUN   TestT06A14RoleMatrix/row-format/allowed-strict
+=== RUN   TestT06A14RoleMatrix/row-format/denied-strict
+=== RUN   TestT06A14RoleMatrix/row-format/omitted-strict
+=== RUN   TestT06A14RoleMatrix/row-format/omitted-optional
+=== RUN   TestT06A14RoleMatrix/row-format/denied-optional
+--- PASS: TestT06A14RoleMatrix (0.00s)
+    --- PASS: TestT06A14RoleMatrix/engine/allowed-strict (0.00s)
+    --- PASS: TestT06A14RoleMatrix/engine/denied-strict (0.00s)
+    --- PASS: TestT06A14RoleMatrix/engine/omitted-strict (0.00s)
+    --- PASS: TestT06A14RoleMatrix/engine/omitted-optional (0.00s)
+    --- PASS: TestT06A14RoleMatrix/engine/denied-optional (0.00s)
+    --- PASS: TestT06A14RoleMatrix/charset/allowed-strict (0.00s)
+    --- PASS: TestT06A14RoleMatrix/charset/denied-strict (0.00s)
+    --- PASS: TestT06A14RoleMatrix/charset/omitted-strict (0.00s)
+    --- PASS: TestT06A14RoleMatrix/charset/omitted-optional (0.00s)
+    --- PASS: TestT06A14RoleMatrix/charset/denied-optional (0.00s)
+    --- PASS: TestT06A14RoleMatrix/row-format/allowed-strict (0.00s)
+    --- PASS: TestT06A14RoleMatrix/row-format/denied-strict (0.00s)
+    --- PASS: TestT06A14RoleMatrix/row-format/omitted-strict (0.00s)
+    --- PASS: TestT06A14RoleMatrix/row-format/omitted-optional (0.00s)
+    --- PASS: TestT06A14RoleMatrix/row-format/denied-optional (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	0.722s
+=== RUN   TestT06A14OfflineRoleMatrix
+=== PAUSE TestT06A14OfflineRoleMatrix
+=== RUN   TestT06A14ColumnCharsetCannotSatisfyTableRequirement
+=== PAUSE TestT06A14ColumnCharsetCannotSatisfyTableRequirement
+=== RUN   TestT06A14DerivedPreStateCarriesDeclaredOptions
+=== PAUSE TestT06A14DerivedPreStateCarriesDeclaredOptions
+=== CONT  TestT06A14OfflineRoleMatrix
+=== CONT  TestT06A14DerivedPreStateCarriesDeclaredOptions
+=== RUN   TestT06A14DerivedPreStateCarriesDeclaredOptions/mysql/engine-denied
+=== CONT  TestT06A14ColumnCharsetCannotSatisfyTableRequirement
+=== RUN   TestT06A14DerivedPreStateCarriesDeclaredOptions/mysql/charset-denied
+=== RUN   TestT06A14DerivedPreStateCarriesDeclaredOptions/mysql/rowformat-denied
+=== RUN   TestT06A14DerivedPreStateCarriesDeclaredOptions/mysql/omitted
+=== RUN   TestT06A14DerivedPreStateCarriesDeclaredOptions/tidb/engine-denied
+=== RUN   TestT06A14DerivedPreStateCarriesDeclaredOptions/tidb/charset-denied
+=== RUN   TestT06A14DerivedPreStateCarriesDeclaredOptions/tidb/rowformat-denied
+=== RUN   TestT06A14DerivedPreStateCarriesDeclaredOptions/tidb/omitted
+--- PASS: TestT06A14DerivedPreStateCarriesDeclaredOptions (0.01s)
+    --- PASS: TestT06A14DerivedPreStateCarriesDeclaredOptions/mysql/engine-denied (0.01s)
+    --- PASS: TestT06A14DerivedPreStateCarriesDeclaredOptions/mysql/charset-denied (0.00s)
+    --- PASS: TestT06A14DerivedPreStateCarriesDeclaredOptions/mysql/rowformat-denied (0.00s)
+    --- PASS: TestT06A14DerivedPreStateCarriesDeclaredOptions/mysql/omitted (0.00s)
+    --- PASS: TestT06A14DerivedPreStateCarriesDeclaredOptions/tidb/engine-denied (0.00s)
+    --- PASS: TestT06A14DerivedPreStateCarriesDeclaredOptions/tidb/charset-denied (0.00s)
+    --- PASS: TestT06A14DerivedPreStateCarriesDeclaredOptions/tidb/rowformat-denied (0.00s)
+    --- PASS: TestT06A14DerivedPreStateCarriesDeclaredOptions/tidb/omitted (0.00s)
+=== RUN   TestT06A14ColumnCharsetCannotSatisfyTableRequirement/mysql
+=== RUN   TestT06A14OfflineRoleMatrix/mysql/engine-allowed-strict
+=== RUN   TestT06A14ColumnCharsetCannotSatisfyTableRequirement/tidb
+=== RUN   TestT06A14OfflineRoleMatrix/mysql/engine-denied-strict
+--- PASS: TestT06A14ColumnCharsetCannotSatisfyTableRequirement (0.02s)
+    --- PASS: TestT06A14ColumnCharsetCannotSatisfyTableRequirement/mysql (0.01s)
+    --- PASS: TestT06A14ColumnCharsetCannotSatisfyTableRequirement/tidb (0.01s)
+=== RUN   TestT06A14OfflineRoleMatrix/mysql/engine-omitted-strict
+=== RUN   TestT06A14OfflineRoleMatrix/mysql/engine-omitted-optional
+=== RUN   TestT06A14OfflineRoleMatrix/mysql/engine-denied-optional
+=== RUN   TestT06A14OfflineRoleMatrix/mysql/engine-denied-off
+=== RUN   TestT06A14OfflineRoleMatrix/mysql/charset-allowed-strict
+=== RUN   TestT06A14OfflineRoleMatrix/mysql/charset-denied-strict
+=== RUN   TestT06A14OfflineRoleMatrix/mysql/charset-omitted-strict
+=== RUN   TestT06A14OfflineRoleMatrix/mysql/charset-omitted-optional
+=== RUN   TestT06A14OfflineRoleMatrix/mysql/charset-denied-optional
+=== RUN   TestT06A14OfflineRoleMatrix/mysql/charset-denied-off
+=== RUN   TestT06A14OfflineRoleMatrix/mysql/row-format-allowed-strict
+=== RUN   TestT06A14OfflineRoleMatrix/mysql/row-format-denied-strict
+=== RUN   TestT06A14OfflineRoleMatrix/mysql/row-format-omitted-strict
+=== RUN   TestT06A14OfflineRoleMatrix/mysql/row-format-omitted-optional
+=== RUN   TestT06A14OfflineRoleMatrix/mysql/row-format-denied-optional
+=== RUN   TestT06A14OfflineRoleMatrix/mysql/row-format-denied-off
+=== RUN   TestT06A14OfflineRoleMatrix/tidb/engine-allowed-strict
+=== RUN   TestT06A14OfflineRoleMatrix/tidb/engine-denied-strict
+=== RUN   TestT06A14OfflineRoleMatrix/tidb/engine-omitted-strict
+=== RUN   TestT06A14OfflineRoleMatrix/tidb/engine-omitted-optional
+=== RUN   TestT06A14OfflineRoleMatrix/tidb/engine-denied-optional
+=== RUN   TestT06A14OfflineRoleMatrix/tidb/engine-denied-off
+=== RUN   TestT06A14OfflineRoleMatrix/tidb/charset-allowed-strict
+=== RUN   TestT06A14OfflineRoleMatrix/tidb/charset-denied-strict
+=== RUN   TestT06A14OfflineRoleMatrix/tidb/charset-omitted-strict
+=== RUN   TestT06A14OfflineRoleMatrix/tidb/charset-omitted-optional
+=== RUN   TestT06A14OfflineRoleMatrix/tidb/charset-denied-optional
+=== RUN   TestT06A14OfflineRoleMatrix/tidb/charset-denied-off
+=== RUN   TestT06A14OfflineRoleMatrix/tidb/row-format-allowed-strict
+=== RUN   TestT06A14OfflineRoleMatrix/tidb/row-format-denied-strict
+=== RUN   TestT06A14OfflineRoleMatrix/tidb/row-format-omitted-strict
+=== RUN   TestT06A14OfflineRoleMatrix/tidb/row-format-omitted-optional
+=== RUN   TestT06A14OfflineRoleMatrix/tidb/row-format-denied-optional
+=== RUN   TestT06A14OfflineRoleMatrix/tidb/row-format-denied-off
+--- PASS: TestT06A14OfflineRoleMatrix (0.11s)
+    --- PASS: TestT06A14OfflineRoleMatrix/mysql/engine-allowed-strict (0.01s)
+    --- PASS: TestT06A14OfflineRoleMatrix/mysql/engine-denied-strict (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/mysql/engine-omitted-strict (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/mysql/engine-omitted-optional (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/mysql/engine-denied-optional (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/mysql/engine-denied-off (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/mysql/charset-allowed-strict (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/mysql/charset-denied-strict (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/mysql/charset-omitted-strict (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/mysql/charset-omitted-optional (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/mysql/charset-denied-optional (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/mysql/charset-denied-off (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/mysql/row-format-allowed-strict (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/mysql/row-format-denied-strict (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/mysql/row-format-omitted-strict (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/mysql/row-format-omitted-optional (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/mysql/row-format-denied-optional (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/mysql/row-format-denied-off (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/tidb/engine-allowed-strict (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/tidb/engine-denied-strict (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/tidb/engine-omitted-strict (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/tidb/engine-omitted-optional (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/tidb/engine-denied-optional (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/tidb/engine-denied-off (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/tidb/charset-allowed-strict (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/tidb/charset-denied-strict (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/tidb/charset-omitted-strict (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/tidb/charset-omitted-optional (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/tidb/charset-denied-optional (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/tidb/charset-denied-off (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/tidb/row-format-allowed-strict (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/tidb/row-format-denied-strict (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/tidb/row-format-omitted-strict (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/tidb/row-format-omitted-optional (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/tidb/row-format-denied-optional (0.00s)
+    --- PASS: TestT06A14OfflineRoleMatrix/tidb/row-format-denied-off (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	1.313s

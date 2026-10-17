@@ -1,0 +1,33 @@
+ .../2026-10-17-ddl-table-option-allowlist-proof.md |    96 +
+ internal/application/audit/README.md               |     2 +
+ .../application/audit/batch_state_t06a14_test.go   |   301 +
+ internal/domain/rule/ddl/README.md                 |     2 +
+ .../domain/rule/ddl/table_option_t06a14_test.go    |   310 +
+ internal/infrastructure/parser/tidb/README.md      |     2 +
+ .../parser/tidb/extractor_t06a14_test.go           |   127 +
+ internal/interfaces/http/README.md                 |     2 +
+ .../http/audit_table_option_t06a14_test.go         |    71 +
+ pkg/deltascope/README.md                           |     2 +
+ pkg/deltascope/audit_table_option_t06a14_test.go   |    70 +
+ scripts/README.md                                  |     4 +-
+ scripts/ddl_golden.py                              |   424 +-
+ scripts/test_ddl_golden.py                         |   254 +-
+ testdata/ddl-golden/T06.json                       | 27066 +++++++++++--------
+ testdata/ddl-inventory/T06-base-traceability.md    |    20 +-
+ 16 files changed, 18038 insertions(+), 10715 deletions(-)
+docs/decisions/2026-10-17-ddl-table-option-allowlist-proof.md
+internal/application/audit/README.md
+internal/application/audit/batch_state_t06a14_test.go
+internal/domain/rule/ddl/README.md
+internal/domain/rule/ddl/table_option_t06a14_test.go
+internal/infrastructure/parser/tidb/README.md
+internal/infrastructure/parser/tidb/extractor_t06a14_test.go
+internal/interfaces/http/README.md
+internal/interfaces/http/audit_table_option_t06a14_test.go
+pkg/deltascope/README.md
+pkg/deltascope/audit_table_option_t06a14_test.go
+scripts/README.md
+scripts/ddl_golden.py
+scripts/test_ddl_golden.py
+testdata/ddl-golden/T06.json
+testdata/ddl-inventory/T06-base-traceability.md

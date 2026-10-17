@@ -1,0 +1,88 @@
+=== s0-omitted dialect=mysql statements=1 warnings=[]
+  ast table-options=0
+  spec.Options keys=[] unextracted=[]
+  spec[0] name=c type="int(11)" length=-1 charset="" collation=""
+=== engine-allowed dialect=mysql statements=1 warnings=[]
+  ast table-options=1
+    ast[0] tp=1 str="InnoDB" uint=0 bool=false
+  spec.Options keys=[engine] unextracted=[]
+    Options["engine"]="InnoDB"
+  spec[0] name=c type="int(11)" length=-1 charset="" collation=""
+=== engine-denied dialect=mysql statements=1 warnings=[]
+  ast table-options=1
+    ast[0] tp=1 str="MyISAM" uint=0 bool=false
+  spec.Options keys=[engine] unextracted=[]
+    Options["engine"]="MyISAM"
+  spec[0] name=c type="int(11)" length=-1 charset="" collation=""
+=== charset-allowed dialect=mysql statements=1 warnings=[]
+  ast table-options=1
+    ast[0] tp=2 str="utf8mb4" uint=0 bool=false
+  spec.Options keys=[charset] unextracted=[]
+    Options["charset"]="utf8mb4"
+  spec[0] name=c type="int(11)" length=-1 charset="" collation=""
+=== charset-denied dialect=mysql statements=1 warnings=[]
+  ast table-options=1
+    ast[0] tp=2 str="latin1" uint=0 bool=false
+  spec.Options keys=[charset] unextracted=[]
+    Options["charset"]="latin1"
+  spec[0] name=c type="int(11)" length=-1 charset="" collation=""
+=== rowformat-allowed dialect=mysql statements=1 warnings=[]
+  ast table-options=1
+    ast[0] tp=17 str="" uint=2 bool=false
+  spec.Options keys=[row_format] unextracted=[]
+    Options["row_format"]="DYNAMIC"
+  spec[0] name=c type="int(11)" length=-1 charset="" collation=""
+=== rowformat-denied dialect=mysql statements=1 warnings=[]
+  ast table-options=1
+    ast[0] tp=17 str="" uint=6 bool=false
+  spec.Options keys=[row_format] unextracted=[]
+    Options["row_format"]="COMPACT"
+  spec[0] name=c type="int(11)" length=-1 charset="" collation=""
+=== column-charset dialect=mysql statements=1 warnings=[]
+  ast table-options=0
+  spec.Options keys=[] unextracted=[]
+  spec[0] name=c type="varchar(8) character set utf8mb4" length=8 charset="utf8mb4" collation=""
+=== s0-omitted dialect=tidb statements=1 warnings=[]
+  ast table-options=0
+  spec.Options keys=[] unextracted=[]
+  spec[0] name=c type="int(11)" length=-1 charset="" collation=""
+=== engine-allowed dialect=tidb statements=1 warnings=[]
+  ast table-options=1
+    ast[0] tp=1 str="InnoDB" uint=0 bool=false
+  spec.Options keys=[engine] unextracted=[]
+    Options["engine"]="InnoDB"
+  spec[0] name=c type="int(11)" length=-1 charset="" collation=""
+=== engine-denied dialect=tidb statements=1 warnings=[]
+  ast table-options=1
+    ast[0] tp=1 str="MyISAM" uint=0 bool=false
+  spec.Options keys=[engine] unextracted=[]
+    Options["engine"]="MyISAM"
+  spec[0] name=c type="int(11)" length=-1 charset="" collation=""
+=== charset-allowed dialect=tidb statements=1 warnings=[]
+  ast table-options=1
+    ast[0] tp=2 str="utf8mb4" uint=0 bool=false
+  spec.Options keys=[charset] unextracted=[]
+    Options["charset"]="utf8mb4"
+  spec[0] name=c type="int(11)" length=-1 charset="" collation=""
+=== charset-denied dialect=tidb statements=1 warnings=[]
+  ast table-options=1
+    ast[0] tp=2 str="latin1" uint=0 bool=false
+  spec.Options keys=[charset] unextracted=[]
+    Options["charset"]="latin1"
+  spec[0] name=c type="int(11)" length=-1 charset="" collation=""
+=== rowformat-allowed dialect=tidb statements=1 warnings=[]
+  ast table-options=1
+    ast[0] tp=17 str="" uint=2 bool=false
+  spec.Options keys=[row_format] unextracted=[]
+    Options["row_format"]="DYNAMIC"
+  spec[0] name=c type="int(11)" length=-1 charset="" collation=""
+=== rowformat-denied dialect=tidb statements=1 warnings=[]
+  ast table-options=1
+    ast[0] tp=17 str="" uint=6 bool=false
+  spec.Options keys=[row_format] unextracted=[]
+    Options["row_format"]="COMPACT"
+  spec[0] name=c type="int(11)" length=-1 charset="" collation=""
+=== column-charset dialect=tidb statements=1 warnings=[]
+  ast table-options=0
+  spec.Options keys=[] unextracted=[]
+  spec[0] name=c type="varchar(8) character set utf8mb4" length=8 charset="utf8mb4" collation=""

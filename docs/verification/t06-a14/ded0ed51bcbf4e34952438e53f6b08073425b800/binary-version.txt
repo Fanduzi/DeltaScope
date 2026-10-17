@@ -1,0 +1,1 @@
+deltascope v0.511.2-0.20261017155122-ded0ed51bcbf+dirty (mysql, tidb)

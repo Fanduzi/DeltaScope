@@ -1,0 +1,1 @@
+/tmp/ds-t06-a14-baseline/deltascope audit --dialect tidb --config /tmp/ds-t06-a14-baseline/policies/p-engine-optional.yaml --format json --fail-on blocker --file /tmp/ds-t06-a14-baseline/sql/s0-omitted.sql

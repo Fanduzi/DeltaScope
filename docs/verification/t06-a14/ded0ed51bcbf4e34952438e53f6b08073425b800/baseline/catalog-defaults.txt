@@ -1,0 +1,6 @@
+Product defaults (rules-list catalog 381 rules + internal/domain/policy/defaults_ddl.go):
+- ddl.table.engine.allowlist: enabled=true level=blocker params.values=["InnoDB"] (require_explicit default true — boolParam fallback)
+- ddl.table.charset.allowlist: enabled=true level=blocker params.values=["utf8","utf8mb4"] (require_explicit default true)
+- ddl.table.row_format.allowlist: enabled=true level=blocker params.values=["DYNAMIC"] require_explicit=false
+- ddl.table.collation.allowlist: enabled=false level=blocker params.values=["utf8mb4_bin"] require_explicit=true
+Baseline policies narrow values to ["InnoDB"]/["utf8mb4"]/["DYNAMIC"] and set require_explicit true|false — NOT product defaults.

@@ -1,0 +1,8 @@
+# artifact and case files
+2eaad9929114020852701e3e5a43d00990b945c9fdc085f1caa9c5fe086da88c  artifact.json
+# manifest/anchors
+546b84c5dd0ae8635a6924fa0612b08b22624ea7d4c894f3d57233b8f7274861  T06-manifest.json
+53ba4e251afcb1b5e2c7f61fe5b78eb922d682b0a5478c153a340951ad80a48e  anchors.json
+# binaries (not committed)
+b5ec6a68a7ec1a1e52cc3664f51d40a58981233df2e8d9038efa85ccb599824c  /tmp/ds-t06-a14-proof/T06/bin/deltascope
+37a2451cf8d4e4618184dfdb1733d2fc20fd332e86c771173bfa8a1419638cb7  /tmp/ds-t06-a14-baseline/deltascope

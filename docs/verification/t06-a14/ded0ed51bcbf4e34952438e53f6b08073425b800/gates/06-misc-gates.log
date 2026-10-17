@@ -1,0 +1,29 @@
+=== pg-unit-test-gates ===
+CGO_ENABLED=1 go test -tags postgresql -count=1 ./internal/infrastructure/parser/postgresql ./internal/application/audit ./internal/application/auditmeta ./internal/interfaces/cli ./internal/interfaces/http ./internal/interfaces/mcp ./pkg/deltascope
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/postgresql	0.550s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	2.871s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/auditmeta	2.315s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/cli	1.876s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/http	3.873s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/mcp	3.465s
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	4.326s
+pg-unit-test-gates rc=0
+=== sql-corpus-gates ===
+go test ./internal/application/audit -run 'TestSQLCorpusMySQLAndTiDB|TestSQLCorpusExpectedFilesAreWellFormed|TestSQLCorpusCoversSupportedRuleDialects' -count=1
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.574s
+sql-corpus-gates rc=0
+=== ddl-inventory-gate ===
+go test ./internal/application/audit -run TestDDLInventoryContract -count=1
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.329s
+ddl-inventory-gate rc=0
+=== ddl-coverage-catalog-test ===
+go test ./internal/application/audit -count=1 -tags postgresql -run TestDDLCoverageCatalog
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.512s
+ddl-coverage-catalog-test rc=0
+=== docs-example-gates ===
+docs-examples: PASS
+docs-example-gates rc=0
+=== decision-record-gate ===
+./scripts/check_decision_record.sh main...HEAD
+decision-record-gate: trigger paths hit but no trigger keywords in diff, PASS
+decision-record-gate rc=0

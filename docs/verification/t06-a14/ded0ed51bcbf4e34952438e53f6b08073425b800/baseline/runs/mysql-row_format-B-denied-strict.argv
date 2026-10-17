@@ -1,0 +1,1 @@
+/tmp/ds-t06-a14-baseline/deltascope audit --dialect mysql --config /tmp/ds-t06-a14-baseline/policies/p-row_format-strict.yaml --format json --fail-on blocker --file /tmp/ds-t06-a14-baseline/sql/rowformat-denied.sql

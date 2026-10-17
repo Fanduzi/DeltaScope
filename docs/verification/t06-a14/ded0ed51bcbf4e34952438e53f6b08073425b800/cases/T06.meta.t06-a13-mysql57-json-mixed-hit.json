@@ -1,0 +1,477 @@
+{
+  "case_id": "T06.meta.t06-a13-mysql57-json-mixed-hit",
+  "kind": "cli_metadata",
+  "cli_case": "t06-a13-mysql57-json-mixed-hit",
+  "anchor": "mysql57",
+  "dialect": "mysql",
+  "input_sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+  "policy_profile": "t06-a13-json-on-isolated",
+  "policy_path": "/private/tmp/ds-t06-a14-proof/T06/golden-policy-t06-a13-json-on-isolated.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "schema": "golden"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "statement_sql": [
+      "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+      0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.column.json.forbid",
+        "level": "blocker"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 0,
+        "rule_id": "ddl.column.json.forbid",
+        "metadata": {
+          "table": "t",
+          "column": "c_json",
+          "type": "json",
+          "family": "json",
+          "charset": ""
+        }
+      }
+    ],
+    "finding_locations": [
+      {
+        "index": 0,
+        "line": 1,
+        "column": 1
+      }
+    ],
+    "finding_message": "column \"c_json\" must not use the json type family",
+    "finding_entries_full": [
+      {
+        "index": 0,
+        "rule_id": "ddl.column.json.forbid",
+        "level": "blocker",
+        "message": "column \"c_json\" must not use the json type family",
+        "metadata": {
+          "table": "t",
+          "column": "c_json",
+          "type": "json",
+          "family": "json",
+          "charset": ""
+        },
+        "line": 1,
+        "column": 1
+      }
+    ]
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:5.7.44",
+      "image_digest": "mysql@sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb",
+      "container": "deltascope-ddl-golden-mysql57",
+      "reachable": true,
+      "version": "5.7.44"
+    },
+    "setup": [
+      {
+        "name": "ensure t absent",
+        "sql": "DROP TABLE IF EXISTS t",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "verify": [
+          {
+            "assert": "t absent before audit",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ]
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit did not create t",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "0",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      }
+    ],
+    "execute": [
+      {
+        "name": "driver applies the audited create",
+        "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      }
+    ],
+    "structure": [
+      {
+        "assert": "exactly one user table",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "1",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "exact user column count",
+        "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "9",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "ordered column set",
+        "sql": "SELECT GROUP_CONCAT(CONCAT(TABLE_SCHEMA, ':', TABLE_NAME, ':', COLUMN_NAME, ':', DATA_TYPE, ':', ORDINAL_POSITION) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "golden:t:c_blob:blob:1|golden:t:c_text:text:2|golden:t:c_json:json:3|golden:t:c_bit:bit:4|golden:t:c_float:float:5|golden:t:c_double:double:6|golden:t:c_timestamp:timestamp:7|golden:t:c_datetime:datetime:8|golden:t:c_int:int:9",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "primary key constraint count",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+        "rc": 0,
+        "output": "0",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "primary index part count",
+        "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+        "rc": 0,
+        "output": "0",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "no extra indexes",
+        "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+        "rc": 0,
+        "output": "0",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      },
+      {
+        "assert": "storage engine",
+        "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "InnoDB",
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+      }
+    ],
+    "teardown": [
+      {
+        "name": "drop fixture",
+        "sql": "DROP TABLE IF EXISTS t",
+        "rc": 0,
+        "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "verify": [
+          {
+            "assert": "no residual t",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": "mysql: [Warning] Using a password on the command line interface can be insecure."
+          }
+        ]
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);\",\"normalized_sql\":\"CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT)\",\"findings\":[{\"rule_id\":\"ddl.column.json.forbid\",\"level\":\"blocker\",\"message\":\"column \\\"c_json\\\" must not use the json type family\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"store structured data in relational columns or relax the json policy intentionally\",\"metadata\":{\"charset\":\"\",\"column\":\"c_json\",\"family\":\"json\",\"table\":\"t\",\"type\":\"json\"},\"explanation\":{\"summary\":\"Forbid DDL column json forbid\",\"why\":\"The statement uses a construct that the shipped policy explicitly forbids.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"store structured data in relational columns or relax the json policy intentionally\"}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"5.7.44\",\"major\":5,\"minor\":7,\"patch\":44,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+          "normalized_sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT)",
+          "findings": [
+            {
+              "rule_id": "ddl.column.json.forbid",
+              "level": "blocker",
+              "message": "column \"c_json\" must not use the json type family",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "store structured data in relational columns or relax the json policy intentionally",
+              "metadata": {
+                "charset": "",
+                "column": "c_json",
+                "family": "json",
+                "table": "t",
+                "type": "json"
+              },
+              "explanation": {
+                "summary": "Forbid DDL column json forbid",
+                "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "store structured data in relational columns or relax the json policy intentionally"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "5.7.44",
+        "major": 5,
+        "minor": 7,
+        "patch": 44,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "5.7.44",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "5.7.44"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "5.7.44",
+        "major": 5,
+        "minor": 7,
+        "patch": 44,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='5.7.44' expected_contains='5.7.44'"
+    },
+    {
+      "name": "setup ensure t absent return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "setup ensure t absent: t absent before audit",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=1"
+    },
+    {
+      "name": "applicable rule count",
+      "ok": true,
+      "detail": "applicable=1"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);'] expected=['CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.column.json.forbid', 'blocker')] expected=[(0, 'ddl.column.json.forbid', 'blocker')]"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.column.json.forbid')",
+      "ok": true,
+      "detail": "findings=[{'charset': '', 'column': 'c_json', 'family': 'json', 'table': 't', 'type': 'json'}] expected_subset={'table': 't', 'column': 'c_json', 'type': 'json', 'family': 'json', 'charset': ''}"
+    },
+    {
+      "name": "finding location index=0",
+      "ok": true,
+      "detail": "locations=[{'line': 1, 'column': 1}] expected={'index': 0, 'line': 1, 'column': 1}"
+    },
+    {
+      "name": "fail_on_triggered",
+      "ok": true,
+      "detail": "fail_on_triggered=True"
+    },
+    {
+      "name": "post-verify audit did not create t",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute driver applies the audited create return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "structure exactly one user table",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "structure exact user column count",
+      "ok": true,
+      "detail": "rc=0 output='9' expected='9'"
+    },
+    {
+      "name": "structure ordered column set",
+      "ok": true,
+      "detail": "rc=0 output='golden:t:c_blob:blob:1|golden:t:c_text:text:2|golden:t:c_json:json:3|golden:t:c_bit:bit:4|golden:t:c_float:float:5|golden:t:c_double:double:6|golden:t:c_timestamp:timestamp:7|golden:t:c_datetime:datetime:8|golden:t:c_int:int:9' expected='golden:t:c_blob:blob:1|golden:t:c_text:text:2|golden:t:c_json:json:3|golden:t:c_bit:bit:4|golden:t:c_float:float:5|golden:t:c_double:double:6|golden:t:c_timestamp:timestamp:7|golden:t:c_datetime:datetime:8|golden:t:c_int:int:9'"
+    },
+    {
+      "name": "structure primary key constraint count",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "structure primary index part count",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "structure no extra indexes",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "structure storage engine",
+      "ok": true,
+      "detail": "rc=0 output='InnoDB' expected='InnoDB'"
+    },
+    {
+      "name": "teardown drop fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr='mysql: [Warning] Using a password on the command line interface can be insecure.'"
+    },
+    {
+      "name": "teardown drop fixture: no residual t",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ds-t06-a14-proof/T06/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+    "--config",
+    "/private/tmp/ds-t06-a14-proof/T06/golden-policy-t06-a13-json-on-isolated.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23357",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T06_GOLDEN_PW",
+    "--schema",
+    "golden",
+    "--fail-on",
+    "blocker"
+  ]
+}
