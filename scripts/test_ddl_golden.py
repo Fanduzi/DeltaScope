@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: synthetic ddl-golden artifacts and manifests built in a temp directory
-# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1/A2/A3/A4/A5/A7/A8/A9/A10 mutation coverage (T06-A9 includes the byte-exact EXTRA comparison mutations: plain-LOWER-IN rollback, catalog pad-space control deletion, and forged marker/sentinel outputs; T06-A10 includes the AUTO_INCREMENT declaration/allocator-observation mutations plus the T06-A10-R1 record-set controls: duplicate/hidden/wrong-target/header-only/forged-header records on all three observations, and legal allocator null|value:<digits> variants staying accepted; T06-A10-R2 adds non-string-stdout contract failures and the complete-`t` SHOW CREATE head boundary; T06-A11 adds the BIGINT/UNSIGNED policy mutations and T06-A11-R1 adds the raw HEX-field shape boundary: whitespace-corrupted, empty, odd-length, 0x-prefixed, and non-ASCII COLUMN_TYPE hex rejected while every frozen whitelist form and upper/lower/mixed-case hex stays accepted; T06-A12 adds the NOT NULL attribution and column-set mutations, and T06-A12-R1 adds the strict rule_summary shape controls: present-but-null/empty/false keys on the disabled role, missing or non-object summaries on enabled roles, missing counters, bool/float/string/null counts, and wrong per-role integer combos — all rejected through the full validate_artifact entry; T06-A13 adds the type-family forbid mutations: missed/forged findings, absorbed c_json/c_datetime, collapsed/duplicated/cross-paired findings, dropped or added metadata keys, same-SQL family profile/record swaps, switch-state laundering, weakened profiles, ordered-column-set corruptions, skipped or failed driver replay, and denominator shrinkage)
+# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1/A2/A3/A4/A5/A7/A8/A9/A10 mutation coverage (T06-A9 includes the byte-exact EXTRA comparison mutations: plain-LOWER-IN rollback, catalog pad-space control deletion, and forged marker/sentinel outputs; T06-A10 includes the AUTO_INCREMENT declaration/allocator-observation mutations plus the T06-A10-R1 record-set controls: duplicate/hidden/wrong-target/header-only/forged-header records on all three observations, and legal allocator null|value:<digits> variants staying accepted; T06-A10-R2 adds non-string-stdout contract failures and the complete-`t` SHOW CREATE head boundary; T06-A11 adds the BIGINT/UNSIGNED policy mutations and T06-A11-R1 adds the raw HEX-field shape boundary: whitespace-corrupted, empty, odd-length, 0x-prefixed, and non-ASCII COLUMN_TYPE hex rejected while every frozen whitelist form and upper/lower/mixed-case hex stays accepted; T06-A12 adds the NOT NULL attribution and column-set mutations, and T06-A12-R1 adds the strict rule_summary shape controls: present-but-null/empty/false keys on the disabled role, missing or non-object summaries on enabled roles, missing counters, bool/float/string/null counts, and wrong per-role integer combos — all rejected through the full validate_artifact entry; T06-A13 adds the type-family forbid mutations: missed/forged findings, absorbed c_json/c_datetime, collapsed/duplicated/cross-paired findings, dropped or added metadata keys, same-SQL family profile/record swaps, switch-state laundering, weakened profiles, ordered-column-set corruptions, skipped or failed driver replay, and denominator shrinkage; T06-A14 adds the table-option allowlist mutations: missed/forged findings per role, the omitted-strict actual laundered to a server default, swapped option keys, widened allowed lists, dropped actual keys, duplicated findings, denied-optional pass laundering, the omitted-optional 1/0 forgery, fabricated/null/non-integer summaries, strict-optional-off record and profile swaps, cross-family borrowing, weakened profiles, forged MySQL/TiDB catalog identities (MyISAM-as-InnoDB, Dynamic-as-Compact, TiDB declarations recorded as catalog values), missing/multirow charset associations, skipped or failed driver replay, and denominator shrinkage)
 # pos: offline negative tests for scripts/ddl_golden.py validation (no Docker required)
 # note: if this file changes, update this header and module README.md.
 """Validator contract tests for scripts/ddl_golden.py.
@@ -2117,6 +2117,7 @@ def t06_contract_tests(tmp):
         ddl_golden.T06_A11_BIGINT_RULE, ddl_golden.T06_A11_UNSIGNED_RULE,
         ddl_golden.T06_A12_RULE,
         *[pair[0] for pair in ddl_golden.T06_A13_RULES.values()],
+        *[pair[0] for pair in ddl_golden.T06_A14_RULES.values()],
         "ddl.table.exists.create.forbid", "ddl.table.exists.alter.require",
         "ddl.alter.drop_column.exists.require", "ddl.create_index.columns.exists.require")]})
     binary.write_text("#!/bin/sh\nprintf '%s' '" + catalog + "'\n")
@@ -2541,7 +2542,7 @@ def t06_contract_tests(tmp):
     donors = {v: copy.deepcopy(by_id(a, f"T06.meta.t06-mysql84-{v}"))
               for v in ("no-pk", "inline-pk", "table-pk")}
     for item in list(a["cases"]):
-        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-", "t06-a7-", "t06-a8-", "t06-a9-", "t06-a10-", "t06-a11-", "t06-a12-", "t06-a13-")):
+        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-", "t06-a7-", "t06-a8-", "t06-a9-", "t06-a10-", "t06-a11-", "t06-a12-", "t06-a13-", "t06-a14-")):
             slot(a, item["case_id"], donors[item["cli_case"].split("-", 2)[2]])
     run("t06 all metadata slots refilled variant-wise rejected", a, "identity")
 
@@ -2552,7 +2553,7 @@ def t06_contract_tests(tmp):
     run("t06 metadata slot filled by offline record rejected", a, "identity")
     a = copy.deepcopy(artifact)
     for item in list(a["cases"]):
-        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-", "t06-a7-", "t06-a8-", "t06-a9-", "t06-a10-", "t06-a11-", "t06-a12-", "t06-a13-")):
+        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-", "t06-a7-", "t06-a8-", "t06-a9-", "t06-a10-", "t06-a11-", "t06-a12-", "t06-a13-", "t06-a14-")):
             variant = item["cli_case"].split("-", 2)[2]
             dialect = "tidb" if item["anchor"] == "tidb85" else "mysql"
             slot(a, item["case_id"], by_id(a, f"T06.cli.t06-{dialect}-{variant}"))
@@ -5160,6 +5161,253 @@ def t06_contract_tests(tmp):
                            if s["id"] != "t06-a13-mysql84-json-mixed-hit"]
     m["required_case_ids"].remove(victim)
     run("t06a13 case deleted on both sides rejected", a, "T06-A1", m)
+
+    # --- T06-A14 additions: three table-option allowlist families ---
+
+    def t06a14(suffix):
+        candidate = copy.deepcopy(artifact)
+        case = next(item for item in candidate["cases"]
+                    if item.get("cli_case") == "t06-a14-" + suffix
+                    or item.get("metadata_case") == "t06-a14-" + suffix)
+        return candidate, case
+
+    def a14_structure_entry(case, needle):
+        return next(r for r in case["actual"]["structure"]
+                    if r["assert"] == needle)
+
+    def a14_finding(case):
+        return case["actual"]["parsed"]["statements"][0]["findings"][0]
+
+    # Missed findings on every reject role and forged findings on the pass
+    # roles — per family, never borrowed across rules.
+    for family in ("engine", "charset", "row-format"):
+        for role in ("denied-strict", "omitted-strict", "denied-optional"):
+            a, c = t06a14(f"mysql-{family}-{role}")
+            c["actual"]["parsed"]["statements"][0]["findings"] = []
+            c["actual"]["parsed"]["verdict"] = "pass"
+            c["actual"]["parsed"]["summary"]["blockers"] = 0
+            update_stdout(c)
+            run(f"t06a14 {family} {role} missed finding rejected", a, family)
+        for role in ("allowed-strict", "omitted-optional"):
+            a, c = t06a14(f"mysql-{family}-{role}")
+            donor = by_id(a, f"T06.cli.t06-a14-mysql-{family}-denied-strict")
+            c["actual"]["parsed"]["statements"][0]["findings"] = [
+                copy.deepcopy(donor["actual"]["parsed"]
+                              ["statements"][0]["findings"][0])]
+            update_stdout(c)
+            run(f"t06a14 {family} {role} forged finding rejected", a, family)
+
+    # The omitted-strict actual is "" — a server default substituted in its
+    # place launders declaration-layer evidence into catalog-layer claims.
+    a, c = t06a14("mysql-engine-omitted-strict")
+    a14_finding(c)["metadata"]["actual"] = "InnoDB"
+    update_stdout(c)
+    run("t06a14 omitted-strict actual forged to server default rejected",
+        a, "engine")
+
+    # Metadata fields are bound as a complete map — a swapped option key, a
+    # widened allowed list, or a dropped actual key each fail the frozen
+    # entry, not just a count.
+    a, c = t06a14("tidb-charset-denied-strict")
+    a14_finding(c)["metadata"]["option"] = "engine"
+    update_stdout(c)
+    run("t06a14 charset finding option key swapped rejected", a, "charset")
+
+    a, c = t06a14("mysql-row-format-denied-strict")
+    a14_finding(c)["metadata"]["allowed"] = ["DYNAMIC", "COMPACT"]
+    update_stdout(c)
+    run("t06a14 row-format allowed list widened in finding rejected", a,
+        "row-format")
+
+    a, c = t06a14("tidb-engine-denied-strict")
+    del a14_finding(c)["metadata"]["actual"]
+    update_stdout(c)
+    run("t06a14 engine finding dropped actual key rejected", a, "engine")
+
+    # A duplicated finding can never collapse the single-finding contract.
+    a, c = t06a14("mysql-charset-omitted-strict")
+    c["actual"]["parsed"]["statements"][0]["findings"].append(
+        copy.deepcopy(a14_finding(c)))
+    update_stdout(c)
+    run("t06a14 charset finding duplicated rejected", a, "charset")
+
+    # require_explicit=false exempts omission only — a denied value under
+    # the optional profile forged to pass is the same laundering as a
+    # missed strict finding, never legal.
+    a, c = t06a14("tidb-row-format-denied-optional")
+    c["actual"]["parsed"]["statements"][0]["findings"] = []
+    c["actual"]["parsed"]["verdict"] = "pass"
+    c["actual"]["parsed"]["summary"]["blockers"] = 0
+    update_stdout(c)
+    run("t06a14 tidb denied-optional forged as pass rejected", a,
+        "row-format")
+
+    # rule_summary shape: every enabled role is loaded=1/applicable=1 as
+    # strict JSON integers — omitted-optional never degrades to the
+    # forbid=false 1/0 state, the all-off control carries no key at all,
+    # and non-integer counters can never == through.
+    a, c = t06a14("mysql-engine-omitted-optional")
+    c["actual"]["parsed"]["rule_summary"]["applicable"] = 0
+    update_stdout(c)
+    run("t06a14 omitted-optional applicable forged to 0 rejected", a,
+        "engine")
+
+    a, c = t06a14("mysql-charset-denied-off")
+    c["actual"]["parsed"]["rule_summary"] = {"loaded": 0, "applicable": 0,
+                                             "skipped": []}
+    update_stdout(c)
+    run("t06a14 denied-off fabricated rule_summary rejected", a, "charset")
+
+    a, c = t06a14("mysql-charset-denied-off")
+    c["actual"]["parsed"]["rule_summary"] = None
+    update_stdout(c)
+    run("t06a14 denied-off null rule_summary rejected", a, "absent")
+
+    a, c = t06a14("tidb-row-format-denied-strict")
+    c["actual"]["parsed"]["rule_summary"]["loaded"] = True
+    update_stdout(c)
+    run("t06a14 loaded bool rejected", a, "row-format")
+
+    a, c = t06a14("mysql84-engine-denied-strict")
+    c["actual"]["parsed"]["rule_summary"]["applicable"] = 1.0
+    update_stdout(c)
+    run("t06a14 anchored applicable float rejected", a, "engine")
+
+    # Strict/optional/off records bound to the same SQL can never swap:
+    # same-SQL strict slot refilled by the optional pass record, the off
+    # slot refilled by a reject record, and a cross-family record borrowed
+    # into the engine slot all fail the frozen role identity.
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.cli.t06-a14-mysql-engine-omitted-strict",
+         by_id(a, "T06.cli.t06-a14-mysql-engine-omitted-optional"))
+    run("t06a14 omitted-optional record in strict slot rejected", a,
+        "identity")
+
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.cli.t06-a14-mysql-engine-denied-off",
+         by_id(a, "T06.cli.t06-a14-mysql-engine-denied-optional"))
+    run("t06a14 denied-optional record in off slot rejected", a, "identity")
+
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.cli.t06-a14-mysql-engine-denied-strict",
+         by_id(a, "T06.cli.t06-a14-mysql-charset-denied-strict"))
+    run("t06a14 charset record in engine slot rejected", a, "identity")
+
+    a, c = t06a14("mysql-engine-denied-optional")
+    c["policy_profile"] = "t06-a14-engine-strict-isolated"
+    run("t06a14 optional recorded as strict profile rejected", a,
+        "policy_profile")
+
+    a, c = t06a14("mysql-row-format-denied-strict")
+    c["policy_profile"] = "t06-a14-charset-strict-isolated"
+    run("t06a14 row-format record borrowed charset profile rejected", a,
+        "policy_profile")
+
+    # Weakening a declared profile fails at the manifest boundary — widened
+    # values, a flipped require_explicit, or a lowered level each break the
+    # frozen profile identity even before any case runs.
+    m = copy.deepcopy(manifest)
+    m["policy"]["profiles"]["t06-a14-engine-strict-isolated"]["enable"][
+        "ddl.table.engine.allowlist"]["params"]["values"] = [
+            "InnoDB", "MyISAM"]
+    run("t06a14 engine values widened rejected", artifact, "T06-A1", m)
+
+    m = copy.deepcopy(manifest)
+    m["policy"]["profiles"]["t06-a14-charset-strict-isolated"]["enable"][
+        "ddl.table.charset.allowlist"]["params"]["require_explicit"] = False
+    run("t06a14 charset strict profile weakened rejected", artifact,
+        "T06-A1", m)
+
+    m = copy.deepcopy(manifest)
+    m["policy"]["profiles"]["t06-a14-row-format-optional-isolated"]["enable"][
+        "ddl.table.row_format.allowlist"]["level"] = "warning"
+    run("t06a14 row-format level lowered rejected", artifact, "T06-A1", m)
+
+    # Catalog oracle per product: MySQL records the real declared value,
+    # TiDB records its compatibility display — forged identities fail the
+    # frozen constants even if the manifest were rewritten alongside.
+    a, c = t06a14("mysql57-engine-denied-strict")
+    a14_structure_entry(c, "engine identity")["output"] = "golden:t:InnoDB"
+    run("t06a14 mysql57 MyISAM forged as InnoDB rejected", a, "structure")
+
+    a, c = t06a14("mysql80-row-format-allowed-strict")
+    a14_structure_entry(c, "engine and row format identity")["output"] = (
+        "golden:t:InnoDB:Compact")
+    run("t06a14 mysql80 Dynamic forged as Compact rejected", a, "structure")
+
+    a, c = t06a14("tidb85-engine-denied-strict")
+    a14_structure_entry(c, "engine identity")["output"] = "golden:t:MyISAM"
+    run("t06a14 tidb85 MyISAM declaration forged into catalog rejected", a,
+        "structure")
+
+    a, c = t06a14("tidb85-row-format-allowed-strict")
+    a14_structure_entry(c, "engine and row format identity")["output"] = (
+        "golden:t:InnoDB:Dynamic")
+    run("t06a14 tidb85 DYNAMIC declaration forged into catalog rejected", a,
+        "structure")
+
+    a, c = t06a14("mysql84-charset-allowed-strict")
+    a14_structure_entry(c, "table charset identity")["output"] = (
+        "golden:t:latin1")
+    run("t06a14 mysql84 utf8mb4 association forged latin1 rejected", a,
+        "structure")
+
+    a, c = t06a14("tidb85-charset-denied-strict")
+    a14_structure_entry(c, "charset association single row")["output"] = "2"
+    run("t06a14 tidb85 charset association multirow rejected", a,
+        "structure")
+
+    a, c = t06a14("mysql80-charset-allowed-strict")
+    c["actual"]["structure"] = [
+        r for r in c["actual"]["structure"]
+        if r["assert"] != "charset association single row"]
+    run("t06a14 mysql80 charset association check dropped rejected", a,
+        "structure")
+
+    # A product reject never skips the driver replay, and a driver failure
+    # can never be recorded as a native success.
+    a, c = t06a14("mysql84-engine-denied-strict")
+    c["actual"]["execute"] = [
+        s for s in c["actual"]["execute"]
+        if s["name"] != "driver applies the audited create"]
+    run("t06a14 product reject skipped driver create rejected", a,
+        "execute")
+
+    a, c = t06a14("mysql57-row-format-denied-strict")
+    next(s for s in c["actual"]["execute"]
+         if s["name"] == "driver applies the audited create")["rc"] = 1
+    run("t06a14 driver create failure recorded as success rejected", a,
+        "execute")
+
+    # Denominator and identity: cross-anchor donor, offline demotion,
+    # duplicate record, and both-side deletion all fail.
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.meta.t06-a14-mysql57-engine-denied-strict",
+         by_id(a, "T06.meta.t06-a14-mysql84-engine-denied-strict"))
+    run("t06a14 mysql84 record re-keyed as mysql57 rejected", a, "identity")
+
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.meta.t06-a14-tidb85-charset-allowed-strict",
+         by_id(a, "T06.cli.t06-a14-tidb-charset-allowed-strict"))
+    run("t06a14 metadata slot demoted to offline record rejected", a,
+        "identity")
+
+    a = copy.deepcopy(artifact)
+    a["cases"].append(copy.deepcopy(
+        by_id(a, "T06.cli.t06-a14-mysql-engine-denied-strict")))
+    a["executed_count"] = len(a["cases"])
+    run("t06a14 duplicate executed case rejected", a, "duplicate")
+
+    a = copy.deepcopy(artifact)
+    m = copy.deepcopy(manifest)
+    victim = "T06.meta.t06-a14-mysql84-charset-denied-strict"
+    a["cases"] = [x for x in a["cases"] if x["case_id"] != victim]
+    a["executed_count"] = len(a["cases"])
+    a["required_case_ids"].remove(victim)
+    m["metadata_cases"] = [s for s in m["metadata_cases"]
+                           if s["id"] != "t06-a14-mysql84-charset-denied-strict"]
+    m["required_case_ids"].remove(victim)
+    run("t06a14 case deleted on both sides rejected", a, "T06-A1", m)
 
     return results
 

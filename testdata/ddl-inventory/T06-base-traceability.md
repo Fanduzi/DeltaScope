@@ -1,4 +1,4 @@
-# T06 base CREATE TABLE traceability (issue #85, slices A1+A2+A3+A4+A5+A7+A8+A9+A10+A11+A12+A13)
+# T06 base CREATE TABLE traceability (issue #85, slices A1+A2+A3+A4+A5+A7+A8+A9+A10+A11+A12+A13+A14)
 
 Scope: the `mysql.create-table` and `tidb.create-table` inventory rows owned by
 T06. This file maps each #85 acceptance dimension to the normalized spec
@@ -9,9 +9,9 @@ tasks are listed as deferred, not silently absorbed.
 Status vocabulary:
 
 - **golden-proven (this slice)** — pinned by `testdata/ddl-golden/T06.json`
-  (412 cases: 8 baseline database + 192 offline CLI + 212 anchored metadata
+  (472 cases: 8 baseline database + 228 offline CLI + 236 anchored metadata
   structure proofs)
-  and/or the `T06A1`/`T06A2`/`T06A3`/`T06A4`/`T06A5`/`T06A7`/`T06A8`/`T06A9`/`T06A10`/`T06A11`/`T06A12`/`T06A13` Go regression tests.
+  and/or the `T06A1`/`T06A2`/`T06A3`/`T06A4`/`T06A5`/`T06A7`/`T06A8`/`T06A9`/`T06A10`/`T06A11`/`T06A12`/`T06A13`/`T06A14` Go regression tests.
 - **earlier evidence** — covered by pre-T06 artifacts (T02–T05 golden runs,
   sql-corpus fixtures, catalog examples); not re-proven by this slice.
 - **not proven** — the field/rule exists but no dedicated evidence pins the
@@ -55,7 +55,8 @@ Neighboring rows share the CREATE TABLE grammar but stay with their owners:
 | AUTO_INCREMENT | `Column.AutoIncrement` (column attribute), `DDL.Options["auto_increment"]` (declared table option — distinct from the provider-written catalog counter on the same key) | `ddl.table.auto_increment.init_value.require` (exact equality, omission silent), `ddl.table.primary_key.auto_increment.require` (single bound member only; composite skips) | `T06.json` `t06-a10-*` 16 cli + 20 meta cases under `t06-a10-pk-auto-increment-isolated`/`t06-a10-init-value-isolated`: A–H roles pin pass/missing-auto blocker/init equality/omitted-silent/disabled controls; anchored roles pin stored `EXTRA` byte-exact (`auto_increment` or empty per role), ordered PK members, no stray secondary index, and driver CREATE success alongside product rejects; verbatim EXTRA members, `information_schema.TABLES` allocator row, and SHOW CREATE recorded as bound observations; `TestT06A10*` Go tests | **partially golden-proven (A10)** — single-PK require + composite skip, init equality, declaration facts, and stored column/PK structure proven; catalog allocator value observed-not-validated; allocator advance / next INSERT id / AUTO_INCREMENT=0 / unindexed or multi-column forms / AUTO_RANDOM / AUTO_ID_CACHE / ALTER-side changes stay unproven or deferred |
 | Charset / collation | `Column.Charset`, `Column.Collation`, `DDL.Options["collate"]` | `ddl.column.charset.allowlist`, `ddl.column.collation.allowlist`, `ddl.column.charset_collation.match.require`, `ddl.table.charset.allowlist`, `ddl.table.collation.allowlist` (new, default-disabled) | `T06.json` `t06-a7-*` 32 cli + 32 meta cases: each column rule isolated (allow/deny/off), match pair/single/empty/mismatch/`required=false`, table collate allowed/denied/missing under both `require_explicit` values; anchored roles pin `CHARACTER_SET_NAME`/`COLLATION_NAME`/`TABLE_COLLATION` as resolved facts distinct from declared fields, `latin1` octets (16) vs `utf8mb4` (64), and the utf8mb4+latin1_bin driver ERROR 1253 negative; `TestT06A7*` Go tests; corpus fixtures | **golden-proven (A7)** — declared-declaration facts only; native collation catalog completeness, ordering behavior, and ALTER-side governance are not claimed |
 | Comments | `Table.Comment`, `Column.Comment` (parser-decoded content, no SQL quote wrap), `DDL.Options["comment"]`, derived-shape `Table.Comment` | `ddl.table.comment.require`, `ddl.table.comment.max_length` (Unicode code points), `ddl.column.comment.require`, `ddl.table.audit_columns.require` | `T06.json` `t06-a8-*` 24 cli + 16 meta cases: per-field require isolation (missing/empty/blank), code-point length boundaries (ASCII 8/9, `中文注`=3, 8/9-rune at/above), all-off control; anchored roles pin raw comment + `CHAR_LENGTH`/`OCTET_LENGTH`/`HEX` under recorded `utf8mb4` session (`it''s 中文`→`it's 中文`, `表注`, `中文注中文注ab[c]`) including product-reject+driver-success cases; `TestT06A8*` Go tests | **golden-proven (A8)** — column-comment length policy and comment provenance (`HasComment`) are not claimed |
-| Common table options | `DDL.Options`, `DDL.UnextractedOptions` | `ddl.table.engine.allowlist`, `ddl.table.row_format.allowlist`, `ddl.table.partition.forbid`, `ddl.table.create_as.forbid`, `ddl.table.create_like.forbid` | corpus fixtures; `T06.json` ENGINE structure assertion on MySQL anchors | **earlier evidence** — option enumeration completeness belongs to T15 |
+| Table option allowlists (ENGINE / CHARSET / ROW_FORMAT) + `require_explicit` | `DDL.Options["engine"\|"charset"\|"row_format"]` — explicit declarations only; an absent key is "not declared", never an observed server default | `ddl.table.engine.allowlist`, `ddl.table.charset.allowlist`, `ddl.table.row_format.allowlist` | `T06.json` `t06-a14-*` 36 cli + 24 meta cases under `t06-a14-<family>-{strict,optional}-isolated` and `all-rules-disabled`: six roles per family pin allowed pass, denied strict and denied optional blockers (explicit disallowed values reject under both `require_explicit` values), omitted-strict blocker (`actual=""`), omitted-optional pass (`loaded=1`/`applicable=1`, never the `forbid=false` 1/0 state), and the denied-off absent summary — exact `{table,option,actual,allowed}` metadata, `table <label> must be one of [...]` messages, 1:1 location; anchored roles pin per-product catalog facts — MySQL `ENGINE`/`ROW_FORMAT` storage values (`golden:t:InnoDB`/`MyISAM`, `Dynamic`/`Compact`), TiDB compatibility display (`InnoDB`/`Compact` on both roles), and the declared charset through the real `TABLE_COLLATION`→`COLLATION_CHARACTER_SET_APPLICABILITY` association (`utf8mb4`/`latin1`, exactly-one-row check) — plus the shared one-table/one-INT-column/no-PK/no-secondary-index fixture and driver CREATE success alongside product rejects; `TestT06A14*` Go tests pin AST payload kinds (StrValue vs row_format enum), Options extraction, case-folded membership, parameter boundaries, derived pre-state carry-over, and CREATE-only/PG applicability | **partially golden-proven (A14)** — the three declared option allowlists on ordinary CREATE only; declaration-layer facts and catalog-layer resolution stay separate, TiDB's InnoDB/Compact display is compatibility representation not physical storage, and the remaining table options stay with T15 |
+| Other table options | `DDL.Options`, `DDL.UnextractedOptions` | `ddl.table.partition.forbid`, `ddl.table.create_as.forbid`, `ddl.table.create_like.forbid`, `ddl.table.collation.allowlist` (proved separately under A7) | corpus fixtures; `T06.json` ENGINE structure assertion on MySQL anchors | **earlier evidence** — option enumeration completeness belongs to T15 |
 | GIPK absence on MySQL 8.0/8.4 | `instance_facts` reads | — (fixture facts, not findings) | `T06.json` `expect.instance_facts` on `mysql80`/`mysql84` cases (`sql_require_primary_key`/`sql_generate_invisible_primary_key` OFF, `show_gipk_in_create_table_and_information_schema` ON) | **golden-proven (this slice)** |
 
 ## Honest gaps recorded for later T06 slices
@@ -108,6 +109,17 @@ Neighboring rows share the CREATE TABLE grammar but stay with their owners:
   observed server default — the anchored oracles prove the same statements
   resolve to `utf8mb4`/`utf8mb4_bin` via table-level inheritance. No
   inheritance inference was added to the extractor or the T05 state model.
+- A14 applies the same layering to table options: an absent
+  `DDL.Options` key is "not declared" (`actual=""`), never an observed
+  server default; the anchored oracles record per-product catalog facts —
+  MySQL's real `ENGINE`/`ROW_FORMAT` storage values and the
+  `TABLE_COLLATION`-derived charset — while TiDB's `InnoDB`/`Compact`
+  display is MySQL-compatible representation, never a physical-storage
+  claim. The engine family does not freeze ROW_FORMAT alongside (MyISAM
+  row layout is not InnoDB's), the row_format roles pin `ENGINE=InnoDB`
+  as the fixture's declared default-engine premise only, and the charset
+  oracle resolves through the real collation association rather than a
+  hardcoded collation name or a column's charset.
 - `CREATE DATABASE`/`ALTER DATABASE` collate stays unaudited boundary
   evidence (`create_schema.option.collate`/`alter_schema.option.collate`);
   `ALTER TABLE` collation governance is T15/#94 scope; collation catalog

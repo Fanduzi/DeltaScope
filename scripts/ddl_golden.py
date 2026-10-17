@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: task manifest testdata/ddl-golden/<TASK>.json, docker/ddl-golden-compose.yaml, freshly built deltascope CLI
-# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest, including synchronous execute verification and the frozen T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1–A12 oracles (the T06-A9 EXTRA whitelist compares CAST(LOWER(x) AS BINARY) byte-exact so PAD SPACE catalog collations cannot smuggle trailing-space text into a role marker; the T06-A10 observations enforce a string-typed stdout carrying the fixed client header plus exactly one bound data record — the allocator counter is verbatim-observed, never numerically asserted, and SHOW CREATE must name object `t` with the head opening `CREATE TABLE `t` (` before its opaque body; the T06-A11 observation additionally enforces a complete two-digit-pair HEX field shape so literal whitespace can never launder into the COLUMN_TYPE whitelist; T06-A12 pins per-column NOT NULL finding attribution, the loaded/applicable/absent rule_summary contract per role, and the ordered column-set oracle; T06-A12-R1 requires the absent key to be truly missing, enabled summaries to be JSON objects, and loaded/applicable to be strict JSON integers so bool/float/string/null and non-object shapes reject as failures, never == laundering or exceptions; T06-A13 binds each of the five type-family forbid roles to its own profile family/switch state, pins the absent vs loaded/applicable rule_summary per role, requires every mixed-hit finding to carry its family's rule_id, and verifies the ordered nine-column DATA_TYPE oracle per anchor)
+# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest, including synchronous execute verification and the frozen T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1–A12 oracles (the T06-A9 EXTRA whitelist compares CAST(LOWER(x) AS BINARY) byte-exact so PAD SPACE catalog collations cannot smuggle trailing-space text into a role marker; the T06-A10 observations enforce a string-typed stdout carrying the fixed client header plus exactly one bound data record — the allocator counter is verbatim-observed, never numerically asserted, and SHOW CREATE must name object `t` with the head opening `CREATE TABLE `t` (` before its opaque body; the T06-A11 observation additionally enforces a complete two-digit-pair HEX field shape so literal whitespace can never launder into the COLUMN_TYPE whitelist; T06-A12 pins per-column NOT NULL finding attribution, the loaded/applicable/absent rule_summary contract per role, and the ordered column-set oracle; T06-A12-R1 requires the absent key to be truly missing, enabled summaries to be JSON objects, and loaded/applicable to be strict JSON integers so bool/float/string/null and non-object shapes reject as failures, never == laundering or exceptions; T06-A13 binds each of the five type-family forbid roles to its own profile family/switch state, pins the absent vs loaded/applicable rule_summary per role, requires every mixed-hit finding to carry its family's rule_id, and verifies the ordered nine-column DATA_TYPE oracle per anchor; T06-A14 binds each table-option role to its own strict/optional isolated profile, pins loaded=1/applicable=1 on all five enabled roles (omitted-optional never degrades to 1/0), re-derives the per-product catalog oracle (MySQL storage/catalog values, TiDB compatibility display, charset through the real TABLE_COLLATION association) from frozen constants, and requires every reject finding to carry the family's complete frozen identity)
 # pos: DDL golden-path runner and artifact validator behind `make ddl-golden TASK=Txx ARTIFACT_DIR=...`
 # note: if this file changes, update this header and module README.md.
 """DeltaScope DDL golden-path runner (milestone T02/#81, T04/#83).
@@ -3116,6 +3116,102 @@ T06_A13_COLUMN_SET_EXPECT = (
 )
 
 
+# T06-A14 (issue #85): three ordinary CREATE TABLE table-option allowlist
+# policies — engine/charset/row_format — proven as one slice. family ->
+# (rule_id, Options key, message label, narrowed slice allowlist value,
+# declared denied value). The narrowed values are test configuration, never
+# the shipped defaults (charset's real default is utf8+utf8mb4).
+T06_A14_RULES = {
+    "engine": ("ddl.table.engine.allowlist", "engine", "engine",
+               "InnoDB", "MyISAM"),
+    "charset": ("ddl.table.charset.allowlist", "charset", "charset",
+                "utf8mb4", "latin1"),
+    "row-format": ("ddl.table.row_format.allowlist", "row_format",
+                   "row format", "DYNAMIC", "COMPACT"),
+}
+
+T06_A14_OMITTED_SQL = "CREATE TABLE t (c INT);"
+T06_A14_ALLOWED_SQL = {
+    "engine": "CREATE TABLE t (c INT) ENGINE=InnoDB;",
+    "charset": "CREATE TABLE t (c INT) DEFAULT CHARSET=utf8mb4;",
+    "row-format": "CREATE TABLE t (c INT) ROW_FORMAT=DYNAMIC;",
+}
+T06_A14_DENIED_SQL = {
+    "engine": "CREATE TABLE t (c INT) ENGINE=MyISAM;",
+    "charset": "CREATE TABLE t (c INT) DEFAULT CHARSET=latin1;",
+    "row-format": "CREATE TABLE t (c INT) ROW_FORMAT=COMPACT;",
+}
+
+
+def t06_a14_profile(family, strict=True):
+    return f"t06-a14-{family}-{'strict' if strict else 'optional'}-isolated"
+
+
+def t06_a14_finding(family, actual):
+    """Complete expected finding identity for one family/actual pair —
+    rule/message/full metadata map, never a count. `actual` is the declared
+    option text verbatim (denied roles) or "" (omitted under strict)."""
+    rule_id, option, label, allowed, _denied = T06_A14_RULES[family]
+    return {
+        "rule_id": rule_id,
+        "message": f"table {label} must be one of [{allowed}]",
+        "metadata": {"table": "t", "option": option,
+                     "actual": actual, "allowed": [allowed]},
+    }
+
+
+# Identity-bound catalog scalars: schema:table:value keeps a returned row
+# tied to the golden.t target — a bare value from another table or an empty
+# result can never satisfy it.
+T06_A14_ENGINE_IDENTITY = (
+    "SELECT CONCAT_WS(':', TABLE_SCHEMA, TABLE_NAME, ENGINE) "
+    "FROM information_schema.TABLES "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'"
+)
+T06_A14_FORMAT_IDENTITY = (
+    "SELECT CONCAT_WS(':', TABLE_SCHEMA, TABLE_NAME, ENGINE, ROW_FORMAT) "
+    "FROM information_schema.TABLES "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'"
+)
+# The declared table charset is observed through the real collation
+# association — never through a column's charset and never split off
+# TABLE_COLLATION text. The row-count check pins exactly one mapping row so
+# a missing or duplicated association cannot launder as a match.
+T06_A14_CHARSET_IDENTITY = (
+    "SELECT CONCAT(t.TABLE_SCHEMA, ':', t.TABLE_NAME, ':', "
+    "a.CHARACTER_SET_NAME) "
+    "FROM information_schema.TABLES AS t "
+    "JOIN information_schema.COLLATION_CHARACTER_SET_APPLICABILITY AS a "
+    "ON a.COLLATION_NAME = t.TABLE_COLLATION "
+    "WHERE t.TABLE_SCHEMA='golden' AND t.TABLE_NAME='t'"
+)
+T06_A14_CHARSET_ROWS = (
+    "SELECT COUNT(*) "
+    "FROM information_schema.TABLES AS t "
+    "JOIN information_schema.COLLATION_CHARACTER_SET_APPLICABILITY AS a "
+    "ON a.COLLATION_NAME = t.TABLE_COLLATION "
+    "WHERE t.TABLE_SCHEMA='golden' AND t.TABLE_NAME='t'"
+)
+
+
+def t06_a14_catalog_expect(anchor_key, family, role):
+    """Frozen per-product catalog observation for an anchored A14 role.
+    MySQL anchors record the real storage/catalog value for the declared
+    option; the TiDB anchor records its compatibility-catalog display —
+    InnoDB for any ENGINE clause and Compact for any ROW_FORMAT clause —
+    which is never promoted to a physical-storage claim."""
+    denied = role == "denied-strict"
+    if family == "engine":
+        if anchor_key == "tidb85":
+            return "golden:t:InnoDB"
+        return "golden:t:" + ("MyISAM" if denied else "InnoDB")
+    if family == "row-format":
+        if anchor_key == "tidb85":
+            return "golden:t:InnoDB:Compact"
+        return "golden:t:InnoDB:" + ("Compact" if denied else "Dynamic")
+    return "golden:t:" + ("latin1" if denied else "utf8mb4")
+
+
 T06_ANCHORS = {
     "mysql57": {
         "service": "mysql57",
@@ -3946,6 +4042,63 @@ def t06_a1_contract():
             "args": ["--fail-on", "blocker"],
             "expect": audit_expect(T06_A13_MIXED_SQL, False),
         })
+
+    # T06-A14 (issue #85): three table-option allowlist policies, each
+    # isolated at blocker under its own strict/optional profile pair plus
+    # the reused all-off control. Six roles per family pin the complete
+    # require_explicit contract: denied-optional proves the switch exempts
+    # omission only, omitted-optional keeps loaded=1/applicable=1 — never
+    # the forbid=false 1/0 state — and denied-off binds the manifest's
+    # all-rules-disabled default. Every reject pins the complete finding
+    # entry (rule/message/full metadata/location) through
+    # finding_entries_full.
+    for dialect in ("mysql", "tidb"):
+        for family in T06_A14_RULES:
+            strict = t06_a14_profile(family)
+            optional = t06_a14_profile(family, strict=False)
+            denied_value = T06_A14_RULES[family][4]
+            denied_finding = t06_a14_finding(family, denied_value)
+            omitted_finding = t06_a14_finding(family, "")
+
+            def reject_expect(sql, finding):
+                expect = audit_expect(sql, True, loaded=1, applicable=1,
+                                      finding=finding)
+                expect["finding_entries_full"] = [{
+                    "index": 0, "rule_id": finding["rule_id"],
+                    "level": "blocker", "message": finding["message"],
+                    "metadata": dict(finding["metadata"]),
+                    "line": 1, "column": 1}]
+                return expect
+
+            for role, sql, profile, expect in (
+                ("allowed-strict", T06_A14_ALLOWED_SQL[family], strict,
+                 audit_expect(T06_A14_ALLOWED_SQL[family], False,
+                              loaded=1, applicable=1)),
+                ("denied-strict", T06_A14_DENIED_SQL[family], strict,
+                 reject_expect(T06_A14_DENIED_SQL[family], denied_finding)),
+                ("omitted-strict", T06_A14_OMITTED_SQL, strict,
+                 reject_expect(T06_A14_OMITTED_SQL, omitted_finding)),
+                ("omitted-optional", T06_A14_OMITTED_SQL, optional,
+                 audit_expect(T06_A14_OMITTED_SQL, False,
+                              loaded=1, applicable=1)),
+                ("denied-optional", T06_A14_DENIED_SQL[family], optional,
+                 reject_expect(T06_A14_DENIED_SQL[family], denied_finding)),
+            ):
+                cli_cases.append({
+                    "id": f"t06-a14-{dialect}-{family}-{role}",
+                    "dialect": dialect,
+                    "sql": sql,
+                    "policy": profile,
+                    "args": ["--fail-on", "blocker"],
+                    "expect": expect,
+                })
+            cli_cases.append({
+                "id": f"t06-a14-{dialect}-{family}-denied-off",
+                "dialect": dialect,
+                "sql": T06_A14_DENIED_SQL[family],
+                "args": ["--fail-on", "blocker"],
+                "expect": audit_expect(T06_A14_DENIED_SQL[family], False),
+            })
 
     connects = {
         "mysql57": {
@@ -5366,6 +5519,100 @@ def t06_a1_contract():
                 ],
             })
 
+        # T06-A14 (issue #85): two strict roles per family per anchor — the
+        # allowed and the denied declaration. A denied product verdict never
+        # stands in for native legality: every rejected CREATE must still
+        # replay on the driver with rc=0, and the catalog oracle records the
+        # product-specific fact — MySQL's real storage/catalog value, TiDB's
+        # compatibility display, charset via the real TABLE_COLLATION
+        # association — never a declaration-to-physical-storage inference.
+        # Common rows pin the shared fixture shape (one table, one nullable
+        # INT column, no PK, no secondary index); only the family oracle
+        # differs per role. The engine family never reuses the shared
+        # "all InnoDB" structure helper — MyISAM is a legal denied role.
+        for family in T06_A14_RULES:
+            for role in ("allowed-strict", "denied-strict"):
+                denied = role == "denied-strict"
+                sql = (T06_A14_DENIED_SQL[family] if denied
+                       else T06_A14_ALLOWED_SQL[family])
+                finding = (t06_a14_finding(family, T06_A14_RULES[family][4])
+                           if denied else None)
+                expect = audit_expect(
+                    sql, denied, loaded=1, applicable=1, finding=finding)
+                if finding is not None:
+                    expect["finding_entries_full"] = [{
+                        "index": 0, "rule_id": finding["rule_id"],
+                        "level": "blocker", "message": finding["message"],
+                        "metadata": dict(finding["metadata"]),
+                        "line": 1, "column": 1}]
+                if anchor_key in ("mysql80", "mysql84"):
+                    expect["instance_facts"] = dict(T06_GIPK_FACTS)
+                rows = [
+                    verify("exactly one user table", T06_TABLE_COUNT, "1"),
+                    verify("exactly one user column", T06_COLUMN_COUNT, "1"),
+                    verify("column c identity", T06_COLUMN_ROW,
+                           "c:int:1:YES"),
+                    verify("primary key constraint count",
+                           T06_PK_CONSTRAINT, "0"),
+                    verify("primary index part count", T06_PK_PARTS, "0"),
+                    verify("no extra indexes", T06_A10_NO_SECONDARY, "0"),
+                ]
+                if family == "engine":
+                    rows.append(verify(
+                        "engine identity", T06_A14_ENGINE_IDENTITY,
+                        t06_a14_catalog_expect(anchor_key, family, role)))
+                elif family == "row-format":
+                    rows.append(verify(
+                        "engine and row format identity",
+                        T06_A14_FORMAT_IDENTITY,
+                        t06_a14_catalog_expect(anchor_key, family, role)))
+                else:
+                    rows.append(verify(
+                        "table charset identity", T06_A14_CHARSET_IDENTITY,
+                        t06_a14_catalog_expect(anchor_key, family, role)))
+                    rows.append(verify(
+                        "charset association single row",
+                        T06_A14_CHARSET_ROWS, "1"))
+                metadata_cases.append({
+                    "id": f"t06-a14-{anchor_key}-{family}-{role}",
+                    "anchor": anchor_key,
+                    "dialect": dialect,
+                    "sql": sql,
+                    "policy": t06_a14_profile(family),
+                    "connect": dict(connects[anchor_key]),
+                    "args": ["--fail-on", "blocker"],
+                    "setup": [
+                        {
+                            "name": "ensure t absent",
+                            "sql": "DROP TABLE IF EXISTS t",
+                            "expect_rc": 0,
+                            "verify": [verify("t absent before audit",
+                                              T06_TABLE_COUNT, "0")],
+                        },
+                    ],
+                    "expect": expect,
+                    "post_verify": [
+                        verify("audit did not create t", T06_TABLE_COUNT, "0"),
+                    ],
+                    "execute": [
+                        {
+                            "name": "driver applies the audited create",
+                            "sql": sql,
+                            "expect_rc": 0,
+                        },
+                    ],
+                    "structure": rows,
+                    "teardown": [
+                        {
+                            "name": "drop fixture",
+                            "sql": "DROP TABLE IF EXISTS t",
+                            "expect_rc": 0,
+                            "verify": [verify("no residual t",
+                                              T06_TABLE_COUNT, "0")],
+                        },
+                    ],
+                })
+
     required_case_ids = (
         [f"T06.db.{anchor}.{kind}" for anchor in T06_ANCHORS for kind in ("ddl", "syntax_negative")]
         + [f"T06.cli.{spec['id']}" for spec in cli_cases]
@@ -5610,6 +5857,35 @@ def t06_a1_contract():
                     }
                 }
                 for family in T06_A13_RULES
+            },
+            # T06-A14: three table-option allowlists, each with a
+            # strict/optional isolated pair — require_explicit is the
+            # switch, never a different rule. The narrowed values are test
+            # configuration: shipped defaults (charset utf8+utf8mb4,
+            # warning levels, require_explicit=true) stay untouched.
+            **{
+                t06_a14_profile(family): {
+                    "enable": {
+                        T06_A14_RULES[family][0]: {
+                            "enabled": True, "level": "blocker",
+                            "params": {"values": [T06_A14_RULES[family][3]],
+                                       "require_explicit": True},
+                        },
+                    }
+                }
+                for family in T06_A14_RULES
+            },
+            **{
+                t06_a14_profile(family, strict=False): {
+                    "enable": {
+                        T06_A14_RULES[family][0]: {
+                            "enabled": True, "level": "blocker",
+                            "params": {"values": [T06_A14_RULES[family][3]],
+                                       "require_explicit": False},
+                        },
+                    }
+                }
+                for family in T06_A14_RULES
             },
         },
         "anchors": T06_ANCHORS,
@@ -6317,6 +6593,151 @@ def t06_a13_artifact_failures(artifact, manifest):
     return failures
 
 
+def t06_a14_role_shape(local_id):
+    """Decode an A14 local case id into (family, role). Returns
+    (None, "denied-off") for the all-off control; (family, role) where role
+    is one of allowed-strict/denied-strict/omitted-strict/omitted-optional/
+    denied-optional otherwise."""
+    tail = local_id[len("t06-a14-"):]
+    for token in ("mysql57", "mysql80", "mysql84", "tidb85", "mysql", "tidb"):
+        if tail.startswith(token + "-"):
+            tail = tail[len(token) + 1:]
+            break
+    for suffix in ("-allowed-strict", "-denied-strict", "-omitted-strict",
+                   "-omitted-optional", "-denied-optional", "-denied-off"):
+        if tail.endswith(suffix):
+            return tail[:-len(suffix)], suffix[1:]
+    return None, None
+
+
+def t06_a14_artifact_failures(artifact, manifest):
+    """T06-A14 (issue #85): pin the per-role rule_summary contract, the
+    family/profile binding, and the per-product catalog oracle, re-parsed
+    from recorded raw stdout — never a stored `parsed` blob. All five
+    enabled roles carry loaded=1/applicable=1 as strict JSON integers —
+    omitted-optional included, never the forbid=false 1/0 state — and
+    denied-off carries no rule_summary key at all (A12-R1 strict shape).
+    The recorded profile must be the family's own strict or optional
+    profile; every reject finding must carry the family's complete frozen
+    identity (rule/message/full metadata map including the verbatim actual
+    and the narrowed allowed list), and every pass role must carry none.
+    Anchored roles additionally re-derive the catalog oracle from frozen
+    constants per (anchor, family, role) — a both-sides rewrite cannot
+    launder MyISAM into InnoDB, Compact into Dynamic, or a fabricated
+    charset association."""
+    if manifest.get("task_id") != "T06":
+        return []
+    frozen = {}
+    contract = t06_a1_contract()
+    for field, prefix in (("cli_cases", "T06.cli."), ("metadata_cases", "T06.meta.")):
+        for spec in contract[field]:
+            local = spec["id"]
+            if local.startswith("t06-a14-"):
+                frozen[prefix + local] = t06_a14_role_shape(local)
+    labels = {"engine": "engine identity",
+              "row-format": "engine and row format identity",
+              "charset": "table charset identity"}
+    optional_roles = ("omitted-optional", "denied-optional")
+    reject_roles = ("denied-strict", "omitted-strict", "denied-optional")
+    failures = []
+    for case in artifact.get("cases") or []:
+        case_id = case.get("case_id")
+        role = frozen.get(case_id)
+        if role is None:
+            continue
+        family, role_kind = role
+        try:
+            parsed = json.loads((case.get("actual") or {}).get("stdout") or "")
+        except (json.JSONDecodeError, TypeError):
+            continue  # the generic validator already reports unparseable stdout
+        if role_kind == "denied-off":
+            if isinstance(parsed, dict) and "rule_summary" in parsed:
+                failures.append(
+                    f"T06-A14 {case_id}: rule_summary key must be absent "
+                    f"under the all-off control, found {parsed['rule_summary']!r}")
+            continue
+        if family not in T06_A14_RULES:
+            failures.append(f"T06-A14 {case_id}: unfrozen family {family!r}")
+            continue
+        want_profile = t06_a14_profile(
+            family, strict=(role_kind not in optional_roles))
+        if case.get("policy_profile") != want_profile:
+            failures.append(
+                f"T06-A14 {case_id}: policy_profile "
+                f"{case.get('policy_profile')!r} != frozen {want_profile!r}")
+        if not isinstance(parsed, dict) or "rule_summary" not in parsed:
+            failures.append(
+                f"T06-A14 {case_id}: rule_summary must be present as a "
+                f"JSON object for role {role_kind!r}")
+            continue
+        summary = parsed["rule_summary"]
+        if not isinstance(summary, dict):
+            failures.append(
+                f"T06-A14 {case_id}: rule_summary must be a JSON object "
+                f"for role {role_kind!r}, found {summary!r}")
+            continue
+        for key in ("loaded", "applicable"):
+            if key not in summary:
+                failures.append(
+                    f"T06-A14 {case_id}: rule_summary.{key} missing for "
+                    f"role {role_kind!r}")
+                continue
+            got = summary[key]
+            if type(got) is not int:
+                failures.append(
+                    f"T06-A14 {case_id}: rule_summary.{key}={got!r} must "
+                    "be a JSON integer (not bool/float/string/null)")
+            elif got != 1:
+                failures.append(
+                    f"T06-A14 {case_id}: rule_summary.{key}={got} != "
+                    f"frozen 1 for role {role_kind!r}")
+        rule_id, option, _label, allowed, denied_value = T06_A14_RULES[family]
+        statements = parsed.get("statements") or []
+        findings = [f for st in statements if isinstance(st, dict)
+                    for f in (st.get("findings") or [])]
+        if role_kind in reject_roles:
+            want_actual = "" if role_kind == "omitted-strict" else denied_value
+            want_finding = t06_a14_finding(family, want_actual)
+            for finding in findings:
+                if not isinstance(finding, dict):
+                    continue
+                if (finding.get("rule_id") != want_finding["rule_id"]
+                        or finding.get("message") != want_finding["message"]
+                        or finding.get("metadata") != want_finding["metadata"]):
+                    failures.append(
+                        f"T06-A14 {case_id}: finding identity mismatch — "
+                        f"want {want_finding!r}, got {finding!r}")
+        elif findings:
+            failures.append(
+                f"T06-A14 {case_id}: pass role {role_kind!r} carries "
+                f"{len(findings)} findings")
+        if case.get("kind") == "cli_metadata":
+            # The catalog oracle is re-derived from frozen constants —
+            # never from the manifest spec — so rewriting manifest and
+            # artifact together still fails here.
+            want_catalog = t06_a14_catalog_expect(
+                case.get("anchor"), family, role_kind)
+            structure = (case.get("actual") or {}).get("structure") or []
+            matched = [r for r in structure
+                       if r.get("assert") == labels[family]]
+            if len(matched) != 1:
+                failures.append(
+                    f"T06-A14 {case_id}: catalog oracle {labels[family]!r} "
+                    f"must appear exactly once, found {len(matched)}")
+            elif matched[0].get("output") != want_catalog:
+                failures.append(
+                    f"T06-A14 {case_id}: catalog oracle output "
+                    f"{matched[0].get('output')!r} != frozen {want_catalog!r}")
+            if family == "charset":
+                rows = [r for r in structure
+                        if r.get("assert") == "charset association single row"]
+                if len(rows) != 1 or rows[0].get("output") != "1":
+                    failures.append(
+                        f"T06-A14 {case_id}: charset association row count "
+                        "must be exactly one output '1'")
+    return failures
+
+
 def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
     """Re-check an emitted artifact. Returns a list of failure strings."""
     failures = []
@@ -6340,6 +6761,7 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
     failures.extend(t06_a11_artifact_failures(artifact, manifest))
     failures.extend(t06_a12_artifact_failures(artifact, manifest))
     failures.extend(t06_a13_artifact_failures(artifact, manifest))
+    failures.extend(t06_a14_artifact_failures(artifact, manifest))
 
     if artifact.get("external_blocker"):
         failures.append(f"external blocker recorded: {artifact['external_blocker']}")

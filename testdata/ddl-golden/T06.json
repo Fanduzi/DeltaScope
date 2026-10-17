@@ -1,7 +1,7 @@
 {
  "task_id": "T06",
  "issue": "https://github.com/Fanduzi/DeltaScope/issues/85",
- "description": "CREATE TABLE base semantics (issue #85 T06-A1/A2/A3/A4/A5/A7/A8/A9/A10/A11/A12/A13): the accepted 56-case primary-key/nullability/default-presence subset plus 16 DEFAULT NULL cases, 12 provider default-identity cases, 40 declared CHAR/VARCHAR length cases, 64 charset/collation cases, 40 comment-fidelity cases, 28 explicit audit-time-column role cases, 36 AUTO_INCREMENT declaration cases, and 32 single-member primary-key BIGINT/UNSIGNED cases, and 36 ordinary-column NOT NULL cases, and 52 type-family forbid cases — the A13 subset isolates ddl.column.blob_text.forbid, ddl.column.json.forbid, ddl.column.bit.forbid, ddl.column.float_double.forbid, and ddl.column.timestamp.forbid under per-rule on/false blocker profiles with the all-rules-disabled control, pinning per-column finding attribution (blob/text excluding JSON, timestamp excluding DATETIME, the independent float/double metadata shape) plus the ordered nine-column DATA_TYPE oracle on all four anchors regardless of the policy verdict — the A11 offline matrix isolates ddl.table.primary_key.bigint.require and ddl.table.primary_key.unsigned.require (required=true) under single-rule blocker profiles across both dialects (composite primary keys skip the member check; the off controls reuse the all-rules-disabled profile), while the anchored roles pin DATA_TYPE, a finite-whitelist COLUMN_TYPE complete form, byte-empty EXTRA, and ordered single-member PK binding regardless of the policy verdict. The A12 subset adds three single-rule isolations of ddl.column.not_null.require (strict/time-allow/not-required) — the offline matrix pins per-column finding attribution and the loaded/applicable/absent rule_summary contract, while the anchored roles pin the ordered column set (name/DATA_TYPE/ordinal/IS_NULLABLE) with zero PK constraints regardless of the policy verdict.",
+ "description": "CREATE TABLE base semantics (issue #85 T06-A1/A2/A3/A4/A5/A7/A8/A9/A10/A11/A12/A13/A14): the accepted 56-case primary-key/nullability/default-presence subset plus 16 DEFAULT NULL cases, 12 provider default-identity cases, 40 declared CHAR/VARCHAR length cases, 64 charset/collation cases, 40 comment-fidelity cases, 28 explicit audit-time-column role cases, 36 AUTO_INCREMENT declaration cases, and 32 single-member primary-key BIGINT/UNSIGNED cases, and 36 ordinary-column NOT NULL cases, and 52 type-family forbid cases — the A13 subset isolates ddl.column.blob_text.forbid, ddl.column.json.forbid, ddl.column.bit.forbid, ddl.column.float_double.forbid, and ddl.column.timestamp.forbid under per-rule on/false blocker profiles with the all-rules-disabled control, pinning per-column finding attribution (blob/text excluding JSON, timestamp excluding DATETIME, the independent float/double metadata shape) plus the ordered nine-column DATA_TYPE oracle on all four anchors regardless of the policy verdict — the A11 offline matrix isolates ddl.table.primary_key.bigint.require and ddl.table.primary_key.unsigned.require (required=true) under single-rule blocker profiles across both dialects (composite primary keys skip the member check; the off controls reuse the all-rules-disabled profile), while the anchored roles pin DATA_TYPE, a finite-whitelist COLUMN_TYPE complete form, byte-empty EXTRA, and ordered single-member PK binding regardless of the policy verdict. The A12 subset adds three single-rule isolations of ddl.column.not_null.require (strict/time-allow/not-required) — the offline matrix pins per-column finding attribution and the loaded/applicable/absent rule_summary contract, while the anchored roles pin the ordered column set (name/DATA_TYPE/ordinal/IS_NULLABLE) with zero PK constraints regardless of the policy verdict. The A14 subset adds 60 table-option allowlist cases: 36 offline roles across three families (ddl.table.engine.allowlist values=[InnoDB], ddl.table.charset.allowlist values=[utf8mb4], ddl.table.row_format.allowlist values=[DYNAMIC]) under per-family strict/optional isolated blocker profiles plus the all-rules-disabled control — pinning the complete require_explicit contract (explicit disallowed values reject under both switches, omission rejects only under strict, omitted-optional stays loaded=1/applicable=1) — and 24 anchored roles whose driver-applied CREATEs record per-product catalog facts: MySQL engine/row_format storage values, TiDB's InnoDB/Compact compatibility display, and the declared charset through the real TABLE_COLLATION association.",
  "policy_profile": "all-rules-disabled",
  "policy": {
   "profiles": {
@@ -413,6 +413,90 @@
       "level": "blocker",
       "params": {
        "forbid": false
+      }
+     }
+    }
+   },
+   "t06-a14-engine-strict-isolated": {
+    "enable": {
+     "ddl.table.engine.allowlist": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "values": [
+        "InnoDB"
+       ],
+       "require_explicit": true
+      }
+     }
+    }
+   },
+   "t06-a14-charset-strict-isolated": {
+    "enable": {
+     "ddl.table.charset.allowlist": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "values": [
+        "utf8mb4"
+       ],
+       "require_explicit": true
+      }
+     }
+    }
+   },
+   "t06-a14-row-format-strict-isolated": {
+    "enable": {
+     "ddl.table.row_format.allowlist": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "values": [
+        "DYNAMIC"
+       ],
+       "require_explicit": true
+      }
+     }
+    }
+   },
+   "t06-a14-engine-optional-isolated": {
+    "enable": {
+     "ddl.table.engine.allowlist": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "values": [
+        "InnoDB"
+       ],
+       "require_explicit": false
+      }
+     }
+    }
+   },
+   "t06-a14-charset-optional-isolated": {
+    "enable": {
+     "ddl.table.charset.allowlist": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "values": [
+        "utf8mb4"
+       ],
+       "require_explicit": false
+      }
+     }
+    }
+   },
+   "t06-a14-row-format-optional-isolated": {
+    "enable": {
+     "ddl.table.row_format.allowlist": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "values": [
+        "DYNAMIC"
+       ],
+       "require_explicit": false
       }
      }
     }
@@ -8654,6 +8738,1986 @@
     "evidence_gaps": 0,
     "fail_on_triggered": false
    }
+  },
+  {
+   "id": "t06-a14-mysql-engine-allowed-strict",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) ENGINE=InnoDB;",
+   "policy": "t06-a14-engine-strict-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ENGINE=InnoDB;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t06-a14-mysql-engine-denied-strict",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) ENGINE=MyISAM;",
+   "policy": "t06-a14-engine-strict-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ENGINE=MyISAM;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.engine.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.engine.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "engine",
+       "actual": "MyISAM",
+       "allowed": [
+        "InnoDB"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table engine must be one of [InnoDB]",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.engine.allowlist",
+      "level": "blocker",
+      "message": "table engine must be one of [InnoDB]",
+      "metadata": {
+       "table": "t",
+       "option": "engine",
+       "actual": "MyISAM",
+       "allowed": [
+        "InnoDB"
+       ]
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a14-mysql-engine-omitted-strict",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT);",
+   "policy": "t06-a14-engine-strict-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.engine.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.engine.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "engine",
+       "actual": "",
+       "allowed": [
+        "InnoDB"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table engine must be one of [InnoDB]",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.engine.allowlist",
+      "level": "blocker",
+      "message": "table engine must be one of [InnoDB]",
+      "metadata": {
+       "table": "t",
+       "option": "engine",
+       "actual": "",
+       "allowed": [
+        "InnoDB"
+       ]
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a14-mysql-engine-omitted-optional",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT);",
+   "policy": "t06-a14-engine-optional-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t06-a14-mysql-engine-denied-optional",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) ENGINE=MyISAM;",
+   "policy": "t06-a14-engine-optional-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ENGINE=MyISAM;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.engine.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.engine.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "engine",
+       "actual": "MyISAM",
+       "allowed": [
+        "InnoDB"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table engine must be one of [InnoDB]",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.engine.allowlist",
+      "level": "blocker",
+      "message": "table engine must be one of [InnoDB]",
+      "metadata": {
+       "table": "t",
+       "option": "engine",
+       "actual": "MyISAM",
+       "allowed": [
+        "InnoDB"
+       ]
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a14-mysql-engine-denied-off",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) ENGINE=MyISAM;",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ENGINE=MyISAM;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "t06-a14-mysql-charset-allowed-strict",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) DEFAULT CHARSET=utf8mb4;",
+   "policy": "t06-a14-charset-strict-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) DEFAULT CHARSET=utf8mb4;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t06-a14-mysql-charset-denied-strict",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) DEFAULT CHARSET=latin1;",
+   "policy": "t06-a14-charset-strict-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) DEFAULT CHARSET=latin1;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.charset.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.charset.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "charset",
+       "actual": "latin1",
+       "allowed": [
+        "utf8mb4"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table charset must be one of [utf8mb4]",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.charset.allowlist",
+      "level": "blocker",
+      "message": "table charset must be one of [utf8mb4]",
+      "metadata": {
+       "table": "t",
+       "option": "charset",
+       "actual": "latin1",
+       "allowed": [
+        "utf8mb4"
+       ]
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a14-mysql-charset-omitted-strict",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT);",
+   "policy": "t06-a14-charset-strict-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.charset.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.charset.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "charset",
+       "actual": "",
+       "allowed": [
+        "utf8mb4"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table charset must be one of [utf8mb4]",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.charset.allowlist",
+      "level": "blocker",
+      "message": "table charset must be one of [utf8mb4]",
+      "metadata": {
+       "table": "t",
+       "option": "charset",
+       "actual": "",
+       "allowed": [
+        "utf8mb4"
+       ]
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a14-mysql-charset-omitted-optional",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT);",
+   "policy": "t06-a14-charset-optional-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t06-a14-mysql-charset-denied-optional",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) DEFAULT CHARSET=latin1;",
+   "policy": "t06-a14-charset-optional-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) DEFAULT CHARSET=latin1;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.charset.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.charset.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "charset",
+       "actual": "latin1",
+       "allowed": [
+        "utf8mb4"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table charset must be one of [utf8mb4]",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.charset.allowlist",
+      "level": "blocker",
+      "message": "table charset must be one of [utf8mb4]",
+      "metadata": {
+       "table": "t",
+       "option": "charset",
+       "actual": "latin1",
+       "allowed": [
+        "utf8mb4"
+       ]
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a14-mysql-charset-denied-off",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) DEFAULT CHARSET=latin1;",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) DEFAULT CHARSET=latin1;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "t06-a14-mysql-row-format-allowed-strict",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) ROW_FORMAT=DYNAMIC;",
+   "policy": "t06-a14-row-format-strict-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ROW_FORMAT=DYNAMIC;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t06-a14-mysql-row-format-denied-strict",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) ROW_FORMAT=COMPACT;",
+   "policy": "t06-a14-row-format-strict-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ROW_FORMAT=COMPACT;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_format.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_format.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "row_format",
+       "actual": "COMPACT",
+       "allowed": [
+        "DYNAMIC"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table row format must be one of [DYNAMIC]",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_format.allowlist",
+      "level": "blocker",
+      "message": "table row format must be one of [DYNAMIC]",
+      "metadata": {
+       "table": "t",
+       "option": "row_format",
+       "actual": "COMPACT",
+       "allowed": [
+        "DYNAMIC"
+       ]
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a14-mysql-row-format-omitted-strict",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT);",
+   "policy": "t06-a14-row-format-strict-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_format.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_format.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "row_format",
+       "actual": "",
+       "allowed": [
+        "DYNAMIC"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table row format must be one of [DYNAMIC]",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_format.allowlist",
+      "level": "blocker",
+      "message": "table row format must be one of [DYNAMIC]",
+      "metadata": {
+       "table": "t",
+       "option": "row_format",
+       "actual": "",
+       "allowed": [
+        "DYNAMIC"
+       ]
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a14-mysql-row-format-omitted-optional",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT);",
+   "policy": "t06-a14-row-format-optional-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t06-a14-mysql-row-format-denied-optional",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) ROW_FORMAT=COMPACT;",
+   "policy": "t06-a14-row-format-optional-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ROW_FORMAT=COMPACT;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_format.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_format.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "row_format",
+       "actual": "COMPACT",
+       "allowed": [
+        "DYNAMIC"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table row format must be one of [DYNAMIC]",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_format.allowlist",
+      "level": "blocker",
+      "message": "table row format must be one of [DYNAMIC]",
+      "metadata": {
+       "table": "t",
+       "option": "row_format",
+       "actual": "COMPACT",
+       "allowed": [
+        "DYNAMIC"
+       ]
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a14-mysql-row-format-denied-off",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) ROW_FORMAT=COMPACT;",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ROW_FORMAT=COMPACT;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "t06-a14-tidb-engine-allowed-strict",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c INT) ENGINE=InnoDB;",
+   "policy": "t06-a14-engine-strict-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ENGINE=InnoDB;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t06-a14-tidb-engine-denied-strict",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c INT) ENGINE=MyISAM;",
+   "policy": "t06-a14-engine-strict-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ENGINE=MyISAM;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.engine.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.engine.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "engine",
+       "actual": "MyISAM",
+       "allowed": [
+        "InnoDB"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table engine must be one of [InnoDB]",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.engine.allowlist",
+      "level": "blocker",
+      "message": "table engine must be one of [InnoDB]",
+      "metadata": {
+       "table": "t",
+       "option": "engine",
+       "actual": "MyISAM",
+       "allowed": [
+        "InnoDB"
+       ]
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a14-tidb-engine-omitted-strict",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c INT);",
+   "policy": "t06-a14-engine-strict-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.engine.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.engine.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "engine",
+       "actual": "",
+       "allowed": [
+        "InnoDB"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table engine must be one of [InnoDB]",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.engine.allowlist",
+      "level": "blocker",
+      "message": "table engine must be one of [InnoDB]",
+      "metadata": {
+       "table": "t",
+       "option": "engine",
+       "actual": "",
+       "allowed": [
+        "InnoDB"
+       ]
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a14-tidb-engine-omitted-optional",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c INT);",
+   "policy": "t06-a14-engine-optional-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t06-a14-tidb-engine-denied-optional",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c INT) ENGINE=MyISAM;",
+   "policy": "t06-a14-engine-optional-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ENGINE=MyISAM;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.engine.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.engine.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "engine",
+       "actual": "MyISAM",
+       "allowed": [
+        "InnoDB"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table engine must be one of [InnoDB]",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.engine.allowlist",
+      "level": "blocker",
+      "message": "table engine must be one of [InnoDB]",
+      "metadata": {
+       "table": "t",
+       "option": "engine",
+       "actual": "MyISAM",
+       "allowed": [
+        "InnoDB"
+       ]
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a14-tidb-engine-denied-off",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c INT) ENGINE=MyISAM;",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ENGINE=MyISAM;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "t06-a14-tidb-charset-allowed-strict",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c INT) DEFAULT CHARSET=utf8mb4;",
+   "policy": "t06-a14-charset-strict-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) DEFAULT CHARSET=utf8mb4;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t06-a14-tidb-charset-denied-strict",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c INT) DEFAULT CHARSET=latin1;",
+   "policy": "t06-a14-charset-strict-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) DEFAULT CHARSET=latin1;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.charset.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.charset.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "charset",
+       "actual": "latin1",
+       "allowed": [
+        "utf8mb4"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table charset must be one of [utf8mb4]",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.charset.allowlist",
+      "level": "blocker",
+      "message": "table charset must be one of [utf8mb4]",
+      "metadata": {
+       "table": "t",
+       "option": "charset",
+       "actual": "latin1",
+       "allowed": [
+        "utf8mb4"
+       ]
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a14-tidb-charset-omitted-strict",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c INT);",
+   "policy": "t06-a14-charset-strict-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.charset.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.charset.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "charset",
+       "actual": "",
+       "allowed": [
+        "utf8mb4"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table charset must be one of [utf8mb4]",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.charset.allowlist",
+      "level": "blocker",
+      "message": "table charset must be one of [utf8mb4]",
+      "metadata": {
+       "table": "t",
+       "option": "charset",
+       "actual": "",
+       "allowed": [
+        "utf8mb4"
+       ]
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a14-tidb-charset-omitted-optional",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c INT);",
+   "policy": "t06-a14-charset-optional-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t06-a14-tidb-charset-denied-optional",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c INT) DEFAULT CHARSET=latin1;",
+   "policy": "t06-a14-charset-optional-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) DEFAULT CHARSET=latin1;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.charset.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.charset.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "charset",
+       "actual": "latin1",
+       "allowed": [
+        "utf8mb4"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table charset must be one of [utf8mb4]",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.charset.allowlist",
+      "level": "blocker",
+      "message": "table charset must be one of [utf8mb4]",
+      "metadata": {
+       "table": "t",
+       "option": "charset",
+       "actual": "latin1",
+       "allowed": [
+        "utf8mb4"
+       ]
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a14-tidb-charset-denied-off",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c INT) DEFAULT CHARSET=latin1;",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) DEFAULT CHARSET=latin1;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "t06-a14-tidb-row-format-allowed-strict",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c INT) ROW_FORMAT=DYNAMIC;",
+   "policy": "t06-a14-row-format-strict-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ROW_FORMAT=DYNAMIC;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t06-a14-tidb-row-format-denied-strict",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c INT) ROW_FORMAT=COMPACT;",
+   "policy": "t06-a14-row-format-strict-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ROW_FORMAT=COMPACT;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_format.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_format.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "row_format",
+       "actual": "COMPACT",
+       "allowed": [
+        "DYNAMIC"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table row format must be one of [DYNAMIC]",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_format.allowlist",
+      "level": "blocker",
+      "message": "table row format must be one of [DYNAMIC]",
+      "metadata": {
+       "table": "t",
+       "option": "row_format",
+       "actual": "COMPACT",
+       "allowed": [
+        "DYNAMIC"
+       ]
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a14-tidb-row-format-omitted-strict",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c INT);",
+   "policy": "t06-a14-row-format-strict-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_format.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_format.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "row_format",
+       "actual": "",
+       "allowed": [
+        "DYNAMIC"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table row format must be one of [DYNAMIC]",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_format.allowlist",
+      "level": "blocker",
+      "message": "table row format must be one of [DYNAMIC]",
+      "metadata": {
+       "table": "t",
+       "option": "row_format",
+       "actual": "",
+       "allowed": [
+        "DYNAMIC"
+       ]
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a14-tidb-row-format-omitted-optional",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c INT);",
+   "policy": "t06-a14-row-format-optional-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t06-a14-tidb-row-format-denied-optional",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c INT) ROW_FORMAT=COMPACT;",
+   "policy": "t06-a14-row-format-optional-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ROW_FORMAT=COMPACT;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_format.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_format.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "row_format",
+       "actual": "COMPACT",
+       "allowed": [
+        "DYNAMIC"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table row format must be one of [DYNAMIC]",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_format.allowlist",
+      "level": "blocker",
+      "message": "table row format must be one of [DYNAMIC]",
+      "metadata": {
+       "table": "t",
+       "option": "row_format",
+       "actual": "COMPACT",
+       "allowed": [
+        "DYNAMIC"
+       ]
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a14-tidb-row-format-denied-off",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c INT) ROW_FORMAT=COMPACT;",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ROW_FORMAT=COMPACT;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   }
   }
  ],
  "metadata_cases": [
@@ -16498,6 +18562,877 @@
      "assert": "storage engine",
      "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
      "expect": "InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a14-mysql57-engine-allowed-strict",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) ENGINE=InnoDB;",
+   "policy": "t06-a14-engine-strict-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ENGINE=InnoDB;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c INT) ENGINE=InnoDB;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:int:1:YES"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "engine identity",
+     "sql": "SELECT CONCAT_WS(':', TABLE_SCHEMA, TABLE_NAME, ENGINE) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a14-mysql57-engine-denied-strict",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) ENGINE=MyISAM;",
+   "policy": "t06-a14-engine-strict-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ENGINE=MyISAM;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.engine.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.engine.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "engine",
+       "actual": "MyISAM",
+       "allowed": [
+        "InnoDB"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table engine must be one of [InnoDB]",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.engine.allowlist",
+      "level": "blocker",
+      "message": "table engine must be one of [InnoDB]",
+      "metadata": {
+       "table": "t",
+       "option": "engine",
+       "actual": "MyISAM",
+       "allowed": [
+        "InnoDB"
+       ]
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c INT) ENGINE=MyISAM;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:int:1:YES"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "engine identity",
+     "sql": "SELECT CONCAT_WS(':', TABLE_SCHEMA, TABLE_NAME, ENGINE) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:MyISAM"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a14-mysql57-charset-allowed-strict",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) DEFAULT CHARSET=utf8mb4;",
+   "policy": "t06-a14-charset-strict-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) DEFAULT CHARSET=utf8mb4;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c INT) DEFAULT CHARSET=utf8mb4;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:int:1:YES"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "table charset identity",
+     "sql": "SELECT CONCAT(t.TABLE_SCHEMA, ':', t.TABLE_NAME, ':', a.CHARACTER_SET_NAME) FROM information_schema.TABLES AS t JOIN information_schema.COLLATION_CHARACTER_SET_APPLICABILITY AS a ON a.COLLATION_NAME = t.TABLE_COLLATION WHERE t.TABLE_SCHEMA='golden' AND t.TABLE_NAME='t'",
+     "expect": "golden:t:utf8mb4"
+    },
+    {
+     "assert": "charset association single row",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES AS t JOIN information_schema.COLLATION_CHARACTER_SET_APPLICABILITY AS a ON a.COLLATION_NAME = t.TABLE_COLLATION WHERE t.TABLE_SCHEMA='golden' AND t.TABLE_NAME='t'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a14-mysql57-charset-denied-strict",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) DEFAULT CHARSET=latin1;",
+   "policy": "t06-a14-charset-strict-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) DEFAULT CHARSET=latin1;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.charset.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.charset.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "charset",
+       "actual": "latin1",
+       "allowed": [
+        "utf8mb4"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table charset must be one of [utf8mb4]",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.charset.allowlist",
+      "level": "blocker",
+      "message": "table charset must be one of [utf8mb4]",
+      "metadata": {
+       "table": "t",
+       "option": "charset",
+       "actual": "latin1",
+       "allowed": [
+        "utf8mb4"
+       ]
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c INT) DEFAULT CHARSET=latin1;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:int:1:YES"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "table charset identity",
+     "sql": "SELECT CONCAT(t.TABLE_SCHEMA, ':', t.TABLE_NAME, ':', a.CHARACTER_SET_NAME) FROM information_schema.TABLES AS t JOIN information_schema.COLLATION_CHARACTER_SET_APPLICABILITY AS a ON a.COLLATION_NAME = t.TABLE_COLLATION WHERE t.TABLE_SCHEMA='golden' AND t.TABLE_NAME='t'",
+     "expect": "golden:t:latin1"
+    },
+    {
+     "assert": "charset association single row",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES AS t JOIN information_schema.COLLATION_CHARACTER_SET_APPLICABILITY AS a ON a.COLLATION_NAME = t.TABLE_COLLATION WHERE t.TABLE_SCHEMA='golden' AND t.TABLE_NAME='t'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a14-mysql57-row-format-allowed-strict",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) ROW_FORMAT=DYNAMIC;",
+   "policy": "t06-a14-row-format-strict-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ROW_FORMAT=DYNAMIC;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c INT) ROW_FORMAT=DYNAMIC;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:int:1:YES"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "engine and row format identity",
+     "sql": "SELECT CONCAT_WS(':', TABLE_SCHEMA, TABLE_NAME, ENGINE, ROW_FORMAT) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:InnoDB:Dynamic"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a14-mysql57-row-format-denied-strict",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) ROW_FORMAT=COMPACT;",
+   "policy": "t06-a14-row-format-strict-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ROW_FORMAT=COMPACT;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_format.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_format.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "row_format",
+       "actual": "COMPACT",
+       "allowed": [
+        "DYNAMIC"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table row format must be one of [DYNAMIC]",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_format.allowlist",
+      "level": "blocker",
+      "message": "table row format must be one of [DYNAMIC]",
+      "metadata": {
+       "table": "t",
+       "option": "row_format",
+       "actual": "COMPACT",
+       "allowed": [
+        "DYNAMIC"
+       ]
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c INT) ROW_FORMAT=COMPACT;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:int:1:YES"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "engine and row format identity",
+     "sql": "SELECT CONCAT_WS(':', TABLE_SCHEMA, TABLE_NAME, ENGINE, ROW_FORMAT) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:InnoDB:Compact"
     }
    ],
    "teardown": [
@@ -24639,6 +27574,907 @@
    ]
   },
   {
+   "id": "t06-a14-mysql80-engine-allowed-strict",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) ENGINE=InnoDB;",
+   "policy": "t06-a14-engine-strict-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ENGINE=InnoDB;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c INT) ENGINE=InnoDB;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:int:1:YES"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "engine identity",
+     "sql": "SELECT CONCAT_WS(':', TABLE_SCHEMA, TABLE_NAME, ENGINE) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a14-mysql80-engine-denied-strict",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) ENGINE=MyISAM;",
+   "policy": "t06-a14-engine-strict-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ENGINE=MyISAM;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.engine.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.engine.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "engine",
+       "actual": "MyISAM",
+       "allowed": [
+        "InnoDB"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table engine must be one of [InnoDB]",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.engine.allowlist",
+      "level": "blocker",
+      "message": "table engine must be one of [InnoDB]",
+      "metadata": {
+       "table": "t",
+       "option": "engine",
+       "actual": "MyISAM",
+       "allowed": [
+        "InnoDB"
+       ]
+      },
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c INT) ENGINE=MyISAM;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:int:1:YES"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "engine identity",
+     "sql": "SELECT CONCAT_WS(':', TABLE_SCHEMA, TABLE_NAME, ENGINE) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:MyISAM"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a14-mysql80-charset-allowed-strict",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) DEFAULT CHARSET=utf8mb4;",
+   "policy": "t06-a14-charset-strict-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) DEFAULT CHARSET=utf8mb4;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c INT) DEFAULT CHARSET=utf8mb4;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:int:1:YES"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "table charset identity",
+     "sql": "SELECT CONCAT(t.TABLE_SCHEMA, ':', t.TABLE_NAME, ':', a.CHARACTER_SET_NAME) FROM information_schema.TABLES AS t JOIN information_schema.COLLATION_CHARACTER_SET_APPLICABILITY AS a ON a.COLLATION_NAME = t.TABLE_COLLATION WHERE t.TABLE_SCHEMA='golden' AND t.TABLE_NAME='t'",
+     "expect": "golden:t:utf8mb4"
+    },
+    {
+     "assert": "charset association single row",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES AS t JOIN information_schema.COLLATION_CHARACTER_SET_APPLICABILITY AS a ON a.COLLATION_NAME = t.TABLE_COLLATION WHERE t.TABLE_SCHEMA='golden' AND t.TABLE_NAME='t'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a14-mysql80-charset-denied-strict",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) DEFAULT CHARSET=latin1;",
+   "policy": "t06-a14-charset-strict-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) DEFAULT CHARSET=latin1;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.charset.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.charset.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "charset",
+       "actual": "latin1",
+       "allowed": [
+        "utf8mb4"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table charset must be one of [utf8mb4]",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.charset.allowlist",
+      "level": "blocker",
+      "message": "table charset must be one of [utf8mb4]",
+      "metadata": {
+       "table": "t",
+       "option": "charset",
+       "actual": "latin1",
+       "allowed": [
+        "utf8mb4"
+       ]
+      },
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c INT) DEFAULT CHARSET=latin1;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:int:1:YES"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "table charset identity",
+     "sql": "SELECT CONCAT(t.TABLE_SCHEMA, ':', t.TABLE_NAME, ':', a.CHARACTER_SET_NAME) FROM information_schema.TABLES AS t JOIN information_schema.COLLATION_CHARACTER_SET_APPLICABILITY AS a ON a.COLLATION_NAME = t.TABLE_COLLATION WHERE t.TABLE_SCHEMA='golden' AND t.TABLE_NAME='t'",
+     "expect": "golden:t:latin1"
+    },
+    {
+     "assert": "charset association single row",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES AS t JOIN information_schema.COLLATION_CHARACTER_SET_APPLICABILITY AS a ON a.COLLATION_NAME = t.TABLE_COLLATION WHERE t.TABLE_SCHEMA='golden' AND t.TABLE_NAME='t'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a14-mysql80-row-format-allowed-strict",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) ROW_FORMAT=DYNAMIC;",
+   "policy": "t06-a14-row-format-strict-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ROW_FORMAT=DYNAMIC;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c INT) ROW_FORMAT=DYNAMIC;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:int:1:YES"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "engine and row format identity",
+     "sql": "SELECT CONCAT_WS(':', TABLE_SCHEMA, TABLE_NAME, ENGINE, ROW_FORMAT) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:InnoDB:Dynamic"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a14-mysql80-row-format-denied-strict",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) ROW_FORMAT=COMPACT;",
+   "policy": "t06-a14-row-format-strict-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ROW_FORMAT=COMPACT;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_format.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_format.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "row_format",
+       "actual": "COMPACT",
+       "allowed": [
+        "DYNAMIC"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table row format must be one of [DYNAMIC]",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_format.allowlist",
+      "level": "blocker",
+      "message": "table row format must be one of [DYNAMIC]",
+      "metadata": {
+       "table": "t",
+       "option": "row_format",
+       "actual": "COMPACT",
+       "allowed": [
+        "DYNAMIC"
+       ]
+      },
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c INT) ROW_FORMAT=COMPACT;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:int:1:YES"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "engine and row format identity",
+     "sql": "SELECT CONCAT_WS(':', TABLE_SCHEMA, TABLE_NAME, ENGINE, ROW_FORMAT) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:InnoDB:Compact"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
    "id": "t06-mysql84-no-pk",
    "anchor": "mysql84",
    "dialect": "mysql",
@@ -32762,6 +36598,907 @@
    ]
   },
   {
+   "id": "t06-a14-mysql84-engine-allowed-strict",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) ENGINE=InnoDB;",
+   "policy": "t06-a14-engine-strict-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ENGINE=InnoDB;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c INT) ENGINE=InnoDB;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:int:1:YES"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "engine identity",
+     "sql": "SELECT CONCAT_WS(':', TABLE_SCHEMA, TABLE_NAME, ENGINE) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a14-mysql84-engine-denied-strict",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) ENGINE=MyISAM;",
+   "policy": "t06-a14-engine-strict-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ENGINE=MyISAM;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.engine.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.engine.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "engine",
+       "actual": "MyISAM",
+       "allowed": [
+        "InnoDB"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table engine must be one of [InnoDB]",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.engine.allowlist",
+      "level": "blocker",
+      "message": "table engine must be one of [InnoDB]",
+      "metadata": {
+       "table": "t",
+       "option": "engine",
+       "actual": "MyISAM",
+       "allowed": [
+        "InnoDB"
+       ]
+      },
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c INT) ENGINE=MyISAM;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:int:1:YES"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "engine identity",
+     "sql": "SELECT CONCAT_WS(':', TABLE_SCHEMA, TABLE_NAME, ENGINE) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:MyISAM"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a14-mysql84-charset-allowed-strict",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) DEFAULT CHARSET=utf8mb4;",
+   "policy": "t06-a14-charset-strict-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) DEFAULT CHARSET=utf8mb4;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c INT) DEFAULT CHARSET=utf8mb4;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:int:1:YES"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "table charset identity",
+     "sql": "SELECT CONCAT(t.TABLE_SCHEMA, ':', t.TABLE_NAME, ':', a.CHARACTER_SET_NAME) FROM information_schema.TABLES AS t JOIN information_schema.COLLATION_CHARACTER_SET_APPLICABILITY AS a ON a.COLLATION_NAME = t.TABLE_COLLATION WHERE t.TABLE_SCHEMA='golden' AND t.TABLE_NAME='t'",
+     "expect": "golden:t:utf8mb4"
+    },
+    {
+     "assert": "charset association single row",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES AS t JOIN information_schema.COLLATION_CHARACTER_SET_APPLICABILITY AS a ON a.COLLATION_NAME = t.TABLE_COLLATION WHERE t.TABLE_SCHEMA='golden' AND t.TABLE_NAME='t'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a14-mysql84-charset-denied-strict",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) DEFAULT CHARSET=latin1;",
+   "policy": "t06-a14-charset-strict-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) DEFAULT CHARSET=latin1;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.charset.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.charset.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "charset",
+       "actual": "latin1",
+       "allowed": [
+        "utf8mb4"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table charset must be one of [utf8mb4]",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.charset.allowlist",
+      "level": "blocker",
+      "message": "table charset must be one of [utf8mb4]",
+      "metadata": {
+       "table": "t",
+       "option": "charset",
+       "actual": "latin1",
+       "allowed": [
+        "utf8mb4"
+       ]
+      },
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c INT) DEFAULT CHARSET=latin1;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:int:1:YES"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "table charset identity",
+     "sql": "SELECT CONCAT(t.TABLE_SCHEMA, ':', t.TABLE_NAME, ':', a.CHARACTER_SET_NAME) FROM information_schema.TABLES AS t JOIN information_schema.COLLATION_CHARACTER_SET_APPLICABILITY AS a ON a.COLLATION_NAME = t.TABLE_COLLATION WHERE t.TABLE_SCHEMA='golden' AND t.TABLE_NAME='t'",
+     "expect": "golden:t:latin1"
+    },
+    {
+     "assert": "charset association single row",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES AS t JOIN information_schema.COLLATION_CHARACTER_SET_APPLICABILITY AS a ON a.COLLATION_NAME = t.TABLE_COLLATION WHERE t.TABLE_SCHEMA='golden' AND t.TABLE_NAME='t'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a14-mysql84-row-format-allowed-strict",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) ROW_FORMAT=DYNAMIC;",
+   "policy": "t06-a14-row-format-strict-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ROW_FORMAT=DYNAMIC;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c INT) ROW_FORMAT=DYNAMIC;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:int:1:YES"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "engine and row format identity",
+     "sql": "SELECT CONCAT_WS(':', TABLE_SCHEMA, TABLE_NAME, ENGINE, ROW_FORMAT) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:InnoDB:Dynamic"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a14-mysql84-row-format-denied-strict",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c INT) ROW_FORMAT=COMPACT;",
+   "policy": "t06-a14-row-format-strict-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ROW_FORMAT=COMPACT;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_format.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_format.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "row_format",
+       "actual": "COMPACT",
+       "allowed": [
+        "DYNAMIC"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table row format must be one of [DYNAMIC]",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_format.allowlist",
+      "level": "blocker",
+      "message": "table row format must be one of [DYNAMIC]",
+      "metadata": {
+       "table": "t",
+       "option": "row_format",
+       "actual": "COMPACT",
+       "allowed": [
+        "DYNAMIC"
+       ]
+      },
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c INT) ROW_FORMAT=COMPACT;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:int:1:YES"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "engine and row format identity",
+     "sql": "SELECT CONCAT_WS(':', TABLE_SCHEMA, TABLE_NAME, ENGINE, ROW_FORMAT) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:InnoDB:Compact"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
    "id": "t06-tidb85-no-pk",
    "anchor": "tidb85",
    "dialect": "tidb",
@@ -40287,6 +45024,865 @@
      ]
     }
    ]
+  },
+  {
+   "id": "t06-a14-tidb85-engine-allowed-strict",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c INT) ENGINE=InnoDB;",
+   "policy": "t06-a14-engine-strict-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ENGINE=InnoDB;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c INT) ENGINE=InnoDB;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:int:1:YES"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "engine identity",
+     "sql": "SELECT CONCAT_WS(':', TABLE_SCHEMA, TABLE_NAME, ENGINE) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a14-tidb85-engine-denied-strict",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c INT) ENGINE=MyISAM;",
+   "policy": "t06-a14-engine-strict-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ENGINE=MyISAM;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.engine.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.engine.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "engine",
+       "actual": "MyISAM",
+       "allowed": [
+        "InnoDB"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table engine must be one of [InnoDB]",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.engine.allowlist",
+      "level": "blocker",
+      "message": "table engine must be one of [InnoDB]",
+      "metadata": {
+       "table": "t",
+       "option": "engine",
+       "actual": "MyISAM",
+       "allowed": [
+        "InnoDB"
+       ]
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c INT) ENGINE=MyISAM;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:int:1:YES"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "engine identity",
+     "sql": "SELECT CONCAT_WS(':', TABLE_SCHEMA, TABLE_NAME, ENGINE) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a14-tidb85-charset-allowed-strict",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c INT) DEFAULT CHARSET=utf8mb4;",
+   "policy": "t06-a14-charset-strict-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) DEFAULT CHARSET=utf8mb4;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c INT) DEFAULT CHARSET=utf8mb4;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:int:1:YES"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "table charset identity",
+     "sql": "SELECT CONCAT(t.TABLE_SCHEMA, ':', t.TABLE_NAME, ':', a.CHARACTER_SET_NAME) FROM information_schema.TABLES AS t JOIN information_schema.COLLATION_CHARACTER_SET_APPLICABILITY AS a ON a.COLLATION_NAME = t.TABLE_COLLATION WHERE t.TABLE_SCHEMA='golden' AND t.TABLE_NAME='t'",
+     "expect": "golden:t:utf8mb4"
+    },
+    {
+     "assert": "charset association single row",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES AS t JOIN information_schema.COLLATION_CHARACTER_SET_APPLICABILITY AS a ON a.COLLATION_NAME = t.TABLE_COLLATION WHERE t.TABLE_SCHEMA='golden' AND t.TABLE_NAME='t'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a14-tidb85-charset-denied-strict",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c INT) DEFAULT CHARSET=latin1;",
+   "policy": "t06-a14-charset-strict-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) DEFAULT CHARSET=latin1;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.charset.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.charset.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "charset",
+       "actual": "latin1",
+       "allowed": [
+        "utf8mb4"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table charset must be one of [utf8mb4]",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.charset.allowlist",
+      "level": "blocker",
+      "message": "table charset must be one of [utf8mb4]",
+      "metadata": {
+       "table": "t",
+       "option": "charset",
+       "actual": "latin1",
+       "allowed": [
+        "utf8mb4"
+       ]
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c INT) DEFAULT CHARSET=latin1;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:int:1:YES"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "table charset identity",
+     "sql": "SELECT CONCAT(t.TABLE_SCHEMA, ':', t.TABLE_NAME, ':', a.CHARACTER_SET_NAME) FROM information_schema.TABLES AS t JOIN information_schema.COLLATION_CHARACTER_SET_APPLICABILITY AS a ON a.COLLATION_NAME = t.TABLE_COLLATION WHERE t.TABLE_SCHEMA='golden' AND t.TABLE_NAME='t'",
+     "expect": "golden:t:latin1"
+    },
+    {
+     "assert": "charset association single row",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES AS t JOIN information_schema.COLLATION_CHARACTER_SET_APPLICABILITY AS a ON a.COLLATION_NAME = t.TABLE_COLLATION WHERE t.TABLE_SCHEMA='golden' AND t.TABLE_NAME='t'",
+     "expect": "1"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a14-tidb85-row-format-allowed-strict",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c INT) ROW_FORMAT=DYNAMIC;",
+   "policy": "t06-a14-row-format-strict-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ROW_FORMAT=DYNAMIC;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c INT) ROW_FORMAT=DYNAMIC;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:int:1:YES"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "engine and row format identity",
+     "sql": "SELECT CONCAT_WS(':', TABLE_SCHEMA, TABLE_NAME, ENGINE, ROW_FORMAT) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:InnoDB:Compact"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a14-tidb85-row-format-denied-strict",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c INT) ROW_FORMAT=COMPACT;",
+   "policy": "t06-a14-row-format-strict-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c INT) ROW_FORMAT=COMPACT;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_format.allowlist",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_format.allowlist",
+      "metadata": {
+       "table": "t",
+       "option": "row_format",
+       "actual": "COMPACT",
+       "allowed": [
+        "DYNAMIC"
+       ]
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "table row format must be one of [DYNAMIC]",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_format.allowlist",
+      "level": "blocker",
+      "message": "table row format must be one of [DYNAMIC]",
+      "metadata": {
+       "table": "t",
+       "option": "row_format",
+       "actual": "COMPACT",
+       "allowed": [
+        "DYNAMIC"
+       ]
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c INT) ROW_FORMAT=COMPACT;",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exactly one user column",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "column c identity",
+     "sql": "SELECT CONCAT_WS(':', COLUMN_NAME, DATA_TYPE, ORDINAL_POSITION, IS_NULLABLE) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' ORDER BY ORDINAL_POSITION",
+     "expect": "c:int:1:YES"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "engine and row format identity",
+     "sql": "SELECT CONCAT_WS(':', TABLE_SCHEMA, TABLE_NAME, ENGINE, ROW_FORMAT) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:InnoDB:Compact"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
   }
  ],
  "required_case_ids": [
@@ -40490,6 +46086,42 @@
   "T06.cli.t06-a13-tidb-timestamp-safe",
   "T06.cli.t06-a13-tidb-timestamp-forbid-false",
   "T06.cli.t06-a13-tidb-mixed-off",
+  "T06.cli.t06-a14-mysql-engine-allowed-strict",
+  "T06.cli.t06-a14-mysql-engine-denied-strict",
+  "T06.cli.t06-a14-mysql-engine-omitted-strict",
+  "T06.cli.t06-a14-mysql-engine-omitted-optional",
+  "T06.cli.t06-a14-mysql-engine-denied-optional",
+  "T06.cli.t06-a14-mysql-engine-denied-off",
+  "T06.cli.t06-a14-mysql-charset-allowed-strict",
+  "T06.cli.t06-a14-mysql-charset-denied-strict",
+  "T06.cli.t06-a14-mysql-charset-omitted-strict",
+  "T06.cli.t06-a14-mysql-charset-omitted-optional",
+  "T06.cli.t06-a14-mysql-charset-denied-optional",
+  "T06.cli.t06-a14-mysql-charset-denied-off",
+  "T06.cli.t06-a14-mysql-row-format-allowed-strict",
+  "T06.cli.t06-a14-mysql-row-format-denied-strict",
+  "T06.cli.t06-a14-mysql-row-format-omitted-strict",
+  "T06.cli.t06-a14-mysql-row-format-omitted-optional",
+  "T06.cli.t06-a14-mysql-row-format-denied-optional",
+  "T06.cli.t06-a14-mysql-row-format-denied-off",
+  "T06.cli.t06-a14-tidb-engine-allowed-strict",
+  "T06.cli.t06-a14-tidb-engine-denied-strict",
+  "T06.cli.t06-a14-tidb-engine-omitted-strict",
+  "T06.cli.t06-a14-tidb-engine-omitted-optional",
+  "T06.cli.t06-a14-tidb-engine-denied-optional",
+  "T06.cli.t06-a14-tidb-engine-denied-off",
+  "T06.cli.t06-a14-tidb-charset-allowed-strict",
+  "T06.cli.t06-a14-tidb-charset-denied-strict",
+  "T06.cli.t06-a14-tidb-charset-omitted-strict",
+  "T06.cli.t06-a14-tidb-charset-omitted-optional",
+  "T06.cli.t06-a14-tidb-charset-denied-optional",
+  "T06.cli.t06-a14-tidb-charset-denied-off",
+  "T06.cli.t06-a14-tidb-row-format-allowed-strict",
+  "T06.cli.t06-a14-tidb-row-format-denied-strict",
+  "T06.cli.t06-a14-tidb-row-format-omitted-strict",
+  "T06.cli.t06-a14-tidb-row-format-omitted-optional",
+  "T06.cli.t06-a14-tidb-row-format-denied-optional",
+  "T06.cli.t06-a14-tidb-row-format-denied-off",
   "T06.meta.t06-mysql57-no-pk",
   "T06.meta.t06-mysql57-inline-pk",
   "T06.meta.t06-mysql57-table-pk",
@@ -40543,6 +46175,12 @@
   "T06.meta.t06-a13-mysql57-bit-mixed-hit",
   "T06.meta.t06-a13-mysql57-float-double-mixed-hit",
   "T06.meta.t06-a13-mysql57-timestamp-mixed-hit",
+  "T06.meta.t06-a14-mysql57-engine-allowed-strict",
+  "T06.meta.t06-a14-mysql57-engine-denied-strict",
+  "T06.meta.t06-a14-mysql57-charset-allowed-strict",
+  "T06.meta.t06-a14-mysql57-charset-denied-strict",
+  "T06.meta.t06-a14-mysql57-row-format-allowed-strict",
+  "T06.meta.t06-a14-mysql57-row-format-denied-strict",
   "T06.meta.t06-mysql80-no-pk",
   "T06.meta.t06-mysql80-inline-pk",
   "T06.meta.t06-mysql80-table-pk",
@@ -40596,6 +46234,12 @@
   "T06.meta.t06-a13-mysql80-bit-mixed-hit",
   "T06.meta.t06-a13-mysql80-float-double-mixed-hit",
   "T06.meta.t06-a13-mysql80-timestamp-mixed-hit",
+  "T06.meta.t06-a14-mysql80-engine-allowed-strict",
+  "T06.meta.t06-a14-mysql80-engine-denied-strict",
+  "T06.meta.t06-a14-mysql80-charset-allowed-strict",
+  "T06.meta.t06-a14-mysql80-charset-denied-strict",
+  "T06.meta.t06-a14-mysql80-row-format-allowed-strict",
+  "T06.meta.t06-a14-mysql80-row-format-denied-strict",
   "T06.meta.t06-mysql84-no-pk",
   "T06.meta.t06-mysql84-inline-pk",
   "T06.meta.t06-mysql84-table-pk",
@@ -40649,6 +46293,12 @@
   "T06.meta.t06-a13-mysql84-bit-mixed-hit",
   "T06.meta.t06-a13-mysql84-float-double-mixed-hit",
   "T06.meta.t06-a13-mysql84-timestamp-mixed-hit",
+  "T06.meta.t06-a14-mysql84-engine-allowed-strict",
+  "T06.meta.t06-a14-mysql84-engine-denied-strict",
+  "T06.meta.t06-a14-mysql84-charset-allowed-strict",
+  "T06.meta.t06-a14-mysql84-charset-denied-strict",
+  "T06.meta.t06-a14-mysql84-row-format-allowed-strict",
+  "T06.meta.t06-a14-mysql84-row-format-denied-strict",
   "T06.meta.t06-tidb85-no-pk",
   "T06.meta.t06-tidb85-inline-pk",
   "T06.meta.t06-tidb85-table-pk",
@@ -40701,6 +46351,12 @@
   "T06.meta.t06-a13-tidb85-json-mixed-hit",
   "T06.meta.t06-a13-tidb85-bit-mixed-hit",
   "T06.meta.t06-a13-tidb85-float-double-mixed-hit",
-  "T06.meta.t06-a13-tidb85-timestamp-mixed-hit"
+  "T06.meta.t06-a13-tidb85-timestamp-mixed-hit",
+  "T06.meta.t06-a14-tidb85-engine-allowed-strict",
+  "T06.meta.t06-a14-tidb85-engine-denied-strict",
+  "T06.meta.t06-a14-tidb85-charset-allowed-strict",
+  "T06.meta.t06-a14-tidb85-charset-denied-strict",
+  "T06.meta.t06-a14-tidb85-row-format-allowed-strict",
+  "T06.meta.t06-a14-tidb85-row-format-denied-strict"
  ]
 }
