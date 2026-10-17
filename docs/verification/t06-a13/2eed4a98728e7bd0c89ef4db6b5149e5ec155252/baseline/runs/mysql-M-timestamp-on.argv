@@ -1,0 +1,1 @@
+./deltascope audit --dialect mysql --config policies/p-timestamp-on.yaml --format json --fail-on blocker --file M.sql

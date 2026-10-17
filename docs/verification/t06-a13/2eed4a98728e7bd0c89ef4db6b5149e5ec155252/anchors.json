@@ -1,0 +1,64 @@
+{
+ "mysql57": {
+  "service": "mysql57",
+  "container": "deltascope-ddl-golden-mysql57",
+  "image": "mysql:5.7.44",
+  "product": "mysql",
+  "version_contains": "5.7.44",
+  "database": "golden",
+  "exec_client": [
+   "mysql",
+   "-uroot",
+   "-proot"
+  ],
+  "needs_database_create": false
+ },
+ "mysql80": {
+  "service": "mysql80",
+  "container": "deltascope-ddl-golden-mysql80",
+  "image": "mysql:8.0.46",
+  "product": "mysql",
+  "version_contains": "8.0.46",
+  "database": "golden",
+  "exec_client": [
+   "mysql",
+   "-uroot",
+   "-proot"
+  ],
+  "needs_database_create": false
+ },
+ "mysql84": {
+  "service": "mysql84",
+  "container": "deltascope-ddl-golden-mysql84",
+  "image": "mysql:8.4.10",
+  "product": "mysql",
+  "version_contains": "8.4.10",
+  "database": "golden",
+  "exec_client": [
+   "mysql",
+   "-uroot",
+   "-proot"
+  ],
+  "needs_database_create": false
+ },
+ "tidb85": {
+  "service": "tidb85",
+  "container": "deltascope-ddl-golden-tidb85",
+  "client_container": "deltascope-ddl-golden-tidb85-client",
+  "client_service": "tidb85-client",
+  "image": "pingcap/tidb:v8.5.0",
+  "product": "tidb",
+  "version_contains": "v8.5.0",
+  "database": "golden",
+  "exec_client": [
+   "mysql",
+   "--protocol=tcp",
+   "-h",
+   "tidb85",
+   "-P",
+   "4000",
+   "-uroot"
+  ],
+  "needs_database_create": true
+ }
+}

@@ -1,0 +1,3 @@
+argv: python3 scripts/ddl_golden.py validate --artifact /tmp/ds-t06-a13-proof/T06/artifact.json
+[ddl-golden] artifact valid
+rc=0

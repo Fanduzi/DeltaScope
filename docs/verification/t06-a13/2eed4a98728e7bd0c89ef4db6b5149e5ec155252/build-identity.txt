@@ -1,0 +1,30 @@
+== source identity ==
+repo: Fanduzi/DeltaScope
+branch: milestone/mysql-tidb-ddl-completion
+head_sha: 2eed4a98728e7bd0c89ef4db6b5149e5ec155252
+parent: 84e37e32d694e92666ac27726eb91426ff40121f
+code commit: 2eed4a98728e7bd0c89ef4db6b5149e5ec155252
+task base (prior evidence HEAD): 84e37e32d694e92666ac27726eb91426ff40121f
+
+== build ==
+go version go1.26.1 darwin/arm64
+build cmd: CGO_ENABLED=0 go build -o <artifact>/bin/deltascope ./cmd/deltascope (via make ddl-golden TASK=T06)
+module: v0.511.2-0.20261017120845-2eed4a98728e+dirty
+33cce3d4e803f071c328d6a16db9fcaaacaea0b072fdc611d6b89b421d75dcb5  /tmp/ds-t06-a13-proof/T06/bin/deltascope
+
+== worktree at commit ==
+ M .mcp.json
+?? .agents/
+?? .codex/
+?? .cursor/
+?? .debug-journal.md
+?? .devin/
+?? .grok/
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? docs/quality/architecture-review-2026-08-11.html
+?? docs/verification/t06-a12/1a5dd90de898a59590ef8a19aa068c4b5e8ce7f8/T06/
+?? docs/verification/t06-a13/
+
+note: +dirty attributes to the externally modified .mcp.json plus pre-existing untracked tool dirs (see worktree-status.txt); all A13 files are committed.

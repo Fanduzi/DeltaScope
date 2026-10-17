@@ -1,0 +1,282 @@
+argv: go test -count=1 ./internal/infrastructure/parser/tidb ./internal/domain/rule/ddl ./internal/application/audit -run T06A13 -v
+=== RUN   TestExtractorT06A13ColumnFacts
+=== PAUSE TestExtractorT06A13ColumnFacts
+=== RUN   TestExtractorT06A13BinaryCharsetBoundary
+=== PAUSE TestExtractorT06A13BinaryCharsetBoundary
+=== CONT  TestExtractorT06A13ColumnFacts
+=== RUN   TestExtractorT06A13ColumnFacts/mysql/mixed
+=== PAUSE TestExtractorT06A13ColumnFacts/mysql/mixed
+=== RUN   TestExtractorT06A13ColumnFacts/mysql/safe
+=== PAUSE TestExtractorT06A13ColumnFacts/mysql/safe
+=== RUN   TestExtractorT06A13ColumnFacts/tidb/mixed
+=== PAUSE TestExtractorT06A13ColumnFacts/tidb/mixed
+=== RUN   TestExtractorT06A13ColumnFacts/tidb/safe
+=== PAUSE TestExtractorT06A13ColumnFacts/tidb/safe
+=== CONT  TestExtractorT06A13ColumnFacts/mysql/mixed
+=== CONT  TestExtractorT06A13ColumnFacts/tidb/safe
+=== CONT  TestExtractorT06A13ColumnFacts/tidb/mixed
+=== CONT  TestExtractorT06A13BinaryCharsetBoundary
+=== RUN   TestExtractorT06A13BinaryCharsetBoundary/mysql
+=== PAUSE TestExtractorT06A13BinaryCharsetBoundary/mysql
+=== RUN   TestExtractorT06A13BinaryCharsetBoundary/tidb
+=== PAUSE TestExtractorT06A13BinaryCharsetBoundary/tidb
+=== CONT  TestExtractorT06A13BinaryCharsetBoundary/mysql
+=== CONT  TestExtractorT06A13ColumnFacts/mysql/safe
+=== CONT  TestExtractorT06A13BinaryCharsetBoundary/tidb
+--- PASS: TestExtractorT06A13BinaryCharsetBoundary (0.00s)
+    --- PASS: TestExtractorT06A13BinaryCharsetBoundary/mysql (0.00s)
+    --- PASS: TestExtractorT06A13BinaryCharsetBoundary/tidb (0.00s)
+--- PASS: TestExtractorT06A13ColumnFacts (0.00s)
+    --- PASS: TestExtractorT06A13ColumnFacts/mysql/mixed (0.00s)
+    --- PASS: TestExtractorT06A13ColumnFacts/tidb/mixed (0.00s)
+    --- PASS: TestExtractorT06A13ColumnFacts/tidb/safe (0.00s)
+    --- PASS: TestExtractorT06A13ColumnFacts/mysql/safe (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	0.297s
+=== RUN   TestT06A13RegisteredAttribution
+=== PAUSE TestT06A13RegisteredAttribution
+=== RUN   TestT06A13FindingShapes
+=== PAUSE TestT06A13FindingShapes
+=== RUN   TestT06A13ForbidDisabledAndDefaults
+=== PAUSE TestT06A13ForbidDisabledAndDefaults
+=== RUN   TestT06A13InvalidForbidParameter
+=== PAUSE TestT06A13InvalidForbidParameter
+=== RUN   TestT06A13ExclusionBoundaries
+=== PAUSE TestT06A13ExclusionBoundaries
+=== RUN   TestT06A13ReorderedColumns
+=== PAUSE TestT06A13ReorderedColumns
+=== RUN   TestT06A13CreateTableOnlySeam
+=== PAUSE TestT06A13CreateTableOnlySeam
+=== CONT  TestT06A13RegisteredAttribution
+=== CONT  TestT06A13ExclusionBoundaries
+=== RUN   TestT06A13RegisteredAttribution/blob-text
+=== PAUSE TestT06A13RegisteredAttribution/blob-text
+=== RUN   TestT06A13RegisteredAttribution/json
+=== PAUSE TestT06A13RegisteredAttribution/json
+=== RUN   TestT06A13RegisteredAttribution/bit
+=== CONT  TestT06A13CreateTableOnlySeam
+=== PAUSE TestT06A13RegisteredAttribution/bit
+=== RUN   TestT06A13RegisteredAttribution/float-double
+=== PAUSE TestT06A13RegisteredAttribution/float-double
+=== CONT  TestT06A13ForbidDisabledAndDefaults
+=== RUN   TestT06A13RegisteredAttribution/timestamp
+=== PAUSE TestT06A13RegisteredAttribution/timestamp
+--- PASS: TestT06A13ExclusionBoundaries (0.00s)
+=== CONT  TestT06A13RegisteredAttribution/blob-text
+=== CONT  TestT06A13RegisteredAttribution/float-double
+=== CONT  TestT06A13FindingShapes
+=== CONT  TestT06A13RegisteredAttribution/bit
+=== CONT  TestT06A13RegisteredAttribution/json
+--- PASS: TestT06A13CreateTableOnlySeam (0.00s)
+=== CONT  TestT06A13RegisteredAttribution/timestamp
+=== RUN   TestT06A13ForbidDisabledAndDefaults/ddl.column.blob_text.forbid/forbid-false
+=== CONT  TestT06A13InvalidForbidParameter
+=== RUN   TestT06A13InvalidForbidParameter/ddl.column.blob_text.forbid
+--- PASS: TestT06A13FindingShapes (0.00s)
+--- PASS: TestT06A13RegisteredAttribution (0.00s)
+    --- PASS: TestT06A13RegisteredAttribution/blob-text (0.00s)
+    --- PASS: TestT06A13RegisteredAttribution/bit (0.00s)
+    --- PASS: TestT06A13RegisteredAttribution/json (0.00s)
+    --- PASS: TestT06A13RegisteredAttribution/timestamp (0.00s)
+    --- PASS: TestT06A13RegisteredAttribution/float-double (0.00s)
+=== CONT  TestT06A13ReorderedColumns
+=== RUN   TestT06A13ReorderedColumns/ddl.column.blob_text.forbid
+=== PAUSE TestT06A13ForbidDisabledAndDefaults/ddl.column.blob_text.forbid/forbid-false
+=== RUN   TestT06A13InvalidForbidParameter/ddl.column.blob_text.forbid#01
+=== PAUSE TestT06A13ReorderedColumns/ddl.column.blob_text.forbid
+=== RUN   TestT06A13InvalidForbidParameter/ddl.column.blob_text.forbid#02
+=== RUN   TestT06A13ForbidDisabledAndDefaults/ddl.column.blob_text.forbid/disabled
+=== PAUSE TestT06A13ForbidDisabledAndDefaults/ddl.column.blob_text.forbid/disabled
+=== RUN   TestT06A13ReorderedColumns/ddl.column.float_double.forbid
+=== PAUSE TestT06A13ReorderedColumns/ddl.column.float_double.forbid
+=== RUN   TestT06A13ForbidDisabledAndDefaults/ddl.column.blob_text.forbid/defaults
+=== RUN   TestT06A13InvalidForbidParameter/ddl.column.json.forbid
+=== CONT  TestT06A13ReorderedColumns/ddl.column.blob_text.forbid
+=== PAUSE TestT06A13ForbidDisabledAndDefaults/ddl.column.blob_text.forbid/defaults
+=== RUN   TestT06A13InvalidForbidParameter/ddl.column.json.forbid#01
+=== CONT  TestT06A13ReorderedColumns/ddl.column.float_double.forbid
+=== RUN   TestT06A13InvalidForbidParameter/ddl.column.json.forbid#02
+=== RUN   TestT06A13ForbidDisabledAndDefaults/ddl.column.json.forbid/forbid-false
+=== PAUSE TestT06A13ForbidDisabledAndDefaults/ddl.column.json.forbid/forbid-false
+=== RUN   TestT06A13ForbidDisabledAndDefaults/ddl.column.json.forbid/disabled
+=== RUN   TestT06A13InvalidForbidParameter/ddl.column.bit.forbid
+--- PASS: TestT06A13ReorderedColumns (0.00s)
+    --- PASS: TestT06A13ReorderedColumns/ddl.column.blob_text.forbid (0.00s)
+    --- PASS: TestT06A13ReorderedColumns/ddl.column.float_double.forbid (0.00s)
+=== PAUSE TestT06A13ForbidDisabledAndDefaults/ddl.column.json.forbid/disabled
+=== RUN   TestT06A13ForbidDisabledAndDefaults/ddl.column.json.forbid/defaults
+=== RUN   TestT06A13InvalidForbidParameter/ddl.column.bit.forbid#01
+=== PAUSE TestT06A13ForbidDisabledAndDefaults/ddl.column.json.forbid/defaults
+=== RUN   TestT06A13InvalidForbidParameter/ddl.column.bit.forbid#02
+=== RUN   TestT06A13ForbidDisabledAndDefaults/ddl.column.bit.forbid/forbid-false
+=== PAUSE TestT06A13ForbidDisabledAndDefaults/ddl.column.bit.forbid/forbid-false
+=== RUN   TestT06A13ForbidDisabledAndDefaults/ddl.column.bit.forbid/disabled
+=== PAUSE TestT06A13ForbidDisabledAndDefaults/ddl.column.bit.forbid/disabled
+=== RUN   TestT06A13ForbidDisabledAndDefaults/ddl.column.bit.forbid/defaults
+=== PAUSE TestT06A13ForbidDisabledAndDefaults/ddl.column.bit.forbid/defaults
+=== RUN   TestT06A13InvalidForbidParameter/ddl.column.float_double.forbid
+=== RUN   TestT06A13ForbidDisabledAndDefaults/ddl.column.float_double.forbid/forbid-false
+=== PAUSE TestT06A13ForbidDisabledAndDefaults/ddl.column.float_double.forbid/forbid-false
+=== RUN   TestT06A13ForbidDisabledAndDefaults/ddl.column.float_double.forbid/disabled
+=== PAUSE TestT06A13ForbidDisabledAndDefaults/ddl.column.float_double.forbid/disabled
+=== RUN   TestT06A13InvalidForbidParameter/ddl.column.float_double.forbid#01
+=== RUN   TestT06A13ForbidDisabledAndDefaults/ddl.column.float_double.forbid/defaults
+=== PAUSE TestT06A13ForbidDisabledAndDefaults/ddl.column.float_double.forbid/defaults
+=== RUN   TestT06A13InvalidForbidParameter/ddl.column.float_double.forbid#02
+=== RUN   TestT06A13ForbidDisabledAndDefaults/ddl.column.timestamp.forbid/forbid-false
+=== PAUSE TestT06A13ForbidDisabledAndDefaults/ddl.column.timestamp.forbid/forbid-false
+=== RUN   TestT06A13ForbidDisabledAndDefaults/ddl.column.timestamp.forbid/disabled
+=== RUN   TestT06A13InvalidForbidParameter/ddl.column.timestamp.forbid
+=== PAUSE TestT06A13ForbidDisabledAndDefaults/ddl.column.timestamp.forbid/disabled
+=== RUN   TestT06A13ForbidDisabledAndDefaults/ddl.column.timestamp.forbid/defaults
+=== RUN   TestT06A13InvalidForbidParameter/ddl.column.timestamp.forbid#01
+=== PAUSE TestT06A13ForbidDisabledAndDefaults/ddl.column.timestamp.forbid/defaults
+=== CONT  TestT06A13ForbidDisabledAndDefaults/ddl.column.blob_text.forbid/forbid-false
+=== RUN   TestT06A13InvalidForbidParameter/ddl.column.timestamp.forbid#02
+=== CONT  TestT06A13ForbidDisabledAndDefaults/ddl.column.bit.forbid/defaults
+=== CONT  TestT06A13ForbidDisabledAndDefaults/ddl.column.json.forbid/disabled
+=== CONT  TestT06A13ForbidDisabledAndDefaults/ddl.column.blob_text.forbid/defaults
+--- PASS: TestT06A13InvalidForbidParameter (0.00s)
+    --- PASS: TestT06A13InvalidForbidParameter/ddl.column.blob_text.forbid (0.00s)
+    --- PASS: TestT06A13InvalidForbidParameter/ddl.column.blob_text.forbid#01 (0.00s)
+    --- PASS: TestT06A13InvalidForbidParameter/ddl.column.blob_text.forbid#02 (0.00s)
+    --- PASS: TestT06A13InvalidForbidParameter/ddl.column.json.forbid (0.00s)
+    --- PASS: TestT06A13InvalidForbidParameter/ddl.column.json.forbid#01 (0.00s)
+    --- PASS: TestT06A13InvalidForbidParameter/ddl.column.json.forbid#02 (0.00s)
+    --- PASS: TestT06A13InvalidForbidParameter/ddl.column.bit.forbid (0.00s)
+    --- PASS: TestT06A13InvalidForbidParameter/ddl.column.bit.forbid#01 (0.00s)
+    --- PASS: TestT06A13InvalidForbidParameter/ddl.column.bit.forbid#02 (0.00s)
+    --- PASS: TestT06A13InvalidForbidParameter/ddl.column.float_double.forbid (0.00s)
+    --- PASS: TestT06A13InvalidForbidParameter/ddl.column.float_double.forbid#01 (0.00s)
+    --- PASS: TestT06A13InvalidForbidParameter/ddl.column.float_double.forbid#02 (0.00s)
+    --- PASS: TestT06A13InvalidForbidParameter/ddl.column.timestamp.forbid (0.00s)
+    --- PASS: TestT06A13InvalidForbidParameter/ddl.column.timestamp.forbid#01 (0.00s)
+    --- PASS: TestT06A13InvalidForbidParameter/ddl.column.timestamp.forbid#02 (0.00s)
+=== CONT  TestT06A13ForbidDisabledAndDefaults/ddl.column.timestamp.forbid/forbid-false
+=== CONT  TestT06A13ForbidDisabledAndDefaults/ddl.column.float_double.forbid/defaults
+=== CONT  TestT06A13ForbidDisabledAndDefaults/ddl.column.float_double.forbid/disabled
+=== CONT  TestT06A13ForbidDisabledAndDefaults/ddl.column.bit.forbid/disabled
+=== CONT  TestT06A13ForbidDisabledAndDefaults/ddl.column.blob_text.forbid/disabled
+=== CONT  TestT06A13ForbidDisabledAndDefaults/ddl.column.timestamp.forbid/defaults
+=== CONT  TestT06A13ForbidDisabledAndDefaults/ddl.column.float_double.forbid/forbid-false
+=== CONT  TestT06A13ForbidDisabledAndDefaults/ddl.column.bit.forbid/forbid-false
+=== CONT  TestT06A13ForbidDisabledAndDefaults/ddl.column.timestamp.forbid/disabled
+=== CONT  TestT06A13ForbidDisabledAndDefaults/ddl.column.json.forbid/defaults
+=== CONT  TestT06A13ForbidDisabledAndDefaults/ddl.column.json.forbid/forbid-false
+--- PASS: TestT06A13ForbidDisabledAndDefaults (0.00s)
+    --- PASS: TestT06A13ForbidDisabledAndDefaults/ddl.column.blob_text.forbid/forbid-false (0.00s)
+    --- PASS: TestT06A13ForbidDisabledAndDefaults/ddl.column.json.forbid/disabled (0.00s)
+    --- PASS: TestT06A13ForbidDisabledAndDefaults/ddl.column.bit.forbid/defaults (0.00s)
+    --- PASS: TestT06A13ForbidDisabledAndDefaults/ddl.column.blob_text.forbid/defaults (0.00s)
+    --- PASS: TestT06A13ForbidDisabledAndDefaults/ddl.column.timestamp.forbid/forbid-false (0.00s)
+    --- PASS: TestT06A13ForbidDisabledAndDefaults/ddl.column.float_double.forbid/defaults (0.00s)
+    --- PASS: TestT06A13ForbidDisabledAndDefaults/ddl.column.float_double.forbid/disabled (0.00s)
+    --- PASS: TestT06A13ForbidDisabledAndDefaults/ddl.column.bit.forbid/disabled (0.00s)
+    --- PASS: TestT06A13ForbidDisabledAndDefaults/ddl.column.blob_text.forbid/disabled (0.00s)
+    --- PASS: TestT06A13ForbidDisabledAndDefaults/ddl.column.float_double.forbid/forbid-false (0.00s)
+    --- PASS: TestT06A13ForbidDisabledAndDefaults/ddl.column.bit.forbid/forbid-false (0.00s)
+    --- PASS: TestT06A13ForbidDisabledAndDefaults/ddl.column.timestamp.forbid/defaults (0.00s)
+    --- PASS: TestT06A13ForbidDisabledAndDefaults/ddl.column.timestamp.forbid/disabled (0.00s)
+    --- PASS: TestT06A13ForbidDisabledAndDefaults/ddl.column.json.forbid/defaults (0.00s)
+    --- PASS: TestT06A13ForbidDisabledAndDefaults/ddl.column.json.forbid/forbid-false (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	0.265s
+=== RUN   TestT06A13OfflineRoleMatrix
+=== PAUSE TestT06A13OfflineRoleMatrix
+=== RUN   TestT06A13ReorderedAttribution
+=== PAUSE TestT06A13ReorderedAttribution
+=== RUN   TestT06A13DerivedPreStateCarriesTypes
+=== PAUSE TestT06A13DerivedPreStateCarriesTypes
+=== RUN   TestT06A13PolicyVerdictDoesNotMutateSource
+=== PAUSE TestT06A13PolicyVerdictDoesNotMutateSource
+=== CONT  TestT06A13OfflineRoleMatrix
+=== CONT  TestT06A13DerivedPreStateCarriesTypes
+=== RUN   TestT06A13DerivedPreStateCarriesTypes/mysql
+=== CONT  TestT06A13PolicyVerdictDoesNotMutateSource
+=== CONT  TestT06A13ReorderedAttribution
+=== RUN   TestT06A13ReorderedAttribution/mysql/blob-text
+=== RUN   TestT06A13PolicyVerdictDoesNotMutateSource/mysql
+=== RUN   TestT06A13PolicyVerdictDoesNotMutateSource/tidb
+=== RUN   TestT06A13DerivedPreStateCarriesTypes/tidb
+--- PASS: TestT06A13DerivedPreStateCarriesTypes (0.01s)
+    --- PASS: TestT06A13DerivedPreStateCarriesTypes/mysql (0.00s)
+    --- PASS: TestT06A13DerivedPreStateCarriesTypes/tidb (0.00s)
+--- PASS: TestT06A13PolicyVerdictDoesNotMutateSource (0.01s)
+    --- PASS: TestT06A13PolicyVerdictDoesNotMutateSource/mysql (0.00s)
+    --- PASS: TestT06A13PolicyVerdictDoesNotMutateSource/tidb (0.00s)
+=== RUN   TestT06A13OfflineRoleMatrix/mysql/blob-text-mixed-hit
+=== RUN   TestT06A13ReorderedAttribution/mysql/float-double
+=== RUN   TestT06A13OfflineRoleMatrix/mysql/blob-text-safe
+=== RUN   TestT06A13OfflineRoleMatrix/mysql/blob-text-forbid-false
+=== RUN   TestT06A13ReorderedAttribution/tidb/blob-text
+=== RUN   TestT06A13OfflineRoleMatrix/mysql/json-mixed-hit
+=== RUN   TestT06A13ReorderedAttribution/tidb/float-double
+=== RUN   TestT06A13OfflineRoleMatrix/mysql/json-safe
+--- PASS: TestT06A13ReorderedAttribution (0.02s)
+    --- PASS: TestT06A13ReorderedAttribution/mysql/blob-text (0.01s)
+    --- PASS: TestT06A13ReorderedAttribution/mysql/float-double (0.01s)
+    --- PASS: TestT06A13ReorderedAttribution/tidb/blob-text (0.00s)
+    --- PASS: TestT06A13ReorderedAttribution/tidb/float-double (0.00s)
+=== RUN   TestT06A13OfflineRoleMatrix/mysql/json-forbid-false
+=== RUN   TestT06A13OfflineRoleMatrix/mysql/bit-mixed-hit
+=== RUN   TestT06A13OfflineRoleMatrix/mysql/bit-safe
+=== RUN   TestT06A13OfflineRoleMatrix/mysql/bit-forbid-false
+=== RUN   TestT06A13OfflineRoleMatrix/mysql/float-double-mixed-hit
+=== RUN   TestT06A13OfflineRoleMatrix/mysql/float-double-safe
+=== RUN   TestT06A13OfflineRoleMatrix/mysql/float-double-forbid-false
+=== RUN   TestT06A13OfflineRoleMatrix/mysql/timestamp-mixed-hit
+=== RUN   TestT06A13OfflineRoleMatrix/mysql/timestamp-safe
+=== RUN   TestT06A13OfflineRoleMatrix/mysql/timestamp-forbid-false
+=== RUN   TestT06A13OfflineRoleMatrix/mysql/mixed-off
+=== RUN   TestT06A13OfflineRoleMatrix/tidb/blob-text-mixed-hit
+=== RUN   TestT06A13OfflineRoleMatrix/tidb/blob-text-safe
+=== RUN   TestT06A13OfflineRoleMatrix/tidb/blob-text-forbid-false
+=== RUN   TestT06A13OfflineRoleMatrix/tidb/json-mixed-hit
+=== RUN   TestT06A13OfflineRoleMatrix/tidb/json-safe
+=== RUN   TestT06A13OfflineRoleMatrix/tidb/json-forbid-false
+=== RUN   TestT06A13OfflineRoleMatrix/tidb/bit-mixed-hit
+=== RUN   TestT06A13OfflineRoleMatrix/tidb/bit-safe
+=== RUN   TestT06A13OfflineRoleMatrix/tidb/bit-forbid-false
+=== RUN   TestT06A13OfflineRoleMatrix/tidb/float-double-mixed-hit
+=== RUN   TestT06A13OfflineRoleMatrix/tidb/float-double-safe
+=== RUN   TestT06A13OfflineRoleMatrix/tidb/float-double-forbid-false
+=== RUN   TestT06A13OfflineRoleMatrix/tidb/timestamp-mixed-hit
+=== RUN   TestT06A13OfflineRoleMatrix/tidb/timestamp-safe
+=== RUN   TestT06A13OfflineRoleMatrix/tidb/timestamp-forbid-false
+=== RUN   TestT06A13OfflineRoleMatrix/tidb/mixed-off
+--- PASS: TestT06A13OfflineRoleMatrix (0.10s)
+    --- PASS: TestT06A13OfflineRoleMatrix/mysql/blob-text-mixed-hit (0.00s)
+    --- PASS: TestT06A13OfflineRoleMatrix/mysql/blob-text-safe (0.00s)
+    --- PASS: TestT06A13OfflineRoleMatrix/mysql/blob-text-forbid-false (0.00s)
+    --- PASS: TestT06A13OfflineRoleMatrix/mysql/json-mixed-hit (0.00s)
+    --- PASS: TestT06A13OfflineRoleMatrix/mysql/json-safe (0.00s)
+    --- PASS: TestT06A13OfflineRoleMatrix/mysql/json-forbid-false (0.00s)
+    --- PASS: TestT06A13OfflineRoleMatrix/mysql/bit-mixed-hit (0.00s)
+    --- PASS: TestT06A13OfflineRoleMatrix/mysql/bit-safe (0.00s)
+    --- PASS: TestT06A13OfflineRoleMatrix/mysql/bit-forbid-false (0.00s)
+    --- PASS: TestT06A13OfflineRoleMatrix/mysql/float-double-mixed-hit (0.00s)
+    --- PASS: TestT06A13OfflineRoleMatrix/mysql/float-double-safe (0.00s)
+    --- PASS: TestT06A13OfflineRoleMatrix/mysql/float-double-forbid-false (0.00s)
+    --- PASS: TestT06A13OfflineRoleMatrix/mysql/timestamp-mixed-hit (0.00s)
+    --- PASS: TestT06A13OfflineRoleMatrix/mysql/timestamp-safe (0.00s)
+    --- PASS: TestT06A13OfflineRoleMatrix/mysql/timestamp-forbid-false (0.00s)
+    --- PASS: TestT06A13OfflineRoleMatrix/mysql/mixed-off (0.00s)
+    --- PASS: TestT06A13OfflineRoleMatrix/tidb/blob-text-mixed-hit (0.00s)
+    --- PASS: TestT06A13OfflineRoleMatrix/tidb/blob-text-safe (0.00s)
+    --- PASS: TestT06A13OfflineRoleMatrix/tidb/blob-text-forbid-false (0.00s)
+    --- PASS: TestT06A13OfflineRoleMatrix/tidb/json-mixed-hit (0.00s)
+    --- PASS: TestT06A13OfflineRoleMatrix/tidb/json-safe (0.00s)
+    --- PASS: TestT06A13OfflineRoleMatrix/tidb/json-forbid-false (0.00s)
+    --- PASS: TestT06A13OfflineRoleMatrix/tidb/bit-mixed-hit (0.00s)
+    --- PASS: TestT06A13OfflineRoleMatrix/tidb/bit-safe (0.00s)
+    --- PASS: TestT06A13OfflineRoleMatrix/tidb/bit-forbid-false (0.00s)
+    --- PASS: TestT06A13OfflineRoleMatrix/tidb/float-double-mixed-hit (0.00s)
+    --- PASS: TestT06A13OfflineRoleMatrix/tidb/float-double-safe (0.00s)
+    --- PASS: TestT06A13OfflineRoleMatrix/tidb/float-double-forbid-false (0.00s)
+    --- PASS: TestT06A13OfflineRoleMatrix/tidb/timestamp-mixed-hit (0.00s)
+    --- PASS: TestT06A13OfflineRoleMatrix/tidb/timestamp-safe (0.00s)
+    --- PASS: TestT06A13OfflineRoleMatrix/tidb/timestamp-forbid-false (0.00s)
+    --- PASS: TestT06A13OfflineRoleMatrix/tidb/mixed-off (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.883s
+rc=0

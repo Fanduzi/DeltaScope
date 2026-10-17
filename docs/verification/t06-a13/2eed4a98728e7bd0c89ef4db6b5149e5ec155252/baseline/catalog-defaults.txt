@@ -1,0 +1,5 @@
+ddl.column.bit.forbid: enabled=True level=warning dialect=common kind=ddl
+ddl.column.blob_text.forbid: enabled=True level=warning dialect=common kind=ddl
+ddl.column.float_double.forbid: enabled=True level=warning dialect=common kind=ddl
+ddl.column.json.forbid: enabled=True level=warning dialect=common kind=ddl
+ddl.column.timestamp.forbid: enabled=True level=warning dialect=common kind=ddl

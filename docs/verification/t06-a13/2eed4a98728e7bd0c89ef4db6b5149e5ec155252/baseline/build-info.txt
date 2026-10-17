@@ -1,0 +1,5 @@
+# T06-A13-BASELINE build identity
+worktree HEAD: 84e37e32d694e92666ac27726eb91426ff40121f
+module version: v0.511.2-0.20261016161622-84e37e32d694+dirty
+binary sha256: 67295c490c47f6ba47b812eccc094debe5ace403d85411a29e0f34ce8eb7efaf
+go version go1.26.1 darwin/arm64
