@@ -1,4 +1,4 @@
-# T06 base CREATE TABLE traceability (issue #85, slices A1+A2+A3+A4+A5+A7+A8+A9+A10+A11+A12)
+# T06 base CREATE TABLE traceability (issue #85, slices A1+A2+A3+A4+A5+A7+A8+A9+A10+A11+A12+A13)
 
 Scope: the `mysql.create-table` and `tidb.create-table` inventory rows owned by
 T06. This file maps each #85 acceptance dimension to the normalized spec
@@ -9,9 +9,9 @@ tasks are listed as deferred, not silently absorbed.
 Status vocabulary:
 
 - **golden-proven (this slice)** — pinned by `testdata/ddl-golden/T06.json`
-  (360 cases: 8 baseline database + 160 offline CLI + 192 anchored metadata
+  (412 cases: 8 baseline database + 192 offline CLI + 212 anchored metadata
   structure proofs)
-  and/or the `T06A1`/`T06A2`/`T06A3`/`T06A4`/`T06A5`/`T06A7`/`T06A8`/`T06A9`/`T06A10`/`T06A11`/`T06A12` Go regression tests.
+  and/or the `T06A1`/`T06A2`/`T06A3`/`T06A4`/`T06A5`/`T06A7`/`T06A8`/`T06A9`/`T06A10`/`T06A11`/`T06A12`/`T06A13` Go regression tests.
 - **earlier evidence** — covered by pre-T06 artifacts (T02–T05 golden runs,
   sql-corpus fixtures, catalog examples); not re-proven by this slice.
 - **not proven** — the field/rule exists but no dedicated evidence pins the
@@ -40,7 +40,7 @@ Neighboring rows share the CREATE TABLE grammar but stay with their owners:
 | UNIQUE must not substitute for PK | `DDL.Indexes` (`IndexKindUnique`) vs `DDL.PrimaryKey` | `ddl.table.primary_key.require` | `TestT06A1UniqueKeyNotPrimaryKey` | **golden-proven (this slice)** |
 | PK fact consumed by follower statements | `applyCreateTable` → `TableSnapshot.PrimaryKey`/`HasPrimaryKey` | state layer (T05), not a rule | `TestT06A1PrimaryKeyPreStateConsumption`; T05 golden manifests | **golden-proven (this slice, consumption seam)** |
 | Policy on/off is independent of legality | policy `enabled`/`params.required` | `ddl.table.primary_key.require` | `T06.json` `t06-*-rule-off` / `t06-*-required-false` cli cases; anchored no-PK cases show product reject + driver success | **golden-proven (this slice)** |
-| Type family presence (INT etc.) | `Column.Type` | `ddl.column.blob_text.forbid`, `ddl.column.json.forbid`, `ddl.column.bit.forbid`, `ddl.column.float_double.forbid`, `ddl.column.timestamp.forbid`, `ddl.table.primary_key.bigint.require`, `ddl.table.primary_key.unsigned.require` | corpus `findings`/`metadata` fixtures; catalog examples; `T06.json` structure oracle pins `DATA_TYPE=int` | **earlier evidence** — per-type-family version matrix not yet pinned; the single-member-PK BIGINT/UNSIGNED sub-dimension is golden-proven by A11 below |
+| Type family presence (INT etc.) | `Column.Type` | `ddl.column.blob_text.forbid`, `ddl.column.json.forbid`, `ddl.column.bit.forbid`, `ddl.column.float_double.forbid`, `ddl.column.timestamp.forbid`, `ddl.table.primary_key.bigint.require`, `ddl.table.primary_key.unsigned.require` | corpus `findings`/`metadata` fixtures; catalog examples; `T06.json` `t06-a13-*` 32 cli + 20 meta cases under `t06-a13-<family>-{on,false}-isolated` and `all-rules-disabled`: each family pins isolated blocker findings on the mixed table (exact rule_id, message, `{table,column,type,family,charset:""}` metadata for the four generic rules, `{table,column,type}` for the independent float/double rule, 1:1 location), the applicable-but-clean safe role, `forbid=false` (loaded+inapplicable) vs disabled (no `rule_summary`), the blob/text exclusion of `c_json`, the timestamp exclusion of `c_datetime`, and per-column attribution on the two-finding roles; anchored roles pin the ordered nine-column `schema:table:column:DATA_TYPE:ordinal` set, exact column count, zero PK constraints/index parts, no secondary indexes, InnoDB on MySQL anchors, and driver CREATE success alongside product rejects; `TestT06A13*` Go tests | **partially golden-proven (A13)** — the five forbid policies on the fixed representative columns only; size variants (TINYBLOB/LONGTEXT etc.), BIT lengths, FLOAT precision/REAL aliases, JSON document/default/index semantics, TIMESTAMP implicit defaults/ranges/time zones, DECIMAL precision/scale, and ALTER-side type governance stay unproven or deferred; the single-member-PK BIGINT/UNSIGNED sub-dimension is golden-proven by A11 below |
 | Single-member PK BIGINT/UNSIGNED policies | `Column.Type` (base type), `Column.Unsigned` (parser UNSIGNED flag), `DDL.PrimaryKey.Columns` name binding | `ddl.table.primary_key.bigint.require`, `ddl.table.primary_key.unsigned.require` | `T06.json` `t06-a11-*` 16 cli + 16 meta cases under `t06-a11-pk-bigint-isolated`/`t06-a11-pk-unsigned-isolated`: A–H roles pin pass/int-and-signed-bigint blockers (exact rule_id/message/metadata), composite member-count skip, and disabled controls across both dialects; anchored roles pin `DATA_TYPE` (`bigint`/`int`), finite-whitelist `COLUMN_TYPE` complete forms (`bigint`/`bigint(20)`, `int`/`int(11)`, `bigint unsigned`/`bigint(20) unsigned`), byte-empty `EXTRA`, single-member `PRIMARY(id)` binding, and driver CREATE success alongside product rejects; `TestT06A11*` Go tests | **partially golden-proven (A11)** — ordinary single-member-PK CREATE only; composite-PK members are skipped not judged, `required=false` vs disabled stay distinct, ALTER-side applicability keeps its existing seam unproven here, ZEROFILL stays a parser-only observation, numeric-range/runtime semantics and other type families stay unproven or deferred |
 | Length / precision | `Column.Length` (and type args) | `ddl.column.char.max_length`, `ddl.column.varchar.max_length`, `ddl.table.row_size.max_bytes.require` | `T06.json` `t06-a5-*` 16 cli + 24 meta cases pin declared CHAR/VARCHAR lengths against `limit=8` (7/8/9 + all-off control, exact `limit`/`actual` metadata, post-audit absence + native replay on both, `CHARACTER_MAXIMUM_LENGTH=N`/`CHARACTER_OCTET_LENGTH=4*N`/`utf8mb4_bin` oracle); `TestT06A5*` Go tests; corpus fixtures; catalog examples | **partially golden-proven (A5)** — declared CHAR/VARCHAR character length on CREATE only; DECIMAL precision/scale, other type args, `row_size`/`key_length` byte estimation, and ALTER-side length policy (#87/T08) stay earlier evidence |
 | PK member implied NOT NULL (inline + table-level + composite) | `Column.NotNull` normalized in `extractCreateTable`; `DDL.PrimaryKey.Columns` binding | `ddl.table.primary_key.not_null.require`, `ddl.column.not_null.require` | `T06.json` `t06-a2-*` 8 cli + 16 meta cases (`IS_NULLABLE=NO`, ordered `b:1,a:2` members, ERROR 1171 negatives); `TestT06A2*` Go tests | **golden-proven (A2)** |
@@ -86,6 +86,13 @@ Neighboring rows share the CREATE TABLE grammar but stay with their owners:
   NULL" vs "omitted nullability" is only observable on primary-key members;
   T06-A12 records this normalization for ordinary columns without adding a
   provenance field.
+- The A13 blob/text forbid predicate is the registered
+  `isBlobTextLike && !json` pair — the `isBlobTextLike` set itself still
+  contains `json` (that is the A12 exemption set, not the forbid set), and
+  the timestamp forbid matches `baseType=="timestamp"` only, so `DATETIME`
+  is never absorbed. `TIMESTAMP NULL` in the frozen input records a parse
+  fact only; no implicit-default, sql_mode, or runtime-conversion claim is
+  made.
 - No stored-body or generated/expression semantics enter this slice
   (T07/T27–T30).
 - The two length rules are CREATE-only: `ALTER TABLE ... ADD/MODIFY COLUMN`

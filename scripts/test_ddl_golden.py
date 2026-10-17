@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: synthetic ddl-golden artifacts and manifests built in a temp directory
-# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1/A2/A3/A4/A5/A7/A8/A9/A10 mutation coverage (T06-A9 includes the byte-exact EXTRA comparison mutations: plain-LOWER-IN rollback, catalog pad-space control deletion, and forged marker/sentinel outputs; T06-A10 includes the AUTO_INCREMENT declaration/allocator-observation mutations plus the T06-A10-R1 record-set controls: duplicate/hidden/wrong-target/header-only/forged-header records on all three observations, and legal allocator null|value:<digits> variants staying accepted; T06-A10-R2 adds non-string-stdout contract failures and the complete-`t` SHOW CREATE head boundary; T06-A11 adds the BIGINT/UNSIGNED policy mutations and T06-A11-R1 adds the raw HEX-field shape boundary: whitespace-corrupted, empty, odd-length, 0x-prefixed, and non-ASCII COLUMN_TYPE hex rejected while every frozen whitelist form and upper/lower/mixed-case hex stays accepted; T06-A12 adds the NOT NULL attribution and column-set mutations, and T06-A12-R1 adds the strict rule_summary shape controls: present-but-null/empty/false keys on the disabled role, missing or non-object summaries on enabled roles, missing counters, bool/float/string/null counts, and wrong per-role integer combos — all rejected through the full validate_artifact entry)
+# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1/A2/A3/A4/A5/A7/A8/A9/A10 mutation coverage (T06-A9 includes the byte-exact EXTRA comparison mutations: plain-LOWER-IN rollback, catalog pad-space control deletion, and forged marker/sentinel outputs; T06-A10 includes the AUTO_INCREMENT declaration/allocator-observation mutations plus the T06-A10-R1 record-set controls: duplicate/hidden/wrong-target/header-only/forged-header records on all three observations, and legal allocator null|value:<digits> variants staying accepted; T06-A10-R2 adds non-string-stdout contract failures and the complete-`t` SHOW CREATE head boundary; T06-A11 adds the BIGINT/UNSIGNED policy mutations and T06-A11-R1 adds the raw HEX-field shape boundary: whitespace-corrupted, empty, odd-length, 0x-prefixed, and non-ASCII COLUMN_TYPE hex rejected while every frozen whitelist form and upper/lower/mixed-case hex stays accepted; T06-A12 adds the NOT NULL attribution and column-set mutations, and T06-A12-R1 adds the strict rule_summary shape controls: present-but-null/empty/false keys on the disabled role, missing or non-object summaries on enabled roles, missing counters, bool/float/string/null counts, and wrong per-role integer combos — all rejected through the full validate_artifact entry; T06-A13 adds the type-family forbid mutations: missed/forged findings, absorbed c_json/c_datetime, collapsed/duplicated/cross-paired findings, dropped or added metadata keys, same-SQL family profile/record swaps, switch-state laundering, weakened profiles, ordered-column-set corruptions, skipped or failed driver replay, and denominator shrinkage)
 # pos: offline negative tests for scripts/ddl_golden.py validation (no Docker required)
 # note: if this file changes, update this header and module README.md.
 """Validator contract tests for scripts/ddl_golden.py.
@@ -2116,6 +2116,7 @@ def t06_contract_tests(tmp):
         ddl_golden.T06_A10_PK_RULE, ddl_golden.T06_A10_INIT_RULE,
         ddl_golden.T06_A11_BIGINT_RULE, ddl_golden.T06_A11_UNSIGNED_RULE,
         ddl_golden.T06_A12_RULE,
+        *[pair[0] for pair in ddl_golden.T06_A13_RULES.values()],
         "ddl.table.exists.create.forbid", "ddl.table.exists.alter.require",
         "ddl.alter.drop_column.exists.require", "ddl.create_index.columns.exists.require")]})
     binary.write_text("#!/bin/sh\nprintf '%s' '" + catalog + "'\n")
@@ -2540,7 +2541,7 @@ def t06_contract_tests(tmp):
     donors = {v: copy.deepcopy(by_id(a, f"T06.meta.t06-mysql84-{v}"))
               for v in ("no-pk", "inline-pk", "table-pk")}
     for item in list(a["cases"]):
-        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-", "t06-a7-", "t06-a8-", "t06-a9-", "t06-a10-", "t06-a11-", "t06-a12-")):
+        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-", "t06-a7-", "t06-a8-", "t06-a9-", "t06-a10-", "t06-a11-", "t06-a12-", "t06-a13-")):
             slot(a, item["case_id"], donors[item["cli_case"].split("-", 2)[2]])
     run("t06 all metadata slots refilled variant-wise rejected", a, "identity")
 
@@ -2551,7 +2552,7 @@ def t06_contract_tests(tmp):
     run("t06 metadata slot filled by offline record rejected", a, "identity")
     a = copy.deepcopy(artifact)
     for item in list(a["cases"]):
-        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-", "t06-a7-", "t06-a8-", "t06-a9-", "t06-a10-", "t06-a11-", "t06-a12-")):
+        if item["kind"] == "cli_metadata" and not item["cli_case"].startswith(("t06-a2-", "t06-a3-", "t06-a4-", "t06-a5-", "t06-a7-", "t06-a8-", "t06-a9-", "t06-a10-", "t06-a11-", "t06-a12-", "t06-a13-")):
             variant = item["cli_case"].split("-", 2)[2]
             dialect = "tidb" if item["anchor"] == "tidb85" else "mysql"
             slot(a, item["case_id"], by_id(a, f"T06.cli.t06-{dialect}-{variant}"))
@@ -4875,6 +4876,290 @@ def t06_contract_tests(tmp):
     c["actual"]["parsed"]["rule_summary"]["loaded"] = True
     update_stdout(c)
     run("t06a12r1 anchored bool count rejected", a, "integer")
+
+    # --- T06-A13 additions: five type-family forbid roles ---
+
+    def t06a13(suffix):
+        candidate = copy.deepcopy(artifact)
+        case = next(item for item in candidate["cases"]
+                    if item.get("cli_case") == "t06-a13-" + suffix
+                    or item.get("metadata_case") == "t06-a13-" + suffix)
+        return candidate, case
+
+    def a13_structure_entry(case, needle):
+        return next(s for s in case["actual"]["structure"]
+                    if needle in s["assert"])
+
+    def a13_execute_step(case, needle):
+        return next(s for s in case["actual"]["execute"]
+                    if needle in s["name"])
+
+    def a13_finding(case, column, rule_id=None):
+        parsed = case["actual"]["parsed"]
+        return next(f for s in parsed["statements"] for f in s["findings"]
+                    if f["metadata"]["column"] == column
+                    and (rule_id is None or f["rule_id"] == rule_id))
+
+    # Missed findings on hit roles and a fabricated finding on a safe role —
+    # each direction fails.
+    for family in ("blob-text", "json", "bit", "float-double", "timestamp"):
+        a, c = t06a13(f"mysql-{family}-mixed-hit")
+        parsed = c["actual"]["parsed"]
+        parsed["statements"][0]["findings"] = []
+        parsed["verdict"] = "pass"
+        parsed["summary"]["blockers"] = 0
+        parsed["fail_on_triggered"] = False
+        c["actual"]["exit"] = 0
+        update_stdout(c)
+        run(f"t06a13 {family} missed hit rejected", a, family)
+
+        a, c = t06a13(f"mysql-{family}-safe")
+        parsed = c["actual"]["parsed"]
+        donor = by_id(a, f"T06.cli.t06-a13-mysql-{family}-mixed-hit")
+        parsed["statements"][0]["findings"].append(copy.deepcopy(
+            donor["actual"]["parsed"]["statements"][0]["findings"][0]))
+        parsed["verdict"] = "reject"
+        parsed["summary"]["blockers"] = 1
+        parsed["fail_on_triggered"] = True
+        c["actual"]["exit"] = 1
+        update_stdout(c)
+        run(f"t06a13 {family} safe forged finding rejected", a, family)
+
+    # The exclusion boundaries: blob/text must never absorb c_json and
+    # timestamp must never absorb c_datetime.
+    a, c = t06a13("mysql-blob-text-mixed-hit")
+    parsed = c["actual"]["parsed"]
+    parsed["statements"][0]["findings"].append({
+        "rule_id": "ddl.column.blob_text.forbid", "level": "blocker",
+        "message": 'column "c_json" must not use the blob/text type family',
+        "statement_kind": "ddl", "location": {"line": 1, "column": 1},
+        "metadata": {"table": "t", "column": "c_json", "type": "json",
+                     "family": "blob/text", "charset": ""}})
+    parsed["summary"]["blockers"] = 3
+    update_stdout(c)
+    run("t06a13 blob-text absorbed c_json rejected", a, "blob-text")
+
+    a, c = t06a13("mysql-timestamp-mixed-hit")
+    parsed = c["actual"]["parsed"]
+    parsed["statements"][0]["findings"].append({
+        "rule_id": "ddl.column.timestamp.forbid", "level": "blocker",
+        "message": 'column "c_datetime" must not use the timestamp type family',
+        "statement_kind": "ddl", "location": {"line": 1, "column": 1},
+        "metadata": {"table": "t", "column": "c_datetime", "type": "datetime",
+                     "family": "timestamp", "charset": ""}})
+    parsed["summary"]["blockers"] = 2
+    update_stdout(c)
+    run("t06a13 timestamp absorbed c_datetime rejected", a, "timestamp")
+
+    # Two-finding roles: collapse to one, duplicate one entry in place of the
+    # other, and cross-pair message/metadata — all reject via the multiset.
+    a, c = t06a13("mysql-blob-text-mixed-hit")
+    parsed = c["actual"]["parsed"]
+    parsed["statements"][0]["findings"].pop()
+    parsed["summary"]["blockers"] = 1
+    update_stdout(c)
+    run("t06a13 blob-text collapsed to one finding rejected", a, "blob-text")
+
+    a, c = t06a13("mysql-blob-text-mixed-hit")
+    parsed = c["actual"]["parsed"]
+    findings = parsed["statements"][0]["findings"]
+    findings[1] = copy.deepcopy(findings[0])
+    update_stdout(c)
+    run("t06a13 blob-text duplicated c_blob over c_text rejected", a,
+        "blob-text")
+
+    a, c = t06a13("mysql-float-double-mixed-hit")
+    parsed = c["actual"]["parsed"]
+    parsed["statements"][0]["findings"].pop()
+    parsed["summary"]["blockers"] = 1
+    update_stdout(c)
+    run("t06a13 float-double collapsed to one finding rejected", a,
+        "float-double")
+
+    a, c = t06a13("mysql-float-double-mixed-hit")
+    parsed = c["actual"]["parsed"]
+    findings = parsed["statements"][0]["findings"]
+    findings[1] = copy.deepcopy(findings[0])
+    update_stdout(c)
+    run("t06a13 float-double duplicated c_float over c_double rejected", a,
+        "float-double")
+
+    a, c = t06a13("mysql-blob-text-mixed-hit")
+    finding = a13_finding(c, "c_text")
+    finding["message"] = 'column "c_blob" must not use the blob/text type family'
+    update_stdout(c)
+    run("t06a13 blob-text message/metadata cross-paired rejected", a,
+        "blob-text")
+
+    # Shape: the generic rule's family/charset keys and the float/double
+    # rule's metadata shape are contract — dropping keys or swapping the
+    # rule_id/shape between the two implementations fails.
+    a, c = t06a13("mysql-bit-mixed-hit")
+    del a13_finding(c, "c_bit")["metadata"]["charset"]
+    update_stdout(c)
+    run("t06a13 generic finding dropped charset key rejected", a, "bit")
+
+    a, c = t06a13("mysql-json-mixed-hit")
+    del a13_finding(c, "c_json")["metadata"]["family"]
+    update_stdout(c)
+    run("t06a13 generic finding dropped family key rejected", a, "json")
+
+    a, c = t06a13("mysql-float-double-mixed-hit")
+    finding = a13_finding(c, "c_float")
+    finding["rule_id"] = "ddl.column.blob_text.forbid"
+    update_stdout(c)
+    run("t06a13 float finding re-badged to blob_text rejected", a,
+        "float-double")
+
+    a, c = t06a13("mysql-float-double-mixed-hit")
+    finding = a13_finding(c, "c_double")
+    finding["metadata"]["family"] = "float/double"
+    update_stdout(c)
+    run("t06a13 float finding gained family key rejected", a, "float-double")
+
+    # Same SQL under five sibling profiles: swapping complete records or
+    # only the recorded profile between two families is a role swap.
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.cli.t06-a13-mysql-json-mixed-hit",
+         by_id(a, "T06.cli.t06-a13-mysql-bit-mixed-hit"))
+    run("t06a13 same-sql family records swapped rejected", a, "identity")
+
+    a = copy.deepcopy(artifact)
+    json_case = by_id(a, "T06.cli.t06-a13-mysql-json-mixed-hit")
+    bit_case = by_id(a, "T06.cli.t06-a13-mysql-bit-mixed-hit")
+    json_case["policy_profile"], bit_case["policy_profile"] = (
+        bit_case["policy_profile"], json_case["policy_profile"])
+    run("t06a13 same-sql family profiles swapped rejected", a, "policy")
+
+    # The three switch states cannot impersonate each other; bool/float
+    # counts never launder through the strict summary shape.
+    a, c = t06a13("mysql-blob-text-safe")
+    c["actual"]["parsed"]["rule_summary"]["applicable"] = 0
+    update_stdout(c)
+    run("t06a13 safe applicable forged to 0 rejected", a, "blob-text")
+
+    a, c = t06a13("mysql-bit-forbid-false")
+    c["actual"]["parsed"]["rule_summary"]["applicable"] = 1
+    update_stdout(c)
+    run("t06a13 forbid-false applicable forged to 1 rejected", a, "bit")
+
+    a, c = t06a13("mysql-mixed-off")
+    c["actual"]["parsed"]["rule_summary"] = {"loaded": 0, "applicable": 0,
+                                             "skipped": []}
+    update_stdout(c)
+    run("t06a13 all-off fabricated rule_summary rejected", a, "mixed-off")
+
+    a, c = t06a13("mysql-mixed-off")
+    c["actual"]["parsed"]["rule_summary"] = None
+    update_stdout(c)
+    run("t06a13 all-off null rule_summary rejected", a, "absent")
+
+    a, c = t06a13("mysql-timestamp-mixed-hit")
+    c["actual"]["parsed"]["rule_summary"]["loaded"] = True
+    update_stdout(c)
+    run("t06a13 hit loaded bool rejected", a, "timestamp")
+
+    a, c = t06a13("mysql84-float-double-mixed-hit")
+    c["actual"]["parsed"]["rule_summary"]["applicable"] = 1.0
+    update_stdout(c)
+    run("t06a13 anchored applicable float rejected", a, "float-double")
+
+    # Weakening a declared profile's forbid param or level fails at the
+    # manifest boundary — the frozen profile identity, not the file hash.
+    m = copy.deepcopy(manifest)
+    m["policy"]["profiles"]["t06-a13-bit-on-isolated"]["enable"][
+        "ddl.column.bit.forbid"]["params"]["forbid"] = False
+    run("t06a13 bit on-profile forbid weakened rejected", artifact,
+        "T06-A1", m)
+
+    m = copy.deepcopy(manifest)
+    m["policy"]["profiles"]["t06-a13-json-on-isolated"]["enable"][
+        "ddl.column.json.forbid"]["level"] = "warning"
+    run("t06a13 json on-profile level weakened rejected", artifact,
+        "T06-A1", m)
+
+    m = copy.deepcopy(manifest)
+    m["policy"]["profiles"]["t06-a13-timestamp-false-isolated"]["enable"][
+        "ddl.column.timestamp.forbid"]["params"]["forbid"] = True
+    run("t06a13 timestamp false-profile flipped on rejected", artifact,
+        "T06-A1", m)
+
+    # Column-set oracle: a dropped column, a reorder, a wrong name, or a
+    # DATA_TYPE swap all break the frozen ordered set — finding counts can
+    # never launder structure corruption.
+    a, c = t06a13("mysql84-blob-text-mixed-hit")
+    a13_structure_entry(c, "ordered column set")["output"] = (
+        "golden:t:c_blob:blob:1|golden:t:c_text:text:2|golden:t:c_json:json:3|"
+        "golden:t:c_bit:bit:4|golden:t:c_float:float:5|golden:t:c_double:double:6|"
+        "golden:t:c_timestamp:timestamp:7|golden:t:c_datetime:datetime:8")
+    run("t06a13 column set dropped c_int rejected", a, "structure")
+
+    a, c = t06a13("mysql84-json-mixed-hit")
+    a13_structure_entry(c, "ordered column set")["output"] = (
+        "golden:t:c_json:json:1|golden:t:c_text:text:2|golden:t:c_blob:blob:3|"
+        "golden:t:c_bit:bit:4|golden:t:c_float:float:5|golden:t:c_double:double:6|"
+        "golden:t:c_timestamp:timestamp:7|golden:t:c_datetime:datetime:8|"
+        "golden:t:c_int:int:9")
+    run("t06a13 column set reordered rejected", a, "structure")
+
+    a, c = t06a13("tidb85-bit-mixed-hit")
+    a13_structure_entry(c, "ordered column set")["output"] = (
+        "golden:t:c_blob:blob:1|golden:t:c_text:text:2|golden:t:c_json:json:3|"
+        "golden:t:c_bit64:bit:4|golden:t:c_float:float:5|golden:t:c_double:double:6|"
+        "golden:t:c_timestamp:timestamp:7|golden:t:c_datetime:datetime:8|"
+        "golden:t:c_int:int:9")
+    run("t06a13 column set wrong name rejected", a, "structure")
+
+    a, c = t06a13("mysql80-float-double-mixed-hit")
+    a13_structure_entry(c, "ordered column set")["output"] = (
+        "golden:t:c_blob:blob:1|golden:t:c_text:text:2|golden:t:c_json:json:3|"
+        "golden:t:c_bit:bit:4|golden:t:c_float:double:5|golden:t:c_double:float:6|"
+        "golden:t:c_timestamp:timestamp:7|golden:t:c_datetime:datetime:8|"
+        "golden:t:c_int:int:9")
+    run("t06a13 column set DATA_TYPE swapped rejected", a, "structure")
+
+    # A product reject never skips the driver replay, and a driver failure
+    # can never be recorded as a native success.
+    a, c = t06a13("mysql57-timestamp-mixed-hit")
+    c["actual"]["execute"] = [
+        s for s in c["actual"]["execute"]
+        if s["name"] != "driver applies the audited create"]
+    run("t06a13 product reject skipped driver create rejected", a, "execute")
+
+    a, c = t06a13("mysql84-timestamp-mixed-hit")
+    a13_execute_step(c, "driver applies the audited create")["rc"] = 1
+    run("t06a13 driver create failure recorded as success rejected", a,
+        "execute")
+
+    # Denominator and identity: cross-anchor donor, offline demotion,
+    # duplicate record, and both-side deletion all fail.
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.meta.t06-a13-mysql57-json-mixed-hit",
+         by_id(a, "T06.meta.t06-a13-mysql84-json-mixed-hit"))
+    run("t06a13 mysql84 record re-keyed as mysql57 rejected", a, "identity")
+
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.meta.t06-a13-tidb85-bit-mixed-hit",
+         by_id(a, "T06.cli.t06-a13-tidb-bit-mixed-hit"))
+    run("t06a13 metadata slot demoted to offline record rejected", a,
+        "identity")
+
+    a = copy.deepcopy(artifact)
+    a["cases"].append(
+        copy.deepcopy(by_id(a, "T06.cli.t06-a13-mysql-bit-mixed-hit")))
+    a["executed_count"] = len(a["cases"])
+    run("t06a13 duplicate executed case rejected", a, "duplicate")
+
+    a = copy.deepcopy(artifact)
+    m = copy.deepcopy(manifest)
+    victim = "T06.meta.t06-a13-mysql84-json-mixed-hit"
+    a["cases"] = [x for x in a["cases"] if x["case_id"] != victim]
+    a["executed_count"] = len(a["cases"])
+    a["required_case_ids"].remove(victim)
+    m["metadata_cases"] = [s for s in m["metadata_cases"]
+                           if s["id"] != "t06-a13-mysql84-json-mixed-hit"]
+    m["required_case_ids"].remove(victim)
+    run("t06a13 case deleted on both sides rejected", a, "T06-A1", m)
 
     return results
 

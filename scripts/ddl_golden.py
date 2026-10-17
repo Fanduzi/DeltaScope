@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: task manifest testdata/ddl-golden/<TASK>.json, docker/ddl-golden-compose.yaml, freshly built deltascope CLI
-# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest, including synchronous execute verification and the frozen T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1–A12 oracles (the T06-A9 EXTRA whitelist compares CAST(LOWER(x) AS BINARY) byte-exact so PAD SPACE catalog collations cannot smuggle trailing-space text into a role marker; the T06-A10 observations enforce a string-typed stdout carrying the fixed client header plus exactly one bound data record — the allocator counter is verbatim-observed, never numerically asserted, and SHOW CREATE must name object `t` with the head opening `CREATE TABLE `t` (` before its opaque body; the T06-A11 observation additionally enforces a complete two-digit-pair HEX field shape so literal whitespace can never launder into the COLUMN_TYPE whitelist; T06-A12 pins per-column NOT NULL finding attribution, the loaded/applicable/absent rule_summary contract per role, and the ordered column-set oracle; T06-A12-R1 requires the absent key to be truly missing, enabled summaries to be JSON objects, and loaded/applicable to be strict JSON integers so bool/float/string/null and non-object shapes reject as failures, never == laundering or exceptions)
+# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest, including synchronous execute verification and the frozen T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1–A12 oracles (the T06-A9 EXTRA whitelist compares CAST(LOWER(x) AS BINARY) byte-exact so PAD SPACE catalog collations cannot smuggle trailing-space text into a role marker; the T06-A10 observations enforce a string-typed stdout carrying the fixed client header plus exactly one bound data record — the allocator counter is verbatim-observed, never numerically asserted, and SHOW CREATE must name object `t` with the head opening `CREATE TABLE `t` (` before its opaque body; the T06-A11 observation additionally enforces a complete two-digit-pair HEX field shape so literal whitespace can never launder into the COLUMN_TYPE whitelist; T06-A12 pins per-column NOT NULL finding attribution, the loaded/applicable/absent rule_summary contract per role, and the ordered column-set oracle; T06-A12-R1 requires the absent key to be truly missing, enabled summaries to be JSON objects, and loaded/applicable to be strict JSON integers so bool/float/string/null and non-object shapes reject as failures, never == laundering or exceptions; T06-A13 binds each of the five type-family forbid roles to its own profile family/switch state, pins the absent vs loaded/applicable rule_summary per role, requires every mixed-hit finding to carry its family's rule_id, and verifies the ordered nine-column DATA_TYPE oracle per anchor)
 # pos: DDL golden-path runner and artifact validator behind `make ddl-golden TASK=Txx ARTIFACT_DIR=...`
 # note: if this file changes, update this header and module README.md.
 """DeltaScope DDL golden-path runner (milestone T02/#81, T04/#83).
@@ -3036,6 +3036,86 @@ T06_A12_COLUMN_SET = (
 )
 
 
+# T06-A13 (issue #85): five ordinary CREATE TABLE type-family forbid
+# policies, each isolated at blocker under its own on/false profile pair.
+# The mixed input carries matching and non-matching columns in one table so
+# every role pins per-column attribution — blob/text never absorbs c_json,
+# timestamp never absorbs c_datetime, and the two float/double findings keep
+# their independent shapes.
+T06_A13_MIXED_SQL = (
+    "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), "
+    "c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, "
+    "c_datetime DATETIME NULL, c_int INT);")
+T06_A13_SAFE_SQL = (
+    "CREATE TABLE t (c_int INT, c_string VARCHAR(8), c_datetime DATETIME NULL);")
+
+# family key -> (rule_id, family label). The profile names embed the same
+# key so a profile/role swap cannot launder; the label is the rule's own
+# message family, which differs from the key for blob-text.
+T06_A13_RULES = {
+    "blob-text": ("ddl.column.blob_text.forbid", "blob/text"),
+    "json": ("ddl.column.json.forbid", "json"),
+    "bit": ("ddl.column.bit.forbid", "bit"),
+    "float-double": ("ddl.column.float_double.forbid", None),
+    "timestamp": ("ddl.column.timestamp.forbid", "timestamp"),
+}
+
+# Frozen per-column attribution on M — (column, rendered type) pairs in
+# declaration order. BLOB renders `blob binary` and BIT keeps its declared
+# width: the strings the real extractor produced at baseline, pinned as
+# contract constants rather than re-derived from actuals.
+T06_A13_HIT_COLUMNS = {
+    "blob-text": [("c_blob", "blob binary"), ("c_text", "text")],
+    "json": [("c_json", "json")],
+    "bit": [("c_bit", "bit(1)")],
+    "float-double": [("c_float", "float"), ("c_double", "double")],
+    "timestamp": [("c_timestamp", "timestamp")],
+}
+
+
+def t06_a13_profile(family, on=True):
+    return f"t06-a13-{family}-{'on' if on else 'false'}-isolated"
+
+
+def t06_a13_findings(family):
+    """Complete expected finding identities for the family's frozen
+    attribution on M — rule/message/full metadata map, never a count."""
+    rule_id, label = T06_A13_RULES[family]
+    out = []
+    for column, typ in T06_A13_HIT_COLUMNS[family]:
+        if label is None:
+            # FLOAT/DOUBLE is an independent implementation: one finding per
+            # matched column, named type in the message, no family/charset.
+            message = f'column "{column}" should not use {typ}'
+            metadata = {"table": "t", "column": column, "type": typ}
+        else:
+            message = f'column "{column}" must not use the {label} type family'
+            metadata = {"table": "t", "column": column, "type": typ,
+                        "family": label, "charset": ""}
+        out.append({"rule_id": rule_id, "message": message,
+                    "metadata": metadata})
+    return out
+
+
+# Ordered column-set oracle (issue #85 T06-A13): one GROUP_CONCAT row binds
+# schema/table/name/DATA_TYPE/ordinal per stored column — the whole set, in
+# ordinal order. No IS_NULLABLE/DEFAULT/COLUMN_TYPE joins: declared-type
+# structure only.
+T06_A13_COLUMN_SET = (
+    "SELECT GROUP_CONCAT(CONCAT(TABLE_SCHEMA, ':', TABLE_NAME, ':', "
+    "COLUMN_NAME, ':', DATA_TYPE, ':', ORDINAL_POSITION) "
+    "ORDER BY ORDINAL_POSITION SEPARATOR '|') "
+    "FROM information_schema.COLUMNS "
+    "WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'"
+)
+T06_A13_COLUMN_SET_EXPECT = (
+    "golden:t:c_blob:blob:1|golden:t:c_text:text:2|golden:t:c_json:json:3|"
+    "golden:t:c_bit:bit:4|golden:t:c_float:float:5|golden:t:c_double:double:6|"
+    "golden:t:c_timestamp:timestamp:7|golden:t:c_datetime:datetime:8|"
+    "golden:t:c_int:int:9"
+)
+
+
 T06_ANCHORS = {
     "mysql57": {
         "service": "mysql57",
@@ -3812,6 +3892,60 @@ def t06_a1_contract():
                         "line": 1, "column": 1,
                     }]
             cli_cases.append(case)
+
+    # T06-A13 (issue #85): five type-family forbid policies, each isolated at
+    # blocker under its own on/false profile pair plus the reused all-off
+    # control. mixed-hit and forbid-false share the same SQL M on purpose —
+    # role identity binds (sql, profile, verdict, findings), never the SQL
+    # text alone. Every isolated-policy role pins loaded/applicable, the
+    # finding_entries_full multiset pins complete per-column identity, and
+    # the all-off role records no rule_summary at all.
+    for dialect in ("mysql", "tidb"):
+        for family in T06_A13_RULES:
+            findings = t06_a13_findings(family)
+            hit_expect = audit_expect(
+                T06_A13_MIXED_SQL, True, loaded=1, applicable=1,
+                finding=findings)
+            hit_expect["finding_entries_full"] = [
+                {"index": 0, "rule_id": item["rule_id"], "level": "blocker",
+                 "message": item["message"],
+                 "metadata": dict(item["metadata"]),
+                 "line": 1, "column": 1}
+                for item in findings
+            ]
+            cli_cases.append({
+                "id": f"t06-a13-{dialect}-{family}-mixed-hit",
+                "dialect": dialect,
+                "sql": T06_A13_MIXED_SQL,
+                "policy": t06_a13_profile(family),
+                "args": ["--fail-on", "blocker"],
+                "expect": hit_expect,
+            })
+            cli_cases.append({
+                "id": f"t06-a13-{dialect}-{family}-safe",
+                "dialect": dialect,
+                "sql": T06_A13_SAFE_SQL,
+                "policy": t06_a13_profile(family),
+                "args": ["--fail-on", "blocker"],
+                "expect": audit_expect(
+                    T06_A13_SAFE_SQL, False, loaded=1, applicable=1),
+            })
+            cli_cases.append({
+                "id": f"t06-a13-{dialect}-{family}-forbid-false",
+                "dialect": dialect,
+                "sql": T06_A13_MIXED_SQL,
+                "policy": t06_a13_profile(family, on=False),
+                "args": ["--fail-on", "blocker"],
+                "expect": audit_expect(
+                    T06_A13_MIXED_SQL, False, loaded=1, applicable=0),
+            })
+        cli_cases.append({
+            "id": f"t06-a13-{dialect}-mixed-off",
+            "dialect": dialect,
+            "sql": T06_A13_MIXED_SQL,
+            "args": ["--fail-on", "blocker"],
+            "expect": audit_expect(T06_A13_MIXED_SQL, False),
+        })
 
     connects = {
         "mysql57": {
@@ -5161,6 +5295,77 @@ def t06_a1_contract():
                 ],
             })
 
+        # T06-A13 (issue #85): five type-family forbid roles per anchor. All
+        # five replay the identical M create — same SQL, distinct
+        # rule/profile/finding identity — and every product reject must be
+        # matched by a successful driver CREATE: a policy verdict never
+        # stands in for native legality. The structure oracle binds the
+        # complete ordered 9-column set (name/DATA_TYPE/ordinal) plus the
+        # independent count/PK/index checks.
+        for family in T06_A13_RULES:
+            findings = t06_a13_findings(family)
+            expect = audit_expect(
+                T06_A13_MIXED_SQL, True, loaded=1, applicable=1,
+                finding=findings)
+            expect["finding_entries_full"] = [
+                {"index": 0, "rule_id": item["rule_id"], "level": "blocker",
+                 "message": item["message"],
+                 "metadata": dict(item["metadata"]),
+                 "line": 1, "column": 1}
+                for item in findings
+            ]
+            if anchor_key in ("mysql80", "mysql84"):
+                expect["instance_facts"] = dict(T06_GIPK_FACTS)
+            rows = [
+                verify("exactly one user table", T06_TABLE_COUNT, "1"),
+                verify("exact user column count", T06_COLUMN_COUNT, "9"),
+                verify("ordered column set", T06_A13_COLUMN_SET,
+                       T06_A13_COLUMN_SET_EXPECT),
+                verify("primary key constraint count", T06_PK_CONSTRAINT, "0"),
+                verify("primary index part count", T06_PK_PARTS, "0"),
+                verify("no extra indexes", T06_A10_NO_SECONDARY, "0"),
+            ]
+            if anchor_key != "tidb85":
+                rows.append(verify("storage engine", T06_ENGINE, "InnoDB"))
+            metadata_cases.append({
+                "id": f"t06-a13-{anchor_key}-{family}-mixed-hit",
+                "anchor": anchor_key,
+                "dialect": dialect,
+                "sql": T06_A13_MIXED_SQL,
+                "policy": t06_a13_profile(family),
+                "connect": dict(connects[anchor_key]),
+                "args": ["--fail-on", "blocker"],
+                "setup": [
+                    {
+                        "name": "ensure t absent",
+                        "sql": "DROP TABLE IF EXISTS t",
+                        "expect_rc": 0,
+                        "verify": [verify("t absent before audit",
+                                          T06_TABLE_COUNT, "0")],
+                    },
+                ],
+                "expect": expect,
+                "post_verify": [
+                    verify("audit did not create t", T06_TABLE_COUNT, "0"),
+                ],
+                "execute": [
+                    {
+                        "name": "driver applies the audited create",
+                        "sql": T06_A13_MIXED_SQL,
+                        "expect_rc": 0,
+                    },
+                ],
+                "structure": rows,
+                "teardown": [
+                    {
+                        "name": "drop fixture",
+                        "sql": "DROP TABLE IF EXISTS t",
+                        "expect_rc": 0,
+                        "verify": [verify("no residual t", T06_TABLE_COUNT, "0")],
+                    },
+                ],
+            })
+
     required_case_ids = (
         [f"T06.db.{anchor}.{kind}" for anchor in T06_ANCHORS for kind in ("ddl", "syntax_negative")]
         + [f"T06.cli.{spec['id']}" for spec in cli_cases]
@@ -5379,6 +5584,32 @@ def t06_a1_contract():
                         "params": {"required": False, "allow_time_null": False},
                     },
                 }
+            },
+            # T06-A13: five type-family forbid policies, each with an
+            # on/forbid-false isolated pair — the switch is the forbid
+            # parameter, never a different rule. Shipped defaults
+            # (enabled=true, warning, forbid=true) stay untouched.
+            **{
+                t06_a13_profile(family): {
+                    "enable": {
+                        T06_A13_RULES[family][0]: {
+                            "enabled": True, "level": "blocker",
+                            "params": {"forbid": True},
+                        },
+                    }
+                }
+                for family in T06_A13_RULES
+            },
+            **{
+                t06_a13_profile(family, on=False): {
+                    "enable": {
+                        T06_A13_RULES[family][0]: {
+                            "enabled": True, "level": "blocker",
+                            "params": {"forbid": False},
+                        },
+                    }
+                }
+                for family in T06_A13_RULES
             },
         },
         "anchors": T06_ANCHORS,
@@ -5980,6 +6211,112 @@ def t06_a12_artifact_failures(artifact, manifest):
     return failures
 
 
+def t06_a13_role_shape(local_id):
+    """Decode an A13 local case id into (family, role). Returns
+    (None, "mixed-off") for the all-off control; (family, role) where role is
+    mixed-hit/safe/forbid-false otherwise."""
+    tail = local_id[len("t06-a13-"):]
+    for token in ("mysql57", "mysql80", "mysql84", "tidb85", "mysql", "tidb"):
+        if tail.startswith(token + "-"):
+            tail = tail[len(token) + 1:]
+            break
+    if tail == "mixed-off":
+        return None, "mixed-off"
+    for suffix, role in (("-forbid-false", "forbid-false"),
+                         ("-mixed-hit", "mixed-hit"), ("-safe", "safe")):
+        if tail.endswith(suffix):
+            return tail[:-len(suffix)], role
+    return None, None
+
+
+def t06_a13_artifact_failures(artifact, manifest):
+    """T06-A13 (issue #85): pin the per-role rule_summary contract and the
+    family binding, re-parsed from recorded raw stdout — never a stored
+    `parsed` blob. mixed-hit/safe roles carry loaded=1/applicable=1,
+    forbid-false carries loaded=1/applicable=0, and mixed-off carries no
+    rule_summary key at all — the A12-R1 strict shape applies unchanged. The
+    recorded policy profile must be the family's own isolated profile (or
+    all-rules-disabled for off), and every finding on a hit role must belong
+    to the family's rule — the same SQL under five profiles can never borrow
+    a sibling role's record."""
+    if manifest.get("task_id") != "T06":
+        return []
+    frozen = {}
+    contract = t06_a1_contract()
+    for field, prefix in (("cli_cases", "T06.cli."), ("metadata_cases", "T06.meta.")):
+        for spec in contract[field]:
+            local = spec["id"]
+            if local.startswith("t06-a13-"):
+                frozen[prefix + local] = t06_a13_role_shape(local)
+    failures = []
+    for case in artifact.get("cases") or []:
+        case_id = case.get("case_id")
+        role = frozen.get(case_id)
+        if role is None:
+            continue
+        family, role_kind = role
+        try:
+            parsed = json.loads((case.get("actual") or {}).get("stdout") or "")
+        except (json.JSONDecodeError, TypeError):
+            continue  # the generic validator already reports unparseable stdout
+        if role_kind == "mixed-off":
+            if isinstance(parsed, dict) and "rule_summary" in parsed:
+                failures.append(
+                    f"T06-A13 {case_id}: rule_summary key must be absent "
+                    f"under the all-off control, found {parsed['rule_summary']!r}")
+            continue
+        if family not in T06_A13_RULES:
+            failures.append(f"T06-A13 {case_id}: unfrozen family {family!r}")
+            continue
+        want_loaded, want_applicable = (1, 1) if role_kind in ("mixed-hit", "safe") else (1, 0)
+        if not isinstance(parsed, dict) or "rule_summary" not in parsed:
+            failures.append(
+                f"T06-A13 {case_id}: rule_summary must be present as a JSON "
+                f"object for role {role_kind!r}")
+            continue
+        summary = parsed["rule_summary"]
+        if not isinstance(summary, dict):
+            failures.append(
+                f"T06-A13 {case_id}: rule_summary must be a JSON object for "
+                f"role {role_kind!r}, found {summary!r}")
+            continue
+        for key, want_value in (("loaded", want_loaded), ("applicable", want_applicable)):
+            if key not in summary:
+                failures.append(
+                    f"T06-A13 {case_id}: rule_summary.{key} missing for "
+                    f"role {role_kind!r}")
+                continue
+            got = summary[key]
+            if type(got) is not int:
+                failures.append(
+                    f"T06-A13 {case_id}: rule_summary.{key}={got!r} must be a "
+                    "JSON integer (not bool/float/string/null)")
+            elif got != want_value:
+                failures.append(
+                    f"T06-A13 {case_id}: rule_summary.{key}={got} != frozen "
+                    f"{want_value} for role {role_kind!r}")
+        # Same SQL under five sibling profiles: the recorded profile must be
+        # the family's own, and every finding must carry the family's rule —
+        # a borrowed record can never satisfy this pair together.
+        want_profile = t06_a13_profile(family, on=(role_kind != "forbid-false"))
+        if case.get("policy_profile") != want_profile:
+            failures.append(
+                f"T06-A13 {case_id}: policy_profile {case.get('policy_profile')!r} "
+                f"!= frozen {want_profile!r}")
+        if role_kind == "mixed-hit":
+            want_rule = T06_A13_RULES[family][0]
+            statements = parsed.get("statements") or []
+            for st in statements:
+                if not isinstance(st, dict):
+                    continue
+                for finding in st.get("findings") or []:
+                    if isinstance(finding, dict) and finding.get("rule_id") != want_rule:
+                        failures.append(
+                            f"T06-A13 {case_id}: finding rule_id "
+                            f"{finding.get('rule_id')!r} borrowed — want {want_rule}")
+    return failures
+
+
 def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
     """Re-check an emitted artifact. Returns a list of failure strings."""
     failures = []
@@ -6002,6 +6339,7 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
     failures.extend(t06_a10_artifact_failures(artifact, manifest))
     failures.extend(t06_a11_artifact_failures(artifact, manifest))
     failures.extend(t06_a12_artifact_failures(artifact, manifest))
+    failures.extend(t06_a13_artifact_failures(artifact, manifest))
 
     if artifact.get("external_blocker"):
         failures.append(f"external blocker recorded: {artifact['external_blocker']}")

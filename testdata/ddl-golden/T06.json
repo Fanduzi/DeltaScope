@@ -1,7 +1,7 @@
 {
  "task_id": "T06",
  "issue": "https://github.com/Fanduzi/DeltaScope/issues/85",
- "description": "CREATE TABLE base semantics (issue #85 T06-A1/A2/A3/A4/A5/A7/A8/A9/A10/A11/A12): the accepted 56-case primary-key/nullability/default-presence subset plus 16 DEFAULT NULL cases, 12 provider default-identity cases, 40 declared CHAR/VARCHAR length cases, 64 charset/collation cases, 40 comment-fidelity cases, 28 explicit audit-time-column role cases, 36 AUTO_INCREMENT declaration cases, and 32 single-member primary-key BIGINT/UNSIGNED cases, and 36 ordinary-column NOT NULL cases — the A11 offline matrix isolates ddl.table.primary_key.bigint.require and ddl.table.primary_key.unsigned.require (required=true) under single-rule blocker profiles across both dialects (composite primary keys skip the member check; the off controls reuse the all-rules-disabled profile), while the anchored roles pin DATA_TYPE, a finite-whitelist COLUMN_TYPE complete form, byte-empty EXTRA, and ordered single-member PK binding regardless of the policy verdict. The A12 subset adds three single-rule isolations of ddl.column.not_null.require (strict/time-allow/not-required) — the offline matrix pins per-column finding attribution and the loaded/applicable/absent rule_summary contract, while the anchored roles pin the ordered column set (name/DATA_TYPE/ordinal/IS_NULLABLE) with zero PK constraints regardless of the policy verdict.",
+ "description": "CREATE TABLE base semantics (issue #85 T06-A1/A2/A3/A4/A5/A7/A8/A9/A10/A11/A12/A13): the accepted 56-case primary-key/nullability/default-presence subset plus 16 DEFAULT NULL cases, 12 provider default-identity cases, 40 declared CHAR/VARCHAR length cases, 64 charset/collation cases, 40 comment-fidelity cases, 28 explicit audit-time-column role cases, 36 AUTO_INCREMENT declaration cases, and 32 single-member primary-key BIGINT/UNSIGNED cases, and 36 ordinary-column NOT NULL cases, and 52 type-family forbid cases — the A13 subset isolates ddl.column.blob_text.forbid, ddl.column.json.forbid, ddl.column.bit.forbid, ddl.column.float_double.forbid, and ddl.column.timestamp.forbid under per-rule on/false blocker profiles with the all-rules-disabled control, pinning per-column finding attribution (blob/text excluding JSON, timestamp excluding DATETIME, the independent float/double metadata shape) plus the ordered nine-column DATA_TYPE oracle on all four anchors regardless of the policy verdict — the A11 offline matrix isolates ddl.table.primary_key.bigint.require and ddl.table.primary_key.unsigned.require (required=true) under single-rule blocker profiles across both dialects (composite primary keys skip the member check; the off controls reuse the all-rules-disabled profile), while the anchored roles pin DATA_TYPE, a finite-whitelist COLUMN_TYPE complete form, byte-empty EXTRA, and ordered single-member PK binding regardless of the policy verdict. The A12 subset adds three single-rule isolations of ddl.column.not_null.require (strict/time-allow/not-required) — the offline matrix pins per-column finding attribution and the loaded/applicable/absent rule_summary contract, while the anchored roles pin the ordered column set (name/DATA_TYPE/ordinal/IS_NULLABLE) with zero PK constraints regardless of the policy verdict.",
  "policy_profile": "all-rules-disabled",
  "policy": {
   "profiles": {
@@ -303,6 +303,116 @@
       "params": {
        "required": false,
        "allow_time_null": false
+      }
+     }
+    }
+   },
+   "t06-a13-blob-text-on-isolated": {
+    "enable": {
+     "ddl.column.blob_text.forbid": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "forbid": true
+      }
+     }
+    }
+   },
+   "t06-a13-json-on-isolated": {
+    "enable": {
+     "ddl.column.json.forbid": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "forbid": true
+      }
+     }
+    }
+   },
+   "t06-a13-bit-on-isolated": {
+    "enable": {
+     "ddl.column.bit.forbid": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "forbid": true
+      }
+     }
+    }
+   },
+   "t06-a13-float-double-on-isolated": {
+    "enable": {
+     "ddl.column.float_double.forbid": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "forbid": true
+      }
+     }
+    }
+   },
+   "t06-a13-timestamp-on-isolated": {
+    "enable": {
+     "ddl.column.timestamp.forbid": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "forbid": true
+      }
+     }
+    }
+   },
+   "t06-a13-blob-text-false-isolated": {
+    "enable": {
+     "ddl.column.blob_text.forbid": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "forbid": false
+      }
+     }
+    }
+   },
+   "t06-a13-json-false-isolated": {
+    "enable": {
+     "ddl.column.json.forbid": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "forbid": false
+      }
+     }
+    }
+   },
+   "t06-a13-bit-false-isolated": {
+    "enable": {
+     "ddl.column.bit.forbid": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "forbid": false
+      }
+     }
+    }
+   },
+   "t06-a13-float-double-false-isolated": {
+    "enable": {
+     "ddl.column.float_double.forbid": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "forbid": false
+      }
+     }
+    }
+   },
+   "t06-a13-timestamp-false-isolated": {
+    "enable": {
+     "ddl.column.timestamp.forbid": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "forbid": false
       }
      }
     }
@@ -6945,6 +7055,1598 @@
     ],
     "statement_sql": [
      "CREATE TABLE t (c INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "t06-a13-mysql-blob-text-mixed-hit",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-blob-text-on-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "level": "blocker"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_blob",
+       "type": "blob binary",
+       "family": "blob/text",
+       "charset": ""
+      }
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_text",
+       "type": "text",
+       "family": "blob/text",
+       "charset": ""
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     },
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "level": "blocker",
+      "message": "column \"c_blob\" must not use the blob/text type family",
+      "metadata": {
+       "table": "t",
+       "column": "c_blob",
+       "type": "blob binary",
+       "family": "blob/text",
+       "charset": ""
+      },
+      "line": 1,
+      "column": 1
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "level": "blocker",
+      "message": "column \"c_text\" must not use the blob/text type family",
+      "metadata": {
+       "table": "t",
+       "column": "c_text",
+       "type": "text",
+       "family": "blob/text",
+       "charset": ""
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a13-mysql-blob-text-safe",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c_int INT, c_string VARCHAR(8), c_datetime DATETIME NULL);",
+   "policy": "t06-a13-blob-text-on-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_int INT, c_string VARCHAR(8), c_datetime DATETIME NULL);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t06-a13-mysql-blob-text-forbid-false",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-blob-text-false-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 0
+   }
+  },
+  {
+   "id": "t06-a13-mysql-json-mixed-hit",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-json-on-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.json.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.json.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_json",
+       "type": "json",
+       "family": "json",
+       "charset": ""
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c_json\" must not use the json type family",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.json.forbid",
+      "level": "blocker",
+      "message": "column \"c_json\" must not use the json type family",
+      "metadata": {
+       "table": "t",
+       "column": "c_json",
+       "type": "json",
+       "family": "json",
+       "charset": ""
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a13-mysql-json-safe",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c_int INT, c_string VARCHAR(8), c_datetime DATETIME NULL);",
+   "policy": "t06-a13-json-on-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_int INT, c_string VARCHAR(8), c_datetime DATETIME NULL);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t06-a13-mysql-json-forbid-false",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-json-false-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 0
+   }
+  },
+  {
+   "id": "t06-a13-mysql-bit-mixed-hit",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-bit-on-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.bit.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.bit.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_bit",
+       "type": "bit(1)",
+       "family": "bit",
+       "charset": ""
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c_bit\" must not use the bit type family",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.bit.forbid",
+      "level": "blocker",
+      "message": "column \"c_bit\" must not use the bit type family",
+      "metadata": {
+       "table": "t",
+       "column": "c_bit",
+       "type": "bit(1)",
+       "family": "bit",
+       "charset": ""
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a13-mysql-bit-safe",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c_int INT, c_string VARCHAR(8), c_datetime DATETIME NULL);",
+   "policy": "t06-a13-bit-on-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_int INT, c_string VARCHAR(8), c_datetime DATETIME NULL);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t06-a13-mysql-bit-forbid-false",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-bit-false-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 0
+   }
+  },
+  {
+   "id": "t06-a13-mysql-float-double-mixed-hit",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-float-double-on-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "level": "blocker"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_float",
+       "type": "float"
+      }
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_double",
+       "type": "double"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     },
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "level": "blocker",
+      "message": "column \"c_float\" should not use float",
+      "metadata": {
+       "table": "t",
+       "column": "c_float",
+       "type": "float"
+      },
+      "line": 1,
+      "column": 1
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "level": "blocker",
+      "message": "column \"c_double\" should not use double",
+      "metadata": {
+       "table": "t",
+       "column": "c_double",
+       "type": "double"
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a13-mysql-float-double-safe",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c_int INT, c_string VARCHAR(8), c_datetime DATETIME NULL);",
+   "policy": "t06-a13-float-double-on-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_int INT, c_string VARCHAR(8), c_datetime DATETIME NULL);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t06-a13-mysql-float-double-forbid-false",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-float-double-false-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 0
+   }
+  },
+  {
+   "id": "t06-a13-mysql-timestamp-mixed-hit",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-timestamp-on-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.timestamp.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.timestamp.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_timestamp",
+       "type": "timestamp",
+       "family": "timestamp",
+       "charset": ""
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c_timestamp\" must not use the timestamp type family",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.timestamp.forbid",
+      "level": "blocker",
+      "message": "column \"c_timestamp\" must not use the timestamp type family",
+      "metadata": {
+       "table": "t",
+       "column": "c_timestamp",
+       "type": "timestamp",
+       "family": "timestamp",
+       "charset": ""
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a13-mysql-timestamp-safe",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c_int INT, c_string VARCHAR(8), c_datetime DATETIME NULL);",
+   "policy": "t06-a13-timestamp-on-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_int INT, c_string VARCHAR(8), c_datetime DATETIME NULL);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t06-a13-mysql-timestamp-forbid-false",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-timestamp-false-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 0
+   }
+  },
+  {
+   "id": "t06-a13-mysql-mixed-off",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "t06-a13-tidb-blob-text-mixed-hit",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-blob-text-on-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "level": "blocker"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_blob",
+       "type": "blob binary",
+       "family": "blob/text",
+       "charset": ""
+      }
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_text",
+       "type": "text",
+       "family": "blob/text",
+       "charset": ""
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     },
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "level": "blocker",
+      "message": "column \"c_blob\" must not use the blob/text type family",
+      "metadata": {
+       "table": "t",
+       "column": "c_blob",
+       "type": "blob binary",
+       "family": "blob/text",
+       "charset": ""
+      },
+      "line": 1,
+      "column": 1
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "level": "blocker",
+      "message": "column \"c_text\" must not use the blob/text type family",
+      "metadata": {
+       "table": "t",
+       "column": "c_text",
+       "type": "text",
+       "family": "blob/text",
+       "charset": ""
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a13-tidb-blob-text-safe",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c_int INT, c_string VARCHAR(8), c_datetime DATETIME NULL);",
+   "policy": "t06-a13-blob-text-on-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_int INT, c_string VARCHAR(8), c_datetime DATETIME NULL);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t06-a13-tidb-blob-text-forbid-false",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-blob-text-false-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 0
+   }
+  },
+  {
+   "id": "t06-a13-tidb-json-mixed-hit",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-json-on-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.json.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.json.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_json",
+       "type": "json",
+       "family": "json",
+       "charset": ""
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c_json\" must not use the json type family",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.json.forbid",
+      "level": "blocker",
+      "message": "column \"c_json\" must not use the json type family",
+      "metadata": {
+       "table": "t",
+       "column": "c_json",
+       "type": "json",
+       "family": "json",
+       "charset": ""
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a13-tidb-json-safe",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c_int INT, c_string VARCHAR(8), c_datetime DATETIME NULL);",
+   "policy": "t06-a13-json-on-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_int INT, c_string VARCHAR(8), c_datetime DATETIME NULL);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t06-a13-tidb-json-forbid-false",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-json-false-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 0
+   }
+  },
+  {
+   "id": "t06-a13-tidb-bit-mixed-hit",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-bit-on-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.bit.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.bit.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_bit",
+       "type": "bit(1)",
+       "family": "bit",
+       "charset": ""
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c_bit\" must not use the bit type family",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.bit.forbid",
+      "level": "blocker",
+      "message": "column \"c_bit\" must not use the bit type family",
+      "metadata": {
+       "table": "t",
+       "column": "c_bit",
+       "type": "bit(1)",
+       "family": "bit",
+       "charset": ""
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a13-tidb-bit-safe",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c_int INT, c_string VARCHAR(8), c_datetime DATETIME NULL);",
+   "policy": "t06-a13-bit-on-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_int INT, c_string VARCHAR(8), c_datetime DATETIME NULL);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t06-a13-tidb-bit-forbid-false",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-bit-false-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 0
+   }
+  },
+  {
+   "id": "t06-a13-tidb-float-double-mixed-hit",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-float-double-on-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "level": "blocker"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_float",
+       "type": "float"
+      }
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_double",
+       "type": "double"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     },
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "level": "blocker",
+      "message": "column \"c_float\" should not use float",
+      "metadata": {
+       "table": "t",
+       "column": "c_float",
+       "type": "float"
+      },
+      "line": 1,
+      "column": 1
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "level": "blocker",
+      "message": "column \"c_double\" should not use double",
+      "metadata": {
+       "table": "t",
+       "column": "c_double",
+       "type": "double"
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a13-tidb-float-double-safe",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c_int INT, c_string VARCHAR(8), c_datetime DATETIME NULL);",
+   "policy": "t06-a13-float-double-on-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_int INT, c_string VARCHAR(8), c_datetime DATETIME NULL);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t06-a13-tidb-float-double-forbid-false",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-float-double-false-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 0
+   }
+  },
+  {
+   "id": "t06-a13-tidb-timestamp-mixed-hit",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-timestamp-on-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.timestamp.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.timestamp.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_timestamp",
+       "type": "timestamp",
+       "family": "timestamp",
+       "charset": ""
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c_timestamp\" must not use the timestamp type family",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.timestamp.forbid",
+      "level": "blocker",
+      "message": "column \"c_timestamp\" must not use the timestamp type family",
+      "metadata": {
+       "table": "t",
+       "column": "c_timestamp",
+       "type": "timestamp",
+       "family": "timestamp",
+       "charset": ""
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a13-tidb-timestamp-safe",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c_int INT, c_string VARCHAR(8), c_datetime DATETIME NULL);",
+   "policy": "t06-a13-timestamp-on-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_int INT, c_string VARCHAR(8), c_datetime DATETIME NULL);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t06-a13-tidb-timestamp-forbid-false",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-timestamp-false-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 0
+   }
+  },
+  {
+   "id": "t06-a13-tidb-mixed-off",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
     ],
     "statement_indices": [
      0
@@ -13889,6 +15591,893 @@
      "assert": "ordered column set",
      "sql": "SELECT GROUP_CONCAT(CONCAT(TABLE_SCHEMA, ':', TABLE_NAME, ':', COLUMN_NAME, ':', DATA_TYPE, ':', ORDINAL_POSITION, ':', IS_NULLABLE) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
      "expect": "golden:t:ordinary:int:1:YES|golden:t:time_c:datetime:2:YES|golden:t:payload:text:3:YES"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a13-mysql57-blob-text-mixed-hit",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-blob-text-on-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "level": "blocker"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_blob",
+       "type": "blob binary",
+       "family": "blob/text",
+       "charset": ""
+      }
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_text",
+       "type": "text",
+       "family": "blob/text",
+       "charset": ""
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     },
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "level": "blocker",
+      "message": "column \"c_blob\" must not use the blob/text type family",
+      "metadata": {
+       "table": "t",
+       "column": "c_blob",
+       "type": "blob binary",
+       "family": "blob/text",
+       "charset": ""
+      },
+      "line": 1,
+      "column": 1
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "level": "blocker",
+      "message": "column \"c_text\" must not use the blob/text type family",
+      "metadata": {
+       "table": "t",
+       "column": "c_text",
+       "type": "text",
+       "family": "blob/text",
+       "charset": ""
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exact user column count",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "9"
+    },
+    {
+     "assert": "ordered column set",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(TABLE_SCHEMA, ':', TABLE_NAME, ':', COLUMN_NAME, ':', DATA_TYPE, ':', ORDINAL_POSITION) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:c_blob:blob:1|golden:t:c_text:text:2|golden:t:c_json:json:3|golden:t:c_bit:bit:4|golden:t:c_float:float:5|golden:t:c_double:double:6|golden:t:c_timestamp:timestamp:7|golden:t:c_datetime:datetime:8|golden:t:c_int:int:9"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a13-mysql57-json-mixed-hit",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-json-on-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.json.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.json.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_json",
+       "type": "json",
+       "family": "json",
+       "charset": ""
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c_json\" must not use the json type family",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.json.forbid",
+      "level": "blocker",
+      "message": "column \"c_json\" must not use the json type family",
+      "metadata": {
+       "table": "t",
+       "column": "c_json",
+       "type": "json",
+       "family": "json",
+       "charset": ""
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exact user column count",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "9"
+    },
+    {
+     "assert": "ordered column set",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(TABLE_SCHEMA, ':', TABLE_NAME, ':', COLUMN_NAME, ':', DATA_TYPE, ':', ORDINAL_POSITION) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:c_blob:blob:1|golden:t:c_text:text:2|golden:t:c_json:json:3|golden:t:c_bit:bit:4|golden:t:c_float:float:5|golden:t:c_double:double:6|golden:t:c_timestamp:timestamp:7|golden:t:c_datetime:datetime:8|golden:t:c_int:int:9"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a13-mysql57-bit-mixed-hit",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-bit-on-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.bit.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.bit.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_bit",
+       "type": "bit(1)",
+       "family": "bit",
+       "charset": ""
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c_bit\" must not use the bit type family",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.bit.forbid",
+      "level": "blocker",
+      "message": "column \"c_bit\" must not use the bit type family",
+      "metadata": {
+       "table": "t",
+       "column": "c_bit",
+       "type": "bit(1)",
+       "family": "bit",
+       "charset": ""
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exact user column count",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "9"
+    },
+    {
+     "assert": "ordered column set",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(TABLE_SCHEMA, ':', TABLE_NAME, ':', COLUMN_NAME, ':', DATA_TYPE, ':', ORDINAL_POSITION) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:c_blob:blob:1|golden:t:c_text:text:2|golden:t:c_json:json:3|golden:t:c_bit:bit:4|golden:t:c_float:float:5|golden:t:c_double:double:6|golden:t:c_timestamp:timestamp:7|golden:t:c_datetime:datetime:8|golden:t:c_int:int:9"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a13-mysql57-float-double-mixed-hit",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-float-double-on-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "level": "blocker"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_float",
+       "type": "float"
+      }
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_double",
+       "type": "double"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     },
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "level": "blocker",
+      "message": "column \"c_float\" should not use float",
+      "metadata": {
+       "table": "t",
+       "column": "c_float",
+       "type": "float"
+      },
+      "line": 1,
+      "column": 1
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "level": "blocker",
+      "message": "column \"c_double\" should not use double",
+      "metadata": {
+       "table": "t",
+       "column": "c_double",
+       "type": "double"
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exact user column count",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "9"
+    },
+    {
+     "assert": "ordered column set",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(TABLE_SCHEMA, ':', TABLE_NAME, ':', COLUMN_NAME, ':', DATA_TYPE, ':', ORDINAL_POSITION) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:c_blob:blob:1|golden:t:c_text:text:2|golden:t:c_json:json:3|golden:t:c_bit:bit:4|golden:t:c_float:float:5|golden:t:c_double:double:6|golden:t:c_timestamp:timestamp:7|golden:t:c_datetime:datetime:8|golden:t:c_int:int:9"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a13-mysql57-timestamp-mixed-hit",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-timestamp-on-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.timestamp.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.timestamp.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_timestamp",
+       "type": "timestamp",
+       "family": "timestamp",
+       "charset": ""
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c_timestamp\" must not use the timestamp type family",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.timestamp.forbid",
+      "level": "blocker",
+      "message": "column \"c_timestamp\" must not use the timestamp type family",
+      "metadata": {
+       "table": "t",
+       "column": "c_timestamp",
+       "type": "timestamp",
+       "family": "timestamp",
+       "charset": ""
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exact user column count",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "9"
+    },
+    {
+     "assert": "ordered column set",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(TABLE_SCHEMA, ':', TABLE_NAME, ':', COLUMN_NAME, ':', DATA_TYPE, ':', ORDINAL_POSITION) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:c_blob:blob:1|golden:t:c_text:text:2|golden:t:c_json:json:3|golden:t:c_bit:bit:4|golden:t:c_float:float:5|golden:t:c_double:double:6|golden:t:c_timestamp:timestamp:7|golden:t:c_datetime:datetime:8|golden:t:c_int:int:9"
     },
     {
      "assert": "primary key constraint count",
@@ -21138,6 +23727,918 @@
    ]
   },
   {
+   "id": "t06-a13-mysql80-blob-text-mixed-hit",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-blob-text-on-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "level": "blocker"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_blob",
+       "type": "blob binary",
+       "family": "blob/text",
+       "charset": ""
+      }
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_text",
+       "type": "text",
+       "family": "blob/text",
+       "charset": ""
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     },
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "level": "blocker",
+      "message": "column \"c_blob\" must not use the blob/text type family",
+      "metadata": {
+       "table": "t",
+       "column": "c_blob",
+       "type": "blob binary",
+       "family": "blob/text",
+       "charset": ""
+      },
+      "line": 1,
+      "column": 1
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "level": "blocker",
+      "message": "column \"c_text\" must not use the blob/text type family",
+      "metadata": {
+       "table": "t",
+       "column": "c_text",
+       "type": "text",
+       "family": "blob/text",
+       "charset": ""
+      },
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exact user column count",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "9"
+    },
+    {
+     "assert": "ordered column set",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(TABLE_SCHEMA, ':', TABLE_NAME, ':', COLUMN_NAME, ':', DATA_TYPE, ':', ORDINAL_POSITION) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:c_blob:blob:1|golden:t:c_text:text:2|golden:t:c_json:json:3|golden:t:c_bit:bit:4|golden:t:c_float:float:5|golden:t:c_double:double:6|golden:t:c_timestamp:timestamp:7|golden:t:c_datetime:datetime:8|golden:t:c_int:int:9"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a13-mysql80-json-mixed-hit",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-json-on-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.json.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.json.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_json",
+       "type": "json",
+       "family": "json",
+       "charset": ""
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c_json\" must not use the json type family",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.json.forbid",
+      "level": "blocker",
+      "message": "column \"c_json\" must not use the json type family",
+      "metadata": {
+       "table": "t",
+       "column": "c_json",
+       "type": "json",
+       "family": "json",
+       "charset": ""
+      },
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exact user column count",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "9"
+    },
+    {
+     "assert": "ordered column set",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(TABLE_SCHEMA, ':', TABLE_NAME, ':', COLUMN_NAME, ':', DATA_TYPE, ':', ORDINAL_POSITION) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:c_blob:blob:1|golden:t:c_text:text:2|golden:t:c_json:json:3|golden:t:c_bit:bit:4|golden:t:c_float:float:5|golden:t:c_double:double:6|golden:t:c_timestamp:timestamp:7|golden:t:c_datetime:datetime:8|golden:t:c_int:int:9"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a13-mysql80-bit-mixed-hit",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-bit-on-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.bit.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.bit.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_bit",
+       "type": "bit(1)",
+       "family": "bit",
+       "charset": ""
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c_bit\" must not use the bit type family",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.bit.forbid",
+      "level": "blocker",
+      "message": "column \"c_bit\" must not use the bit type family",
+      "metadata": {
+       "table": "t",
+       "column": "c_bit",
+       "type": "bit(1)",
+       "family": "bit",
+       "charset": ""
+      },
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exact user column count",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "9"
+    },
+    {
+     "assert": "ordered column set",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(TABLE_SCHEMA, ':', TABLE_NAME, ':', COLUMN_NAME, ':', DATA_TYPE, ':', ORDINAL_POSITION) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:c_blob:blob:1|golden:t:c_text:text:2|golden:t:c_json:json:3|golden:t:c_bit:bit:4|golden:t:c_float:float:5|golden:t:c_double:double:6|golden:t:c_timestamp:timestamp:7|golden:t:c_datetime:datetime:8|golden:t:c_int:int:9"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a13-mysql80-float-double-mixed-hit",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-float-double-on-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "level": "blocker"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_float",
+       "type": "float"
+      }
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_double",
+       "type": "double"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     },
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "level": "blocker",
+      "message": "column \"c_float\" should not use float",
+      "metadata": {
+       "table": "t",
+       "column": "c_float",
+       "type": "float"
+      },
+      "line": 1,
+      "column": 1
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "level": "blocker",
+      "message": "column \"c_double\" should not use double",
+      "metadata": {
+       "table": "t",
+       "column": "c_double",
+       "type": "double"
+      },
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exact user column count",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "9"
+    },
+    {
+     "assert": "ordered column set",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(TABLE_SCHEMA, ':', TABLE_NAME, ':', COLUMN_NAME, ':', DATA_TYPE, ':', ORDINAL_POSITION) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:c_blob:blob:1|golden:t:c_text:text:2|golden:t:c_json:json:3|golden:t:c_bit:bit:4|golden:t:c_float:float:5|golden:t:c_double:double:6|golden:t:c_timestamp:timestamp:7|golden:t:c_datetime:datetime:8|golden:t:c_int:int:9"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a13-mysql80-timestamp-mixed-hit",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-timestamp-on-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.timestamp.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.timestamp.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_timestamp",
+       "type": "timestamp",
+       "family": "timestamp",
+       "charset": ""
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c_timestamp\" must not use the timestamp type family",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.timestamp.forbid",
+      "level": "blocker",
+      "message": "column \"c_timestamp\" must not use the timestamp type family",
+      "metadata": {
+       "table": "t",
+       "column": "c_timestamp",
+       "type": "timestamp",
+       "family": "timestamp",
+       "charset": ""
+      },
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exact user column count",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "9"
+    },
+    {
+     "assert": "ordered column set",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(TABLE_SCHEMA, ':', TABLE_NAME, ':', COLUMN_NAME, ':', DATA_TYPE, ':', ORDINAL_POSITION) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:c_blob:blob:1|golden:t:c_text:text:2|golden:t:c_json:json:3|golden:t:c_bit:bit:4|golden:t:c_float:float:5|golden:t:c_double:double:6|golden:t:c_timestamp:timestamp:7|golden:t:c_datetime:datetime:8|golden:t:c_int:int:9"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
    "id": "t06-mysql84-no-pk",
    "anchor": "mysql84",
    "dialect": "mysql",
@@ -28349,6 +31850,918 @@
    ]
   },
   {
+   "id": "t06-a13-mysql84-blob-text-mixed-hit",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-blob-text-on-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "level": "blocker"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_blob",
+       "type": "blob binary",
+       "family": "blob/text",
+       "charset": ""
+      }
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_text",
+       "type": "text",
+       "family": "blob/text",
+       "charset": ""
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     },
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "level": "blocker",
+      "message": "column \"c_blob\" must not use the blob/text type family",
+      "metadata": {
+       "table": "t",
+       "column": "c_blob",
+       "type": "blob binary",
+       "family": "blob/text",
+       "charset": ""
+      },
+      "line": 1,
+      "column": 1
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "level": "blocker",
+      "message": "column \"c_text\" must not use the blob/text type family",
+      "metadata": {
+       "table": "t",
+       "column": "c_text",
+       "type": "text",
+       "family": "blob/text",
+       "charset": ""
+      },
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exact user column count",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "9"
+    },
+    {
+     "assert": "ordered column set",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(TABLE_SCHEMA, ':', TABLE_NAME, ':', COLUMN_NAME, ':', DATA_TYPE, ':', ORDINAL_POSITION) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:c_blob:blob:1|golden:t:c_text:text:2|golden:t:c_json:json:3|golden:t:c_bit:bit:4|golden:t:c_float:float:5|golden:t:c_double:double:6|golden:t:c_timestamp:timestamp:7|golden:t:c_datetime:datetime:8|golden:t:c_int:int:9"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a13-mysql84-json-mixed-hit",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-json-on-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.json.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.json.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_json",
+       "type": "json",
+       "family": "json",
+       "charset": ""
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c_json\" must not use the json type family",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.json.forbid",
+      "level": "blocker",
+      "message": "column \"c_json\" must not use the json type family",
+      "metadata": {
+       "table": "t",
+       "column": "c_json",
+       "type": "json",
+       "family": "json",
+       "charset": ""
+      },
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exact user column count",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "9"
+    },
+    {
+     "assert": "ordered column set",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(TABLE_SCHEMA, ':', TABLE_NAME, ':', COLUMN_NAME, ':', DATA_TYPE, ':', ORDINAL_POSITION) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:c_blob:blob:1|golden:t:c_text:text:2|golden:t:c_json:json:3|golden:t:c_bit:bit:4|golden:t:c_float:float:5|golden:t:c_double:double:6|golden:t:c_timestamp:timestamp:7|golden:t:c_datetime:datetime:8|golden:t:c_int:int:9"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a13-mysql84-bit-mixed-hit",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-bit-on-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.bit.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.bit.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_bit",
+       "type": "bit(1)",
+       "family": "bit",
+       "charset": ""
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c_bit\" must not use the bit type family",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.bit.forbid",
+      "level": "blocker",
+      "message": "column \"c_bit\" must not use the bit type family",
+      "metadata": {
+       "table": "t",
+       "column": "c_bit",
+       "type": "bit(1)",
+       "family": "bit",
+       "charset": ""
+      },
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exact user column count",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "9"
+    },
+    {
+     "assert": "ordered column set",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(TABLE_SCHEMA, ':', TABLE_NAME, ':', COLUMN_NAME, ':', DATA_TYPE, ':', ORDINAL_POSITION) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:c_blob:blob:1|golden:t:c_text:text:2|golden:t:c_json:json:3|golden:t:c_bit:bit:4|golden:t:c_float:float:5|golden:t:c_double:double:6|golden:t:c_timestamp:timestamp:7|golden:t:c_datetime:datetime:8|golden:t:c_int:int:9"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a13-mysql84-float-double-mixed-hit",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-float-double-on-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "level": "blocker"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_float",
+       "type": "float"
+      }
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_double",
+       "type": "double"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     },
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "level": "blocker",
+      "message": "column \"c_float\" should not use float",
+      "metadata": {
+       "table": "t",
+       "column": "c_float",
+       "type": "float"
+      },
+      "line": 1,
+      "column": 1
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "level": "blocker",
+      "message": "column \"c_double\" should not use double",
+      "metadata": {
+       "table": "t",
+       "column": "c_double",
+       "type": "double"
+      },
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exact user column count",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "9"
+    },
+    {
+     "assert": "ordered column set",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(TABLE_SCHEMA, ':', TABLE_NAME, ':', COLUMN_NAME, ':', DATA_TYPE, ':', ORDINAL_POSITION) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:c_blob:blob:1|golden:t:c_text:text:2|golden:t:c_json:json:3|golden:t:c_bit:bit:4|golden:t:c_float:float:5|golden:t:c_double:double:6|golden:t:c_timestamp:timestamp:7|golden:t:c_datetime:datetime:8|golden:t:c_int:int:9"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a13-mysql84-timestamp-mixed-hit",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-timestamp-on-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "password_env": "DS_T06_GOLDEN_PW",
+    "password": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.timestamp.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.timestamp.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_timestamp",
+       "type": "timestamp",
+       "family": "timestamp",
+       "charset": ""
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c_timestamp\" must not use the timestamp type family",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.timestamp.forbid",
+      "level": "blocker",
+      "message": "column \"c_timestamp\" must not use the timestamp type family",
+      "metadata": {
+       "table": "t",
+       "column": "c_timestamp",
+       "type": "timestamp",
+       "family": "timestamp",
+       "charset": ""
+      },
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "instance_facts": {
+     "sql_require_primary_key": "OFF",
+     "sql_generate_invisible_primary_key": "OFF",
+     "show_gipk_in_create_table_and_information_schema": "ON"
+    }
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exact user column count",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "9"
+    },
+    {
+     "assert": "ordered column set",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(TABLE_SCHEMA, ':', TABLE_NAME, ':', COLUMN_NAME, ':', DATA_TYPE, ':', ORDINAL_POSITION) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:c_blob:blob:1|golden:t:c_text:text:2|golden:t:c_json:json:3|golden:t:c_bit:bit:4|golden:t:c_float:float:5|golden:t:c_double:double:6|golden:t:c_timestamp:timestamp:7|golden:t:c_datetime:datetime:8|golden:t:c_int:int:9"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "storage engine",
+     "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "InnoDB"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
    "id": "t06-tidb85-no-pk",
    "anchor": "tidb85",
    "dialect": "tidb",
@@ -35022,6 +39435,858 @@
      ]
     }
    ]
+  },
+  {
+   "id": "t06-a13-tidb85-blob-text-mixed-hit",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-blob-text-on-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "level": "blocker"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_blob",
+       "type": "blob binary",
+       "family": "blob/text",
+       "charset": ""
+      }
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_text",
+       "type": "text",
+       "family": "blob/text",
+       "charset": ""
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     },
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "level": "blocker",
+      "message": "column \"c_blob\" must not use the blob/text type family",
+      "metadata": {
+       "table": "t",
+       "column": "c_blob",
+       "type": "blob binary",
+       "family": "blob/text",
+       "charset": ""
+      },
+      "line": 1,
+      "column": 1
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.blob_text.forbid",
+      "level": "blocker",
+      "message": "column \"c_text\" must not use the blob/text type family",
+      "metadata": {
+       "table": "t",
+       "column": "c_text",
+       "type": "text",
+       "family": "blob/text",
+       "charset": ""
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exact user column count",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "9"
+    },
+    {
+     "assert": "ordered column set",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(TABLE_SCHEMA, ':', TABLE_NAME, ':', COLUMN_NAME, ':', DATA_TYPE, ':', ORDINAL_POSITION) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:c_blob:blob:1|golden:t:c_text:text:2|golden:t:c_json:json:3|golden:t:c_bit:bit:4|golden:t:c_float:float:5|golden:t:c_double:double:6|golden:t:c_timestamp:timestamp:7|golden:t:c_datetime:datetime:8|golden:t:c_int:int:9"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a13-tidb85-json-mixed-hit",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-json-on-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.json.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.json.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_json",
+       "type": "json",
+       "family": "json",
+       "charset": ""
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c_json\" must not use the json type family",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.json.forbid",
+      "level": "blocker",
+      "message": "column \"c_json\" must not use the json type family",
+      "metadata": {
+       "table": "t",
+       "column": "c_json",
+       "type": "json",
+       "family": "json",
+       "charset": ""
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exact user column count",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "9"
+    },
+    {
+     "assert": "ordered column set",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(TABLE_SCHEMA, ':', TABLE_NAME, ':', COLUMN_NAME, ':', DATA_TYPE, ':', ORDINAL_POSITION) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:c_blob:blob:1|golden:t:c_text:text:2|golden:t:c_json:json:3|golden:t:c_bit:bit:4|golden:t:c_float:float:5|golden:t:c_double:double:6|golden:t:c_timestamp:timestamp:7|golden:t:c_datetime:datetime:8|golden:t:c_int:int:9"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a13-tidb85-bit-mixed-hit",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-bit-on-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.bit.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.bit.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_bit",
+       "type": "bit(1)",
+       "family": "bit",
+       "charset": ""
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c_bit\" must not use the bit type family",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.bit.forbid",
+      "level": "blocker",
+      "message": "column \"c_bit\" must not use the bit type family",
+      "metadata": {
+       "table": "t",
+       "column": "c_bit",
+       "type": "bit(1)",
+       "family": "bit",
+       "charset": ""
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exact user column count",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "9"
+    },
+    {
+     "assert": "ordered column set",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(TABLE_SCHEMA, ':', TABLE_NAME, ':', COLUMN_NAME, ':', DATA_TYPE, ':', ORDINAL_POSITION) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:c_blob:blob:1|golden:t:c_text:text:2|golden:t:c_json:json:3|golden:t:c_bit:bit:4|golden:t:c_float:float:5|golden:t:c_double:double:6|golden:t:c_timestamp:timestamp:7|golden:t:c_datetime:datetime:8|golden:t:c_int:int:9"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a13-tidb85-float-double-mixed-hit",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-float-double-on-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "level": "blocker"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_float",
+       "type": "float"
+      }
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_double",
+       "type": "double"
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     },
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "level": "blocker",
+      "message": "column \"c_float\" should not use float",
+      "metadata": {
+       "table": "t",
+       "column": "c_float",
+       "type": "float"
+      },
+      "line": 1,
+      "column": 1
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.column.float_double.forbid",
+      "level": "blocker",
+      "message": "column \"c_double\" should not use double",
+      "metadata": {
+       "table": "t",
+       "column": "c_double",
+       "type": "double"
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exact user column count",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "9"
+    },
+    {
+     "assert": "ordered column set",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(TABLE_SCHEMA, ':', TABLE_NAME, ':', COLUMN_NAME, ':', DATA_TYPE, ':', ORDINAL_POSITION) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:c_blob:blob:1|golden:t:c_text:text:2|golden:t:c_json:json:3|golden:t:c_bit:bit:4|golden:t:c_float:float:5|golden:t:c_double:double:6|golden:t:c_timestamp:timestamp:7|golden:t:c_datetime:datetime:8|golden:t:c_int:int:9"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "t06-a13-tidb85-timestamp-mixed-hit",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+   "policy": "t06-a13-timestamp-on-isolated",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "ensure t absent",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "t absent before audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.timestamp.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.timestamp.forbid",
+      "metadata": {
+       "table": "t",
+       "column": "c_timestamp",
+       "type": "timestamp",
+       "family": "timestamp",
+       "charset": ""
+      }
+     }
+    ],
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "finding_message": "column \"c_timestamp\" must not use the timestamp type family",
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.column.timestamp.forbid",
+      "level": "blocker",
+      "message": "column \"c_timestamp\" must not use the timestamp type family",
+      "metadata": {
+       "table": "t",
+       "column": "c_timestamp",
+       "type": "timestamp",
+       "family": "timestamp",
+       "charset": ""
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   },
+   "post_verify": [
+    {
+     "assert": "audit did not create t",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "0"
+    }
+   ],
+   "execute": [
+    {
+     "name": "driver applies the audited create",
+     "sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+     "expect_rc": 0
+    }
+   ],
+   "structure": [
+    {
+     "assert": "exactly one user table",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "1"
+    },
+    {
+     "assert": "exact user column count",
+     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "9"
+    },
+    {
+     "assert": "ordered column set",
+     "sql": "SELECT GROUP_CONCAT(CONCAT(TABLE_SCHEMA, ':', TABLE_NAME, ':', COLUMN_NAME, ':', DATA_TYPE, ':', ORDINAL_POSITION) ORDER BY ORDINAL_POSITION SEPARATOR '|') FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+     "expect": "golden:t:c_blob:blob:1|golden:t:c_text:text:2|golden:t:c_json:json:3|golden:t:c_bit:bit:4|golden:t:c_float:float:5|golden:t:c_double:double:6|golden:t:c_timestamp:timestamp:7|golden:t:c_datetime:datetime:8|golden:t:c_int:int:9"
+    },
+    {
+     "assert": "primary key constraint count",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+     "expect": "0"
+    },
+    {
+     "assert": "primary index part count",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME='PRIMARY'",
+     "expect": "0"
+    },
+    {
+     "assert": "no extra indexes",
+     "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t' AND INDEX_NAME<>'PRIMARY'",
+     "expect": "0"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP TABLE IF EXISTS t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no residual t",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
   }
  ],
  "required_case_ids": [
@@ -35193,6 +40458,38 @@
   "T06.cli.t06-a12-tidb-mixed-attribution",
   "T06.cli.t06-a12-tidb-required-false",
   "T06.cli.t06-a12-tidb-disabled",
+  "T06.cli.t06-a13-mysql-blob-text-mixed-hit",
+  "T06.cli.t06-a13-mysql-blob-text-safe",
+  "T06.cli.t06-a13-mysql-blob-text-forbid-false",
+  "T06.cli.t06-a13-mysql-json-mixed-hit",
+  "T06.cli.t06-a13-mysql-json-safe",
+  "T06.cli.t06-a13-mysql-json-forbid-false",
+  "T06.cli.t06-a13-mysql-bit-mixed-hit",
+  "T06.cli.t06-a13-mysql-bit-safe",
+  "T06.cli.t06-a13-mysql-bit-forbid-false",
+  "T06.cli.t06-a13-mysql-float-double-mixed-hit",
+  "T06.cli.t06-a13-mysql-float-double-safe",
+  "T06.cli.t06-a13-mysql-float-double-forbid-false",
+  "T06.cli.t06-a13-mysql-timestamp-mixed-hit",
+  "T06.cli.t06-a13-mysql-timestamp-safe",
+  "T06.cli.t06-a13-mysql-timestamp-forbid-false",
+  "T06.cli.t06-a13-mysql-mixed-off",
+  "T06.cli.t06-a13-tidb-blob-text-mixed-hit",
+  "T06.cli.t06-a13-tidb-blob-text-safe",
+  "T06.cli.t06-a13-tidb-blob-text-forbid-false",
+  "T06.cli.t06-a13-tidb-json-mixed-hit",
+  "T06.cli.t06-a13-tidb-json-safe",
+  "T06.cli.t06-a13-tidb-json-forbid-false",
+  "T06.cli.t06-a13-tidb-bit-mixed-hit",
+  "T06.cli.t06-a13-tidb-bit-safe",
+  "T06.cli.t06-a13-tidb-bit-forbid-false",
+  "T06.cli.t06-a13-tidb-float-double-mixed-hit",
+  "T06.cli.t06-a13-tidb-float-double-safe",
+  "T06.cli.t06-a13-tidb-float-double-forbid-false",
+  "T06.cli.t06-a13-tidb-timestamp-mixed-hit",
+  "T06.cli.t06-a13-tidb-timestamp-safe",
+  "T06.cli.t06-a13-tidb-timestamp-forbid-false",
+  "T06.cli.t06-a13-tidb-mixed-off",
   "T06.meta.t06-mysql57-no-pk",
   "T06.meta.t06-mysql57-inline-pk",
   "T06.meta.t06-mysql57-table-pk",
@@ -35241,6 +40538,11 @@
   "T06.meta.t06-a12-mysql57-time-exempt",
   "T06.meta.t06-a12-mysql57-time-required",
   "T06.meta.t06-a12-mysql57-mixed-attribution",
+  "T06.meta.t06-a13-mysql57-blob-text-mixed-hit",
+  "T06.meta.t06-a13-mysql57-json-mixed-hit",
+  "T06.meta.t06-a13-mysql57-bit-mixed-hit",
+  "T06.meta.t06-a13-mysql57-float-double-mixed-hit",
+  "T06.meta.t06-a13-mysql57-timestamp-mixed-hit",
   "T06.meta.t06-mysql80-no-pk",
   "T06.meta.t06-mysql80-inline-pk",
   "T06.meta.t06-mysql80-table-pk",
@@ -35289,6 +40591,11 @@
   "T06.meta.t06-a12-mysql80-time-exempt",
   "T06.meta.t06-a12-mysql80-time-required",
   "T06.meta.t06-a12-mysql80-mixed-attribution",
+  "T06.meta.t06-a13-mysql80-blob-text-mixed-hit",
+  "T06.meta.t06-a13-mysql80-json-mixed-hit",
+  "T06.meta.t06-a13-mysql80-bit-mixed-hit",
+  "T06.meta.t06-a13-mysql80-float-double-mixed-hit",
+  "T06.meta.t06-a13-mysql80-timestamp-mixed-hit",
   "T06.meta.t06-mysql84-no-pk",
   "T06.meta.t06-mysql84-inline-pk",
   "T06.meta.t06-mysql84-table-pk",
@@ -35337,6 +40644,11 @@
   "T06.meta.t06-a12-mysql84-time-exempt",
   "T06.meta.t06-a12-mysql84-time-required",
   "T06.meta.t06-a12-mysql84-mixed-attribution",
+  "T06.meta.t06-a13-mysql84-blob-text-mixed-hit",
+  "T06.meta.t06-a13-mysql84-json-mixed-hit",
+  "T06.meta.t06-a13-mysql84-bit-mixed-hit",
+  "T06.meta.t06-a13-mysql84-float-double-mixed-hit",
+  "T06.meta.t06-a13-mysql84-timestamp-mixed-hit",
   "T06.meta.t06-tidb85-no-pk",
   "T06.meta.t06-tidb85-inline-pk",
   "T06.meta.t06-tidb85-table-pk",
@@ -35384,6 +40696,11 @@
   "T06.meta.t06-a12-tidb85-ordinary-not-null",
   "T06.meta.t06-a12-tidb85-time-exempt",
   "T06.meta.t06-a12-tidb85-time-required",
-  "T06.meta.t06-a12-tidb85-mixed-attribution"
+  "T06.meta.t06-a12-tidb85-mixed-attribution",
+  "T06.meta.t06-a13-tidb85-blob-text-mixed-hit",
+  "T06.meta.t06-a13-tidb85-json-mixed-hit",
+  "T06.meta.t06-a13-tidb85-bit-mixed-hit",
+  "T06.meta.t06-a13-tidb85-float-double-mixed-hit",
+  "T06.meta.t06-a13-tidb85-timestamp-mixed-hit"
  ]
 }
