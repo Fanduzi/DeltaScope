@@ -1,7 +1,20 @@
 # T06-A17: declared column type-parameter fidelity
 
-Code under test: `4f58ac548aecd495edc707c35868c179686b0e35`
+Implementation commit: `4f58ac548aecd495edc707c35868c179686b0e35`
 (`fix(ddl): T06-A17 declared column type-parameter fidelity`)
+
+**R1 provenance correction:** this directory groups evidence for that
+implementation; it does not establish that every command ran after that
+commit. The preserved Golden log and artifact identify Git HEAD
+`a08190969237404b280cfcc8d2cec8c01a082316`. The surviving Golden binary has
+that revision and `vcs.modified=true`; its hash matches the artifact. No
+contemporaneous modified-source snapshot was retained, so the exact source
+used for that build cannot be proved. It is neither a final-`4f58ac54`
+commit run nor evidence of an unmodified pre-fix run. See
+[PROVENANCE-CORRECTION.md](PROVENANCE-CORRECTION.md) for the separate work
+CLI, Golden CLI, and probe identities. Original logs, artifacts, cases,
+hashes, and results are unchanged; the correction supersedes conflicting
+SHA attribution below.
 
 Buggy base (red-state): `a08190969237404b280cfcc8d2cec8c01a082316`
 Evidence parent: same `a0819096` (code commit is its direct child).
@@ -55,8 +68,10 @@ source; every other type keeps its established rendering.
   truncates to base keyword, derived pre-state and `source_type` echo
   carry the losses. `TestT06A17TypeFactsSDKTransport` passes on both
   sides by design (transport regression, not a fidelity assertion).
-- **Green state** (`red-green/green-run.log`): the same 14 tests at
-  `4f58ac54` — all pass, both dialects.
+- **Historical green state** (`red-green/green-run.log`): the 14 A17
+  tests passed on the then-modified worktree. The log lacks per-command
+  HEAD/source-snapshot provenance; associating it with implementation
+  commit `4f58ac54` is not proof of a post-commit run.
 - **Declaration matrix** (`declaration-matrix.md`): every frozen N1/N2/
   L1/L2/C spelling → `Column.Type`/`Length`/`Unsigned`, including the
   `FLOAT(p)` normalization controls and the `a\\b` backslash member.
@@ -149,5 +164,7 @@ not clean.
 `head-sha.txt`, `go-version.txt`, `binary-sha256.txt`,
 `binary-version.txt`, `build-identity.txt`, `worktree-status.txt`,
 `task-range-diff.txt`, `identity/hashes.txt` — the directory name is the
-tested code SHA; this evidence lives in a separate evidence-only commit
-that is its child. Self-verification is not reviewer acceptance.
+implementation SHA, not a proven common tested SHA for these historical
+runs. The evidence-only commit is its child; this does not change the HEAD
+recorded by the earlier commands. See the R1 provenance correction above.
+Self-verification is not reviewer acceptance.

@@ -83,3 +83,23 @@ belongs in the two normalization sites, not the schema.
   `DECIMAL` physical-byte formulas, ENUM ordering semantics,
   FLOAT(M,D) deprecation or version policy, PG provider, `Length`
   semantics, and any display-width changes on non-target types.
+
+## Verification completeness and identity
+
+Fidelity evidence must assert the complete ordered column set and the
+presence of each expected ALTER action and definition, not merely validate
+whatever entries happen to be returned. Derived pre-state projections must
+remain detached from source declarations and state-owned columns.
+
+The bounded native proof collector must fail on read, iteration, encoding,
+or evidence-write errors and may clean up only a fixture it successfully
+created after proving prior absence. Catalog/provider equality is necessary
+but does not replace independent numeric and member-content facts.
+
+An implementation commit or evidence-directory name is not a run identity.
+Each command must retain its actual HEAD, dirty-source status, direct return
+code, and the identity of the binary it really used. Work CLI, Golden CLI,
+and native probe are separate artifacts. Missing historical source snapshots
+remain missing; later source or binaries cannot retroactively establish
+build provenance. These verification requirements do not change the A17
+representation, production behavior, or policy scope.

@@ -4,13 +4,15 @@
 // layer's default substitution or keyword-driven case folding. The tests run
 // the real parser + extractor (t06a2Extract) for both dialects.
 // input: frozen declaration shapes from the T06-A17 baseline fixtures
-// output: faithful Column.Type/Length/Unsigned per declared spelling
+// output: faithful Column.Type/Length/Unsigned per declared spelling, plus
+// exactly-once ALTER action/subject/old-name/definition identity checks
 // pos: infrastructure extraction regression tests for issue #85 T06-A17
 // note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -203,28 +205,58 @@ func TestT06A17OrdinaryTypeControls(t *testing.T) {
 	t06a17WantType(t, t06a17C, "u", "bigint(20) unsigned", -1, true)
 }
 
+// t06a17CheckAlterDefinition requires the statement to carry exactly one
+// alter action with the expected action/subject identity and an exact column
+// definition — every link of the fixed definition is checked once.
+func t06a17CheckAlterDefinition(statement spec.Statement, action, subject, oldName, columnName, typeText string) error {
+	if statement.DDL == nil {
+		return fmt.Errorf("no DDL in %+v", statement)
+	}
+	if len(statement.DDL.Alter) != 1 {
+		return fmt.Errorf("alter actions = %d, want exactly 1 (%+v)", len(statement.DDL.Alter), statement.DDL.Alter)
+	}
+	alter := statement.DDL.Alter[0]
+	if alter.Action != action {
+		return fmt.Errorf("action = %q, want %q", alter.Action, action)
+	}
+	if alter.Name != subject {
+		return fmt.Errorf("subject = %q, want %q", alter.Name, subject)
+	}
+	if alter.Column == nil {
+		return fmt.Errorf("alter.Column is nil")
+	}
+	if alter.Column.OldName != oldName {
+		return fmt.Errorf("Column.OldName = %q, want %q", alter.Column.OldName, oldName)
+	}
+	if alter.Column.Definition == nil {
+		return fmt.Errorf("Column.Definition is nil")
+	}
+	if alter.Column.Definition.Name != columnName {
+		return fmt.Errorf("Definition.Name = %q, want %q", alter.Column.Definition.Name, columnName)
+	}
+	if alter.Column.Definition.Type != typeText {
+		return fmt.Errorf("Definition %q Type = %q, want %q", columnName, alter.Column.Definition.Type, typeText)
+	}
+	return nil
+}
+
 // TestT06A17AlterColumnDefinitions checks the shared extractColumn path for
-// ALTER ADD/MODIFY/CHANGE carries the same faithful Type.
+// ALTER ADD/MODIFY/CHANGE carries the same faithful Type — each fixed
+// definition is verified exactly once with its full action identity under
+// both dialects.
 func TestT06A17AlterColumnDefinitions(t *testing.T) {
 	for _, tc := range []struct {
-		name, sql, col, wantType string
+		name, sql, action, subject, oldName, col, wantType string
 	}{
-		{"add", `ALTER TABLE t ADD COLUMN e ENUM('Ready','Closed');`, "e", "enum('Ready','Closed')"},
-		{"modify", `ALTER TABLE t MODIFY d DECIMAL(12,3);`, "d", "decimal(12,3)"},
-		{"change", `ALTER TABLE t CHANGE d d2 FLOAT(10,0);`, "d2", "float(10,0)"},
+		{"add", `ALTER TABLE t ADD COLUMN e ENUM('Ready','Closed');`, "add_columns", "e", "", "e", "enum('Ready','Closed')"},
+		{"modify", `ALTER TABLE t MODIFY d DECIMAL(12,3);`, "modify_column", "d", "", "d", "decimal(12,3)"},
+		{"change", `ALTER TABLE t CHANGE d d2 FLOAT(10,0);`, "change_column", "d", "d", "d2", "float(10,0)"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			statement := t06a2Extract(t, spec.DialectMySQL, tc.sql)
-			if statement.DDL == nil {
-				t.Fatalf("no DDL in %+v", statement)
-			}
-			for _, alter := range statement.DDL.Alter {
-				if alter.Column == nil || alter.Column.Definition == nil {
-					continue
-				}
-				def := alter.Column.Definition
-				if def.Name == tc.col && def.Type != tc.wantType {
-					t.Fatalf("%s: %s Type = %q, want %q", tc.name, tc.col, def.Type, tc.wantType)
+			for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
+				statement := t06a2Extract(t, dialect, tc.sql)
+				if err := t06a17CheckAlterDefinition(statement, tc.action, tc.subject, tc.oldName, tc.col, tc.wantType); err != nil {
+					t.Fatalf("%s/%s: %v", dialect, tc.name, err)
 				}
 			}
 		})

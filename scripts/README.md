@@ -6,6 +6,7 @@ Operational scripts for local DeltaScope workflows.
 
 | File | Responsibility |
 |------|---------------|
+| t06a17proof/ | Bounded T06-A17-R1 native catalog/provider proof command and constructed-fault tests: complete ordered 24-column collection, independent numeric/member facts, owned-table cleanup, failure propagation, and test-only old/new assertion sensitivity; see [module README](t06a17proof/README.md) |
 | verify_pg_manylinux_baseline.sh | Builds the converged Linux PG-capable binaries in a manylinux2014 container and fails if the Linux glibc baseline exceeds the approved threshold |
 | verify_homebrew_cask.sh | Verifies rendered Homebrew cask files against the release version, darwin archive URLs, sha256 values, and binary stanza |
 | verify_release_archive.sh | Verifies packaged release archives by checking checksums, required files, binary version output, PostgreSQL CLI smoke, and optional Linux glibc baseline |

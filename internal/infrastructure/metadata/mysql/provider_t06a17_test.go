@@ -5,7 +5,9 @@
 // constructed catalog input (a live server may normalize differently; the
 // provider must only preserve what it actually receives).
 // input: constructed information_schema row sets for the five target types
-// output: faithful Column.Type/Length/Unsigned per stored column_type
+// output: the complete 22-row column set in catalog order — identity, order,
+// and presence pinned alongside faithful Type/Length/Unsigned per stored
+// column_type
 // pos: infrastructure metadata adapter regression tests for issue #85 T06-A17
 // note: if this file changes, update this header and module README.md.
 package mysqlmeta
@@ -13,6 +15,7 @@ package mysqlmeta
 import (
 	"context"
 	"database/sql/driver"
+	"fmt"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -65,6 +68,59 @@ func t06a17Results() map[string]testQueryResult {
 	}
 }
 
+// t06a17CheckProviderColumns requires the complete 22-row fixture set in
+// catalog order: every expected name present exactly once, in position, with
+// its faithful Type/Length/Unsigned — nothing unchecked on the actual side.
+func t06a17CheckProviderColumns(columns []spec.Column) error {
+	expected := []struct {
+		name, typeText string
+		length         int
+		unsigned       bool
+	}{
+		{"d_dec122", "decimal(12,2)", 12, false},
+		{"d_dec123", "decimal(12,3)", 12, false},
+		{"d_dec120", "decimal(12,0)", 12, false},
+		{"f_flt102", "float(10,2)", 10, false},
+		{"f_flt103", "float(10,3)", 10, false},
+		{"f_flt100", "float(10,0)", 10, false},
+		{"x_dbl162", "double(16,2)", 16, false},
+		{"x_dbl164", "double(16,4)", 16, false},
+		{"x_dbl160", "double(16,0)", 16, false},
+		{"e_upper", "enum('Ready','Closed')", 0, false},
+		{"e_lower", "enum('ready','closed')", 0, false},
+		{"e_order", "enum('Closed','Ready')", 0, false},
+		{"s_upper", "set('Read','Write')", 0, false},
+		{"s_lower", "set('read','write')", 0, false},
+		{"s_order", "set('Write','Read')", 0, false},
+		{"e_edge", "enum('','A,B','A)B','O''Reilly')", 0, false},
+		{"e_attrword", "enum('x unsigned','y zerofill')", 0, false},
+		{"s_attrword", "set('a unsigned','b')", 0, false},
+		{"c_int", "int", 0, false},
+		{"c_varchar8", "varchar", 8, false},
+		{"c_bigint_u", "bigint", 0, true},
+		{"d_dec122u", "decimal(12,2) unsigned", 12, true},
+	}
+	if len(columns) != len(expected) {
+		return fmt.Errorf("columns = %d (%+v), want %d", len(columns), columns, len(expected))
+	}
+	seen := map[string]struct{}{}
+	for i, want := range expected {
+		got := columns[i]
+		if _, dup := seen[got.Name]; dup {
+			return fmt.Errorf("duplicate column %q", got.Name)
+		}
+		seen[got.Name] = struct{}{}
+		if got.Name != want.name {
+			return fmt.Errorf("column[%d] = %q, want %q", i, got.Name, want.name)
+		}
+		if got.Type != want.typeText || got.Length != want.length || got.Unsigned != want.unsigned {
+			return fmt.Errorf("%s = Type %q Length %d Unsigned %v, want %q/%d/%v",
+				got.Name, got.Type, got.Length, got.Unsigned, want.typeText, want.length, want.unsigned)
+		}
+	}
+	return nil
+}
+
 func t06a17SnapshotColumns(t *testing.T) []spec.Column {
 	t.Helper()
 	db := openTestDB(t, t06a17Results())
@@ -73,52 +129,21 @@ func t06a17SnapshotColumns(t *testing.T) []spec.Column {
 	if err != nil {
 		t.Fatalf("LoadTableSnapshot: %v", err)
 	}
+	if snapshot == nil || !snapshot.Exists {
+		t.Fatalf("snapshot missing or absent: %+v", snapshot)
+	}
+	if err := t06a17CheckProviderColumns(snapshot.Columns); err != nil {
+		t.Fatalf("provider columns: %v", err)
+	}
 	return snapshot.Columns
 }
 
 // TestT06A17ProviderParameterFidelity pins verbatim catalog parameter text:
 // scale/second-parameter/member content survive; non-target types keep the
-// established base-keyword contract.
+// established base-keyword contract. The complete-set check runs inside the
+// shared snapshot path so the adjacent matrices inherit it too.
 func TestT06A17ProviderParameterFidelity(t *testing.T) {
-	columns := t06a17SnapshotColumns(t)
-	want := map[string]struct {
-		typeText string
-		length   int
-		unsigned bool
-	}{
-		"d_dec122":   {"decimal(12,2)", 12, false},
-		"d_dec123":   {"decimal(12,3)", 12, false},
-		"d_dec120":   {"decimal(12,0)", 12, false},
-		"f_flt102":   {"float(10,2)", 10, false},
-		"f_flt103":   {"float(10,3)", 10, false},
-		"f_flt100":   {"float(10,0)", 10, false},
-		"x_dbl162":   {"double(16,2)", 16, false},
-		"x_dbl164":   {"double(16,4)", 16, false},
-		"x_dbl160":   {"double(16,0)", 16, false},
-		"e_upper":    {"enum('Ready','Closed')", 0, false},
-		"e_lower":    {"enum('ready','closed')", 0, false},
-		"e_order":    {"enum('Closed','Ready')", 0, false},
-		"s_upper":    {"set('Read','Write')", 0, false},
-		"s_lower":    {"set('read','write')", 0, false},
-		"s_order":    {"set('Write','Read')", 0, false},
-		"e_edge":     {"enum('','A,B','A)B','O''Reilly')", 0, false},
-		"e_attrword": {"enum('x unsigned','y zerofill')", 0, false},
-		"s_attrword": {"set('a unsigned','b')", 0, false},
-		"c_int":      {"int", 0, false},
-		"c_varchar8": {"varchar", 8, false},
-		"c_bigint_u": {"bigint", 0, true},
-		"d_dec122u":  {"decimal(12,2) unsigned", 12, true},
-	}
-	for _, column := range columns {
-		w, ok := want[column.Name]
-		if !ok {
-			t.Fatalf("unexpected column %q", column.Name)
-		}
-		if column.Type != w.typeText || column.Length != w.length || column.Unsigned != w.unsigned {
-			t.Fatalf("%s = Type %q Length %d Unsigned %v, want %q/%d/%v",
-				column.Name, column.Type, column.Length, column.Unsigned, w.typeText, w.length, w.unsigned)
-		}
-	}
+	t06a17SnapshotColumns(t)
 }
 
 // TestT06A17ProviderDistinctness asserts the merged groups stay distinguishable
@@ -136,8 +161,13 @@ func TestT06A17ProviderDistinctness(t *testing.T) {
 		{"s_upper", "s_lower"}, {"s_upper", "s_order"},
 	}
 	for _, pair := range pairs {
-		if byName[pair[0]].Type == byName[pair[1]].Type {
-			t.Fatalf("%s and %s merged to %q", pair[0], pair[1], byName[pair[0]].Type)
+		left, lok := byName[pair[0]]
+		right, rok := byName[pair[1]]
+		if !lok || !rok {
+			t.Fatalf("pair %s/%s missing from provider columns", pair[0], pair[1])
+		}
+		if left.Type == right.Type {
+			t.Fatalf("%s and %s merged to %q", pair[0], pair[1], left.Type)
 		}
 	}
 }
@@ -151,12 +181,19 @@ func TestT06A17ProviderParamBoundary(t *testing.T) {
 	for _, column := range columns {
 		byName[column.Name] = column
 	}
-	edge := byName["e_edge"]
+	edge, ok := byName["e_edge"]
+	if !ok {
+		t.Fatalf("e_edge missing from provider columns")
+	}
 	if edge.Type != "enum('','A,B','A)B','O''Reilly')" {
 		t.Fatalf("e_edge Type = %q — member delimiters broke the parameter span", edge.Type)
 	}
 	for _, name := range []string{"e_attrword", "s_attrword"} {
-		if byName[name].Unsigned {
+		column, ok := byName[name]
+		if !ok {
+			t.Fatalf("%s missing from provider columns", name)
+		}
+		if column.Unsigned {
 			t.Fatalf("%s Unsigned = true — attribute word inside member literal leaked", name)
 		}
 	}
