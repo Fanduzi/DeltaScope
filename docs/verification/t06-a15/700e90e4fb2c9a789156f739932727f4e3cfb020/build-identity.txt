@@ -1,0 +1,12 @@
+head_sha: 700e90e4fb2c9a789156f739932727f4e3cfb020
+tree_state: tracked-clean except .mcp.json (external, unrelated to T06-A15-R1)
+go: go version go1.26.1 darwin/arm64
+work_binary: /Users/fan/GolangProjects/DeltaScope/bin/deltascope
+work_binary_sha256: 33bbe16a9459bb4f548d18745a3f2734973ca0f26b7b6cf507e5040297119040
+golden_runner_binary: /tmp/ds-t06-a15r1-golden/T06/bin/deltascope
+golden_runner_binary_sha256: 0e2123bc09dd44cd2c4009c7db02788b9fa02df7d05cfa64effc580467da22bd
+	path	github.com/Fanduzi/DeltaScope/cmd/deltascope
+	mod	github.com/Fanduzi/DeltaScope	v0.511.2-0.20261018073352-700e90e4fb2c+dirty	
+	build	vcs.revision=700e90e4fb2c9a789156f739932727f4e3cfb020
+	build	vcs.time=2026-10-18T07:33:52Z
+	build	vcs.modified=true

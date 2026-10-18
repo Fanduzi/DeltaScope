@@ -1,0 +1,278 @@
+$ go test -count=1 ./internal/domain/rule/ddl ./internal/application/audit -run T06A15R1 -v  (at fixed worktree)
+=== RUN   TestT06A15R1DeclaredCompressedResolvesVerbatim
+=== PAUSE TestT06A15R1DeclaredCompressedResolvesVerbatim
+=== RUN   TestT06A15R1CompressedNeverEntersPayloadBranches
+=== PAUSE TestT06A15R1CompressedNeverEntersPayloadBranches
+=== CONT  TestT06A15R1DeclaredCompressedResolvesVerbatim
+=== RUN   TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/nil
+=== PAUSE TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/nil
+=== RUN   TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/empty
+=== CONT  TestT06A15R1CompressedNeverEntersPayloadBranches
+=== PAUSE TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/empty
+=== RUN   TestT06A15R1CompressedNeverEntersPayloadBranches/COMPRESSED
+=== PAUSE TestT06A15R1CompressedNeverEntersPayloadBranches/COMPRESSED
+=== RUN   TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/dynamic
+=== RUN   TestT06A15R1CompressedNeverEntersPayloadBranches/DYNAMIC
+=== PAUSE TestT06A15R1CompressedNeverEntersPayloadBranches/DYNAMIC
+=== RUN   TestT06A15R1CompressedNeverEntersPayloadBranches/control-COMPACT
+=== PAUSE TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/dynamic
+=== RUN   TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/compact
+=== PAUSE TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/compact
+=== RUN   TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/redundant
+=== PAUSE TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/redundant
+=== RUN   TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/redundant
+=== PAUSE TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/redundant
+=== RUN   TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/nil
+=== PAUSE TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/nil
+=== RUN   TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/empty
+=== PAUSE TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/empty
+=== RUN   TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/dynamic
+=== PAUSE TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/dynamic
+=== RUN   TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/compact
+=== PAUSE TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/compact
+=== CONT  TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/nil
+=== CONT  TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/redundant
+=== CONT  TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/dynamic
+=== CONT  TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/compact
+=== CONT  TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/empty
+=== CONT  TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/compact
+=== CONT  TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/redundant
+=== CONT  TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/empty
+=== CONT  TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/dynamic
+=== CONT  TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/nil
+=== RUN   TestT06A15R1CompressedNeverEntersPayloadBranches/control-REDUNDANT
+--- PASS: TestT06A15R1DeclaredCompressedResolvesVerbatim (0.00s)
+    --- PASS: TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/redundant (0.00s)
+    --- PASS: TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/empty (0.00s)
+    --- PASS: TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/dynamic (0.00s)
+    --- PASS: TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/compact (0.00s)
+    --- PASS: TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/nil (0.00s)
+    --- PASS: TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/redundant (0.00s)
+    --- PASS: TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/empty (0.00s)
+    --- PASS: TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/compact (0.00s)
+    --- PASS: TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/dynamic (0.00s)
+    --- PASS: TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/nil (0.00s)
+=== CONT  TestT06A15R1CompressedNeverEntersPayloadBranches/COMPRESSED
+=== CONT  TestT06A15R1CompressedNeverEntersPayloadBranches/DYNAMIC
+--- PASS: TestT06A15R1CompressedNeverEntersPayloadBranches (0.00s)
+    --- PASS: TestT06A15R1CompressedNeverEntersPayloadBranches/control-COMPACT (0.00s)
+    --- PASS: TestT06A15R1CompressedNeverEntersPayloadBranches/control-REDUNDANT (0.00s)
+    --- PASS: TestT06A15R1CompressedNeverEntersPayloadBranches/COMPRESSED (0.00s)
+    --- PASS: TestT06A15R1CompressedNeverEntersPayloadBranches/DYNAMIC (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	0.279s
+=== RUN   TestT06A15R1CompressedOptionExtractedVerbatim
+=== PAUSE TestT06A15R1CompressedOptionExtractedVerbatim
+=== RUN   TestT06A15R1SmallComputesUnderEveryInstanceShape
+=== PAUSE TestT06A15R1SmallComputesUnderEveryInstanceShape
+=== RUN   TestT06A15R1BranchNeverEntersInstanceFormatBranch
+=== PAUSE TestT06A15R1BranchNeverEntersInstanceFormatBranch
+=== RUN   TestT06A15R1OverLimitFindingKeepsCompressedIdentity
+=== PAUSE TestT06A15R1OverLimitFindingKeepsCompressedIdentity
+=== RUN   TestT06A15R1MissingCharsetReportsOnlyCharset
+=== PAUSE TestT06A15R1MissingCharsetReportsOnlyCharset
+=== RUN   TestT06A15R1OppositeFormatControls
+=== PAUSE TestT06A15R1OppositeFormatControls
+=== CONT  TestT06A15R1CompressedOptionExtractedVerbatim
+=== CONT  TestT06A15R1OverLimitFindingKeepsCompressedIdentity
+=== RUN   TestT06A15R1CompressedOptionExtractedVerbatim/mysql/S_SMALL
+=== PAUSE TestT06A15R1CompressedOptionExtractedVerbatim/mysql/S_SMALL
+=== RUN   TestT06A15R1CompressedOptionExtractedVerbatim/mysql/S_OVER
+=== PAUSE TestT06A15R1CompressedOptionExtractedVerbatim/mysql/S_OVER
+=== RUN   TestT06A15R1CompressedOptionExtractedVerbatim/mysql/S_NO_CHARSET
+=== RUN   TestT06A15R1OverLimitFindingKeepsCompressedIdentity/mysql/offline
+=== CONT  TestT06A15R1OppositeFormatControls
+=== PAUSE TestT06A15R1OverLimitFindingKeepsCompressedIdentity/mysql/offline
+=== CONT  TestT06A15R1MissingCharsetReportsOnlyCharset
+=== CONT  TestT06A15R1SmallComputesUnderEveryInstanceShape
+=== CONT  TestT06A15R1BranchNeverEntersInstanceFormatBranch
+=== PAUSE TestT06A15R1CompressedOptionExtractedVerbatim/mysql/S_NO_CHARSET
+=== RUN   TestT06A15R1OppositeFormatControls/mysql/compact-declared
+=== RUN   TestT06A15R1OverLimitFindingKeepsCompressedIdentity/mysql/compact
+=== RUN   TestT06A15R1MissingCharsetReportsOnlyCharset/mysql/offline
+=== PAUSE TestT06A15R1OverLimitFindingKeepsCompressedIdentity/mysql/compact
+=== PAUSE TestT06A15R1MissingCharsetReportsOnlyCharset/mysql/offline
+=== RUN   TestT06A15R1MissingCharsetReportsOnlyCharset/mysql/nil
+=== RUN   TestT06A15R1SmallComputesUnderEveryInstanceShape/mysql/nil
+=== PAUSE TestT06A15R1MissingCharsetReportsOnlyCharset/mysql/nil
+=== PAUSE TestT06A15R1OppositeFormatControls/mysql/compact-declared
+=== RUN   TestT06A15R1OverLimitFindingKeepsCompressedIdentity/tidb/compact
+=== RUN   TestT06A15R1MissingCharsetReportsOnlyCharset/mysql/empty
+=== PAUSE TestT06A15R1MissingCharsetReportsOnlyCharset/mysql/empty
+=== RUN   TestT06A15R1CompressedOptionExtractedVerbatim/mysql/S_BRANCH
+=== PAUSE TestT06A15R1CompressedOptionExtractedVerbatim/mysql/S_BRANCH
+=== PAUSE TestT06A15R1SmallComputesUnderEveryInstanceShape/mysql/nil
+=== PAUSE TestT06A15R1OverLimitFindingKeepsCompressedIdentity/tidb/compact
+=== RUN   TestT06A15R1BranchNeverEntersInstanceFormatBranch/mysql/default-COMPACT
+=== PAUSE TestT06A15R1BranchNeverEntersInstanceFormatBranch/mysql/default-COMPACT
+=== RUN   TestT06A15R1OppositeFormatControls/mysql/redundant-declared
+=== RUN   TestT06A15R1BranchNeverEntersInstanceFormatBranch/mysql/default-REDUNDANT
+=== PAUSE TestT06A15R1BranchNeverEntersInstanceFormatBranch/mysql/default-REDUNDANT
+=== RUN   TestT06A15R1BranchNeverEntersInstanceFormatBranch/tidb/default-COMPACT
+=== PAUSE TestT06A15R1OppositeFormatControls/mysql/redundant-declared
+=== PAUSE TestT06A15R1BranchNeverEntersInstanceFormatBranch/tidb/default-COMPACT
+=== RUN   TestT06A15R1MissingCharsetReportsOnlyCharset/mysql/charset-provided
+=== RUN   TestT06A15R1CompressedOptionExtractedVerbatim/tidb/S_SMALL
+=== RUN   TestT06A15R1SmallComputesUnderEveryInstanceShape/mysql/empty
+=== RUN   TestT06A15R1OverLimitFindingKeepsCompressedIdentity/tidb/offline
+=== PAUSE TestT06A15R1SmallComputesUnderEveryInstanceShape/mysql/empty
+=== PAUSE TestT06A15R1CompressedOptionExtractedVerbatim/tidb/S_SMALL
+=== RUN   TestT06A15R1BranchNeverEntersInstanceFormatBranch/tidb/default-REDUNDANT
+=== PAUSE TestT06A15R1BranchNeverEntersInstanceFormatBranch/tidb/default-REDUNDANT
+=== CONT  TestT06A15R1BranchNeverEntersInstanceFormatBranch/mysql/default-COMPACT
+=== CONT  TestT06A15R1BranchNeverEntersInstanceFormatBranch/tidb/default-REDUNDANT
+=== CONT  TestT06A15R1BranchNeverEntersInstanceFormatBranch/tidb/default-COMPACT
+=== RUN   TestT06A15R1OppositeFormatControls/mysql/dynamic-declared
+=== PAUSE TestT06A15R1OppositeFormatControls/mysql/dynamic-declared
+=== CONT  TestT06A15R1BranchNeverEntersInstanceFormatBranch/mysql/default-REDUNDANT
+=== RUN   TestT06A15R1OppositeFormatControls/mysql/default-declared-with-compact-instance
+=== PAUSE TestT06A15R1OppositeFormatControls/mysql/default-declared-with-compact-instance
+=== RUN   TestT06A15R1SmallComputesUnderEveryInstanceShape/mysql/dynamic
+=== RUN   TestT06A15R1OppositeFormatControls/mysql/default-declared-no-instance
+=== PAUSE TestT06A15R1OverLimitFindingKeepsCompressedIdentity/tidb/offline
+=== RUN   TestT06A15R1CompressedOptionExtractedVerbatim/tidb/S_OVER
+=== PAUSE TestT06A15R1SmallComputesUnderEveryInstanceShape/mysql/dynamic
+=== CONT  TestT06A15R1OverLimitFindingKeepsCompressedIdentity/mysql/offline
+=== PAUSE TestT06A15R1OppositeFormatControls/mysql/default-declared-no-instance
+=== RUN   TestT06A15R1SmallComputesUnderEveryInstanceShape/mysql/compact
+=== PAUSE TestT06A15R1SmallComputesUnderEveryInstanceShape/mysql/compact
+=== RUN   TestT06A15R1SmallComputesUnderEveryInstanceShape/mysql/redundant
+=== CONT  TestT06A15R1OverLimitFindingKeepsCompressedIdentity/tidb/compact
+=== CONT  TestT06A15R1OverLimitFindingKeepsCompressedIdentity/mysql/compact
+=== CONT  TestT06A15R1OverLimitFindingKeepsCompressedIdentity/tidb/offline
+=== PAUSE TestT06A15R1SmallComputesUnderEveryInstanceShape/mysql/redundant
+=== PAUSE TestT06A15R1CompressedOptionExtractedVerbatim/tidb/S_OVER
+=== RUN   TestT06A15R1SmallComputesUnderEveryInstanceShape/mysql/offline
+=== RUN   TestT06A15R1CompressedOptionExtractedVerbatim/tidb/S_NO_CHARSET
+=== PAUSE TestT06A15R1CompressedOptionExtractedVerbatim/tidb/S_NO_CHARSET
+=== RUN   TestT06A15R1CompressedOptionExtractedVerbatim/tidb/S_BRANCH
+=== PAUSE TestT06A15R1CompressedOptionExtractedVerbatim/tidb/S_BRANCH
+=== CONT  TestT06A15R1CompressedOptionExtractedVerbatim/mysql/S_SMALL
+=== PAUSE TestT06A15R1SmallComputesUnderEveryInstanceShape/mysql/offline
+=== RUN   TestT06A15R1SmallComputesUnderEveryInstanceShape/tidb/offline
+=== PAUSE TestT06A15R1SmallComputesUnderEveryInstanceShape/tidb/offline
+=== RUN   TestT06A15R1SmallComputesUnderEveryInstanceShape/tidb/nil
+=== PAUSE TestT06A15R1SmallComputesUnderEveryInstanceShape/tidb/nil
+=== RUN   TestT06A15R1SmallComputesUnderEveryInstanceShape/tidb/empty
+=== PAUSE TestT06A15R1SmallComputesUnderEveryInstanceShape/tidb/empty
+=== RUN   TestT06A15R1SmallComputesUnderEveryInstanceShape/tidb/dynamic
+=== PAUSE TestT06A15R1SmallComputesUnderEveryInstanceShape/tidb/dynamic
+=== RUN   TestT06A15R1SmallComputesUnderEveryInstanceShape/tidb/compact
+=== PAUSE TestT06A15R1SmallComputesUnderEveryInstanceShape/tidb/compact
+=== RUN   TestT06A15R1SmallComputesUnderEveryInstanceShape/tidb/redundant
+=== PAUSE TestT06A15R1SmallComputesUnderEveryInstanceShape/tidb/redundant
+=== CONT  TestT06A15R1CompressedOptionExtractedVerbatim/tidb/S_SMALL
+=== RUN   TestT06A15R1OppositeFormatControls/mysql/omitted-no-instance
+=== PAUSE TestT06A15R1OppositeFormatControls/mysql/omitted-no-instance
+=== RUN   TestT06A15R1OppositeFormatControls/tidb/compact-declared
+=== PAUSE TestT06A15R1OppositeFormatControls/tidb/compact-declared
+=== RUN   TestT06A15R1OppositeFormatControls/tidb/redundant-declared
+=== PAUSE TestT06A15R1OppositeFormatControls/tidb/redundant-declared
+=== RUN   TestT06A15R1OppositeFormatControls/tidb/dynamic-declared
+=== PAUSE TestT06A15R1OppositeFormatControls/tidb/dynamic-declared
+=== RUN   TestT06A15R1OppositeFormatControls/tidb/default-declared-with-compact-instance
+=== PAUSE TestT06A15R1OppositeFormatControls/tidb/default-declared-with-compact-instance
+=== RUN   TestT06A15R1OppositeFormatControls/tidb/default-declared-no-instance
+=== PAUSE TestT06A15R1OppositeFormatControls/tidb/default-declared-no-instance
+=== RUN   TestT06A15R1OppositeFormatControls/tidb/omitted-no-instance
+=== PAUSE TestT06A15R1OppositeFormatControls/tidb/omitted-no-instance
+=== CONT  TestT06A15R1CompressedOptionExtractedVerbatim/mysql/S_NO_CHARSET
+=== CONT  TestT06A15R1CompressedOptionExtractedVerbatim/tidb/S_BRANCH
+=== CONT  TestT06A15R1CompressedOptionExtractedVerbatim/tidb/S_NO_CHARSET
+=== CONT  TestT06A15R1CompressedOptionExtractedVerbatim/mysql/S_OVER
+=== CONT  TestT06A15R1CompressedOptionExtractedVerbatim/tidb/S_OVER
+=== CONT  TestT06A15R1SmallComputesUnderEveryInstanceShape/mysql/nil
+=== CONT  TestT06A15R1CompressedOptionExtractedVerbatim/mysql/S_BRANCH
+=== CONT  TestT06A15R1SmallComputesUnderEveryInstanceShape/tidb/offline
+--- PASS: TestT06A15R1CompressedOptionExtractedVerbatim (0.00s)
+    --- PASS: TestT06A15R1CompressedOptionExtractedVerbatim/mysql/S_NO_CHARSET (0.00s)
+    --- PASS: TestT06A15R1CompressedOptionExtractedVerbatim/mysql/S_SMALL (0.00s)
+    --- PASS: TestT06A15R1CompressedOptionExtractedVerbatim/tidb/S_SMALL (0.00s)
+    --- PASS: TestT06A15R1CompressedOptionExtractedVerbatim/tidb/S_NO_CHARSET (0.00s)
+    --- PASS: TestT06A15R1CompressedOptionExtractedVerbatim/mysql/S_OVER (0.00s)
+    --- PASS: TestT06A15R1CompressedOptionExtractedVerbatim/tidb/S_OVER (0.00s)
+    --- PASS: TestT06A15R1CompressedOptionExtractedVerbatim/tidb/S_BRANCH (0.00s)
+    --- PASS: TestT06A15R1CompressedOptionExtractedVerbatim/mysql/S_BRANCH (0.00s)
+=== CONT  TestT06A15R1SmallComputesUnderEveryInstanceShape/tidb/redundant
+=== CONT  TestT06A15R1SmallComputesUnderEveryInstanceShape/tidb/compact
+=== CONT  TestT06A15R1SmallComputesUnderEveryInstanceShape/tidb/dynamic
+=== CONT  TestT06A15R1SmallComputesUnderEveryInstanceShape/tidb/empty
+--- PASS: TestT06A15R1BranchNeverEntersInstanceFormatBranch (0.00s)
+    --- PASS: TestT06A15R1BranchNeverEntersInstanceFormatBranch/mysql/default-COMPACT (0.02s)
+    --- PASS: TestT06A15R1BranchNeverEntersInstanceFormatBranch/tidb/default-COMPACT (0.02s)
+    --- PASS: TestT06A15R1BranchNeverEntersInstanceFormatBranch/mysql/default-REDUNDANT (0.02s)
+    --- PASS: TestT06A15R1BranchNeverEntersInstanceFormatBranch/tidb/default-REDUNDANT (0.02s)
+=== RUN   TestT06A15R1MissingCharsetReportsOnlyCharset/tidb/offline
+=== PAUSE TestT06A15R1MissingCharsetReportsOnlyCharset/tidb/offline
+=== CONT  TestT06A15R1SmallComputesUnderEveryInstanceShape/tidb/nil
+=== RUN   TestT06A15R1MissingCharsetReportsOnlyCharset/tidb/nil
+=== PAUSE TestT06A15R1MissingCharsetReportsOnlyCharset/tidb/nil
+=== RUN   TestT06A15R1MissingCharsetReportsOnlyCharset/tidb/empty
+=== PAUSE TestT06A15R1MissingCharsetReportsOnlyCharset/tidb/empty
+=== RUN   TestT06A15R1MissingCharsetReportsOnlyCharset/tidb/charset-provided
+=== CONT  TestT06A15R1SmallComputesUnderEveryInstanceShape/mysql/compact
+=== CONT  TestT06A15R1SmallComputesUnderEveryInstanceShape/mysql/offline
+=== CONT  TestT06A15R1SmallComputesUnderEveryInstanceShape/mysql/redundant
+=== CONT  TestT06A15R1SmallComputesUnderEveryInstanceShape/mysql/dynamic
+=== CONT  TestT06A15R1SmallComputesUnderEveryInstanceShape/mysql/empty
+--- PASS: TestT06A15R1OverLimitFindingKeepsCompressedIdentity (0.00s)
+    --- PASS: TestT06A15R1OverLimitFindingKeepsCompressedIdentity/mysql/compact (0.02s)
+    --- PASS: TestT06A15R1OverLimitFindingKeepsCompressedIdentity/mysql/offline (0.02s)
+    --- PASS: TestT06A15R1OverLimitFindingKeepsCompressedIdentity/tidb/offline (0.02s)
+    --- PASS: TestT06A15R1OverLimitFindingKeepsCompressedIdentity/tidb/compact (0.02s)
+=== CONT  TestT06A15R1OppositeFormatControls/tidb/default-declared-with-compact-instance
+=== CONT  TestT06A15R1OppositeFormatControls/tidb/omitted-no-instance
+=== CONT  TestT06A15R1OppositeFormatControls/tidb/redundant-declared
+=== CONT  TestT06A15R1OppositeFormatControls/tidb/dynamic-declared
+=== CONT  TestT06A15R1OppositeFormatControls/mysql/dynamic-declared
+=== CONT  TestT06A15R1OppositeFormatControls/mysql/redundant-declared
+=== CONT  TestT06A15R1OppositeFormatControls/mysql/default-declared-with-compact-instance
+=== CONT  TestT06A15R1OppositeFormatControls/mysql/compact-declared
+=== CONT  TestT06A15R1OppositeFormatControls/tidb/compact-declared
+=== CONT  TestT06A15R1OppositeFormatControls/mysql/default-declared-no-instance
+=== CONT  TestT06A15R1OppositeFormatControls/tidb/default-declared-no-instance
+=== CONT  TestT06A15R1OppositeFormatControls/mysql/omitted-no-instance
+=== CONT  TestT06A15R1MissingCharsetReportsOnlyCharset/mysql/offline
+--- PASS: TestT06A15R1SmallComputesUnderEveryInstanceShape (0.00s)
+    --- PASS: TestT06A15R1SmallComputesUnderEveryInstanceShape/mysql/nil (0.01s)
+    --- PASS: TestT06A15R1SmallComputesUnderEveryInstanceShape/tidb/offline (0.01s)
+    --- PASS: TestT06A15R1SmallComputesUnderEveryInstanceShape/tidb/redundant (0.01s)
+    --- PASS: TestT06A15R1SmallComputesUnderEveryInstanceShape/tidb/dynamic (0.01s)
+    --- PASS: TestT06A15R1SmallComputesUnderEveryInstanceShape/mysql/compact (0.01s)
+    --- PASS: TestT06A15R1SmallComputesUnderEveryInstanceShape/mysql/redundant (0.01s)
+    --- PASS: TestT06A15R1SmallComputesUnderEveryInstanceShape/tidb/nil (0.01s)
+    --- PASS: TestT06A15R1SmallComputesUnderEveryInstanceShape/mysql/dynamic (0.01s)
+    --- PASS: TestT06A15R1SmallComputesUnderEveryInstanceShape/tidb/compact (0.01s)
+    --- PASS: TestT06A15R1SmallComputesUnderEveryInstanceShape/mysql/empty (0.01s)
+    --- PASS: TestT06A15R1SmallComputesUnderEveryInstanceShape/tidb/empty (0.01s)
+    --- PASS: TestT06A15R1SmallComputesUnderEveryInstanceShape/mysql/offline (0.01s)
+=== CONT  TestT06A15R1MissingCharsetReportsOnlyCharset/tidb/offline
+=== CONT  TestT06A15R1MissingCharsetReportsOnlyCharset/tidb/empty
+=== CONT  TestT06A15R1MissingCharsetReportsOnlyCharset/tidb/nil
+=== CONT  TestT06A15R1MissingCharsetReportsOnlyCharset/mysql/empty
+=== CONT  TestT06A15R1MissingCharsetReportsOnlyCharset/mysql/nil
+--- PASS: TestT06A15R1OppositeFormatControls (0.00s)
+    --- PASS: TestT06A15R1OppositeFormatControls/tidb/default-declared-with-compact-instance (0.01s)
+    --- PASS: TestT06A15R1OppositeFormatControls/tidb/omitted-no-instance (0.01s)
+    --- PASS: TestT06A15R1OppositeFormatControls/tidb/redundant-declared (0.01s)
+    --- PASS: TestT06A15R1OppositeFormatControls/mysql/redundant-declared (0.01s)
+    --- PASS: TestT06A15R1OppositeFormatControls/mysql/default-declared-no-instance (0.01s)
+    --- PASS: TestT06A15R1OppositeFormatControls/tidb/dynamic-declared (0.01s)
+    --- PASS: TestT06A15R1OppositeFormatControls/mysql/dynamic-declared (0.01s)
+    --- PASS: TestT06A15R1OppositeFormatControls/mysql/compact-declared (0.01s)
+    --- PASS: TestT06A15R1OppositeFormatControls/tidb/default-declared-no-instance (0.01s)
+    --- PASS: TestT06A15R1OppositeFormatControls/tidb/compact-declared (0.01s)
+    --- PASS: TestT06A15R1OppositeFormatControls/mysql/default-declared-with-compact-instance (0.01s)
+    --- PASS: TestT06A15R1OppositeFormatControls/mysql/omitted-no-instance (0.01s)
+--- PASS: TestT06A15R1MissingCharsetReportsOnlyCharset (0.03s)
+    --- PASS: TestT06A15R1MissingCharsetReportsOnlyCharset/mysql/charset-provided (0.02s)
+    --- PASS: TestT06A15R1MissingCharsetReportsOnlyCharset/tidb/charset-provided (0.01s)
+    --- PASS: TestT06A15R1MissingCharsetReportsOnlyCharset/tidb/offline (0.01s)
+    --- PASS: TestT06A15R1MissingCharsetReportsOnlyCharset/mysql/offline (0.01s)
+    --- PASS: TestT06A15R1MissingCharsetReportsOnlyCharset/tidb/empty (0.01s)
+    --- PASS: TestT06A15R1MissingCharsetReportsOnlyCharset/tidb/nil (0.01s)
+    --- PASS: TestT06A15R1MissingCharsetReportsOnlyCharset/mysql/empty (0.01s)
+    --- PASS: TestT06A15R1MissingCharsetReportsOnlyCharset/mysql/nil (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.536s
+rc=0

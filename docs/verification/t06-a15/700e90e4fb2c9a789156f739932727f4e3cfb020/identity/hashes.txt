@@ -1,0 +1,20 @@
+# T06-A15-R1 evidence identity hashes (sha256)
+
+## code under test
+head_sha 700e90e4fb2c9a789156f739932727f4e3cfb020
+parent    0a4c19d65bd6f7c1273bd2f6f82b702ce2dca9bd (A15 evidence commit)
+buggy     32a325c35539bec163677382db587666b0023029 (A15 code, red-state base)
+
+## artifacts
+07698be38b19dfaf64e83a73720d5fdc8f1672a689bc75f3cce63476e4f638c4  artifact.json
+d8d89655f59a1894f082f983d1bd5a7326cc20eb73829d0b42fc587b4db946b4  T06-manifest.json
+53ba4e251afcb1b5e2c7f61fe5b78eb922d682b0a5478c153a340951ad80a48e  anchors.json
+
+## policies (isolated profile used by supplemental CLI runs)
+7f36b4b7a930b18718596cbad5f42e59f40f7eff5c3e711158877a64ddee28fa  red-green/policies/on.yaml
+
+## binaries (kept out of repo)
+/tmp/ds-t06-a15r1-golden/T06/bin/deltascope
+0e2123bc09dd44cd2c4009c7db02788b9fa02df7d05cfa64effc580467da22bd  /tmp/ds-t06-a15r1-golden/T06/bin/deltascope
+/Users/fan/GolangProjects/DeltaScope/bin/deltascope
+33bbe16a9459bb4f548d18745a3f2734973ca0f26b7b6cf507e5040297119040  /Users/fan/GolangProjects/DeltaScope/bin/deltascope

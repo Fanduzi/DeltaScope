@@ -1,0 +1,8 @@
+$ make ddl-golden-validator-test
+PASS t06a15 not-required record in on slot rejected
+PASS t06a15 disabled record in on slot rejected
+PASS t06a15 disabled fabricated rule_summary rejected
+PASS t06a15 on case bound to not-required profile rejected
+PASS t06a15 case deleted on both sides rejected
+contract cases=728 failures=0
+rc=0

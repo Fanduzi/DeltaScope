@@ -1,0 +1,5 @@
+$ make ddl-golden TASK=T06 ARTIFACT_DIR=/tmp/ds-t06-a15r1-golden
+[ddl-golden] task=T06 head=700e90e4fb2c cases=496 passed=496 assertions=11772
+[ddl-golden] artifact=/private/tmp/ds-t06-a15r1-golden/T06/artifact.json
+[ddl-golden] PASS
+rc=0

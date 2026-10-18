@@ -1,0 +1,1 @@
+/Users/fan/GolangProjects/DeltaScope/bin/deltascope audit --config on.yaml --file S_SMALL.sql --dialect tidb --format json --fail-on blocker

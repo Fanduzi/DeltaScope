@@ -1,0 +1,10 @@
+$ gofmt -l internal pkg
+rc=0
+
+$ three-level-doc
+[three-level-doc] OK
+rc=0
+
+$ golangci-lint on touched packages
+0 issues.
+rc=0
