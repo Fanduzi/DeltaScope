@@ -1,0 +1,5 @@
+CREATE TABLE t (
+  i INT,
+  v VARCHAR(8),
+  u BIGINT UNSIGNED
+);

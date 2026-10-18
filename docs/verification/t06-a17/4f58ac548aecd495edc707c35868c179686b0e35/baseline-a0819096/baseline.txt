@@ -1,0 +1,28 @@
+=== git identity ===
+a08190969237404b280cfcc8d2cec8c01a082316
+milestone/mysql-tidb-ddl-completion
+a08190969237404b280cfcc8d2cec8c01a082316
+=== status ===
+ M .mcp.json
+?? .agents/
+?? .codex/
+?? .cursor/
+?? .debug-journal.md
+?? .devin/
+?? .grok/
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? docs/quality/architecture-review-2026-08-11.html
+?? docs/verification/t06-a12/1a5dd90de898a59590ef8a19aa068c4b5e8ce7f8/T06/
+=== parent chain ===
+a08190969237404b280cfcc8d2cec8c01a082316 700e90e4fb2c9a789156f739932727f4e3cfb020 docs(verification): T06-A15-R1 declared-COMPRESSED identity evidence at 700e90e4
+700e90e4fb2c9a789156f739932727f4e3cfb020 0a4c19d65bd6f7c1273bd2f6f82b702ce2dca9bd fix(ddl): T06-A15-R1 keep declared ROW_FORMAT=COMPRESSED identity over instance defaults
+0a4c19d65bd6f7c1273bd2f6f82b702ce2dca9bd 32a325c35539bec163677382db587666b0023029 docs(verification): T06-A15 row-size fact-resolution evidence at 32a325c3
+=== parser dep ===
+	github.com/pingcap/tidb/pkg/parser v0.0.0-20260622124716-26db2d85d6cd
+edc51c364a9ef5ae64687b62290fe8f67d3ed814fa0661f20627df39ec698354  build/probe_a17
+go version go1.26.1 darwin/arm64
+extract rc=0
+audit rc=0
+provider rc=0

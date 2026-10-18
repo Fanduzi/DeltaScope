@@ -1,0 +1,18 @@
+ M .mcp.json
+?? .agents/
+?? .codex/
+?? .cursor/
+?? .debug-journal.md
+?? .devin/
+?? .grok/
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? docs/quality/architecture-review-2026-08-11.html
+?? docs/verification/t06-a12/1a5dd90de898a59590ef8a19aa068c4b5e8ce7f8/T06/
+?? docs/verification/t06-a17/
+
+--- note ---
+.mcp.json: external user modification, intentionally untracked from this task (not staged, not committed)
+untracked tool/recovery dirs belong to other tooling — untouched
+a17probe/: temporary in-module probe used for the four-anchor proof — removed before commit, source kept at anchor-probe/main.go.txt

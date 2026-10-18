@@ -1,0 +1,25 @@
+{
+  "coverage": {
+    "status": "complete"
+  },
+  "diagnostics": null,
+  "dialect": "tidb",
+  "sql": "CREATE TABLE t (\n  e_upper ENUM('Ready','Closed'),\n  e_lower ENUM('ready','closed'),\n  e_order ENUM('Closed','Ready'),\n  s_upper SET('Read','Write'),\n  s_lower SET('read','write'),\n  s_order SET('Write','Read')\n);\n",
+  "statement_count": 1,
+  "statements": [
+    {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "CREATE TABLE t (\n  e_upper ENUM('Ready','Closed'),\n  e_lower ENUM('ready','closed'),\n  e_order ENUM('Closed','Ready'),\n  s_upper SET('Read','Write'),\n  s_lower SET('read','write'),\n  s_order SET('Write','Read')\n);",
+      "normalized_sql": "CREATE TABLE t (\n  e_upper ENUM('Ready','Closed'),\n  e_lower ENUM('ready','closed'),\n  e_order ENUM('Closed','Ready'),\n  s_upper SET('Read','Write'),\n  s_lower SET('read','write'),\n  s_order SET('Write','Read')\n)",
+      "coverage": {
+        "status": "complete"
+      },
+      "findings": 0,
+      "evidence_gaps": null,
+      "has_column_detail": false
+    }
+  ],
+  "unsupported": [],
+  "verdict": "pass"
+}

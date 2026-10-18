@@ -1,0 +1,43 @@
+--- FAIL: TestT06A17DecimalDeclarations (0.00s)
+    extractor_t06a17_test.go:94: mysql dm Type="decimal(12,0)" Length=12 Unsigned=false, want "decimal(12)"/12/false
+--- FAIL: TestT06A17FloatDoubleDeclarations (0.00s)
+    extractor_t06a17_test.go:103: mysql f0 Type="float" Length=10 Unsigned=false, want "float(10,0)"/10/false
+--- FAIL: TestT06A17EnumSetMemberFidelity (0.00s)
+    extractor_t06a17_test.go:114: mysql e_upper Type="enum('ready','closed')" Length=6 Unsigned=false, want "enum('Ready','Closed')"/6/false
+--- FAIL: TestT06A17MemberRoundTrip (0.00s)
+    extractor_t06a17_test.go:171: "enum('ready','closed')" member[0] "ready", want "Ready"
+--- FAIL: TestT06A17BackslashMemberControl (0.00s)
+    extractor_t06a17_test.go:195: backslash member Type = "enum('a\\b','plain')", want enum('a\\b','plain')
+--- FAIL: TestT06A17AlterColumnDefinitions (0.00s)
+    --- FAIL: TestT06A17AlterColumnDefinitions/add (0.00s)
+        extractor_t06a17_test.go:227: add: e Type = "enum('ready','closed')", want "enum('Ready','Closed')"
+    --- FAIL: TestT06A17AlterColumnDefinitions/change (0.00s)
+        extractor_t06a17_test.go:227: change: d2 Type = "float", want "float(10,0)"
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	0.608s
+--- FAIL: TestT06A17ProviderParameterFidelity (0.00s)
+    provider_t06a17_test.go:118: d_dec122 = Type "decimal" Length 12 Unsigned false, want "decimal(12,2)"/12/false
+--- FAIL: TestT06A17ProviderDistinctness (0.00s)
+    provider_t06a17_test.go:140: d_dec122 and d_dec123 merged to "decimal"
+--- FAIL: TestT06A17ProviderParamBoundary (0.00s)
+    provider_t06a17_test.go:156: e_edge Type = "enum" — member delimiters broke the parameter span
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql	0.751s
+--- FAIL: TestT06A17DerivedPreStatePreservesType (0.00s)
+    --- FAIL: TestT06A17DerivedPreStatePreservesType/tidb (0.00s)
+        batch_state_t06a17_test.go:66: tidb pre-state column f Type = "float", want "float(10,0)"
+    --- FAIL: TestT06A17DerivedPreStatePreservesType/mysql (0.00s)
+        batch_state_t06a17_test.go:66: mysql pre-state column f Type = "float", want "float(10,0)"
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.631s
+--- FAIL: TestT06A17ProviderTypeReachesPreState (0.01s)
+    --- FAIL: TestT06A17ProviderTypeReachesPreState/d (0.00s)
+        audit_t06a17_test.go:149: source_type = decimal, want "decimal(12,2)"
+    --- FAIL: TestT06A17ProviderTypeReachesPreState/e (0.00s)
+        audit_t06a17_test.go:149: source_type = enum, want "enum('Ready','Closed')"
+    --- FAIL: TestT06A17ProviderTypeReachesPreState/s (0.00s)
+        audit_t06a17_test.go:149: source_type = set, want "set('Write','Read')"
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/auditmeta	1.151s
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	1.933s
+FAIL

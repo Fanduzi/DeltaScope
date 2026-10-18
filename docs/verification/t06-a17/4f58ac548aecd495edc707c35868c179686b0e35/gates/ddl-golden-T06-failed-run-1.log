@@ -1,0 +1,41 @@
+First `make ddl-golden TASK=T06 ARTIFACT_DIR=/tmp/ds-a17-proof/golden` attempt
+(failed — see verbatim make output below; second attempt rc=0 after removing
+the four anchor containers this session had started for the §7 anchor probe).
+
+FAILURE CAUSE: this session had `docker compose up -d`ed the four baseline
+anchors for the four-anchor proof before invoking the runner; the runner
+manages the compose lifecycle itself and failed with a container-name
+conflict. Containers were removed (not modified), then the rerun passed
+496/496. No golden runner code, manifest, or artifact path was changed.
+
+verbatim make output (rc=1):
+
+python3 ./scripts/ddl_golden.py run --task "T06" --artifact-dir "/tmp/ds-a17-proof/golden"
+[ddl-golden][FAIL] external blocker recorded: compose up failed: Network deltascope-ddl-golden_default Creating 
+ Network deltascope-ddl-golden_default Created 
+ Container deltascope-ddl-golden-mysql57 Creating 
+ Container deltascope-ddl-golden-mysql84 Creating 
+ Container deltascope-ddl-golden-tidb85 Creating 
+ Container deltascope-ddl-golden-mysql80 Creating 
+ service:mysql57:1 Error response from daemon: Conflict. The container name "/deltascope-ddl-golden-mysql57" is already in use by container "068865a49b48166035bbe91201243f61e294e2004aba26032fe87a8cca467eeb". You have to remove (or rename) that container to be able to reuse that name. 
+Error response from daemon: Conflict. The container name "/deltascope-ddl-golden-mysql57" is already in use by container "068865a49b48166035bbe91201243f61e294e2004aba26032fe87a8cca467eeb". You have to remove (or rename) that container to be able to reuse that name.
+[ddl-golden][FAIL] zero executed cases
+[ddl-golden][FAIL] required cases not executed: [T06.db.mysql57.ddl ... T06.cli.* (all 496, truncated)]
+[ddl-golden][FAIL] baseline case T06.db.mysql57.ddl not executed
+[ddl-golden][FAIL] baseline case T06.db.mysql57.syntax_negative not executed
+[ddl-golden][FAIL] baseline case T06.db.mysql80.ddl not executed
+[ddl-golden][FAIL] baseline case T06.db.mysql80.syntax_negative not executed
+[ddl-golden][FAIL] baseline case T06.db.mysql84.ddl not executed
+[ddl-golden][FAIL] baseline case T06.db.mysql84.syntax_negative not executed
+[ddl-golden][FAIL] baseline case T06.db.tidb85.ddl not executed
+[ddl-golden][FAIL] baseline case T06.db.tidb85.syntax_negative not executed
+[ddl-golden][FAIL] baseline cli dialect mysql not executed
+[ddl-golden][FAIL] baseline cli dialect tidb not executed
+[ddl-golden][FAIL] required anchor mysql57 skipped (no executed db_ddl case)
+[ddl-golden][FAIL] required anchor mysql80 skipped (no executed db_ddl case)
+[ddl-golden][FAIL] required anchor mysql84 skipped (no executed db_ddl case)
+[ddl-golden][FAIL] required anchor tidb85 skipped (no executed db_ddl case)
+[ddl-golden][FAIL] cleanup residual containers: ['d7a637f7ba4a', 'a82566780d40', '3cf56106dc8b', '068865a49b48']
+[ddl-golden] task=T06 head=a08190969237 cases=0 passed=0 assertions=0
+[ddl-golden] artifact=/private/tmp/ds-a17-proof/golden/T06/artifact.json
+make: *** [ddl-golden] Error 1

@@ -1,0 +1,210 @@
+{
+  "columns": [
+    {
+      "name": "d_dec122",
+      "type": "decimal",
+      "length": 12,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    },
+    {
+      "name": "d_dec123",
+      "type": "decimal",
+      "length": 12,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    },
+    {
+      "name": "d_dec120",
+      "type": "decimal",
+      "length": 12,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    },
+    {
+      "name": "f_flt102",
+      "type": "float",
+      "length": 10,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    },
+    {
+      "name": "f_flt103",
+      "type": "float",
+      "length": 10,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    },
+    {
+      "name": "f_flt100",
+      "type": "float",
+      "length": 10,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    },
+    {
+      "name": "x_dbl162",
+      "type": "double",
+      "length": 16,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    },
+    {
+      "name": "x_dbl164",
+      "type": "double",
+      "length": 16,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    },
+    {
+      "name": "x_dbl160",
+      "type": "double",
+      "length": 16,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    },
+    {
+      "name": "e_upper",
+      "type": "enum",
+      "length": 0,
+      "unsigned": false,
+      "charset": "utf8mb4",
+      "collation": "utf8mb4_bin",
+      "not_null": false
+    },
+    {
+      "name": "e_lower",
+      "type": "enum",
+      "length": 0,
+      "unsigned": false,
+      "charset": "utf8mb4",
+      "collation": "utf8mb4_bin",
+      "not_null": false
+    },
+    {
+      "name": "e_order",
+      "type": "enum",
+      "length": 0,
+      "unsigned": false,
+      "charset": "utf8mb4",
+      "collation": "utf8mb4_bin",
+      "not_null": false
+    },
+    {
+      "name": "s_upper",
+      "type": "set",
+      "length": 0,
+      "unsigned": false,
+      "charset": "utf8mb4",
+      "collation": "utf8mb4_bin",
+      "not_null": false
+    },
+    {
+      "name": "s_lower",
+      "type": "set",
+      "length": 0,
+      "unsigned": false,
+      "charset": "utf8mb4",
+      "collation": "utf8mb4_bin",
+      "not_null": false
+    },
+    {
+      "name": "s_order",
+      "type": "set",
+      "length": 0,
+      "unsigned": false,
+      "charset": "utf8mb4",
+      "collation": "utf8mb4_bin",
+      "not_null": false
+    },
+    {
+      "name": "e_edge",
+      "type": "enum",
+      "length": 0,
+      "unsigned": false,
+      "charset": "utf8mb4",
+      "collation": "utf8mb4_bin",
+      "not_null": false
+    },
+    {
+      "name": "c_int",
+      "type": "int",
+      "length": 0,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    },
+    {
+      "name": "c_varchar8",
+      "type": "varchar",
+      "length": 8,
+      "unsigned": false,
+      "charset": "utf8mb4",
+      "collation": "utf8mb4_bin",
+      "not_null": false
+    },
+    {
+      "name": "c_bigint_u",
+      "type": "bigint",
+      "length": 0,
+      "unsigned": true,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    }
+  ],
+  "dialect_label": "tidb",
+  "exists": true,
+  "fixture": "constructed catalog rows (not observed from a live server)",
+  "input_column_types": [
+    "decimal(12,2)",
+    "decimal(12,3)",
+    "decimal(12,0)",
+    "float(10,2)",
+    "float(10,3)",
+    "float(10,0)",
+    "double(16,2)",
+    "double(16,4)",
+    "double(16,0)",
+    "enum('Ready','Closed')",
+    "enum('ready','closed')",
+    "enum('Closed','Ready')",
+    "set('Read','Write')",
+    "set('read','write')",
+    "set('Write','Read')",
+    "enum('','A,B','A)B','O''Reilly')",
+    "int",
+    "varchar(8)",
+    "bigint unsigned"
+  ],
+  "options": {
+    "charset": "utf8mb4",
+    "collation": "utf8mb4_bin",
+    "engine": "InnoDB",
+    "row_format": "DYNAMIC"
+  },
+  "provider_query_ledger": [
+    " select engine, table_collation, table_comment, auto_increment, row_format, table_rows from information_schema.tables where table_schema = ? and table_name = ? ",
+    " select column_name, column_type, character_set_name, collation_name, column_comment, column_default, is_nullable, extra from information_schema.columns where table_schema = ? and table_name = ? order by ordinal_position ",
+    " select index_name, non_unique, index_type, column_name, cardinality from information_schema.statistics where table_schema = ? and table_name = ? order by index_name, seq_in_index "
+  ]
+}

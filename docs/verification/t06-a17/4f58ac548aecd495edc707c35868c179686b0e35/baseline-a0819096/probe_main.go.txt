@@ -1,0 +1,466 @@
+// T06-A17 probe: real parser/extractor/AuditSQL/provider observation of
+// declared column type parameters. Out-of-repo evidence only.
+package main
+
+import (
+	"context"
+	"database/sql"
+	"database/sql/driver"
+	"encoding/json"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"regexp"
+	"sort"
+	"strings"
+
+	audit "github.com/Fanduzi/DeltaScope/internal/application/audit"
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+	mysqlmeta "github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql"
+	tidbparser "github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb"
+
+	"github.com/pingcap/tidb/pkg/parser/ast"
+	"github.com/pingcap/tidb/pkg/parser/format"
+	pmysql "github.com/pingcap/tidb/pkg/parser/mysql"
+	ptypes "github.com/pingcap/tidb/pkg/parser/types"
+)
+
+var outDir = os.Getenv("PROBE_OUT")
+
+type astCol struct {
+	Name       string   `json:"name"`
+	TpCode     byte     `json:"tp_code"`
+	TpName     string   `json:"tp_name"`
+	Flen       int      `json:"flen"`
+	Decimal    int      `json:"decimal"`
+	Elems      []string `json:"elems,omitempty"`
+	ElemsHex   []string `json:"elems_hex,omitempty"`
+	ElemsSet   bool     `json:"elems_set"`
+	String     string   `json:"string"`
+	CompactStr string   `json:"compact_str"`
+	Restore    string   `json:"restore"`
+}
+
+type specCol struct {
+	Name               string   `json:"name"`
+	Type               string   `json:"type"`
+	Length             int      `json:"length"`
+	Unsigned           bool     `json:"unsigned"`
+	Charset            string   `json:"charset"`
+	Collation          string   `json:"collation"`
+	NotNull            bool     `json:"not_null"`
+	UnextractedOptions []string `json:"unextracted_options,omitempty"`
+}
+
+func writeJSON(name string, v any) {
+	b, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		panic(err)
+	}
+	b = append(b, '\n')
+	if err := os.WriteFile(filepath.Join(outDir, name), b, 0o644); err != nil {
+		panic(err)
+	}
+}
+
+func sqlFiles() ([]string, map[string]string) {
+	dir := os.Getenv("PROBE_SQL_DIR")
+	names := []string{"N1.sql", "N2.sql", "L1.sql", "L2.sql", "C.sql"}
+	bodies := map[string]string{}
+	for _, n := range names {
+		b, err := os.ReadFile(filepath.Join(dir, n))
+		if err != nil {
+			panic(err)
+		}
+		bodies[n] = string(b)
+	}
+	return names, bodies
+}
+
+func observeExtract() {
+	names, bodies := sqlFiles()
+	ctx := context.Background()
+	for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
+		for _, name := range names {
+			sqlText := bodies[name]
+			run := map[string]any{"dialect": string(dialect), "sql": sqlText}
+
+			// Layer A/B: real upstream parser through the real adapter call
+			// path (adapter Parse = parser.New().Parse(sql, "", "")).
+			adapterResult, perr := tidbparser.New().Parse(ctx, sqlText)
+			var cols []astCol
+			var astErr string
+			if perr != nil {
+				astErr = perr.Error()
+			} else {
+				for _, stmt := range adapterResult.Statements {
+					ct, ok := stmt.(*ast.CreateTableStmt)
+					if !ok {
+						continue
+					}
+					for _, col := range ct.Cols {
+						tp := col.Tp
+						ac := astCol{
+							Name:       col.Name.Name.O,
+							TpCode:     tp.GetType(),
+							TpName:     ptypes.TypeToStr(tp.GetType(), tp.GetCharset()),
+							Flen:       tp.GetFlen(),
+							Decimal:    tp.GetDecimal(),
+							Elems:      tp.GetElems(),
+							ElemsSet:   tp.GetElems() != nil,
+							String:     tp.String(),
+							CompactStr: tp.CompactStr(),
+						}
+						for _, e := range tp.GetElems() {
+							ac.ElemsHex = append(ac.ElemsHex, fmt.Sprintf("%x", []byte(e)))
+						}
+						var sb strings.Builder
+						rc := format.NewRestoreCtx(format.DefaultRestoreFlags, &sb)
+						if err := tp.Restore(rc); err != nil {
+							ac.Restore = "ERR:" + err.Error()
+						} else {
+							ac.Restore = sb.String()
+						}
+						cols = append(cols, ac)
+					}
+				}
+			}
+			run["ast_columns"] = cols
+			run["ast_error"] = astErr
+			run["warnings"] = adapterResult.Warnings
+
+			// Layer C: real application Parse + Extract -> spec.Column.
+			parsed, aerr := audit.Parse(ctx, sqlText, dialect)
+			var speccols []specCol
+			var specErr string
+			if aerr != nil {
+				specErr = aerr.Error()
+			} else {
+				stmts, eerr := audit.Extract(ctx, parsed)
+				if eerr != nil {
+					specErr = eerr.Error()
+				} else {
+					for _, st := range stmts {
+						if st.DDL == nil {
+							continue
+						}
+						for _, c := range st.DDL.Columns {
+							speccols = append(speccols, specCol{
+								Name:               c.Name,
+								Type:               c.Type,
+								Length:             c.Length,
+								Unsigned:           c.Unsigned,
+								Charset:            c.Charset,
+								Collation:          c.Collation,
+								NotNull:            c.NotNull,
+								UnextractedOptions: c.UnextractedOptions,
+							})
+						}
+					}
+				}
+			}
+			run["spec_columns"] = speccols
+			run["spec_error"] = specErr
+			writeJSON(fmt.Sprintf("%s-%s.json", strings.TrimSuffix(name, ".sql"), dialect), run)
+		}
+	}
+}
+
+func observeAudit() {
+	names, bodies := sqlFiles()
+	ctx := context.Background()
+	policyPath := os.Getenv("PROBE_POLICY")
+	for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
+		for _, name := range names {
+			result, err := audit.AuditSQL(ctx, audit.Request{
+				SQL:        bodies[name],
+				Dialect:    dialect,
+				Schema:     "golden",
+				ConfigPath: policyPath,
+			})
+			rec := map[string]any{"dialect": string(dialect), "sql": bodies[name]}
+			if err != nil {
+				rec["err"] = fmt.Sprintf("%T: %s", err, err.Error())
+			} else {
+				type st struct {
+					Index           int      `json:"index"`
+					Kind            string   `json:"kind"`
+					RawSQL          string   `json:"raw_sql"`
+					NormalizedSQL   string   `json:"normalized_sql"`
+					Coverage        any      `json:"coverage"`
+					Findings        int      `json:"findings"`
+					FindingRules    []string `json:"finding_rules,omitempty"`
+					EvidenceGaps    any      `json:"evidence_gaps"`
+					HasColumnDetail bool     `json:"has_column_detail"`
+				}
+				rec["verdict"] = result.Verdict
+				rec["coverage"] = result.Coverage
+				rec["unsupported"] = result.Unsupported
+				rec["diagnostics"] = result.Diagnostics
+				rec["statement_count"] = len(result.Statements)
+				var ss []st
+				for _, s := range result.Statements {
+					var rules []string
+					for _, f := range s.Findings {
+						rules = append(rules, f.RuleID)
+					}
+					sort.Strings(rules)
+					raw, _ := json.Marshal(s)
+					ss = append(ss, st{
+						Index:           s.Index,
+						Kind:            string(s.Kind),
+						RawSQL:          s.RawSQL,
+						NormalizedSQL:   s.NormalizedSQL,
+						Coverage:        s.Coverage,
+						Findings:        len(s.Findings),
+						FindingRules:    rules,
+						EvidenceGaps:    s.EvidenceGaps,
+						HasColumnDetail: strings.Contains(string(raw), "\"columns\""),
+					})
+				}
+				rec["statements"] = ss
+			}
+			writeJSON("audit-"+fmt.Sprintf("%s-%s.json", strings.TrimSuffix(name, ".sql"), dialect), rec)
+		}
+	}
+}
+
+// ---- controlled database/sql driver for the real provider ----
+
+type probeDriver struct{}
+
+type probeConn struct {
+	ledger *[]string
+}
+
+type probeRows struct {
+	cols []string
+	rows [][]driver.Value
+	i    int
+}
+
+type probeStmt struct {
+	conn  *probeConn
+	query string
+}
+
+func (d probeDriver) Open(name string) (driver.Conn, error) { return nil, fmt.Errorf("unused") }
+
+var querySpace = regexp.MustCompile(`\s+`)
+
+type fixtureDB struct {
+	ledger  []string
+	columns [][]driver.Value
+}
+
+var fixtures = map[string]*fixtureDB{}
+
+func probeDB(name string, columns [][]driver.Value) *sql.DB {
+	fx := &fixtureDB{columns: columns}
+	fixtures[name] = fx
+	drv := fixtureDriver{key: name}
+	sql.Register("a17-"+name, drv)
+	db, err := sql.Open("a17-"+name, "")
+	if err != nil {
+		panic(err)
+	}
+	return db
+}
+
+type fixtureDriver struct{ key string }
+
+func (d fixtureDriver) Open(name string) (driver.Conn, error) {
+	fx := fixtures[d.key]
+	return fixtureConn{fx: fx}, nil
+}
+
+type fixtureConn struct{ fx *fixtureDB }
+
+func (c fixtureConn) Prepare(query string) (driver.Stmt, error) {
+	return fixtureStmt{fx: c.fx, query: query}, nil
+}
+func (c fixtureConn) Close() error              { return nil }
+func (c fixtureConn) Begin() (driver.Tx, error) { return nil, fmt.Errorf("no tx") }
+func (c fixtureConn) QueryContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Rows, error) {
+	norm := querySpace.ReplaceAllString(strings.ToLower(query), " ")
+	c.fx.ledger = append(c.fx.ledger, norm)
+	switch {
+	case strings.Contains(norm, "information_schema.columns"):
+		return &fixtureRows{cols: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra"}, rows: c.fx.columns}, nil
+	case strings.Contains(norm, "information_schema.statistics"):
+		return &fixtureRows{cols: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality"}, rows: nil}, nil
+	}
+	return &fixtureRows{cols: []string{"v"}, rows: [][]driver.Value{{"0"}}}, nil
+}
+func (c fixtureConn) Query(query string, args []driver.Value) (driver.Rows, error) {
+	return nil, fmt.Errorf("non-context query not implemented")
+}
+
+type fixtureStmt struct {
+	fx    *fixtureDB
+	query string
+}
+
+func (s fixtureStmt) Close() error  { return nil }
+func (s fixtureStmt) NumInput() int { return -1 }
+func (s fixtureStmt) Exec(args []driver.Value) (driver.Result, error) {
+	return nil, fmt.Errorf("exec not implemented")
+}
+func (s fixtureStmt) Query(args []driver.Value) (driver.Rows, error) {
+	return nil, fmt.Errorf("query not implemented")
+}
+
+type fixtureRows struct {
+	cols []string
+	rows [][]driver.Value
+	i    int
+}
+
+func (r *fixtureRows) Columns() []string { return r.cols }
+func (r *fixtureRows) Close() error      { return nil }
+func (r *fixtureRows) Next(dest []driver.Value) error {
+	if r.i >= len(r.rows) {
+		return io.EOF
+	}
+	copy(dest, r.rows[r.i])
+	r.i++
+	return nil
+}
+
+// QueryRowContext path for the tables query uses conn.Query too? The provider
+// uses db.QueryRowContext -> conn.QueryerContext path. The switch above handles
+// it. For the single-row tables answer we must return one row.
+
+func init() {
+	// tables row is answered per fixture at QueryContext time (see below).
+	_ = pmysql.TypeNewDecimal
+}
+
+func observeProvider() {
+	// One controlled catalog row set per contract, ordered deterministically.
+	col := func(name, ctype, charset, coll, comment string, def any, nullable, extra string) []driver.Value {
+		var defv driver.Value
+		if def != nil {
+			defv = def
+		}
+		return []driver.Value{name, ctype, charset, coll, comment, defv, nullable, extra}
+	}
+	columns := [][]driver.Value{
+		col("d_dec122", "decimal(12,2)", "", "", "", nil, "YES", ""),
+		col("d_dec123", "decimal(12,3)", "", "", "", nil, "YES", ""),
+		col("d_dec120", "decimal(12,0)", "", "", "", nil, "YES", ""),
+		col("f_flt102", "float(10,2)", "", "", "", nil, "YES", ""),
+		col("f_flt103", "float(10,3)", "", "", "", nil, "YES", ""),
+		col("f_flt100", "float(10,0)", "", "", "", nil, "YES", ""),
+		col("x_dbl162", "double(16,2)", "", "", "", nil, "YES", ""),
+		col("x_dbl164", "double(16,4)", "", "", "", nil, "YES", ""),
+		col("x_dbl160", "double(16,0)", "", "", "", nil, "YES", ""),
+		col("e_upper", "enum('Ready','Closed')", "utf8mb4", "utf8mb4_bin", "", nil, "YES", ""),
+		col("e_lower", "enum('ready','closed')", "utf8mb4", "utf8mb4_bin", "", nil, "YES", ""),
+		col("e_order", "enum('Closed','Ready')", "utf8mb4", "utf8mb4_bin", "", nil, "YES", ""),
+		col("s_upper", "set('Read','Write')", "utf8mb4", "utf8mb4_bin", "", nil, "YES", ""),
+		col("s_lower", "set('read','write')", "utf8mb4", "utf8mb4_bin", "", nil, "YES", ""),
+		col("s_order", "set('Write','Read')", "utf8mb4", "utf8mb4_bin", "", nil, "YES", ""),
+		col("e_edge", "enum('','A,B','A)B','O''Reilly')", "utf8mb4", "utf8mb4_bin", "", nil, "YES", ""),
+		col("c_int", "int", "", "", "", nil, "YES", ""),
+		col("c_varchar8", "varchar(8)", "utf8mb4", "utf8mb4_bin", "", nil, "YES", ""),
+		col("c_bigint_u", "bigint unsigned", "", "", "", nil, "YES", ""),
+	}
+	tableRow := []driver.Value{"InnoDB", "utf8mb4_bin", "", nil, "Dynamic", nil}
+
+	for _, dialect := range []string{"mysql", "tidb"} {
+		key := "prov-" + dialect
+		fx := &fixtureDB{columns: columns}
+		fixtures[key] = fx
+		// extend QueryContext: tables query needs a row
+		drv := tableAwareDriver{key: key, tableRow: tableRow}
+		sql.Register("a17-"+key, drv)
+		db, err := sql.Open("a17-"+key, "")
+		if err != nil {
+			panic(err)
+		}
+		provider := mysqlmeta.NewProvider(db)
+		snap, err := provider.LoadTableSnapshot(context.Background(), spec.DialectMySQL, "golden", "t")
+		rec := map[string]any{"dialect_label": dialect, "fixture": "constructed catalog rows (not observed from a live server)"}
+		if err != nil {
+			rec["err"] = err.Error()
+		} else {
+			rec["exists"] = snap.Exists
+			rec["options"] = snap.Options
+			var out []specCol
+			for _, c := range snap.Columns {
+				out = append(out, specCol{
+					Name: c.Name, Type: c.Type, Length: c.Length, Unsigned: c.Unsigned,
+					Charset: c.Charset, Collation: c.Collation, NotNull: c.NotNull,
+					UnextractedOptions: c.UnextractedOptions,
+				})
+			}
+			rec["columns"] = out
+			rec["input_column_types"] = func() []string {
+				var v []string
+				for _, r := range columns {
+					v = append(v, r[1].(string))
+				}
+				return v
+			}()
+		}
+		rec["provider_query_ledger"] = fx.ledger
+		writeJSON("provider-"+dialect+".json", rec)
+		db.Close()
+	}
+}
+
+// tableAwareDriver answers the tables QueryRow path plus the generic context
+// query path used by loadColumns/loadIndexes.
+type tableAwareDriver struct {
+	key      string
+	tableRow []driver.Value
+}
+
+func (d tableAwareDriver) Open(name string) (driver.Conn, error) {
+	return tableAwareConn{fx: fixtures[d.key], tableRow: d.tableRow}, nil
+}
+
+type tableAwareConn struct {
+	fx       *fixtureDB
+	tableRow []driver.Value
+}
+
+func (c tableAwareConn) Prepare(q string) (driver.Stmt, error) {
+	return fixtureStmt{fx: c.fx, query: q}, nil
+}
+func (c tableAwareConn) Close() error              { return nil }
+func (c tableAwareConn) Begin() (driver.Tx, error) { return nil, fmt.Errorf("no tx") }
+func (c tableAwareConn) Query(q string, a []driver.Value) (driver.Rows, error) {
+	return nil, fmt.Errorf("non-context query not implemented")
+}
+func (c tableAwareConn) QueryContext(ctx context.Context, q string, a []driver.NamedValue) (driver.Rows, error) {
+	norm := querySpace.ReplaceAllString(strings.ToLower(q), " ")
+	c.fx.ledger = append(c.fx.ledger, norm)
+	switch {
+	case strings.Contains(norm, "information_schema.columns"):
+		return &fixtureRows{cols: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra"}, rows: c.fx.columns}, nil
+	case strings.Contains(norm, "information_schema.statistics"):
+		return &fixtureRows{cols: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality"}, rows: nil}, nil
+	case strings.Contains(norm, "information_schema.tables"):
+		return &fixtureRows{cols: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"}, rows: [][]driver.Value{c.tableRow}}, nil
+	}
+	return &fixtureRows{cols: []string{"v"}, rows: [][]driver.Value{{"0"}}}, nil
+}
+
+func main() {
+	if outDir == "" {
+		panic("PROBE_OUT not set")
+	}
+	switch os.Args[1] {
+	case "extract":
+		observeExtract()
+	case "audit":
+		observeAudit()
+	case "provider":
+		observeProvider()
+	default:
+		panic("unknown phase")
+	}
+}

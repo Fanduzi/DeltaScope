@@ -1,0 +1,60 @@
+=== RUN   TestT06A17DecimalDeclarations
+--- PASS: TestT06A17DecimalDeclarations (0.00s)
+=== RUN   TestT06A17FloatDoubleDeclarations
+--- PASS: TestT06A17FloatDoubleDeclarations (0.00s)
+=== RUN   TestT06A17EnumSetMemberFidelity
+--- PASS: TestT06A17EnumSetMemberFidelity (0.00s)
+=== RUN   TestT06A17MemberRoundTrip
+--- PASS: TestT06A17MemberRoundTrip (0.00s)
+=== RUN   TestT06A17FloatSingleParamControls
+--- PASS: TestT06A17FloatSingleParamControls (0.00s)
+=== RUN   TestT06A17BackslashMemberControl
+--- PASS: TestT06A17BackslashMemberControl (0.00s)
+=== RUN   TestT06A17OrdinaryTypeControls
+--- PASS: TestT06A17OrdinaryTypeControls (0.00s)
+=== RUN   TestT06A17AlterColumnDefinitions
+=== RUN   TestT06A17AlterColumnDefinitions/add
+=== RUN   TestT06A17AlterColumnDefinitions/modify
+=== RUN   TestT06A17AlterColumnDefinitions/change
+--- PASS: TestT06A17AlterColumnDefinitions (0.00s)
+    --- PASS: TestT06A17AlterColumnDefinitions/add (0.00s)
+    --- PASS: TestT06A17AlterColumnDefinitions/modify (0.00s)
+    --- PASS: TestT06A17AlterColumnDefinitions/change (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	0.751s
+=== RUN   TestT06A17ProviderParameterFidelity
+--- PASS: TestT06A17ProviderParameterFidelity (0.00s)
+=== RUN   TestT06A17ProviderDistinctness
+--- PASS: TestT06A17ProviderDistinctness (0.00s)
+=== RUN   TestT06A17ProviderParamBoundary
+--- PASS: TestT06A17ProviderParamBoundary (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql	0.238s
+=== RUN   TestT06A17DerivedPreStatePreservesType
+=== PAUSE TestT06A17DerivedPreStatePreservesType
+=== CONT  TestT06A17DerivedPreStatePreservesType
+=== RUN   TestT06A17DerivedPreStatePreservesType/mysql
+=== PAUSE TestT06A17DerivedPreStatePreservesType/mysql
+=== RUN   TestT06A17DerivedPreStatePreservesType/tidb
+=== PAUSE TestT06A17DerivedPreStatePreservesType/tidb
+=== CONT  TestT06A17DerivedPreStatePreservesType/mysql
+=== CONT  TestT06A17DerivedPreStatePreservesType/tidb
+--- PASS: TestT06A17DerivedPreStatePreservesType (0.00s)
+    --- PASS: TestT06A17DerivedPreStatePreservesType/mysql (0.00s)
+    --- PASS: TestT06A17DerivedPreStatePreservesType/tidb (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.977s
+=== RUN   TestT06A17ProviderTypeReachesPreState
+=== RUN   TestT06A17ProviderTypeReachesPreState/d
+=== RUN   TestT06A17ProviderTypeReachesPreState/e
+=== RUN   TestT06A17ProviderTypeReachesPreState/s
+--- PASS: TestT06A17ProviderTypeReachesPreState (0.01s)
+    --- PASS: TestT06A17ProviderTypeReachesPreState/d (0.00s)
+    --- PASS: TestT06A17ProviderTypeReachesPreState/e (0.00s)
+    --- PASS: TestT06A17ProviderTypeReachesPreState/s (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/auditmeta	0.562s
+=== RUN   TestT06A17TypeFactsSDKTransport
+--- PASS: TestT06A17TypeFactsSDKTransport (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.818s

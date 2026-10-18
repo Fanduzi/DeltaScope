@@ -1,0 +1,25 @@
+{
+  "coverage": {
+    "status": "complete"
+  },
+  "diagnostics": null,
+  "dialect": "mysql",
+  "sql": "CREATE TABLE t (\n  i INT,\n  v VARCHAR(8),\n  u BIGINT UNSIGNED\n);\n",
+  "statement_count": 1,
+  "statements": [
+    {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "CREATE TABLE t (\n  i INT,\n  v VARCHAR(8),\n  u BIGINT UNSIGNED\n);",
+      "normalized_sql": "CREATE TABLE t (\n  i INT,\n  v VARCHAR(8),\n  u BIGINT UNSIGNED\n)",
+      "coverage": {
+        "status": "complete"
+      },
+      "findings": 0,
+      "evidence_gaps": null,
+      "has_column_detail": false
+    }
+  ],
+  "unsupported": [],
+  "verdict": "pass"
+}

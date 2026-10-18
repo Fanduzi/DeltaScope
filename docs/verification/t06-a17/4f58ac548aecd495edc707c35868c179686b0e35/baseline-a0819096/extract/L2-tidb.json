@@ -1,0 +1,73 @@
+{
+  "ast_columns": [
+    {
+      "name": "e",
+      "tp_code": 247,
+      "tp_name": "enum",
+      "flen": 8,
+      "decimal": -1,
+      "elems": [
+        "",
+        "A,B",
+        "A)B",
+        "O'Reilly"
+      ],
+      "elems_hex": [
+        "",
+        "412c42",
+        "412942",
+        "4f275265696c6c79"
+      ],
+      "elems_set": true,
+      "string": "enum('','A,B','A)B','O''Reilly')",
+      "compact_str": "enum('','A,B','A)B','O''Reilly')",
+      "restore": "ENUM('','A,B','A)B','O''Reilly')"
+    },
+    {
+      "name": "s",
+      "tp_code": 248,
+      "tp_name": "set",
+      "flen": 17,
+      "decimal": -1,
+      "elems": [
+        "Read",
+        "A)B",
+        "O'Reilly"
+      ],
+      "elems_hex": [
+        "52656164",
+        "412942",
+        "4f275265696c6c79"
+      ],
+      "elems_set": true,
+      "string": "set('Read','A)B','O''Reilly')",
+      "compact_str": "set('Read','A)B','O''Reilly')",
+      "restore": "SET('Read','A)B','O''Reilly')"
+    }
+  ],
+  "ast_error": "",
+  "dialect": "tidb",
+  "spec_columns": [
+    {
+      "name": "e",
+      "type": "enum('','a,b','a)b','o''reilly')",
+      "length": 8,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    },
+    {
+      "name": "s",
+      "type": "set('read','a)b','o''reilly')",
+      "length": 17,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    }
+  ],
+  "spec_error": "",
+  "sql": "CREATE TABLE t (\n  e ENUM('','A,B','A)B','O''Reilly'),\n  s SET('Read','A)B','O''Reilly')\n);\n",
+  "warnings": []
+}

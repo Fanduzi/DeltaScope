@@ -1,0 +1,171 @@
+{
+  "ast_columns": [
+    {
+      "name": "f2",
+      "tp_code": 4,
+      "tp_name": "float",
+      "flen": 10,
+      "decimal": 2,
+      "elems_set": false,
+      "string": "float(10,2)",
+      "compact_str": "float(10,2)",
+      "restore": "FLOAT(10,2)"
+    },
+    {
+      "name": "f3",
+      "tp_code": 4,
+      "tp_name": "float",
+      "flen": 10,
+      "decimal": 3,
+      "elems_set": false,
+      "string": "float(10,3)",
+      "compact_str": "float(10,3)",
+      "restore": "FLOAT(10,3)"
+    },
+    {
+      "name": "f0",
+      "tp_code": 4,
+      "tp_name": "float",
+      "flen": 10,
+      "decimal": 0,
+      "elems_set": false,
+      "string": "float",
+      "compact_str": "float",
+      "restore": "FLOAT(10,0)"
+    },
+    {
+      "name": "fn",
+      "tp_code": 4,
+      "tp_name": "float",
+      "flen": -1,
+      "decimal": -1,
+      "elems_set": false,
+      "string": "float",
+      "compact_str": "float",
+      "restore": "FLOAT"
+    },
+    {
+      "name": "x2",
+      "tp_code": 5,
+      "tp_name": "double",
+      "flen": 16,
+      "decimal": 2,
+      "elems_set": false,
+      "string": "double(16,2)",
+      "compact_str": "double(16,2)",
+      "restore": "DOUBLE(16,2)"
+    },
+    {
+      "name": "x4",
+      "tp_code": 5,
+      "tp_name": "double",
+      "flen": 16,
+      "decimal": 4,
+      "elems_set": false,
+      "string": "double(16,4)",
+      "compact_str": "double(16,4)",
+      "restore": "DOUBLE(16,4)"
+    },
+    {
+      "name": "x0",
+      "tp_code": 5,
+      "tp_name": "double",
+      "flen": 16,
+      "decimal": 0,
+      "elems_set": false,
+      "string": "double",
+      "compact_str": "double",
+      "restore": "DOUBLE(16,0)"
+    },
+    {
+      "name": "xn",
+      "tp_code": 5,
+      "tp_name": "double",
+      "flen": -1,
+      "decimal": -1,
+      "elems_set": false,
+      "string": "double",
+      "compact_str": "double",
+      "restore": "DOUBLE"
+    }
+  ],
+  "ast_error": "",
+  "dialect": "mysql",
+  "spec_columns": [
+    {
+      "name": "f2",
+      "type": "float(10,2)",
+      "length": 10,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    },
+    {
+      "name": "f3",
+      "type": "float(10,3)",
+      "length": 10,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    },
+    {
+      "name": "f0",
+      "type": "float",
+      "length": 10,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    },
+    {
+      "name": "fn",
+      "type": "float",
+      "length": -1,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    },
+    {
+      "name": "x2",
+      "type": "double(16,2)",
+      "length": 16,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    },
+    {
+      "name": "x4",
+      "type": "double(16,4)",
+      "length": 16,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    },
+    {
+      "name": "x0",
+      "type": "double",
+      "length": 16,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    },
+    {
+      "name": "xn",
+      "type": "double",
+      "length": -1,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    }
+  ],
+  "spec_error": "",
+  "sql": "CREATE TABLE t (\n  f2 FLOAT(10,2),\n  f3 FLOAT(10,3),\n  f0 FLOAT(10,0),\n  fn FLOAT,\n  x2 DOUBLE(16,2),\n  x4 DOUBLE(16,4),\n  x0 DOUBLE(16,0),\n  xn DOUBLE\n);\n",
+  "warnings": []
+}

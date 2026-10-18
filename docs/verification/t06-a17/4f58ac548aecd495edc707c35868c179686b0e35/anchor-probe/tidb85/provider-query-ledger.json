@@ -1,0 +1,14 @@
+[
+  {
+    "op": "query",
+    "query": "\n\t\tselect engine, table_collation, table_comment, auto_increment, row_format, table_rows\n\t\tfrom information_schema.tables\n\t\twhere table_schema = ? and table_name = ?\n\t"
+  },
+  {
+    "op": "query",
+    "query": "\n\t\tselect column_name, column_type, character_set_name, collation_name, column_comment,\n\t\t       column_default, is_nullable, extra\n\t\tfrom information_schema.columns\n\t\twhere table_schema = ? and table_name = ?\n\t\torder by ordinal_position\n\t"
+  },
+  {
+    "op": "query",
+    "query": "\n\t\tselect index_name, non_unique, index_type, column_name, cardinality\n\t\tfrom information_schema.statistics\n\t\twhere table_schema = ? and table_name = ?\n\t\torder by index_name, seq_in_index\n\t"
+  }
+]

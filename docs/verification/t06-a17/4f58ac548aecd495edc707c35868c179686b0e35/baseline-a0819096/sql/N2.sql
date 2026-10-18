@@ -1,0 +1,10 @@
+CREATE TABLE t (
+  f2 FLOAT(10,2),
+  f3 FLOAT(10,3),
+  f0 FLOAT(10,0),
+  fn FLOAT,
+  x2 DOUBLE(16,2),
+  x4 DOUBLE(16,4),
+  x0 DOUBLE(16,0),
+  xn DOUBLE
+);

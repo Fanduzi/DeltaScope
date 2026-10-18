@@ -1,0 +1,14 @@
+head_sha: 4f58ac548aecd495edc707c35868c179686b0e35
+parent: a08190969237404b280cfcc8d2cec8c01a082316 (A15-R1 evidence commit / task base)
+go: go version go1.26.1 darwin/arm64
+work_binary: /Users/fan/GolangProjects/DeltaScope/bin/deltascope
+work_binary_sha256: 5d37945162b6d1e254005e354b6b761013b6d982e1b9a72273ce444430e4e3aa
+golden_runner_binary: /tmp/ds-a17-proof/golden/T06/bin/deltascope
+golden_runner_binary_sha256: 20fa5257f5e8fcd479410774aaa744640683757abb3008a86fb1dd965d568830
+	path	github.com/Fanduzi/DeltaScope/cmd/deltascope
+	mod	github.com/Fanduzi/DeltaScope	v0.511.2-0.20261018151436-4f58ac548aec+dirty	
+	build	-buildmode=exe
+	build	vcs=git
+	build	vcs.revision=4f58ac548aecd495edc707c35868c179686b0e35
+	build	vcs.time=2026-10-18T15:14:36Z
+	build	vcs.modified=true

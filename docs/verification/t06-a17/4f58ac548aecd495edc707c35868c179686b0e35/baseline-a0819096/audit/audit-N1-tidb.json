@@ -1,0 +1,25 @@
+{
+  "coverage": {
+    "status": "complete"
+  },
+  "diagnostics": null,
+  "dialect": "tidb",
+  "sql": "CREATE TABLE t (\n  d2 DECIMAL(12,2),\n  d3 DECIMAL(12,3),\n  d0 DECIMAL(12,0),\n  dm DECIMAL(12),\n  dn DECIMAL\n);\n",
+  "statement_count": 1,
+  "statements": [
+    {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "CREATE TABLE t (\n  d2 DECIMAL(12,2),\n  d3 DECIMAL(12,3),\n  d0 DECIMAL(12,0),\n  dm DECIMAL(12),\n  dn DECIMAL\n);",
+      "normalized_sql": "CREATE TABLE t (\n  d2 DECIMAL(12,2),\n  d3 DECIMAL(12,3),\n  d0 DECIMAL(12,0),\n  dm DECIMAL(12),\n  dn DECIMAL\n)",
+      "coverage": {
+        "status": "complete"
+      },
+      "findings": 0,
+      "evidence_gaps": null,
+      "has_column_detail": false
+    }
+  ],
+  "unsupported": [],
+  "verdict": "pass"
+}

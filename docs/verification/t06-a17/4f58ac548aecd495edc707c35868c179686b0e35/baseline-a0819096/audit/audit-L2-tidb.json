@@ -1,0 +1,25 @@
+{
+  "coverage": {
+    "status": "complete"
+  },
+  "diagnostics": null,
+  "dialect": "tidb",
+  "sql": "CREATE TABLE t (\n  e ENUM('','A,B','A)B','O''Reilly'),\n  s SET('Read','A)B','O''Reilly')\n);\n",
+  "statement_count": 1,
+  "statements": [
+    {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "CREATE TABLE t (\n  e ENUM('','A,B','A)B','O''Reilly'),\n  s SET('Read','A)B','O''Reilly')\n);",
+      "normalized_sql": "CREATE TABLE t (\n  e ENUM('','A,B','A)B','O''Reilly'),\n  s SET('Read','A)B','O''Reilly')\n)",
+      "coverage": {
+        "status": "complete"
+      },
+      "findings": 0,
+      "evidence_gaps": null,
+      "has_column_detail": false
+    }
+  ],
+  "unsupported": [],
+  "verdict": "pass"
+}

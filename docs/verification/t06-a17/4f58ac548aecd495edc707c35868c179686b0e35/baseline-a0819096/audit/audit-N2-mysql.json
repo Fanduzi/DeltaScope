@@ -1,0 +1,25 @@
+{
+  "coverage": {
+    "status": "complete"
+  },
+  "diagnostics": null,
+  "dialect": "mysql",
+  "sql": "CREATE TABLE t (\n  f2 FLOAT(10,2),\n  f3 FLOAT(10,3),\n  f0 FLOAT(10,0),\n  fn FLOAT,\n  x2 DOUBLE(16,2),\n  x4 DOUBLE(16,4),\n  x0 DOUBLE(16,0),\n  xn DOUBLE\n);\n",
+  "statement_count": 1,
+  "statements": [
+    {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "CREATE TABLE t (\n  f2 FLOAT(10,2),\n  f3 FLOAT(10,3),\n  f0 FLOAT(10,0),\n  fn FLOAT,\n  x2 DOUBLE(16,2),\n  x4 DOUBLE(16,4),\n  x0 DOUBLE(16,0),\n  xn DOUBLE\n);",
+      "normalized_sql": "CREATE TABLE t (\n  f2 FLOAT(10,2),\n  f3 FLOAT(10,3),\n  f0 FLOAT(10,0),\n  fn FLOAT,\n  x2 DOUBLE(16,2),\n  x4 DOUBLE(16,4),\n  x0 DOUBLE(16,0),\n  xn DOUBLE\n)",
+      "coverage": {
+        "status": "complete"
+      },
+      "findings": 0,
+      "evidence_gaps": null,
+      "has_column_detail": false
+    }
+  ],
+  "unsupported": [],
+  "verdict": "pass"
+}

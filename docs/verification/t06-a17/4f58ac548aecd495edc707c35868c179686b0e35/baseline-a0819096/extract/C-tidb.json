@@ -1,0 +1,71 @@
+{
+  "ast_columns": [
+    {
+      "name": "i",
+      "tp_code": 3,
+      "tp_name": "int",
+      "flen": -1,
+      "decimal": -1,
+      "elems_set": false,
+      "string": "int(11)",
+      "compact_str": "int(11)",
+      "restore": "INT"
+    },
+    {
+      "name": "v",
+      "tp_code": 15,
+      "tp_name": "varchar",
+      "flen": 8,
+      "decimal": -1,
+      "elems_set": false,
+      "string": "varchar(8)",
+      "compact_str": "varchar(8)",
+      "restore": "VARCHAR(8)"
+    },
+    {
+      "name": "u",
+      "tp_code": 8,
+      "tp_name": "bigint",
+      "flen": -1,
+      "decimal": -1,
+      "elems_set": false,
+      "string": "bigint(20) UNSIGNED",
+      "compact_str": "bigint(20)",
+      "restore": "BIGINT UNSIGNED"
+    }
+  ],
+  "ast_error": "",
+  "dialect": "tidb",
+  "spec_columns": [
+    {
+      "name": "i",
+      "type": "int(11)",
+      "length": -1,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    },
+    {
+      "name": "v",
+      "type": "varchar(8)",
+      "length": 8,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    },
+    {
+      "name": "u",
+      "type": "bigint(20) unsigned",
+      "length": -1,
+      "unsigned": true,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    }
+  ],
+  "spec_error": "",
+  "sql": "CREATE TABLE t (\n  i INT,\n  v VARCHAR(8),\n  u BIGINT UNSIGNED\n);\n",
+  "warnings": []
+}

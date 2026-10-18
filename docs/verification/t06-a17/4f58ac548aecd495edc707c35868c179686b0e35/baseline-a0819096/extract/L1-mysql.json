@@ -1,0 +1,179 @@
+{
+  "ast_columns": [
+    {
+      "name": "e_upper",
+      "tp_code": 247,
+      "tp_name": "enum",
+      "flen": 6,
+      "decimal": -1,
+      "elems": [
+        "Ready",
+        "Closed"
+      ],
+      "elems_hex": [
+        "5265616479",
+        "436c6f736564"
+      ],
+      "elems_set": true,
+      "string": "enum('Ready','Closed')",
+      "compact_str": "enum('Ready','Closed')",
+      "restore": "ENUM('Ready','Closed')"
+    },
+    {
+      "name": "e_lower",
+      "tp_code": 247,
+      "tp_name": "enum",
+      "flen": 6,
+      "decimal": -1,
+      "elems": [
+        "ready",
+        "closed"
+      ],
+      "elems_hex": [
+        "7265616479",
+        "636c6f736564"
+      ],
+      "elems_set": true,
+      "string": "enum('ready','closed')",
+      "compact_str": "enum('ready','closed')",
+      "restore": "ENUM('ready','closed')"
+    },
+    {
+      "name": "e_order",
+      "tp_code": 247,
+      "tp_name": "enum",
+      "flen": 6,
+      "decimal": -1,
+      "elems": [
+        "Closed",
+        "Ready"
+      ],
+      "elems_hex": [
+        "436c6f736564",
+        "5265616479"
+      ],
+      "elems_set": true,
+      "string": "enum('Closed','Ready')",
+      "compact_str": "enum('Closed','Ready')",
+      "restore": "ENUM('Closed','Ready')"
+    },
+    {
+      "name": "s_upper",
+      "tp_code": 248,
+      "tp_name": "set",
+      "flen": 10,
+      "decimal": -1,
+      "elems": [
+        "Read",
+        "Write"
+      ],
+      "elems_hex": [
+        "52656164",
+        "5772697465"
+      ],
+      "elems_set": true,
+      "string": "set('Read','Write')",
+      "compact_str": "set('Read','Write')",
+      "restore": "SET('Read','Write')"
+    },
+    {
+      "name": "s_lower",
+      "tp_code": 248,
+      "tp_name": "set",
+      "flen": 10,
+      "decimal": -1,
+      "elems": [
+        "read",
+        "write"
+      ],
+      "elems_hex": [
+        "72656164",
+        "7772697465"
+      ],
+      "elems_set": true,
+      "string": "set('read','write')",
+      "compact_str": "set('read','write')",
+      "restore": "SET('read','write')"
+    },
+    {
+      "name": "s_order",
+      "tp_code": 248,
+      "tp_name": "set",
+      "flen": 10,
+      "decimal": -1,
+      "elems": [
+        "Write",
+        "Read"
+      ],
+      "elems_hex": [
+        "5772697465",
+        "52656164"
+      ],
+      "elems_set": true,
+      "string": "set('Write','Read')",
+      "compact_str": "set('Write','Read')",
+      "restore": "SET('Write','Read')"
+    }
+  ],
+  "ast_error": "",
+  "dialect": "mysql",
+  "spec_columns": [
+    {
+      "name": "e_upper",
+      "type": "enum('ready','closed')",
+      "length": 6,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    },
+    {
+      "name": "e_lower",
+      "type": "enum('ready','closed')",
+      "length": 6,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    },
+    {
+      "name": "e_order",
+      "type": "enum('closed','ready')",
+      "length": 6,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    },
+    {
+      "name": "s_upper",
+      "type": "set('read','write')",
+      "length": 10,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    },
+    {
+      "name": "s_lower",
+      "type": "set('read','write')",
+      "length": 10,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    },
+    {
+      "name": "s_order",
+      "type": "set('write','read')",
+      "length": 10,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    }
+  ],
+  "spec_error": "",
+  "sql": "CREATE TABLE t (\n  e_upper ENUM('Ready','Closed'),\n  e_lower ENUM('ready','closed'),\n  e_order ENUM('Closed','Ready'),\n  s_upper SET('Read','Write'),\n  s_lower SET('read','write'),\n  s_order SET('Write','Read')\n);\n",
+  "warnings": []
+}

@@ -1,0 +1,14 @@
+# T06-A17 evidence identity hashes (sha256)
+
+## code under test
+head_sha 4f58ac548aecd495edc707c35868c179686b0e35
+parent    a08190969237404b280cfcc8d2cec8c01a082316 (A15-R1 evidence commit / task base)
+buggy     a08190969237404b280cfcc8d2cec8c01a082316 (baseline, red-state base)
+
+## artifacts
+372fc82bef94241984eff36e6ba712a210bb546366527b52380483422543b8c0  artifact.json
+d8d89655f59a1894f082f983d1bd5a7326cc20eb73829d0b42fc587b4db946b4  T06-manifest.json
+
+## binaries
+5d37945162b6d1e254005e354b6b761013b6d982e1b9a72273ce444430e4e3aa  bin/deltascope
+20fa5257f5e8fcd479410774aaa744640683757abb3008a86fb1dd965d568830  golden-runner bin/deltascope

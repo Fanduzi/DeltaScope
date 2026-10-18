@@ -1,0 +1,1175 @@
+diff --git a/docs/decisions/2026-10-18-ddl-column-type-parameter-fidelity.md b/docs/decisions/2026-10-18-ddl-column-type-parameter-fidelity.md
+new file mode 100644
+index 00000000..a2cf7e10
+--- /dev/null
++++ b/docs/decisions/2026-10-18-ddl-column-type-parameter-fidelity.md
+@@ -0,0 +1,85 @@
++# Decision: T06-A17 declared column type-parameter fidelity
++
++Date: 2026-10-18
++Status: Accepted
++Related milestone/version: mysql-tidb-ddl-completion (#79), task T06 / issue #85
++Related commits: T06-A17 fix commit on milestone/mysql-tidb-ddl-completion
++Related tests: `internal/infrastructure/parser/tidb/extractor_t06a17_test.go`, `internal/infrastructure/metadata/mysql/provider_t06a17_test.go`, `internal/application/audit/batch_state_t06a17_test.go`, `internal/application/auditmeta/audit_t06a17_test.go`, `pkg/deltascope/audit_type_facts_t06a17_test.go`
++Related docs: T06-A17 external baseline `/tmp/ds-t06-type-facts-baseline/`, EXPECTED-UPGRADES in this slice's evidence
++
++## Context
++
++The T06-A16 closeout left one residual: declared type parameters on the
++ordinary-CREATE fact path. The T06-A17 baseline (repository-external probe
++on `a0819096`, locked parser `v0.0.0-20260622124716-26db2d85d6cd`) measured
++the actual loss layers:
++
++- The **AST is fully faithful**: `GetFlen`/`GetDecimal` sentinels
++  (`-1` = unspecified) distinguish `DECIMAL(12,0)` / `DECIMAL(12)` /
++  `DECIMAL`, and `GetElems` preserves member case, order, and edge
++  literals byte-exactly.
++- **Upstream formatted text** (`FieldType.String()`/`CompactStr()`)
++  renders parameters but substitutes defaults (`DECIMAL`→`decimal(10,0)`,
++  `DECIMAL(12)`→`decimal(12,0)`) and elides explicit `(M,0)` on
++  FLOAT/DOUBLE (`FLOAT(10,0)`→`float`).
++- **The extractor** carried that text but added its own defect:
++  `strings.ToLower` case-folded ENUM/SET member literals, merging
++  `enum('Ready','Closed')` with `enum('ready','closed')`.
++- **The provider** truncated `column_type` at `(` and parsed only the
++  first integer: all scale and all member literals were lost, and an
++  `unsigned` substring inside a member literal would falsely set
++  `Unsigned`.
++
++`spec.Column` keeps a single `Type` string; no `Precision`/`Scale`/
++`Elements` fields exist. The baseline showed the field already carries
++parameter text (`varchar(8)`, `decimal(12,2)`), and every consumer
++(`baseType`, `columnTypeFamily`, ALTER compatibility echo, A15 length
++estimation, `cloneColumn` value copy) reads it compatibly — so the fix
++belongs in the two normalization sites, not the schema.
++
++## Decision
++
++- **Extractor: sentinel-faithful rendering for exactly five types.**
++  `DECIMAL`, `FLOAT`, `DOUBLE`, `ENUM`, `SET` go through
++  `FieldType.Restore` with single-quote + backslash-escape +
++  lowercase-keyword flags. Restore writes `(flen[,decimal])` only from
++  specified sentinels — `decimal`, `decimal(12)`, `decimal(12,0)` stay
++  three distinct strings — keeps the explicit `(10,0)` scale the
++  formatter elides, and re-quotes members byte-exact so member case,
++  order, empty strings, commas, parens, and quotes survive. Every other
++  type keeps the existing `ToLower(String())` text (`int(11)`,
++  `bigint(20) unsigned`, charset/collation suffixes).
++- **Provider: verbatim parameter span for the same five bases.** A
++  quote-aware scan locates the parenthesized span (commas/`)`/`''`
++  inside members never end it); `Type` = lowercase base + verbatim span
++  + lowercased attribute remainder (`decimal(12,2) unsigned`). `Unsigned`
++  is detected on quote-stripped text, so member literals containing
++  ` unsigned`/`zerofill` can never leak into attributes. `Length` keeps
++  its first-integer meaning; non-target bases keep the bare-keyword
++  contract (`varchar(8)`→`varchar`, `int`→`int`).
++- **Declaration vs catalog stay distinct layers.** `DECIMAL(12)` declared
++  yields `decimal(12)`; a catalog `decimal(12,0)` row yields
++  `decimal(12,0)` — the provider preserves what it receives and never
++  reconstructs the original spelling, so catalog normalization is not
++  laundered into declaration provenance.
++- **FLOAT(p) single-argument is the parser's normalization, not ours.**
++  `FLOAT(10)` normalizes to `float` and `FLOAT(30)` to `double` with the
++  parameter discarded upstream; the extractor reports the normalized
++  fact and does not rebuild `p` from SQL text.
++- **No new fields, rules, gaps, or unsupported states.** `Type` text is
++  the whole contract. Findings that echo `source_type`/`target_type`
++  now carry faithful text; rule applicability and family logic are
++  unchanged because `baseType` strips at `(`.
++
++## Consequences
++
++- Member case/order and explicit scale are now durable facts in both
++  declaration and catalog source columns, and derived batch pre-state
++  carries them unchanged (`cloneColumn` needs no new slice fields).
++- One same-root expected upgrade: `provider_test.go`'s
++  `parseColumnType` table now expects `decimal(10,2)` where it asserted
++  the truncated `decimal`.
++- Out of scope per contract: precision/scale/member governance rules,
++  `DECIMAL` physical-byte formulas, ENUM ordering semantics,
++  FLOAT(M,D) deprecation or version policy, PG provider, `Length`
++  semantics, and any display-width changes on non-target types.
+diff --git a/docs/verification/t06-a15/700e90e4fb2c9a789156f739932727f4e3cfb020/README.md b/docs/verification/t06-a15/700e90e4fb2c9a789156f739932727f4e3cfb020/README.md
+index 2fa22355..1884de68 100644
+--- a/docs/verification/t06-a15/700e90e4fb2c9a789156f739932727f4e3cfb020/README.md
++++ b/docs/verification/t06-a15/700e90e4fb2c9a789156f739932727f4e3cfb020/README.md
+@@ -110,9 +110,11 @@ Instance defaults are trusted verbatim only when the declaration is
+ instance-default collection and no server config was read or fabricated.
+ Estimation formulas, 65535/8126/8000 thresholds, PG behavior, index
+ decisions, catalog classification, parser/spec/provider/state
+-machine/transport, and the 24 original A15 roles are unchanged. This
+-evidence HEAD (`700e90e4`) is not the bug report's reviewed SHA —
+-self-verification is not reviewer acceptance.
++machine/transport, and the 24 original A15 roles are unchanged. The
++directory name `700e90e4` is the *tested code* SHA; the evidence itself
++lives in a separate evidence-only commit that is its child (`a0819096`).
++Neither is the bug report's reviewed SHA — self-verification is not
++reviewer acceptance.
+ 
+ ## Working tree honesty
+ 
+diff --git a/internal/application/audit/README.md b/internal/application/audit/README.md
+index 7fb18d60..ad35b5d2 100644
+--- a/internal/application/audit/README.md
++++ b/internal/application/audit/README.md
+@@ -93,6 +93,7 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
+ | batch_state_t06a14_test.go | Verifies the T06-A14 table-option allowlist contract through the real parser and AuditSQL: the six-role × three-family × two-dialect matrix pins the complete `require_explicit` contract (explicit disallowed values reject under both switches, omission rejects only under strict, omitted-optional stays loaded=1/applicable=1, denied-off records no `rule_summary`) with full finding identity, the column-`CHARACTER SET` control proving a column declaration cannot satisfy the table charset requirement, and the CREATE-derived post-state carries `DDL.Options` verbatim into the follower ALTER's pre-state with exactly one `golden.t` provider read and clone isolation — a policy reject never rewrites the declared option |
+ | batch_state_t06a15_test.go | Verifies the T06-A15 row-size field-level fact contract through the real parser and AuditSQL: the ten frozen CREATE TABLE inputs × two dialects under the isolated on/not-required/off profiles plus the nil/empty/partial instance-facts provider matrix pin pointer-presence-independent estimates, deterministic `required_facts` ordering (`instance.default_charset` then `instance.innodb_default_row_format`), the determined-finding-plus-gap coexistence (`missing-format-over` keeps its blocker with `row_format=""` under unverified coverage), the strict 65535 boundary, the declared non-InnoDB scope skip, and provider-error/context-cancellation propagation that never degrades into a fabricated gap |
+ | batch_state_t06a15r1_test.go | Verifies the T06-A15-R1 declared-COMPRESSED row-format identity through the real parser/extractor and AuditSQL: `Options["row_format"]` extracts `COMPRESSED` verbatim, the eleven-column utf8mb4 input never enters the instance-default COMPACT/REDUNDANT payload branch, the over-limit finding keeps `row_format="COMPRESSED"` under complete coverage, missing-charset reports only `instance.default_charset`, opposite-format controls (declared COMPACT/REDUNDANT/DYNAMIC/DEFAULT) keep their bounds, and the provider call ledger stays facts+snapshot with inputs unmutated |
++| batch_state_t06a17_test.go | Verifies the T06-A17 declaration-source carry through the real parser/extractor into `batchState`: a CREATE declaring `DECIMAL(12,2)`, `FLOAT(10,0)`, `ENUM('Ready','Closed')`, `SET('Write','Read')` lands every faithful `Column.Type` verbatim in the derived pre-state a follower ALTER consumes under both dialects — cloneColumn drops nothing the extractor now carries |
+ | diagnostics.go | Defines diagnostic evidence constants (classification aliases `spec.DiagnosticParserError`, reason, action_hint, guidance codes, evidence refs) and helpers for constructing parser-error and unsupported statement diagnostics with optional guidance classification |
+ | ddl_coverage_catalog_query.go | Defines CatalogEntry, CatalogQuery, CatalogResult, LoadEmbeddedCatalog, LoadCatalogFile, LoadCatalog, QueryCatalog, and Validate for reading the generated (embedded) DDL coverage catalog and filtering it without invoking the audit engine |
+ | catalogdata/ddl-coverage-catalog.json | Generated catalog copy compiled into release binaries; kept byte-identical to docs/reference/ddl-coverage-catalog.json |
+diff --git a/internal/application/audit/batch_state_t06a17_test.go b/internal/application/audit/batch_state_t06a17_test.go
+new file mode 100644
+index 00000000..108e04f6
+--- /dev/null
++++ b/internal/application/audit/batch_state_t06a17_test.go
+@@ -0,0 +1,71 @@
++// Package audit verifies the T06-A17 declaration-source carry contract:
++// columns parsed from CREATE TABLE keep their faithful Type (DECIMAL scale,
++// explicit-zero FLOAT/DOUBLE scale, ENUM/SET member case) inside the derived
++// pre-state a later batch statement consumes — cloneColumn drops nothing the
++// extractor now carries.
++// input: real parser/extractor statements applied into batchState
++// output: pre-state snapshot columns with identical Type facts
++// pos: application-layer ordered-state regression tests for issue #85 T06-A17
++// note: if this file changes, update this header and module README.md.
++package audit
++
++import (
++	"context"
++	"testing"
++
++	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
++)
++
++func TestT06A17DerivedPreStatePreservesType(t *testing.T) {
++	t.Parallel()
++	ctx := context.Background()
++	for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
++		dialect := dialect
++		t.Run(string(dialect), func(t *testing.T) {
++			t.Parallel()
++			sql := "CREATE TABLE t (\n" +
++				"  d DECIMAL(12,2),\n" +
++				"  f FLOAT(10,0),\n" +
++				"  e ENUM('Ready','Closed'),\n" +
++				"  s SET('Write','Read')\n" +
++				");\n" +
++				"ALTER TABLE t ADD COLUMN next_c INT;"
++			parsed, err := Parse(ctx, sql, dialect)
++			if err != nil {
++				t.Fatalf("parse: %v", err)
++			}
++			statements, err := Extract(ctx, parsed)
++			if err != nil {
++				t.Fatalf("extract: %v", err)
++			}
++			if len(statements) != 2 {
++				t.Fatalf("statements = %d, want 2", len(statements))
++			}
++			state := newBatchState(dialect, "golden", nil)
++			if _, err := state.preState(ctx, "golden", *statements[0].DDL.Table); err != nil {
++				t.Fatalf("warm pre-state: %v", err)
++			}
++			if err := state.apply(ctx, statements[0]); err != nil {
++				t.Fatalf("apply create: %v", err)
++			}
++			snapshot, err := state.preState(ctx, "golden", spec.Table{Schema: "golden", Name: "t"})
++			if err != nil {
++				t.Fatalf("pre-state: %v", err)
++			}
++			if snapshot == nil || !snapshot.Exists {
++				t.Fatalf("pre-state missing after CREATE: %+v", snapshot)
++			}
++			want := map[string]string{
++				"d": "decimal(12,2)",
++				"f": "float(10,0)",
++				"e": "enum('Ready','Closed')",
++				"s": "set('Write','Read')",
++			}
++			for _, column := range snapshot.Columns {
++				if expected, ok := want[column.Name]; ok && column.Type != expected {
++					t.Fatalf("%s pre-state column %s Type = %q, want %q", dialect, column.Name, column.Type, expected)
++				}
++			}
++		})
++	}
++}
+diff --git a/internal/application/auditmeta/README.md b/internal/application/auditmeta/README.md
+index ed0dbb21..4420b4b8 100644
+--- a/internal/application/auditmeta/README.md
++++ b/internal/application/auditmeta/README.md
+@@ -12,6 +12,7 @@ Shared preparation helpers for metadata-aware audit requests before they enter t
+ | `client.go` | Bridges MySQL-compatible infrastructure providers into the shared preparation client contract |
+ | `prepare_test.go` | Verifies shared metadata-aware preparation behavior, including schema inference from valid statements around one parser error |
+ | `audit_t06a4_test.go` | Verifies the T06-A4 AuditSQL contract with the real `mysqlmeta.Provider` behind a controlled database/sql driver: a stored `'NULL'` sibling keeps DROP COLUMN + CREATE INDEX conservative (`review`/`unverified`, one `unknown_table_state` gap, exactly one provider read), a stored `'<nil>'` sibling stays equally conservative, a stored SQL NULL sibling stays `pass`/`complete`, a parsed-source `DEFAULT 'NULL'` agrees with the provider outcome, provider errors propagate via `errors.Is` rather than degrading into gaps, `ddl.column.default.require` reads only submitted DDL, and all-disabled rules fabricate nothing |
++| `audit_t06a17_test.go` | Verifies the T06-A17 provider-source carry contract: a real `mysqlmeta.Provider` reads constructed catalog rows (`decimal(12,2)`, `enum('Ready','Closed')`, `set('Write','Read')`) and AuditSQL's ordered pre-state lands the verbatim `COLUMN_TYPE` text in the modify-compatibility finding's `source_type` echo — never a truncated base keyword |
+ 
+ ## Exports
+ 
+diff --git a/internal/application/auditmeta/audit_t06a17_test.go b/internal/application/auditmeta/audit_t06a17_test.go
+new file mode 100644
+index 00000000..ad06b377
+--- /dev/null
++++ b/internal/application/auditmeta/audit_t06a17_test.go
+@@ -0,0 +1,157 @@
++// Package auditmeta verifies the T06-A17 provider-source carry contract: a
++// real mysqlmeta.Provider reading constructed catalog rows feeds AuditSQL's
++// ordered pre-state, and the faithful COLUMN_TYPE text (DECIMAL scale,
++// ENUM/SET member case) reaches the compatibility finding's source_type echo
++// — never a truncated base keyword. This is "real provider + constructed DB
++// rows", not a live anchor.
++// input: ALTER MODIFY batches against driver-fed catalog rows for t06_a17_type_facts
++// output: compatibility findings carrying verbatim provider Type in source_type
++// pos: application-layer real-provider contract tests for issue #85 T06-A17
++// note: if this file changes, update this header and module README.md.
++package auditmeta
++
++import (
++	"context"
++	"database/sql"
++	"database/sql/driver"
++	"io"
++	"strings"
++	"sync"
++	"testing"
++
++	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
++	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
++	mysqlmeta "github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql"
++)
++
++const (
++	t06a17CompatRule = "ddl.alter.modify_column.compatibility.require"
++	t06a17Table      = "golden.t06_a17_type_facts"
++)
++
++var (
++	t06a17Once  sync.Once
++	t06a17State sync.Map
++)
++
++type t06a17Driver struct{}
++type t06a17Conn struct{ rows [][]driver.Value }
++type t06a17Rows struct {
++	cols  []string
++	rows  [][]driver.Value
++	index int
++}
++
++// t06a17Catalog is the constructed catalog fixture: five target-type columns
++// whose parameters/members must survive the provider verbatim.
++var t06a17Catalog = [][]driver.Value{
++	{"d", "decimal(12,2)", nil, nil, "", nil, "YES", ""},
++	{"e", "enum('Ready','Closed')", "utf8mb4", "utf8mb4_bin", "", nil, "YES", ""},
++	{"s", "set('Write','Read')", "utf8mb4", "utf8mb4_bin", "", nil, "YES", ""},
++}
++
++func openT06A17DB(t *testing.T) *sql.DB {
++	t.Helper()
++	t06a17Once.Do(func() { sql.Register("t06a17-mysqlmeta", t06a17Driver{}) })
++	name := "t06a17-" + strings.NewReplacer("/", "_", " ", "_").Replace(t.Name())
++	t06a17State.Store(name, t06a17Catalog)
++	db, err := sql.Open("t06a17-mysqlmeta", name)
++	if err != nil {
++		t.Fatalf("open driver db: %v", err)
++	}
++	t.Cleanup(func() {
++		db.Close()
++		t06a17State.Delete(name)
++	})
++	return db
++}
++
++func (t06a17Driver) Open(name string) (driver.Conn, error) {
++	value, _ := t06a17State.Load(name)
++	rows, _ := value.([][]driver.Value)
++	return t06a17Conn{rows: rows}, nil
++}
++
++func (t06a17Conn) Prepare(string) (driver.Stmt, error) { return nil, driver.ErrSkip }
++func (t06a17Conn) Close() error                        { return nil }
++func (t06a17Conn) Begin() (driver.Tx, error)           { return nil, driver.ErrSkip }
++
++func (c t06a17Conn) QueryContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Rows, error) {
++	switch {
++	case strings.Contains(query, "show variables"):
++		return &t06a17Rows{
++			cols: []string{"Variable_name", "Value"},
++			rows: [][]driver.Value{{"version", "8.4.10"}},
++		}, nil
++	case strings.Contains(query, "information_schema.columns"):
++		return &t06a17Rows{
++			cols: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra"},
++			rows: c.rows,
++		}, nil
++	case strings.Contains(query, "information_schema.statistics"):
++		return &t06a17Rows{
++			cols: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality"},
++		}, nil
++	case strings.Contains(query, "information_schema.tables"):
++		return &t06a17Rows{
++			cols: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
++			rows: [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0)}},
++		}, nil
++	}
++	return nil, sql.ErrNoRows
++}
++
++func (r *t06a17Rows) Columns() []string { return r.cols }
++func (r *t06a17Rows) Close() error      { return nil }
++func (r *t06a17Rows) Next(dest []driver.Value) error {
++	if r.index >= len(r.rows) {
++		return io.EOF
++	}
++	copy(dest, r.rows[r.index])
++	r.index++
++	return nil
++}
++
++// TestT06A17ProviderTypeReachesPreState pins the observable echo: MODIFY
++// across a type-family boundary reports the provider's verbatim source_type.
++// One audit per column because a cross-family MODIFY publishes a conservative
++// tombstone for the following statement's pre-state by design.
++func TestT06A17ProviderTypeReachesPreState(t *testing.T) {
++	db := openT06A17DB(t)
++	provider := mysqlmeta.NewProvider(db)
++	policy := t06a4Policy(t, map[string]string{t06a17CompatRule: ""})
++	for _, tc := range []struct {
++		column, wantSource string
++	}{
++		{"d", "decimal(12,2)"},
++		{"e", "enum('Ready','Closed')"},
++		{"s", "set('Write','Read')"},
++	} {
++		t.Run(tc.column, func(t *testing.T) {
++			result, err := appaudit.AuditSQL(context.Background(), appaudit.Request{
++				SQL:     "ALTER TABLE t06_a17_type_facts MODIFY " + tc.column + " VARCHAR(9);",
++				Dialect: spec.DialectMySQL, Schema: "golden",
++				ConfigPath: policy, MetadataProvider: provider,
++			})
++			if err != nil {
++				t.Fatalf("AuditSQL: %v", err)
++			}
++			if len(result.Statements) != 1 {
++				t.Fatalf("statements = %d, want 1", len(result.Statements))
++			}
++			var found bool
++			for _, finding := range result.Statements[0].Findings {
++				if finding.RuleID != t06a17CompatRule {
++					continue
++				}
++				found = true
++				if finding.Metadata["source_type"] != tc.wantSource {
++					t.Fatalf("source_type = %v, want %q", finding.Metadata["source_type"], tc.wantSource)
++				}
++			}
++			if !found {
++				t.Fatalf("no compatibility finding: %+v", result.Statements[0])
++			}
++		})
++	}
++}
+diff --git a/internal/infrastructure/metadata/mysql/README.md b/internal/infrastructure/metadata/mysql/README.md
+index 50355e09..beb7a857 100644
+--- a/internal/infrastructure/metadata/mysql/README.md
++++ b/internal/infrastructure/metadata/mysql/README.md
+@@ -10,6 +10,7 @@ MySQL-protocol metadata provider used for optional metadata-aware DeltaScope aud
+ | provider_test.go | Verifies provider connection, dialect, normalization helpers, information_schema column nullability mapping, index-cardinality accumulation, and known-bit instance-fact loading (16K/4K/missing/zero/unparseable page sizes, TiDB `max-index-length` single/multi-row consistency in both orders, zero/invalid rows, query/scan/mid-iteration error propagation including errors trailing invalid values, MySQL banners never probing TiDB config) without a live database |
+ | provider_t06a4_test.go | Verifies the T06-A4 default-identity contract through real `Provider.LoadTableSnapshot` over injected driver rows: a NULL `COLUMN_DEFAULT` (omitted clause or explicit `DEFAULT NULL` — catalog-indistinguishable) records `HasDefault=false`/empty fields, stored literals `NULL`/`null`/`NuLl`/`'<nil>'`/`''`/`'0'` keep `HasDefault=true` with raw bytes and never set `DefaultIsNull`, rows stay isolated, and the temporal/default presence semantics are untouched |
+ | provider_t06a10_test.go | Verifies the T06-A10 provenance boundary through real `Provider.LoadTableSnapshot` over constructed catalog rows: `TABLES.AUTO_INCREMENT` lands on `snapshot.Options["auto_increment"]` and `COLUMNS.EXTRA` lands on `Column.AutoIncrement` as catalog observations — a NULL allocator keeps the key absent rather than fabricating a declaration |
++| provider_t06a17_test.go | Verifies the T06-A17 catalog type-parameter fidelity contract through real `Provider.LoadTableSnapshot` over constructed catalog rows: `COLUMN_TYPE` parameter spans on DECIMAL/FLOAT/DOUBLE/ENUM/SET land verbatim in `Column.Type` (scale variants, member case/order/edge literals all distinguishable), quote-aware scanning keeps member delimiters and attribute words inside literals from breaking the span or setting `Unsigned`, `Length` keeps its first-integer meaning, and non-target bases keep the bare-keyword contract |
+ | provider_integration_test.go | Verifies provider connection pool configuration and connection-leak behavior against a live MySQL service (build tag `integration`) |
+ | query_access_conn_resolver.go | Implements SchemaResolver for a caller-owned MySQL/TiDB `*sql.Conn` |
+ | query_access_resolver_test.go | Verifies conn resolver behavior for table/view kind, full column order, missing relation, empty columns, cancellation, and unsupported relation kind using a custom test driver |
+diff --git a/internal/infrastructure/metadata/mysql/provider.go b/internal/infrastructure/metadata/mysql/provider.go
+index 3e81caf5..8c6c9368 100644
+--- a/internal/infrastructure/metadata/mysql/provider.go
++++ b/internal/infrastructure/metadata/mysql/provider.go
+@@ -1,6 +1,6 @@
+ // Package mysqlmeta implements metadata-aware audit adapters over the MySQL protocol.
+ // input: sql.DB access plus connection configs, version/schema/table lookup requests, and MySQL/TiDB metadata queries
+-// output: normalized instance facts with explicit known bits (innodb_page_size, 5.7 large-prefix, TiDB max-index-length via all-rows SHOW CONFIG verification — read failures propagate as provider errors, only absent/ambiguous values stay unknown), dialect detection, schema discovery, and table snapshots with preserved index cardinality and stored-representation default facts (COLUMN_DEFAULT IS NOT NULL → HasDefault with verbatim DefaultValue bytes; NULL rows and literal "null" text never set DefaultIsNull on this path) for application-level audit enrichment
++// output: normalized instance facts with explicit known bits (innodb_page_size, 5.7 large-prefix, TiDB max-index-length via all-rows SHOW CONFIG verification — read failures propagate as provider errors, only absent/ambiguous values stay unknown), dialect detection, schema discovery, and table snapshots with preserved index cardinality, verbatim COLUMN_TYPE parameter spans on the five declared-parameter bases (DECIMAL/FLOAT/DOUBLE/ENUM/SET — member literals keep catalog case and attribute words inside quotes never set Unsigned), and stored-representation default facts (COLUMN_DEFAULT IS NOT NULL → HasDefault with verbatim DefaultValue bytes; NULL rows and literal "null" text never set DefaultIsNull on this path) for application-level audit enrichment
+ // pos: infrastructure metadata adapter between database/sql and domain metadata specs
+ // note: if this file changes, update this header and module README.md.
+ package mysqlmeta
+@@ -377,10 +377,10 @@ func (p *Provider) loadColumns(ctx context.Context, snapshot *spec.TableSnapshot
+ 		if err := rows.Scan(&name, &columnType, &charset, &collation, &comment, &defaultValue, &isNullable, &extra); err != nil {
+ 			return fmt.Errorf("scan table column: %w", err)
+ 		}
+-		baseType, length, unsigned := parseColumnType(columnType)
++		typeText, length, unsigned := parseColumnType(columnType)
+ 		column := spec.Column{
+ 			Name:          name,
+-			Type:          baseType,
++			Type:          typeText,
+ 			Length:        length,
+ 			Charset:       charset.String,
+ 			Collation:     collation.String,
+@@ -490,25 +490,107 @@ func charsetFromCollation(collation string) string {
+ 	return ""
+ }
+ 
+-func parseColumnType(columnType string) (baseType string, length int, unsigned bool) {
+-	lower := strings.ToLower(strings.TrimSpace(columnType))
+-	unsigned = strings.Contains(lower, " unsigned")
+-	if idx := strings.Index(lower, "("); idx >= 0 {
+-		baseType = strings.TrimSpace(lower[:idx])
+-		end := strings.Index(lower[idx+1:], ")")
+-		if end >= 0 {
+-			part := lower[idx+1 : idx+1+end]
+-			if comma := strings.Index(part, ","); comma >= 0 {
+-				part = part[:comma]
++// faithfulCatalogTypes are the T06-A17 target bases whose COLUMN_TYPE
++// parameter text — DECIMAL/FLOAT/DOUBLE second parameters and ENUM/SET member
++// literals — is preserved verbatim. Every other type keeps the established
++// base-keyword contract.
++var faithfulCatalogTypes = map[string]bool{
++	"decimal": true, "float": true, "double": true, "enum": true, "set": true,
++}
++
++// typeParameterSpan locates the parenthesized parameter list of a catalog
++// COLUMN_TYPE, honoring single-quoted members with ” escapes: a comma or
++// right paren inside a member never ends the span. Returns (-1, -1) without a
++// parameter list; the end index is exclusive so columnType[start:end] is the
++// whole "(...)" segment.
++func typeParameterSpan(columnType string) (start, end int) {
++	start = strings.IndexByte(columnType, '(')
++	if start < 0 {
++		return -1, -1
++	}
++	inString := false
++	for i := start + 1; i < len(columnType); i++ {
++		switch {
++		case inString:
++			if columnType[i] == '\'' {
++				if i+1 < len(columnType) && columnType[i+1] == '\'' {
++					i++
++					continue
++				}
++				inString = false
+ 			}
+-			if parsed, err := strconv.Atoi(strings.TrimSpace(part)); err == nil {
+-				length = parsed
++		case columnType[i] == '\'':
++			inString = true
++		case columnType[i] == ')':
++			return start, i + 1
++		}
++	}
++	return start, len(columnType)
++}
++
++// stripQuotedLiterals removes '...' member literals (including ” escapes) so
++// attribute detection never reads inside member text: 'x unsigned' inside an
++// ENUM member is a value, never the UNSIGNED attribute.
++func stripQuotedLiterals(s string) string {
++	var b strings.Builder
++	inString := false
++	for i := 0; i < len(s); i++ {
++		c := s[i]
++		if inString {
++			if c == '\'' {
++				if i+1 < len(s) && s[i+1] == '\'' {
++					i++
++					continue
++				}
++				inString = false
+ 			}
++			continue
+ 		}
+-	} else {
+-		baseType = strings.Fields(lower)[0]
++		if c == '\'' {
++			inString = true
++			continue
++		}
++		b.WriteByte(c)
+ 	}
+-	return baseType, length, unsigned
++	return b.String()
++}
++
++// parseColumnType normalizes a catalog COLUMN_TYPE. Length keeps its
++// established first-integer meaning; unsigned is read only outside quoted
++// member literals; typeText preserves the verbatim parameter span for the
++// five faithfulCatalogTypes bases and stays the bare base keyword otherwise.
++func parseColumnType(columnType string) (typeText string, length int, unsigned bool) {
++	trimmed := strings.TrimSpace(columnType)
++	lower := strings.ToLower(trimmed)
++	unsigned = strings.Contains(strings.ToLower(stripQuotedLiterals(trimmed)), " unsigned")
++	start, end := typeParameterSpan(trimmed)
++	var baseType string
++	if start >= 0 {
++		baseType = strings.TrimSpace(lower[:start])
++		part := trimmed[start+1 : end-1]
++		if comma := strings.Index(part, ","); comma >= 0 {
++			part = part[:comma]
++		}
++		if parsed, err := strconv.Atoi(strings.TrimSpace(part)); err == nil {
++			length = parsed
++		}
++	} else if fields := strings.Fields(lower); len(fields) > 0 {
++		baseType = fields[0]
++	}
++	if !faithfulCatalogTypes[baseType] {
++		return baseType, length, unsigned
++	}
++	var text strings.Builder
++	text.WriteString(baseType)
++	if start >= 0 {
++		text.WriteString(trimmed[start:end])             // verbatim parameters, member case intact
++		text.WriteString(strings.ToLower(trimmed[end:])) // attribute keywords after the span
++	} else if rest := trimmed[len(baseType):]; rest != "" {
++		// No parameter span (e.g. bare "float unsigned"): keep the declared
++		// attribute text, keyword-normalized.
++		text.WriteString(strings.ToLower(rest))
++	}
++	return text.String(), length, unsigned
+ }
+ 
+ func classifyIndex(name string, nonUnique int, indexType string) spec.IndexKind {
+diff --git a/internal/infrastructure/metadata/mysql/provider_t06a17_test.go b/internal/infrastructure/metadata/mysql/provider_t06a17_test.go
+new file mode 100644
+index 00000000..2c025500
+--- /dev/null
++++ b/internal/infrastructure/metadata/mysql/provider_t06a17_test.go
+@@ -0,0 +1,163 @@
++// Package mysqlmeta verifies the T06-A17 catalog type-parameter fidelity
++// contract: DECIMAL/FLOAT/DOUBLE parameter text and ENUM/SET member literals
++// from COLUMN_TYPE survive the real Provider.LoadTableSnapshot — parameters
++// are no longer truncated to the base keyword plus first integer. Rows are
++// constructed catalog input (a live server may normalize differently; the
++// provider must only preserve what it actually receives).
++// input: constructed information_schema row sets for the five target types
++// output: faithful Column.Type/Length/Unsigned per stored column_type
++// pos: infrastructure metadata adapter regression tests for issue #85 T06-A17
++// note: if this file changes, update this header and module README.md.
++package mysqlmeta
++
++import (
++	"context"
++	"database/sql/driver"
++	"testing"
++
++	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
++)
++
++// t06a17ColumnRows renders the frozen A17 column_type inputs verbatim.
++func t06a17Results() map[string]testQueryResult {
++	columnTypes := [][2]string{
++		{"d_dec122", "decimal(12,2)"},
++		{"d_dec123", "decimal(12,3)"},
++		{"d_dec120", "decimal(12,0)"},
++		{"f_flt102", "float(10,2)"},
++		{"f_flt103", "float(10,3)"},
++		{"f_flt100", "float(10,0)"},
++		{"x_dbl162", "double(16,2)"},
++		{"x_dbl164", "double(16,4)"},
++		{"x_dbl160", "double(16,0)"},
++		{"e_upper", "enum('Ready','Closed')"},
++		{"e_lower", "enum('ready','closed')"},
++		{"e_order", "enum('Closed','Ready')"},
++		{"s_upper", "set('Read','Write')"},
++		{"s_lower", "set('read','write')"},
++		{"s_order", "set('Write','Read')"},
++		{"e_edge", "enum('','A,B','A)B','O''Reilly')"},
++		// Attribute-boundary controls: ' unsigned'/'zerofill' inside member
++		// literals are values, never type attributes.
++		{"e_attrword", "enum('x unsigned','y zerofill')"},
++		{"s_attrword", "set('a unsigned','b')"},
++		{"c_int", "int"},
++		{"c_varchar8", "varchar(8)"},
++		{"c_bigint_u", "bigint unsigned"},
++		{"d_dec122u", "decimal(12,2) unsigned"},
++	}
++	rows := make([][]driver.Value, 0, len(columnTypes))
++	for _, pair := range columnTypes {
++		rows = append(rows, []driver.Value{pair[0], pair[1], nil, nil, "", nil, "YES", ""})
++	}
++	return map[string]testQueryResult{
++		"from information_schema.tables": {
++			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
++			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0)}},
++		},
++		"from information_schema.columns": {
++			columns: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra"},
++			rows:    rows,
++		},
++		"from information_schema.statistics": {
++			columns: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality"},
++		},
++	}
++}
++
++func t06a17SnapshotColumns(t *testing.T) []spec.Column {
++	t.Helper()
++	db := openTestDB(t, t06a17Results())
++	defer db.Close()
++	snapshot, err := NewProvider(db).LoadTableSnapshot(context.Background(), spec.DialectMySQL, "golden", "t")
++	if err != nil {
++		t.Fatalf("LoadTableSnapshot: %v", err)
++	}
++	return snapshot.Columns
++}
++
++// TestT06A17ProviderParameterFidelity pins verbatim catalog parameter text:
++// scale/second-parameter/member content survive; non-target types keep the
++// established base-keyword contract.
++func TestT06A17ProviderParameterFidelity(t *testing.T) {
++	columns := t06a17SnapshotColumns(t)
++	want := map[string]struct {
++		typeText string
++		length   int
++		unsigned bool
++	}{
++		"d_dec122":   {"decimal(12,2)", 12, false},
++		"d_dec123":   {"decimal(12,3)", 12, false},
++		"d_dec120":   {"decimal(12,0)", 12, false},
++		"f_flt102":   {"float(10,2)", 10, false},
++		"f_flt103":   {"float(10,3)", 10, false},
++		"f_flt100":   {"float(10,0)", 10, false},
++		"x_dbl162":   {"double(16,2)", 16, false},
++		"x_dbl164":   {"double(16,4)", 16, false},
++		"x_dbl160":   {"double(16,0)", 16, false},
++		"e_upper":    {"enum('Ready','Closed')", 0, false},
++		"e_lower":    {"enum('ready','closed')", 0, false},
++		"e_order":    {"enum('Closed','Ready')", 0, false},
++		"s_upper":    {"set('Read','Write')", 0, false},
++		"s_lower":    {"set('read','write')", 0, false},
++		"s_order":    {"set('Write','Read')", 0, false},
++		"e_edge":     {"enum('','A,B','A)B','O''Reilly')", 0, false},
++		"e_attrword": {"enum('x unsigned','y zerofill')", 0, false},
++		"s_attrword": {"set('a unsigned','b')", 0, false},
++		"c_int":      {"int", 0, false},
++		"c_varchar8": {"varchar", 8, false},
++		"c_bigint_u": {"bigint", 0, true},
++		"d_dec122u":  {"decimal(12,2) unsigned", 12, true},
++	}
++	for _, column := range columns {
++		w, ok := want[column.Name]
++		if !ok {
++			t.Fatalf("unexpected column %q", column.Name)
++		}
++		if column.Type != w.typeText || column.Length != w.length || column.Unsigned != w.unsigned {
++			t.Fatalf("%s = Type %q Length %d Unsigned %v, want %q/%d/%v",
++				column.Name, column.Type, column.Length, column.Unsigned, w.typeText, w.length, w.unsigned)
++		}
++	}
++}
++
++// TestT06A17ProviderDistinctness asserts the merged groups stay distinguishable
++// end-to-end: scale variants, case variants, and order variants never collapse.
++func TestT06A17ProviderDistinctness(t *testing.T) {
++	columns := t06a17SnapshotColumns(t)
++	byName := map[string]spec.Column{}
++	for _, column := range columns {
++		byName[column.Name] = column
++	}
++	pairs := [][2]string{
++		{"d_dec122", "d_dec123"}, {"d_dec122", "d_dec120"},
++		{"f_flt102", "f_flt103"}, {"x_dbl162", "x_dbl164"},
++		{"e_upper", "e_lower"}, {"e_upper", "e_order"},
++		{"s_upper", "s_lower"}, {"s_upper", "s_order"},
++	}
++	for _, pair := range pairs {
++		if byName[pair[0]].Type == byName[pair[1]].Type {
++			t.Fatalf("%s and %s merged to %q", pair[0], pair[1], byName[pair[0]].Type)
++		}
++	}
++}
++
++// TestT06A17ProviderParamBoundary pins quote-aware boundary scanning: a member
++// containing ")" or "," never ends the parameter list early, and attribute
++// words inside members never set Unsigned.
++func TestT06A17ProviderParamBoundary(t *testing.T) {
++	columns := t06a17SnapshotColumns(t)
++	byName := map[string]spec.Column{}
++	for _, column := range columns {
++		byName[column.Name] = column
++	}
++	edge := byName["e_edge"]
++	if edge.Type != "enum('','A,B','A)B','O''Reilly')" {
++		t.Fatalf("e_edge Type = %q — member delimiters broke the parameter span", edge.Type)
++	}
++	for _, name := range []string{"e_attrword", "s_attrword"} {
++		if byName[name].Unsigned {
++			t.Fatalf("%s Unsigned = true — attribute word inside member literal leaked", name)
++		}
++	}
++}
+diff --git a/internal/infrastructure/metadata/mysql/provider_test.go b/internal/infrastructure/metadata/mysql/provider_test.go
+index e7edea03..0766aecc 100644
+--- a/internal/infrastructure/metadata/mysql/provider_test.go
++++ b/internal/infrastructure/metadata/mysql/provider_test.go
+@@ -397,7 +397,7 @@ func TestParseColumnType(t *testing.T) {
+ 		{"bigint(20) unsigned", "bigint", 20, true},
+ 		{"int", "int", 0, false},
+ 		{"text", "text", 0, false},
+-		{"decimal(10,2)", "decimal", 10, false},
++		{"decimal(10,2)", "decimal(10,2)", 10, false},
+ 		{"bigint unsigned", "bigint", 0, true},
+ 		{"tinyint(1)", "tinyint", 1, false},
+ 		{"varchar(64) unsigned", "varchar", 64, true},
+diff --git a/internal/infrastructure/parser/tidb/README.md b/internal/infrastructure/parser/tidb/README.md
+index 65f7c5e3..54b2e7c9 100644
+--- a/internal/infrastructure/parser/tidb/README.md
++++ b/internal/infrastructure/parser/tidb/README.md
+@@ -31,6 +31,7 @@ TiDB-backed parser adapter for multi-statement SQL parsing, parser-warning colle
+ | extractor_t06a12_test.go | Verifies the T06-A12 nullability extraction contract under both dialects: `Column.NotNull` lands true only for the explicit `NOT NULL` clause, explicit `NULL` and omitted nullability both normalize to `NotNull=false` (the AST distinguishes the option kinds; the normalized spec does not preserve the provenance — recorded as current behavior, not an A12 defect), declared column order and `Type`/`Length` survive verbatim across INT/DATETIME/TEXT mixes, and no PK constraint, index, or default flag is fabricated |
+ | extractor_t06a13_test.go | Verifies the T06-A13 type-family extraction contract under both dialects: the nine frozen columns land `Column.Type`/rendered text verbatim (BLOB's `blob binary`, BIT's declared width), declaration order survives, and no undeclared default/nullability/charset flag is fabricated |
+ | extractor_t06a14_test.go | Verifies the T06-A14 table-option extraction contract under both dialects: `ENGINE`/`DEFAULT CHARSET` land `DDL.Options` as verbatim `StrValue` text, `ROW_FORMAT` lands as the normalized uppercase enum name, undeclared options stay absent (never server defaults), and the column-`CHARACTER SET` control lands `Column.Charset` without fabricating `Options["charset"]` |
++| extractor_t06a17_test.go | Verifies the T06-A17 declared type-parameter fidelity contract under both dialects: DECIMAL precision/scale sentinels stay three-way distinct (`decimal`/`decimal(12)`/`decimal(12,0)`), explicit `(M,0)` FLOAT/DOUBLE scale survives, ENUM/SET member case/order/edge literals are byte-exact (case-fold is the fixed defect, not normalization), the produced Type re-parses to identical member bytes, `FLOAT(p)` pins the parser's own float↔double normalization, and ordinary types keep `int(11)`/`bigint(20) unsigned`/`varchar(8)` verbatim |
+ 
+ ## Exports
+ 
+diff --git a/internal/infrastructure/parser/tidb/extractor.go b/internal/infrastructure/parser/tidb/extractor.go
+index eada2f4b..04d3f19f 100644
+--- a/internal/infrastructure/parser/tidb/extractor.go
++++ b/internal/infrastructure/parser/tidb/extractor.go
+@@ -1,6 +1,6 @@
+ // Package tidbparser extracts parser-neutral statements from TiDB AST nodes.
+ // input: TiDB parser statement nodes and parser-neutral dialect metadata
+-// output: extractor-backed parsed statements for the application layer, including MutationTargets and mutation-target-only DML tables, normalized ALTER index/constraint actions, multi-target DDL Targets for DROP/RENAME/ALTER-rename, temporary-table scope facts, typed and unextracted column-option facts, primary-key metadata, inline PRIMARY KEY presence on column-change facts, parser-decoded COMMENT string content (no SQL quote wrapping), and if_exists/if_not_exists option markers for conditional-existence derivation
++// output: extractor-backed parsed statements for the application layer, including MutationTargets and mutation-target-only DML tables, normalized ALTER index/constraint actions, multi-target DDL Targets for DROP/RENAME/ALTER-rename, temporary-table scope facts, typed and unextracted column-option facts, primary-key metadata, inline PRIMARY KEY presence on column-change facts, parser-decoded COMMENT string content (no SQL quote wrapping), sentinel-faithful declared type parameters (DECIMAL/FLOAT/DOUBLE scale, byte-exact ENUM/SET members) on the five declared-parameter types, and if_exists/if_not_exists option markers for conditional-existence derivation
+ // pos: infrastructure extraction adapter between TiDB AST and domain spec
+ // note: if this file changes, update this header and module README.md.
+ package tidbparser
+@@ -12,6 +12,7 @@ import (
+ 
+ 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+ 	"github.com/pingcap/tidb/pkg/parser/ast"
++	"github.com/pingcap/tidb/pkg/parser/format"
+ 	"github.com/pingcap/tidb/pkg/parser/mysql"
+ 	"github.com/pingcap/tidb/pkg/parser/opcode"
+ 	tidbtypes "github.com/pingcap/tidb/pkg/parser/types"
+@@ -637,8 +638,35 @@ func extractDelete(stmt *ast.DeleteStmt) *spec.DML {
+ 	return &spec.DML{Operation: spec.DMLOperationDelete, Tables: tables, MutationTargets: tables, HasWhere: stmt.Where != nil, HasLimit: stmt.Limit != nil, HasOrderBy: stmt.Order != nil, HasSubquery: hasSubquery, HasJoin: joinExists(join), HasJoinOn: joinHasOn(join), HasReturning: len(stmt.Returning) > 0, PredicateShape: shape, LookupColumns: lookupColumns, MatchedKeyName: matchedKeyName, MatchedKeyKind: matchedKeyKind, IsSingleTable: isSingleTable}
+ }
+ 
++// declaredTypeRestoreFlags renders the five declared-parameter types with a
++// lowercase keyword, single-quoted re-escaped members, and sentinel-faithful
++// precision/scale — never the formatted layer's substituted defaults.
++const declaredTypeRestoreFlags = format.RestoreStringSingleQuotes |
++	format.RestoreStringEscapeBackslash |
++	format.RestoreKeyWordLowercase |
++	format.RestoreNameBackQuotes
++
++// declaredColumnType renders column types for spec.Column.Type. DECIMAL,
++// FLOAT, DOUBLE, ENUM, and SET go through FieldType.Restore: it writes the
++// declared (flen[,decimal]) span from the sentinels — preserving DECIMAL(12)
++// vs DECIMAL(12,0) vs bare DECIMAL and the explicit (M,0) scale String()
++// elides — and writes ENUM/SET members byte-exact so keyword normalization
++// can never fold member case or content. Every other type keeps the existing
++// lowercase String() text (int(11), bigint(20) unsigned, charset facts).
++func declaredColumnType(tp *tidbtypes.FieldType) string {
++	switch tp.GetType() {
++	case mysql.TypeNewDecimal, mysql.TypeFloat, mysql.TypeDouble,
++		mysql.TypeEnum, mysql.TypeSet:
++		var text strings.Builder
++		if err := tp.Restore(format.NewRestoreCtx(declaredTypeRestoreFlags, &text)); err == nil {
++			return text.String()
++		}
++	}
++	return strings.ToLower(tp.String())
++}
++
+ func extractColumn(col *ast.ColumnDef) spec.Column {
+-	column := spec.Column{Name: col.Name.Name.L, Type: strings.ToLower(col.Tp.String()), Length: col.Tp.GetFlen(), Unsigned: mysql.HasUnsignedFlag(col.Tp.GetFlag())}
++	column := spec.Column{Name: col.Name.Name.L, Type: declaredColumnType(col.Tp), Length: col.Tp.GetFlen(), Unsigned: mysql.HasUnsignedFlag(col.Tp.GetFlag())}
+ 	if tidbtypes.HasCharset(col.Tp) {
+ 		column.Charset = strings.ToLower(col.Tp.GetCharset())
+ 		column.Collation = strings.ToLower(col.Tp.GetCollate())
+diff --git a/internal/infrastructure/parser/tidb/extractor_t06a17_test.go b/internal/infrastructure/parser/tidb/extractor_t06a17_test.go
+new file mode 100644
+index 00000000..9fc18097
+--- /dev/null
++++ b/internal/infrastructure/parser/tidb/extractor_t06a17_test.go
+@@ -0,0 +1,232 @@
++// Package tidbparser verifies the T06-A17 declared-type-parameter fidelity
++// contract: DECIMAL/FLOAT/DOUBLE precision-scale facts and ENUM/SET member
++// literals survive extractColumn into spec.Column.Type without the formatted
++// layer's default substitution or keyword-driven case folding. The tests run
++// the real parser + extractor (t06a2Extract) for both dialects.
++// input: frozen declaration shapes from the T06-A17 baseline fixtures
++// output: faithful Column.Type/Length/Unsigned per declared spelling
++// pos: infrastructure extraction regression tests for issue #85 T06-A17
++// note: if this file changes, update this header and module README.md.
++package tidbparser
++
++import (
++	"context"
++	"testing"
++
++	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
++	"github.com/pingcap/tidb/pkg/parser/ast"
++)
++
++// t06a17SQL mirrors the frozen A17 baseline fixtures verbatim.
++const (
++	t06a17N1 = `CREATE TABLE t (
++  d2 DECIMAL(12,2),
++  d3 DECIMAL(12,3),
++  d0 DECIMAL(12,0),
++  dm DECIMAL(12),
++  dn DECIMAL
++);`
++	t06a17N2 = `CREATE TABLE t (
++  f2 FLOAT(10,2),
++  f3 FLOAT(10,3),
++  f0 FLOAT(10,0),
++  fn FLOAT,
++  x2 DOUBLE(16,2),
++  x4 DOUBLE(16,4),
++  x0 DOUBLE(16,0),
++  xn DOUBLE
++);`
++	t06a17L1 = `CREATE TABLE t (
++  e_upper ENUM('Ready','Closed'),
++  e_lower ENUM('ready','closed'),
++  e_order ENUM('Closed','Ready'),
++  s_upper SET('Read','Write'),
++  s_lower SET('read','write'),
++  s_order SET('Write','Read')
++);`
++	t06a17L2 = `CREATE TABLE t (
++  e ENUM('','A,B','A)B','O''Reilly'),
++  s SET('Read','A)B','O''Reilly')
++);`
++	t06a17C = `CREATE TABLE t (
++  i INT,
++  v VARCHAR(8),
++  u BIGINT UNSIGNED
++);`
++	// FLOAT(p) single-argument controls: the locked parser normalizes p<=24
++	// to TypeFloat and p>=25 to TypeDouble, discarding p — the test pins the
++	// real normalization, never a rebuilt parameter.
++	t06a17FloatP = `CREATE TABLE t (f10 FLOAT(10), f30 FLOAT(30));`
++	// Backslash member control: input bytes 'a\\b' decode to member a\b;
++	// rendering must re-escape so the member stays distinguishable.
++	t06a17Backslash = `CREATE TABLE t (e ENUM('a\\b','plain'));`
++)
++
++func t06a17Column(t *testing.T, statement spec.Statement, name string) spec.Column {
++	t.Helper()
++	for _, column := range statement.DDL.Columns {
++		if column.Name == name {
++			return column
++		}
++	}
++	t.Fatalf("column %q not found in %+v", name, statement.DDL.Columns)
++	return spec.Column{}
++}
++
++func t06a17WantType(t *testing.T, sqlText, name, wantType string, wantLen int, wantUnsigned bool) {
++	t.Helper()
++	for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
++		statement := t06a2Extract(t, dialect, sqlText)
++		column := t06a17Column(t, statement, name)
++		if column.Type != wantType || column.Length != wantLen || column.Unsigned != wantUnsigned {
++			t.Fatalf("%s %s Type=%q Length=%d Unsigned=%v, want %q/%d/%v",
++				dialect, name, column.Type, column.Length, column.Unsigned, wantType, wantLen, wantUnsigned)
++		}
++	}
++}
++
++// TestT06A17DecimalDeclarations pins every frozen DECIMAL spelling: explicit
++// zero scale, omitted scale, and omitted precision stay three distinct types.
++func TestT06A17DecimalDeclarations(t *testing.T) {
++	t06a17WantType(t, t06a17N1, "d2", "decimal(12,2)", 12, false)
++	t06a17WantType(t, t06a17N1, "d3", "decimal(12,3)", 12, false)
++	t06a17WantType(t, t06a17N1, "d0", "decimal(12,0)", 12, false)
++	t06a17WantType(t, t06a17N1, "dm", "decimal(12)", 12, false)
++	t06a17WantType(t, t06a17N1, "dn", "decimal", -1, false)
++}
++
++// TestT06A17FloatDoubleDeclarations pins FLOAT/DOUBLE(M,D) including the
++// explicit-zero scale the formatted layer elides.
++func TestT06A17FloatDoubleDeclarations(t *testing.T) {
++	t06a17WantType(t, t06a17N2, "f2", "float(10,2)", 10, false)
++	t06a17WantType(t, t06a17N2, "f3", "float(10,3)", 10, false)
++	t06a17WantType(t, t06a17N2, "f0", "float(10,0)", 10, false)
++	t06a17WantType(t, t06a17N2, "fn", "float", -1, false)
++	t06a17WantType(t, t06a17N2, "x2", "double(16,2)", 16, false)
++	t06a17WantType(t, t06a17N2, "x4", "double(16,4)", 16, false)
++	t06a17WantType(t, t06a17N2, "x0", "double(16,0)", 16, false)
++	t06a17WantType(t, t06a17N2, "xn", "double", -1, false)
++}
++
++// TestT06A17EnumSetMemberFidelity pins member case, order, and edge literals:
++// keyword normalization must never fold member bytes.
++func TestT06A17EnumSetMemberFidelity(t *testing.T) {
++	t06a17WantType(t, t06a17L1, "e_upper", "enum('Ready','Closed')", 6, false)
++	t06a17WantType(t, t06a17L1, "e_lower", "enum('ready','closed')", 6, false)
++	t06a17WantType(t, t06a17L1, "e_order", "enum('Closed','Ready')", 6, false)
++	t06a17WantType(t, t06a17L1, "s_upper", "set('Read','Write')", 10, false)
++	t06a17WantType(t, t06a17L1, "s_lower", "set('read','write')", 10, false)
++	t06a17WantType(t, t06a17L1, "s_order", "set('Write','Read')", 10, false)
++	t06a17WantType(t, t06a17L2, "e", "enum('','A,B','A)B','O''Reilly')", 8, false)
++	// SET flen is the joined member width (4+3+8+2 separators = 17), ENUM flen
++	// is the widest member (8) — both recorded, never inferred.
++	t06a17WantType(t, t06a17L2, "s", "set('Read','A)B','O''Reilly')", 17, false)
++	// e_upper vs e_lower and e_order must stay three distinct declarations —
++	// member literals are values, never keyword text to normalize.
++	for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
++		statement := t06a2Extract(t, dialect, t06a17L1)
++		upper := t06a17Column(t, statement, "e_upper")
++		lower := t06a17Column(t, statement, "e_lower")
++		order := t06a17Column(t, statement, "e_order")
++		if upper.Type == lower.Type {
++			t.Fatalf("%s: member case merged: %q == %q", dialect, upper.Type, lower.Type)
++		}
++		if upper.Type == order.Type {
++			t.Fatalf("%s: member order merged: %q == %q", dialect, upper.Type, order.Type)
++		}
++	}
++}
++
++// TestT06A17MemberRoundTrip re-parses the produced Type inside a plain column
++// definition and requires identical member bytes and order — proof the
++// rendering is a legal type spelling, not display-only text.
++func TestT06A17MemberRoundTrip(t *testing.T) {
++	for _, tc := range []struct{ sql, col string }{
++		{t06a17L1, "e_upper"}, {t06a17L1, "e_order"},
++		{t06a17L1, "s_order"}, {t06a17L2, "e"}, {t06a17L2, "s"},
++		{t06a17Backslash, "e"},
++	} {
++		statement := t06a2Extract(t, spec.DialectMySQL, tc.sql)
++		column := t06a17Column(t, statement, tc.col)
++		round := "CREATE TABLE r (c " + column.Type + ");"
++		result, err := New().Parse(context.Background(), round)
++		if err != nil {
++			t.Fatalf("re-parse %q (from %q): %v", round, tc.sql, err)
++		}
++		create := result.Statements[0].(*ast.CreateTableStmt)
++		origStmt, _ := New().Parse(context.Background(), tc.sql)
++		orig := origStmt.Statements[0].(*ast.CreateTableStmt)
++		var origElems []string
++		for _, c := range orig.Cols {
++			if c.Name.Name.L == tc.col {
++				origElems = c.Tp.GetElems()
++			}
++		}
++		gotElems := create.Cols[0].Tp.GetElems()
++		if len(gotElems) != len(origElems) {
++			t.Fatalf("%q round-trip member count %d, want %d (%q)", column.Type, len(gotElems), len(origElems), tc.sql)
++		}
++		for i := range gotElems {
++			if gotElems[i] != origElems[i] {
++				t.Fatalf("%q member[%d] %q, want %q", column.Type, i, gotElems[i], origElems[i])
++			}
++		}
++	}
++}
++
++// TestT06A17FloatSingleParamControls pins the real parser normalization for
++// FLOAT(p): p<=24 keeps TypeFloat, p>=25 becomes TypeDouble, and the parser
++// drops p entirely (flen=-1). Type must reflect the normalized result without
++// inventing the discarded parameter back.
++func TestT06A17FloatSingleParamControls(t *testing.T) {
++	t06a17WantType(t, t06a17FloatP, "f10", "float", -1, false)
++	t06a17WantType(t, t06a17FloatP, "f30", "double", -1, false)
++}
++
++// TestT06A17BackslashMemberControl records actual input bytes 'a\\b': the
++// parser decodes the escape into member a\b, and the rendered Type must
++// re-escape the backslash so the member re-parses to the same bytes.
++func TestT06A17BackslashMemberControl(t *testing.T) {
++	statement := t06a2Extract(t, spec.DialectMySQL, t06a17Backslash)
++	column := t06a17Column(t, statement, "e")
++	// The decoded member a\b must render re-escaped so a re-parse decodes to
++	// the same bytes; a single-backslash rendering would decode \b → 0x08.
++	if column.Type != `enum('a\\b','plain')` {
++		t.Fatalf("backslash member Type = %q, want enum('a\\\\b','plain')", column.Type)
++	}
++}
++
++// TestT06A17OrdinaryTypeControls pins the unchanged non-target rendering.
++func TestT06A17OrdinaryTypeControls(t *testing.T) {
++	t06a17WantType(t, t06a17C, "i", "int(11)", -1, false)
++	t06a17WantType(t, t06a17C, "v", "varchar(8)", 8, false)
++	t06a17WantType(t, t06a17C, "u", "bigint(20) unsigned", -1, true)
++}
++
++// TestT06A17AlterColumnDefinitions checks the shared extractColumn path for
++// ALTER ADD/MODIFY/CHANGE carries the same faithful Type.
++func TestT06A17AlterColumnDefinitions(t *testing.T) {
++	for _, tc := range []struct {
++		name, sql, col, wantType string
++	}{
++		{"add", `ALTER TABLE t ADD COLUMN e ENUM('Ready','Closed');`, "e", "enum('Ready','Closed')"},
++		{"modify", `ALTER TABLE t MODIFY d DECIMAL(12,3);`, "d", "decimal(12,3)"},
++		{"change", `ALTER TABLE t CHANGE d d2 FLOAT(10,0);`, "d2", "float(10,0)"},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			statement := t06a2Extract(t, spec.DialectMySQL, tc.sql)
++			if statement.DDL == nil {
++				t.Fatalf("no DDL in %+v", statement)
++			}
++			for _, alter := range statement.DDL.Alter {
++				if alter.Column == nil || alter.Column.Definition == nil {
++					continue
++				}
++				def := alter.Column.Definition
++				if def.Name == tc.col && def.Type != tc.wantType {
++					t.Fatalf("%s: %s Type = %q, want %q", tc.name, tc.col, def.Type, tc.wantType)
++				}
++			}
++		})
++	}
++}
+diff --git a/pkg/deltascope/README.md b/pkg/deltascope/README.md
+index 9ddce69b..e2aff456 100644
+--- a/pkg/deltascope/README.md
++++ b/pkg/deltascope/README.md
+@@ -51,6 +51,7 @@ Stable public package surface for library consumers.
+ | audit_type_forbid_t06a13_test.go | Verifies the T06-A13 public SDK contract under the isolated float-double policy: the mixed declaration returns an ordinary two-blocker `reject` bound to `c_float`/`c_double`, and the safe input returns nil error/`pass`/`complete` — never an SDK error |
+ | audit_table_option_t06a14_test.go | Verifies the T06-A14 public SDK contract under the isolated engine optional policy: `ENGINE=MyISAM` returns an ordinary one-blocker `reject` (`require_explicit=false` exempts omission only), and the option-less declaration returns nil error/`pass`/`complete` — never an SDK error |
+ | audit_row_size_t06a15_test.go | Verifies the T06-A15 public SDK contract under the isolated row-size policy with no provider: the declared over-limit input returns `reject`/`complete` with the full blocker identity, the missing-charset input returns `review`/`unverified` with the single `instance.default_charset` gap, and the missing-row-format input keeps its determined blocker beside the `instance.innodb_default_row_format` gap — all ordinary audit results, never SDK errors |
++| audit_type_facts_t06a17_test.go | Verifies the T06-A17 transport contract at the public SDK seam: a declaration carrying case-bearing ENUM members and parameterized DECIMAL/FLOAT audits as one ordinary `ddl` statement with `pass`/`complete` and a nil error channel — the public result never exposed `Column.Type`, so fidelity is pinned at the parser/provider/state seams, not this boundary |
+ | query_access_test.go | Verifies the public query access API with dialect routing, mode handling, JSON structure parity, and context cancellation |
+ | query_access_probe_boundary_no_leak_test.go | No-leak regression for the MySQL/TiDB builtin-identity probe boundary: asserts injected markers, identity facts, candidates, session/context, manifest, raw SQL, and `severity` are absent from the SDK result and JSON mapping |
+ 
+diff --git a/pkg/deltascope/audit_type_facts_t06a17_test.go b/pkg/deltascope/audit_type_facts_t06a17_test.go
+new file mode 100644
+index 00000000..f694b3be
+--- /dev/null
++++ b/pkg/deltascope/audit_type_facts_t06a17_test.go
+@@ -0,0 +1,48 @@
++// Package deltascope verifies the T06-A17 type-fidelity change stays invisible
++// at the public SDK seam: case-bearing ENUM members and explicit DECIMAL
++// parameters audit as one ordinary DDL statement with the usual result and
++// error channels. The public contract never exposed Column.Type, so this test
++// proves transport identity only — field fidelity is pinned at the parser,
++// provider, and state seams.
++// input: CREATE with case-bearing members and parameterized numerics under all-off policy
++// output: one clean pass statement, stable kind/index, nil error channel
++// pos: public SDK transport regression test for issue #85 T06-A17
++// note: if this file changes, update this header and module README.md.
++package deltascope
++
++import (
++	"context"
++	"testing"
++)
++
++// TestT06A17TypeFactsSDKTransport runs the fidelity fixture through the public
++// Audit seam — the internal Type upgrade must not change statement identity,
++// verdict, coverage, or the error channel.
++func TestT06A17TypeFactsSDKTransport(t *testing.T) {
++	// One loaded-but-non-firing rule keeps the request on the ordinary audit
++	// path without turning the pass result into a policy signal.
++	policy := t06A10SDKPolicy(t, "ddl.column.float_double.forbid", "      forbid: false\n")
++	result, err := Audit(context.Background(), Request{
++		SQL: "CREATE TABLE t (\n" +
++			"  d DECIMAL(12,2),\n" +
++			"  e ENUM('Ready','Closed'),\n" +
++			"  s SET('Write','Read'),\n" +
++			"  f FLOAT(10,0)\n" +
++			");",
++		Dialect:    DialectMySQL,
++		Schema:     "golden",
++		ConfigPath: policy,
++	})
++	if err != nil {
++		t.Fatalf("error = %v, want nil", err)
++	}
++	if result.Verdict != VerdictPass || result.Coverage.Status != CoverageComplete {
++		t.Fatalf("aggregate = %s/%s, want pass/complete", result.Verdict, result.Coverage.Status)
++	}
++	if len(result.Statements) != 1 || result.Statements[0].Index != 0 || result.Statements[0].Kind != "ddl" {
++		t.Fatalf("statements = %+v, want one ddl statement at index 0", result.Statements)
++	}
++	if len(result.Statements[0].Findings) != 0 {
++		t.Fatalf("findings = %+v, want none under all-off policy", result.Statements[0].Findings)
++	}
++}
+diff --git a/testdata/ddl-inventory/T06-base-traceability.md b/testdata/ddl-inventory/T06-base-traceability.md
+index 0645e52a..8ae2e510 100644
+--- a/testdata/ddl-inventory/T06-base-traceability.md
++++ b/testdata/ddl-inventory/T06-base-traceability.md
+@@ -1,4 +1,4 @@
+-# T06 base CREATE TABLE traceability (issue #85, slices A1+A2+A3+A4+A5+A7+A8+A9+A10+A11+A12+A13+A14+A15)
++# T06 base CREATE TABLE traceability (issue #85, slices A1+A2+A3+A4+A5+A7+A8+A9+A10+A11+A12+A13+A14+A15+A17)
+ 
+ Scope: the `mysql.create-table` and `tidb.create-table` inventory rows owned by
+ T06. This file maps each #85 acceptance dimension to the normalized spec
+@@ -11,7 +11,7 @@ Status vocabulary:
+ - **golden-proven (this slice)** — pinned by `testdata/ddl-golden/T06.json`
+   (496 cases: 8 baseline database + 252 offline CLI + 236 anchored metadata
+   structure proofs)
+-  and/or the `T06A1`/`T06A2`/`T06A3`/`T06A4`/`T06A5`/`T06A7`/`T06A8`/`T06A9`/`T06A10`/`T06A11`/`T06A12`/`T06A13`/`T06A14`/`T06A15` Go regression tests.
++  and/or the `T06A1`/`T06A2`/`T06A3`/`T06A4`/`T06A5`/`T06A7`/`T06A8`/`T06A9`/`T06A10`/`T06A11`/`T06A12`/`T06A13`/`T06A14`/`T06A15`/`T06A17` Go regression tests.
+ - **earlier evidence** — covered by pre-T06 artifacts (T02–T05 golden runs,
+   sql-corpus fixtures, catalog examples); not re-proven by this slice.
+ - **not proven** — the field/rule exists but no dedicated evidence pins the
+@@ -40,16 +40,16 @@ Neighboring rows share the CREATE TABLE grammar but stay with their owners:
+ | UNIQUE must not substitute for PK | `DDL.Indexes` (`IndexKindUnique`) vs `DDL.PrimaryKey` | `ddl.table.primary_key.require` | `TestT06A1UniqueKeyNotPrimaryKey` | **golden-proven (this slice)** |
+ | PK fact consumed by follower statements | `applyCreateTable` → `TableSnapshot.PrimaryKey`/`HasPrimaryKey` | state layer (T05), not a rule | `TestT06A1PrimaryKeyPreStateConsumption`; T05 golden manifests | **golden-proven (this slice, consumption seam)** |
+ | Policy on/off is independent of legality | policy `enabled`/`params.required` | `ddl.table.primary_key.require` | `T06.json` `t06-*-rule-off` / `t06-*-required-false` cli cases; anchored no-PK cases show product reject + driver success | **golden-proven (this slice)** |
+-| Type family presence (INT etc.) | `Column.Type` | `ddl.column.blob_text.forbid`, `ddl.column.json.forbid`, `ddl.column.bit.forbid`, `ddl.column.float_double.forbid`, `ddl.column.timestamp.forbid`, `ddl.table.primary_key.bigint.require`, `ddl.table.primary_key.unsigned.require` | corpus `findings`/`metadata` fixtures; catalog examples; `T06.json` `t06-a13-*` 32 cli + 20 meta cases under `t06-a13-<family>-{on,false}-isolated` and `all-rules-disabled`: each family pins isolated blocker findings on the mixed table (exact rule_id, message, `{table,column,type,family,charset:""}` metadata for the four generic rules, `{table,column,type}` for the independent float/double rule, 1:1 location), the applicable-but-clean safe role, `forbid=false` (loaded+inapplicable) vs disabled (no `rule_summary`), the blob/text exclusion of `c_json`, the timestamp exclusion of `c_datetime`, and per-column attribution on the two-finding roles; anchored roles pin the ordered nine-column `schema:table:column:DATA_TYPE:ordinal` set, exact column count, zero PK constraints/index parts, no secondary indexes, InnoDB on MySQL anchors, and driver CREATE success alongside product rejects; `TestT06A13*` Go tests | **partially golden-proven (A13)** — the five forbid policies on the fixed representative columns only; size variants (TINYBLOB/LONGTEXT etc.), BIT lengths, FLOAT precision/REAL aliases, JSON document/default/index semantics, TIMESTAMP implicit defaults/ranges/time zones, DECIMAL precision/scale, and ALTER-side type governance stay unproven or deferred; the single-member-PK BIGINT/UNSIGNED sub-dimension is golden-proven by A11 below |
++| Type family presence (INT etc.) | `Column.Type` | `ddl.column.blob_text.forbid`, `ddl.column.json.forbid`, `ddl.column.bit.forbid`, `ddl.column.float_double.forbid`, `ddl.column.timestamp.forbid`, `ddl.table.primary_key.bigint.require`, `ddl.table.primary_key.unsigned.require` | corpus `findings`/`metadata` fixtures; catalog examples; `T06.json` `t06-a13-*` 32 cli + 20 meta cases under `t06-a13-<family>-{on,false}-isolated` and `all-rules-disabled`: each family pins isolated blocker findings on the mixed table (exact rule_id, message, `{table,column,type,family,charset:""}` metadata for the four generic rules, `{table,column,type}` for the independent float/double rule, 1:1 location), the applicable-but-clean safe role, `forbid=false` (loaded+inapplicable) vs disabled (no `rule_summary`), the blob/text exclusion of `c_json`, the timestamp exclusion of `c_datetime`, and per-column attribution on the two-finding roles; anchored roles pin the ordered nine-column `schema:table:column:DATA_TYPE:ordinal` set, exact column count, zero PK constraints/index parts, no secondary indexes, InnoDB on MySQL anchors, and driver CREATE success alongside product rejects; `TestT06A13*` Go tests | **partially golden-proven (A13)** — the five forbid policies on the fixed representative columns only; size variants (TINYBLOB/LONGTEXT etc.), BIT lengths, FLOAT precision/REAL aliases, JSON document/default/index semantics, TIMESTAMP implicit defaults/ranges/time zones, and ALTER-side type governance stay unproven or deferred; the single-member-PK BIGINT/UNSIGNED sub-dimension is golden-proven by A11 below, and declared DECIMAL/FLOAT/DOUBLE/ENUM/SET parameter text is golden-proven by A17 below |
+ | Single-member PK BIGINT/UNSIGNED policies | `Column.Type` (base type), `Column.Unsigned` (parser UNSIGNED flag), `DDL.PrimaryKey.Columns` name binding | `ddl.table.primary_key.bigint.require`, `ddl.table.primary_key.unsigned.require` | `T06.json` `t06-a11-*` 16 cli + 16 meta cases under `t06-a11-pk-bigint-isolated`/`t06-a11-pk-unsigned-isolated`: A–H roles pin pass/int-and-signed-bigint blockers (exact rule_id/message/metadata), composite member-count skip, and disabled controls across both dialects; anchored roles pin `DATA_TYPE` (`bigint`/`int`), finite-whitelist `COLUMN_TYPE` complete forms (`bigint`/`bigint(20)`, `int`/`int(11)`, `bigint unsigned`/`bigint(20) unsigned`), byte-empty `EXTRA`, single-member `PRIMARY(id)` binding, and driver CREATE success alongside product rejects; `TestT06A11*` Go tests | **partially golden-proven (A11)** — ordinary single-member-PK CREATE only; composite-PK members are skipped not judged, `required=false` vs disabled stay distinct, ALTER-side applicability keeps its existing seam unproven here, ZEROFILL stays a parser-only observation, numeric-range/runtime semantics and other type families stay unproven or deferred |
+-| Length / precision | `Column.Length` (and type args) | `ddl.column.char.max_length`, `ddl.column.varchar.max_length`, `ddl.table.row_size.max_bytes.require` | `T06.json` `t06-a5-*` 16 cli + 24 meta cases pin declared CHAR/VARCHAR lengths against `limit=8` (7/8/9 + all-off control, exact `limit`/`actual` metadata, post-audit absence + native replay on both, `CHARACTER_MAXIMUM_LENGTH=N`/`CHARACTER_OCTET_LENGTH=4*N`/`utf8mb4_bin` oracle); `TestT06A5*` Go tests; corpus fixtures; catalog examples | **partially golden-proven (A5)** — declared CHAR/VARCHAR character length on CREATE only; DECIMAL precision/scale, other type args, `key_length` byte estimation, and ALTER-side length policy (#87/T08) stay earlier evidence; the `row_size` estimation *gate* is golden-proven by A15 below |
++| Length / precision | `Column.Length` (and type args) | `ddl.column.char.max_length`, `ddl.column.varchar.max_length`, `ddl.table.row_size.max_bytes.require` | `T06.json` `t06-a5-*` 16 cli + 24 meta cases pin declared CHAR/VARCHAR lengths against `limit=8` (7/8/9 + all-off control, exact `limit`/`actual` metadata, post-audit absence + native replay on both, `CHARACTER_MAXIMUM_LENGTH=N`/`CHARACTER_OCTET_LENGTH=4*N`/`utf8mb4_bin` oracle); `TestT06A5*` Go tests; corpus fixtures; catalog examples | **partially golden-proven (A5)** — declared CHAR/VARCHAR character length on CREATE only; DECIMAL precision/scale and FLOAT/DOUBLE second parameters are now fidelity-proven by A17 below as source facts (no length-policy consumer); other type args, `key_length` byte estimation, and ALTER-side length policy (#87/T08) stay earlier evidence; the `row_size` estimation *gate* is golden-proven by A15 below |
+ | PK member implied NOT NULL (inline + table-level + composite) | `Column.NotNull` normalized in `extractCreateTable`; `DDL.PrimaryKey.Columns` binding | `ddl.table.primary_key.not_null.require`, `ddl.column.not_null.require` | `T06.json` `t06-a2-*` 8 cli + 16 meta cases (`IS_NULLABLE=NO`, ordered `b:1,a:2` members, ERROR 1171 negatives); `TestT06A2*` Go tests | **golden-proven (A2)** |
+ | Explicit NULL on PK member keeps the declaration conflict | `ColumnOptionNull` → member `NotNull=false` | `ddl.table.primary_key.not_null.require` | `t06-a2-*-explicit-null-{table,inline}` meta cases (product reject + driver ERROR 1171 + absence); `primary_key_explicit_null` corpus fixtures | **golden-proven (A2)** |
+ | DEFAULT clause presence (absent vs explicit `DEFAULT NULL`) | `HasDefault`, `DefaultValue`, `DefaultIsNull` | `ddl.column.default.require` | `T06.json` `t06-a2-*-no-default`/`default-null` + `t06-a3-{mysql\|tidb}-{no-default,sql-null,text-null,text-nil}` cli cases; `TestT06A3*` | **golden-proven (A3)** — SQL `NULL` records `DefaultValue="NULL"` + `DefaultIsNull=true` from the typed AST datum; `'NULL'`/`'<nil>'` keep quoted text with `DefaultIsNull=false` |
+ | Typed NULL default reaches drop-column state seam | `DefaultIsNull` consumed by `dropOtherColumnMayReference`; post-state column clone | state layer (T05), not a rule | `T06.json` `t06-a3-{anchor}-null-drop-state` meta cases (3-statement complete/pass + post-DROP structure oracle); `TestT06A3NullDropStatePath` | **golden-proven (A3)** |
+ | Server-side `COLUMN_DEFAULT` NULL vs literal bytes | `information_schema.COLUMNS` `COLUMN_DEFAULT`/`HEX` observation | — (oracle, not a product fact) | `T06.json` `t06-a3-{anchor}-default-representation` structure verifies (`a:1:-,b:1:-,c:0:4E554C4C,d:0:3C6E696C3E`); `t06-a4-{anchor}-*` setup/post_verify oracles | **golden-proven (A3/A4)** — declaration provenance stays unrecoverable below |
+ | Provider snapshot default identity consumed by drop-column state | `Column.HasDefault` (non-NULL stored default), `DefaultValue` (raw stored text), `DefaultIsNull` (never set by metadata path) | state layer via `dropOtherColumnMayReference`, not a rule | `T06.json` `t06-a4-{anchor}-{drop-d-text-null,drop-c-text-nil,drop-d-null-control}` meta cases (setup-CREATE + product `review`/`pass` split + mid-flight oracle); `TestT06A4*` Go tests | **golden-proven (A4)** — stored `'NULL'` can no longer read as SQL NULL |
+-| NULL / literal defaults beyond PK members | `HasDefault`, `DefaultValue`, `DefaultKind`, `DefaultIsNull` | `ddl.column.default.require` | corpus fixtures; `T06.json` `IS_NULLABLE` structure assertions | **earlier evidence** — expression defaults are T07; the ordinary-column NOT NULL sub-dimension is golden-proven by A12 below |
++| NULL / literal defaults beyond PK members | `HasDefault`, `DefaultValue`, `DefaultKind`, `DefaultIsNull` | `ddl.column.default.require` | corpus fixtures; `T06.json` `IS_NULLABLE` structure assertions; `T06.json` `t06-a3-{mysql\|tidb}-{text-null,text-nil}` cli cases + the anchored `t06-a3-{anchor}-default-representation` HEX oracle (stored `'NULL'`/`'<nil>'` byte records) | **partially golden-proven (A3)** — literal-identity defaults on ordinary non-PK columns proven for the two frozen representatives; expression defaults are T07, and the ordinary-column NOT NULL sub-dimension is golden-proven by A12 below |
+ | Ordinary non-PK column NOT NULL policy + per-column attribution | `Column.NotNull` (explicit `NULL` and omitted nullability both normalize to `false`; the AST option kinds stay distinguishable below the spec), `Column.Type` in finding metadata | `ddl.column.not_null.require` (`required`, `allow_time_null`) | `T06.json` `t06-a12-*` 16 cli + 20 meta cases under `t06-a12-not-null-{strict,time-allow,not-required}-isolated` and `all-rules-disabled`: A–H roles pin pass / ordinary-nullable and strict-DATETIME blockers (exact rule_id, `column "<name>" should be declared NOT NULL` message, `{table,column,type}` metadata, 1:1 location), the DATETIME `allow_time_null` branch, the TEXT exemption representative, `required=false` (loaded+inapplicable) vs disabled (no `rule_summary`), and declaration-order per-column attribution on the mixed table; anchored roles pin ordered `schema:table:column:DATA_TYPE:ordinal:IS_NULLABLE` sets, exact column counts, zero PK constraints/index parts, no secondary indexes, InnoDB on MySQL anchors, and driver CREATE success alongside product rejects; `TestT06A12*` Go tests pin the derived pre-state `NotNull` carry-over and reject-never-rewrites-declaration | **partially golden-proven (A12)** — INT/DATETIME/TEXT representatives on ordinary non-PK CREATE columns only; the full time-like/blob-text-like exemption matrices, explicit-NULL provenance, ALTER-side nullability changes, and runtime INSERT behavior stay unproven or deferred |
+ | Temporal columns (explicit DATETIME audit roles) | `DefaultIsCurrentTimestamp`, `OnUpdateCurrentTimestamp`, `HasDefault`, `Column.Type` | `ddl.table.audit_columns.require` (created = time type + current-timestamp default; updated = same + `ON UPDATE`), `ddl.column.timestamp.forbid` | `T06.json` `t06-a9-*` 12 cli + 16 meta cases under the `t06-a9-audit-columns-isolated` blocker profile: complete-pair / missing-created / missing-updated / missing-both (exactly two per-role findings) / `NOW()`-spelling / all-off roles across both dialects; anchored roles pin stored `COLUMN_DEFAULT` whitelisted to `current_timestamp`/`current_timestamp()`/`current_timestamp(0)`, normalized `EXTRA` (`created_at` empty-or-DEFAULT_GENERATED, `updated_at` = `on update current_timestamp`), PK membership, and driver CREATE success alongside product reject; `TestT06A9*` Go tests pin parser normalization of `CURRENT_TIMESTAMP`/`CURRENT_TIMESTAMP()`/`NOW()`/`LOCALTIME`/`LOCALTIMESTAMP` (fsp `NOW(3)` arg preserved), role attribution from facts not names, `ON UPDATE`-without-default counting as neither role, `required=false`/disabled silence, and pre-state flag carry-over | **partially golden-proven (A9)** — explicit `DATETIME ... DEFAULT CURRENT_TIMESTAMP [ON UPDATE CURRENT_TIMESTAMP]` roles only; TIMESTAMP implicit defaults/`explicit_defaults_for_timestamp`, fsp>0 policy, time-zone/runtime-value semantics, other temporal types, and ALTER-side governance stay earlier evidence or deferred |
+ | AUTO_INCREMENT | `Column.AutoIncrement` (column attribute), `DDL.Options["auto_increment"]` (declared table option — distinct from the provider-written catalog counter on the same key) | `ddl.table.auto_increment.init_value.require` (exact equality, omission silent), `ddl.table.primary_key.auto_increment.require` (single bound member only; composite skips) | `T06.json` `t06-a10-*` 16 cli + 20 meta cases under `t06-a10-pk-auto-increment-isolated`/`t06-a10-init-value-isolated`: A–H roles pin pass/missing-auto blocker/init equality/omitted-silent/disabled controls; anchored roles pin stored `EXTRA` byte-exact (`auto_increment` or empty per role), ordered PK members, no stray secondary index, and driver CREATE success alongside product rejects; verbatim EXTRA members, `information_schema.TABLES` allocator row, and SHOW CREATE recorded as bound observations; `TestT06A10*` Go tests | **partially golden-proven (A10)** — single-PK require + composite skip, init equality, declaration facts, and stored column/PK structure proven; catalog allocator value observed-not-validated; allocator advance / next INSERT id / AUTO_INCREMENT=0 / unindexed or multi-column forms / AUTO_RANDOM / AUTO_ID_CACHE / ALTER-side changes stay unproven or deferred |
+@@ -57,6 +57,7 @@ Neighboring rows share the CREATE TABLE grammar but stay with their owners:
+ | Comments | `Table.Comment`, `Column.Comment` (parser-decoded content, no SQL quote wrap), `DDL.Options["comment"]`, derived-shape `Table.Comment` | `ddl.table.comment.require`, `ddl.table.comment.max_length` (Unicode code points), `ddl.column.comment.require`, `ddl.table.audit_columns.require` | `T06.json` `t06-a8-*` 24 cli + 16 meta cases: per-field require isolation (missing/empty/blank), code-point length boundaries (ASCII 8/9, `中文注`=3, 8/9-rune at/above), all-off control; anchored roles pin raw comment + `CHAR_LENGTH`/`OCTET_LENGTH`/`HEX` under recorded `utf8mb4` session (`it''s 中文`→`it's 中文`, `表注`, `中文注中文注ab[c]`) including product-reject+driver-success cases; `TestT06A8*` Go tests | **golden-proven (A8)** — column-comment length policy and comment provenance (`HasComment`) are not claimed |
+ | Table option allowlists (ENGINE / CHARSET / ROW_FORMAT) + `require_explicit` | `DDL.Options["engine"\|"charset"\|"row_format"]` — explicit declarations only; an absent key is "not declared", never an observed server default | `ddl.table.engine.allowlist`, `ddl.table.charset.allowlist`, `ddl.table.row_format.allowlist` | `T06.json` `t06-a14-*` 36 cli + 24 meta cases under `t06-a14-<family>-{strict,optional}-isolated` and `all-rules-disabled`: six roles per family pin allowed pass, denied strict and denied optional blockers (explicit disallowed values reject under both `require_explicit` values), omitted-strict blocker (`actual=""`), omitted-optional pass (`loaded=1`/`applicable=1`, never the `forbid=false` 1/0 state), and the denied-off absent summary — exact `{table,option,actual,allowed}` metadata, `table <label> must be one of [...]` messages, 1:1 location; anchored roles pin per-product catalog facts — MySQL `ENGINE`/`ROW_FORMAT` storage values (`golden:t:InnoDB`/`MyISAM`, `Dynamic`/`Compact`), TiDB compatibility display (`InnoDB`/`Compact` on both roles), and the declared charset through the real `TABLE_COLLATION`→`COLLATION_CHARACTER_SET_APPLICABILITY` association (`utf8mb4`/`latin1`, exactly-one-row check) — plus the shared one-table/one-INT-column/no-PK/no-secondary-index fixture and driver CREATE success alongside product rejects; `TestT06A14*` Go tests pin AST payload kinds (StrValue vs row_format enum), Options extraction, case-folded membership, parameter boundaries, derived pre-state carry-over, and CREATE-only/PG applicability | **partially golden-proven (A14)** — the three declared option allowlists on ordinary CREATE only; declaration-layer facts and catalog-layer resolution stay separate, TiDB's InnoDB/Compact display is compatibility representation not physical storage, and the remaining table options stay with T15 |
+ | Row-size estimate fact resolution (charset/row_format gating) | `DDL.Options["engine"\|"charset"\|"row_format"]`, `Column.Charset`/`Type`/`Length`, `instance.default_charset`, `instance.innodb_default_row_format` | `ddl.table.row_size.max_bytes.require` | `T06.json` `t06-a15-*` 24 cli cases under `t06-a15-row-size-isolated`/`t06-a15-row-size-not-required-isolated`/`all-rules-disabled`: declaration-complete roles evaluate identically with a nil instance object (below/equal pass at strict `>`, above rejects `estimated=65536/65538, limit=65535`), column charset wins over table for the estimate while `metadata.charset` stays table-level, missing-fact roles report one `missing_instance_fact` gap per statement with `required_facts` in fixed `default_charset`-then-`innodb_default_row_format` order and `coverage=unverified`/`verdict=review`, `missing-format-over` keeps its proven total blocker alongside the gap, declared non-InnoDB scope-outs and required=false/disabled controls stay silent, `ROW_FORMAT=DEFAULT` is unresolved (never fabricated DYNAMIC), and a declared `COMPRESSED` keeps its own identity (never deferred to the instance default, never a missing fact, never inside a payload branch — declaration identity only, no compressed model, R1); `TestT06A15*` Go tests pin the pointer-shape matrix (nil/empty/full instance objects agree), provider-error/context-cancel channel preservation, and the PG legacy gate | **partially golden-proven (A15)** — the *gate* and *gap contract* only: the rough-estimate formulas/thresholds are unchanged and are not physical-storage proof, COMPACT/REDUNDANT payload bounds keep their existing model, no native CREATE equivalence oracle was run for the boundary inputs, and `indexKeyLengthRule` decisions stay untouched |
++| Declared type parameters + member literals (DECIMAL / FLOAT / DOUBLE / ENUM / SET) | `Column.Type` (verbatim parameter span + member bytes), `Column.Length` (unchanged first-parameter meaning), `Column.Unsigned` (attribute words outside quotes only) | — (source-fact fidelity; consuming rules keep existing `baseType`/`family` matching) | `TestT06A17*` Go tests across five seams: real parser/extractor pin the five-declaration matrix (`decimal`/`decimal(12)`/`decimal(12,0)` distinct, `float(10,0)` preserved, member case/order/edge literals byte-exact, member round-trip re-parse, `FLOAT(p)` parser normalization controls, backslash member control, ALTER add/modify/change definitions); real `LoadTableSnapshot` over constructed catalog rows pins verbatim parameter spans and quote-aware attribute boundaries; real `batchState`/`AuditSQL` pin declaration-source and provider-source carry into the consumed pre-state (`source_type` echo); four-anchor catalog→provider proofs (below); SDK transport unchanged | **golden-proven (A17, fidelity-only)** — parameters/members survive as `Type` text on both sources; no precision/member policy, no scale-shrink or ENUM-order governance, no `FLOAT(M,D)` deprecation/version claim, and catalog normalization is never laundered into declaration provenance |
+ | Other table options | `DDL.Options`, `DDL.UnextractedOptions` | `ddl.table.partition.forbid`, `ddl.table.create_as.forbid`, `ddl.table.create_like.forbid`, `ddl.table.collation.allowlist` (proved separately under A7) | corpus fixtures; `T06.json` ENGINE structure assertion on MySQL anchors | **earlier evidence** — option enumeration completeness belongs to T15 |
+ | GIPK absence on MySQL 8.0/8.4 | `instance_facts` reads | — (fixture facts, not findings) | `T06.json` `expect.instance_facts` on `mysql80`/`mysql84` cases (`sql_require_primary_key`/`sql_generate_invisible_primary_key` OFF, `show_gipk_in_create_table_and_information_schema` ON) | **golden-proven (this slice)** |
+ 
+@@ -131,6 +132,16 @@ Neighboring rows share the CREATE TABLE grammar but stay with their owners:
+   added; `ROW_FORMAT=DEFAULT` resolves only through the real instance
+   default field, and an omitted `ENGINE` stays in the conditional
+   InnoDB scope without asserting an observed server default engine.
++- A17 narrows what the type-fidelity fix proves: `Column.Type` now carries
++  verbatim parameter text and member literals on the five declared-parameter
++  types from both the declaration path and the catalog path — but it is a
++  *source-fact* contract only. No consumer reads scale or members today;
++  catalog `COLUMN_TYPE` is a normalized representation (the provider cannot
++  tell `DECIMAL(12,0)` declared explicitly from omitted-scale, and that is a
++  catalog-layer limit, not a gap to hide); `FLOAT(p)` reports the parser's
++  own float↔double normalization without rebuilding `p`; and non-target
++  types keep their established rendering (`int(11)`, `bigint(20) unsigned`,
++  provider `varchar`/`int` bases) untouched.
+ - `CREATE DATABASE`/`ALTER DATABASE` collate stays unaudited boundary
+   evidence (`create_schema.option.collate`/`alter_schema.option.collate`);
+   `ALTER TABLE` collation governance is T15/#94 scope; collation catalog
+diff --git a/testdata/ddl-inventory/inventory.yaml b/testdata/ddl-inventory/inventory.yaml
+index 83a8ed8e..40cb74fd 100644
+--- a/testdata/ddl-inventory/inventory.yaml
++++ b/testdata/ddl-inventory/inventory.yaml
+@@ -260,7 +260,7 @@ rows:
+     sql_shape: "CREATE TABLE t (id INT PRIMARY KEY)"
+     prerequisites: "InnoDB for engine-dependent checks"
+     status: semantically_checked
+-    status_evidence: "2026-10-08 T06-A9 (#85): ddl.table.audit_columns.require proven in isolation — explicit DATETIME columns carrying DEFAULT CURRENT_TIMESTAMP spellings (CURRENT_TIMESTAMP, CURRENT_TIMESTAMP(), NOW(), LOCALTIME, LOCALTIMESTAMP) fill the created role, the same plus ON UPDATE CURRENT_TIMESTAMP fills updated only, and missing roles emit exact per-kind blockers including the two-finding missing-both shape (12x2 offline + 4x4 anchored cases in T06.json); TIMESTAMP implicit defaults, fsp>0 policy, and ALTER-side governance stay unclaimed. 2026-10-07 T06-A7 (#85): column charset/collation rules proven in isolation plus table-level COLLATE governed by the new default-disabled ddl.table.collation.allowlist — declared table collate is audited semantics (16x2 offline roles + 8x4 anchored cases in T06.json); CREATE/ALTER DATABASE collate boundaries unchanged. 2026-09-22 CLI probe: column-level UNIQUE/PRIMARY KEY GLOBAL record create_table.column.unique_global/primary_key_global evidence (vendor boundary under MySQL); primary-key/comment/audit-column/charset/engine rules fire; golden path executes real CREATE on 4 anchors 2026-09-24 T03 rework (#82): TiDB-only parsed options (auto_random_base, auto_id_cache, shard_row_id_bits, pre_split_regions, TTL family, stats_*, affinity) now record create_table.option.<name> vendor-boundary evidence under MySQL; column-level generated/inline REFERENCES/CHECK/UNIQUE record create_table.column.<name> unaudited evidence. 2026-09-25 T03 rework: SPLIT PRIMARY KEY BETWEEN ... REGIONS records create_table.option.split_index vendor-boundary evidence"
++    status_evidence: "2026-10-18 T06-A17 (#85): declared type-parameter fidelity proven — DECIMAL/FLOAT/DOUBLE scale sentinels and ENUM/SET member literals survive extractColumn and the metadata provider verbatim (declaration vs catalog layers stay distinct; fidelity-only, no parameter governance). 2026-10-15–18 T06-A10…A15 (#85): AUTO_INCREMENT declaration/init-value policy, single-member-PK BIGINT/UNSIGNED policy, ordinary-column NOT NULL attribution, five-family type forbids, ENGINE/CHARSET/ROW_FORMAT declared-option allowlists, and row-size field-level fact resolution (incl. R1 declared-COMPRESSED identity) each proven in isolation (T06.json roles + TestT06A1x Go tests; traceability table holds per-dimension scope). 2026-10-08 T06-A9 (#85): ddl.table.audit_columns.require proven in isolation — explicit DATETIME columns carrying DEFAULT CURRENT_TIMESTAMP spellings (CURRENT_TIMESTAMP, CURRENT_TIMESTAMP(), NOW(), LOCALTIME, LOCALTIMESTAMP) fill the created role, the same plus ON UPDATE CURRENT_TIMESTAMP fills updated only, and missing roles emit exact per-kind blockers including the two-finding missing-both shape (12x2 offline + 4x4 anchored cases in T06.json); TIMESTAMP implicit defaults, fsp>0 policy, and ALTER-side governance stay unclaimed. 2026-10-07 T06-A7 (#85): column charset/collation rules proven in isolation plus table-level COLLATE governed by the new default-disabled ddl.table.collation.allowlist — declared table collate is audited semantics (16x2 offline roles + 8x4 anchored cases in T06.json); CREATE/ALTER DATABASE collate boundaries unchanged. 2026-09-22 CLI probe: column-level UNIQUE/PRIMARY KEY GLOBAL record create_table.column.unique_global/primary_key_global evidence (vendor boundary under MySQL); primary-key/comment/audit-column/charset/engine rules fire; golden path executes real CREATE on 4 anchors 2026-09-24 T03 rework (#82): TiDB-only parsed options (auto_random_base, auto_id_cache, shard_row_id_bits, pre_split_regions, TTL family, stats_*, affinity) now record create_table.option.<name> vendor-boundary evidence under MySQL; column-level generated/inline REFERENCES/CHECK/UNIQUE record create_table.column.<name> unaudited evidence. 2026-09-25 T03 rework: SPLIT PRIMARY KEY BETWEEN ... REGIONS records create_table.option.split_index vendor-boundary evidence"
+     targets: "table identity, columns, PK, indexes, options"
+     acceptance:
+       dimensions: "per-statement findings, version-legal column forms, metadata presence/absence"
+@@ -1277,7 +1277,7 @@ rows:
+     sql_shape: "CREATE TABLE t (id BIGINT PRIMARY KEY AUTO_RANDOM)"
+     prerequisites: "TiDB option semantics differ from MySQL"
+     status: semantically_checked
+-    status_evidence: "2026-10-08 T06-A9 (#85): same explicit audit-time-column role proof set as mysql.create-table — ddl.table.audit_columns.require assigns created/updated from typed DefaultIsCurrentTimestamp/OnUpdateCurrentTimestamp facts (parser normalizes NOW()/LOCALTIME/LOCALTIMESTAMP to current_timestamp) on TiDB CREATE TABLE as well. 2026-10-07 T06-A7 (#85): same charset/collation proof set as mysql.create-table — the new ddl.table.collation.allowlist consumes Options[\"collate\"] on TiDB CREATE TABLE as well. 2026-09-22 CLI probe: pk/comment/audit-column/charset/engine rules fire incl. AUTO_RANDOM form; TiDB-specific option semantics unchecked (covered by dedicated rows). 2026-09-24 T03 rework (#82): extracted PLACEMENT POLICY=<name> binding has no rule consumer and now records bounded unsupported evidence (create_table.option.placement_policy) with coverage=incomplete until T20 models it"
++    status_evidence: "2026-10-18 T06-A17 (#85): same declared type-parameter fidelity proof set as mysql.create-table on TiDB CREATE TABLE (identical extractor/provider paths; four-anchor catalog→provider run includes the TiDB 8.5 anchor). 2026-10-15–18 T06-A10…A15 (#85): same isolated proof sets as mysql.create-table for AUTO_INCREMENT, single-member-PK BIGINT/UNSIGNED, ordinary-column NOT NULL, five-family type forbids, declared table-option allowlists, and row-size field-level fact resolution (incl. R1 declared-COMPRESSED identity). 2026-10-08 T06-A9 (#85): same explicit audit-time-column role proof set as mysql.create-table — ddl.table.audit_columns.require assigns created/updated from typed DefaultIsCurrentTimestamp/OnUpdateCurrentTimestamp facts (parser normalizes NOW()/LOCALTIME/LOCALTIMESTAMP to current_timestamp) on TiDB CREATE TABLE as well. 2026-10-07 T06-A7 (#85): same charset/collation proof set as mysql.create-table — the new ddl.table.collation.allowlist consumes Options[\"collate\"] on TiDB CREATE TABLE as well. 2026-09-22 CLI probe: pk/comment/audit-column/charset/engine rules fire incl. AUTO_RANDOM form; TiDB-specific option semantics unchecked (covered by dedicated rows). 2026-09-24 T03 rework (#82): extracted PLACEMENT POLICY=<name> binding has no rule consumer and now records bounded unsupported evidence (create_table.option.placement_policy) with coverage=incomplete until T20 models it"
+     targets: "table identity, columns, PK kind, TiDB options as facts"
+     acceptance:
+       dimensions: "base table checks plus TiDB option capture"

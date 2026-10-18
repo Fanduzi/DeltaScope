@@ -1,0 +1,26 @@
+[
+  {
+    "anchor": "mysql57",
+    "version": "5.7.44",
+    "rows": 24,
+    "target_mismatches": []
+  },
+  {
+    "anchor": "mysql80",
+    "version": "8.0.46",
+    "rows": 24,
+    "target_mismatches": []
+  },
+  {
+    "anchor": "mysql84",
+    "version": "8.4.10",
+    "rows": 24,
+    "target_mismatches": []
+  },
+  {
+    "anchor": "tidb85",
+    "version": "8.0.11-TiDB-v8.5.0",
+    "rows": 24,
+    "target_mismatches": []
+  }
+]

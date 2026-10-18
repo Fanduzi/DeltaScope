@@ -1,0 +1,289 @@
+// Command a17probe is a temporary T06-A17 four-anchor proof driver. It is NOT
+// committed: it connects to each pinned golden anchor, creates the
+// golden.t06_a17_type_facts table, captures raw information_schema rows,
+// runs the real mysqlmeta.Provider.LoadTableSnapshot through a query-logging
+// driver wrapper (ledger), then drops the table and verifies COUNT=0.
+// Credentials arrive only via env (A17_USER, A17_PASS); ports via argv.
+package main
+
+import (
+	"context"
+	"database/sql"
+	"database/sql/driver"
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"time"
+
+	mysqlmeta "github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql"
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+	gomysql "github.com/go-sql-driver/mysql"
+)
+
+// --- query ledger -----------------------------------------------------------
+
+type ledgerEntry struct {
+	Op    string `json:"op"`
+	Query string `json:"query"`
+}
+
+var ledger []ledgerEntry
+
+type ledgerConnector struct{ inner driver.Connector }
+
+func (c *ledgerConnector) Connect(ctx context.Context) (driver.Conn, error) {
+	conn, err := c.inner.Connect(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &ledgerConn{conn: conn}, nil
+}
+func (c *ledgerConnector) Driver() driver.Driver { return c.inner.Driver() }
+
+type ledgerConn struct{ conn driver.Conn }
+
+func (c *ledgerConn) Prepare(q string) (driver.Stmt, error) {
+	stmt, err := c.conn.Prepare(q)
+	if err != nil {
+		return nil, err
+	}
+	return &ledgerStmt{stmt: stmt, query: q}, nil
+}
+func (c *ledgerConn) Close() error          { return c.conn.Close() }
+func (c *ledgerConn) Begin() (driver.Tx, error) { return c.conn.Begin() }
+
+func (c *ledgerConn) QueryContext(ctx context.Context, q string, args []driver.NamedValue) (driver.Rows, error) {
+	ledger = append(ledger, ledgerEntry{Op: "query", Query: q})
+	if qc, ok := c.conn.(driver.QueryerContext); ok {
+		return qc.QueryContext(ctx, q, args)
+	}
+	return nil, driver.ErrSkip
+}
+func (c *ledgerConn) ExecContext(ctx context.Context, q string, args []driver.NamedValue) (driver.Result, error) {
+	ledger = append(ledger, ledgerEntry{Op: "exec", Query: q})
+	if ec, ok := c.conn.(driver.ExecerContext); ok {
+		return ec.ExecContext(ctx, q, args)
+	}
+	return nil, driver.ErrSkip
+}
+
+type ledgerStmt struct {
+	stmt  driver.Stmt
+	query string
+}
+
+func (s *ledgerStmt) Close() error  { return s.stmt.Close() }
+func (s *ledgerStmt) NumInput() int { return s.stmt.NumInput() }
+func (s *ledgerStmt) Exec(args []driver.Value) (driver.Result, error) {
+	ledger = append(ledger, ledgerEntry{Op: "stmt-exec", Query: s.query})
+	return s.stmt.Exec(args)
+}
+func (s *ledgerStmt) Query(args []driver.Value) (driver.Rows, error) {
+	ledger = append(ledger, ledgerEntry{Op: "stmt-query", Query: s.query})
+	return s.stmt.Query(args)
+}
+
+// --- probe ------------------------------------------------------------------
+
+const createSQL = `CREATE TABLE golden.t06_a17_type_facts (
+  d2 DECIMAL(12,2),
+  d3 DECIMAL(12,3),
+  d0 DECIMAL(12,0),
+  dm DECIMAL(12),
+  dn DECIMAL,
+  f2 FLOAT(10,2),
+  f3 FLOAT(10,3),
+  f0 FLOAT(10,0),
+  fn FLOAT,
+  x2 DOUBLE(16,2),
+  x4 DOUBLE(16,4),
+  x0 DOUBLE(16,0),
+  xn DOUBLE,
+  e_upper ENUM('Ready','Closed'),
+  e_lower ENUM('ready','closed'),
+  e_order ENUM('Closed','Ready'),
+  s_upper SET('Read','Write'),
+  s_lower SET('read','write'),
+  s_order SET('Write','Read'),
+  e_escaped ENUM('','A,B','A)B','O''Reilly'),
+  s_escaped SET('Read','A)B','O''Reilly'),
+  i INT,
+  v VARCHAR(8),
+  u BIGINT UNSIGNED
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin`
+
+func writeJSON(dir, name string, v any) {
+	data, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "marshal %s: %v\n", name, err)
+		return
+	}
+	if err := os.WriteFile(filepath.Join(dir, name), append(data, '\n'), 0o644); err != nil {
+		fmt.Fprintf(os.Stderr, "write %s: %v\n", name, err)
+	}
+}
+
+func main() {
+	outDir := os.Args[1]
+	anchor := os.Args[2]
+	port := os.Args[3]
+	dialect := os.Args[4]
+	dir := filepath.Join(outDir, anchor)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "create.sql"), []byte(createSQL+"\n"), 0o644); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	cfg := gomysql.NewConfig()
+	cfg.Net = "tcp"
+	cfg.Addr = "127.0.0.1:" + port
+	cfg.User = os.Getenv("A17_USER")
+	cfg.Passwd = os.Getenv("A17_PASS")
+	cfg.InterpolateParams = true
+	cfg.Timeout = 30 * time.Second
+	inner, err := gomysql.NewConnector(cfg)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	db := sql.OpenDB(&ledgerConnector{inner: inner})
+	defer db.Close()
+	ctx := context.Background()
+	if err := db.PingContext(ctx); err != nil {
+		fmt.Fprintln(os.Stderr, "ping:", err)
+		os.Exit(1)
+	}
+	pingAt := len(ledger)
+
+	// session facts
+	session := map[string]string{}
+	for _, q := range []struct{ key, sql string }{
+		{"version", "select version()"},
+		{"character_set_connection", "select @@character_set_connection"},
+		{"collation_connection", "select @@collation_connection"},
+		{"sql_mode", "select @@sql_mode"},
+		{"hostname_anchor", "select @@hostname"},
+	} {
+		var v string
+		if err := db.QueryRowContext(ctx, q.sql).Scan(&v); err != nil {
+			session[q.key] = "ERROR: " + err.Error()
+		} else {
+			session[q.key] = v
+		}
+	}
+	writeJSON(dir, "session-facts.json", session)
+
+	// pre-absence
+	var preCount int
+	_ = db.QueryRowContext(ctx, "select count(*) from information_schema.tables where table_schema='golden' and table_name='t06_a17_type_facts'").Scan(&preCount)
+	writeJSON(dir, "pre-create-count.json", map[string]int{"count": preCount})
+
+	// create schema (TiDB anchor has no golden db) + table
+	if _, err := db.ExecContext(ctx, "CREATE DATABASE IF NOT EXISTS golden"); err != nil {
+		fmt.Fprintln(os.Stderr, "create db:", err)
+		os.Exit(1)
+	}
+	if _, err := db.ExecContext(ctx, createSQL); err != nil {
+		fmt.Fprintln(os.Stderr, "create table:", err)
+		writeJSON(dir, "create-error.json", map[string]string{"error": err.Error()})
+		writeJSON(dir, "query-ledger.json", ledger)
+		os.Exit(2)
+	}
+	fmt.Println("CREATE TABLE ok")
+
+	// raw catalog rows
+	catRows, err := db.QueryContext(ctx, `select column_name, ordinal_position, data_type, column_type, hex(column_type), numeric_precision, numeric_scale, character_set_name, collation_name from information_schema.columns where table_schema='golden' and table_name='t06_a17_type_facts' order by ordinal_position`)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "catalog query:", err)
+		os.Exit(1)
+	}
+	type catRow struct {
+		ColumnName      string  `json:"column_name"`
+		OrdinalPosition int     `json:"ordinal_position"`
+		DataType        string  `json:"data_type"`
+		ColumnType      string  `json:"column_type"`
+		ColumnTypeHex   string  `json:"column_type_hex"`
+		NumericPrecision *int64 `json:"numeric_precision"`
+		NumericScale    *int64  `json:"numeric_scale"`
+		CharacterSet    *string `json:"character_set_name"`
+		Collation       *string `json:"collation_name"`
+	}
+	var cat []catRow
+	for catRows.Next() {
+		var r catRow
+		var prec, scale sql.NullInt64
+		var cs, coll sql.NullString
+		if err := catRows.Scan(&r.ColumnName, &r.OrdinalPosition, &r.DataType, &r.ColumnType, &r.ColumnTypeHex, &prec, &scale, &cs, &coll); err != nil {
+			fmt.Fprintln(os.Stderr, "scan:", err)
+			os.Exit(1)
+		}
+		if prec.Valid {
+			r.NumericPrecision = &prec.Int64
+		}
+		if scale.Valid {
+			r.NumericScale = &scale.Int64
+		}
+		if cs.Valid {
+			r.CharacterSet = &cs.String
+		}
+		if coll.Valid {
+			r.Collation = &coll.String
+		}
+		cat = append(cat, r)
+	}
+	catRows.Close()
+	writeJSON(dir, "catalog-rows.json", cat)
+	fmt.Printf("catalog rows: %d\n", len(cat))
+
+	// real provider over the same ledger connection
+	provLedgerStart := len(ledger)
+	provider := mysqlmeta.NewProvider(db)
+	var dia spec.Dialect
+	if dialect == "tidb" {
+		dia = spec.DialectTiDB
+	} else {
+		dia = spec.DialectMySQL
+	}
+	snap, err := provider.LoadTableSnapshot(ctx, dia, "golden", "t06_a17_type_facts")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "provider snapshot:", err)
+		os.Exit(1)
+	}
+	writeJSON(dir, "provider-snapshot.json", snap)
+	writeJSON(dir, "provider-query-ledger.json", ledger[provLedgerStart:])
+
+	// pairing: catalog column_type vs provider Type
+	type pair struct {
+		Column     string `json:"column"`
+		Catalog    string `json:"catalog_column_type"`
+		Provider   string `json:"provider_type"`
+		Length     int    `json:"provider_length"`
+		Unsigned   bool   `json:"provider_unsigned"`
+	}
+	var pairs []pair
+	provByName := map[string]spec.Column{}
+	for _, c := range snap.Columns {
+		provByName[c.Name] = c
+	}
+	for _, r := range cat {
+		pc := provByName[r.ColumnName]
+		pairs = append(pairs, pair{Column: r.ColumnName, Catalog: r.ColumnType, Provider: pc.Type, Length: pc.Length, Unsigned: pc.Unsigned})
+	}
+	writeJSON(dir, "catalog-provider-pairs.json", pairs)
+
+	// drop + post count
+	if _, err := db.ExecContext(ctx, "DROP TABLE golden.t06_a17_type_facts"); err != nil {
+		fmt.Fprintln(os.Stderr, "drop:", err)
+		os.Exit(1)
+	}
+	var postCount int
+	_ = db.QueryRowContext(ctx, "select count(*) from information_schema.tables where table_schema='golden' and table_name='t06_a17_type_facts'").Scan(&postCount)
+	writeJSON(dir, "post-drop-count.json", map[string]int{"count": postCount})
+	writeJSON(dir, "query-ledger.json", ledger[pingAt:])
+	fmt.Printf("post-drop count: %d\n", postCount)
+}

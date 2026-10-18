@@ -1,0 +1,111 @@
+{
+  "ast_columns": [
+    {
+      "name": "d2",
+      "tp_code": 246,
+      "tp_name": "decimal",
+      "flen": 12,
+      "decimal": 2,
+      "elems_set": false,
+      "string": "decimal(12,2)",
+      "compact_str": "decimal(12,2)",
+      "restore": "DECIMAL(12,2)"
+    },
+    {
+      "name": "d3",
+      "tp_code": 246,
+      "tp_name": "decimal",
+      "flen": 12,
+      "decimal": 3,
+      "elems_set": false,
+      "string": "decimal(12,3)",
+      "compact_str": "decimal(12,3)",
+      "restore": "DECIMAL(12,3)"
+    },
+    {
+      "name": "d0",
+      "tp_code": 246,
+      "tp_name": "decimal",
+      "flen": 12,
+      "decimal": 0,
+      "elems_set": false,
+      "string": "decimal(12,0)",
+      "compact_str": "decimal(12,0)",
+      "restore": "DECIMAL(12,0)"
+    },
+    {
+      "name": "dm",
+      "tp_code": 246,
+      "tp_name": "decimal",
+      "flen": 12,
+      "decimal": -1,
+      "elems_set": false,
+      "string": "decimal(12,0)",
+      "compact_str": "decimal(12,0)",
+      "restore": "DECIMAL(12)"
+    },
+    {
+      "name": "dn",
+      "tp_code": 246,
+      "tp_name": "decimal",
+      "flen": -1,
+      "decimal": -1,
+      "elems_set": false,
+      "string": "decimal(10,0)",
+      "compact_str": "decimal(10,0)",
+      "restore": "DECIMAL"
+    }
+  ],
+  "ast_error": "",
+  "dialect": "tidb",
+  "spec_columns": [
+    {
+      "name": "d2",
+      "type": "decimal(12,2)",
+      "length": 12,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    },
+    {
+      "name": "d3",
+      "type": "decimal(12,3)",
+      "length": 12,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    },
+    {
+      "name": "d0",
+      "type": "decimal(12,0)",
+      "length": 12,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    },
+    {
+      "name": "dm",
+      "type": "decimal(12,0)",
+      "length": 12,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    },
+    {
+      "name": "dn",
+      "type": "decimal(10,0)",
+      "length": -1,
+      "unsigned": false,
+      "charset": "",
+      "collation": "",
+      "not_null": false
+    }
+  ],
+  "spec_error": "",
+  "sql": "CREATE TABLE t (\n  d2 DECIMAL(12,2),\n  d3 DECIMAL(12,3),\n  d0 DECIMAL(12,0),\n  dm DECIMAL(12),\n  dn DECIMAL\n);\n",
+  "warnings": []
+}

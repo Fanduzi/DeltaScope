@@ -1,0 +1,7 @@
+CREATE TABLE t (
+  d2 DECIMAL(12,2),
+  d3 DECIMAL(12,3),
+  d0 DECIMAL(12,0),
+  dm DECIMAL(12),
+  dn DECIMAL
+);
