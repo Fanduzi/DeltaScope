@@ -1,0 +1,14 @@
+[
+  "git",
+  "diff",
+  "--check",
+  "--",
+  "internal/application/audit/batch_state_t06a17_test.go",
+  "internal/application/audit/README.md",
+  "internal/infrastructure/parser/tidb/extractor_t06a17_test.go",
+  "internal/infrastructure/parser/tidb/README.md",
+  "internal/infrastructure/metadata/mysql/provider_t06a17_test.go",
+  "internal/infrastructure/metadata/mysql/README.md",
+  "scripts/README.md",
+  "docs/verification/t06-a17/4f58ac548aecd495edc707c35868c179686b0e35/README.md"
+]

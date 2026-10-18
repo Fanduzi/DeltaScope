@@ -1,0 +1,9 @@
+[
+  "docker",
+  "network",
+  "ls",
+  "--filter",
+  "label=com.docker.compose.project=deltascope-t06-a17-r1",
+  "--format",
+  "{{.ID}}\t{{.Name}}"
+]

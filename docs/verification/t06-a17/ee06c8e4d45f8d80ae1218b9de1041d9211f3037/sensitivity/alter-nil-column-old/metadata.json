@@ -1,0 +1,26 @@
+{
+  "argv": [
+    "go",
+    "test",
+    "-count=1",
+    "-overlay",
+    "/private/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/sensitivity/alter-nil-column-old/overlay.json",
+    "./internal/infrastructure/parser/tidb",
+    "-run",
+    "^TestT06A17AlterColumnDefinitions$",
+    "-v"
+  ],
+  "cwd": "/Users/fan/GolangProjects/DeltaScope",
+  "started_at": "2026-10-18T16:48:01.280201+00:00",
+  "head_sha": "ee06c8e4d45f8d80ae1218b9de1041d9211f3037",
+  "source_ref": "8d1253e2fea0e1fac6bd150a8e46f436486f7205",
+  "source_path": "internal/infrastructure/parser/tidb/extractor_t06a17_test.go",
+  "source_sha256": "4ed669885031d332eb78d07ea1d23bef01b005abb9f7843d69845ea28448a2c3",
+  "overlay_source_sha256": "0476a3c19a6f58d94633806ba8d235f7253037c73e1e2569906ffeb31b989555",
+  "constructed_fault": "statement.DDL.Alter[0].Column = nil",
+  "task_file_status_before": "",
+  "finished_at": "2026-10-18T16:48:01.959127+00:00",
+  "returncode": 0,
+  "head_sha_after": "ee06c8e4d45f8d80ae1218b9de1041d9211f3037",
+  "task_file_status_after": ""
+}

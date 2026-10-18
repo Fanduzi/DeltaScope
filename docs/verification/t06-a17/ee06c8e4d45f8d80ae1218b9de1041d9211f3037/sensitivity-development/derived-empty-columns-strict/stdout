@@ -1,0 +1,19 @@
+=== RUN   TestT06A17DerivedPreStatePreservesType
+=== PAUSE TestT06A17DerivedPreStatePreservesType
+=== CONT  TestT06A17DerivedPreStatePreservesType
+=== RUN   TestT06A17DerivedPreStatePreservesType/mysql
+=== PAUSE TestT06A17DerivedPreStatePreservesType/mysql
+=== RUN   TestT06A17DerivedPreStatePreservesType/tidb
+=== PAUSE TestT06A17DerivedPreStatePreservesType/tidb
+=== CONT  TestT06A17DerivedPreStatePreservesType/mysql
+=== CONT  TestT06A17DerivedPreStatePreservesType/tidb
+=== NAME  TestT06A17DerivedPreStatePreservesType/mysql
+    batch_state_t06a17_test.go:103: mysql derived pre-state: columns = 0 ([]), want 4
+=== NAME  TestT06A17DerivedPreStatePreservesType/tidb
+    batch_state_t06a17_test.go:103: tidb derived pre-state: columns = 0 ([]), want 4
+--- FAIL: TestT06A17DerivedPreStatePreservesType (0.00s)
+    --- FAIL: TestT06A17DerivedPreStatePreservesType/mysql (0.00s)
+    --- FAIL: TestT06A17DerivedPreStatePreservesType/tidb (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.539s
+FAIL

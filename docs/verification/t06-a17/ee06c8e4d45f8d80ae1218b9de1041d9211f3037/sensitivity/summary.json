@@ -1,0 +1,188 @@
+{
+  "head_sha": "ee06c8e4d45f8d80ae1218b9de1041d9211f3037",
+  "old_assertion_ref": "8d1253e2fea0e1fac6bd150a8e46f436486f7205",
+  "strict_source": "ee06c8e4d45f8d80ae1218b9de1041d9211f3037",
+  "selected_kind": null,
+  "expected_records": 22,
+  "constructed_faults_only": true,
+  "native_database_fault_injection": false,
+  "records": [
+    {
+      "kind": "derived",
+      "case": "missing-column",
+      "assertions": "old",
+      "returncode": 0,
+      "expected_observation": true,
+      "path": "/private/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/sensitivity/derived-missing-column-old"
+    },
+    {
+      "kind": "derived",
+      "case": "missing-column",
+      "assertions": "strict",
+      "returncode": 1,
+      "expected_observation": true,
+      "path": "/private/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/sensitivity/derived-missing-column-strict"
+    },
+    {
+      "kind": "derived",
+      "case": "empty-columns",
+      "assertions": "old",
+      "returncode": 0,
+      "expected_observation": true,
+      "path": "/private/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/sensitivity/derived-empty-columns-old"
+    },
+    {
+      "kind": "derived",
+      "case": "empty-columns",
+      "assertions": "strict",
+      "returncode": 1,
+      "expected_observation": true,
+      "path": "/private/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/sensitivity/derived-empty-columns-strict"
+    },
+    {
+      "kind": "derived",
+      "case": "duplicate-column",
+      "assertions": "old",
+      "returncode": 0,
+      "expected_observation": true,
+      "path": "/private/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/sensitivity/derived-duplicate-column-old"
+    },
+    {
+      "kind": "derived",
+      "case": "duplicate-column",
+      "assertions": "strict",
+      "returncode": 1,
+      "expected_observation": true,
+      "path": "/private/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/sensitivity/derived-duplicate-column-strict"
+    },
+    {
+      "kind": "provider",
+      "case": "missing-column",
+      "assertions": "old",
+      "returncode": 0,
+      "expected_observation": true,
+      "path": "/private/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/sensitivity/provider-missing-column-old"
+    },
+    {
+      "kind": "provider",
+      "case": "missing-column",
+      "assertions": "strict",
+      "returncode": 1,
+      "expected_observation": true,
+      "path": "/private/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/sensitivity/provider-missing-column-strict"
+    },
+    {
+      "kind": "provider",
+      "case": "empty-columns",
+      "assertions": "old",
+      "returncode": 0,
+      "expected_observation": true,
+      "path": "/private/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/sensitivity/provider-empty-columns-old"
+    },
+    {
+      "kind": "provider",
+      "case": "empty-columns",
+      "assertions": "strict",
+      "returncode": 1,
+      "expected_observation": true,
+      "path": "/private/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/sensitivity/provider-empty-columns-strict"
+    },
+    {
+      "kind": "provider",
+      "case": "duplicate-column",
+      "assertions": "old",
+      "returncode": 0,
+      "expected_observation": true,
+      "path": "/private/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/sensitivity/provider-duplicate-column-old"
+    },
+    {
+      "kind": "provider",
+      "case": "duplicate-column",
+      "assertions": "strict",
+      "returncode": 1,
+      "expected_observation": true,
+      "path": "/private/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/sensitivity/provider-duplicate-column-strict"
+    },
+    {
+      "kind": "alter",
+      "case": "nil-definition",
+      "assertions": "old",
+      "returncode": 0,
+      "expected_observation": true,
+      "path": "/private/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/sensitivity/alter-nil-definition-old"
+    },
+    {
+      "kind": "alter",
+      "case": "nil-definition",
+      "assertions": "strict",
+      "returncode": 1,
+      "expected_observation": true,
+      "path": "/private/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/sensitivity/alter-nil-definition-strict"
+    },
+    {
+      "kind": "alter",
+      "case": "missing-action",
+      "assertions": "old",
+      "returncode": 0,
+      "expected_observation": true,
+      "path": "/private/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/sensitivity/alter-missing-action-old"
+    },
+    {
+      "kind": "alter",
+      "case": "missing-action",
+      "assertions": "strict",
+      "returncode": 1,
+      "expected_observation": true,
+      "path": "/private/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/sensitivity/alter-missing-action-strict"
+    },
+    {
+      "kind": "alter",
+      "case": "nil-column",
+      "assertions": "old",
+      "returncode": 0,
+      "expected_observation": true,
+      "path": "/private/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/sensitivity/alter-nil-column-old"
+    },
+    {
+      "kind": "alter",
+      "case": "nil-column",
+      "assertions": "strict",
+      "returncode": 1,
+      "expected_observation": true,
+      "path": "/private/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/sensitivity/alter-nil-column-strict"
+    },
+    {
+      "kind": "alter",
+      "case": "wrong-target",
+      "assertions": "old",
+      "returncode": 0,
+      "expected_observation": true,
+      "path": "/private/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/sensitivity/alter-wrong-target-old"
+    },
+    {
+      "kind": "alter",
+      "case": "wrong-target",
+      "assertions": "strict",
+      "returncode": 1,
+      "expected_observation": true,
+      "path": "/private/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/sensitivity/alter-wrong-target-strict"
+    },
+    {
+      "kind": "alter",
+      "case": "duplicate-action",
+      "assertions": "old",
+      "returncode": 0,
+      "expected_observation": true,
+      "path": "/private/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/sensitivity/alter-duplicate-action-old"
+    },
+    {
+      "kind": "alter",
+      "case": "duplicate-action",
+      "assertions": "strict",
+      "returncode": 1,
+      "expected_observation": true,
+      "path": "/private/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/sensitivity/alter-duplicate-action-strict"
+    }
+  ],
+  "all_expected_observations": true
+}

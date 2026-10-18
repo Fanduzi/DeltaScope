@@ -1,0 +1,26 @@
+{
+  "argv": [
+    "go",
+    "test",
+    "-count=1",
+    "-overlay",
+    "/private/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/sensitivity/alter-duplicate-action-strict/overlay.json",
+    "./internal/infrastructure/parser/tidb",
+    "-run",
+    "^TestT06A17AlterColumnDefinitions$",
+    "-v"
+  ],
+  "cwd": "/Users/fan/GolangProjects/DeltaScope",
+  "started_at": "2026-10-18T16:48:04.833622+00:00",
+  "head_sha": "ee06c8e4d45f8d80ae1218b9de1041d9211f3037",
+  "source_ref": "ee06c8e4d45f8d80ae1218b9de1041d9211f3037",
+  "source_path": "internal/infrastructure/parser/tidb/extractor_t06a17_test.go",
+  "source_sha256": "a4db44d105c9364e90f0f0246987d935670affaef982d438a8fa5ac7cd7f458a",
+  "overlay_source_sha256": "c4e1405133e6f8f45575cc9d723544c496b6e1d9b718f17dde26876cdeddc213",
+  "constructed_fault": "statement.DDL.Alter = append(statement.DDL.Alter, statement.DDL.Alter[0])",
+  "task_file_status_before": "",
+  "finished_at": "2026-10-18T16:48:05.475190+00:00",
+  "returncode": 1,
+  "head_sha_after": "ee06c8e4d45f8d80ae1218b9de1041d9211f3037",
+  "task_file_status_after": ""
+}

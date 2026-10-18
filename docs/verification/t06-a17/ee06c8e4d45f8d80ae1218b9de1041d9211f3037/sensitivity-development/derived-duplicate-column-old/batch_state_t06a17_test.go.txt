@@ -1,0 +1,72 @@
+// Package audit verifies the T06-A17 declaration-source carry contract:
+// columns parsed from CREATE TABLE keep their faithful Type (DECIMAL scale,
+// explicit-zero FLOAT/DOUBLE scale, ENUM/SET member case) inside the derived
+// pre-state a later batch statement consumes — cloneColumn drops nothing the
+// extractor now carries.
+// input: real parser/extractor statements applied into batchState
+// output: pre-state snapshot columns with identical Type facts
+// pos: application-layer ordered-state regression tests for issue #85 T06-A17
+// note: if this file changes, update this header and module README.md.
+package audit
+
+import (
+	"context"
+	"testing"
+
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+)
+
+func TestT06A17DerivedPreStatePreservesType(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
+		dialect := dialect
+		t.Run(string(dialect), func(t *testing.T) {
+			t.Parallel()
+			sql := "CREATE TABLE t (\n" +
+				"  d DECIMAL(12,2),\n" +
+				"  f FLOAT(10,0),\n" +
+				"  e ENUM('Ready','Closed'),\n" +
+				"  s SET('Write','Read')\n" +
+				");\n" +
+				"ALTER TABLE t ADD COLUMN next_c INT;"
+			parsed, err := Parse(ctx, sql, dialect)
+			if err != nil {
+				t.Fatalf("parse: %v", err)
+			}
+			statements, err := Extract(ctx, parsed)
+			if err != nil {
+				t.Fatalf("extract: %v", err)
+			}
+			if len(statements) != 2 {
+				t.Fatalf("statements = %d, want 2", len(statements))
+			}
+			state := newBatchState(dialect, "golden", nil)
+			if _, err := state.preState(ctx, "golden", *statements[0].DDL.Table); err != nil {
+				t.Fatalf("warm pre-state: %v", err)
+			}
+			if err := state.apply(ctx, statements[0]); err != nil {
+				t.Fatalf("apply create: %v", err)
+			}
+			snapshot, err := state.preState(ctx, "golden", spec.Table{Schema: "golden", Name: "t"})
+			if err != nil {
+				t.Fatalf("pre-state: %v", err)
+			}
+			snapshot.Columns[1] = snapshot.Columns[0]
+			if snapshot == nil || !snapshot.Exists {
+				t.Fatalf("pre-state missing after CREATE: %+v", snapshot)
+			}
+			want := map[string]string{
+				"d": "decimal(12,2)",
+				"f": "float(10,0)",
+				"e": "enum('Ready','Closed')",
+				"s": "set('Write','Read')",
+			}
+			for _, column := range snapshot.Columns {
+				if expected, ok := want[column.Name]; ok && column.Type != expected {
+					t.Fatalf("%s pre-state column %s Type = %q, want %q", dialect, column.Name, column.Type, expected)
+				}
+			}
+		})
+	}
+}

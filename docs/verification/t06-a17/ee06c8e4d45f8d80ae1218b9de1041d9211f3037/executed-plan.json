@@ -1,0 +1,450 @@
+[
+  {
+    "label": "00-git-source-state",
+    "argv": [
+      "git",
+      "status",
+      "--short",
+      "--untracked-files=normal"
+    ]
+  },
+  {
+    "label": "01-production-unchanged",
+    "argv": [
+      "git",
+      "diff",
+      "--exit-code",
+      "4f58ac548aecd495edc707c35868c179686b0e35",
+      "--",
+      "internal/infrastructure/parser/tidb/extractor.go",
+      "internal/infrastructure/metadata/mysql/provider.go"
+    ]
+  },
+  {
+    "label": "02-docker-before",
+    "argv": [
+      "docker",
+      "ps",
+      "-a",
+      "--format",
+      "{{.ID}}\t{{.Names}}\t{{.Status}}"
+    ]
+  },
+  {
+    "label": "03-native-network-before",
+    "argv": [
+      "docker",
+      "network",
+      "ls",
+      "--filter",
+      "label=com.docker.compose.project=deltascope-t06-a17-r1",
+      "--format",
+      "{{.ID}}\t{{.Name}}"
+    ]
+  },
+  {
+    "label": "04-focused-a17",
+    "argv": [
+      "go",
+      "test",
+      "-count=1",
+      "./internal/infrastructure/parser/tidb",
+      "./internal/infrastructure/metadata/mysql",
+      "./internal/application/audit",
+      "./internal/application/auditmeta",
+      "-run",
+      "T06A17",
+      "-v"
+    ]
+  },
+  {
+    "label": "05-sdk-a17",
+    "argv": [
+      "go",
+      "test",
+      "-count=1",
+      "./pkg/deltascope",
+      "-run",
+      "^TestT06A17TypeFactsSDKTransport$",
+      "-v"
+    ]
+  },
+  {
+    "label": "06-http-representatives",
+    "argv": [
+      "go",
+      "test",
+      "-count=1",
+      "./internal/interfaces/http",
+      "-run",
+      "^TestHandlerAuditReturnsJSONResult$|^TestHandlerAuditOfflineBehaviorPreserved$|^TestHandlerT06A13BlobTextSafe$",
+      "-v"
+    ]
+  },
+  {
+    "label": "07-collector-faults",
+    "argv": [
+      "go",
+      "test",
+      "-count=1",
+      "./scripts/t06a17proof",
+      "-run",
+      "T06A17R1",
+      "-v"
+    ]
+  },
+  {
+    "label": "08-assertion-sensitivity",
+    "argv": [
+      "python3",
+      "scripts/t06a17proof/sensitivity.py",
+      "--out",
+      "/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/sensitivity"
+    ]
+  },
+  {
+    "label": "09-make-test",
+    "argv": [
+      "env",
+      "GOFLAGS=-count=1",
+      "make",
+      "test"
+    ]
+  },
+  {
+    "label": "10-pg-unit-test-gates",
+    "argv": [
+      "make",
+      "pg-unit-test-gates"
+    ]
+  },
+  {
+    "label": "11-sql-corpus-gates",
+    "argv": [
+      "make",
+      "sql-corpus-gates"
+    ]
+  },
+  {
+    "label": "12-ddl-inventory-gate",
+    "argv": [
+      "make",
+      "ddl-inventory-gate"
+    ]
+  },
+  {
+    "label": "13-ddl-coverage-catalog-test",
+    "argv": [
+      "make",
+      "ddl-coverage-catalog-test"
+    ]
+  },
+  {
+    "label": "14-docs-example-gates",
+    "argv": [
+      "make",
+      "docs-example-gates"
+    ]
+  },
+  {
+    "label": "15-decision-record-gate",
+    "argv": [
+      "make",
+      "decision-record-gate"
+    ]
+  },
+  {
+    "label": "16-ddl-golden-validator-test",
+    "argv": [
+      "make",
+      "ddl-golden-validator-test"
+    ]
+  },
+  {
+    "label": "17-shared-regressions",
+    "argv": [
+      "go",
+      "test",
+      "-count=1",
+      "./internal/domain/rule/ddl",
+      "-run",
+      "T06A13|T06A15|AlterColumnCompatibility|TableRowSize|IndexKeyLength",
+      "-v"
+    ]
+  },
+  {
+    "label": "18-work-cli-build",
+    "argv": [
+      "env",
+      "CGO_ENABLED=0",
+      "go",
+      "build",
+      "-o",
+      "/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/work-bin/deltascope",
+      "./cmd/deltascope"
+    ]
+  },
+  {
+    "label": "19-work-cli-sha",
+    "argv": [
+      "shasum",
+      "-a",
+      "256",
+      "/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/work-bin/deltascope"
+    ]
+  },
+  {
+    "label": "20-work-cli-build-info",
+    "argv": [
+      "go",
+      "version",
+      "-m",
+      "/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/work-bin/deltascope"
+    ]
+  },
+  {
+    "label": "21-work-cli-version",
+    "argv": [
+      "/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/work-bin/deltascope",
+      "--version"
+    ]
+  },
+  {
+    "label": "22-probe-build",
+    "argv": [
+      "env",
+      "CGO_ENABLED=0",
+      "go",
+      "build",
+      "-o",
+      "/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/probe-bin/t06a17proof",
+      "./scripts/t06a17proof"
+    ]
+  },
+  {
+    "label": "23-probe-sha",
+    "argv": [
+      "shasum",
+      "-a",
+      "256",
+      "/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/probe-bin/t06a17proof"
+    ]
+  },
+  {
+    "label": "24-probe-build-info",
+    "argv": [
+      "go",
+      "version",
+      "-m",
+      "/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/probe-bin/t06a17proof"
+    ]
+  },
+  {
+    "label": "25-probe-source-sha",
+    "argv": [
+      "shasum",
+      "-a",
+      "256",
+      "scripts/t06a17proof/main.go",
+      "scripts/t06a17proof/facts.go",
+      "scripts/t06a17proof/main_test.go",
+      "scripts/t06a17proof/sensitivity.py"
+    ]
+  },
+  {
+    "label": "26-golden",
+    "argv": [
+      "make",
+      "ddl-golden",
+      "TASK=T06",
+      "ARTIFACT_DIR=/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/golden"
+    ]
+  },
+  {
+    "label": "27-golden-validate",
+    "argv": [
+      "python3",
+      "scripts/ddl_golden.py",
+      "validate",
+      "--artifact",
+      "/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/golden/T06/artifact.json"
+    ]
+  },
+  {
+    "label": "28-golden-cli-sha",
+    "argv": [
+      "shasum",
+      "-a",
+      "256",
+      "/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/golden/T06/bin/deltascope"
+    ]
+  },
+  {
+    "label": "29-golden-cli-build-info",
+    "argv": [
+      "go",
+      "version",
+      "-m",
+      "/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/golden/T06/bin/deltascope"
+    ]
+  },
+  {
+    "label": "30-golden-cli-version",
+    "argv": [
+      "/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/golden/T06/bin/deltascope",
+      "--version"
+    ]
+  },
+  {
+    "label": "31-docker-between",
+    "argv": [
+      "docker",
+      "ps",
+      "-a",
+      "--format",
+      "{{.ID}}\t{{.Names}}\t{{.Status}}"
+    ]
+  },
+  {
+    "label": "32-native-up",
+    "argv": [
+      "docker",
+      "compose",
+      "-p",
+      "deltascope-t06-a17-r1",
+      "-f",
+      "docker/ddl-golden-compose.yaml",
+      "up",
+      "-d",
+      "--wait",
+      "mysql57",
+      "mysql80",
+      "mysql84",
+      "tidb85"
+    ]
+  },
+  {
+    "label": "33-native-container-identities",
+    "argv": [
+      "docker",
+      "inspect",
+      "--format",
+      "{{.Id}}\t{{.Name}}\t{{.Image}}\t{{.Config.Image}}\t{{.State.Health.Status}}",
+      "deltascope-ddl-golden-mysql57",
+      "deltascope-ddl-golden-mysql80",
+      "deltascope-ddl-golden-mysql84",
+      "deltascope-ddl-golden-tidb85"
+    ]
+  },
+  {
+    "label": "34-native-image-identities",
+    "argv": [
+      "docker",
+      "image",
+      "inspect",
+      "--format",
+      "{{.Id}}\t{{json .RepoTags}}\t{{json .RepoDigests}}",
+      "mysql:5.7.44",
+      "mysql:8.0.46",
+      "mysql:8.4.10",
+      "pingcap/tidb:v8.5.0"
+    ]
+  },
+  {
+    "label": "35-native-mysql57",
+    "argv": [
+      "/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/probe-bin/t06a17proof",
+      "/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/anchors",
+      "mysql57"
+    ]
+  },
+  {
+    "label": "36-native-mysql80",
+    "argv": [
+      "/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/probe-bin/t06a17proof",
+      "/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/anchors",
+      "mysql80"
+    ]
+  },
+  {
+    "label": "37-native-mysql84",
+    "argv": [
+      "/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/probe-bin/t06a17proof",
+      "/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/anchors",
+      "mysql84"
+    ]
+  },
+  {
+    "label": "38-native-tidb85",
+    "argv": [
+      "/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/probe-bin/t06a17proof",
+      "/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/anchors",
+      "tidb85"
+    ]
+  },
+  {
+    "label": "39-native-down",
+    "argv": [
+      "docker",
+      "compose",
+      "-p",
+      "deltascope-t06-a17-r1",
+      "-f",
+      "docker/ddl-golden-compose.yaml",
+      "down",
+      "--volumes"
+    ]
+  },
+  {
+    "label": "40-docker-after",
+    "argv": [
+      "docker",
+      "ps",
+      "-a",
+      "--format",
+      "{{.ID}}\t{{.Names}}\t{{.Status}}"
+    ]
+  },
+  {
+    "label": "41-native-network-after",
+    "argv": [
+      "docker",
+      "network",
+      "ls",
+      "--filter",
+      "label=com.docker.compose.project=deltascope-t06-a17-r1",
+      "--format",
+      "{{.ID}}\t{{.Name}}"
+    ]
+  },
+  {
+    "label": "42-production-unchanged-after",
+    "argv": [
+      "git",
+      "diff",
+      "--exit-code",
+      "4f58ac548aecd495edc707c35868c179686b0e35",
+      "--",
+      "internal/infrastructure/parser/tidb/extractor.go",
+      "internal/infrastructure/metadata/mysql/provider.go"
+    ]
+  },
+  {
+    "label": "43-final-source-status",
+    "argv": [
+      "git",
+      "status",
+      "--short",
+      "--untracked-files=normal"
+    ]
+  },
+  {
+    "label": "44-task-diff-check",
+    "argv": [
+      "git",
+      "diff",
+      "--check",
+      "8d1253e2fea0e1fac6bd150a8e46f436486f7205..ee06c8e4d45f8d80ae1218b9de1041d9211f3037"
+    ]
+  }
+]

@@ -1,0 +1,265 @@
+// Package tidbparser verifies the T06-A17 declared-type-parameter fidelity
+// contract: DECIMAL/FLOAT/DOUBLE precision-scale facts and ENUM/SET member
+// literals survive extractColumn into spec.Column.Type without the formatted
+// layer's default substitution or keyword-driven case folding. The tests run
+// the real parser + extractor (t06a2Extract) for both dialects.
+// input: frozen declaration shapes from the T06-A17 baseline fixtures
+// output: faithful Column.Type/Length/Unsigned per declared spelling, plus
+// exactly-once ALTER action/subject/old-name/definition identity checks
+// pos: infrastructure extraction regression tests for issue #85 T06-A17
+// note: if this file changes, update this header and module README.md.
+package tidbparser
+
+import (
+	"context"
+	"fmt"
+	"testing"
+
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+	"github.com/pingcap/tidb/pkg/parser/ast"
+)
+
+// t06a17SQL mirrors the frozen A17 baseline fixtures verbatim.
+const (
+	t06a17N1 = `CREATE TABLE t (
+  d2 DECIMAL(12,2),
+  d3 DECIMAL(12,3),
+  d0 DECIMAL(12,0),
+  dm DECIMAL(12),
+  dn DECIMAL
+);`
+	t06a17N2 = `CREATE TABLE t (
+  f2 FLOAT(10,2),
+  f3 FLOAT(10,3),
+  f0 FLOAT(10,0),
+  fn FLOAT,
+  x2 DOUBLE(16,2),
+  x4 DOUBLE(16,4),
+  x0 DOUBLE(16,0),
+  xn DOUBLE
+);`
+	t06a17L1 = `CREATE TABLE t (
+  e_upper ENUM('Ready','Closed'),
+  e_lower ENUM('ready','closed'),
+  e_order ENUM('Closed','Ready'),
+  s_upper SET('Read','Write'),
+  s_lower SET('read','write'),
+  s_order SET('Write','Read')
+);`
+	t06a17L2 = `CREATE TABLE t (
+  e ENUM('','A,B','A)B','O''Reilly'),
+  s SET('Read','A)B','O''Reilly')
+);`
+	t06a17C = `CREATE TABLE t (
+  i INT,
+  v VARCHAR(8),
+  u BIGINT UNSIGNED
+);`
+	// FLOAT(p) single-argument controls: the locked parser normalizes p<=24
+	// to TypeFloat and p>=25 to TypeDouble, discarding p — the test pins the
+	// real normalization, never a rebuilt parameter.
+	t06a17FloatP = `CREATE TABLE t (f10 FLOAT(10), f30 FLOAT(30));`
+	// Backslash member control: input bytes 'a\\b' decode to member a\b;
+	// rendering must re-escape so the member stays distinguishable.
+	t06a17Backslash = `CREATE TABLE t (e ENUM('a\\b','plain'));`
+)
+
+func t06a17Column(t *testing.T, statement spec.Statement, name string) spec.Column {
+	t.Helper()
+	for _, column := range statement.DDL.Columns {
+		if column.Name == name {
+			return column
+		}
+	}
+	t.Fatalf("column %q not found in %+v", name, statement.DDL.Columns)
+	return spec.Column{}
+}
+
+func t06a17WantType(t *testing.T, sqlText, name, wantType string, wantLen int, wantUnsigned bool) {
+	t.Helper()
+	for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
+		statement := t06a2Extract(t, dialect, sqlText)
+		column := t06a17Column(t, statement, name)
+		if column.Type != wantType || column.Length != wantLen || column.Unsigned != wantUnsigned {
+			t.Fatalf("%s %s Type=%q Length=%d Unsigned=%v, want %q/%d/%v",
+				dialect, name, column.Type, column.Length, column.Unsigned, wantType, wantLen, wantUnsigned)
+		}
+	}
+}
+
+// TestT06A17DecimalDeclarations pins every frozen DECIMAL spelling: explicit
+// zero scale, omitted scale, and omitted precision stay three distinct types.
+func TestT06A17DecimalDeclarations(t *testing.T) {
+	t06a17WantType(t, t06a17N1, "d2", "decimal(12,2)", 12, false)
+	t06a17WantType(t, t06a17N1, "d3", "decimal(12,3)", 12, false)
+	t06a17WantType(t, t06a17N1, "d0", "decimal(12,0)", 12, false)
+	t06a17WantType(t, t06a17N1, "dm", "decimal(12)", 12, false)
+	t06a17WantType(t, t06a17N1, "dn", "decimal", -1, false)
+}
+
+// TestT06A17FloatDoubleDeclarations pins FLOAT/DOUBLE(M,D) including the
+// explicit-zero scale the formatted layer elides.
+func TestT06A17FloatDoubleDeclarations(t *testing.T) {
+	t06a17WantType(t, t06a17N2, "f2", "float(10,2)", 10, false)
+	t06a17WantType(t, t06a17N2, "f3", "float(10,3)", 10, false)
+	t06a17WantType(t, t06a17N2, "f0", "float(10,0)", 10, false)
+	t06a17WantType(t, t06a17N2, "fn", "float", -1, false)
+	t06a17WantType(t, t06a17N2, "x2", "double(16,2)", 16, false)
+	t06a17WantType(t, t06a17N2, "x4", "double(16,4)", 16, false)
+	t06a17WantType(t, t06a17N2, "x0", "double(16,0)", 16, false)
+	t06a17WantType(t, t06a17N2, "xn", "double", -1, false)
+}
+
+// TestT06A17EnumSetMemberFidelity pins member case, order, and edge literals:
+// keyword normalization must never fold member bytes.
+func TestT06A17EnumSetMemberFidelity(t *testing.T) {
+	t06a17WantType(t, t06a17L1, "e_upper", "enum('Ready','Closed')", 6, false)
+	t06a17WantType(t, t06a17L1, "e_lower", "enum('ready','closed')", 6, false)
+	t06a17WantType(t, t06a17L1, "e_order", "enum('Closed','Ready')", 6, false)
+	t06a17WantType(t, t06a17L1, "s_upper", "set('Read','Write')", 10, false)
+	t06a17WantType(t, t06a17L1, "s_lower", "set('read','write')", 10, false)
+	t06a17WantType(t, t06a17L1, "s_order", "set('Write','Read')", 10, false)
+	t06a17WantType(t, t06a17L2, "e", "enum('','A,B','A)B','O''Reilly')", 8, false)
+	// SET flen is the joined member width (4+3+8+2 separators = 17), ENUM flen
+	// is the widest member (8) — both recorded, never inferred.
+	t06a17WantType(t, t06a17L2, "s", "set('Read','A)B','O''Reilly')", 17, false)
+	// e_upper vs e_lower and e_order must stay three distinct declarations —
+	// member literals are values, never keyword text to normalize.
+	for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
+		statement := t06a2Extract(t, dialect, t06a17L1)
+		upper := t06a17Column(t, statement, "e_upper")
+		lower := t06a17Column(t, statement, "e_lower")
+		order := t06a17Column(t, statement, "e_order")
+		if upper.Type == lower.Type {
+			t.Fatalf("%s: member case merged: %q == %q", dialect, upper.Type, lower.Type)
+		}
+		if upper.Type == order.Type {
+			t.Fatalf("%s: member order merged: %q == %q", dialect, upper.Type, order.Type)
+		}
+	}
+}
+
+// TestT06A17MemberRoundTrip re-parses the produced Type inside a plain column
+// definition and requires identical member bytes and order — proof the
+// rendering is a legal type spelling, not display-only text.
+func TestT06A17MemberRoundTrip(t *testing.T) {
+	for _, tc := range []struct{ sql, col string }{
+		{t06a17L1, "e_upper"}, {t06a17L1, "e_order"},
+		{t06a17L1, "s_order"}, {t06a17L2, "e"}, {t06a17L2, "s"},
+		{t06a17Backslash, "e"},
+	} {
+		statement := t06a2Extract(t, spec.DialectMySQL, tc.sql)
+		column := t06a17Column(t, statement, tc.col)
+		round := "CREATE TABLE r (c " + column.Type + ");"
+		result, err := New().Parse(context.Background(), round)
+		if err != nil {
+			t.Fatalf("re-parse %q (from %q): %v", round, tc.sql, err)
+		}
+		create := result.Statements[0].(*ast.CreateTableStmt)
+		origStmt, _ := New().Parse(context.Background(), tc.sql)
+		orig := origStmt.Statements[0].(*ast.CreateTableStmt)
+		var origElems []string
+		for _, c := range orig.Cols {
+			if c.Name.Name.L == tc.col {
+				origElems = c.Tp.GetElems()
+			}
+		}
+		gotElems := create.Cols[0].Tp.GetElems()
+		if len(gotElems) != len(origElems) {
+			t.Fatalf("%q round-trip member count %d, want %d (%q)", column.Type, len(gotElems), len(origElems), tc.sql)
+		}
+		for i := range gotElems {
+			if gotElems[i] != origElems[i] {
+				t.Fatalf("%q member[%d] %q, want %q", column.Type, i, gotElems[i], origElems[i])
+			}
+		}
+	}
+}
+
+// TestT06A17FloatSingleParamControls pins the real parser normalization for
+// FLOAT(p): p<=24 keeps TypeFloat, p>=25 becomes TypeDouble, and the parser
+// drops p entirely (flen=-1). Type must reflect the normalized result without
+// inventing the discarded parameter back.
+func TestT06A17FloatSingleParamControls(t *testing.T) {
+	t06a17WantType(t, t06a17FloatP, "f10", "float", -1, false)
+	t06a17WantType(t, t06a17FloatP, "f30", "double", -1, false)
+}
+
+// TestT06A17BackslashMemberControl records actual input bytes 'a\\b': the
+// parser decodes the escape into member a\b, and the rendered Type must
+// re-escape the backslash so the member re-parses to the same bytes.
+func TestT06A17BackslashMemberControl(t *testing.T) {
+	statement := t06a2Extract(t, spec.DialectMySQL, t06a17Backslash)
+	column := t06a17Column(t, statement, "e")
+	// The decoded member a\b must render re-escaped so a re-parse decodes to
+	// the same bytes; a single-backslash rendering would decode \b → 0x08.
+	if column.Type != `enum('a\\b','plain')` {
+		t.Fatalf("backslash member Type = %q, want enum('a\\\\b','plain')", column.Type)
+	}
+}
+
+// TestT06A17OrdinaryTypeControls pins the unchanged non-target rendering.
+func TestT06A17OrdinaryTypeControls(t *testing.T) {
+	t06a17WantType(t, t06a17C, "i", "int(11)", -1, false)
+	t06a17WantType(t, t06a17C, "v", "varchar(8)", 8, false)
+	t06a17WantType(t, t06a17C, "u", "bigint(20) unsigned", -1, true)
+}
+
+// t06a17CheckAlterDefinition requires the statement to carry exactly one
+// alter action with the expected action/subject identity and an exact column
+// definition — every link of the fixed definition is checked once.
+func t06a17CheckAlterDefinition(statement spec.Statement, action, subject, oldName, columnName, typeText string) error {
+	if statement.DDL == nil {
+		return fmt.Errorf("no DDL in %+v", statement)
+	}
+	if len(statement.DDL.Alter) != 1 {
+		return fmt.Errorf("alter actions = %d, want exactly 1 (%+v)", len(statement.DDL.Alter), statement.DDL.Alter)
+	}
+	alter := statement.DDL.Alter[0]
+	if alter.Action != action {
+		return fmt.Errorf("action = %q, want %q", alter.Action, action)
+	}
+	if alter.Name != subject {
+		return fmt.Errorf("subject = %q, want %q", alter.Name, subject)
+	}
+	if alter.Column == nil {
+		return fmt.Errorf("alter.Column is nil")
+	}
+	if alter.Column.OldName != oldName {
+		return fmt.Errorf("Column.OldName = %q, want %q", alter.Column.OldName, oldName)
+	}
+	if alter.Column.Definition == nil {
+		return fmt.Errorf("Column.Definition is nil")
+	}
+	if alter.Column.Definition.Name != columnName {
+		return fmt.Errorf("Definition.Name = %q, want %q", alter.Column.Definition.Name, columnName)
+	}
+	if alter.Column.Definition.Type != typeText {
+		return fmt.Errorf("Definition %q Type = %q, want %q", columnName, alter.Column.Definition.Type, typeText)
+	}
+	return nil
+}
+
+// TestT06A17AlterColumnDefinitions checks the shared extractColumn path for
+// ALTER ADD/MODIFY/CHANGE carries the same faithful Type — each fixed
+// definition is verified exactly once with its full action identity under
+// both dialects.
+func TestT06A17AlterColumnDefinitions(t *testing.T) {
+	for _, tc := range []struct {
+		name, sql, action, subject, oldName, col, wantType string
+	}{
+		{"add", `ALTER TABLE t ADD COLUMN e ENUM('Ready','Closed');`, "add_columns", "e", "", "e", "enum('Ready','Closed')"},
+		{"modify", `ALTER TABLE t MODIFY d DECIMAL(12,3);`, "modify_column", "d", "", "d", "decimal(12,3)"},
+		{"change", `ALTER TABLE t CHANGE d d2 FLOAT(10,0);`, "change_column", "d", "d", "d2", "float(10,0)"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
+				statement := t06a2Extract(t, dialect, tc.sql)
+				statement.DDL.Alter[0].Column = nil
+				if err := t06a17CheckAlterDefinition(statement, tc.action, tc.subject, tc.oldName, tc.col, tc.wantType); err != nil {
+					t.Fatalf("%s/%s: %v", dialect, tc.name, err)
+				}
+			}
+		})
+	}
+}

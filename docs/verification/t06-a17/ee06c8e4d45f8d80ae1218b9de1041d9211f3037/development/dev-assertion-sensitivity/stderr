@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/t06a17proof/sensitivity.py", line 131, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/t06a17proof/sensitivity.py", line 90, in main
+    mutated = inject(source, kind, mutation)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/t06a17proof/sensitivity.py", line 63, in inject
+    raise ValueError("ALTER injection anchor must occur exactly once")
+ValueError: ALTER injection anchor must occur exactly once

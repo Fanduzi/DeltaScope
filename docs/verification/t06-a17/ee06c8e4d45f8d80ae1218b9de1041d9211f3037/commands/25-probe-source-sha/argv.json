@@ -1,0 +1,9 @@
+[
+  "shasum",
+  "-a",
+  "256",
+  "scripts/t06a17proof/main.go",
+  "scripts/t06a17proof/facts.go",
+  "scripts/t06a17proof/main_test.go",
+  "scripts/t06a17proof/sensitivity.py"
+]

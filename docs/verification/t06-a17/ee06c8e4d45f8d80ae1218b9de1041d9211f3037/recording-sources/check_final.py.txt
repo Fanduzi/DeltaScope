@@ -1,0 +1,208 @@
+#!/usr/bin/env python3
+# input: untouched final R1 command records, Golden artifact, strict native observations, and fixed Git refs
+# output: a once-written checked-summary.json for evidence presentation, without rerunning any experiment
+# pos: lead-authored and lead-executed correctness review of measurements and attribution
+# note: retain raw inputs; render later reports from this frozen checked result
+import argparse
+import datetime
+import hashlib
+import json
+from pathlib import Path
+import re
+import subprocess
+
+BASE = "8d1253e2fea0e1fac6bd150a8e46f436486f7205"
+PRODUCTION = "4f58ac548aecd495edc707c35868c179686b0e35"
+REPO = Path("/Users/fan/GolangProjects/DeltaScope")
+NAMES = ["d2", "d3", "d0", "dm", "dn", "f2", "f3", "f0", "fn", "x2", "x4", "x0", "xn", "e_upper", "e_lower", "e_order", "s_upper", "s_lower", "s_order", "e_escaped", "s_escaped", "i", "v", "u"]
+MEMBER_TYPES = {
+    "e_upper": "enum('Ready','Closed')", "e_lower": "enum('ready','closed')", "e_order": "enum('Closed','Ready')",
+    "s_upper": "set('Read','Write')", "s_lower": "set('read','write')", "s_order": "set('Write','Read')",
+    "e_escaped": "enum('','A,B','A)B','O''Reilly')", "s_escaped": "set('Read','A)B','O''Reilly')",
+}
+VERSIONS = {"mysql57": "5.7.44", "mysql80": "8.0.46", "mysql84": "8.4.10", "tidb85": "8.0.11-TiDB-v8.5.0"}
+EXPECTED_DIGESTS = [
+    "mysql@sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb",
+    "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+    "mysql@sha256:c592c15aaf4a1961e15d82eb31ea5987dda862d1c4b1e93424438c0e91dc1f8d",
+    "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+]
+ALLOWED_CODE_FILES = {
+    "internal/application/audit/batch_state_t06a17_test.go", "internal/application/audit/README.md",
+    "internal/infrastructure/parser/tidb/extractor_t06a17_test.go", "internal/infrastructure/parser/tidb/README.md",
+    "internal/infrastructure/metadata/mysql/provider_t06a17_test.go", "internal/infrastructure/metadata/mysql/README.md",
+    "scripts/t06a17proof/main.go", "scripts/t06a17proof/facts.go", "scripts/t06a17proof/main_test.go",
+    "scripts/t06a17proof/sensitivity.py", "scripts/t06a17proof/README.md", "scripts/README.md",
+    "docs/decisions/2026-10-18-ddl-column-type-parameter-fidelity.md",
+    "docs/verification/t06-a17/4f58ac548aecd495edc707c35868c179686b0e35/README.md",
+    "docs/verification/t06-a17/4f58ac548aecd495edc707c35868c179686b0e35/PROVENANCE-CORRECTION.md",
+}
+
+
+def require(condition, message):
+    if not condition:
+        raise AssertionError(message)
+
+
+def load(path):
+    return json.loads(path.read_text())
+
+
+def digest(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def git(*args):
+    return subprocess.check_output(["git", *args], cwd=REPO)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--code", required=True)
+    parser.add_argument("--root", required=True)
+    args = parser.parse_args()
+    root = Path(args.root).resolve(strict=True)
+    code = args.code
+    require(git("rev-parse", "HEAD").decode().strip() == code, "review is not at tested code HEAD")
+    require(git("rev-parse", code + "^").decode().strip() == BASE, "wrong task parent")
+    changed = set(git("diff", "--name-only", BASE, code).decode().splitlines())
+    require(changed == ALLOWED_CODE_FILES, "R1 code scope differs from the reviewed 15 files")
+    frozen_paths = ["internal/infrastructure/parser/tidb/extractor.go", "internal/infrastructure/metadata/mysql/provider.go"]
+    production_files = []
+    for path in frozen_paths:
+        before, after = git("show", PRODUCTION + ":" + path), git("show", code + ":" + path)
+        require(before == after == (REPO / path).read_bytes(), "frozen production bytes changed: " + path)
+        production_files.append({"path": path, "sha256": hashlib.sha256(after).hexdigest(), "unchanged_from": PRODUCTION})
+    historical = "docs/verification/t06-a17/" + PRODUCTION
+    historical_changes = git("diff", "--name-only", BASE, code, "--", historical).decode().splitlines()
+    require(set(historical_changes) == {historical + "/README.md", historical + "/PROVENANCE-CORRECTION.md"}, "historical raw originals changed")
+    plan = load(root / "executed-plan.json")
+    require(len(plan) == 45 and len({row["label"] for row in plan}) == 45, "final recipe lacks 45 unique command records")
+    gates = []
+    for row in plan:
+        directory = root / "commands" / row["label"]
+        metadata = load(directory / "metadata.json")
+        require(metadata["argv"] == row["argv"] == load(directory / "argv.json"), "argv drift: " + row["label"])
+        require(metadata["returncode"] == 0 and (directory / "returncode").read_text().strip() == "0", "nonzero command: " + row["label"])
+        require(Path(metadata["cwd"]).resolve() == REPO, "wrong cwd: " + row["label"])
+        for phase in ("before", "after"):
+            require(metadata[phase]["head_sha"] == code, "wrong HEAD: " + row["label"])
+            require(metadata[phase]["task_paths_have_uncommitted_changes"] is False, "dirty task source: " + row["label"])
+            require(metadata[phase]["task_status_porcelain"] == "", "nonempty task status: " + row["label"])
+            require(metadata[phase]["tracked_status_porcelain"] == " M .mcp.json\n", "unexplained tracked state: " + row["label"])
+        require(metadata["head_unchanged"] is True, "HEAD changed: " + row["label"])
+        require(datetime.datetime.fromisoformat(metadata["started_at"]) <= datetime.datetime.fromisoformat(metadata["finished_at"]), "bad timestamps")
+        require((directory / "stdout").is_file() and (directory / "stderr").is_file(), "missing raw stream")
+        gates.append({"label": row["label"], "argv": row["argv"], "returncode": 0, "started_at": metadata["started_at"], "finished_at": metadata["finished_at"]})
+    def stdout(label):
+        return (root / "commands" / label / "stdout").read_text()
+    for label in ("04-focused-a17", "05-sdk-a17", "06-http-representatives", "07-collector-faults", "17-shared-regressions"):
+        require("=== RUN" in stdout(label) and "[no tests to run]" not in stdout(label), "empty test selection: " + label)
+    required_tests = ["TestT06A17DerivedPreStatePreservesType", "TestT06A17AlterColumnDefinitions", "TestT06A17ProviderParameterFidelity", "TestT06A17ProviderTypeReachesPreState"]
+    require(all("--- PASS: " + name in stdout("04-focused-a17") for name in required_tests), "missing required parser/provider/pre-state seam")
+    require("--- PASS: TestT06A17TypeFactsSDKTransport" in stdout("05-sdk-a17"), "SDK test absent")
+    require(all("--- PASS: " + name in stdout("06-http-representatives") for name in ("TestHandlerAuditReturnsJSONResult", "TestHandlerAuditOfflineBehaviorPreserved", "TestHandlerT06A13BlobTextSafe")), "HTTP representative missing")
+    require("contract cases=728 failures=0" in stdout("16-ddl-golden-validator-test"), "validator contract drift")
+    sensitivity = load(root / "sensitivity" / "summary.json")
+    require(sensitivity["head_sha"] == sensitivity["strict_source"] == code, "sensitivity strict source not final commit")
+    require(sensitivity["selected_kind"] is None and sensitivity["expected_records"] == 22 and len(sensitivity["records"]) == 22 and sensitivity["all_expected_observations"] is True, "sensitivity incomplete")
+    for record in sensitivity["records"]:
+        directory = Path(record["path"])
+        metadata = load(directory / "metadata.json")
+        expected_rc = 0 if record["assertions"] == "old" else 1
+        require(record["returncode"] == metadata["returncode"] == expected_rc and record["expected_observation"] is True, "wrong sensitivity observation")
+        require(metadata["head_sha"] == metadata["head_sha_after"] == code, "sensitivity execution HEAD drift")
+        require(metadata["task_file_status_before"] == metadata["task_file_status_after"] == "", "sensitivity edited checkout")
+        require("panic:" not in (directory / "stdout").read_text() + (directory / "stderr").read_text(), "sensitivity panic")
+    artifact_path = root / "golden" / "T06" / "artifact.json"
+    artifact = load(artifact_path)
+    cases = artifact["cases"]
+    require(artifact["head_sha"] == artifact["cli"]["build"]["head_sha"] == code, "Golden final SHA mismatch")
+    require(type(artifact["executed_count"]) is int and artifact["executed_count"] == len(cases) == 496, "Golden denominator mismatch")
+    require(len({case["case_id"] for case in cases}) == len(artifact["required_case_ids"]) == 496, "Golden identity set mismatch")
+    require(all(case["status"] == "pass" and all(item["ok"] is True for item in case["assertions"]) for case in cases), "Golden case/assertion failure")
+    assertions = sum(len(case["assertions"]) for case in cases)
+    require(assertions == 11772, "Golden assertion count changed")
+    require(artifact["cleanup"]["compose_down_rc"] == 0 and artifact["cleanup"]["residual_containers"] == [], "Golden cleanup failed")
+    for case in cases:
+        require(load(root / "golden" / "T06" / "cases" / (case["case_id"] + ".json")) == case, "Golden per-case record differs")
+    for policy in artifact["policies"]:
+        require(digest(Path(policy["path"])) == policy["sha256"], "policy hash mismatch")
+    require("--skip-binary-check" not in " ".join(plan[27]["argv"]), "binary check disabled")
+    require("artifact valid" in stdout("27-golden-validate"), "missing actual validation")
+    binary_records = []
+    for role, path, sha_label, build_label, version_label in [
+        ("work-cli", root / "work-bin" / "deltascope", "19-work-cli-sha", "20-work-cli-build-info", "21-work-cli-version"),
+        ("golden-cli", Path(artifact["cli"]["path"]), "28-golden-cli-sha", "29-golden-cli-build-info", "30-golden-cli-version"),
+        ("native-probe", root / "probe-bin" / "t06a17proof", "23-probe-sha", "24-probe-build-info", None),
+    ]:
+        sha = digest(path)
+        require(stdout(sha_label).split()[0] == sha, role + " hash mismatch")
+        build = stdout(build_label)
+        require("vcs.revision=" + code in build, role + " revision mismatch")
+        if role == "golden-cli":
+            require(artifact["cli"]["sha256"] == sha, "actual Golden binary differs from artifact")
+        binary_records.append({"role": role, "path": str(path), "sha256": sha, "build_info_record": build_label,
+            "vcs_revision": code, "vcs_modified_true": "vcs.modified=true" in build,
+            "version": stdout(version_label).strip() if version_label else None})
+    old_probe_source = (REPO / historical / "anchor-probe/main.go.txt").read_text()
+    frozen_create = re.search(r"const createSQL = `(.*?)`", old_probe_source, re.S).group(1) + "\n"
+    anchor_records = []
+    for name, version in VERSIONS.items():
+        directory = root / "anchors" / name
+        catalog, provider, pairs = load(directory / "catalog-rows.json"), load(directory / "provider-snapshot.json"), load(directory / "catalog-provider-pairs.json")
+        require([row["column_name"] for row in catalog] == NAMES, name + " catalog set/order mismatch")
+        require(provider["exists"] is True and provider["schema"] == "golden" and provider["table"]["name"] == "t06_a17_type_facts", name + " snapshot missing")
+        require([column["name"] for column in provider["columns"]] == NAMES and [row["column"] for row in pairs] == NAMES, name + " provider/pair set mismatch")
+        require(len(catalog) == len(provider["columns"]) == len(pairs) == 24, name + " count mismatch")
+        session, life, result = load(directory / "session-facts.json"), load(directory / "lifecycle.json"), load(directory / "run-result.json")
+        require(session["version"] == version, name + " wrong observed version")
+        require(result["success"] is True and not result.get("error"), name + " collector failure")
+        require(all(life[key] is True for key in ("created_by_this_probe", "cleanup_attempted", "drop_succeeded")), name + " incomplete owned cleanup")
+        require(type(life["pre_create_count"]) is int and life["pre_create_count"] == 0 and type(life["post_drop_count"]) is int and life["post_drop_count"] == 0, name + " COUNT not proven")
+        require(not life.get("primary_error") and not life.get("cleanup_error"), name + " lifecycle error")
+        for count_file in ("pre-create-count.json", "post-drop-count.json"):
+            value = load(directory / count_file)["count"]
+            require(type(value) is int and value == 0, name + " count-file error")
+        require((directory / "create.sql").read_text() == frozen_create, name + " CREATE bytes changed")
+        for i, row in enumerate(catalog):
+            require(type(row["ordinal_position"]) is int and row["ordinal_position"] == i+1, name + " ordinal mismatch")
+            require(bytes.fromhex(row["column_type_hex"]) == row["column_type"].encode(), name + " raw HEX mismatch")
+            column, pair = provider["columns"][i], pairs[i]
+            if i < 21:
+                require(column["type"] == pair["catalog_column_type"] == pair["provider_type"] == row["column_type"], name + " target text loss")
+            else:
+                require(column["type"] == ("int", "varchar", "bigint")[i-21], name + " ordinary Type regression")
+            if row["column_name"] in MEMBER_TYPES:
+                require(row["column_type"] == MEMBER_TYPES[row["column_name"]], name + " independent member text/order mismatch")
+            if i < 3:
+                require(type(row["numeric_precision"]) is int and row["numeric_precision"] == 12 and type(row["numeric_scale"]) is int and row["numeric_scale"] == (2, 3, 0)[i], name + " independent decimal facts failed")
+        ledger = load(directory / "provider-query-ledger.json")
+        require(len(ledger) == 3 and all(row["op"] == "query" for row in ledger), name + " provider call ledger mismatch")
+        anchor_records.append({"anchor": name, "version": version, "catalog_columns": 24, "provider_columns": 24, "target_pairs": 21, "ordinary_controls": 3, "target_mismatches": 0, "pre_count": 0, "post_count": 0, "provider_queries": 3,
+            "dm_catalog": catalog[3]["column_type"], "dn_catalog": catalog[4]["column_type"], "f0_catalog": catalog[7]["column_type"], "x0_catalog": catalog[11]["column_type"]})
+    images = stdout("34-native-image-identities")
+    require(all(expected in images for expected in EXPECTED_DIGESTS), "pinned image digests changed")
+    def container_set(label):
+        return {tuple(line.split("\t")[:2]) for line in stdout(label).splitlines() if line.strip()}
+    require(container_set("02-docker-before") == container_set("31-docker-between") == container_set("40-docker-after"), "unrelated container identity set changed or fixture residual")
+    require(not stdout("03-native-network-before").strip() and not stdout("41-native-network-after").strip(), "native project network residual")
+    require(load(root / "execution-finished.json")["code_sha"] == code, "recipe did not finish at final SHA")
+    summary = {"checked_at": datetime.datetime.now(datetime.timezone.utc).isoformat(), "code_sha": code, "base_sha": BASE, "production_implementation_sha": PRODUCTION,
+        "code_files": sorted(changed), "production_files": production_files,
+        "command_count": len(gates), "commands": gates,
+        "make_test_ok_packages": len(re.findall(r"(?m)^ok\s", stdout("09-make-test"))),
+        "golden": {"head_sha": artifact["head_sha"], "cases": 496, "passed": 496, "assertions": assertions, "artifact_sha256": digest(artifact_path), "policies": len(artifact["policies"]), "validator_checks": 728, "validator_failures": 0, "binary_check_enabled": True},
+        "sensitivity": {"constructed_scenarios": 11, "old_passes": 11, "strict_assertion_failures": 11, "runs": 22, "native_database_fault_injection": False},
+        "binaries": binary_records, "anchors": anchor_records,
+        "external_tracked_state": ".mcp.json modified; contents never recorded", "unrelated_container_set_preserved": True,
+        "historical_raw_originals_unchanged": True, "archive_builds_used_for_r1": False}
+    destination = root / "checked-summary.json"
+    with destination.open("x") as handle:
+        json.dump(summary, handle, ensure_ascii=False, indent=2)
+        handle.write("\n")
+    print(json.dumps({"checked_summary": str(destination), "code_sha": code, "commands": len(gates), "golden_cases": 496, "assertions": assertions, "native_anchors": len(anchor_records)}, indent=2))
+
+
+if __name__ == "__main__":
+    main()

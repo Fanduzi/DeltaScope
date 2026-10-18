@@ -1,0 +1,128 @@
+#!/usr/bin/env python3
+# input: finalized R1 checkout and existing fixed-fixture credentials through environment only
+# output: one ordered final gate/Golden/native-proof run with raw per-command provenance
+# pos: lead-authored T06-A17-R1 mechanical execution recipe, retained with evidence
+# note: never repair sources, rewrite observations, or rerun a failed final step here
+import argparse
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+
+REPO = Path("/Users/fan/GolangProjects/DeltaScope")
+BASE = "8d1253e2fea0e1fac6bd150a8e46f436486f7205"
+PRODUCTION = "4f58ac548aecd495edc707c35868c179686b0e35"
+RECORDER = Path("/tmp/ds-t06-a17-r1-proof/record_command.py")
+PROJECT = "deltascope-t06-a17-r1"
+NAMES = ["deltascope-ddl-golden-" + name for name in ("mysql57", "mysql80", "mysql84", "tidb85", "tidb85-client")]
+FROZEN = ["internal/infrastructure/parser/tidb/extractor.go", "internal/infrastructure/metadata/mysql/provider.go"]
+
+
+def output(*args):
+    return subprocess.check_output(args, cwd=REPO).decode().strip()
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--code", required=True)
+    args = parser.parse_args()
+    if output("git", "rev-parse", "HEAD") != args.code:
+        raise RuntimeError("final HEAD mismatch")
+    if output("git", "rev-parse", "HEAD^") != BASE:
+        raise RuntimeError("R1 code parent mismatch")
+    if not os.environ.get("A17_USER") or "A17_MYSQL_PASSWORD" not in os.environ or "A17_TIDB_PASSWORD" not in os.environ:
+        raise RuntimeError("fixed-fixture credential environment is incomplete")
+    root = Path("/tmp/ds-t06-a17-r1-proof/final") / args.code
+    root.mkdir(parents=True, exist_ok=False)
+    for directory in ("work-bin", "probe-bin"):
+        (root / directory).mkdir()
+    golden = root / "golden"
+    artifact = golden / "T06" / "artifact.json"
+    work_cli = root / "work-bin" / "deltascope"
+    probe = root / "probe-bin" / "t06a17proof"
+    golden_cli = golden / "T06" / "bin" / "deltascope"
+    plan = []
+
+    def run(label, command, environment=None, require_success=True):
+        if output("git", "rev-parse", "HEAD") != args.code:
+            raise RuntimeError("HEAD changed during final execution")
+        dirty = output("git", "status", "--porcelain=v1", "--untracked-files=all", "--", "internal", "pkg", "cmd", "scripts", "go.mod", "go.sum", "Makefile", "docker", "configs", "testdata", "docs/decisions")
+        if dirty:
+            raise RuntimeError("final source/test/document paths changed: " + dirty)
+        plan.append({"label": label, "argv": command})
+        (root / "executed-plan.json").write_text(json.dumps(plan, indent=2) + "\n")
+        env = os.environ.copy()
+        if environment:
+            env.update(environment)
+        rc = subprocess.run([sys.executable, str(RECORDER), "--root", str(root / "commands"), "--cwd", str(REPO), "--expected-head", args.code, "--label", label, "--", *command], cwd=REPO, env=env).returncode
+        if require_success and rc != 0:
+            raise RuntimeError(f"final command {label} failed, rc={rc}; raw originals retained")
+        return rc
+
+    def text(label):
+        return (root / "commands" / label / "stdout").read_text()
+
+    compose = ["docker", "compose", "-p", PROJECT, "-f", "docker/ddl-golden-compose.yaml"]
+    run("00-git-source-state", ["git", "status", "--short", "--untracked-files=normal"])
+    run("01-production-unchanged", ["git", "diff", "--exit-code", PRODUCTION, "--", *FROZEN])
+    run("02-docker-before", ["docker", "ps", "-a", "--format", "{{.ID}}\t{{.Names}}\t{{.Status}}"])
+    if any(name in text("02-docker-before") for name in NAMES):
+        raise RuntimeError("pre-existing Golden-named container; stop without touching it")
+    run("03-native-network-before", ["docker", "network", "ls", "--filter", "label=com.docker.compose.project=" + PROJECT, "--format", "{{.ID}}\t{{.Name}}"])
+    if text("03-native-network-before").strip():
+        raise RuntimeError("pre-existing R1 project network; stop without taking ownership")
+    run("04-focused-a17", ["go", "test", "-count=1", "./internal/infrastructure/parser/tidb", "./internal/infrastructure/metadata/mysql", "./internal/application/audit", "./internal/application/auditmeta", "-run", "T06A17", "-v"])
+    run("05-sdk-a17", ["go", "test", "-count=1", "./pkg/deltascope", "-run", "^TestT06A17TypeFactsSDKTransport$", "-v"])
+    run("06-http-representatives", ["go", "test", "-count=1", "./internal/interfaces/http", "-run", "^TestHandlerAuditReturnsJSONResult$|^TestHandlerAuditOfflineBehaviorPreserved$|^TestHandlerT06A13BlobTextSafe$", "-v"])
+    run("07-collector-faults", ["go", "test", "-count=1", "./scripts/t06a17proof", "-run", "T06A17R1", "-v"])
+    run("08-assertion-sensitivity", ["python3", "scripts/t06a17proof/sensitivity.py", "--out", str(root / "sensitivity")])
+    run("09-make-test", ["env", "GOFLAGS=-count=1", "make", "test"])
+    for index, target in enumerate(("pg-unit-test-gates", "sql-corpus-gates", "ddl-inventory-gate", "ddl-coverage-catalog-test", "docs-example-gates", "decision-record-gate", "ddl-golden-validator-test"), 10):
+        run(f"{index:02d}-{target}", ["make", target])
+    run("17-shared-regressions", ["go", "test", "-count=1", "./internal/domain/rule/ddl", "-run", "T06A13|T06A15|AlterColumnCompatibility|TableRowSize|IndexKeyLength", "-v"])
+    run("18-work-cli-build", ["env", "CGO_ENABLED=0", "go", "build", "-o", str(work_cli), "./cmd/deltascope"])
+    run("19-work-cli-sha", ["shasum", "-a", "256", str(work_cli)])
+    run("20-work-cli-build-info", ["go", "version", "-m", str(work_cli)])
+    run("21-work-cli-version", [str(work_cli), "--version"])
+    run("22-probe-build", ["env", "CGO_ENABLED=0", "go", "build", "-o", str(probe), "./scripts/t06a17proof"])
+    run("23-probe-sha", ["shasum", "-a", "256", str(probe)])
+    run("24-probe-build-info", ["go", "version", "-m", str(probe)])
+    run("25-probe-source-sha", ["shasum", "-a", "256", "scripts/t06a17proof/main.go", "scripts/t06a17proof/facts.go", "scripts/t06a17proof/main_test.go", "scripts/t06a17proof/sensitivity.py"])
+    run("26-golden", ["make", "ddl-golden", "TASK=T06", "ARTIFACT_DIR=" + str(golden)])
+    run("27-golden-validate", ["python3", "scripts/ddl_golden.py", "validate", "--artifact", str(artifact)])
+    run("28-golden-cli-sha", ["shasum", "-a", "256", str(golden_cli)])
+    run("29-golden-cli-build-info", ["go", "version", "-m", str(golden_cli)])
+    run("30-golden-cli-version", [str(golden_cli), "--version"])
+    run("31-docker-between", ["docker", "ps", "-a", "--format", "{{.ID}}\t{{.Names}}\t{{.Status}}"])
+    if any(name in text("31-docker-between") for name in NAMES):
+        raise RuntimeError("Golden did not release its named containers; no native proof started")
+    native_owned = True
+    native_error = None
+    try:
+        run("32-native-up", [*compose, "up", "-d", "--wait", "mysql57", "mysql80", "mysql84", "tidb85"])
+        run("33-native-container-identities", ["docker", "inspect", "--format", "{{.Id}}\t{{.Name}}\t{{.Image}}\t{{.Config.Image}}\t{{.State.Health.Status}}", *NAMES[:4]])
+        run("34-native-image-identities", ["docker", "image", "inspect", "--format", "{{.Id}}\t{{json .RepoTags}}\t{{json .RepoDigests}}", "mysql:5.7.44", "mysql:8.0.46", "mysql:8.4.10", "pingcap/tidb:v8.5.0"])
+        for number, name in enumerate(("mysql57", "mysql80", "mysql84", "tidb85"), 35):
+            password = os.environ["A17_TIDB_PASSWORD"] if name == "tidb85" else os.environ["A17_MYSQL_PASSWORD"]
+            run(f"{number}-native-{name}", [str(probe), str(root / "anchors"), name], {"A17_PASS": password})
+    except Exception as error:
+        native_error = error
+    finally:
+        if native_owned:
+            cleanup_rc = run("39-native-down", [*compose, "down", "--volumes"], require_success=False)
+            run("40-docker-after", ["docker", "ps", "-a", "--format", "{{.ID}}\t{{.Names}}\t{{.Status}}"])
+            run("41-native-network-after", ["docker", "network", "ls", "--filter", "label=com.docker.compose.project=" + PROJECT, "--format", "{{.ID}}\t{{.Name}}"])
+            if cleanup_rc != 0 or any(name in text("40-docker-after") for name in NAMES) or text("41-native-network-after").strip():
+                raise RuntimeError(f"native cleanup failed; prior error={native_error}")
+    if native_error:
+        raise native_error
+    run("42-production-unchanged-after", ["git", "diff", "--exit-code", PRODUCTION, "--", *FROZEN])
+    run("43-final-source-status", ["git", "status", "--short", "--untracked-files=normal"])
+    run("44-task-diff-check", ["git", "diff", "--check", BASE + ".." + args.code])
+    (root / "execution-finished.json").write_text(json.dumps({"code_sha": args.code, "all_recipe_commands_returned_zero": True, "golden_root": str(golden), "native_anchor_invocations": 4, "source_test_edits_during_recipe": False}, indent=2) + "\n")
+    print("R1_FINAL_RECIPE_FINISHED " + str(root), flush=True)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,9 @@
+[
+  "go",
+  "test",
+  "-count=1",
+  "./pkg/deltascope",
+  "-run",
+  "^TestT06A17TypeFactsSDKTransport$",
+  "-v"
+]

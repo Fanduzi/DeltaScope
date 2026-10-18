@@ -1,0 +1,6 @@
+=== RUN   TestT06A17ProviderParameterFidelity
+    provider_t06a17_test.go:147: provider columns: duplicate column "d_dec122"
+--- FAIL: TestT06A17ProviderParameterFidelity (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql	0.461s
+FAIL

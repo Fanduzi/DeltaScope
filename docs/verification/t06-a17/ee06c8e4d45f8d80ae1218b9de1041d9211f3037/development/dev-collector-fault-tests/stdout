@@ -1,0 +1,67 @@
+=== RUN   TestT06A17R1CollectorComplete
+--- PASS: TestT06A17R1CollectorComplete (0.00s)
+=== RUN   TestT06A17R1CollectorRejectsFaults
+=== RUN   TestT06A17R1CollectorRejectsFaults/count-query
+    main_test.go:288: constructed fault rejected: pre-create: table COUNT query/scan: injected COUNT query error
+=== RUN   TestT06A17R1CollectorRejectsFaults/count-scan
+    main_test.go:288: constructed fault rejected: pre-create: table COUNT query/scan: sql: Scan error on column index 0, name "count": converting driver.Value type string ("not-an-integer") to a int: invalid syntax
+=== RUN   TestT06A17R1CollectorRejectsFaults/existing-table
+    main_test.go:288: constructed fault rejected: pre-create COUNT=1: existing table is not owned by this probe
+=== RUN   TestT06A17R1CollectorRejectsFaults/rows-error-after-full-set
+    main_test.go:288: constructed fault rejected: iterate catalog after 24 rows: injected catalog stream error
+=== RUN   TestT06A17R1CollectorRejectsFaults/rows-error-mid-stream
+    main_test.go:288: constructed fault rejected: iterate catalog after 3 rows: injected catalog stream error
+=== RUN   TestT06A17R1CollectorRejectsFaults/scan-error
+    main_test.go:288: constructed fault rejected: scan catalog row 2: sql: Scan error on column index 1, name "ordinal_position": converting driver.Value type string ("bad-ordinal") to a int: invalid syntax
+=== RUN   TestT06A17R1CollectorRejectsFaults/few-columns
+    main_test.go:288: constructed fault rejected: catalog column count=23, want 24
+=== RUN   TestT06A17R1CollectorRejectsFaults/empty-columns
+    main_test.go:288: constructed fault rejected: catalog column count=0, want 24
+=== RUN   TestT06A17R1CollectorRejectsFaults/extra-column
+    main_test.go:288: constructed fault rejected: catalog column count=25, want 24
+=== RUN   TestT06A17R1CollectorRejectsFaults/duplicate-column
+    main_test.go:288: constructed fault rejected: duplicate catalog column "d2"
+=== RUN   TestT06A17R1CollectorRejectsFaults/provider-missing-column
+    main_test.go:288: constructed fault rejected: pairing column counts: catalog=24 provider=23, want 24 each
+=== RUN   TestT06A17R1CollectorRejectsFaults/provider-empty-columns
+    main_test.go:288: constructed fault rejected: pairing column counts: catalog=24 provider=0, want 24 each
+=== RUN   TestT06A17R1CollectorRejectsFaults/provider-duplicate-column
+    main_test.go:288: constructed fault rejected: duplicate provider column "d2"
+=== RUN   TestT06A17R1CollectorRejectsFaults/provider-absent
+    main_test.go:288: constructed fault rejected: provider snapshot missing or not present
+=== RUN   TestT06A17R1CollectorRejectsFaults/evidence-write
+    main_test.go:288: constructed fault rejected: write catalog-rows.json: injected evidence write failure
+=== RUN   TestT06A17R1CollectorRejectsFaults/post-count-query
+    main_test.go:288: constructed fault rejected: cleanup final COUNT: table COUNT query/scan: injected final COUNT error
+=== RUN   TestT06A17R1CollectorRejectsFaults/primary-and-cleanup
+    main_test.go:288: constructed fault rejected: catalog column count=23, want 24
+        cleanup DROP: injected DROP error
+        cleanup final COUNT=1, want 0
+--- PASS: TestT06A17R1CollectorRejectsFaults (0.00s)
+    --- PASS: TestT06A17R1CollectorRejectsFaults/count-query (0.00s)
+    --- PASS: TestT06A17R1CollectorRejectsFaults/count-scan (0.00s)
+    --- PASS: TestT06A17R1CollectorRejectsFaults/existing-table (0.00s)
+    --- PASS: TestT06A17R1CollectorRejectsFaults/rows-error-after-full-set (0.00s)
+    --- PASS: TestT06A17R1CollectorRejectsFaults/rows-error-mid-stream (0.00s)
+    --- PASS: TestT06A17R1CollectorRejectsFaults/scan-error (0.00s)
+    --- PASS: TestT06A17R1CollectorRejectsFaults/few-columns (0.00s)
+    --- PASS: TestT06A17R1CollectorRejectsFaults/empty-columns (0.00s)
+    --- PASS: TestT06A17R1CollectorRejectsFaults/extra-column (0.00s)
+    --- PASS: TestT06A17R1CollectorRejectsFaults/duplicate-column (0.00s)
+    --- PASS: TestT06A17R1CollectorRejectsFaults/provider-missing-column (0.00s)
+    --- PASS: TestT06A17R1CollectorRejectsFaults/provider-empty-columns (0.00s)
+    --- PASS: TestT06A17R1CollectorRejectsFaults/provider-duplicate-column (0.00s)
+    --- PASS: TestT06A17R1CollectorRejectsFaults/provider-absent (0.00s)
+    --- PASS: TestT06A17R1CollectorRejectsFaults/evidence-write (0.00s)
+    --- PASS: TestT06A17R1CollectorRejectsFaults/post-count-query (0.00s)
+    --- PASS: TestT06A17R1CollectorRejectsFaults/primary-and-cleanup (0.00s)
+=== RUN   TestT06A17R1IndependentFacts
+=== RUN   TestT06A17R1IndependentFacts/decimal-precision
+=== RUN   TestT06A17R1IndependentFacts/members-both-sides-corrupt
+--- PASS: TestT06A17R1IndependentFacts (0.00s)
+    --- PASS: TestT06A17R1IndependentFacts/decimal-precision (0.00s)
+    --- PASS: TestT06A17R1IndependentFacts/members-both-sides-corrupt (0.00s)
+=== RUN   TestT06A17R1EvidenceEncodingAndDiskErrors
+--- PASS: TestT06A17R1EvidenceEncodingAndDiskErrors (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/scripts/t06a17proof	0.622s

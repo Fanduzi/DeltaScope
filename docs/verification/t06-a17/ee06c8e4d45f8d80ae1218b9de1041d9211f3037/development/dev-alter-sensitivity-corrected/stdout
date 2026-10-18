@@ -1,0 +1,10 @@
+alter/nil-definition/old: rc=0 expected_observation=True
+alter/nil-definition/strict: rc=1 expected_observation=True
+alter/missing-action/old: rc=0 expected_observation=True
+alter/missing-action/strict: rc=1 expected_observation=True
+alter/nil-column/old: rc=0 expected_observation=True
+alter/nil-column/strict: rc=1 expected_observation=True
+alter/wrong-target/old: rc=0 expected_observation=True
+alter/wrong-target/strict: rc=1 expected_observation=True
+alter/duplicate-action/old: rc=0 expected_observation=True
+alter/duplicate-action/strict: rc=1 expected_observation=True

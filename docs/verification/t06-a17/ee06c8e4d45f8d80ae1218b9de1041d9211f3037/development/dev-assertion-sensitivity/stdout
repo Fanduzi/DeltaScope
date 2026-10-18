@@ -1,0 +1,12 @@
+derived/missing-column/old: rc=0 expected_observation=True
+derived/missing-column/strict: rc=1 expected_observation=True
+derived/empty-columns/old: rc=0 expected_observation=True
+derived/empty-columns/strict: rc=1 expected_observation=True
+derived/duplicate-column/old: rc=0 expected_observation=True
+derived/duplicate-column/strict: rc=1 expected_observation=True
+provider/missing-column/old: rc=0 expected_observation=True
+provider/missing-column/strict: rc=1 expected_observation=True
+provider/empty-columns/old: rc=0 expected_observation=True
+provider/empty-columns/strict: rc=1 expected_observation=True
+provider/duplicate-column/old: rc=0 expected_observation=True
+provider/duplicate-column/strict: rc=1 expected_observation=True

@@ -1,0 +1,8 @@
+{
+  "checked_summary": "/private/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/checked-summary.json",
+  "code_sha": "ee06c8e4d45f8d80ae1218b9de1041d9211f3037",
+  "commands": 45,
+  "golden_cases": 496,
+  "assertions": 11772,
+  "native_anchors": 4
+}

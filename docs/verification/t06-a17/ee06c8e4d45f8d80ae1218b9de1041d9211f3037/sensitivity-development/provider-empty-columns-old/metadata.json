@@ -1,0 +1,26 @@
+{
+  "argv": [
+    "go",
+    "test",
+    "-count=1",
+    "-overlay",
+    "/private/tmp/ds-t06-a17-r1-proof/sensitivity-development/provider-empty-columns-old/overlay.json",
+    "./internal/infrastructure/metadata/mysql",
+    "-run",
+    "^TestT06A17ProviderParameterFidelity$",
+    "-v"
+  ],
+  "cwd": "/Users/fan/GolangProjects/DeltaScope",
+  "started_at": "2026-10-18T16:39:59.591185+00:00",
+  "head_sha": "8d1253e2fea0e1fac6bd150a8e46f436486f7205",
+  "source_ref": "8d1253e2fea0e1fac6bd150a8e46f436486f7205",
+  "source_path": "internal/infrastructure/metadata/mysql/provider_t06a17_test.go",
+  "source_sha256": "0cba44d7f59c30ca5dfc55723ae64775382539e2d48fe48202cb862d9e37278c",
+  "overlay_source_sha256": "a2ec42ed31a87d5a84f40cfdefb30fffa601117352f01740cfa1972b89ce8b8e",
+  "constructed_fault": "snapshot.Columns = nil",
+  "task_file_status_before": " M internal/infrastructure/metadata/mysql/provider_t06a17_test.go\n",
+  "finished_at": "2026-10-18T16:40:00.515297+00:00",
+  "returncode": 0,
+  "head_sha_after": "8d1253e2fea0e1fac6bd150a8e46f436486f7205",
+  "task_file_status_after": " M internal/infrastructure/metadata/mysql/provider_t06a17_test.go\n"
+}

@@ -1,0 +1,6 @@
+=== RUN   TestT06A17ProviderParameterFidelity
+    provider_t06a17_test.go:147: provider columns: columns = 0 ([]), want 22
+--- FAIL: TestT06A17ProviderParameterFidelity (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql	0.454s
+FAIL

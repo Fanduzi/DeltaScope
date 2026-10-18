@@ -1,0 +1,7 @@
+[
+  "python3",
+  "scripts/t06a17proof/sensitivity.py",
+  "--strict-worktree",
+  "--out",
+  "/tmp/ds-t06-a17-r1-proof/sensitivity-development"
+]

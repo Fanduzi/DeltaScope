@@ -1,0 +1,1767 @@
+diff --git a/docs/decisions/2026-10-18-ddl-column-type-parameter-fidelity.md b/docs/decisions/2026-10-18-ddl-column-type-parameter-fidelity.md
+index a2cf7e10..9fb79456 100644
+--- a/docs/decisions/2026-10-18-ddl-column-type-parameter-fidelity.md
++++ b/docs/decisions/2026-10-18-ddl-column-type-parameter-fidelity.md
+@@ -83,3 +83,23 @@ belongs in the two normalization sites, not the schema.
+   `DECIMAL` physical-byte formulas, ENUM ordering semantics,
+   FLOAT(M,D) deprecation or version policy, PG provider, `Length`
+   semantics, and any display-width changes on non-target types.
++
++## Verification completeness and identity
++
++Fidelity evidence must assert the complete ordered column set and the
++presence of each expected ALTER action and definition, not merely validate
++whatever entries happen to be returned. Derived pre-state projections must
++remain detached from source declarations and state-owned columns.
++
++The bounded native proof collector must fail on read, iteration, encoding,
++or evidence-write errors and may clean up only a fixture it successfully
++created after proving prior absence. Catalog/provider equality is necessary
++but does not replace independent numeric and member-content facts.
++
++An implementation commit or evidence-directory name is not a run identity.
++Each command must retain its actual HEAD, dirty-source status, direct return
++code, and the identity of the binary it really used. Work CLI, Golden CLI,
++and native probe are separate artifacts. Missing historical source snapshots
++remain missing; later source or binaries cannot retroactively establish
++build provenance. These verification requirements do not change the A17
++representation, production behavior, or policy scope.
+diff --git a/docs/verification/t06-a17/4f58ac548aecd495edc707c35868c179686b0e35/PROVENANCE-CORRECTION.md b/docs/verification/t06-a17/4f58ac548aecd495edc707c35868c179686b0e35/PROVENANCE-CORRECTION.md
+new file mode 100644
+index 00000000..fde6f67d
+--- /dev/null
++++ b/docs/verification/t06-a17/4f58ac548aecd495edc707c35868c179686b0e35/PROVENANCE-CORRECTION.md
+@@ -0,0 +1,60 @@
++# T06-A17-R1 correction of historical execution attribution
++
++This correction changes attribution, not the original observations. The
++historical logs, artifact, case records, binary hashes, baseline originals,
++and pass/fail results in this directory remain unchanged.
++
++## What the historical Golden records actually establish
++
++- `gates/ddl-golden-T06.log` records
++  `head=a08190969237 cases=496 passed=496 assertions=11772`.
++- `artifact.json.head_sha` and `artifact.json.cli.build.head_sha` both equal
++  `a08190969237404b280cfcc8d2cec8c01a082316`.
++- The artifact's CLI path is
++  `/private/tmp/ds-a17-proof/golden/T06/bin/deltascope`; its SHA-256 is
++  `20fa5257f5e8fcd479410774aaa744640683757abb3008a86fb1dd965d568830`.
++- R1 read-only inspection of the surviving binary matches that hash.
++  Actual `go version -m` reports revision `a08190969237404b280cfcc8d2cec8c01a082316`
++  and `vcs.modified=true`.
++
++Thus the Golden run used a binary built while Git HEAD was `a0819096`
++with a modified checkout. The conversation records uncommitted A17 work at
++that point, but no contemporaneous source snapshot was retained to bind
++those exact bytes to the build. Neither today's source nor a newly built
++binary can supply that missing proof. This is not a verified run of the
++unmodified pre-fix code, and it is not a run after final implementation
++commit `4f58ac54`.
++
++The historical `worktree-status.txt` was captured later, during evidence
++assembly; it cannot establish the build-time dirty path set. In particular,
++`vcs.modified=true` cannot be attributed solely to `.mcp.json`.
++
++## Three separate surviving binaries
++
++The following are observations made during R1, not newly fabricated
++historical tool output. Their unabridged command output, argv, inspection
++HEAD, timestamps, stderr, and direct return codes are retained in the R1
++evidence under `old-identity/`.
++
++| Role | Path | SHA-256 | Actual build revision / modified |
++|---|---|---|---|
++| Work CLI | `/Users/fan/GolangProjects/DeltaScope/bin/deltascope` | `5d37945162b6d1e254005e354b6b761013b6d982e1b9a72273ce444430e4e3aa` | `4f58ac548aecd495edc707c35868c179686b0e35` / `true` |
++| Golden runner CLI | `/tmp/ds-a17-proof/golden/T06/bin/deltascope` | `20fa5257f5e8fcd479410774aaa744640683757abb3008a86fb1dd965d568830` | `a08190969237404b280cfcc8d2cec8c01a082316` / `true` |
++| Four-anchor probe | `/tmp/ds-a17-proof/a17probe` | `bdc7bd49cc6e83c01fd58b314971d35e27b6d7f2cb9f6b908896272683a6b322` | `a08190969237404b280cfcc8d2cec8c01a082316` / `true` |
++
++Both CLIs report `CGO_ENABLED=0`; the old probe reports `CGO_ENABLED=1`.
++All three report `go1.26.1`, `darwin/arm64`, and actual Git VCS fields.
++The work CLI's revision/version must not substitute for the Golden CLI's
++or the probe's identity. The probe source was retained as
++`anchor-probe/main.go.txt`, but the original evidence did not bind that
++source snapshot and all provider dependencies to the probe binary with a
++complete build record.
++
++## Scope of the correction
++
++The old 496-case observations and four-anchor normal samples remain useful
++historical evidence. Their SHA attribution and collection guarantees were
++incomplete. R1 supplies complete-set-sensitive assertions, a committed
++strict collector, and a new final-commit-bound execution. It does not
++rewrite these originals, re-label their HEAD, or change production type
++representation, rules, policies, or Golden denominators.
+diff --git a/docs/verification/t06-a17/4f58ac548aecd495edc707c35868c179686b0e35/README.md b/docs/verification/t06-a17/4f58ac548aecd495edc707c35868c179686b0e35/README.md
+index fda2ff3f..d843f39a 100644
+--- a/docs/verification/t06-a17/4f58ac548aecd495edc707c35868c179686b0e35/README.md
++++ b/docs/verification/t06-a17/4f58ac548aecd495edc707c35868c179686b0e35/README.md
+@@ -1,8 +1,21 @@
+ # T06-A17: declared column type-parameter fidelity
+ 
+-Code under test: `4f58ac548aecd495edc707c35868c179686b0e35`
++Implementation commit: `4f58ac548aecd495edc707c35868c179686b0e35`
+ (`fix(ddl): T06-A17 declared column type-parameter fidelity`)
+ 
++**R1 provenance correction:** this directory groups evidence for that
++implementation; it does not establish that every command ran after that
++commit. The preserved Golden log and artifact identify Git HEAD
++`a08190969237404b280cfcc8d2cec8c01a082316`. The surviving Golden binary has
++that revision and `vcs.modified=true`; its hash matches the artifact. No
++contemporaneous modified-source snapshot was retained, so the exact source
++used for that build cannot be proved. It is neither a final-`4f58ac54`
++commit run nor evidence of an unmodified pre-fix run. See
++[PROVENANCE-CORRECTION.md](PROVENANCE-CORRECTION.md) for the separate work
++CLI, Golden CLI, and probe identities. Original logs, artifacts, cases,
++hashes, and results are unchanged; the correction supersedes conflicting
++SHA attribution below.
++
+ Buggy base (red-state): `a08190969237404b280cfcc8d2cec8c01a082316`
+ Evidence parent: same `a0819096` (code commit is its direct child).
+ Frozen T06 denominator: **496 cases — unchanged** (no manifest/profile/case
+@@ -55,8 +68,10 @@ source; every other type keeps its established rendering.
+   truncates to base keyword, derived pre-state and `source_type` echo
+   carry the losses. `TestT06A17TypeFactsSDKTransport` passes on both
+   sides by design (transport regression, not a fidelity assertion).
+-- **Green state** (`red-green/green-run.log`): the same 14 tests at
+-  `4f58ac54` — all pass, both dialects.
++- **Historical green state** (`red-green/green-run.log`): the 14 A17
++  tests passed on the then-modified worktree. The log lacks per-command
++  HEAD/source-snapshot provenance; associating it with implementation
++  commit `4f58ac54` is not proof of a post-commit run.
+ - **Declaration matrix** (`declaration-matrix.md`): every frozen N1/N2/
+   L1/L2/C spelling → `Column.Type`/`Length`/`Unsigned`, including the
+   `FLOAT(p)` normalization controls and the `a\\b` backslash member.
+@@ -149,5 +164,7 @@ not clean.
+ `head-sha.txt`, `go-version.txt`, `binary-sha256.txt`,
+ `binary-version.txt`, `build-identity.txt`, `worktree-status.txt`,
+ `task-range-diff.txt`, `identity/hashes.txt` — the directory name is the
+-tested code SHA; this evidence lives in a separate evidence-only commit
+-that is its child. Self-verification is not reviewer acceptance.
++implementation SHA, not a proven common tested SHA for these historical
++runs. The evidence-only commit is its child; this does not change the HEAD
++recorded by the earlier commands. See the R1 provenance correction above.
++Self-verification is not reviewer acceptance.
+diff --git a/internal/application/audit/README.md b/internal/application/audit/README.md
+index ad35b5d2..674cb190 100644
+--- a/internal/application/audit/README.md
++++ b/internal/application/audit/README.md
+@@ -93,7 +93,7 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
+ | batch_state_t06a14_test.go | Verifies the T06-A14 table-option allowlist contract through the real parser and AuditSQL: the six-role × three-family × two-dialect matrix pins the complete `require_explicit` contract (explicit disallowed values reject under both switches, omission rejects only under strict, omitted-optional stays loaded=1/applicable=1, denied-off records no `rule_summary`) with full finding identity, the column-`CHARACTER SET` control proving a column declaration cannot satisfy the table charset requirement, and the CREATE-derived post-state carries `DDL.Options` verbatim into the follower ALTER's pre-state with exactly one `golden.t` provider read and clone isolation — a policy reject never rewrites the declared option |
+ | batch_state_t06a15_test.go | Verifies the T06-A15 row-size field-level fact contract through the real parser and AuditSQL: the ten frozen CREATE TABLE inputs × two dialects under the isolated on/not-required/off profiles plus the nil/empty/partial instance-facts provider matrix pin pointer-presence-independent estimates, deterministic `required_facts` ordering (`instance.default_charset` then `instance.innodb_default_row_format`), the determined-finding-plus-gap coexistence (`missing-format-over` keeps its blocker with `row_format=""` under unverified coverage), the strict 65535 boundary, the declared non-InnoDB scope skip, and provider-error/context-cancellation propagation that never degrades into a fabricated gap |
+ | batch_state_t06a15r1_test.go | Verifies the T06-A15-R1 declared-COMPRESSED row-format identity through the real parser/extractor and AuditSQL: `Options["row_format"]` extracts `COMPRESSED` verbatim, the eleven-column utf8mb4 input never enters the instance-default COMPACT/REDUNDANT payload branch, the over-limit finding keeps `row_format="COMPRESSED"` under complete coverage, missing-charset reports only `instance.default_charset`, opposite-format controls (declared COMPACT/REDUNDANT/DYNAMIC/DEFAULT) keep their bounds, and the provider call ledger stays facts+snapshot with inputs unmutated |
+-| batch_state_t06a17_test.go | Verifies the T06-A17 declaration-source carry through the real parser/extractor into `batchState`: a CREATE declaring `DECIMAL(12,2)`, `FLOAT(10,0)`, `ENUM('Ready','Closed')`, `SET('Write','Read')` lands every faithful `Column.Type` verbatim in the derived pre-state a follower ALTER consumes under both dialects — cloneColumn drops nothing the extractor now carries |
++| batch_state_t06a17_test.go | Verifies the T06-A17 declaration-source carry through the real parser/extractor into `batchState`: a CREATE declaring `DECIMAL(12,2)`, `FLOAT(10,0)`, `ENUM('Ready','Closed')`, `SET('Write','Read')` lands the complete four-column set — names, order, and presence pinned — with faithful `Column.Type` in the derived pre-state a follower `ALTER TABLE t` consumes under both dialects, and mutating a returned projection leaves parser-owned and state-owned columns deep-equal to the original CREATE columns (cloneColumn drops nothing the extractor now carries) |
+ | diagnostics.go | Defines diagnostic evidence constants (classification aliases `spec.DiagnosticParserError`, reason, action_hint, guidance codes, evidence refs) and helpers for constructing parser-error and unsupported statement diagnostics with optional guidance classification |
+ | ddl_coverage_catalog_query.go | Defines CatalogEntry, CatalogQuery, CatalogResult, LoadEmbeddedCatalog, LoadCatalogFile, LoadCatalog, QueryCatalog, and Validate for reading the generated (embedded) DDL coverage catalog and filtering it without invoking the audit engine |
+ | catalogdata/ddl-coverage-catalog.json | Generated catalog copy compiled into release binaries; kept byte-identical to docs/reference/ddl-coverage-catalog.json |
+diff --git a/internal/application/audit/batch_state_t06a17_test.go b/internal/application/audit/batch_state_t06a17_test.go
+index 108e04f6..0b63b47b 100644
+--- a/internal/application/audit/batch_state_t06a17_test.go
++++ b/internal/application/audit/batch_state_t06a17_test.go
+@@ -4,18 +4,55 @@
+ // pre-state a later batch statement consumes — cloneColumn drops nothing the
+ // extractor now carries.
+ // input: real parser/extractor statements applied into batchState
+-// output: pre-state snapshot columns with identical Type facts
++// output: the complete derived pre-state column set — identity, order, and
++// presence pinned alongside faithful Type facts, plus proof a returned
++// projection is detached from both parser-owned and state-owned columns
+ // pos: application-layer ordered-state regression tests for issue #85 T06-A17
+ // note: if this file changes, update this header and module README.md.
+ package audit
+ 
+ import (
+ 	"context"
++	"fmt"
++	"reflect"
+ 	"testing"
+ 
+ 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+ )
+ 
++// t06a17CheckDerivedColumns requires the complete frozen column set in
++// declaration order: exactly the four declared names, no duplicates, each
++// carrying its faithful Type.
++func t06a17CheckDerivedColumns(snapshot *spec.TableSnapshot) error {
++	if snapshot == nil || !snapshot.Exists {
++		return fmt.Errorf("snapshot missing or absent: %+v", snapshot)
++	}
++	expected := []struct{ name, typeText string }{
++		{"d", "decimal(12,2)"},
++		{"f", "float(10,0)"},
++		{"e", "enum('Ready','Closed')"},
++		{"s", "set('Write','Read')"},
++	}
++	if len(snapshot.Columns) != len(expected) {
++		return fmt.Errorf("columns = %d (%+v), want %d", len(snapshot.Columns), snapshot.Columns, len(expected))
++	}
++	seen := map[string]struct{}{}
++	for i, want := range expected {
++		got := snapshot.Columns[i]
++		if _, dup := seen[got.Name]; dup {
++			return fmt.Errorf("duplicate column %q", got.Name)
++		}
++		seen[got.Name] = struct{}{}
++		if got.Name != want.name {
++			return fmt.Errorf("column[%d] name = %q, want %q", i, got.Name, want.name)
++		}
++		if got.Type != want.typeText {
++			return fmt.Errorf("column %q Type = %q, want %q", got.Name, got.Type, want.typeText)
++		}
++	}
++	return nil
++}
++
+ func TestT06A17DerivedPreStatePreservesType(t *testing.T) {
+ 	t.Parallel()
+ 	ctx := context.Background()
+@@ -41,6 +78,15 @@ func TestT06A17DerivedPreStatePreservesType(t *testing.T) {
+ 			if len(statements) != 2 {
+ 				t.Fatalf("statements = %d, want 2", len(statements))
+ 			}
++			if statements[0].DDL == nil || statements[0].DDL.Table == nil {
++				t.Fatalf("CREATE must carry DDL and DDL.Table, got %+v", statements[0].DDL)
++			}
++			if statements[1].DDL == nil || statements[1].DDL.Table == nil ||
++				statements[1].DDL.Operation != spec.DDLOperationAlterTable ||
++				statements[1].DDL.Table.Name != "t" {
++				t.Fatalf("follower must be ALTER TABLE t, got %+v", statements[1].DDL)
++			}
++			createColumns := append([]spec.Column(nil), statements[0].DDL.Columns...)
+ 			state := newBatchState(dialect, "golden", nil)
+ 			if _, err := state.preState(ctx, "golden", *statements[0].DDL.Table); err != nil {
+ 				t.Fatalf("warm pre-state: %v", err)
+@@ -48,23 +94,29 @@ func TestT06A17DerivedPreStatePreservesType(t *testing.T) {
+ 			if err := state.apply(ctx, statements[0]); err != nil {
+ 				t.Fatalf("apply create: %v", err)
+ 			}
+-			snapshot, err := state.preState(ctx, "golden", spec.Table{Schema: "golden", Name: "t"})
++			snapshot, err := state.preState(ctx, "golden", *statements[1].DDL.Table)
+ 			if err != nil {
+ 				t.Fatalf("pre-state: %v", err)
+ 			}
+-			if snapshot == nil || !snapshot.Exists {
+-				t.Fatalf("pre-state missing after CREATE: %+v", snapshot)
++			if err := t06a17CheckDerivedColumns(snapshot); err != nil {
++				t.Fatalf("%s derived pre-state: %v", dialect, err)
++			}
++			snapshot.Columns[0].Name = "mutated"
++			snapshot.Columns[0].Type = "mutated(1)"
++			snapshot.Columns[0].Length = 99
++			snapshot.Columns[0].Unsigned = true
++			if !reflect.DeepEqual(createColumns, statements[0].DDL.Columns) {
++				t.Fatalf("%s mutating the returned projection changed parser-owned CREATE columns: %+v", dialect, statements[0].DDL.Columns)
++			}
++			again, err := state.preState(ctx, "golden", *statements[1].DDL.Table)
++			if err != nil {
++				t.Fatalf("pre-state re-read: %v", err)
+ 			}
+-			want := map[string]string{
+-				"d": "decimal(12,2)",
+-				"f": "float(10,0)",
+-				"e": "enum('Ready','Closed')",
+-				"s": "set('Write','Read')",
++			if err := t06a17CheckDerivedColumns(again); err != nil {
++				t.Fatalf("%s derived pre-state re-read: %v", dialect, err)
+ 			}
+-			for _, column := range snapshot.Columns {
+-				if expected, ok := want[column.Name]; ok && column.Type != expected {
+-					t.Fatalf("%s pre-state column %s Type = %q, want %q", dialect, column.Name, column.Type, expected)
+-				}
++			if !reflect.DeepEqual(again.Columns, createColumns) {
++				t.Fatalf("%s state-owned columns drifted from the original CREATE columns: %+v vs %+v", dialect, again.Columns, createColumns)
+ 			}
+ 		})
+ 	}
+diff --git a/internal/infrastructure/metadata/mysql/README.md b/internal/infrastructure/metadata/mysql/README.md
+index beb7a857..692bae6b 100644
+--- a/internal/infrastructure/metadata/mysql/README.md
++++ b/internal/infrastructure/metadata/mysql/README.md
+@@ -10,7 +10,7 @@ MySQL-protocol metadata provider used for optional metadata-aware DeltaScope aud
+ | provider_test.go | Verifies provider connection, dialect, normalization helpers, information_schema column nullability mapping, index-cardinality accumulation, and known-bit instance-fact loading (16K/4K/missing/zero/unparseable page sizes, TiDB `max-index-length` single/multi-row consistency in both orders, zero/invalid rows, query/scan/mid-iteration error propagation including errors trailing invalid values, MySQL banners never probing TiDB config) without a live database |
+ | provider_t06a4_test.go | Verifies the T06-A4 default-identity contract through real `Provider.LoadTableSnapshot` over injected driver rows: a NULL `COLUMN_DEFAULT` (omitted clause or explicit `DEFAULT NULL` — catalog-indistinguishable) records `HasDefault=false`/empty fields, stored literals `NULL`/`null`/`NuLl`/`'<nil>'`/`''`/`'0'` keep `HasDefault=true` with raw bytes and never set `DefaultIsNull`, rows stay isolated, and the temporal/default presence semantics are untouched |
+ | provider_t06a10_test.go | Verifies the T06-A10 provenance boundary through real `Provider.LoadTableSnapshot` over constructed catalog rows: `TABLES.AUTO_INCREMENT` lands on `snapshot.Options["auto_increment"]` and `COLUMNS.EXTRA` lands on `Column.AutoIncrement` as catalog observations — a NULL allocator keeps the key absent rather than fabricating a declaration |
+-| provider_t06a17_test.go | Verifies the T06-A17 catalog type-parameter fidelity contract through real `Provider.LoadTableSnapshot` over constructed catalog rows: `COLUMN_TYPE` parameter spans on DECIMAL/FLOAT/DOUBLE/ENUM/SET land verbatim in `Column.Type` (scale variants, member case/order/edge literals all distinguishable), quote-aware scanning keeps member delimiters and attribute words inside literals from breaking the span or setting `Unsigned`, `Length` keeps its first-integer meaning, and non-target bases keep the bare-keyword contract |
++| provider_t06a17_test.go | Verifies the T06-A17 catalog type-parameter fidelity contract through real `Provider.LoadTableSnapshot` over constructed catalog rows: `COLUMN_TYPE` parameter spans on DECIMAL/FLOAT/DOUBLE/ENUM/SET land verbatim in `Column.Type` (scale variants, member case/order/edge literals all distinguishable), the shared snapshot path requires the complete 22-row set in fixture order — every name present exactly once with its Type/Length/Unsigned — quote-aware scanning keeps member delimiters and attribute words inside literals from breaking the span or setting `Unsigned`, `Length` keeps its first-integer meaning, and non-target bases keep the bare-keyword contract |
+ | provider_integration_test.go | Verifies provider connection pool configuration and connection-leak behavior against a live MySQL service (build tag `integration`) |
+ | query_access_conn_resolver.go | Implements SchemaResolver for a caller-owned MySQL/TiDB `*sql.Conn` |
+ | query_access_resolver_test.go | Verifies conn resolver behavior for table/view kind, full column order, missing relation, empty columns, cancellation, and unsupported relation kind using a custom test driver |
+diff --git a/internal/infrastructure/metadata/mysql/provider_t06a17_test.go b/internal/infrastructure/metadata/mysql/provider_t06a17_test.go
+index 2c025500..1ee9e71e 100644
+--- a/internal/infrastructure/metadata/mysql/provider_t06a17_test.go
++++ b/internal/infrastructure/metadata/mysql/provider_t06a17_test.go
+@@ -5,7 +5,9 @@
+ // constructed catalog input (a live server may normalize differently; the
+ // provider must only preserve what it actually receives).
+ // input: constructed information_schema row sets for the five target types
+-// output: faithful Column.Type/Length/Unsigned per stored column_type
++// output: the complete 22-row column set in catalog order — identity, order,
++// and presence pinned alongside faithful Type/Length/Unsigned per stored
++// column_type
+ // pos: infrastructure metadata adapter regression tests for issue #85 T06-A17
+ // note: if this file changes, update this header and module README.md.
+ package mysqlmeta
+@@ -13,6 +15,7 @@ package mysqlmeta
+ import (
+ 	"context"
+ 	"database/sql/driver"
++	"fmt"
+ 	"testing"
+ 
+ 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+@@ -65,6 +68,59 @@ func t06a17Results() map[string]testQueryResult {
+ 	}
+ }
+ 
++// t06a17CheckProviderColumns requires the complete 22-row fixture set in
++// catalog order: every expected name present exactly once, in position, with
++// its faithful Type/Length/Unsigned — nothing unchecked on the actual side.
++func t06a17CheckProviderColumns(columns []spec.Column) error {
++	expected := []struct {
++		name, typeText string
++		length         int
++		unsigned       bool
++	}{
++		{"d_dec122", "decimal(12,2)", 12, false},
++		{"d_dec123", "decimal(12,3)", 12, false},
++		{"d_dec120", "decimal(12,0)", 12, false},
++		{"f_flt102", "float(10,2)", 10, false},
++		{"f_flt103", "float(10,3)", 10, false},
++		{"f_flt100", "float(10,0)", 10, false},
++		{"x_dbl162", "double(16,2)", 16, false},
++		{"x_dbl164", "double(16,4)", 16, false},
++		{"x_dbl160", "double(16,0)", 16, false},
++		{"e_upper", "enum('Ready','Closed')", 0, false},
++		{"e_lower", "enum('ready','closed')", 0, false},
++		{"e_order", "enum('Closed','Ready')", 0, false},
++		{"s_upper", "set('Read','Write')", 0, false},
++		{"s_lower", "set('read','write')", 0, false},
++		{"s_order", "set('Write','Read')", 0, false},
++		{"e_edge", "enum('','A,B','A)B','O''Reilly')", 0, false},
++		{"e_attrword", "enum('x unsigned','y zerofill')", 0, false},
++		{"s_attrword", "set('a unsigned','b')", 0, false},
++		{"c_int", "int", 0, false},
++		{"c_varchar8", "varchar", 8, false},
++		{"c_bigint_u", "bigint", 0, true},
++		{"d_dec122u", "decimal(12,2) unsigned", 12, true},
++	}
++	if len(columns) != len(expected) {
++		return fmt.Errorf("columns = %d (%+v), want %d", len(columns), columns, len(expected))
++	}
++	seen := map[string]struct{}{}
++	for i, want := range expected {
++		got := columns[i]
++		if _, dup := seen[got.Name]; dup {
++			return fmt.Errorf("duplicate column %q", got.Name)
++		}
++		seen[got.Name] = struct{}{}
++		if got.Name != want.name {
++			return fmt.Errorf("column[%d] = %q, want %q", i, got.Name, want.name)
++		}
++		if got.Type != want.typeText || got.Length != want.length || got.Unsigned != want.unsigned {
++			return fmt.Errorf("%s = Type %q Length %d Unsigned %v, want %q/%d/%v",
++				got.Name, got.Type, got.Length, got.Unsigned, want.typeText, want.length, want.unsigned)
++		}
++	}
++	return nil
++}
++
+ func t06a17SnapshotColumns(t *testing.T) []spec.Column {
+ 	t.Helper()
+ 	db := openTestDB(t, t06a17Results())
+@@ -73,52 +129,21 @@ func t06a17SnapshotColumns(t *testing.T) []spec.Column {
+ 	if err != nil {
+ 		t.Fatalf("LoadTableSnapshot: %v", err)
+ 	}
++	if snapshot == nil || !snapshot.Exists {
++		t.Fatalf("snapshot missing or absent: %+v", snapshot)
++	}
++	if err := t06a17CheckProviderColumns(snapshot.Columns); err != nil {
++		t.Fatalf("provider columns: %v", err)
++	}
+ 	return snapshot.Columns
+ }
+ 
+ // TestT06A17ProviderParameterFidelity pins verbatim catalog parameter text:
+ // scale/second-parameter/member content survive; non-target types keep the
+-// established base-keyword contract.
++// established base-keyword contract. The complete-set check runs inside the
++// shared snapshot path so the adjacent matrices inherit it too.
+ func TestT06A17ProviderParameterFidelity(t *testing.T) {
+-	columns := t06a17SnapshotColumns(t)
+-	want := map[string]struct {
+-		typeText string
+-		length   int
+-		unsigned bool
+-	}{
+-		"d_dec122":   {"decimal(12,2)", 12, false},
+-		"d_dec123":   {"decimal(12,3)", 12, false},
+-		"d_dec120":   {"decimal(12,0)", 12, false},
+-		"f_flt102":   {"float(10,2)", 10, false},
+-		"f_flt103":   {"float(10,3)", 10, false},
+-		"f_flt100":   {"float(10,0)", 10, false},
+-		"x_dbl162":   {"double(16,2)", 16, false},
+-		"x_dbl164":   {"double(16,4)", 16, false},
+-		"x_dbl160":   {"double(16,0)", 16, false},
+-		"e_upper":    {"enum('Ready','Closed')", 0, false},
+-		"e_lower":    {"enum('ready','closed')", 0, false},
+-		"e_order":    {"enum('Closed','Ready')", 0, false},
+-		"s_upper":    {"set('Read','Write')", 0, false},
+-		"s_lower":    {"set('read','write')", 0, false},
+-		"s_order":    {"set('Write','Read')", 0, false},
+-		"e_edge":     {"enum('','A,B','A)B','O''Reilly')", 0, false},
+-		"e_attrword": {"enum('x unsigned','y zerofill')", 0, false},
+-		"s_attrword": {"set('a unsigned','b')", 0, false},
+-		"c_int":      {"int", 0, false},
+-		"c_varchar8": {"varchar", 8, false},
+-		"c_bigint_u": {"bigint", 0, true},
+-		"d_dec122u":  {"decimal(12,2) unsigned", 12, true},
+-	}
+-	for _, column := range columns {
+-		w, ok := want[column.Name]
+-		if !ok {
+-			t.Fatalf("unexpected column %q", column.Name)
+-		}
+-		if column.Type != w.typeText || column.Length != w.length || column.Unsigned != w.unsigned {
+-			t.Fatalf("%s = Type %q Length %d Unsigned %v, want %q/%d/%v",
+-				column.Name, column.Type, column.Length, column.Unsigned, w.typeText, w.length, w.unsigned)
+-		}
+-	}
++	t06a17SnapshotColumns(t)
+ }
+ 
+ // TestT06A17ProviderDistinctness asserts the merged groups stay distinguishable
+@@ -136,8 +161,13 @@ func TestT06A17ProviderDistinctness(t *testing.T) {
+ 		{"s_upper", "s_lower"}, {"s_upper", "s_order"},
+ 	}
+ 	for _, pair := range pairs {
+-		if byName[pair[0]].Type == byName[pair[1]].Type {
+-			t.Fatalf("%s and %s merged to %q", pair[0], pair[1], byName[pair[0]].Type)
++		left, lok := byName[pair[0]]
++		right, rok := byName[pair[1]]
++		if !lok || !rok {
++			t.Fatalf("pair %s/%s missing from provider columns", pair[0], pair[1])
++		}
++		if left.Type == right.Type {
++			t.Fatalf("%s and %s merged to %q", pair[0], pair[1], left.Type)
+ 		}
+ 	}
+ }
+@@ -151,12 +181,19 @@ func TestT06A17ProviderParamBoundary(t *testing.T) {
+ 	for _, column := range columns {
+ 		byName[column.Name] = column
+ 	}
+-	edge := byName["e_edge"]
++	edge, ok := byName["e_edge"]
++	if !ok {
++		t.Fatalf("e_edge missing from provider columns")
++	}
+ 	if edge.Type != "enum('','A,B','A)B','O''Reilly')" {
+ 		t.Fatalf("e_edge Type = %q — member delimiters broke the parameter span", edge.Type)
+ 	}
+ 	for _, name := range []string{"e_attrword", "s_attrword"} {
+-		if byName[name].Unsigned {
++		column, ok := byName[name]
++		if !ok {
++			t.Fatalf("%s missing from provider columns", name)
++		}
++		if column.Unsigned {
+ 			t.Fatalf("%s Unsigned = true — attribute word inside member literal leaked", name)
+ 		}
+ 	}
+diff --git a/internal/infrastructure/parser/tidb/README.md b/internal/infrastructure/parser/tidb/README.md
+index 54b2e7c9..16d62245 100644
+--- a/internal/infrastructure/parser/tidb/README.md
++++ b/internal/infrastructure/parser/tidb/README.md
+@@ -31,7 +31,7 @@ TiDB-backed parser adapter for multi-statement SQL parsing, parser-warning colle
+ | extractor_t06a12_test.go | Verifies the T06-A12 nullability extraction contract under both dialects: `Column.NotNull` lands true only for the explicit `NOT NULL` clause, explicit `NULL` and omitted nullability both normalize to `NotNull=false` (the AST distinguishes the option kinds; the normalized spec does not preserve the provenance — recorded as current behavior, not an A12 defect), declared column order and `Type`/`Length` survive verbatim across INT/DATETIME/TEXT mixes, and no PK constraint, index, or default flag is fabricated |
+ | extractor_t06a13_test.go | Verifies the T06-A13 type-family extraction contract under both dialects: the nine frozen columns land `Column.Type`/rendered text verbatim (BLOB's `blob binary`, BIT's declared width), declaration order survives, and no undeclared default/nullability/charset flag is fabricated |
+ | extractor_t06a14_test.go | Verifies the T06-A14 table-option extraction contract under both dialects: `ENGINE`/`DEFAULT CHARSET` land `DDL.Options` as verbatim `StrValue` text, `ROW_FORMAT` lands as the normalized uppercase enum name, undeclared options stay absent (never server defaults), and the column-`CHARACTER SET` control lands `Column.Charset` without fabricating `Options["charset"]` |
+-| extractor_t06a17_test.go | Verifies the T06-A17 declared type-parameter fidelity contract under both dialects: DECIMAL precision/scale sentinels stay three-way distinct (`decimal`/`decimal(12)`/`decimal(12,0)`), explicit `(M,0)` FLOAT/DOUBLE scale survives, ENUM/SET member case/order/edge literals are byte-exact (case-fold is the fixed defect, not normalization), the produced Type re-parses to identical member bytes, `FLOAT(p)` pins the parser's own float↔double normalization, and ordinary types keep `int(11)`/`bigint(20) unsigned`/`varchar(8)` verbatim |
++| extractor_t06a17_test.go | Verifies the T06-A17 declared type-parameter fidelity contract under both dialects: DECIMAL precision/scale sentinels stay three-way distinct (`decimal`/`decimal(12)`/`decimal(12,0)`), explicit `(M,0)` FLOAT/DOUBLE scale survives, ENUM/SET member case/order/edge literals are byte-exact (case-fold is the fixed defect, not normalization), the produced Type re-parses to identical member bytes, `FLOAT(p)` pins the parser's own float↔double normalization, ordinary types keep `int(11)`/`bigint(20) unsigned`/`varchar(8)` verbatim, and each ALTER ADD/MODIFY/CHANGE sample is checked exactly once for its full action/subject/old-name/definition identity under both dialects |
+ 
+ ## Exports
+ 
+diff --git a/internal/infrastructure/parser/tidb/extractor_t06a17_test.go b/internal/infrastructure/parser/tidb/extractor_t06a17_test.go
+index 9fc18097..3a2031b2 100644
+--- a/internal/infrastructure/parser/tidb/extractor_t06a17_test.go
++++ b/internal/infrastructure/parser/tidb/extractor_t06a17_test.go
+@@ -4,13 +4,15 @@
+ // layer's default substitution or keyword-driven case folding. The tests run
+ // the real parser + extractor (t06a2Extract) for both dialects.
+ // input: frozen declaration shapes from the T06-A17 baseline fixtures
+-// output: faithful Column.Type/Length/Unsigned per declared spelling
++// output: faithful Column.Type/Length/Unsigned per declared spelling, plus
++// exactly-once ALTER action/subject/old-name/definition identity checks
+ // pos: infrastructure extraction regression tests for issue #85 T06-A17
+ // note: if this file changes, update this header and module README.md.
+ package tidbparser
+ 
+ import (
+ 	"context"
++	"fmt"
+ 	"testing"
+ 
+ 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+@@ -203,28 +205,58 @@ func TestT06A17OrdinaryTypeControls(t *testing.T) {
+ 	t06a17WantType(t, t06a17C, "u", "bigint(20) unsigned", -1, true)
+ }
+ 
++// t06a17CheckAlterDefinition requires the statement to carry exactly one
++// alter action with the expected action/subject identity and an exact column
++// definition — every link of the fixed definition is checked once.
++func t06a17CheckAlterDefinition(statement spec.Statement, action, subject, oldName, columnName, typeText string) error {
++	if statement.DDL == nil {
++		return fmt.Errorf("no DDL in %+v", statement)
++	}
++	if len(statement.DDL.Alter) != 1 {
++		return fmt.Errorf("alter actions = %d, want exactly 1 (%+v)", len(statement.DDL.Alter), statement.DDL.Alter)
++	}
++	alter := statement.DDL.Alter[0]
++	if alter.Action != action {
++		return fmt.Errorf("action = %q, want %q", alter.Action, action)
++	}
++	if alter.Name != subject {
++		return fmt.Errorf("subject = %q, want %q", alter.Name, subject)
++	}
++	if alter.Column == nil {
++		return fmt.Errorf("alter.Column is nil")
++	}
++	if alter.Column.OldName != oldName {
++		return fmt.Errorf("Column.OldName = %q, want %q", alter.Column.OldName, oldName)
++	}
++	if alter.Column.Definition == nil {
++		return fmt.Errorf("Column.Definition is nil")
++	}
++	if alter.Column.Definition.Name != columnName {
++		return fmt.Errorf("Definition.Name = %q, want %q", alter.Column.Definition.Name, columnName)
++	}
++	if alter.Column.Definition.Type != typeText {
++		return fmt.Errorf("Definition %q Type = %q, want %q", columnName, alter.Column.Definition.Type, typeText)
++	}
++	return nil
++}
++
+ // TestT06A17AlterColumnDefinitions checks the shared extractColumn path for
+-// ALTER ADD/MODIFY/CHANGE carries the same faithful Type.
++// ALTER ADD/MODIFY/CHANGE carries the same faithful Type — each fixed
++// definition is verified exactly once with its full action identity under
++// both dialects.
+ func TestT06A17AlterColumnDefinitions(t *testing.T) {
+ 	for _, tc := range []struct {
+-		name, sql, col, wantType string
++		name, sql, action, subject, oldName, col, wantType string
+ 	}{
+-		{"add", `ALTER TABLE t ADD COLUMN e ENUM('Ready','Closed');`, "e", "enum('Ready','Closed')"},
+-		{"modify", `ALTER TABLE t MODIFY d DECIMAL(12,3);`, "d", "decimal(12,3)"},
+-		{"change", `ALTER TABLE t CHANGE d d2 FLOAT(10,0);`, "d2", "float(10,0)"},
++		{"add", `ALTER TABLE t ADD COLUMN e ENUM('Ready','Closed');`, "add_columns", "e", "", "e", "enum('Ready','Closed')"},
++		{"modify", `ALTER TABLE t MODIFY d DECIMAL(12,3);`, "modify_column", "d", "", "d", "decimal(12,3)"},
++		{"change", `ALTER TABLE t CHANGE d d2 FLOAT(10,0);`, "change_column", "d", "d", "d2", "float(10,0)"},
+ 	} {
+ 		t.Run(tc.name, func(t *testing.T) {
+-			statement := t06a2Extract(t, spec.DialectMySQL, tc.sql)
+-			if statement.DDL == nil {
+-				t.Fatalf("no DDL in %+v", statement)
+-			}
+-			for _, alter := range statement.DDL.Alter {
+-				if alter.Column == nil || alter.Column.Definition == nil {
+-					continue
+-				}
+-				def := alter.Column.Definition
+-				if def.Name == tc.col && def.Type != tc.wantType {
+-					t.Fatalf("%s: %s Type = %q, want %q", tc.name, tc.col, def.Type, tc.wantType)
++			for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
++				statement := t06a2Extract(t, dialect, tc.sql)
++				if err := t06a17CheckAlterDefinition(statement, tc.action, tc.subject, tc.oldName, tc.col, tc.wantType); err != nil {
++					t.Fatalf("%s/%s: %v", dialect, tc.name, err)
+ 				}
+ 			}
+ 		})
+diff --git a/scripts/README.md b/scripts/README.md
+index 80a6f9a5..0849eff9 100644
+--- a/scripts/README.md
++++ b/scripts/README.md
+@@ -6,6 +6,7 @@ Operational scripts for local DeltaScope workflows.
+ 
+ | File | Responsibility |
+ |------|---------------|
++| t06a17proof/ | Bounded T06-A17-R1 native catalog/provider proof command and constructed-fault tests: complete ordered 24-column collection, independent numeric/member facts, owned-table cleanup, failure propagation, and test-only old/new assertion sensitivity; see [module README](t06a17proof/README.md) |
+ | verify_pg_manylinux_baseline.sh | Builds the converged Linux PG-capable binaries in a manylinux2014 container and fails if the Linux glibc baseline exceeds the approved threshold |
+ | verify_homebrew_cask.sh | Verifies rendered Homebrew cask files against the release version, darwin archive URLs, sha256 values, and binary stanza |
+ | verify_release_archive.sh | Verifies packaged release archives by checking checksums, required files, binary version output, PostgreSQL CLI smoke, and optional Linux glibc baseline |
+diff --git a/scripts/t06a17proof/README.md b/scripts/t06a17proof/README.md
+new file mode 100644
+index 00000000..a53176e1
+--- /dev/null
++++ b/scripts/t06a17proof/README.md
+@@ -0,0 +1,98 @@
++# T06-A17-R1 proof command
++
++A bounded collector for the existing 24-column native catalog/provider proof.
++It is not a product surface, a new type policy, or a replacement Golden runner.
++The production extractor/provider and the 496-case/728-check contracts stay
++unchanged.
++
++## Files
++
++| File | Responsibility |
++|---|---|
++| `main.go` | Records native session/catalog/provider observations, propagates query/scan/iteration/encoding/write errors, and cleans up only a table this invocation successfully created |
++| `facts.go` | Keeps the original CREATE bytes, four fixed anchors, exact ordered 24-column identity, independent DECIMAL/member facts, and complete 21-target/3-control pairing |
++| `main_test.go` | Uses a controlled `database/sql` driver and failing writers to reject COUNT errors, incomplete/duplicate rows, provider omissions, and evidence failures without live fault injection |
++| `sensitivity.py` | Runs original and strict assertions with test-file-only Go overlays; missing/empty/duplicate columns and missing/malformed ALTER definitions must pass the old insufficient assertions and fail the new assertions explicitly |
++
++## Exports and invocation
++
++No Go API is exported. Build and run from the repository root:
++
++```sh
++CGO_ENABLED=0 go build -o "$proof_root/bin/t06a17proof" ./scripts/t06a17proof
++"$proof_root/bin/t06a17proof" "$proof_root/anchors" mysql57
++"$proof_root/bin/t06a17proof" "$proof_root/anchors" mysql80
++"$proof_root/bin/t06a17proof" "$proof_root/anchors" mysql84
++"$proof_root/bin/t06a17proof" "$proof_root/anchors" tidb85
++```
++
++Supply `A17_USER` and `A17_PASS` only through the process environment. They are
++not accepted in argv or written into the output. The four anchors are bounded
++to loopback ports 23357/23380/23384/24000 and exact observed versions
++5.7.44/8.0.46/8.4.10/8.0.11-TiDB-v8.5.0. Reuse the unchanged pinned
++`docker/ddl-golden-compose.yaml`; do not change images, server variables, or
++SQL to make a run pass.
++
++Each anchor requires a new output subdirectory and a successful pre-create
++COUNT=0 before CREATE. A pre-existing table is never dropped. Every successful
++CREATE installs deferred cleanup on both normal and error exits, using a fresh
++bounded cleanup context. Successful completion requires a successful DROP,
++real final COUNT=0, complete facts, and all evidence writes. An unsuccessful
++COUNT is recorded as unknown/null, never a default integer zero. Primary and
++cleanup errors are retained together in the result and stderr.
++
++The CREATE is byte-identical to the historical probe's fixed definition: no
++INSERT, ALTER, primary key, or index. All 24 names and ordinals must match in
++catalog and provider output; each pair is present once. The 21 target columns
++preserve actual catalog Type text, while INT/VARCHAR/BIGINT keep the provider's
++existing bare-keyword contract. Independent checks pin d2/d3/d0 effective
++precision/scale and the eight member-bearing definitions' exact member bytes
++and order. The locked parser decodes only those stored member definitions for
++this bounded check; it never executes them. Catalog normalization is retained,
++not reconstructed from CREATE (for example TiDB may return bare float/double
++for explicit zero-scale declarations).
++
++## Verification and evidence identity
++
++```sh
++go test -count=1 ./scripts/t06a17proof -run T06A17R1 -v
++python3 scripts/t06a17proof/sensitivity.py --out "$proof_root/sensitivity"
++```
++
++Sensitivity faults are constructed assertion inputs, not database observations.
++The runner saves overlay source/hashes, old committed source identity, exact
++argv/cwd/times/HEAD, stdout/stderr, and direct child exit codes. A strict failure
++must be an expected test assertion, not a build failure, panic, or empty match.
++`--strict-worktree` and the optional `--kind` filter are development-only;
++final evidence uses committed HEAD and all cases, with an exact expected
++record count so an empty or partial run cannot count as complete.
++
++Finalize source, tests, headers, module docs, and historical provenance
++corrections before making the R1 code commit. Run the final gates and the
++unchanged T06 Golden once at that fixed commit, then run these four native
++proofs serially after Golden has completed and released its fixtures. They do
++not add to the 496 Golden cases. Never stop or remove pre-existing services.
++
++Retain exact command records, raw facts, all case/policy files, source hashes,
++and three distinct binary identities: work CLI, Golden-built CLI, and this
++probe. Each binary needs its own path, SHA-256, actual `go version -m`, and build
++command. A `+dirty` marker is an observation, not proof of which file caused it.
++If an archive build has no VCS fields, report their absence; do not synthesize
++them. Final evidence belongs under `docs/verification/t06-a17/<R1-code-sha>/`
++in a separate evidence-only commit. Historical A17 originals remain at their
++original path; see that directory's `PROVENANCE-CORRECTION.md` for attribution.
++
++## Dependencies
++
++- Upstream: the T06-A17-R1 verification workflow, not the product audit path.
++- Downstream: existing Go modules (`database/sql`, MySQL driver, domain spec,
++  real MySQL-compatible provider, locked TiDB parser adapter), Python stdlib,
++  Go/Git commands, and the unchanged Docker anchors.
++
++## Update rule
++
++Change headers and this file together if the collector, checks, or members
++change. The root architecture does not change: this is a task-local proof
++command under the existing scripts module. The existing A17 ADR records the
++verification-completeness and run-identity boundary; its representation,
++product contracts, and architecture decisions remain unchanged.
+diff --git a/scripts/t06a17proof/facts.go b/scripts/t06a17proof/facts.go
+new file mode 100644
+index 00000000..b2fb1b89
+--- /dev/null
++++ b/scripts/t06a17proof/facts.go
+@@ -0,0 +1,227 @@
++// Package main fixes the independent T06-A17-R1 24-column proof contract.
++// input: ordered native catalog rows and a real MySQL-compatible provider snapshot
++// output: exact identity, independent numeric/member facts, and complete catalog/provider pairs
++// pos: bounded A17 evidence oracle; not a production type parser or Golden validator
++// note: if this file changes, update this header and module README.md.
++package main
++
++import (
++	"bytes"
++	"context"
++	"encoding/hex"
++	"fmt"
++	"slices"
++	"strings"
++
++	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
++	tidbparser "github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb"
++	"github.com/pingcap/tidb/pkg/parser/ast"
++)
++
++const createSQL = `CREATE TABLE golden.t06_a17_type_facts (
++  d2 DECIMAL(12,2),
++  d3 DECIMAL(12,3),
++  d0 DECIMAL(12,0),
++  dm DECIMAL(12),
++  dn DECIMAL,
++  f2 FLOAT(10,2),
++  f3 FLOAT(10,3),
++  f0 FLOAT(10,0),
++  fn FLOAT,
++  x2 DOUBLE(16,2),
++  x4 DOUBLE(16,4),
++  x0 DOUBLE(16,0),
++  xn DOUBLE,
++  e_upper ENUM('Ready','Closed'),
++  e_lower ENUM('ready','closed'),
++  e_order ENUM('Closed','Ready'),
++  s_upper SET('Read','Write'),
++  s_lower SET('read','write'),
++  s_order SET('Write','Read'),
++  e_escaped ENUM('','A,B','A)B','O''Reilly'),
++  s_escaped SET('Read','A)B','O''Reilly'),
++  i INT,
++  v VARCHAR(8),
++  u BIGINT UNSIGNED
++) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin`
++
++var columnNames = []string{
++	"d2", "d3", "d0", "dm", "dn", "f2", "f3", "f0", "fn",
++	"x2", "x4", "x0", "xn", "e_upper", "e_lower", "e_order",
++	"s_upper", "s_lower", "s_order", "e_escaped", "s_escaped", "i", "v", "u",
++}
++
++var columnFamilies = []string{
++	"decimal", "decimal", "decimal", "decimal", "decimal", "float", "float", "float", "float",
++	"double", "double", "double", "double", "enum", "enum", "enum",
++	"set", "set", "set", "enum", "set", "int", "varchar", "bigint",
++}
++
++var memberFacts = map[string][]string{
++	"e_upper":   {"Ready", "Closed"},
++	"e_lower":   {"ready", "closed"},
++	"e_order":   {"Closed", "Ready"},
++	"s_upper":   {"Read", "Write"},
++	"s_lower":   {"read", "write"},
++	"s_order":   {"Write", "Read"},
++	"e_escaped": {"", "A,B", "A)B", "O'Reilly"},
++	"s_escaped": {"Read", "A)B", "O'Reilly"},
++}
++
++type anchor struct {
++	Name    string
++	Port    string
++	Version string
++	Dialect spec.Dialect
++}
++
++func anchorFor(name string) (anchor, error) {
++	anchors := map[string]anchor{
++		"mysql57": {"mysql57", "23357", "5.7.44", spec.DialectMySQL},
++		"mysql80": {"mysql80", "23380", "8.0.46", spec.DialectMySQL},
++		"mysql84": {"mysql84", "23384", "8.4.10", spec.DialectMySQL},
++		"tidb85":  {"tidb85", "24000", "8.0.11-TiDB-v8.5.0", spec.DialectTiDB},
++	}
++	value, ok := anchors[name]
++	if !ok {
++		return anchor{}, fmt.Errorf("unknown anchor %q; expected mysql57, mysql80, mysql84, or tidb85", name)
++	}
++	return value, nil
++}
++
++type catalogRow struct {
++	ColumnName       string  `json:"column_name"`
++	OrdinalPosition  int     `json:"ordinal_position"`
++	DataType         string  `json:"data_type"`
++	ColumnType       string  `json:"column_type"`
++	ColumnTypeHex    string  `json:"column_type_hex"`
++	NumericPrecision *int64  `json:"numeric_precision"`
++	NumericScale     *int64  `json:"numeric_scale"`
++	CharacterSet     *string `json:"character_set_name"`
++	Collation        *string `json:"collation_name"`
++}
++
++type pair struct {
++	Column   string `json:"column"`
++	Catalog  string `json:"catalog_column_type"`
++	Provider string `json:"provider_type"`
++	Length   int    `json:"provider_length"`
++	Unsigned bool   `json:"provider_unsigned"`
++}
++
++func validateCatalog(ctx context.Context, rows []catalogRow) error {
++	if len(rows) != len(columnNames) {
++		return fmt.Errorf("catalog column count=%d, want %d", len(rows), len(columnNames))
++	}
++	seen := make(map[string]bool, len(rows))
++	for i, row := range rows {
++		if seen[row.ColumnName] {
++			return fmt.Errorf("duplicate catalog column %q", row.ColumnName)
++		}
++		seen[row.ColumnName] = true
++		if row.ColumnName != columnNames[i] || row.OrdinalPosition != i+1 {
++			return fmt.Errorf("catalog position %d: name=%q ordinal=%d, want %q/%d", i, row.ColumnName, row.OrdinalPosition, columnNames[i], i+1)
++		}
++		if row.DataType != columnFamilies[i] {
++			return fmt.Errorf("catalog %s DATA_TYPE=%q, want %q", row.ColumnName, row.DataType, columnFamilies[i])
++		}
++		decoded, err := hex.DecodeString(row.ColumnTypeHex)
++		if err != nil || !bytes.Equal(decoded, []byte(row.ColumnType)) {
++			return fmt.Errorf("catalog %s COLUMN_TYPE/HEX mismatch", row.ColumnName)
++		}
++		if i < 3 {
++			wantScale := []int64{2, 3, 0}[i]
++			if row.NumericPrecision == nil || row.NumericScale == nil || *row.NumericPrecision != 12 || *row.NumericScale != wantScale {
++				return fmt.Errorf("catalog %s requires effective precision=12 scale=%d", row.ColumnName, wantScale)
++			}
++		}
++		if wantMembers, ok := memberFacts[row.ColumnName]; ok {
++			parsed, err := tidbparser.New().Parse(ctx, "CREATE TABLE member_fact (c "+row.ColumnType+")")
++			if err != nil {
++				return fmt.Errorf("catalog %s member decoding: %w", row.ColumnName, err)
++			}
++			if len(parsed.Statements) != 1 {
++				return fmt.Errorf("catalog %s member definition statement count=%d", row.ColumnName, len(parsed.Statements))
++			}
++			create, ok := parsed.Statements[0].(*ast.CreateTableStmt)
++			if !ok || len(create.Cols) != 1 || create.Cols[0].Tp == nil {
++				return fmt.Errorf("catalog %s member definition is not one typed column", row.ColumnName)
++			}
++			if got := create.Cols[0].Tp.GetElems(); !slices.Equal(got, wantMembers) {
++				return fmt.Errorf("catalog %s members=%q, want %q", row.ColumnName, got, wantMembers)
++			}
++		}
++		if _, members := memberFacts[row.ColumnName]; members || row.ColumnName == "v" {
++			if row.CharacterSet == nil || row.Collation == nil || *row.CharacterSet != "utf8mb4" || *row.Collation != "utf8mb4_bin" {
++				return fmt.Errorf("catalog %s requires utf8mb4/utf8mb4_bin", row.ColumnName)
++			}
++		}
++	}
++	return nil
++}
++
++func pairCatalogProvider(rows []catalogRow, snapshot *spec.TableSnapshot, target anchor) ([]pair, error) {
++	if snapshot == nil || !snapshot.Exists || snapshot.Table == nil {
++		return nil, fmt.Errorf("provider snapshot missing or not present")
++	}
++	if snapshot.Schema != "golden" || snapshot.Table.Name != "t06_a17_type_facts" {
++		return nil, fmt.Errorf("provider table identity mismatch: %s/%s", snapshot.Schema, snapshot.Table.Name)
++	}
++	if len(rows) != len(columnNames) || len(snapshot.Columns) != len(columnNames) {
++		return nil, fmt.Errorf("pairing column counts: catalog=%d provider=%d, want %d each", len(rows), len(snapshot.Columns), len(columnNames))
++	}
++	if snapshot.Options["engine"] != "InnoDB" || snapshot.Options["charset"] != "utf8mb4" || snapshot.Options["collation"] != "utf8mb4_bin" {
++		return nil, fmt.Errorf("provider table engine/charset/collation mismatch")
++	}
++	if snapshot.PrimaryKey != nil || len(snapshot.Indexes) != 0 {
++		return nil, fmt.Errorf("provider returned an undeclared primary key or index")
++	}
++	pairs := make([]pair, 0, len(columnNames))
++	seen := make(map[string]bool, len(columnNames))
++	for i, name := range columnNames {
++		column := snapshot.Columns[i]
++		if seen[column.Name] {
++			return nil, fmt.Errorf("duplicate provider column %q", column.Name)
++		}
++		seen[column.Name] = true
++		if rows[i].ColumnName != name || column.Name != name {
++			return nil, fmt.Errorf("pairing position %d: catalog=%q provider=%q, want %q", i, rows[i].ColumnName, column.Name, name)
++		}
++		if i < 21 {
++			if column.Type != rows[i].ColumnType || column.Unsigned {
++				return nil, fmt.Errorf("provider %s Type=%q unsigned=%v, catalog=%q unsigned=false", name, column.Type, column.Unsigned, rows[i].ColumnType)
++			}
++		} else {
++			wantLength := 0
++			if name == "v" {
++				wantLength = 8
++			} else if target.Name == "mysql57" {
++				if name == "i" {
++					wantLength = 11
++				} else {
++					wantLength = 20
++				}
++			}
++			if column.Type != columnFamilies[i] || column.Length != wantLength || column.Unsigned != (name == "u") {
++				return nil, fmt.Errorf("provider control %s=%q/%d/%v, want %q/%d/%v", name, column.Type, column.Length, column.Unsigned, columnFamilies[i], wantLength, name == "u")
++			}
++		}
++		pairs = append(pairs, pair{name, rows[i].ColumnType, column.Type, column.Length, column.Unsigned})
++	}
++	return pairs, nil
++}
++
++func validateSession(session map[string]string, target anchor) error {
++	if session["version"] != target.Version {
++		return fmt.Errorf("anchor %s VERSION()=%q, want %q", target.Name, session["version"], target.Version)
++	}
++	for _, name := range []string{"character_set_client", "character_set_connection", "character_set_results", "collation_connection"} {
++		if strings.TrimSpace(session[name]) == "" {
++			return fmt.Errorf("missing session fact %s", name)
++		}
++	}
++	if _, ok := session["sql_mode"]; !ok {
++		return fmt.Errorf("missing session sql_mode")
++	}
++	return nil
++}
+diff --git a/scripts/t06a17proof/main.go b/scripts/t06a17proof/main.go
+new file mode 100644
+index 00000000..351a648f
+--- /dev/null
++++ b/scripts/t06a17proof/main.go
+@@ -0,0 +1,350 @@
++// Package main collects the bounded T06-A17-R1 native catalog/provider proof.
++// input: one of four pinned loopback anchors, environment-only credentials, and a new evidence directory
++// output: complete raw observations, query ledgers, strict pairs, and owned-table cleanup results; any failure is nonzero
++// pos: task-specific proof command outside the product audit and Golden runner
++// note: if this file changes, update this header and module README.md.
++package main
++
++import (
++	"context"
++	"database/sql"
++	"database/sql/driver"
++	"encoding/json"
++	"errors"
++	"fmt"
++	"os"
++	"path/filepath"
++	"sync"
++	"time"
++
++	mysqlmeta "github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql"
++	gomysql "github.com/go-sql-driver/mysql"
++)
++
++const countSQL = "select count(*) from information_schema.tables where table_schema='golden' and table_name='t06_a17_type_facts'"
++const catalogSQL = "select column_name, ordinal_position, data_type, column_type, hex(column_type), numeric_precision, numeric_scale, character_set_name, collation_name from information_schema.columns where table_schema='golden' and table_name='t06_a17_type_facts' order by ordinal_position"
++const dropSQL = "DROP TABLE golden.t06_a17_type_facts"
++
++var sessionQueries = []struct{ name, query string }{
++	{"version", "select version()"},
++	{"character_set_client", "select @@character_set_client"},
++	{"character_set_connection", "select @@character_set_connection"},
++	{"character_set_results", "select @@character_set_results"},
++	{"collation_connection", "select @@collation_connection"},
++	{"sql_mode", "select @@sql_mode"},
++}
++
++type ledgerEntry struct {
++	Op    string `json:"op"`
++	Query string `json:"query"`
++}
++
++type queryLedger struct {
++	mu      sync.Mutex
++	entries []ledgerEntry
++}
++
++func (l *queryLedger) add(op, query string) {
++	l.mu.Lock()
++	defer l.mu.Unlock()
++	l.entries = append(l.entries, ledgerEntry{op, query})
++}
++
++func (l *queryLedger) snapshot() []ledgerEntry {
++	l.mu.Lock()
++	defer l.mu.Unlock()
++	return append([]ledgerEntry(nil), l.entries...)
++}
++
++type ledgerConnector struct {
++	inner  driver.Connector
++	ledger *queryLedger
++}
++
++func (c *ledgerConnector) Connect(ctx context.Context) (driver.Conn, error) {
++	conn, err := c.inner.Connect(ctx)
++	if err != nil {
++		return nil, err
++	}
++	return &ledgerConn{conn, c.ledger}, nil
++}
++
++func (c *ledgerConnector) Driver() driver.Driver { return c.inner.Driver() }
++
++type ledgerConn struct {
++	conn   driver.Conn
++	ledger *queryLedger
++}
++
++func (c *ledgerConn) Prepare(query string) (driver.Stmt, error) {
++	stmt, err := c.conn.Prepare(query)
++	if err != nil {
++		return nil, err
++	}
++	return &ledgerStmt{stmt, query, c.ledger}, nil
++}
++
++func (c *ledgerConn) Close() error              { return c.conn.Close() }
++func (c *ledgerConn) Begin() (driver.Tx, error) { return c.conn.Begin() }
++
++func (c *ledgerConn) Ping(ctx context.Context) error {
++	if pinger, ok := c.conn.(driver.Pinger); ok {
++		return pinger.Ping(ctx)
++	}
++	return nil
++}
++
++func (c *ledgerConn) QueryContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Rows, error) {
++	c.ledger.add("query", query)
++	if querier, ok := c.conn.(driver.QueryerContext); ok {
++		return querier.QueryContext(ctx, query, args)
++	}
++	return nil, driver.ErrSkip
++}
++
++func (c *ledgerConn) ExecContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Result, error) {
++	c.ledger.add("exec", query)
++	if execer, ok := c.conn.(driver.ExecerContext); ok {
++		return execer.ExecContext(ctx, query, args)
++	}
++	return nil, driver.ErrSkip
++}
++
++type ledgerStmt struct {
++	stmt   driver.Stmt
++	query  string
++	ledger *queryLedger
++}
++
++func (s *ledgerStmt) Close() error  { return s.stmt.Close() }
++func (s *ledgerStmt) NumInput() int { return s.stmt.NumInput() }
++func (s *ledgerStmt) Exec(args []driver.Value) (driver.Result, error) {
++	s.ledger.add("stmt-exec", s.query)
++	return s.stmt.Exec(args)
++}
++func (s *ledgerStmt) Query(args []driver.Value) (driver.Rows, error) {
++	s.ledger.add("stmt-query", s.query)
++	return s.stmt.Query(args)
++}
++
++type evidenceWriter func(string, []byte) error
++
++func writeJSON(write evidenceWriter, name string, value any) error {
++	data, err := json.MarshalIndent(value, "", "  ")
++	if err != nil {
++		return fmt.Errorf("encode %s: %w", name, err)
++	}
++	if err := write(name, append(data, '\n')); err != nil {
++		return fmt.Errorf("write %s: %w", name, err)
++	}
++	return nil
++}
++
++func tableCount(ctx context.Context, db *sql.DB) (int, error) {
++	var count int
++	if err := db.QueryRowContext(ctx, countSQL).Scan(&count); err != nil {
++		return 0, fmt.Errorf("table COUNT query/scan: %w", err)
++	}
++	return count, nil
++}
++
++func readCatalog(ctx context.Context, db *sql.DB) (result []catalogRow, err error) {
++	rows, err := db.QueryContext(ctx, catalogSQL)
++	if err != nil {
++		return nil, fmt.Errorf("query catalog: %w", err)
++	}
++	defer func() { err = errors.Join(err, rows.Close()) }()
++	for rows.Next() {
++		var row catalogRow
++		var precision, scale sql.NullInt64
++		var charset, collation sql.NullString
++		if err := rows.Scan(&row.ColumnName, &row.OrdinalPosition, &row.DataType, &row.ColumnType, &row.ColumnTypeHex, &precision, &scale, &charset, &collation); err != nil {
++			return result, fmt.Errorf("scan catalog row %d: %w", len(result)+1, err)
++		}
++		if precision.Valid {
++			row.NumericPrecision = &precision.Int64
++		}
++		if scale.Valid {
++			row.NumericScale = &scale.Int64
++		}
++		if charset.Valid {
++			row.CharacterSet = &charset.String
++		}
++		if collation.Valid {
++			row.Collation = &collation.String
++		}
++		result = append(result, row)
++	}
++	if err := rows.Err(); err != nil {
++		return result, fmt.Errorf("iterate catalog after %d rows: %w", len(result), err)
++	}
++	return result, nil
++}
++
++type lifecycle struct {
++	PreCount         *int   `json:"pre_create_count"`
++	Created          bool   `json:"created_by_this_probe"`
++	CleanupAttempted bool   `json:"cleanup_attempted"`
++	DropSucceeded    bool   `json:"drop_succeeded"`
++	PostCount        *int   `json:"post_drop_count"`
++	PrimaryError     string `json:"primary_error,omitempty"`
++	CleanupError     string `json:"cleanup_error,omitempty"`
++}
++
++func collect(ctx context.Context, db *sql.DB, target anchor, ledger *queryLedger, write evidenceWriter) (err error) {
++	life := lifecycle{}
++	defer func() {
++		if err != nil {
++			life.PrimaryError = err.Error()
++		}
++		if life.Created {
++			life.CleanupAttempted = true
++			cleanupCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
++			defer cancel()
++			_, dropErr := db.ExecContext(cleanupCtx, dropSQL)
++			life.DropSucceeded = dropErr == nil
++			if dropErr != nil {
++				dropErr = fmt.Errorf("cleanup DROP: %w", dropErr)
++			}
++			count, countErr := tableCount(cleanupCtx, db)
++			if countErr == nil {
++				life.PostCount = &count
++				countErr = writeJSON(write, "post-drop-count.json", map[string]int{"count": count})
++				if count != 0 {
++					countErr = errors.Join(countErr, fmt.Errorf("cleanup final COUNT=%d, want 0", count))
++				}
++			} else {
++				countErr = fmt.Errorf("cleanup final COUNT: %w", countErr)
++			}
++			cleanupErr := errors.Join(dropErr, countErr)
++			if cleanupErr != nil {
++				life.CleanupError = cleanupErr.Error()
++				err = errors.Join(err, cleanupErr)
++			}
++		}
++		err = errors.Join(err, writeJSON(write, "lifecycle.json", life))
++		err = errors.Join(err, writeJSON(write, "query-ledger.json", ledger.snapshot()))
++		result := struct {
++			Anchor  string `json:"anchor"`
++			Success bool   `json:"success"`
++			Error   string `json:"error,omitempty"`
++		}{Anchor: target.Name, Success: err == nil}
++		if err != nil {
++			result.Error = err.Error()
++		}
++		err = errors.Join(err, writeJSON(write, "run-result.json", result))
++	}()
++	if err := write("create.sql", []byte(createSQL+"\n")); err != nil {
++		return fmt.Errorf("write create.sql: %w", err)
++	}
++	session := make(map[string]string, len(sessionQueries))
++	for _, fact := range sessionQueries {
++		var value string
++		if err := db.QueryRowContext(ctx, fact.query).Scan(&value); err != nil {
++			return fmt.Errorf("read session %s: %w", fact.name, err)
++		}
++		session[fact.name] = value
++	}
++	if err := writeJSON(write, "session-facts.json", session); err != nil {
++		return err
++	}
++	if err := validateSession(session, target); err != nil {
++		return err
++	}
++	count, err := tableCount(ctx, db)
++	if err != nil {
++		return fmt.Errorf("pre-create: %w", err)
++	}
++	life.PreCount = &count
++	if err := writeJSON(write, "pre-create-count.json", map[string]int{"count": count}); err != nil {
++		return err
++	}
++	if count != 0 {
++		return fmt.Errorf("pre-create COUNT=%d: existing table is not owned by this probe", count)
++	}
++	if _, err := db.ExecContext(ctx, "CREATE DATABASE IF NOT EXISTS golden"); err != nil {
++		return fmt.Errorf("create fixture schema: %w", err)
++	}
++	if _, err := db.ExecContext(ctx, createSQL); err != nil {
++		return fmt.Errorf("create fixture table: %w", err)
++	}
++	life.Created = true
++	catalog, readErr := readCatalog(ctx, db)
++	writeErr := writeJSON(write, "catalog-rows.json", catalog)
++	if err := errors.Join(readErr, writeErr); err != nil {
++		return err
++	}
++	if err := validateCatalog(ctx, catalog); err != nil {
++		return err
++	}
++	providerStart := len(ledger.snapshot())
++	snapshot, providerErr := mysqlmeta.NewProvider(db).LoadTableSnapshot(ctx, target.Dialect, "golden", "t06_a17_type_facts")
++	providerEnd := ledger.snapshot()
++	writeErr = errors.Join(
++		writeJSON(write, "provider-query-ledger.json", providerEnd[providerStart:]),
++		writeJSON(write, "provider-snapshot.json", snapshot),
++	)
++	if err := errors.Join(providerErr, writeErr); err != nil {
++		return fmt.Errorf("provider capture: %w", err)
++	}
++	pairs, err := pairCatalogProvider(catalog, snapshot, target)
++	if err != nil {
++		return err
++	}
++	return writeJSON(write, "catalog-provider-pairs.json", pairs)
++}
++
++func execute(args []string) (err error) {
++	if len(args) != 2 {
++		return fmt.Errorf("usage: t06a17proof <external-output-root> <mysql57|mysql80|mysql84|tidb85>")
++	}
++	target, err := anchorFor(args[1])
++	if err != nil {
++		return err
++	}
++	if os.Getenv("A17_USER") == "" {
++		return fmt.Errorf("A17_USER is required; credentials must be passed through the environment")
++	}
++	if err := os.MkdirAll(args[0], 0o755); err != nil {
++		return fmt.Errorf("create output root: %w", err)
++	}
++	directory := filepath.Join(args[0], target.Name)
++	if err := os.Mkdir(directory, 0o755); err != nil {
++		return fmt.Errorf("create new anchor evidence directory: %w", err)
++	}
++	write := func(name string, data []byte) error {
++		return os.WriteFile(filepath.Join(directory, name), data, 0o644)
++	}
++	cfg := gomysql.NewConfig()
++	cfg.Net = "tcp"
++	cfg.Addr = "127.0.0.1:" + target.Port
++	cfg.User = os.Getenv("A17_USER")
++	cfg.Passwd = os.Getenv("A17_PASS")
++	cfg.InterpolateParams = true
++	cfg.Timeout = 30 * time.Second
++	connector, err := gomysql.NewConnector(cfg)
++	if err != nil {
++		return fmt.Errorf("create connector: %w", err)
++	}
++	ledger := &queryLedger{}
++	db := sql.OpenDB(&ledgerConnector{connector, ledger})
++	db.SetMaxOpenConns(1)
++	defer func() { err = errors.Join(err, db.Close()) }()
++	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
++	defer cancel()
++	if err := db.PingContext(ctx); err != nil {
++		return fmt.Errorf("ping anchor: %w", err)
++	}
++	if err := collect(ctx, db, target, ledger, write); err != nil {
++		return err
++	}
++	fmt.Printf("anchor=%s columns=24 target_pairs=21 ordinary_controls=3 pre_count=0 post_count=0\n", target.Name)
++	return nil
++}
++
++func main() {
++	if err := execute(os.Args[1:]); err != nil {
++		fmt.Fprintln(os.Stderr, err)
++		os.Exit(1)
++	}
++}
+diff --git a/scripts/t06a17proof/main_test.go b/scripts/t06a17proof/main_test.go
+new file mode 100644
+index 00000000..19651415
+--- /dev/null
++++ b/scripts/t06a17proof/main_test.go
+@@ -0,0 +1,329 @@
++// Package main verifies bounded failures in the T06-A17-R1 proof collector.
++// input: controlled database/sql driver rows/errors and failing evidence writers, never live fault injection
++// output: explicit errors for incomplete facts and failed evidence, plus owned-table cleanup assertions
++// pos: task-local collector regression tests; production provider code remains unchanged
++// note: if this file changes, update this header and module README.md.
++package main
++
++import (
++	"context"
++	"database/sql"
++	"database/sql/driver"
++	"encoding/hex"
++	"encoding/json"
++	"errors"
++	"fmt"
++	"io"
++	"os"
++	"path/filepath"
++	"strings"
++	"testing"
++)
++
++var fixtureTypes = []string{
++	"decimal(12,2)", "decimal(12,3)", "decimal(12,0)", "decimal(12,0)", "decimal(10,0)",
++	"float(10,2)", "float(10,3)", "float(10,0)", "float", "double(16,2)", "double(16,4)", "double(16,0)", "double",
++	"enum('Ready','Closed')", "enum('ready','closed')", "enum('Closed','Ready')",
++	"set('Read','Write')", "set('read','write')", "set('Write','Read')",
++	"enum('','A,B','A)B','O''Reilly')", "set('Read','A)B','O''Reilly')", "int", "varchar(8)", "bigint unsigned",
++}
++
++type faultFixture struct {
++	catalog         [][]driver.Value
++	provider        [][]driver.Value
++	preCount        driver.Value
++	preError        error
++	postError       error
++	catalogErrorAt  int
++	providerAbsent  bool
++	dropError       error
++	created         bool
++	creates         int
++	drops           int
++	counts          int
++	providerQueries int
++}
++
++func newFaultFixture() *faultFixture {
++	fixture := &faultFixture{preCount: int64(0), catalogErrorAt: -1}
++	for i, name := range columnNames {
++		var precision, scale, charset, collation driver.Value
++		if i < 5 {
++			precision, scale = int64(12), int64(0)
++			if i == 0 {
++				scale = int64(2)
++			} else if i == 1 {
++				scale = int64(3)
++			} else if i == 4 {
++				precision = int64(10)
++			}
++		}
++		if _, ok := memberFacts[name]; ok || name == "v" {
++			charset, collation = "utf8mb4", "utf8mb4_bin"
++		}
++		fixture.catalog = append(fixture.catalog, []driver.Value{name, int64(i + 1), columnFamilies[i], fixtureTypes[i], strings.ToUpper(hex.EncodeToString([]byte(fixtureTypes[i]))), precision, scale, charset, collation})
++		fixture.provider = append(fixture.provider, []driver.Value{name, fixtureTypes[i], charset, collation, "", nil, "YES", ""})
++	}
++	return fixture
++}
++
++type faultConnector struct{ fixture *faultFixture }
++
++type faultDriver struct{}
++
++func (faultDriver) Open(string) (driver.Conn, error) {
++	return nil, errors.New("use the test connector")
++}
++func (c faultConnector) Driver() driver.Driver { return faultDriver{} }
++func (c faultConnector) Connect(context.Context) (driver.Conn, error) {
++	return &faultConn{c.fixture}, nil
++}
++
++type faultConn struct{ fixture *faultFixture }
++
++func (c *faultConn) Close() error { return nil }
++func (c *faultConn) Begin() (driver.Tx, error) {
++	return nil, errors.New("transactions are outside the proof")
++}
++func (c *faultConn) Prepare(string) (driver.Stmt, error) {
++	return nil, errors.New("unexpected prepared query")
++}
++
++func (c *faultConn) ExecContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Result, error) {
++	f := c.fixture
++	switch query {
++	case "CREATE DATABASE IF NOT EXISTS golden":
++	case createSQL:
++		f.creates++
++		f.created = true
++	case dropSQL:
++		f.drops++
++		if f.dropError != nil {
++			return nil, f.dropError
++		}
++		f.created = false
++	default:
++		return nil, fmt.Errorf("unexpected exec %q", query)
++	}
++	return driver.RowsAffected(0), nil
++}
++
++func (c *faultConn) QueryContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Rows, error) {
++	f := c.fixture
++	if query == countSQL {
++		f.counts++
++		if f.counts == 1 {
++			if f.preError != nil {
++				return nil, f.preError
++			}
++			return newFaultRows([]string{"count"}, [][]driver.Value{{f.preCount}}, -1), nil
++		}
++		if f.postError != nil {
++			return nil, f.postError
++		}
++		value := int64(0)
++		if f.created {
++			value = 1
++		}
++		return newFaultRows([]string{"count"}, [][]driver.Value{{value}}, -1), nil
++	}
++	for _, fact := range sessionQueries {
++		if query == fact.query {
++			value := "utf8mb4"
++			switch fact.name {
++			case "version":
++				value = "8.4.10"
++			case "collation_connection":
++				value = "utf8mb4_general_ci"
++			case "sql_mode":
++				value = "STRICT_TRANS_TABLES"
++			}
++			return newFaultRows([]string{fact.name}, [][]driver.Value{{value}}, -1), nil
++		}
++	}
++	if query == catalogSQL {
++		return newFaultRows([]string{"column_name", "ordinal_position", "data_type", "column_type", "hex(column_type)", "numeric_precision", "numeric_scale", "character_set_name", "collation_name"}, f.catalog, f.catalogErrorAt), nil
++	}
++	if strings.Contains(query, "from information_schema.tables") {
++		f.providerQueries++
++		rows := [][]driver.Value{{"InnoDB", "utf8mb4_bin", "", nil, "Dynamic", int64(0)}}
++		if f.providerAbsent {
++			rows = nil
++		}
++		return newFaultRows([]string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"}, rows, -1), nil
++	}
++	if strings.Contains(query, "from information_schema.columns") {
++		f.providerQueries++
++		return newFaultRows([]string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra"}, f.provider, -1), nil
++	}
++	if strings.Contains(query, "from information_schema.statistics") {
++		f.providerQueries++
++		return newFaultRows([]string{"index_name", "non_unique", "index_type", "column_name", "cardinality"}, nil, -1), nil
++	}
++	return nil, fmt.Errorf("unexpected query %q", query)
++}
++
++type faultRows struct {
++	columns []string
++	rows    [][]driver.Value
++	index   int
++	faultAt int
++}
++
++func newFaultRows(columns []string, rows [][]driver.Value, faultAt int) *faultRows {
++	return &faultRows{columns: columns, rows: rows, faultAt: faultAt}
++}
++func (r *faultRows) Columns() []string { return r.columns }
++func (r *faultRows) Close() error      { return nil }
++func (r *faultRows) Next(values []driver.Value) error {
++	if r.index == r.faultAt {
++		return errors.New("injected catalog stream error")
++	}
++	if r.index >= len(r.rows) {
++		return io.EOF
++	}
++	copy(values, r.rows[r.index])
++	r.index++
++	return nil
++}
++
++func runFixture(t *testing.T, fixture *faultFixture, failFile string) (map[string][]byte, error) {
++	t.Helper()
++	ledger := &queryLedger{}
++	db := sql.OpenDB(&ledgerConnector{faultConnector{fixture}, ledger})
++	t.Cleanup(func() {
++		if err := db.Close(); err != nil {
++			t.Errorf("close controlled DB: %v", err)
++		}
++	})
++	target, err := anchorFor("mysql84")
++	if err != nil {
++		t.Fatal(err)
++	}
++	files := map[string][]byte{}
++	write := func(name string, data []byte) error {
++		if name == failFile {
++			return errors.New("injected evidence write failure")
++		}
++		files[name] = append([]byte(nil), data...)
++		return nil
++	}
++	err = collect(context.Background(), db, target, ledger, write)
++	return files, err
++}
++
++func TestT06A17R1CollectorComplete(t *testing.T) {
++	fixture := newFaultFixture()
++	files, err := runFixture(t, fixture, "")
++	if err != nil {
++		t.Fatal(err)
++	}
++	if fixture.creates != 1 || fixture.drops != 1 || fixture.created || fixture.counts != 2 || fixture.providerQueries != 3 {
++		t.Fatalf("incomplete lifecycle/provider calls: %+v", fixture)
++	}
++	var pairs []pair
++	if err := json.Unmarshal(files["catalog-provider-pairs.json"], &pairs); err != nil || len(pairs) != 24 {
++		t.Fatalf("pairs=%d decode=%v", len(pairs), err)
++	}
++	var result struct{ Success bool }
++	if err := json.Unmarshal(files["run-result.json"], &result); err != nil || !result.Success {
++		t.Fatalf("success record: %s (%v)", files["run-result.json"], err)
++	}
++}
++
++func TestT06A17R1CollectorRejectsFaults(t *testing.T) {
++	for _, tc := range []struct {
++		name, want, failFile string
++		mutate               func(*faultFixture)
++		owned                bool
++	}{
++		{"count-query", "pre-create: table COUNT", "", func(f *faultFixture) { f.preError = errors.New("injected COUNT query error") }, false},
++		{"count-scan", "pre-create: table COUNT", "", func(f *faultFixture) { f.preCount = "not-an-integer" }, false},
++		{"existing-table", "existing table is not owned", "", func(f *faultFixture) { f.preCount = int64(1) }, false},
++		{"rows-error-after-full-set", "iterate catalog after 24 rows", "", func(f *faultFixture) { f.catalogErrorAt = 24 }, true},
++		{"rows-error-mid-stream", "iterate catalog after 3 rows", "", func(f *faultFixture) { f.catalogErrorAt = 3 }, true},
++		{"scan-error", "scan catalog row 2", "", func(f *faultFixture) { f.catalog[1][1] = "bad-ordinal" }, true},
++		{"few-columns", "catalog column count=23", "", func(f *faultFixture) { f.catalog = f.catalog[:23] }, true},
++		{"empty-columns", "catalog column count=0", "", func(f *faultFixture) { f.catalog = nil }, true},
++		{"extra-column", "catalog column count=25", "", func(f *faultFixture) { f.catalog = append(f.catalog, f.catalog[0]) }, true},
++		{"duplicate-column", "duplicate catalog column", "", func(f *faultFixture) { f.catalog[1][0] = "d2" }, true},
++		{"provider-missing-column", "provider=23", "", func(f *faultFixture) { f.provider = f.provider[:23] }, true},
++		{"provider-empty-columns", "provider=0", "", func(f *faultFixture) { f.provider = nil }, true},
++		{"provider-duplicate-column", "duplicate provider column", "", func(f *faultFixture) { f.provider[1] = f.provider[0] }, true},
++		{"provider-absent", "provider snapshot missing", "", func(f *faultFixture) { f.providerAbsent = true }, true},
++		{"evidence-write", "injected evidence write failure", "catalog-rows.json", func(*faultFixture) {}, true},
++		{"post-count-query", "cleanup final COUNT", "", func(f *faultFixture) { f.postError = errors.New("injected final COUNT error") }, true},
++		{"primary-and-cleanup", "catalog column count=23", "", func(f *faultFixture) { f.catalog = f.catalog[:23]; f.dropError = errors.New("injected DROP error") }, true},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			fixture := newFaultFixture()
++			tc.mutate(fixture)
++			files, err := runFixture(t, fixture, tc.failFile)
++			if err == nil || !strings.Contains(err.Error(), tc.want) {
++				t.Fatalf("error=%v, want %q", err, tc.want)
++			}
++			if tc.owned {
++				if fixture.creates != 1 || fixture.drops != 1 || fixture.counts != 2 {
++					t.Fatalf("owned cleanup not attempted: creates=%d drops=%d counts=%d", fixture.creates, fixture.drops, fixture.counts)
++				}
++			} else if fixture.creates != 0 || fixture.drops != 0 {
++				t.Fatalf("unowned table touched: creates=%d drops=%d", fixture.creates, fixture.drops)
++			}
++			var result struct{ Success bool }
++			if decodeErr := json.Unmarshal(files["run-result.json"], &result); decodeErr != nil || result.Success {
++				t.Fatalf("fault recorded as success: %s (%v)", files["run-result.json"], decodeErr)
++			}
++			if tc.name == "count-query" || tc.name == "count-scan" || tc.name == "post-count-query" {
++				var life lifecycle
++				if err := json.Unmarshal(files["lifecycle.json"], &life); err != nil {
++					t.Fatal(err)
++				}
++				if tc.name == "post-count-query" && life.PostCount != nil || tc.name != "post-count-query" && life.PreCount != nil {
++					t.Fatalf("failed COUNT fabricated an integer: %+v", life)
++				}
++			}
++			if tc.name == "primary-and-cleanup" && (!strings.Contains(err.Error(), "injected DROP error") || !strings.Contains(err.Error(), "final COUNT=1")) {
++				t.Fatalf("primary/cleanup errors lost: %v", err)
++			}
++			t.Logf("constructed fault rejected: %v", err)
++		})
++	}
++}
++
++func TestT06A17R1IndependentFacts(t *testing.T) {
++	for _, tc := range []struct {
++		name   string
++		mutate func(*faultFixture)
++	}{
++		{"decimal-precision", func(f *faultFixture) { f.catalog[0][5] = int64(11) }},
++		{"members-both-sides-corrupt", func(f *faultFixture) {
++			value := "enum('ready','Closed')"
++			f.catalog[13][3] = value
++			f.catalog[13][4] = strings.ToUpper(hex.EncodeToString([]byte(value)))
++			f.provider[13][1] = value
++		}},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			fixture := newFaultFixture()
++			tc.mutate(fixture)
++			if _, err := runFixture(t, fixture, ""); err == nil {
++				t.Fatal("independent input fact corruption accepted")
++			}
++		})
++	}
++}
++
++func TestT06A17R1EvidenceEncodingAndDiskErrors(t *testing.T) {
++	if err := writeJSON(func(string, []byte) error { return nil }, "unsupported.json", func() {}); err == nil {
++		t.Fatal("JSON encoding failure accepted")
++	}
++	blocker := filepath.Join(t.TempDir(), "not-a-directory")
++	if err := os.WriteFile(blocker, []byte("fixture"), 0o644); err != nil {
++		t.Fatal(err)
++	}
++	if err := writeJSON(func(name string, data []byte) error {
++		return os.WriteFile(filepath.Join(blocker, name), data, 0o644)
++	}, "evidence.json", true); err == nil {
++		t.Fatal("disk write failure accepted")
++	}
++}
+diff --git a/scripts/t06a17proof/sensitivity.py b/scripts/t06a17proof/sensitivity.py
+new file mode 100644
+index 00000000..20e4c67f
+--- /dev/null
++++ b/scripts/t06a17proof/sensitivity.py
+@@ -0,0 +1,140 @@
++#!/usr/bin/env python3
++# input: old committed A17 assertions, R1 assertions, and controlled in-memory omissions via Go test overlays
++# output: raw old-pass/new-assertion-failure records without changing production or checkout files
++# pos: bounded T06-A17-R1 assertion-sensitivity evidence, not native database observations
++# note: if this file changes, update this header and module README.md.
++import argparse
++import datetime
++import hashlib
++import json
++from pathlib import Path
++import re
++import subprocess
++import sys
++
++OLD_REF = "8d1253e2fea0e1fac6bd150a8e46f436486f7205"
++FILES = {
++    "derived": "internal/application/audit/batch_state_t06a17_test.go",
++    "provider": "internal/infrastructure/metadata/mysql/provider_t06a17_test.go",
++    "alter": "internal/infrastructure/parser/tidb/extractor_t06a17_test.go",
++}
++TESTS = {
++    "derived": "TestT06A17DerivedPreStatePreservesType",
++    "provider": "TestT06A17ProviderParameterFidelity",
++    "alter": "TestT06A17AlterColumnDefinitions",
++}
++CASES = [
++    ("derived", "missing-column", "snapshot.Columns = snapshot.Columns[:len(snapshot.Columns)-1]", "derived pre-state:"),
++    ("derived", "empty-columns", "snapshot.Columns = nil", "derived pre-state:"),
++    ("derived", "duplicate-column", "snapshot.Columns[1] = snapshot.Columns[0]", "duplicate column"),
++    ("provider", "missing-column", "snapshot.Columns = snapshot.Columns[:len(snapshot.Columns)-1]", "provider columns:"),
++    ("provider", "empty-columns", "snapshot.Columns = nil", "provider columns:"),
++    ("provider", "duplicate-column", "snapshot.Columns[1] = snapshot.Columns[0]", "duplicate column"),
++    ("alter", "nil-definition", "statement.DDL.Alter[0].Column.Definition = nil", "Column.Definition is nil"),
++    ("alter", "missing-action", "statement.DDL.Alter = nil", "alter actions = 0"),
++    ("alter", "nil-column", "statement.DDL.Alter[0].Column = nil", "alter.Column is nil"),
++    ("alter", "wrong-target", 'statement.DDL.Alter[0].Column.Definition.Name = "not_expected"', "Definition.Name"),
++    ("alter", "duplicate-action", "statement.DDL.Alter = append(statement.DDL.Alter, statement.DDL.Alter[0])", "alter actions = 2"),
++]
++
++
++def now():
++    return datetime.datetime.now(datetime.timezone.utc).isoformat()
++
++
++def git(repo, *args):
++    return subprocess.check_output(["git", *args], cwd=repo)
++
++
++def inject(source, kind, statement):
++    if kind == "provider":
++        anchor = '\tif err != nil {\n\t\tt.Fatalf("LoadTableSnapshot: %v", err)\n\t}\n'
++        if source.count(anchor) != 1:
++            raise ValueError("provider injection anchor must occur exactly once")
++        return source.replace(anchor, anchor + "\t" + statement + "\n", 1)
++    if kind == "derived":
++        anchor = '\t\t\tif err != nil {\n\t\t\t\tt.Fatalf("pre-state: %v", err)\n\t\t\t}\n'
++        if source.count(anchor) != 1:
++            raise ValueError("derived injection anchor must occur exactly once")
++        return source.replace(anchor, anchor + "\t\t\t" + statement + "\n", 1)
++    function_anchor = "func TestT06A17AlterColumnDefinitions("
++    if source.count(function_anchor) != 1:
++        raise ValueError("ALTER test function must occur exactly once")
++    function_start = source.index(function_anchor)
++    prefix, body = source[:function_start], source[function_start:]
++    pattern = r"(?m)^([\t ]*)statement := t06a2Extract\(t, (?:spec\.DialectMySQL|dialect), tc\.sql\)\n"
++    matches = list(re.finditer(pattern, body))
++    if len(matches) != 1:
++        raise ValueError("ALTER injection anchor must occur exactly once inside its test")
++    match = matches[0]
++    return prefix + body[:match.end()] + match.group(1) + statement + "\n" + body[match.end():]
++
++
++def main():
++    parser = argparse.ArgumentParser()
++    parser.add_argument("--repo", default=str(Path(__file__).resolve().parents[2]))
++    parser.add_argument("--out", required=True)
++    parser.add_argument("--strict-worktree", action="store_true")
++    parser.add_argument("--kind", choices=tuple(FILES), help="narrow a development run; omit for the final complete proof")
++    args = parser.parse_args()
++    repo = Path(args.repo).resolve(strict=True)
++    out = Path(args.out).resolve()
++    out.mkdir(parents=True, exist_ok=False)
++    head = git(repo, "rev-parse", "HEAD").decode().strip()
++    sources = {}
++    for kind, relative in FILES.items():
++        old = git(repo, "show", f"{OLD_REF}:{relative}").decode()
++        strict = (repo / relative).read_text() if args.strict_worktree else git(repo, "show", f"{head}:{relative}").decode()
++        sources[kind] = {"old": old, "strict": strict}
++    cases = [case for case in CASES if args.kind is None or case[0] == args.kind]
++    records = []
++    for kind, name, mutation, assertion in cases:
++        relative = FILES[kind]
++        for version in ("old", "strict"):
++            directory = out / f"{kind}-{name}-{version}"
++            directory.mkdir()
++            source = sources[kind][version]
++            mutated = inject(source, kind, mutation)
++            overlay_source = directory / Path(relative).name
++            overlay_source.write_text(mutated)
++            overlay = directory / "overlay.json"
++            overlay.write_text(json.dumps({"Replace": {str(repo / relative): str(overlay_source)}}, indent=2) + "\n")
++            command = ["go", "test", "-count=1", "-overlay", str(overlay), "./" + str(Path(relative).parent), "-run", "^" + TESTS[kind] + "$", "-v"]
++            before = git(repo, "status", "--porcelain=v1", "--untracked-files=all", "--", relative).decode()
++            metadata = {
++                "argv": command, "cwd": str(repo), "started_at": now(),
++                "head_sha": git(repo, "rev-parse", "HEAD").decode().strip(),
++                "source_ref": OLD_REF if version == "old" else ("uncommitted-worktree" if args.strict_worktree else head),
++                "source_path": relative,
++                "source_sha256": hashlib.sha256(source.encode()).hexdigest(),
++                "overlay_source_sha256": hashlib.sha256(mutated.encode()).hexdigest(),
++                "constructed_fault": mutation,
++                "task_file_status_before": before,
++            }
++            with (directory / "stdout").open("wb") as stdout, (directory / "stderr").open("wb") as stderr:
++                rc = subprocess.run(command, cwd=repo, stdout=stdout, stderr=stderr).returncode
++            stdout = (directory / "stdout").read_text()
++            stderr = (directory / "stderr").read_text()
++            combined = stdout + stderr
++            metadata.update({"finished_at": now(), "returncode": rc,
++                "head_sha_after": git(repo, "rev-parse", "HEAD").decode().strip(),
++                "task_file_status_after": git(repo, "status", "--porcelain=v1", "--untracked-files=all", "--", relative).decode()})
++            (directory / "metadata.json").write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\n")
++            (directory / "returncode").write_text(str(rc) + "\n")
++            matched = rc == 0 if version == "old" else (rc == 1 and "--- FAIL: " + TESTS[kind] in stdout and assertion in stdout)
++            matched = matched and "panic:" not in combined and "build failed" not in combined and "no tests to run" not in combined
++            matched = matched and metadata["head_sha"] == metadata["head_sha_after"] == head and before == metadata["task_file_status_after"]
++            records.append({"kind": kind, "case": name, "assertions": version, "returncode": rc, "expected_observation": matched, "path": str(directory)})
++            print(f"{kind}/{name}/{version}: rc={rc} expected_observation={matched}", flush=True)
++    expected_records = 2 * len(cases)
++    summary = {"head_sha": head, "old_assertion_ref": OLD_REF,
++        "strict_source": "uncommitted-worktree" if args.strict_worktree else head,
++        "selected_kind": args.kind, "expected_records": expected_records,
++        "constructed_faults_only": True, "native_database_fault_injection": False,
++        "records": records, "all_expected_observations": expected_records > 0 and len(records) == expected_records and all(row["expected_observation"] for row in records)}
++    (out / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n")
++    return 0 if summary["all_expected_observations"] else 1
++
++
++if __name__ == "__main__":
++    sys.exit(main())

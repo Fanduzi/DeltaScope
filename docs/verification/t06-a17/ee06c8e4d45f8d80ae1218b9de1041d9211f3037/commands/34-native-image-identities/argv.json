@@ -1,0 +1,11 @@
+[
+  "docker",
+  "image",
+  "inspect",
+  "--format",
+  "{{.Id}}\t{{json .RepoTags}}\t{{json .RepoDigests}}",
+  "mysql:5.7.44",
+  "mysql:8.0.46",
+  "mysql:8.4.10",
+  "pingcap/tidb:v8.5.0"
+]

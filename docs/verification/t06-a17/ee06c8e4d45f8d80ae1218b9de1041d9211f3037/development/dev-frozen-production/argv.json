@@ -1,0 +1,9 @@
+[
+  "git",
+  "diff",
+  "--exit-code",
+  "4f58ac548aecd495edc707c35868c179686b0e35",
+  "--",
+  "internal/infrastructure/parser/tidb/extractor.go",
+  "internal/infrastructure/metadata/mysql/provider.go"
+]

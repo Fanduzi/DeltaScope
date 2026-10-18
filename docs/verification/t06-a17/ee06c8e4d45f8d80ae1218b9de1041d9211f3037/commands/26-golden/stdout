@@ -1,0 +1,4 @@
+python3 ./scripts/ddl_golden.py run --task "T06" --artifact-dir "/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/golden"
+[ddl-golden] task=T06 head=ee06c8e4d45f cases=496 passed=496 assertions=11772
+[ddl-golden] artifact=/private/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/golden/T06/artifact.json
+[ddl-golden] PASS

@@ -1,0 +1,170 @@
+[
+  {
+    "column": "d2",
+    "catalog_column_type": "decimal(12,2)",
+    "provider_type": "decimal(12,2)",
+    "provider_length": 12,
+    "provider_unsigned": false
+  },
+  {
+    "column": "d3",
+    "catalog_column_type": "decimal(12,3)",
+    "provider_type": "decimal(12,3)",
+    "provider_length": 12,
+    "provider_unsigned": false
+  },
+  {
+    "column": "d0",
+    "catalog_column_type": "decimal(12,0)",
+    "provider_type": "decimal(12,0)",
+    "provider_length": 12,
+    "provider_unsigned": false
+  },
+  {
+    "column": "dm",
+    "catalog_column_type": "decimal(12,0)",
+    "provider_type": "decimal(12,0)",
+    "provider_length": 12,
+    "provider_unsigned": false
+  },
+  {
+    "column": "dn",
+    "catalog_column_type": "decimal(10,0)",
+    "provider_type": "decimal(10,0)",
+    "provider_length": 10,
+    "provider_unsigned": false
+  },
+  {
+    "column": "f2",
+    "catalog_column_type": "float(10,2)",
+    "provider_type": "float(10,2)",
+    "provider_length": 10,
+    "provider_unsigned": false
+  },
+  {
+    "column": "f3",
+    "catalog_column_type": "float(10,3)",
+    "provider_type": "float(10,3)",
+    "provider_length": 10,
+    "provider_unsigned": false
+  },
+  {
+    "column": "f0",
+    "catalog_column_type": "float(10,0)",
+    "provider_type": "float(10,0)",
+    "provider_length": 10,
+    "provider_unsigned": false
+  },
+  {
+    "column": "fn",
+    "catalog_column_type": "float",
+    "provider_type": "float",
+    "provider_length": 0,
+    "provider_unsigned": false
+  },
+  {
+    "column": "x2",
+    "catalog_column_type": "double(16,2)",
+    "provider_type": "double(16,2)",
+    "provider_length": 16,
+    "provider_unsigned": false
+  },
+  {
+    "column": "x4",
+    "catalog_column_type": "double(16,4)",
+    "provider_type": "double(16,4)",
+    "provider_length": 16,
+    "provider_unsigned": false
+  },
+  {
+    "column": "x0",
+    "catalog_column_type": "double(16,0)",
+    "provider_type": "double(16,0)",
+    "provider_length": 16,
+    "provider_unsigned": false
+  },
+  {
+    "column": "xn",
+    "catalog_column_type": "double",
+    "provider_type": "double",
+    "provider_length": 0,
+    "provider_unsigned": false
+  },
+  {
+    "column": "e_upper",
+    "catalog_column_type": "enum('Ready','Closed')",
+    "provider_type": "enum('Ready','Closed')",
+    "provider_length": 0,
+    "provider_unsigned": false
+  },
+  {
+    "column": "e_lower",
+    "catalog_column_type": "enum('ready','closed')",
+    "provider_type": "enum('ready','closed')",
+    "provider_length": 0,
+    "provider_unsigned": false
+  },
+  {
+    "column": "e_order",
+    "catalog_column_type": "enum('Closed','Ready')",
+    "provider_type": "enum('Closed','Ready')",
+    "provider_length": 0,
+    "provider_unsigned": false
+  },
+  {
+    "column": "s_upper",
+    "catalog_column_type": "set('Read','Write')",
+    "provider_type": "set('Read','Write')",
+    "provider_length": 0,
+    "provider_unsigned": false
+  },
+  {
+    "column": "s_lower",
+    "catalog_column_type": "set('read','write')",
+    "provider_type": "set('read','write')",
+    "provider_length": 0,
+    "provider_unsigned": false
+  },
+  {
+    "column": "s_order",
+    "catalog_column_type": "set('Write','Read')",
+    "provider_type": "set('Write','Read')",
+    "provider_length": 0,
+    "provider_unsigned": false
+  },
+  {
+    "column": "e_escaped",
+    "catalog_column_type": "enum('','A,B','A)B','O''Reilly')",
+    "provider_type": "enum('','A,B','A)B','O''Reilly')",
+    "provider_length": 0,
+    "provider_unsigned": false
+  },
+  {
+    "column": "s_escaped",
+    "catalog_column_type": "set('Read','A)B','O''Reilly')",
+    "provider_type": "set('Read','A)B','O''Reilly')",
+    "provider_length": 0,
+    "provider_unsigned": false
+  },
+  {
+    "column": "i",
+    "catalog_column_type": "int",
+    "provider_type": "int",
+    "provider_length": 0,
+    "provider_unsigned": false
+  },
+  {
+    "column": "v",
+    "catalog_column_type": "varchar(8)",
+    "provider_type": "varchar",
+    "provider_length": 8,
+    "provider_unsigned": false
+  },
+  {
+    "column": "u",
+    "catalog_column_type": "bigint unsigned",
+    "provider_type": "bigint",
+    "provider_length": 0,
+    "provider_unsigned": true
+  }
+]

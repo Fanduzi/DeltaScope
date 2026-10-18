@@ -1,0 +1,6 @@
+[
+  "go",
+  "version",
+  "-m",
+  "/Users/fan/GolangProjects/DeltaScope/bin/deltascope"
+]

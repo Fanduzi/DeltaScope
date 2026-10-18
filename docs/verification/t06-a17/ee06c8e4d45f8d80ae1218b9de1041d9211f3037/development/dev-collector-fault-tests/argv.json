@@ -1,0 +1,9 @@
+[
+  "go",
+  "test",
+  "-count=1",
+  "./scripts/t06a17proof",
+  "-run",
+  "T06A17R1",
+  "-v"
+]

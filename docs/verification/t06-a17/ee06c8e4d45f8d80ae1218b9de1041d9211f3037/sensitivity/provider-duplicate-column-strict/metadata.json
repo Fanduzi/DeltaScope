@@ -1,0 +1,26 @@
+{
+  "argv": [
+    "go",
+    "test",
+    "-count=1",
+    "-overlay",
+    "/private/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/sensitivity/provider-duplicate-column-strict/overlay.json",
+    "./internal/infrastructure/metadata/mysql",
+    "-run",
+    "^TestT06A17ProviderParameterFidelity$",
+    "-v"
+  ],
+  "cwd": "/Users/fan/GolangProjects/DeltaScope",
+  "started_at": "2026-10-18T16:47:57.561732+00:00",
+  "head_sha": "ee06c8e4d45f8d80ae1218b9de1041d9211f3037",
+  "source_ref": "ee06c8e4d45f8d80ae1218b9de1041d9211f3037",
+  "source_path": "internal/infrastructure/metadata/mysql/provider_t06a17_test.go",
+  "source_sha256": "a62e6b9dd70e031648b751e72c8355e8d6b3e4762a7a75f9fc89300d6537f10c",
+  "overlay_source_sha256": "0734f1c0aeefd3e1c27e11a06dc959e369d105c30414f886a04052a3e8a8dd93",
+  "constructed_fault": "snapshot.Columns[1] = snapshot.Columns[0]",
+  "task_file_status_before": "",
+  "finished_at": "2026-10-18T16:47:58.387589+00:00",
+  "returncode": 1,
+  "head_sha_after": "ee06c8e4d45f8d80ae1218b9de1041d9211f3037",
+  "task_file_status_after": ""
+}

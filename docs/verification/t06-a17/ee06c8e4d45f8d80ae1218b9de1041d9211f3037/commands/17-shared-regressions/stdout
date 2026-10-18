@@ -1,0 +1,394 @@
+=== RUN   TestAlterColumnCompatibilityRuleFindsBreakingTransitions
+=== PAUSE TestAlterColumnCompatibilityRuleFindsBreakingTransitions
+=== RUN   TestAlterColumnCompatibilityRuleFindsFamilyChanges
+=== PAUSE TestAlterColumnCompatibilityRuleFindsFamilyChanges
+=== RUN   TestAlterColumnCompatibilityRuleSkipsOfflineMode
+=== PAUSE TestAlterColumnCompatibilityRuleSkipsOfflineMode
+=== RUN   TestAlterColumnCompatibilityEvidenceGapsIgnoreOptInParam
+=== PAUSE TestAlterColumnCompatibilityEvidenceGapsIgnoreOptInParam
+=== RUN   TestAlterColumnCompatibilityEvidenceGapsCoexistWithFindings
+=== PAUSE TestAlterColumnCompatibilityEvidenceGapsCoexistWithFindings
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix
+=== PAUSE TestIndexKeyLengthVersionEvidenceMatrix
+=== RUN   TestIndexKeyLengthNoGapWhenNotApplicable
+=== PAUSE TestIndexKeyLengthNoGapWhenNotApplicable
+=== RUN   TestT06A15DeclaredInputsComputeWithoutInstance
+=== PAUSE TestT06A15DeclaredInputsComputeWithoutInstance
+=== RUN   TestT06A15ColumnCharsetOverridesTableCharset
+=== PAUSE TestT06A15ColumnCharsetOverridesTableCharset
+=== RUN   TestT06A15ColumnOnlyCharsetNeedsNoTableCharset
+=== PAUSE TestT06A15ColumnOnlyCharsetNeedsNoTableCharset
+=== RUN   TestT06A15MissingCharsetReportsGapNotEstimate
+=== PAUSE TestT06A15MissingCharsetReportsGapNotEstimate
+=== RUN   TestT06A15MissingRowFormatReportsGap
+=== PAUSE TestT06A15MissingRowFormatReportsGap
+=== RUN   TestT06A15MissingBothFactsOrderedOnce
+=== PAUSE TestT06A15MissingBothFactsOrderedOnce
+=== RUN   TestT06A15DefaultRowFormatNeedsInstanceFact
+=== PAUSE TestT06A15DefaultRowFormatNeedsInstanceFact
+=== RUN   TestT06A15DeclaredCompactRedundantNeedNoInstance
+=== PAUSE TestT06A15DeclaredCompactRedundantNeedNoInstance
+=== RUN   TestT06A15FixedWidthColumnsNeedNoCharset
+=== PAUSE TestT06A15FixedWidthColumnsNeedNoCharset
+=== RUN   TestT06A15DeclaredNonInnoDBStaysSilent
+=== PAUSE TestT06A15DeclaredNonInnoDBStaysSilent
+=== RUN   TestT06A15RequiredFalseProducesNothing
+=== PAUSE TestT06A15RequiredFalseProducesNothing
+=== RUN   TestT06A15EmptyInstanceEqualsNilInstance
+=== PAUSE TestT06A15EmptyInstanceEqualsNilInstance
+=== RUN   TestT06A15PostgreSQLKeepsLegacyGate
+=== PAUSE TestT06A15PostgreSQLKeepsLegacyGate
+=== RUN   TestT06A15R1DeclaredCompressedResolvesVerbatim
+=== PAUSE TestT06A15R1DeclaredCompressedResolvesVerbatim
+=== RUN   TestT06A15R1CompressedNeverEntersPayloadBranches
+=== PAUSE TestT06A15R1CompressedNeverEntersPayloadBranches
+=== RUN   TestTableRowSizeRuleFindsCompactRowOverflow
+=== PAUSE TestTableRowSizeRuleFindsCompactRowOverflow
+=== RUN   TestIndexKeyLengthRuleFindsLargePrefixOverflow
+=== PAUSE TestIndexKeyLengthRuleFindsLargePrefixOverflow
+=== RUN   TestT06A13RegisteredAttribution
+=== PAUSE TestT06A13RegisteredAttribution
+=== RUN   TestT06A13FindingShapes
+=== PAUSE TestT06A13FindingShapes
+=== RUN   TestT06A13ForbidDisabledAndDefaults
+=== PAUSE TestT06A13ForbidDisabledAndDefaults
+=== RUN   TestT06A13InvalidForbidParameter
+=== PAUSE TestT06A13InvalidForbidParameter
+=== RUN   TestT06A13ExclusionBoundaries
+=== PAUSE TestT06A13ExclusionBoundaries
+=== RUN   TestT06A13ReorderedColumns
+=== PAUSE TestT06A13ReorderedColumns
+=== RUN   TestT06A13CreateTableOnlySeam
+=== PAUSE TestT06A13CreateTableOnlySeam
+=== CONT  TestAlterColumnCompatibilityRuleFindsBreakingTransitions
+=== CONT  TestT06A15DeclaredNonInnoDBStaysSilent
+=== CONT  TestT06A13RegisteredAttribution
+=== CONT  TestT06A15R1DeclaredCompressedResolvesVerbatim
+=== RUN   TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/nil
+--- PASS: TestT06A15DeclaredNonInnoDBStaysSilent (0.00s)
+=== CONT  TestT06A15RequiredFalseProducesNothing
+--- PASS: TestT06A15RequiredFalseProducesNothing (0.00s)
+=== CONT  TestIndexKeyLengthRuleFindsLargePrefixOverflow
+=== PAUSE TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/nil
+=== RUN   TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/empty
+=== PAUSE TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/empty
+=== RUN   TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/dynamic
+=== RUN   TestT06A13RegisteredAttribution/blob-text
+=== CONT  TestT06A15R1CompressedNeverEntersPayloadBranches
+=== PAUSE TestT06A13RegisteredAttribution/blob-text
+=== RUN   TestT06A15R1CompressedNeverEntersPayloadBranches/COMPRESSED
+=== PAUSE TestT06A15R1CompressedNeverEntersPayloadBranches/COMPRESSED
+=== PAUSE TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/dynamic
+=== CONT  TestT06A15ColumnCharsetOverridesTableCharset
+=== CONT  TestTableRowSizeRuleFindsCompactRowOverflow
+--- PASS: TestT06A15ColumnCharsetOverridesTableCharset (0.00s)
+=== CONT  TestT06A15PostgreSQLKeepsLegacyGate
+--- PASS: TestT06A15PostgreSQLKeepsLegacyGate (0.00s)
+=== CONT  TestT06A15MissingBothFactsOrderedOnce
+=== CONT  TestT06A13ExclusionBoundaries
+=== CONT  TestT06A15DeclaredCompactRedundantNeedNoInstance
+--- PASS: TestT06A15MissingBothFactsOrderedOnce (0.00s)
+--- PASS: TestTableRowSizeRuleFindsCompactRowOverflow (0.00s)
+=== RUN   TestT06A15R1CompressedNeverEntersPayloadBranches/DYNAMIC
+=== CONT  TestT06A15DeclaredInputsComputeWithoutInstance
+=== RUN   TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/compact
+=== PAUSE TestT06A15R1CompressedNeverEntersPayloadBranches/DYNAMIC
+=== PAUSE TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/compact
+=== CONT  TestT06A13ForbidDisabledAndDefaults
+=== CONT  TestIndexKeyLengthNoGapWhenNotApplicable
+=== CONT  TestT06A13FindingShapes
+=== RUN   TestT06A15DeclaredInputsComputeWithoutInstance/mysql
+=== PAUSE TestT06A15DeclaredInputsComputeWithoutInstance/mysql
+=== RUN   TestT06A15R1CompressedNeverEntersPayloadBranches/control-COMPACT
+=== RUN   TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/redundant
+=== CONT  TestT06A13CreateTableOnlySeam
+=== PAUSE TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/redundant
+=== CONT  TestT06A15FixedWidthColumnsNeedNoCharset
+=== RUN   TestT06A13ForbidDisabledAndDefaults/ddl.column.blob_text.forbid/forbid-false
+=== CONT  TestIndexKeyLengthVersionEvidenceMatrix
+=== PAUSE TestT06A13ForbidDisabledAndDefaults/ddl.column.blob_text.forbid/forbid-false
+=== RUN   TestT06A13ForbidDisabledAndDefaults/ddl.column.blob_text.forbid/disabled
+=== PAUSE TestT06A13ForbidDisabledAndDefaults/ddl.column.blob_text.forbid/disabled
+--- PASS: TestAlterColumnCompatibilityRuleFindsBreakingTransitions (0.00s)
+--- PASS: TestT06A13CreateTableOnlySeam (0.00s)
+=== CONT  TestAlterColumnCompatibilityRuleSkipsOfflineMode
+=== CONT  TestAlterColumnCompatibilityEvidenceGapsIgnoreOptInParam
+=== CONT  TestT06A15MissingCharsetReportsGapNotEstimate
+=== RUN   TestT06A13RegisteredAttribution/json
+=== PAUSE TestT06A13RegisteredAttribution/json
+=== CONT  TestT06A15DefaultRowFormatNeedsInstanceFact
+=== RUN   TestT06A13RegisteredAttribution/bit
+=== PAUSE TestT06A13RegisteredAttribution/bit
+=== RUN   TestT06A13RegisteredAttribution/float-double
+=== PAUSE TestT06A13RegisteredAttribution/float-double
+=== CONT  TestT06A15MissingRowFormatReportsGap
+=== RUN   TestT06A13RegisteredAttribution/timestamp
+=== PAUSE TestT06A13RegisteredAttribution/timestamp
+=== RUN   TestT06A15MissingRowFormatReportsGap/safe-total
+=== CONT  TestT06A15ColumnOnlyCharsetNeedsNoTableCharset
+=== RUN   TestIndexKeyLengthNoGapWhenNotApplicable/required_false_stays_silent
+=== CONT  TestAlterColumnCompatibilityEvidenceGapsCoexistWithFindings
+=== CONT  TestT06A13ReorderedColumns
+--- PASS: TestT06A15DeclaredCompactRedundantNeedNoInstance (0.00s)
+=== RUN   TestT06A13ReorderedColumns/ddl.column.blob_text.forbid
+--- PASS: TestT06A13ExclusionBoundaries (0.00s)
+=== RUN   TestT06A15DeclaredInputsComputeWithoutInstance/tidb
+=== PAUSE TestT06A13ReorderedColumns/ddl.column.blob_text.forbid
+=== PAUSE TestT06A15DeclaredInputsComputeWithoutInstance/tidb
+=== RUN   TestT06A13ReorderedColumns/ddl.column.float_double.forbid
+=== CONT  TestT06A15EmptyInstanceEqualsNilInstance
+=== RUN   TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/nil
+=== CONT  TestT06A13RegisteredAttribution/blob-text
+=== CONT  TestT06A13RegisteredAttribution/float-double
+=== PAUSE TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/nil
+=== CONT  TestT06A13RegisteredAttribution/timestamp
+=== RUN   TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/empty
+=== RUN   TestAlterColumnCompatibilityEvidenceGapsIgnoreOptInParam/requires_metadata_true
+=== CONT  TestT06A13RegisteredAttribution/bit
+=== CONT  TestT06A13RegisteredAttribution/json
+=== RUN   TestT06A15MissingCharsetReportsGapNotEstimate/mysql
+=== PAUSE TestT06A15MissingCharsetReportsGapNotEstimate/mysql
+=== CONT  TestT06A15DeclaredInputsComputeWithoutInstance/mysql
+=== RUN   TestT06A15MissingCharsetReportsGapNotEstimate/tidb
+=== RUN   TestT06A15DeclaredInputsComputeWithoutInstance/mysql/below
+=== PAUSE TestT06A15MissingCharsetReportsGapNotEstimate/tidb
+=== CONT  TestT06A13InvalidForbidParameter
+=== CONT  TestT06A15DeclaredInputsComputeWithoutInstance/tidb
+=== RUN   TestT06A13InvalidForbidParameter/ddl.column.blob_text.forbid
+=== CONT  TestAlterColumnCompatibilityRuleFindsFamilyChanges
+--- PASS: TestIndexKeyLengthRuleFindsLargePrefixOverflow (0.00s)
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_missing_version_yields_version_gap_not_finding
+=== RUN   TestT06A13InvalidForbidParameter/ddl.column.blob_text.forbid#01
+=== PAUSE TestT06A13ReorderedColumns/ddl.column.float_double.forbid
+=== CONT  TestT06A15MissingCharsetReportsGapNotEstimate/tidb
+=== RUN   TestT06A13ForbidDisabledAndDefaults/ddl.column.blob_text.forbid/defaults
+=== PAUSE TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/empty
+=== RUN   TestT06A15DeclaredInputsComputeWithoutInstance/tidb/below
+=== RUN   TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/dynamic
+=== PAUSE TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/dynamic
+=== CONT  TestT06A15MissingCharsetReportsGapNotEstimate/mysql
+=== CONT  TestT06A13ReorderedColumns/ddl.column.float_double.forbid
+--- PASS: TestT06A15FixedWidthColumnsNeedNoCharset (0.00s)
+--- PASS: TestT06A13FindingShapes (0.00s)
+--- PASS: TestAlterColumnCompatibilityRuleSkipsOfflineMode (0.00s)
+--- PASS: TestT06A15DefaultRowFormatNeedsInstanceFact (0.00s)
+=== RUN   TestT06A15R1CompressedNeverEntersPayloadBranches/control-REDUNDANT
+=== CONT  TestT06A13ReorderedColumns/ddl.column.blob_text.forbid
+=== PAUSE TestT06A13ForbidDisabledAndDefaults/ddl.column.blob_text.forbid/defaults
+=== RUN   TestT06A13ForbidDisabledAndDefaults/ddl.column.json.forbid/forbid-false
+=== PAUSE TestT06A13ForbidDisabledAndDefaults/ddl.column.json.forbid/forbid-false
+=== RUN   TestT06A13ForbidDisabledAndDefaults/ddl.column.json.forbid/disabled
+=== RUN   TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/compact
+=== PAUSE TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/compact
+--- PASS: TestT06A15ColumnOnlyCharsetNeedsNoTableCharset (0.00s)
+=== RUN   TestT06A15MissingRowFormatReportsGap/over-total
+=== PAUSE TestT06A13ForbidDisabledAndDefaults/ddl.column.json.forbid/disabled
+=== RUN   TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/redundant
+--- PASS: TestAlterColumnCompatibilityEvidenceGapsCoexistWithFindings (0.00s)
+=== RUN   TestIndexKeyLengthNoGapWhenNotApplicable/non_index_create_stays_silent
+--- PASS: TestT06A15EmptyInstanceEqualsNilInstance (0.00s)
+=== RUN   TestT06A13ForbidDisabledAndDefaults/ddl.column.json.forbid/defaults
+=== PAUSE TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/redundant
+=== CONT  TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/nil
+--- PASS: TestT06A15MissingRowFormatReportsGap (0.00s)
+    --- PASS: TestT06A15MissingRowFormatReportsGap/safe-total (0.00s)
+    --- PASS: TestT06A15MissingRowFormatReportsGap/over-total (0.00s)
+=== CONT  TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/nil
+=== PAUSE TestT06A13ForbidDisabledAndDefaults/ddl.column.json.forbid/defaults
+=== CONT  TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/compact
+=== CONT  TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/compact
+=== CONT  TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/redundant
+=== CONT  TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/dynamic
+=== CONT  TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/empty
+=== CONT  TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/empty
+=== CONT  TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/redundant
+=== RUN   TestAlterColumnCompatibilityEvidenceGapsIgnoreOptInParam/requires_metadata_absent
+=== RUN   TestT06A13ForbidDisabledAndDefaults/ddl.column.bit.forbid/forbid-false
+=== CONT  TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/dynamic
+=== PAUSE TestT06A13ForbidDisabledAndDefaults/ddl.column.bit.forbid/forbid-false
+--- PASS: TestT06A13RegisteredAttribution (0.00s)
+    --- PASS: TestT06A13RegisteredAttribution/blob-text (0.00s)
+    --- PASS: TestT06A13RegisteredAttribution/float-double (0.00s)
+    --- PASS: TestT06A13RegisteredAttribution/timestamp (0.00s)
+    --- PASS: TestT06A13RegisteredAttribution/bit (0.00s)
+    --- PASS: TestT06A13RegisteredAttribution/json (0.00s)
+=== RUN   TestT06A13ForbidDisabledAndDefaults/ddl.column.bit.forbid/disabled
+=== RUN   TestAlterColumnCompatibilityEvidenceGapsIgnoreOptInParam/requires_metadata_false
+=== PAUSE TestT06A13ForbidDisabledAndDefaults/ddl.column.bit.forbid/disabled
+=== RUN   TestT06A15DeclaredInputsComputeWithoutInstance/mysql/equal
+=== RUN   TestT06A13ForbidDisabledAndDefaults/ddl.column.bit.forbid/defaults
+=== PAUSE TestT06A13ForbidDisabledAndDefaults/ddl.column.bit.forbid/defaults
+=== RUN   TestT06A13ForbidDisabledAndDefaults/ddl.column.float_double.forbid/forbid-false
+=== PAUSE TestT06A13ForbidDisabledAndDefaults/ddl.column.float_double.forbid/forbid-false
+--- PASS: TestAlterColumnCompatibilityRuleFindsFamilyChanges (0.00s)
+=== RUN   TestT06A13ForbidDisabledAndDefaults/ddl.column.float_double.forbid/disabled
+=== PAUSE TestT06A13ForbidDisabledAndDefaults/ddl.column.float_double.forbid/disabled
+--- PASS: TestT06A15MissingCharsetReportsGapNotEstimate (0.00s)
+    --- PASS: TestT06A15MissingCharsetReportsGapNotEstimate/tidb (0.00s)
+    --- PASS: TestT06A15MissingCharsetReportsGapNotEstimate/mysql (0.00s)
+=== CONT  TestT06A15R1CompressedNeverEntersPayloadBranches/COMPRESSED
+--- PASS: TestT06A13ReorderedColumns (0.00s)
+    --- PASS: TestT06A13ReorderedColumns/ddl.column.float_double.forbid (0.00s)
+    --- PASS: TestT06A13ReorderedColumns/ddl.column.blob_text.forbid (0.00s)
+=== RUN   TestT06A13InvalidForbidParameter/ddl.column.blob_text.forbid#02
+--- PASS: TestT06A15R1DeclaredCompressedResolvesVerbatim (0.00s)
+    --- PASS: TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/nil (0.00s)
+    --- PASS: TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/compact (0.00s)
+    --- PASS: TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/compact (0.00s)
+    --- PASS: TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/dynamic (0.00s)
+    --- PASS: TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/redundant (0.00s)
+    --- PASS: TestT06A15R1DeclaredCompressedResolvesVerbatim/mysql/empty (0.00s)
+    --- PASS: TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/empty (0.00s)
+    --- PASS: TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/nil (0.00s)
+    --- PASS: TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/redundant (0.00s)
+    --- PASS: TestT06A15R1DeclaredCompressedResolvesVerbatim/tidb/dynamic (0.00s)
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_missing_version_still_reports_violation_proven_under_every_candidate_bound
+=== RUN   TestAlterColumnCompatibilityEvidenceGapsIgnoreOptInParam/required_false
+=== RUN   TestT06A13InvalidForbidParameter/ddl.column.json.forbid
+=== RUN   TestT06A15DeclaredInputsComputeWithoutInstance/tidb/equal
+=== RUN   TestT06A15DeclaredInputsComputeWithoutInstance/mysql/above
+--- PASS: TestAlterColumnCompatibilityEvidenceGapsIgnoreOptInParam (0.00s)
+    --- PASS: TestAlterColumnCompatibilityEvidenceGapsIgnoreOptInParam/requires_metadata_true (0.00s)
+    --- PASS: TestAlterColumnCompatibilityEvidenceGapsIgnoreOptInParam/requires_metadata_absent (0.00s)
+    --- PASS: TestAlterColumnCompatibilityEvidenceGapsIgnoreOptInParam/requires_metadata_false (0.00s)
+    --- PASS: TestAlterColumnCompatibilityEvidenceGapsIgnoreOptInParam/required_false (0.00s)
+=== RUN   TestT06A13ForbidDisabledAndDefaults/ddl.column.float_double.forbid/defaults
+=== PAUSE TestT06A13ForbidDisabledAndDefaults/ddl.column.float_double.forbid/defaults
+--- PASS: TestIndexKeyLengthNoGapWhenNotApplicable (0.00s)
+    --- PASS: TestIndexKeyLengthNoGapWhenNotApplicable/required_false_stays_silent (0.00s)
+    --- PASS: TestIndexKeyLengthNoGapWhenNotApplicable/non_index_create_stays_silent (0.00s)
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_dynamic_small_index_with_unknown_page_size_is_an_instance-fact_gap
+=== RUN   TestT06A13InvalidForbidParameter/ddl.column.json.forbid#01
+=== CONT  TestT06A15R1CompressedNeverEntersPayloadBranches/DYNAMIC
+=== RUN   TestT06A15DeclaredInputsComputeWithoutInstance/tidb/above
+=== RUN   TestT06A13InvalidForbidParameter/ddl.column.json.forbid#02
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_dynamic_oversized_index_exceeds_every_candidate_page_bound
+--- PASS: TestT06A15R1CompressedNeverEntersPayloadBranches (0.00s)
+    --- PASS: TestT06A15R1CompressedNeverEntersPayloadBranches/control-COMPACT (0.00s)
+    --- PASS: TestT06A15R1CompressedNeverEntersPayloadBranches/control-REDUNDANT (0.00s)
+    --- PASS: TestT06A15R1CompressedNeverEntersPayloadBranches/COMPRESSED (0.00s)
+    --- PASS: TestT06A15R1CompressedNeverEntersPayloadBranches/DYNAMIC (0.00s)
+=== RUN   TestT06A13ForbidDisabledAndDefaults/ddl.column.timestamp.forbid/forbid-false
+=== PAUSE TestT06A13ForbidDisabledAndDefaults/ddl.column.timestamp.forbid/forbid-false
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_dynamic_small_index_with_known_4KB_page_is_a_768_blocker
+=== RUN   TestT06A13ForbidDisabledAndDefaults/ddl.column.timestamp.forbid/disabled
+--- PASS: TestT06A15DeclaredInputsComputeWithoutInstance (0.00s)
+    --- PASS: TestT06A15DeclaredInputsComputeWithoutInstance/mysql (0.00s)
+        --- PASS: TestT06A15DeclaredInputsComputeWithoutInstance/mysql/below (0.00s)
+        --- PASS: TestT06A15DeclaredInputsComputeWithoutInstance/mysql/equal (0.00s)
+        --- PASS: TestT06A15DeclaredInputsComputeWithoutInstance/mysql/above (0.00s)
+    --- PASS: TestT06A15DeclaredInputsComputeWithoutInstance/tidb (0.00s)
+        --- PASS: TestT06A15DeclaredInputsComputeWithoutInstance/tidb/below (0.00s)
+        --- PASS: TestT06A15DeclaredInputsComputeWithoutInstance/tidb/equal (0.00s)
+        --- PASS: TestT06A15DeclaredInputsComputeWithoutInstance/tidb/above (0.00s)
+=== PAUSE TestT06A13ForbidDisabledAndDefaults/ddl.column.timestamp.forbid/disabled
+=== RUN   TestT06A13InvalidForbidParameter/ddl.column.bit.forbid
+=== RUN   TestT06A13ForbidDisabledAndDefaults/ddl.column.timestamp.forbid/defaults
+=== PAUSE TestT06A13ForbidDisabledAndDefaults/ddl.column.timestamp.forbid/defaults
+=== CONT  TestT06A13ForbidDisabledAndDefaults/ddl.column.blob_text.forbid/forbid-false
+=== CONT  TestT06A13ForbidDisabledAndDefaults/ddl.column.bit.forbid/defaults
+=== CONT  TestT06A13ForbidDisabledAndDefaults/ddl.column.timestamp.forbid/forbid-false
+=== CONT  TestT06A13ForbidDisabledAndDefaults/ddl.column.bit.forbid/disabled
+=== CONT  TestT06A13ForbidDisabledAndDefaults/ddl.column.float_double.forbid/disabled
+=== CONT  TestT06A13ForbidDisabledAndDefaults/ddl.column.timestamp.forbid/defaults
+=== CONT  TestT06A13ForbidDisabledAndDefaults/ddl.column.timestamp.forbid/disabled
+=== RUN   TestT06A13InvalidForbidParameter/ddl.column.bit.forbid#01
+=== CONT  TestT06A13ForbidDisabledAndDefaults/ddl.column.json.forbid/forbid-false
+=== CONT  TestT06A13ForbidDisabledAndDefaults/ddl.column.float_double.forbid/defaults
+=== CONT  TestT06A13ForbidDisabledAndDefaults/ddl.column.blob_text.forbid/defaults
+=== CONT  TestT06A13ForbidDisabledAndDefaults/ddl.column.json.forbid/disabled
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_dynamic_small_index_with_known_8KB_page_fits_1536
+=== RUN   TestT06A13InvalidForbidParameter/ddl.column.bit.forbid#02
+=== CONT  TestT06A13ForbidDisabledAndDefaults/ddl.column.float_double.forbid/forbid-false
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_dynamic_small_index_with_known_16KB_page_fits_3072
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.0_dynamic_oversized_index_with_known_16KB_page_is_a_3072_blocker
+=== CONT  TestT06A13ForbidDisabledAndDefaults/ddl.column.blob_text.forbid/disabled
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_5.7_dynamic_without_large_prefix_or_page_facts_reports_both
+=== CONT  TestT06A13ForbidDisabledAndDefaults/ddl.column.json.forbid/defaults
+=== CONT  TestT06A13ForbidDisabledAndDefaults/ddl.column.bit.forbid/forbid-false
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_5.7_dynamic_large_prefix_on_without_page_fact_is_a_page-size_gap
+--- PASS: TestT06A13ForbidDisabledAndDefaults (0.00s)
+    --- PASS: TestT06A13ForbidDisabledAndDefaults/ddl.column.blob_text.forbid/forbid-false (0.00s)
+    --- PASS: TestT06A13ForbidDisabledAndDefaults/ddl.column.bit.forbid/defaults (0.00s)
+    --- PASS: TestT06A13ForbidDisabledAndDefaults/ddl.column.timestamp.forbid/forbid-false (0.00s)
+    --- PASS: TestT06A13ForbidDisabledAndDefaults/ddl.column.bit.forbid/disabled (0.00s)
+    --- PASS: TestT06A13ForbidDisabledAndDefaults/ddl.column.timestamp.forbid/defaults (0.00s)
+    --- PASS: TestT06A13ForbidDisabledAndDefaults/ddl.column.float_double.forbid/disabled (0.00s)
+    --- PASS: TestT06A13ForbidDisabledAndDefaults/ddl.column.timestamp.forbid/disabled (0.00s)
+    --- PASS: TestT06A13ForbidDisabledAndDefaults/ddl.column.json.forbid/forbid-false (0.00s)
+    --- PASS: TestT06A13ForbidDisabledAndDefaults/ddl.column.float_double.forbid/defaults (0.00s)
+    --- PASS: TestT06A13ForbidDisabledAndDefaults/ddl.column.json.forbid/disabled (0.00s)
+    --- PASS: TestT06A13ForbidDisabledAndDefaults/ddl.column.blob_text.forbid/defaults (0.00s)
+    --- PASS: TestT06A13ForbidDisabledAndDefaults/ddl.column.float_double.forbid/forbid-false (0.00s)
+    --- PASS: TestT06A13ForbidDisabledAndDefaults/ddl.column.blob_text.forbid/disabled (0.00s)
+    --- PASS: TestT06A13ForbidDisabledAndDefaults/ddl.column.json.forbid/defaults (0.00s)
+    --- PASS: TestT06A13ForbidDisabledAndDefaults/ddl.column.bit.forbid/forbid-false (0.00s)
+=== RUN   TestT06A13InvalidForbidParameter/ddl.column.float_double.forbid
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_5.7_dynamic_large_prefix_on_4KB_page_caps_at_768
+=== RUN   TestT06A13InvalidForbidParameter/ddl.column.float_double.forbid#01
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_5.7_dynamic_large_prefix_on_16KB_page_oversized_is_a_3072_blocker
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_5.7_dynamic_large_prefix_off_caps_at_767
+=== RUN   TestT06A13InvalidForbidParameter/ddl.column.float_double.forbid#02
+=== RUN   TestT06A13InvalidForbidParameter/ddl.column.timestamp.forbid
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_5.7_dynamic_large_prefix_off_small_index_passes
+=== RUN   TestT06A13InvalidForbidParameter/ddl.column.timestamp.forbid#01
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_compact_resolves_767_without_any_version_fact
+=== RUN   TestT06A13InvalidForbidParameter/ddl.column.timestamp.forbid#02
+--- PASS: TestT06A13InvalidForbidParameter (0.00s)
+    --- PASS: TestT06A13InvalidForbidParameter/ddl.column.blob_text.forbid (0.00s)
+    --- PASS: TestT06A13InvalidForbidParameter/ddl.column.blob_text.forbid#01 (0.00s)
+    --- PASS: TestT06A13InvalidForbidParameter/ddl.column.blob_text.forbid#02 (0.00s)
+    --- PASS: TestT06A13InvalidForbidParameter/ddl.column.json.forbid (0.00s)
+    --- PASS: TestT06A13InvalidForbidParameter/ddl.column.json.forbid#01 (0.00s)
+    --- PASS: TestT06A13InvalidForbidParameter/ddl.column.json.forbid#02 (0.00s)
+    --- PASS: TestT06A13InvalidForbidParameter/ddl.column.bit.forbid (0.00s)
+    --- PASS: TestT06A13InvalidForbidParameter/ddl.column.bit.forbid#01 (0.00s)
+    --- PASS: TestT06A13InvalidForbidParameter/ddl.column.bit.forbid#02 (0.00s)
+    --- PASS: TestT06A13InvalidForbidParameter/ddl.column.float_double.forbid (0.00s)
+    --- PASS: TestT06A13InvalidForbidParameter/ddl.column.float_double.forbid#01 (0.00s)
+    --- PASS: TestT06A13InvalidForbidParameter/ddl.column.float_double.forbid#02 (0.00s)
+    --- PASS: TestT06A13InvalidForbidParameter/ddl.column.timestamp.forbid (0.00s)
+    --- PASS: TestT06A13InvalidForbidParameter/ddl.column.timestamp.forbid#01 (0.00s)
+    --- PASS: TestT06A13InvalidForbidParameter/ddl.column.timestamp.forbid#02 (0.00s)
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_out-of-range_suppresses_finding_and_reports_range_gap
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/tidb_missing_version_yields_version_gap
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/tidb_8.5_unknown_max-index-length_leaves_mid-range_index_unverified
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/tidb_8.5_unknown_max-index-length_passes_totals_under_every_candidate
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/tidb_8.5_unknown_max-index-length_still_proves_totals_over_12288
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/tidb_8.5_configured_3072_blocks_the_3200-byte_index
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/tidb_8.5_configured_12288_passes_the_4000-byte_index
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/tidb_out-of-range_suppresses_finding
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_without_row-format_evidence_yields_instance_fact_gap
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_without_row-format_or_page_facts_reports_both
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_5.7_unknown_row_format_and_large_prefix_reports_all_missing_facts
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_missing_facts_never_suppress_a_proven_blocker
+--- PASS: TestIndexKeyLengthVersionEvidenceMatrix (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_missing_version_yields_version_gap_not_finding (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_missing_version_still_reports_violation_proven_under_every_candidate_bound (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_dynamic_small_index_with_unknown_page_size_is_an_instance-fact_gap (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_dynamic_oversized_index_exceeds_every_candidate_page_bound (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_dynamic_small_index_with_known_4KB_page_is_a_768_blocker (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_dynamic_small_index_with_known_8KB_page_fits_1536 (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_dynamic_small_index_with_known_16KB_page_fits_3072 (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.0_dynamic_oversized_index_with_known_16KB_page_is_a_3072_blocker (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_5.7_dynamic_without_large_prefix_or_page_facts_reports_both (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_5.7_dynamic_large_prefix_on_without_page_fact_is_a_page-size_gap (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_5.7_dynamic_large_prefix_on_4KB_page_caps_at_768 (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_5.7_dynamic_large_prefix_on_16KB_page_oversized_is_a_3072_blocker (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_5.7_dynamic_large_prefix_off_caps_at_767 (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_5.7_dynamic_large_prefix_off_small_index_passes (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_compact_resolves_767_without_any_version_fact (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_out-of-range_suppresses_finding_and_reports_range_gap (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/tidb_missing_version_yields_version_gap (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/tidb_8.5_unknown_max-index-length_leaves_mid-range_index_unverified (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/tidb_8.5_unknown_max-index-length_passes_totals_under_every_candidate (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/tidb_8.5_unknown_max-index-length_still_proves_totals_over_12288 (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/tidb_8.5_configured_3072_blocks_the_3200-byte_index (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/tidb_8.5_configured_12288_passes_the_4000-byte_index (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/tidb_out-of-range_suppresses_finding (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_without_row-format_evidence_yields_instance_fact_gap (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_without_row-format_or_page_facts_reports_both (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_5.7_unknown_row_format_and_large_prefix_reports_all_missing_facts (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_missing_facts_never_suppress_a_proven_blocker (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	0.374s

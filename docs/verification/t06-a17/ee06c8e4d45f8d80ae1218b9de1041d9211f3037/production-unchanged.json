@@ -1,0 +1,12 @@
+[
+  {
+    "path": "internal/infrastructure/parser/tidb/extractor.go",
+    "sha256": "6401d56d12bf847315ce41550c9e307b0bf0124e5d46bffa844b4828479b904e",
+    "unchanged_from": "4f58ac548aecd495edc707c35868c179686b0e35"
+  },
+  {
+    "path": "internal/infrastructure/metadata/mysql/provider.go",
+    "sha256": "3d1ce71892d2f8be02c38acfc1272de9fb47e1e5cb59c5536371791ec35a7156",
+    "unchanged_from": "4f58ac548aecd495edc707c35868c179686b0e35"
+  }
+]

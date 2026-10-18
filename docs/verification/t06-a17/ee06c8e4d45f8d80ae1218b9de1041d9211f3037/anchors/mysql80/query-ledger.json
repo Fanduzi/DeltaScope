@@ -1,0 +1,62 @@
+[
+  {
+    "op": "query",
+    "query": "select version()"
+  },
+  {
+    "op": "query",
+    "query": "select @@character_set_client"
+  },
+  {
+    "op": "query",
+    "query": "select @@character_set_connection"
+  },
+  {
+    "op": "query",
+    "query": "select @@character_set_results"
+  },
+  {
+    "op": "query",
+    "query": "select @@collation_connection"
+  },
+  {
+    "op": "query",
+    "query": "select @@sql_mode"
+  },
+  {
+    "op": "query",
+    "query": "select count(*) from information_schema.tables where table_schema='golden' and table_name='t06_a17_type_facts'"
+  },
+  {
+    "op": "exec",
+    "query": "CREATE DATABASE IF NOT EXISTS golden"
+  },
+  {
+    "op": "exec",
+    "query": "CREATE TABLE golden.t06_a17_type_facts (\n  d2 DECIMAL(12,2),\n  d3 DECIMAL(12,3),\n  d0 DECIMAL(12,0),\n  dm DECIMAL(12),\n  dn DECIMAL,\n  f2 FLOAT(10,2),\n  f3 FLOAT(10,3),\n  f0 FLOAT(10,0),\n  fn FLOAT,\n  x2 DOUBLE(16,2),\n  x4 DOUBLE(16,4),\n  x0 DOUBLE(16,0),\n  xn DOUBLE,\n  e_upper ENUM('Ready','Closed'),\n  e_lower ENUM('ready','closed'),\n  e_order ENUM('Closed','Ready'),\n  s_upper SET('Read','Write'),\n  s_lower SET('read','write'),\n  s_order SET('Write','Read'),\n  e_escaped ENUM('','A,B','A)B','O''Reilly'),\n  s_escaped SET('Read','A)B','O''Reilly'),\n  i INT,\n  v VARCHAR(8),\n  u BIGINT UNSIGNED\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin"
+  },
+  {
+    "op": "query",
+    "query": "select column_name, ordinal_position, data_type, column_type, hex(column_type), numeric_precision, numeric_scale, character_set_name, collation_name from information_schema.columns where table_schema='golden' and table_name='t06_a17_type_facts' order by ordinal_position"
+  },
+  {
+    "op": "query",
+    "query": "\n\t\tselect engine, table_collation, table_comment, auto_increment, row_format, table_rows\n\t\tfrom information_schema.tables\n\t\twhere table_schema = ? and table_name = ?\n\t"
+  },
+  {
+    "op": "query",
+    "query": "\n\t\tselect column_name, column_type, character_set_name, collation_name, column_comment,\n\t\t       column_default, is_nullable, extra\n\t\tfrom information_schema.columns\n\t\twhere table_schema = ? and table_name = ?\n\t\torder by ordinal_position\n\t"
+  },
+  {
+    "op": "query",
+    "query": "\n\t\tselect index_name, non_unique, index_type, column_name, cardinality\n\t\tfrom information_schema.statistics\n\t\twhere table_schema = ? and table_name = ?\n\t\torder by index_name, seq_in_index\n\t"
+  },
+  {
+    "op": "exec",
+    "query": "DROP TABLE golden.t06_a17_type_facts"
+  },
+  {
+    "op": "query",
+    "query": "select count(*) from information_schema.tables where table_schema='golden' and table_name='t06_a17_type_facts'"
+  }
+]

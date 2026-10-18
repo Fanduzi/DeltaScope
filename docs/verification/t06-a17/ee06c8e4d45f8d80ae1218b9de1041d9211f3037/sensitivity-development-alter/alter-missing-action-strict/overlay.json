@@ -1,0 +1,5 @@
+{
+  "Replace": {
+    "/Users/fan/GolangProjects/DeltaScope/internal/infrastructure/parser/tidb/extractor_t06a17_test.go": "/private/tmp/ds-t06-a17-r1-proof/sensitivity-development-alter/alter-missing-action-strict/extractor_t06a17_test.go"
+  }
+}

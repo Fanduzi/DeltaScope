@@ -1,0 +1,437 @@
+diff --git a/internal/application/audit/README.md b/internal/application/audit/README.md
+index ad35b5d2..674cb190 100644
+--- a/internal/application/audit/README.md
++++ b/internal/application/audit/README.md
+@@ -93,7 +93,7 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
+ | batch_state_t06a14_test.go | Verifies the T06-A14 table-option allowlist contract through the real parser and AuditSQL: the six-role × three-family × two-dialect matrix pins the complete `require_explicit` contract (explicit disallowed values reject under both switches, omission rejects only under strict, omitted-optional stays loaded=1/applicable=1, denied-off records no `rule_summary`) with full finding identity, the column-`CHARACTER SET` control proving a column declaration cannot satisfy the table charset requirement, and the CREATE-derived post-state carries `DDL.Options` verbatim into the follower ALTER's pre-state with exactly one `golden.t` provider read and clone isolation — a policy reject never rewrites the declared option |
+ | batch_state_t06a15_test.go | Verifies the T06-A15 row-size field-level fact contract through the real parser and AuditSQL: the ten frozen CREATE TABLE inputs × two dialects under the isolated on/not-required/off profiles plus the nil/empty/partial instance-facts provider matrix pin pointer-presence-independent estimates, deterministic `required_facts` ordering (`instance.default_charset` then `instance.innodb_default_row_format`), the determined-finding-plus-gap coexistence (`missing-format-over` keeps its blocker with `row_format=""` under unverified coverage), the strict 65535 boundary, the declared non-InnoDB scope skip, and provider-error/context-cancellation propagation that never degrades into a fabricated gap |
+ | batch_state_t06a15r1_test.go | Verifies the T06-A15-R1 declared-COMPRESSED row-format identity through the real parser/extractor and AuditSQL: `Options["row_format"]` extracts `COMPRESSED` verbatim, the eleven-column utf8mb4 input never enters the instance-default COMPACT/REDUNDANT payload branch, the over-limit finding keeps `row_format="COMPRESSED"` under complete coverage, missing-charset reports only `instance.default_charset`, opposite-format controls (declared COMPACT/REDUNDANT/DYNAMIC/DEFAULT) keep their bounds, and the provider call ledger stays facts+snapshot with inputs unmutated |
+-| batch_state_t06a17_test.go | Verifies the T06-A17 declaration-source carry through the real parser/extractor into `batchState`: a CREATE declaring `DECIMAL(12,2)`, `FLOAT(10,0)`, `ENUM('Ready','Closed')`, `SET('Write','Read')` lands every faithful `Column.Type` verbatim in the derived pre-state a follower ALTER consumes under both dialects — cloneColumn drops nothing the extractor now carries |
++| batch_state_t06a17_test.go | Verifies the T06-A17 declaration-source carry through the real parser/extractor into `batchState`: a CREATE declaring `DECIMAL(12,2)`, `FLOAT(10,0)`, `ENUM('Ready','Closed')`, `SET('Write','Read')` lands the complete four-column set — names, order, and presence pinned — with faithful `Column.Type` in the derived pre-state a follower `ALTER TABLE t` consumes under both dialects, and mutating a returned projection leaves parser-owned and state-owned columns deep-equal to the original CREATE columns (cloneColumn drops nothing the extractor now carries) |
+ | diagnostics.go | Defines diagnostic evidence constants (classification aliases `spec.DiagnosticParserError`, reason, action_hint, guidance codes, evidence refs) and helpers for constructing parser-error and unsupported statement diagnostics with optional guidance classification |
+ | ddl_coverage_catalog_query.go | Defines CatalogEntry, CatalogQuery, CatalogResult, LoadEmbeddedCatalog, LoadCatalogFile, LoadCatalog, QueryCatalog, and Validate for reading the generated (embedded) DDL coverage catalog and filtering it without invoking the audit engine |
+ | catalogdata/ddl-coverage-catalog.json | Generated catalog copy compiled into release binaries; kept byte-identical to docs/reference/ddl-coverage-catalog.json |
+diff --git a/internal/application/audit/batch_state_t06a17_test.go b/internal/application/audit/batch_state_t06a17_test.go
+index 108e04f6..0b63b47b 100644
+--- a/internal/application/audit/batch_state_t06a17_test.go
++++ b/internal/application/audit/batch_state_t06a17_test.go
+@@ -4,18 +4,55 @@
+ // pre-state a later batch statement consumes — cloneColumn drops nothing the
+ // extractor now carries.
+ // input: real parser/extractor statements applied into batchState
+-// output: pre-state snapshot columns with identical Type facts
++// output: the complete derived pre-state column set — identity, order, and
++// presence pinned alongside faithful Type facts, plus proof a returned
++// projection is detached from both parser-owned and state-owned columns
+ // pos: application-layer ordered-state regression tests for issue #85 T06-A17
+ // note: if this file changes, update this header and module README.md.
+ package audit
+ 
+ import (
+ 	"context"
++	"fmt"
++	"reflect"
+ 	"testing"
+ 
+ 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+ )
+ 
++// t06a17CheckDerivedColumns requires the complete frozen column set in
++// declaration order: exactly the four declared names, no duplicates, each
++// carrying its faithful Type.
++func t06a17CheckDerivedColumns(snapshot *spec.TableSnapshot) error {
++	if snapshot == nil || !snapshot.Exists {
++		return fmt.Errorf("snapshot missing or absent: %+v", snapshot)
++	}
++	expected := []struct{ name, typeText string }{
++		{"d", "decimal(12,2)"},
++		{"f", "float(10,0)"},
++		{"e", "enum('Ready','Closed')"},
++		{"s", "set('Write','Read')"},
++	}
++	if len(snapshot.Columns) != len(expected) {
++		return fmt.Errorf("columns = %d (%+v), want %d", len(snapshot.Columns), snapshot.Columns, len(expected))
++	}
++	seen := map[string]struct{}{}
++	for i, want := range expected {
++		got := snapshot.Columns[i]
++		if _, dup := seen[got.Name]; dup {
++			return fmt.Errorf("duplicate column %q", got.Name)
++		}
++		seen[got.Name] = struct{}{}
++		if got.Name != want.name {
++			return fmt.Errorf("column[%d] name = %q, want %q", i, got.Name, want.name)
++		}
++		if got.Type != want.typeText {
++			return fmt.Errorf("column %q Type = %q, want %q", got.Name, got.Type, want.typeText)
++		}
++	}
++	return nil
++}
++
+ func TestT06A17DerivedPreStatePreservesType(t *testing.T) {
+ 	t.Parallel()
+ 	ctx := context.Background()
+@@ -41,6 +78,15 @@ func TestT06A17DerivedPreStatePreservesType(t *testing.T) {
+ 			if len(statements) != 2 {
+ 				t.Fatalf("statements = %d, want 2", len(statements))
+ 			}
++			if statements[0].DDL == nil || statements[0].DDL.Table == nil {
++				t.Fatalf("CREATE must carry DDL and DDL.Table, got %+v", statements[0].DDL)
++			}
++			if statements[1].DDL == nil || statements[1].DDL.Table == nil ||
++				statements[1].DDL.Operation != spec.DDLOperationAlterTable ||
++				statements[1].DDL.Table.Name != "t" {
++				t.Fatalf("follower must be ALTER TABLE t, got %+v", statements[1].DDL)
++			}
++			createColumns := append([]spec.Column(nil), statements[0].DDL.Columns...)
+ 			state := newBatchState(dialect, "golden", nil)
+ 			if _, err := state.preState(ctx, "golden", *statements[0].DDL.Table); err != nil {
+ 				t.Fatalf("warm pre-state: %v", err)
+@@ -48,23 +94,29 @@ func TestT06A17DerivedPreStatePreservesType(t *testing.T) {
+ 			if err := state.apply(ctx, statements[0]); err != nil {
+ 				t.Fatalf("apply create: %v", err)
+ 			}
+-			snapshot, err := state.preState(ctx, "golden", spec.Table{Schema: "golden", Name: "t"})
++			snapshot, err := state.preState(ctx, "golden", *statements[1].DDL.Table)
+ 			if err != nil {
+ 				t.Fatalf("pre-state: %v", err)
+ 			}
+-			if snapshot == nil || !snapshot.Exists {
+-				t.Fatalf("pre-state missing after CREATE: %+v", snapshot)
++			if err := t06a17CheckDerivedColumns(snapshot); err != nil {
++				t.Fatalf("%s derived pre-state: %v", dialect, err)
++			}
++			snapshot.Columns[0].Name = "mutated"
++			snapshot.Columns[0].Type = "mutated(1)"
++			snapshot.Columns[0].Length = 99
++			snapshot.Columns[0].Unsigned = true
++			if !reflect.DeepEqual(createColumns, statements[0].DDL.Columns) {
++				t.Fatalf("%s mutating the returned projection changed parser-owned CREATE columns: %+v", dialect, statements[0].DDL.Columns)
++			}
++			again, err := state.preState(ctx, "golden", *statements[1].DDL.Table)
++			if err != nil {
++				t.Fatalf("pre-state re-read: %v", err)
+ 			}
+-			want := map[string]string{
+-				"d": "decimal(12,2)",
+-				"f": "float(10,0)",
+-				"e": "enum('Ready','Closed')",
+-				"s": "set('Write','Read')",
++			if err := t06a17CheckDerivedColumns(again); err != nil {
++				t.Fatalf("%s derived pre-state re-read: %v", dialect, err)
+ 			}
+-			for _, column := range snapshot.Columns {
+-				if expected, ok := want[column.Name]; ok && column.Type != expected {
+-					t.Fatalf("%s pre-state column %s Type = %q, want %q", dialect, column.Name, column.Type, expected)
+-				}
++			if !reflect.DeepEqual(again.Columns, createColumns) {
++				t.Fatalf("%s state-owned columns drifted from the original CREATE columns: %+v vs %+v", dialect, again.Columns, createColumns)
+ 			}
+ 		})
+ 	}
+diff --git a/internal/infrastructure/metadata/mysql/README.md b/internal/infrastructure/metadata/mysql/README.md
+index beb7a857..692bae6b 100644
+--- a/internal/infrastructure/metadata/mysql/README.md
++++ b/internal/infrastructure/metadata/mysql/README.md
+@@ -10,7 +10,7 @@ MySQL-protocol metadata provider used for optional metadata-aware DeltaScope aud
+ | provider_test.go | Verifies provider connection, dialect, normalization helpers, information_schema column nullability mapping, index-cardinality accumulation, and known-bit instance-fact loading (16K/4K/missing/zero/unparseable page sizes, TiDB `max-index-length` single/multi-row consistency in both orders, zero/invalid rows, query/scan/mid-iteration error propagation including errors trailing invalid values, MySQL banners never probing TiDB config) without a live database |
+ | provider_t06a4_test.go | Verifies the T06-A4 default-identity contract through real `Provider.LoadTableSnapshot` over injected driver rows: a NULL `COLUMN_DEFAULT` (omitted clause or explicit `DEFAULT NULL` — catalog-indistinguishable) records `HasDefault=false`/empty fields, stored literals `NULL`/`null`/`NuLl`/`'<nil>'`/`''`/`'0'` keep `HasDefault=true` with raw bytes and never set `DefaultIsNull`, rows stay isolated, and the temporal/default presence semantics are untouched |
+ | provider_t06a10_test.go | Verifies the T06-A10 provenance boundary through real `Provider.LoadTableSnapshot` over constructed catalog rows: `TABLES.AUTO_INCREMENT` lands on `snapshot.Options["auto_increment"]` and `COLUMNS.EXTRA` lands on `Column.AutoIncrement` as catalog observations — a NULL allocator keeps the key absent rather than fabricating a declaration |
+-| provider_t06a17_test.go | Verifies the T06-A17 catalog type-parameter fidelity contract through real `Provider.LoadTableSnapshot` over constructed catalog rows: `COLUMN_TYPE` parameter spans on DECIMAL/FLOAT/DOUBLE/ENUM/SET land verbatim in `Column.Type` (scale variants, member case/order/edge literals all distinguishable), quote-aware scanning keeps member delimiters and attribute words inside literals from breaking the span or setting `Unsigned`, `Length` keeps its first-integer meaning, and non-target bases keep the bare-keyword contract |
++| provider_t06a17_test.go | Verifies the T06-A17 catalog type-parameter fidelity contract through real `Provider.LoadTableSnapshot` over constructed catalog rows: `COLUMN_TYPE` parameter spans on DECIMAL/FLOAT/DOUBLE/ENUM/SET land verbatim in `Column.Type` (scale variants, member case/order/edge literals all distinguishable), the shared snapshot path requires the complete 22-row set in fixture order — every name present exactly once with its Type/Length/Unsigned — quote-aware scanning keeps member delimiters and attribute words inside literals from breaking the span or setting `Unsigned`, `Length` keeps its first-integer meaning, and non-target bases keep the bare-keyword contract |
+ | provider_integration_test.go | Verifies provider connection pool configuration and connection-leak behavior against a live MySQL service (build tag `integration`) |
+ | query_access_conn_resolver.go | Implements SchemaResolver for a caller-owned MySQL/TiDB `*sql.Conn` |
+ | query_access_resolver_test.go | Verifies conn resolver behavior for table/view kind, full column order, missing relation, empty columns, cancellation, and unsupported relation kind using a custom test driver |
+diff --git a/internal/infrastructure/metadata/mysql/provider_t06a17_test.go b/internal/infrastructure/metadata/mysql/provider_t06a17_test.go
+index 2c025500..1ee9e71e 100644
+--- a/internal/infrastructure/metadata/mysql/provider_t06a17_test.go
++++ b/internal/infrastructure/metadata/mysql/provider_t06a17_test.go
+@@ -5,7 +5,9 @@
+ // constructed catalog input (a live server may normalize differently; the
+ // provider must only preserve what it actually receives).
+ // input: constructed information_schema row sets for the five target types
+-// output: faithful Column.Type/Length/Unsigned per stored column_type
++// output: the complete 22-row column set in catalog order — identity, order,
++// and presence pinned alongside faithful Type/Length/Unsigned per stored
++// column_type
+ // pos: infrastructure metadata adapter regression tests for issue #85 T06-A17
+ // note: if this file changes, update this header and module README.md.
+ package mysqlmeta
+@@ -13,6 +15,7 @@ package mysqlmeta
+ import (
+ 	"context"
+ 	"database/sql/driver"
++	"fmt"
+ 	"testing"
+ 
+ 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+@@ -65,6 +68,59 @@ func t06a17Results() map[string]testQueryResult {
+ 	}
+ }
+ 
++// t06a17CheckProviderColumns requires the complete 22-row fixture set in
++// catalog order: every expected name present exactly once, in position, with
++// its faithful Type/Length/Unsigned — nothing unchecked on the actual side.
++func t06a17CheckProviderColumns(columns []spec.Column) error {
++	expected := []struct {
++		name, typeText string
++		length         int
++		unsigned       bool
++	}{
++		{"d_dec122", "decimal(12,2)", 12, false},
++		{"d_dec123", "decimal(12,3)", 12, false},
++		{"d_dec120", "decimal(12,0)", 12, false},
++		{"f_flt102", "float(10,2)", 10, false},
++		{"f_flt103", "float(10,3)", 10, false},
++		{"f_flt100", "float(10,0)", 10, false},
++		{"x_dbl162", "double(16,2)", 16, false},
++		{"x_dbl164", "double(16,4)", 16, false},
++		{"x_dbl160", "double(16,0)", 16, false},
++		{"e_upper", "enum('Ready','Closed')", 0, false},
++		{"e_lower", "enum('ready','closed')", 0, false},
++		{"e_order", "enum('Closed','Ready')", 0, false},
++		{"s_upper", "set('Read','Write')", 0, false},
++		{"s_lower", "set('read','write')", 0, false},
++		{"s_order", "set('Write','Read')", 0, false},
++		{"e_edge", "enum('','A,B','A)B','O''Reilly')", 0, false},
++		{"e_attrword", "enum('x unsigned','y zerofill')", 0, false},
++		{"s_attrword", "set('a unsigned','b')", 0, false},
++		{"c_int", "int", 0, false},
++		{"c_varchar8", "varchar", 8, false},
++		{"c_bigint_u", "bigint", 0, true},
++		{"d_dec122u", "decimal(12,2) unsigned", 12, true},
++	}
++	if len(columns) != len(expected) {
++		return fmt.Errorf("columns = %d (%+v), want %d", len(columns), columns, len(expected))
++	}
++	seen := map[string]struct{}{}
++	for i, want := range expected {
++		got := columns[i]
++		if _, dup := seen[got.Name]; dup {
++			return fmt.Errorf("duplicate column %q", got.Name)
++		}
++		seen[got.Name] = struct{}{}
++		if got.Name != want.name {
++			return fmt.Errorf("column[%d] = %q, want %q", i, got.Name, want.name)
++		}
++		if got.Type != want.typeText || got.Length != want.length || got.Unsigned != want.unsigned {
++			return fmt.Errorf("%s = Type %q Length %d Unsigned %v, want %q/%d/%v",
++				got.Name, got.Type, got.Length, got.Unsigned, want.typeText, want.length, want.unsigned)
++		}
++	}
++	return nil
++}
++
+ func t06a17SnapshotColumns(t *testing.T) []spec.Column {
+ 	t.Helper()
+ 	db := openTestDB(t, t06a17Results())
+@@ -73,52 +129,21 @@ func t06a17SnapshotColumns(t *testing.T) []spec.Column {
+ 	if err != nil {
+ 		t.Fatalf("LoadTableSnapshot: %v", err)
+ 	}
++	if snapshot == nil || !snapshot.Exists {
++		t.Fatalf("snapshot missing or absent: %+v", snapshot)
++	}
++	if err := t06a17CheckProviderColumns(snapshot.Columns); err != nil {
++		t.Fatalf("provider columns: %v", err)
++	}
+ 	return snapshot.Columns
+ }
+ 
+ // TestT06A17ProviderParameterFidelity pins verbatim catalog parameter text:
+ // scale/second-parameter/member content survive; non-target types keep the
+-// established base-keyword contract.
++// established base-keyword contract. The complete-set check runs inside the
++// shared snapshot path so the adjacent matrices inherit it too.
+ func TestT06A17ProviderParameterFidelity(t *testing.T) {
+-	columns := t06a17SnapshotColumns(t)
+-	want := map[string]struct {
+-		typeText string
+-		length   int
+-		unsigned bool
+-	}{
+-		"d_dec122":   {"decimal(12,2)", 12, false},
+-		"d_dec123":   {"decimal(12,3)", 12, false},
+-		"d_dec120":   {"decimal(12,0)", 12, false},
+-		"f_flt102":   {"float(10,2)", 10, false},
+-		"f_flt103":   {"float(10,3)", 10, false},
+-		"f_flt100":   {"float(10,0)", 10, false},
+-		"x_dbl162":   {"double(16,2)", 16, false},
+-		"x_dbl164":   {"double(16,4)", 16, false},
+-		"x_dbl160":   {"double(16,0)", 16, false},
+-		"e_upper":    {"enum('Ready','Closed')", 0, false},
+-		"e_lower":    {"enum('ready','closed')", 0, false},
+-		"e_order":    {"enum('Closed','Ready')", 0, false},
+-		"s_upper":    {"set('Read','Write')", 0, false},
+-		"s_lower":    {"set('read','write')", 0, false},
+-		"s_order":    {"set('Write','Read')", 0, false},
+-		"e_edge":     {"enum('','A,B','A)B','O''Reilly')", 0, false},
+-		"e_attrword": {"enum('x unsigned','y zerofill')", 0, false},
+-		"s_attrword": {"set('a unsigned','b')", 0, false},
+-		"c_int":      {"int", 0, false},
+-		"c_varchar8": {"varchar", 8, false},
+-		"c_bigint_u": {"bigint", 0, true},
+-		"d_dec122u":  {"decimal(12,2) unsigned", 12, true},
+-	}
+-	for _, column := range columns {
+-		w, ok := want[column.Name]
+-		if !ok {
+-			t.Fatalf("unexpected column %q", column.Name)
+-		}
+-		if column.Type != w.typeText || column.Length != w.length || column.Unsigned != w.unsigned {
+-			t.Fatalf("%s = Type %q Length %d Unsigned %v, want %q/%d/%v",
+-				column.Name, column.Type, column.Length, column.Unsigned, w.typeText, w.length, w.unsigned)
+-		}
+-	}
++	t06a17SnapshotColumns(t)
+ }
+ 
+ // TestT06A17ProviderDistinctness asserts the merged groups stay distinguishable
+@@ -136,8 +161,13 @@ func TestT06A17ProviderDistinctness(t *testing.T) {
+ 		{"s_upper", "s_lower"}, {"s_upper", "s_order"},
+ 	}
+ 	for _, pair := range pairs {
+-		if byName[pair[0]].Type == byName[pair[1]].Type {
+-			t.Fatalf("%s and %s merged to %q", pair[0], pair[1], byName[pair[0]].Type)
++		left, lok := byName[pair[0]]
++		right, rok := byName[pair[1]]
++		if !lok || !rok {
++			t.Fatalf("pair %s/%s missing from provider columns", pair[0], pair[1])
++		}
++		if left.Type == right.Type {
++			t.Fatalf("%s and %s merged to %q", pair[0], pair[1], left.Type)
+ 		}
+ 	}
+ }
+@@ -151,12 +181,19 @@ func TestT06A17ProviderParamBoundary(t *testing.T) {
+ 	for _, column := range columns {
+ 		byName[column.Name] = column
+ 	}
+-	edge := byName["e_edge"]
++	edge, ok := byName["e_edge"]
++	if !ok {
++		t.Fatalf("e_edge missing from provider columns")
++	}
+ 	if edge.Type != "enum('','A,B','A)B','O''Reilly')" {
+ 		t.Fatalf("e_edge Type = %q — member delimiters broke the parameter span", edge.Type)
+ 	}
+ 	for _, name := range []string{"e_attrword", "s_attrword"} {
+-		if byName[name].Unsigned {
++		column, ok := byName[name]
++		if !ok {
++			t.Fatalf("%s missing from provider columns", name)
++		}
++		if column.Unsigned {
+ 			t.Fatalf("%s Unsigned = true — attribute word inside member literal leaked", name)
+ 		}
+ 	}
+diff --git a/internal/infrastructure/parser/tidb/README.md b/internal/infrastructure/parser/tidb/README.md
+index 54b2e7c9..16d62245 100644
+--- a/internal/infrastructure/parser/tidb/README.md
++++ b/internal/infrastructure/parser/tidb/README.md
+@@ -31,7 +31,7 @@ TiDB-backed parser adapter for multi-statement SQL parsing, parser-warning colle
+ | extractor_t06a12_test.go | Verifies the T06-A12 nullability extraction contract under both dialects: `Column.NotNull` lands true only for the explicit `NOT NULL` clause, explicit `NULL` and omitted nullability both normalize to `NotNull=false` (the AST distinguishes the option kinds; the normalized spec does not preserve the provenance — recorded as current behavior, not an A12 defect), declared column order and `Type`/`Length` survive verbatim across INT/DATETIME/TEXT mixes, and no PK constraint, index, or default flag is fabricated |
+ | extractor_t06a13_test.go | Verifies the T06-A13 type-family extraction contract under both dialects: the nine frozen columns land `Column.Type`/rendered text verbatim (BLOB's `blob binary`, BIT's declared width), declaration order survives, and no undeclared default/nullability/charset flag is fabricated |
+ | extractor_t06a14_test.go | Verifies the T06-A14 table-option extraction contract under both dialects: `ENGINE`/`DEFAULT CHARSET` land `DDL.Options` as verbatim `StrValue` text, `ROW_FORMAT` lands as the normalized uppercase enum name, undeclared options stay absent (never server defaults), and the column-`CHARACTER SET` control lands `Column.Charset` without fabricating `Options["charset"]` |
+-| extractor_t06a17_test.go | Verifies the T06-A17 declared type-parameter fidelity contract under both dialects: DECIMAL precision/scale sentinels stay three-way distinct (`decimal`/`decimal(12)`/`decimal(12,0)`), explicit `(M,0)` FLOAT/DOUBLE scale survives, ENUM/SET member case/order/edge literals are byte-exact (case-fold is the fixed defect, not normalization), the produced Type re-parses to identical member bytes, `FLOAT(p)` pins the parser's own float↔double normalization, and ordinary types keep `int(11)`/`bigint(20) unsigned`/`varchar(8)` verbatim |
++| extractor_t06a17_test.go | Verifies the T06-A17 declared type-parameter fidelity contract under both dialects: DECIMAL precision/scale sentinels stay three-way distinct (`decimal`/`decimal(12)`/`decimal(12,0)`), explicit `(M,0)` FLOAT/DOUBLE scale survives, ENUM/SET member case/order/edge literals are byte-exact (case-fold is the fixed defect, not normalization), the produced Type re-parses to identical member bytes, `FLOAT(p)` pins the parser's own float↔double normalization, ordinary types keep `int(11)`/`bigint(20) unsigned`/`varchar(8)` verbatim, and each ALTER ADD/MODIFY/CHANGE sample is checked exactly once for its full action/subject/old-name/definition identity under both dialects |
+ 
+ ## Exports
+ 
+diff --git a/internal/infrastructure/parser/tidb/extractor_t06a17_test.go b/internal/infrastructure/parser/tidb/extractor_t06a17_test.go
+index 9fc18097..3a2031b2 100644
+--- a/internal/infrastructure/parser/tidb/extractor_t06a17_test.go
++++ b/internal/infrastructure/parser/tidb/extractor_t06a17_test.go
+@@ -4,13 +4,15 @@
+ // layer's default substitution or keyword-driven case folding. The tests run
+ // the real parser + extractor (t06a2Extract) for both dialects.
+ // input: frozen declaration shapes from the T06-A17 baseline fixtures
+-// output: faithful Column.Type/Length/Unsigned per declared spelling
++// output: faithful Column.Type/Length/Unsigned per declared spelling, plus
++// exactly-once ALTER action/subject/old-name/definition identity checks
+ // pos: infrastructure extraction regression tests for issue #85 T06-A17
+ // note: if this file changes, update this header and module README.md.
+ package tidbparser
+ 
+ import (
+ 	"context"
++	"fmt"
+ 	"testing"
+ 
+ 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+@@ -203,28 +205,58 @@ func TestT06A17OrdinaryTypeControls(t *testing.T) {
+ 	t06a17WantType(t, t06a17C, "u", "bigint(20) unsigned", -1, true)
+ }
+ 
++// t06a17CheckAlterDefinition requires the statement to carry exactly one
++// alter action with the expected action/subject identity and an exact column
++// definition — every link of the fixed definition is checked once.
++func t06a17CheckAlterDefinition(statement spec.Statement, action, subject, oldName, columnName, typeText string) error {
++	if statement.DDL == nil {
++		return fmt.Errorf("no DDL in %+v", statement)
++	}
++	if len(statement.DDL.Alter) != 1 {
++		return fmt.Errorf("alter actions = %d, want exactly 1 (%+v)", len(statement.DDL.Alter), statement.DDL.Alter)
++	}
++	alter := statement.DDL.Alter[0]
++	if alter.Action != action {
++		return fmt.Errorf("action = %q, want %q", alter.Action, action)
++	}
++	if alter.Name != subject {
++		return fmt.Errorf("subject = %q, want %q", alter.Name, subject)
++	}
++	if alter.Column == nil {
++		return fmt.Errorf("alter.Column is nil")
++	}
++	if alter.Column.OldName != oldName {
++		return fmt.Errorf("Column.OldName = %q, want %q", alter.Column.OldName, oldName)
++	}
++	if alter.Column.Definition == nil {
++		return fmt.Errorf("Column.Definition is nil")
++	}
++	if alter.Column.Definition.Name != columnName {
++		return fmt.Errorf("Definition.Name = %q, want %q", alter.Column.Definition.Name, columnName)
++	}
++	if alter.Column.Definition.Type != typeText {
++		return fmt.Errorf("Definition %q Type = %q, want %q", columnName, alter.Column.Definition.Type, typeText)
++	}
++	return nil
++}
++
+ // TestT06A17AlterColumnDefinitions checks the shared extractColumn path for
+-// ALTER ADD/MODIFY/CHANGE carries the same faithful Type.
++// ALTER ADD/MODIFY/CHANGE carries the same faithful Type — each fixed
++// definition is verified exactly once with its full action identity under
++// both dialects.
+ func TestT06A17AlterColumnDefinitions(t *testing.T) {
+ 	for _, tc := range []struct {
+-		name, sql, col, wantType string
++		name, sql, action, subject, oldName, col, wantType string
+ 	}{
+-		{"add", `ALTER TABLE t ADD COLUMN e ENUM('Ready','Closed');`, "e", "enum('Ready','Closed')"},
+-		{"modify", `ALTER TABLE t MODIFY d DECIMAL(12,3);`, "d", "decimal(12,3)"},
+-		{"change", `ALTER TABLE t CHANGE d d2 FLOAT(10,0);`, "d2", "float(10,0)"},
++		{"add", `ALTER TABLE t ADD COLUMN e ENUM('Ready','Closed');`, "add_columns", "e", "", "e", "enum('Ready','Closed')"},
++		{"modify", `ALTER TABLE t MODIFY d DECIMAL(12,3);`, "modify_column", "d", "", "d", "decimal(12,3)"},
++		{"change", `ALTER TABLE t CHANGE d d2 FLOAT(10,0);`, "change_column", "d", "d", "d2", "float(10,0)"},
+ 	} {
+ 		t.Run(tc.name, func(t *testing.T) {
+-			statement := t06a2Extract(t, spec.DialectMySQL, tc.sql)
+-			if statement.DDL == nil {
+-				t.Fatalf("no DDL in %+v", statement)
+-			}
+-			for _, alter := range statement.DDL.Alter {
+-				if alter.Column == nil || alter.Column.Definition == nil {
+-					continue
+-				}
+-				def := alter.Column.Definition
+-				if def.Name == tc.col && def.Type != tc.wantType {
+-					t.Fatalf("%s: %s Type = %q, want %q", tc.name, tc.col, def.Type, tc.wantType)
++			for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
++				statement := t06a2Extract(t, dialect, tc.sql)
++				if err := t06a17CheckAlterDefinition(statement, tc.action, tc.subject, tc.oldName, tc.col, tc.wantType); err != nil {
++					t.Fatalf("%s/%s: %v", dialect, tc.name, err)
+ 				}
+ 			}
+ 		})

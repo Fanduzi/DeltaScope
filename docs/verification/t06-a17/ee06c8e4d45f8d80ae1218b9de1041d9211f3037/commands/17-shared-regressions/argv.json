@@ -1,0 +1,9 @@
+[
+  "go",
+  "test",
+  "-count=1",
+  "./internal/domain/rule/ddl",
+  "-run",
+  "T06A13|T06A15|AlterColumnCompatibility|TableRowSize|IndexKeyLength",
+  "-v"
+]

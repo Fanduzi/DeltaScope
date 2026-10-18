@@ -1,0 +1,108 @@
+#!/usr/bin/env python3
+# input: one T06-A17-R1 command argv, cwd, label, and an external evidence root
+# output: unabridged stdout/stderr, direct process return code, and before/after Git provenance
+# pos: task-local command recorder; never records environment secrets or configuration contents
+# note: retain this exact recorder with R1 evidence; source changes require a new hash
+import argparse
+import datetime
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+
+TASK_PATHS = [
+    "internal/infrastructure/parser/tidb/extractor.go",
+    "internal/infrastructure/parser/tidb/extractor_t06a17_test.go",
+    "internal/infrastructure/parser/tidb/README.md",
+    "internal/infrastructure/metadata/mysql/provider.go",
+    "internal/infrastructure/metadata/mysql/provider_t06a17_test.go",
+    "internal/infrastructure/metadata/mysql/README.md",
+    "internal/application/audit/batch_state_t06a17_test.go",
+    "internal/application/audit/README.md",
+    "internal/application/auditmeta/audit_t06a17_test.go",
+    "internal/application/auditmeta/README.md",
+    "pkg/deltascope/audit_type_facts_t06a17_test.go",
+    "scripts/t06a17proof",
+    "scripts/README.md",
+    "docs/decisions/2026-10-18-ddl-column-type-parameter-fidelity.md",
+    "go.mod", "go.sum", "Makefile", "docker/ddl-golden-compose.yaml",
+    "testdata/ddl-golden/T06.json", "scripts/ddl_golden.py", "scripts/test_ddl_golden.py",
+]
+
+
+def now():
+    return datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+
+def git(cwd, *args):
+    result = subprocess.run(["git", *args], cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if result.returncode:
+        raise RuntimeError(f"git {args!r} rc={result.returncode}: {result.stderr.decode(errors='replace')}")
+    return result.stdout.decode(errors="replace")
+
+
+def provenance(cwd):
+    status = git(cwd, "status", "--porcelain=v1", "--untracked-files=all", "--", *TASK_PATHS)
+    return {
+        "time": now(),
+        "head_sha": git(cwd, "rev-parse", "HEAD").strip(),
+        "branch": git(cwd, "branch", "--show-current").strip(),
+        "task_paths": TASK_PATHS,
+        "task_status_porcelain": status,
+        "task_paths_have_uncommitted_changes": bool(status.strip()),
+        "tracked_status_porcelain": git(cwd, "status", "--porcelain=v1", "--untracked-files=no"),
+        "external_mcp_status_only": git(cwd, "status", "--porcelain=v1", "--untracked-files=no", "--", ".mcp.json"),
+    }
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--root", required=True)
+    parser.add_argument("--label", required=True)
+    parser.add_argument("--cwd", required=True)
+    parser.add_argument("--expected-head")
+    parser.add_argument("command", nargs=argparse.REMAINDER)
+    args = parser.parse_args()
+    command = args.command
+    if command and command[0] == "--":
+        command = command[1:]
+    if not command:
+        parser.error("one non-shell command argv is required")
+    if Path(args.label).name != args.label or args.label in ("", ".", ".."):
+        parser.error("label must be a simple directory name")
+    cwd = str(Path(args.cwd).resolve(strict=True))
+    directory = Path(args.root).resolve() / args.label
+    directory.mkdir(parents=True, exist_ok=False)
+    before = provenance(cwd)
+    if args.expected_head and before["head_sha"] != args.expected_head:
+        raise RuntimeError(f"HEAD mismatch: {before['head_sha']} != {args.expected_head}")
+    metadata = {
+        "argv": command,
+        "cwd": cwd,
+        "started_at": now(),
+        "recorder_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        "nonsecret_environment": {key: os.environ[key] for key in ("GOFLAGS", "CGO_ENABLED", "GOOS", "GOARCH") if key in os.environ},
+        "before": before,
+    }
+    (directory / "argv.json").write_text(json.dumps(command, ensure_ascii=False, indent=2) + "\n")
+    rc = 127
+    with (directory / "stdout").open("wb") as stdout, (directory / "stderr").open("wb") as stderr:
+        try:
+            process = subprocess.Popen(command, cwd=cwd, stdout=stdout, stderr=stderr)
+            rc = process.wait()
+        except OSError as error:
+            stderr.write((str(error) + "\n").encode())
+    metadata["finished_at"] = now()
+    metadata["returncode"] = rc
+    metadata["after"] = provenance(cwd)
+    metadata["head_unchanged"] = metadata["before"]["head_sha"] == metadata["after"]["head_sha"]
+    (directory / "returncode").write_text(str(rc) + "\n")
+    (directory / "metadata.json").write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\n")
+    print(json.dumps({"label": args.label, "returncode": rc, "head_sha": before["head_sha"], "directory": str(directory)}), flush=True)
+    return rc if rc >= 0 else 128 - rc
+
+
+if __name__ == "__main__":
+    sys.exit(main())

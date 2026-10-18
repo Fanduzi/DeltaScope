@@ -1,0 +1,141 @@
+{
+  "schema": "golden",
+  "exists": true,
+  "table": {
+    "name": "t06_a17_type_facts"
+  },
+  "columns": [
+    {
+      "name": "d2",
+      "type": "decimal(12,2)",
+      "length": 12
+    },
+    {
+      "name": "d3",
+      "type": "decimal(12,3)",
+      "length": 12
+    },
+    {
+      "name": "d0",
+      "type": "decimal(12,0)",
+      "length": 12
+    },
+    {
+      "name": "dm",
+      "type": "decimal(12,0)",
+      "length": 12
+    },
+    {
+      "name": "dn",
+      "type": "decimal(10,0)",
+      "length": 10
+    },
+    {
+      "name": "f2",
+      "type": "float(10,2)",
+      "length": 10
+    },
+    {
+      "name": "f3",
+      "type": "float(10,3)",
+      "length": 10
+    },
+    {
+      "name": "f0",
+      "type": "float"
+    },
+    {
+      "name": "fn",
+      "type": "float"
+    },
+    {
+      "name": "x2",
+      "type": "double(16,2)",
+      "length": 16
+    },
+    {
+      "name": "x4",
+      "type": "double(16,4)",
+      "length": 16
+    },
+    {
+      "name": "x0",
+      "type": "double"
+    },
+    {
+      "name": "xn",
+      "type": "double"
+    },
+    {
+      "name": "e_upper",
+      "type": "enum('Ready','Closed')",
+      "charset": "utf8mb4",
+      "collation": "utf8mb4_bin"
+    },
+    {
+      "name": "e_lower",
+      "type": "enum('ready','closed')",
+      "charset": "utf8mb4",
+      "collation": "utf8mb4_bin"
+    },
+    {
+      "name": "e_order",
+      "type": "enum('Closed','Ready')",
+      "charset": "utf8mb4",
+      "collation": "utf8mb4_bin"
+    },
+    {
+      "name": "s_upper",
+      "type": "set('Read','Write')",
+      "charset": "utf8mb4",
+      "collation": "utf8mb4_bin"
+    },
+    {
+      "name": "s_lower",
+      "type": "set('read','write')",
+      "charset": "utf8mb4",
+      "collation": "utf8mb4_bin"
+    },
+    {
+      "name": "s_order",
+      "type": "set('Write','Read')",
+      "charset": "utf8mb4",
+      "collation": "utf8mb4_bin"
+    },
+    {
+      "name": "e_escaped",
+      "type": "enum('','A,B','A)B','O''Reilly')",
+      "charset": "utf8mb4",
+      "collation": "utf8mb4_bin"
+    },
+    {
+      "name": "s_escaped",
+      "type": "set('Read','A)B','O''Reilly')",
+      "charset": "utf8mb4",
+      "collation": "utf8mb4_bin"
+    },
+    {
+      "name": "i",
+      "type": "int"
+    },
+    {
+      "name": "v",
+      "type": "varchar",
+      "length": 8,
+      "charset": "utf8mb4",
+      "collation": "utf8mb4_bin"
+    },
+    {
+      "name": "u",
+      "type": "bigint",
+      "unsigned": true
+    }
+  ],
+  "options": {
+    "charset": "utf8mb4",
+    "collation": "utf8mb4_bin",
+    "engine": "InnoDB",
+    "row_format": "COMPACT",
+    "table_rows": "0"
+  }
+}

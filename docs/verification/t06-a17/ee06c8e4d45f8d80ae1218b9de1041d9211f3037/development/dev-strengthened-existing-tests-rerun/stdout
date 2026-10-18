@@ -1,0 +1,32 @@
+=== RUN   TestT06A17AlterColumnDefinitions
+=== RUN   TestT06A17AlterColumnDefinitions/add
+=== RUN   TestT06A17AlterColumnDefinitions/modify
+=== RUN   TestT06A17AlterColumnDefinitions/change
+--- PASS: TestT06A17AlterColumnDefinitions (0.00s)
+    --- PASS: TestT06A17AlterColumnDefinitions/add (0.00s)
+    --- PASS: TestT06A17AlterColumnDefinitions/modify (0.00s)
+    --- PASS: TestT06A17AlterColumnDefinitions/change (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	1.011s
+=== RUN   TestT06A17ProviderParameterFidelity
+--- PASS: TestT06A17ProviderParameterFidelity (0.00s)
+=== RUN   TestT06A17ProviderDistinctness
+--- PASS: TestT06A17ProviderDistinctness (0.00s)
+=== RUN   TestT06A17ProviderParamBoundary
+--- PASS: TestT06A17ProviderParamBoundary (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql	0.261s
+=== RUN   TestT06A17DerivedPreStatePreservesType
+=== PAUSE TestT06A17DerivedPreStatePreservesType
+=== CONT  TestT06A17DerivedPreStatePreservesType
+=== RUN   TestT06A17DerivedPreStatePreservesType/mysql
+=== PAUSE TestT06A17DerivedPreStatePreservesType/mysql
+=== RUN   TestT06A17DerivedPreStatePreservesType/tidb
+=== PAUSE TestT06A17DerivedPreStatePreservesType/tidb
+=== CONT  TestT06A17DerivedPreStatePreservesType/mysql
+=== CONT  TestT06A17DerivedPreStatePreservesType/tidb
+--- PASS: TestT06A17DerivedPreStatePreservesType (0.00s)
+    --- PASS: TestT06A17DerivedPreStatePreservesType/tidb (0.00s)
+    --- PASS: TestT06A17DerivedPreStatePreservesType/mysql (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.528s

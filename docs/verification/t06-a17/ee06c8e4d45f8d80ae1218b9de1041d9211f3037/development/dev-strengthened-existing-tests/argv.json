@@ -1,0 +1,11 @@
+[
+  "go",
+  "test",
+  "-count=1",
+  "./internal/infrastructure/parser/tidb",
+  "./internal/infrastructure/metadata/mysql",
+  "./internal/application/audit",
+  "-run",
+  "TestT06A17(AlterColumnDefinitions|Provider|DerivedPreStatePreservesType)",
+  "-v"
+]

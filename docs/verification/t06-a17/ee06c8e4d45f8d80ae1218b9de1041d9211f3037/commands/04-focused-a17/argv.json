@@ -1,0 +1,12 @@
+[
+  "go",
+  "test",
+  "-count=1",
+  "./internal/infrastructure/parser/tidb",
+  "./internal/infrastructure/metadata/mysql",
+  "./internal/application/audit",
+  "./internal/application/auditmeta",
+  "-run",
+  "T06A17",
+  "-v"
+]

@@ -1,0 +1,26 @@
+{
+  "argv": [
+    "go",
+    "test",
+    "-count=1",
+    "-overlay",
+    "/private/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/sensitivity/derived-missing-column-old/overlay.json",
+    "./internal/application/audit",
+    "-run",
+    "^TestT06A17DerivedPreStatePreservesType$",
+    "-v"
+  ],
+  "cwd": "/Users/fan/GolangProjects/DeltaScope",
+  "started_at": "2026-10-18T16:47:46.951742+00:00",
+  "head_sha": "ee06c8e4d45f8d80ae1218b9de1041d9211f3037",
+  "source_ref": "8d1253e2fea0e1fac6bd150a8e46f436486f7205",
+  "source_path": "internal/application/audit/batch_state_t06a17_test.go",
+  "source_sha256": "8dc6452275ec025597f1ead52f6f21ec23513937e03ac4b873e22de72c4ef85a",
+  "overlay_source_sha256": "785edad3c7e7ef4766747d86ad9deec3f359ecef2420f1a52c911caed5252011",
+  "constructed_fault": "snapshot.Columns = snapshot.Columns[:len(snapshot.Columns)-1]",
+  "task_file_status_before": "",
+  "finished_at": "2026-10-18T16:47:47.975049+00:00",
+  "returncode": 0,
+  "head_sha_after": "ee06c8e4d45f8d80ae1218b9de1041d9211f3037",
+  "task_file_status_after": ""
+}

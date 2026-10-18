@@ -1,0 +1,14 @@
+=== RUN   TestT06A17AlterColumnDefinitions
+=== RUN   TestT06A17AlterColumnDefinitions/add
+    extractor_t06a17_test.go:260: mysql/add: alter actions = 2, want exactly 1 ([{Action:add_columns Name:e Column:0x1afdfac1d3e0 Index:<nil> Constraint:<nil> Options:map[] HasColumnPosition:false UnextractedOptions:[]} {Action:add_columns Name:e Column:0x1afdfac1d3e0 Index:<nil> Constraint:<nil> Options:map[] HasColumnPosition:false UnextractedOptions:[]}])
+=== RUN   TestT06A17AlterColumnDefinitions/modify
+    extractor_t06a17_test.go:260: mysql/modify: alter actions = 2, want exactly 1 ([{Action:modify_column Name:d Column:0x1afdfac1d460 Index:<nil> Constraint:<nil> Options:map[] HasColumnPosition:false UnextractedOptions:[]} {Action:modify_column Name:d Column:0x1afdfac1d460 Index:<nil> Constraint:<nil> Options:map[] HasColumnPosition:false UnextractedOptions:[]}])
+=== RUN   TestT06A17AlterColumnDefinitions/change
+    extractor_t06a17_test.go:260: mysql/change: alter actions = 2, want exactly 1 ([{Action:change_column Name:d Column:0x1afdfac1d4e0 Index:<nil> Constraint:<nil> Options:map[] HasColumnPosition:false UnextractedOptions:[]} {Action:change_column Name:d Column:0x1afdfac1d4e0 Index:<nil> Constraint:<nil> Options:map[] HasColumnPosition:false UnextractedOptions:[]}])
+--- FAIL: TestT06A17AlterColumnDefinitions (0.00s)
+    --- FAIL: TestT06A17AlterColumnDefinitions/add (0.00s)
+    --- FAIL: TestT06A17AlterColumnDefinitions/modify (0.00s)
+    --- FAIL: TestT06A17AlterColumnDefinitions/change (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	0.514s
+FAIL

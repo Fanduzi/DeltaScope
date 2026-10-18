@@ -1,0 +1,14 @@
+=== RUN   TestT06A17AlterColumnDefinitions
+=== RUN   TestT06A17AlterColumnDefinitions/add
+    extractor_t06a17_test.go:260: mysql/add: alter actions = 0, want exactly 1 ([])
+=== RUN   TestT06A17AlterColumnDefinitions/modify
+    extractor_t06a17_test.go:260: mysql/modify: alter actions = 0, want exactly 1 ([])
+=== RUN   TestT06A17AlterColumnDefinitions/change
+    extractor_t06a17_test.go:260: mysql/change: alter actions = 0, want exactly 1 ([])
+--- FAIL: TestT06A17AlterColumnDefinitions (0.00s)
+    --- FAIL: TestT06A17AlterColumnDefinitions/add (0.00s)
+    --- FAIL: TestT06A17AlterColumnDefinitions/modify (0.00s)
+    --- FAIL: TestT06A17AlterColumnDefinitions/change (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	0.320s
+FAIL

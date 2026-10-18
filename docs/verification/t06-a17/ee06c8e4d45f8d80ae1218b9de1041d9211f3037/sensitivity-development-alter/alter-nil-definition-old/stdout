@@ -1,0 +1,10 @@
+=== RUN   TestT06A17AlterColumnDefinitions
+=== RUN   TestT06A17AlterColumnDefinitions/add
+=== RUN   TestT06A17AlterColumnDefinitions/modify
+=== RUN   TestT06A17AlterColumnDefinitions/change
+--- PASS: TestT06A17AlterColumnDefinitions (0.00s)
+    --- PASS: TestT06A17AlterColumnDefinitions/add (0.00s)
+    --- PASS: TestT06A17AlterColumnDefinitions/modify (0.00s)
+    --- PASS: TestT06A17AlterColumnDefinitions/change (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	0.654s

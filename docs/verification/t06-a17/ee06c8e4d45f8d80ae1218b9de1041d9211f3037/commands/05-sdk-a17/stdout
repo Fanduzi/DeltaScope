@@ -1,0 +1,4 @@
+=== RUN   TestT06A17TypeFactsSDKTransport
+--- PASS: TestT06A17TypeFactsSDKTransport (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.588s

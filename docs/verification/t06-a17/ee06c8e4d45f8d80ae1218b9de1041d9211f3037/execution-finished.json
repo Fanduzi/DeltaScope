@@ -1,0 +1,7 @@
+{
+  "code_sha": "ee06c8e4d45f8d80ae1218b9de1041d9211f3037",
+  "all_recipe_commands_returned_zero": true,
+  "golden_root": "/tmp/ds-t06-a17-r1-proof/final/ee06c8e4d45f8d80ae1218b9de1041d9211f3037/golden",
+  "native_anchor_invocations": 4,
+  "source_test_edits_during_recipe": false
+}

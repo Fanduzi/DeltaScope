@@ -1,0 +1,10 @@
+[
+  "docker",
+  "compose",
+  "-p",
+  "deltascope-t06-a17-r1",
+  "-f",
+  "docker/ddl-golden-compose.yaml",
+  "down",
+  "--volumes"
+]

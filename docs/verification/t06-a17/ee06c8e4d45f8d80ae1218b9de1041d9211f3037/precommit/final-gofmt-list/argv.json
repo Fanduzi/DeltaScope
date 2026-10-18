@@ -1,0 +1,10 @@
+[
+  "gofmt",
+  "-l",
+  "internal/application/audit/batch_state_t06a17_test.go",
+  "internal/infrastructure/parser/tidb/extractor_t06a17_test.go",
+  "internal/infrastructure/metadata/mysql/provider_t06a17_test.go",
+  "scripts/t06a17proof/main.go",
+  "scripts/t06a17proof/facts.go",
+  "scripts/t06a17proof/main_test.go"
+]

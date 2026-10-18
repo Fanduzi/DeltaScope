@@ -1,0 +1,6 @@
+[
+  "env",
+  "GOFLAGS=-count=1",
+  "make",
+  "test"
+]

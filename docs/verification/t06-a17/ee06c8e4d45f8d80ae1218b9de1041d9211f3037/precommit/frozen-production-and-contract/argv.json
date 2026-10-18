@@ -1,0 +1,18 @@
+[
+  "git",
+  "diff",
+  "--exit-code",
+  "4f58ac548aecd495edc707c35868c179686b0e35",
+  "--",
+  "internal/infrastructure/parser/tidb/extractor.go",
+  "internal/infrastructure/metadata/mysql/provider.go",
+  "internal/domain/spec",
+  "internal/domain/rule",
+  "internal/application/audit/batch_state.go",
+  "internal/interfaces",
+  "go.mod",
+  "go.sum",
+  "testdata/ddl-golden/T06.json",
+  "scripts/ddl_golden.py",
+  "scripts/test_ddl_golden.py"
+]

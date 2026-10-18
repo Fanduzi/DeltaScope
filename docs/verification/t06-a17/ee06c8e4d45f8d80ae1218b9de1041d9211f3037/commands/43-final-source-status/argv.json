@@ -1,0 +1,6 @@
+[
+  "git",
+  "status",
+  "--short",
+  "--untracked-files=normal"
+]

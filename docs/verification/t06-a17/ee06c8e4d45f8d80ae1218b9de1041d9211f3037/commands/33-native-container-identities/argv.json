@@ -1,0 +1,10 @@
+[
+  "docker",
+  "inspect",
+  "--format",
+  "{{.Id}}\t{{.Name}}\t{{.Image}}\t{{.Config.Image}}\t{{.State.Health.Status}}",
+  "deltascope-ddl-golden-mysql57",
+  "deltascope-ddl-golden-mysql80",
+  "deltascope-ddl-golden-mysql84",
+  "deltascope-ddl-golden-tidb85"
+]

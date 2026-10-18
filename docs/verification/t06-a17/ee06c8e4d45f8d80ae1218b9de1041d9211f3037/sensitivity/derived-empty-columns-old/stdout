@@ -1,0 +1,14 @@
+=== RUN   TestT06A17DerivedPreStatePreservesType
+=== PAUSE TestT06A17DerivedPreStatePreservesType
+=== CONT  TestT06A17DerivedPreStatePreservesType
+=== RUN   TestT06A17DerivedPreStatePreservesType/mysql
+=== PAUSE TestT06A17DerivedPreStatePreservesType/mysql
+=== RUN   TestT06A17DerivedPreStatePreservesType/tidb
+=== PAUSE TestT06A17DerivedPreStatePreservesType/tidb
+=== CONT  TestT06A17DerivedPreStatePreservesType/mysql
+=== CONT  TestT06A17DerivedPreStatePreservesType/tidb
+--- PASS: TestT06A17DerivedPreStatePreservesType (0.00s)
+    --- PASS: TestT06A17DerivedPreStatePreservesType/mysql (0.00s)
+    --- PASS: TestT06A17DerivedPreStatePreservesType/tidb (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.551s

@@ -1,0 +1,7 @@
+[
+  "docker",
+  "ps",
+  "-a",
+  "--format",
+  "{{.ID}}\\t{{.Names}}\\t{{.Status}}"
+]

@@ -1,0 +1,6 @@
+[
+  "git",
+  "diff",
+  "--cached",
+  "--check"
+]

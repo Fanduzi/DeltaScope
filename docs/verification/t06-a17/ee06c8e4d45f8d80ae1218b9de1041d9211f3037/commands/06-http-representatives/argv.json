@@ -1,0 +1,9 @@
+[
+  "go",
+  "test",
+  "-count=1",
+  "./internal/interfaces/http",
+  "-run",
+  "^TestHandlerAuditReturnsJSONResult$|^TestHandlerAuditOfflineBehaviorPreserved$|^TestHandlerT06A13BlobTextSafe$",
+  "-v"
+]

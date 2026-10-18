@@ -1,0 +1,4 @@
+=== RUN   TestT06A17ProviderParameterFidelity
+--- PASS: TestT06A17ProviderParameterFidelity (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql	0.471s

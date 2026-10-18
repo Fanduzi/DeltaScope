@@ -1,0 +1,26 @@
+{
+  "argv": [
+    "go",
+    "test",
+    "-count=1",
+    "-overlay",
+    "/private/tmp/ds-t06-a17-r1-proof/sensitivity-development-alter/alter-wrong-target-strict/overlay.json",
+    "./internal/infrastructure/parser/tidb",
+    "-run",
+    "^TestT06A17AlterColumnDefinitions$",
+    "-v"
+  ],
+  "cwd": "/Users/fan/GolangProjects/DeltaScope",
+  "started_at": "2026-10-18T16:43:08.189286+00:00",
+  "head_sha": "8d1253e2fea0e1fac6bd150a8e46f436486f7205",
+  "source_ref": "uncommitted-worktree",
+  "source_path": "internal/infrastructure/parser/tidb/extractor_t06a17_test.go",
+  "source_sha256": "a4db44d105c9364e90f0f0246987d935670affaef982d438a8fa5ac7cd7f458a",
+  "overlay_source_sha256": "440916ae8a285558481ea55477891aa97d69f72c60b3a3e2fb521d6122e5b38d",
+  "constructed_fault": "statement.DDL.Alter[0].Column.Definition.Name = \"not_expected\"",
+  "task_file_status_before": " M internal/infrastructure/parser/tidb/extractor_t06a17_test.go\n",
+  "finished_at": "2026-10-18T16:43:09.244682+00:00",
+  "returncode": 1,
+  "head_sha_after": "8d1253e2fea0e1fac6bd150a8e46f436486f7205",
+  "task_file_status_after": " M internal/infrastructure/parser/tidb/extractor_t06a17_test.go\n"
+}
