@@ -1,6 +1,6 @@
 // Package tidbparser extracts parser-neutral statements from TiDB AST nodes.
 // input: TiDB parser statement nodes and parser-neutral dialect metadata
-// output: extractor-backed parsed statements for the application layer, including MutationTargets and mutation-target-only DML tables, normalized ALTER index/constraint actions, multi-target DDL Targets for DROP/RENAME/ALTER-rename, temporary-table scope facts, typed and unextracted column-option facts, primary-key metadata, inline PRIMARY KEY presence on column-change facts, parser-decoded COMMENT string content (no SQL quote wrapping), and if_exists/if_not_exists option markers for conditional-existence derivation
+// output: extractor-backed parsed statements for the application layer, including MutationTargets and mutation-target-only DML tables, normalized ALTER index/constraint actions, multi-target DDL Targets for DROP/RENAME/ALTER-rename, temporary-table scope facts, typed and unextracted column-option facts, primary-key metadata, inline PRIMARY KEY presence on column-change facts, parser-decoded COMMENT string content (no SQL quote wrapping), sentinel-faithful declared type parameters (DECIMAL/FLOAT/DOUBLE scale, byte-exact ENUM/SET members) on the five declared-parameter types, and if_exists/if_not_exists option markers for conditional-existence derivation
 // pos: infrastructure extraction adapter between TiDB AST and domain spec
 // note: if this file changes, update this header and module README.md.
 package tidbparser
@@ -12,6 +12,7 @@ import (
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	"github.com/pingcap/tidb/pkg/parser/ast"
+	"github.com/pingcap/tidb/pkg/parser/format"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
 	"github.com/pingcap/tidb/pkg/parser/opcode"
 	tidbtypes "github.com/pingcap/tidb/pkg/parser/types"
@@ -637,8 +638,35 @@ func extractDelete(stmt *ast.DeleteStmt) *spec.DML {
 	return &spec.DML{Operation: spec.DMLOperationDelete, Tables: tables, MutationTargets: tables, HasWhere: stmt.Where != nil, HasLimit: stmt.Limit != nil, HasOrderBy: stmt.Order != nil, HasSubquery: hasSubquery, HasJoin: joinExists(join), HasJoinOn: joinHasOn(join), HasReturning: len(stmt.Returning) > 0, PredicateShape: shape, LookupColumns: lookupColumns, MatchedKeyName: matchedKeyName, MatchedKeyKind: matchedKeyKind, IsSingleTable: isSingleTable}
 }
 
+// declaredTypeRestoreFlags renders the five declared-parameter types with a
+// lowercase keyword, single-quoted re-escaped members, and sentinel-faithful
+// precision/scale — never the formatted layer's substituted defaults.
+const declaredTypeRestoreFlags = format.RestoreStringSingleQuotes |
+	format.RestoreStringEscapeBackslash |
+	format.RestoreKeyWordLowercase |
+	format.RestoreNameBackQuotes
+
+// declaredColumnType renders column types for spec.Column.Type. DECIMAL,
+// FLOAT, DOUBLE, ENUM, and SET go through FieldType.Restore: it writes the
+// declared (flen[,decimal]) span from the sentinels — preserving DECIMAL(12)
+// vs DECIMAL(12,0) vs bare DECIMAL and the explicit (M,0) scale String()
+// elides — and writes ENUM/SET members byte-exact so keyword normalization
+// can never fold member case or content. Every other type keeps the existing
+// lowercase String() text (int(11), bigint(20) unsigned, charset facts).
+func declaredColumnType(tp *tidbtypes.FieldType) string {
+	switch tp.GetType() {
+	case mysql.TypeNewDecimal, mysql.TypeFloat, mysql.TypeDouble,
+		mysql.TypeEnum, mysql.TypeSet:
+		var text strings.Builder
+		if err := tp.Restore(format.NewRestoreCtx(declaredTypeRestoreFlags, &text)); err == nil {
+			return text.String()
+		}
+	}
+	return strings.ToLower(tp.String())
+}
+
 func extractColumn(col *ast.ColumnDef) spec.Column {
-	column := spec.Column{Name: col.Name.Name.L, Type: strings.ToLower(col.Tp.String()), Length: col.Tp.GetFlen(), Unsigned: mysql.HasUnsignedFlag(col.Tp.GetFlag())}
+	column := spec.Column{Name: col.Name.Name.L, Type: declaredColumnType(col.Tp), Length: col.Tp.GetFlen(), Unsigned: mysql.HasUnsignedFlag(col.Tp.GetFlag())}
 	if tidbtypes.HasCharset(col.Tp) {
 		column.Charset = strings.ToLower(col.Tp.GetCharset())
 		column.Collation = strings.ToLower(col.Tp.GetCollate())

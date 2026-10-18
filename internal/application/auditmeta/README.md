@@ -12,6 +12,7 @@ Shared preparation helpers for metadata-aware audit requests before they enter t
 | `client.go` | Bridges MySQL-compatible infrastructure providers into the shared preparation client contract |
 | `prepare_test.go` | Verifies shared metadata-aware preparation behavior, including schema inference from valid statements around one parser error |
 | `audit_t06a4_test.go` | Verifies the T06-A4 AuditSQL contract with the real `mysqlmeta.Provider` behind a controlled database/sql driver: a stored `'NULL'` sibling keeps DROP COLUMN + CREATE INDEX conservative (`review`/`unverified`, one `unknown_table_state` gap, exactly one provider read), a stored `'<nil>'` sibling stays equally conservative, a stored SQL NULL sibling stays `pass`/`complete`, a parsed-source `DEFAULT 'NULL'` agrees with the provider outcome, provider errors propagate via `errors.Is` rather than degrading into gaps, `ddl.column.default.require` reads only submitted DDL, and all-disabled rules fabricate nothing |
+| `audit_t06a17_test.go` | Verifies the T06-A17 provider-source carry contract: a real `mysqlmeta.Provider` reads constructed catalog rows (`decimal(12,2)`, `enum('Ready','Closed')`, `set('Write','Read')`) and AuditSQL's ordered pre-state lands the verbatim `COLUMN_TYPE` text in the modify-compatibility finding's `source_type` echo — never a truncated base keyword |
 
 ## Exports
 

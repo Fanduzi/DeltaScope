@@ -397,7 +397,7 @@ func TestParseColumnType(t *testing.T) {
 		{"bigint(20) unsigned", "bigint", 20, true},
 		{"int", "int", 0, false},
 		{"text", "text", 0, false},
-		{"decimal(10,2)", "decimal", 10, false},
+		{"decimal(10,2)", "decimal(10,2)", 10, false},
 		{"bigint unsigned", "bigint", 0, true},
 		{"tinyint(1)", "tinyint", 1, false},
 		{"varchar(64) unsigned", "varchar", 64, true},

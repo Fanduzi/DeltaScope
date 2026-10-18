@@ -1,6 +1,6 @@
 // Package mysqlmeta implements metadata-aware audit adapters over the MySQL protocol.
 // input: sql.DB access plus connection configs, version/schema/table lookup requests, and MySQL/TiDB metadata queries
-// output: normalized instance facts with explicit known bits (innodb_page_size, 5.7 large-prefix, TiDB max-index-length via all-rows SHOW CONFIG verification — read failures propagate as provider errors, only absent/ambiguous values stay unknown), dialect detection, schema discovery, and table snapshots with preserved index cardinality and stored-representation default facts (COLUMN_DEFAULT IS NOT NULL → HasDefault with verbatim DefaultValue bytes; NULL rows and literal "null" text never set DefaultIsNull on this path) for application-level audit enrichment
+// output: normalized instance facts with explicit known bits (innodb_page_size, 5.7 large-prefix, TiDB max-index-length via all-rows SHOW CONFIG verification — read failures propagate as provider errors, only absent/ambiguous values stay unknown), dialect detection, schema discovery, and table snapshots with preserved index cardinality, verbatim COLUMN_TYPE parameter spans on the five declared-parameter bases (DECIMAL/FLOAT/DOUBLE/ENUM/SET — member literals keep catalog case and attribute words inside quotes never set Unsigned), and stored-representation default facts (COLUMN_DEFAULT IS NOT NULL → HasDefault with verbatim DefaultValue bytes; NULL rows and literal "null" text never set DefaultIsNull on this path) for application-level audit enrichment
 // pos: infrastructure metadata adapter between database/sql and domain metadata specs
 // note: if this file changes, update this header and module README.md.
 package mysqlmeta
@@ -377,10 +377,10 @@ func (p *Provider) loadColumns(ctx context.Context, snapshot *spec.TableSnapshot
 		if err := rows.Scan(&name, &columnType, &charset, &collation, &comment, &defaultValue, &isNullable, &extra); err != nil {
 			return fmt.Errorf("scan table column: %w", err)
 		}
-		baseType, length, unsigned := parseColumnType(columnType)
+		typeText, length, unsigned := parseColumnType(columnType)
 		column := spec.Column{
 			Name:          name,
-			Type:          baseType,
+			Type:          typeText,
 			Length:        length,
 			Charset:       charset.String,
 			Collation:     collation.String,
@@ -490,25 +490,107 @@ func charsetFromCollation(collation string) string {
 	return ""
 }
 
-func parseColumnType(columnType string) (baseType string, length int, unsigned bool) {
-	lower := strings.ToLower(strings.TrimSpace(columnType))
-	unsigned = strings.Contains(lower, " unsigned")
-	if idx := strings.Index(lower, "("); idx >= 0 {
-		baseType = strings.TrimSpace(lower[:idx])
-		end := strings.Index(lower[idx+1:], ")")
-		if end >= 0 {
-			part := lower[idx+1 : idx+1+end]
-			if comma := strings.Index(part, ","); comma >= 0 {
-				part = part[:comma]
-			}
-			if parsed, err := strconv.Atoi(strings.TrimSpace(part)); err == nil {
-				length = parsed
-			}
-		}
-	} else {
-		baseType = strings.Fields(lower)[0]
+// faithfulCatalogTypes are the T06-A17 target bases whose COLUMN_TYPE
+// parameter text — DECIMAL/FLOAT/DOUBLE second parameters and ENUM/SET member
+// literals — is preserved verbatim. Every other type keeps the established
+// base-keyword contract.
+var faithfulCatalogTypes = map[string]bool{
+	"decimal": true, "float": true, "double": true, "enum": true, "set": true,
+}
+
+// typeParameterSpan locates the parenthesized parameter list of a catalog
+// COLUMN_TYPE, honoring single-quoted members with ” escapes: a comma or
+// right paren inside a member never ends the span. Returns (-1, -1) without a
+// parameter list; the end index is exclusive so columnType[start:end] is the
+// whole "(...)" segment.
+func typeParameterSpan(columnType string) (start, end int) {
+	start = strings.IndexByte(columnType, '(')
+	if start < 0 {
+		return -1, -1
 	}
-	return baseType, length, unsigned
+	inString := false
+	for i := start + 1; i < len(columnType); i++ {
+		switch {
+		case inString:
+			if columnType[i] == '\'' {
+				if i+1 < len(columnType) && columnType[i+1] == '\'' {
+					i++
+					continue
+				}
+				inString = false
+			}
+		case columnType[i] == '\'':
+			inString = true
+		case columnType[i] == ')':
+			return start, i + 1
+		}
+	}
+	return start, len(columnType)
+}
+
+// stripQuotedLiterals removes '...' member literals (including ” escapes) so
+// attribute detection never reads inside member text: 'x unsigned' inside an
+// ENUM member is a value, never the UNSIGNED attribute.
+func stripQuotedLiterals(s string) string {
+	var b strings.Builder
+	inString := false
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if inString {
+			if c == '\'' {
+				if i+1 < len(s) && s[i+1] == '\'' {
+					i++
+					continue
+				}
+				inString = false
+			}
+			continue
+		}
+		if c == '\'' {
+			inString = true
+			continue
+		}
+		b.WriteByte(c)
+	}
+	return b.String()
+}
+
+// parseColumnType normalizes a catalog COLUMN_TYPE. Length keeps its
+// established first-integer meaning; unsigned is read only outside quoted
+// member literals; typeText preserves the verbatim parameter span for the
+// five faithfulCatalogTypes bases and stays the bare base keyword otherwise.
+func parseColumnType(columnType string) (typeText string, length int, unsigned bool) {
+	trimmed := strings.TrimSpace(columnType)
+	lower := strings.ToLower(trimmed)
+	unsigned = strings.Contains(strings.ToLower(stripQuotedLiterals(trimmed)), " unsigned")
+	start, end := typeParameterSpan(trimmed)
+	var baseType string
+	if start >= 0 {
+		baseType = strings.TrimSpace(lower[:start])
+		part := trimmed[start+1 : end-1]
+		if comma := strings.Index(part, ","); comma >= 0 {
+			part = part[:comma]
+		}
+		if parsed, err := strconv.Atoi(strings.TrimSpace(part)); err == nil {
+			length = parsed
+		}
+	} else if fields := strings.Fields(lower); len(fields) > 0 {
+		baseType = fields[0]
+	}
+	if !faithfulCatalogTypes[baseType] {
+		return baseType, length, unsigned
+	}
+	var text strings.Builder
+	text.WriteString(baseType)
+	if start >= 0 {
+		text.WriteString(trimmed[start:end])             // verbatim parameters, member case intact
+		text.WriteString(strings.ToLower(trimmed[end:])) // attribute keywords after the span
+	} else if rest := trimmed[len(baseType):]; rest != "" {
+		// No parameter span (e.g. bare "float unsigned"): keep the declared
+		// attribute text, keyword-normalized.
+		text.WriteString(strings.ToLower(rest))
+	}
+	return text.String(), length, unsigned
 }
 
 func classifyIndex(name string, nonUnique int, indexType string) spec.IndexKind {

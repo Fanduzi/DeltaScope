@@ -110,9 +110,11 @@ Instance defaults are trusted verbatim only when the declaration is
 instance-default collection and no server config was read or fabricated.
 Estimation formulas, 65535/8126/8000 thresholds, PG behavior, index
 decisions, catalog classification, parser/spec/provider/state
-machine/transport, and the 24 original A15 roles are unchanged. This
-evidence HEAD (`700e90e4`) is not the bug report's reviewed SHA —
-self-verification is not reviewer acceptance.
+machine/transport, and the 24 original A15 roles are unchanged. The
+directory name `700e90e4` is the *tested code* SHA; the evidence itself
+lives in a separate evidence-only commit that is its child (`a0819096`).
+Neither is the bug report's reviewed SHA — self-verification is not
+reviewer acceptance.
 
 ## Working tree honesty
 
