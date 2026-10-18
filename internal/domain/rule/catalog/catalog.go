@@ -384,6 +384,13 @@ func metadataNotesForRule(ruleID string) *MetadataNotes {
 	if !ok {
 		return nil
 	}
+	if ruleID == "ddl.table.row_size.max_bytes.require" {
+		return &MetadataNotes{
+			Kinds:    kinds,
+			Required: "Live instance facts are available, so undeclared charset and row_format inputs resolve to the observed instance defaults.",
+			Missing:  "Live instance facts are unavailable; the estimate runs on declared inputs only, and any required field left unresolved reports an evidence gap.",
+		}
+	}
 	return &MetadataNotes{
 		Kinds:    kinds,
 		Required: "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.",
@@ -395,9 +402,16 @@ func metadataKindsForRule(ruleID string) ([]MetadataKind, bool) {
 	switch ruleID {
 	case "dml.table.denylist.forbid", "ddl.table.denylist.forbid":
 		return []MetadataKind{MetadataKindSchema}, true
-	case "ddl.table.drop.adaptive_hash.warn", "ddl.table.truncate.adaptive_hash.warn":
+	case "ddl.table.drop.adaptive_hash.warn", "ddl.table.truncate.adaptive_hash.warn",
+		"ddl.table.row_size.max_bytes.require":
+		// The row-size estimate consults optional instance defaults for
+		// undeclared charset/row_format inputs; it never requires a target
+		// table snapshot, so instance facts — not TargetTable — are its
+		// metadata dependency. The flag marks a supplemental source, not a
+		// connectivity requirement: declared-complete statements evaluate
+		// identically offline.
 		return []MetadataKind{MetadataKindInstance}, true
-	case "ddl.table.drop.rows.max_count", "ddl.table.truncate.rows.max_count", "ddl.table.row_size.max_bytes.require":
+	case "ddl.table.drop.rows.max_count", "ddl.table.truncate.rows.max_count":
 		return []MetadataKind{MetadataKindTargetTable}, true
 	}
 	if metadataAwareRuleIDs[ruleID] {

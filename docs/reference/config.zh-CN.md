@@ -779,9 +779,7 @@ rules:
 
 ### `ddl.table.row_size.max_bytes.require`
 
-估算 InnoDB 行大小，超过限制时报告 finding。依赖实例事实（instance facts）中的字符集和行格式信息。
-
-> **需要元数据感知模式。** 离线审计时本规则不生效（no-op）。
+估算 InnoDB 行大小，超过限制时报告 finding。估算所需事实按字段级解析：列/表声明的字符集优先于 `instance.default_charset`，声明的 `row_format` 优先于 `instance.innodb_default_row_format`（`ROW_FORMAT=DEFAULT` 视为未解析）。声明齐备时无论是否连接数据库结果一致；当必需字段无法解析时，本规则报告 `missing_instance_fact` 证据缺口（evidence gap）而非静默跳过。显式声明的非 InnoDB 引擎仍在任何事实查找之前将本规则排除在作用域之外。
 
 - **默认**：已启用，级别 `blocker`
 
@@ -791,7 +789,7 @@ rules:
 
 **触发示例：**
 ```sql
--- 仅在元数据感知模式下，当估算行大小 > 65535 字节时触发
+-- 当估算行大小 > 65535 字节时触发（声明齐备时离线同样生效）
 CREATE TABLE wide (
   c1 VARCHAR(16383),
   c2 VARCHAR(16383),

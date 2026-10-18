@@ -1,7 +1,7 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: create-table statements plus instance facts for charset, row format, large-prefix behavior, and the canonical version identity
+// input: create-table statements plus, for the index rule, instance facts for large-prefix behavior and the canonical version identity; the row-size rule additionally consumes declared charset/row_format first and treats instance.default_charset/instance.innodb_default_row_format as optional per-field fallbacks
 // output: metadata-backed rough row-size and index-key-length findings plus bounded version/instance-fact evidence gaps
-// pos: DDL size-estimation rules for audit completion, including the version-dependent key-length bound contract
+// pos: DDL size-estimation rules for audit completion, including the version-dependent key-length bound contract and the field-level row-size fact resolution (T06-A15)
 // note: if this file changes, update this header and module README.md.
 package ddl
 
@@ -59,18 +59,19 @@ func (r tableRowSizeRule) Evaluate(ctx context.Context, statement spec.Statement
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
-	instance, ok := instanceFacts(statement)
-	if !ok {
+	facts := resolveRowSizeFacts(statement)
+	if !facts.inScope {
+		return nil, nil
+	}
+	if facts.charsetNeeded && !facts.charsetKnown {
+		// A charset-sensitive column has no declared or instance-resolved
+		// width. A total computed under a guessed charset would be fabricated,
+		// so the missing fact reports instead of a finding.
 		return nil, nil
 	}
 
-	engine := normalizedTableOption(statement, "engine")
-	if engine != "" && !strings.EqualFold(engine, "InnoDB") {
-		return nil, nil
-	}
-
-	charset := resolvedTableCharset(statement, instance)
-	rowFormat := resolvedRowFormat(statement, instance)
+	charset := facts.charset
+	rowFormat := facts.rowFormat
 	totalRowBytes := 0
 	compactRowBytes := 0
 	for _, column := range statement.DDL.Columns {
@@ -137,6 +138,140 @@ func (r tableRowSizeRule) Evaluate(ctx context.Context, statement spec.Statement
 	return findings, nil
 }
 
+// Field-level fact contract for the row-size rule (T06-A15/#85): the rough
+// estimate is gated by the facts it actually consumes, not by the presence of
+// an instance-fact object.
+//
+//   - A declared non-InnoDB engine still scopes the rule out before any fact
+//     lookup; an omitted engine stays inside the conditional InnoDB estimate
+//     without claiming an observed default engine.
+//   - Charset resolves per need: only a column whose width estimate consults
+//     bytes-per-character and that does not declare its own charset requires
+//     the table charset option, then instance.default_charset. Fixed-width
+//     columns and fully declared character columns need neither. A missing
+//     width makes every estimate a guess, so no finding is emitted.
+//   - Row format resolves declaration-first: a recognized declared value
+//     (DYNAMIC, COMPACT, REDUNDANT, or another non-default keyword) wins;
+//     DEFAULT, absent, or unrecognized declarations resolve through
+//     instance.innodb_default_row_format and stay unknown when that field is
+//     empty. An unknown format never falls back to DYNAMIC: the 65535-byte
+//     total check still runs on resolved widths, but the COMPACT/REDUNDANT
+//     bounds stay unverified and report the missing fact instead.
+//   - Non-MySQL-family dialects keep the historical contract: no instance
+//     object means no evaluation, and the shared helpers keep their legacy
+//     hardcoded fallbacks when one is present.
+type rowSizeFactResolution struct {
+	inScope        bool     // false when the declared engine excludes the rule, or a non-MySQL-family statement has no instance object
+	charset        string   // resolved table-level charset; "" when no source supplies one
+	charsetKnown   bool     // charset is usable for columns without their own declaration
+	charsetNeeded  bool     // a charset-sensitive column lacks its own declaration
+	rowFormat      string   // resolved row format; "" when no source supplies one
+	rowFormatKnown bool     // a row-format fact exists (declared keyword or instance default)
+	missingFacts   []string // instance.default_charset then instance.innodb_default_row_format, in that fixed order
+}
+
+// resolveRowSizeFacts derives every fact the row-size estimate consumes for
+// one statement. Evaluate and EvidenceGaps share this result so the emitted
+// findings and reported gaps can never diverge on what was known.
+func resolveRowSizeFacts(statement spec.Statement) rowSizeFactResolution {
+	resolution := rowSizeFactResolution{inScope: true}
+	engine := normalizedTableOption(statement, "engine")
+	if engine != "" && !strings.EqualFold(engine, "InnoDB") {
+		resolution.inScope = false
+		return resolution
+	}
+	instance := instanceFacts(statement)
+	if !rowSizeFactDialect(statement.Dialect) {
+		if instance == nil {
+			resolution.inScope = false
+			return resolution
+		}
+		resolution.charset = resolvedTableCharset(statement, instance)
+		resolution.rowFormat = resolvedRowFormat(statement, instance)
+		resolution.charsetKnown = true
+		resolution.rowFormatKnown = true
+		return resolution
+	}
+
+	resolution.charset = strings.ToLower(strings.TrimSpace(normalizedTableOption(statement, "charset")))
+	if resolution.charset == "" && instance != nil {
+		resolution.charset = strings.ToLower(strings.TrimSpace(instance.DefaultCharset))
+	}
+	resolution.charsetKnown = resolution.charset != ""
+	if statement.DDL != nil {
+		for _, column := range statement.DDL.Columns {
+			if strings.TrimSpace(column.Charset) == "" && rowSizeColumnNeedsCharset(column) {
+				resolution.charsetNeeded = true
+				break
+			}
+		}
+	}
+
+	declared := strings.ToUpper(strings.TrimSpace(normalizedTableOption(statement, "row_format")))
+	switch declared {
+	case "DYNAMIC", "COMPACT", "REDUNDANT":
+		resolution.rowFormat, resolution.rowFormatKnown = declared, true
+	default:
+		// An absent, DEFAULT, or unrecognized declaration is not evidence of
+		// an effective format; the instance default is the only remaining
+		// source.
+		if instance != nil {
+			if value := strings.ToUpper(strings.TrimSpace(instance.InnoDBDefaultRowFormat)); value != "" {
+				resolution.rowFormat, resolution.rowFormatKnown = value, true
+			}
+		}
+	}
+	if resolution.charsetNeeded && !resolution.charsetKnown {
+		resolution.missingFacts = append(resolution.missingFacts, factInstanceDefaultCharset)
+	}
+	if !resolution.rowFormatKnown {
+		resolution.missingFacts = append(resolution.missingFacts, factInstanceInnoDBDefaultRowFormat)
+	}
+	return resolution
+}
+
+// rowSizeColumnNeedsCharset reports whether a column's width estimate consults
+// bytes-per-character: char/varchar always, and every other base type only via
+// the generic length-times-width fallback when a declared length exists. It
+// mirrors estimatedColumnBytes — keep the two switches aligned.
+func rowSizeColumnNeedsCharset(column spec.Column) bool {
+	switch baseType(column) {
+	case "char", "varchar":
+		return true
+	case "tinyint", "smallint", "mediumint", "int", "integer",
+		"bigint", "double", "float", "date", "timestamp", "datetime",
+		"time", "year", "json", "text", "tinytext", "mediumtext",
+		"longtext", "blob", "tinyblob", "mediumblob", "longblob":
+		return false
+	default:
+		return column.Length > 0
+	}
+}
+
+func rowSizeFactDialect(dialect spec.Dialect) bool {
+	return dialect == spec.DialectMySQL || dialect == spec.DialectTiDB
+}
+
+// EvidenceGaps reports the instance fields the estimate needed but could not
+// resolve — at most one gap per statement, listing only the facts that were
+// actually missing in a fixed order. Declaration-complete statements report
+// no gap: a nil instance object is not itself a missing fact. It never
+// suppresses Evaluate, so a proven total-size violation still reports its
+// finding alongside an unresolved row-format gap.
+func (r tableRowSizeRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
+	if !r.AppliesTo(statement) || !rowSizeFactDialect(statement.Dialect) {
+		return nil
+	}
+	facts := resolveRowSizeFacts(statement)
+	if !facts.inScope || len(facts.missingFacts) == 0 {
+		return nil
+	}
+	return []rule.EvidenceGap{{
+		ReasonCode:    gapReasonMissingInstanceFact,
+		RequiredFacts: append([]string(nil), facts.missingFacts...),
+	}}
+}
+
 // Version-dependent key-length fact contract (T04-B/#83): the InnoDB index
 // key bound depends on product, version, row format, the InnoDB page size,
 // and — only on MySQL 5.7 DYNAMIC/COMPRESSED — the innodb_large_prefix
@@ -165,6 +300,7 @@ const (
 	gapReasonMissingInstanceFact         = "missing_instance_fact"
 	factTargetVersion                    = "target.version"
 	factTargetVersionValidatedRange      = "target.version.validated_range"
+	factInstanceDefaultCharset           = "instance.default_charset"
 	factInstanceInnoDBDefaultRowFormat   = "instance.innodb_default_row_format"
 	factInstanceInnoDBLargePrefixEnabled = "instance.innodb_large_prefix_enabled"
 	factInstanceInnoDBPageSize           = "instance.innodb_page_size"
@@ -380,7 +516,7 @@ func (r indexKeyLengthRule) EvidenceGaps(statement spec.Statement) []rule.Eviden
 	if !r.AppliesTo(statement) || !versionDependentKeyLengthDialect(statement.Dialect) {
 		return nil
 	}
-	instance, _ := instanceFacts(statement)
+	instance := instanceFacts(statement)
 	resolution := resolveIndexKeyLimit(statement, instance)
 	if resolution.gapReason != "" {
 		return []rule.EvidenceGap{{
@@ -408,7 +544,7 @@ func (r indexKeyLengthRule) Evaluate(ctx context.Context, statement spec.Stateme
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
-	instance, _ := instanceFacts(statement)
+	instance := instanceFacts(statement)
 	if !versionDependentKeyLengthDialect(statement.Dialect) {
 		if instance == nil {
 			return nil, nil
@@ -468,11 +604,11 @@ func (r indexKeyLengthRule) evaluateWithBounds(ctx context.Context, statement sp
 	return findings, nil
 }
 
-func instanceFacts(statement spec.Statement) (*spec.InstanceFacts, bool) {
-	if statement.Metadata == nil || statement.Metadata.Instance == nil {
-		return nil, false
+func instanceFacts(statement spec.Statement) *spec.InstanceFacts {
+	if statement.Metadata == nil {
+		return nil
 	}
-	return statement.Metadata.Instance, true
+	return statement.Metadata.Instance
 }
 
 func resolvedTableCharset(statement spec.Statement, instance *spec.InstanceFacts) string {

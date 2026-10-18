@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: synthetic ddl-golden artifacts and manifests built in a temp directory
-# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1/A2/A3/A4/A5/A7/A8/A9/A10 mutation coverage (T06-A9 includes the byte-exact EXTRA comparison mutations: plain-LOWER-IN rollback, catalog pad-space control deletion, and forged marker/sentinel outputs; T06-A10 includes the AUTO_INCREMENT declaration/allocator-observation mutations plus the T06-A10-R1 record-set controls: duplicate/hidden/wrong-target/header-only/forged-header records on all three observations, and legal allocator null|value:<digits> variants staying accepted; T06-A10-R2 adds non-string-stdout contract failures and the complete-`t` SHOW CREATE head boundary; T06-A11 adds the BIGINT/UNSIGNED policy mutations and T06-A11-R1 adds the raw HEX-field shape boundary: whitespace-corrupted, empty, odd-length, 0x-prefixed, and non-ASCII COLUMN_TYPE hex rejected while every frozen whitelist form and upper/lower/mixed-case hex stays accepted; T06-A12 adds the NOT NULL attribution and column-set mutations, and T06-A12-R1 adds the strict rule_summary shape controls: present-but-null/empty/false keys on the disabled role, missing or non-object summaries on enabled roles, missing counters, bool/float/string/null counts, and wrong per-role integer combos — all rejected through the full validate_artifact entry; T06-A13 adds the type-family forbid mutations: missed/forged findings, absorbed c_json/c_datetime, collapsed/duplicated/cross-paired findings, dropped or added metadata keys, same-SQL family profile/record swaps, switch-state laundering, weakened profiles, ordered-column-set corruptions, skipped or failed driver replay, and denominator shrinkage; T06-A14 adds the table-option allowlist mutations: missed/forged findings per role, the omitted-strict actual laundered to a server default, swapped option keys, widened allowed lists, dropped actual keys, duplicated findings, denied-optional pass laundering, the omitted-optional 1/0 forgery, fabricated/null/non-integer summaries, strict-optional-off record and profile swaps, cross-family borrowing, weakened profiles, forged MySQL/TiDB catalog identities (MyISAM-as-InnoDB, Dynamic-as-Compact, TiDB declarations recorded as catalog values), missing/multirow charset associations, skipped or failed driver replay, and denominator shrinkage)
+# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1/A2/A3/A4/A5/A7/A8/A9/A10 mutation coverage (T06-A9 includes the byte-exact EXTRA comparison mutations: plain-LOWER-IN rollback, catalog pad-space control deletion, and forged marker/sentinel outputs; T06-A10 includes the AUTO_INCREMENT declaration/allocator-observation mutations plus the T06-A10-R1 record-set controls: duplicate/hidden/wrong-target/header-only/forged-header records on all three observations, and legal allocator null|value:<digits> variants staying accepted; T06-A10-R2 adds non-string-stdout contract failures and the complete-`t` SHOW CREATE head boundary; T06-A11 adds the BIGINT/UNSIGNED policy mutations and T06-A11-R1 adds the raw HEX-field shape boundary: whitespace-corrupted, empty, odd-length, 0x-prefixed, and non-ASCII COLUMN_TYPE hex rejected while every frozen whitelist form and upper/lower/mixed-case hex stays accepted; T06-A12 adds the NOT NULL attribution and column-set mutations, and T06-A12-R1 adds the strict rule_summary shape controls: present-but-null/empty/false keys on the disabled role, missing or non-object summaries on enabled roles, missing counters, bool/float/string/null counts, and wrong per-role integer combos — all rejected through the full validate_artifact entry; T06-A13 adds the type-family forbid mutations: missed/forged findings, absorbed c_json/c_datetime, collapsed/duplicated/cross-paired findings, dropped or added metadata keys, same-SQL family profile/record swaps, switch-state laundering, weakened profiles, ordered-column-set corruptions, skipped or failed driver replay, and denominator shrinkage; T06-A14 adds the table-option allowlist mutations: missed/forged findings per role, the omitted-strict actual laundered to a server default, swapped option keys, widened allowed lists, dropped actual keys, duplicated findings, denied-optional pass laundering, the omitted-optional 1/0 forgery, fabricated/null/non-integer summaries, strict-optional-off record and profile swaps, cross-family borrowing, weakened profiles, forged MySQL/TiDB catalog identities (MyISAM-as-InnoDB, Dynamic-as-Compact, TiDB declarations recorded as catalog values), missing/multirow charset associations, skipped or failed driver replay, and denominator shrinkage; T06-A15 adds the row-size fact-resolution mutations: the over-limit role recorded as pass, safe boundary roles forged as blockers, a missing fact recorded as complete, wrong/reordered/duplicated required_facts, a declared fact listed as missing, the missing-format-over determined finding dropped beside its gap, the column charset laundered into table metadata or the estimate overwritten by the table charset, an unused undeclared table charset forged as required, on/not-required/off record and profile swaps, a fabricated rule_summary under the all-off control, and denominator shrinkage)
 # pos: offline negative tests for scripts/ddl_golden.py validation (no Docker required)
 # note: if this file changes, update this header and module README.md.
 """Validator contract tests for scripts/ddl_golden.py.
@@ -2118,6 +2118,7 @@ def t06_contract_tests(tmp):
         ddl_golden.T06_A12_RULE,
         *[pair[0] for pair in ddl_golden.T06_A13_RULES.values()],
         *[pair[0] for pair in ddl_golden.T06_A14_RULES.values()],
+        ddl_golden.T06_A15_RULE,
         "ddl.table.exists.create.forbid", "ddl.table.exists.alter.require",
         "ddl.alter.drop_column.exists.require", "ddl.create_index.columns.exists.require")]})
     binary.write_text("#!/bin/sh\nprintf '%s' '" + catalog + "'\n")
@@ -5408,6 +5409,165 @@ def t06_contract_tests(tmp):
                            if s["id"] != "t06-a14-mysql84-charset-denied-strict"]
     m["required_case_ids"].remove(victim)
     run("t06a14 case deleted on both sides rejected", a, "T06-A1", m)
+
+    # ---- T06-A15 (issue #85): row-size field-level fact resolution ----
+    # The frozen role oracle pins declaration-complete execution, the strict
+    # 65535 boundary, field-ordered missing_instance_fact gaps, and the
+    # determined-finding-plus-gap coexistence. Every mutation below launders
+    # one of those properties: an over-limit role recorded as pass, a safe
+    # role carrying a fabricated blocker, a missing fact recorded as
+    # complete, wrong/reordered/duplicated required_facts, a declared fact
+    # listed as missing, the determined finding dropped beside its gap, the
+    # column charset overridden by the table declaration, or the
+    # on/not-required/off profiles swapped.
+
+    def t06a15(suffix):
+        candidate = copy.deepcopy(artifact)
+        case = next(item for item in candidate["cases"]
+                    if item.get("cli_case") == "t06-a15-" + suffix)
+        return candidate, case
+
+    def a15_statement(case):
+        return case["actual"]["parsed"]["statements"][0]
+
+    # Missed blocker on the over-limit role and forged blockers on the two
+    # safe boundary roles.
+    a, c = t06a15("mysql-above")
+    a15_statement(c)["findings"] = []
+    c["actual"]["parsed"]["verdict"] = "pass"
+    c["actual"]["parsed"]["summary"]["blockers"] = 0
+    c["actual"]["exit"] = 0
+    update_stdout(c)
+    run("t06a15 above recorded as pass rejected", a, "T06-A15")
+
+    for role in ("below", "equal"):
+        a, c = t06a15(f"tidb-{role}")
+        donor = by_id(a, "T06.cli.t06-a15-tidb-above")
+        a15_statement(c)["findings"] = [copy.deepcopy(
+            a15_statement(donor)["findings"][0])]
+        c["actual"]["parsed"]["verdict"] = "reject"
+        c["actual"]["parsed"]["summary"]["blockers"] = 1
+        c["actual"]["exit"] = 1
+        update_stdout(c)
+        run(f"t06a15 {role} forged blocker rejected", a, "T06-A15")
+
+    # A missing required fact recorded as complete: no gap, no finding.
+    a, c = t06a15("mysql-missing-charset")
+    a15_statement(c)["evidence_gaps"] = []
+    c["actual"]["parsed"]["coverage"]["status"] = "complete"
+    a15_statement(c)["coverage"]["status"] = "complete"
+    c["actual"]["parsed"]["verdict"] = "pass"
+    update_stdout(c)
+    run("t06a15 missing-charset fabricated complete rejected", a, "T06-A15")
+
+    # required_facts identity is frozen per role — wrong field, reversed
+    # order, and a duplicated gap each fail.
+    a, c = t06a15("mysql-missing-charset")
+    a15_statement(c)["evidence_gaps"][0]["required_facts"] = [
+        ddl_golden.T06_A15_FACT_ROW_FORMAT]
+    update_stdout(c)
+    run("t06a15 charset gap refilled as row-format fact rejected", a,
+        "T06-A15")
+
+    a, c = t06a15("mysql-missing-both")
+    a15_statement(c)["evidence_gaps"][0]["required_facts"] = [
+        ddl_golden.T06_A15_FACT_ROW_FORMAT,
+        ddl_golden.T06_A15_FACT_CHARSET]
+    update_stdout(c)
+    run("t06a15 required_facts order swapped rejected", a, "T06-A15")
+
+    a, c = t06a15("mysql-missing-format-safe")
+    a15_statement(c)["evidence_gaps"].append(
+        copy.deepcopy(a15_statement(c)["evidence_gaps"][0]))
+    update_stdout(c)
+    run("t06a15 duplicate gap rejected", a, "T06-A15")
+
+    # A declared fact can never be listed as missing: the above role
+    # declares charset+row_format — fabricating a charset gap on it
+    # launders declared evidence into a question.
+    a, c = t06a15("mysql-above")
+    a15_statement(c)["evidence_gaps"] = [{
+        "rule_id": ddl_golden.T06_A15_RULE,
+        "reason_code": "missing_instance_fact",
+        "required_facts": [ddl_golden.T06_A15_FACT_CHARSET]}]
+    update_stdout(c)
+    run("t06a15 declared charset listed as missing rejected", a, "T06-A15")
+
+    # missing-format-over keeps its determined blocker beside the gap —
+    # dropping the finding launders a known violation into review.
+    a, c = t06a15("mysql-missing-format-over")
+    a15_statement(c)["findings"] = []
+    c["actual"]["parsed"]["verdict"] = "review"
+    c["actual"]["parsed"]["summary"]["blockers"] = 0
+    c["actual"]["exit"] = 0
+    update_stdout(c)
+    run("t06a15 format-over lost determined finding rejected", a,
+        "T06-A15")
+
+    # Column-level charset wins the estimate but metadata.charset records
+    # the table declaration — rewriting it to the column charset (or the
+    # table one into the estimate) breaks the identity pin.
+    a, c = t06a15("mysql-column-override")
+    a15_statement(c)["findings"][0]["metadata"]["charset"] = "utf8mb4"
+    update_stdout(c)
+    run("t06a15 column charset laundered into table metadata rejected", a,
+        "T06-A15")
+
+    a, c = t06a15("mysql-column-override")
+    a15_statement(c)["findings"][0]["metadata"]["estimated"] = 65536
+    a15_statement(c)["findings"][0]["message"] = (
+        "estimated row size exceeds 65535 bytes (65536)")
+    update_stdout(c)
+    run("t06a15 estimate overwritten by table charset rejected", a,
+        "T06-A15")
+
+    # column-only-charset proves an unused undeclared table charset is not
+    # a required fact — fabricating a charset gap on it fails.
+    a, c = t06a15("tidb-column-only-charset")
+    a15_statement(c)["evidence_gaps"] = [{
+        "rule_id": ddl_golden.T06_A15_RULE,
+        "reason_code": "missing_instance_fact",
+        "required_facts": [ddl_golden.T06_A15_FACT_CHARSET]}]
+    update_stdout(c)
+    run("t06a15 unused table charset forged as required rejected", a,
+        "T06-A15")
+
+    # The on/not-required/off records share SQL — a not-required record in
+    # the on slot, an off record in the on slot, and a fabricated
+    # rule_summary under the all-off control each fail the identity pin.
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.cli.t06-a15-mysql-above",
+         by_id(a, "T06.cli.t06-a15-mysql-not-required"))
+    run("t06a15 not-required record in on slot rejected", a, "identity")
+
+    a = copy.deepcopy(artifact)
+    slot(a, "T06.cli.t06-a15-mysql-above",
+         by_id(a, "T06.cli.t06-a15-mysql-disabled"))
+    run("t06a15 disabled record in on slot rejected", a, "identity")
+
+    a, c = t06a15("mysql-disabled")
+    c["actual"]["parsed"]["rule_summary"] = {"loaded": 0, "applicable": 0,
+                                             "skipped": []}
+    update_stdout(c)
+    run("t06a15 disabled fabricated rule_summary rejected", a, "absent")
+
+    a, c = t06a15("mysql-above")
+    c["policy_profile"] = ddl_golden.T06_A15_NR_PROFILE
+    run("t06a15 on case bound to not-required profile rejected", a,
+        "policy_profile")
+
+    # Denominator: an a15 case deleted on both sides still fails because
+    # the manifest oracle re-derives the frozen role set.
+    a = copy.deepcopy(artifact)
+    m = copy.deepcopy(manifest)
+    victim = "T06.cli.t06-a15-mysql-missing-both"
+    a["cases"] = [x for x in a["cases"] if x["case_id"] != victim]
+    a["executed_count"] = len(a["cases"])
+    a["required_case_ids"].remove(victim)
+    m["cli_cases"] = [s for s in m["cli_cases"]
+                      if s["id"] != "t06-a15-mysql-missing-both"]
+    m["required_case_ids"].remove(victim)
+    run("t06a15 case deleted on both sides rejected", a, "T06-A1", m)
 
     return results
 

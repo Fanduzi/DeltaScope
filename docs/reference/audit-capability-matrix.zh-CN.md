@@ -39,7 +39,7 @@
 | `ddl.table.create_like.forbid` | 不允许使用 CREATE TABLE … LIKE | ✓ | ✗ | blocker |
 | `ddl.table.foreign_key.forbid` | 不允许使用外键约束 | ✓ | ✗ | blocker |
 | `ddl.table.partition.forbid` | 不允许使用分区表 | ✓ | ✗ | blocker |
-| `ddl.table.row_size.max_bytes.require` | 根据实例行格式估算，行大小超过 InnoDB 行大小限制 | ✗ | ✓ | warning |
+| `ddl.table.row_size.max_bytes.require` | 在解析所得字符集/行格式下估算行大小超过 InnoDB 限制（声明值优先；实例缺省仅作字段级回退——缺失字段报告 `missing_instance_fact` 证据缺口） | ✗ | ✓ | warning |
 | `ddl.table.denylist.forbid` | 表名匹配 Schema 级或表级拒绝列表中的条目 | ✓ | ✗ | blocker |
 
 ### 列级检查
@@ -1229,7 +1229,8 @@ TiDB 使用同一审计批次内先前语句派生的状态。表存在性（`ex
 | `version` | 版本条件性规则行为（如方言特定的语法检查） |
 | `character_set_database` | 为未指定字符集的表解析默认字符集 |
 | `innodb_large_prefix` | 计算索引键长度限制（`ddl.index.key_length.max_bytes.require`） |
-| `innodb_default_row_format` | 对使用实例默认行格式的表进行行大小估算 |
+| `innodb_default_row_format` | `ddl.table.row_size.max_bytes.require` —— `ROW_FORMAT` 未声明（或为 `DEFAULT`）时的行格式回退 |
+| `default_charset` | `ddl.table.row_size.max_bytes.require` —— 字符敏感列与表均未声明字符集时的字符集回退 |
 | `innodb_adaptive_hash_index` | 在 DROP 和 TRUNCATE 时触发自适应哈希索引警告 |
 
 ### 表快照（Table Snapshot）

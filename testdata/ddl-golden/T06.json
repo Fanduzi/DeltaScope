@@ -1,7 +1,7 @@
 {
  "task_id": "T06",
  "issue": "https://github.com/Fanduzi/DeltaScope/issues/85",
- "description": "CREATE TABLE base semantics (issue #85 T06-A1/A2/A3/A4/A5/A7/A8/A9/A10/A11/A12/A13/A14): the accepted 56-case primary-key/nullability/default-presence subset plus 16 DEFAULT NULL cases, 12 provider default-identity cases, 40 declared CHAR/VARCHAR length cases, 64 charset/collation cases, 40 comment-fidelity cases, 28 explicit audit-time-column role cases, 36 AUTO_INCREMENT declaration cases, and 32 single-member primary-key BIGINT/UNSIGNED cases, and 36 ordinary-column NOT NULL cases, and 52 type-family forbid cases — the A13 subset isolates ddl.column.blob_text.forbid, ddl.column.json.forbid, ddl.column.bit.forbid, ddl.column.float_double.forbid, and ddl.column.timestamp.forbid under per-rule on/false blocker profiles with the all-rules-disabled control, pinning per-column finding attribution (blob/text excluding JSON, timestamp excluding DATETIME, the independent float/double metadata shape) plus the ordered nine-column DATA_TYPE oracle on all four anchors regardless of the policy verdict — the A11 offline matrix isolates ddl.table.primary_key.bigint.require and ddl.table.primary_key.unsigned.require (required=true) under single-rule blocker profiles across both dialects (composite primary keys skip the member check; the off controls reuse the all-rules-disabled profile), while the anchored roles pin DATA_TYPE, a finite-whitelist COLUMN_TYPE complete form, byte-empty EXTRA, and ordered single-member PK binding regardless of the policy verdict. The A12 subset adds three single-rule isolations of ddl.column.not_null.require (strict/time-allow/not-required) — the offline matrix pins per-column finding attribution and the loaded/applicable/absent rule_summary contract, while the anchored roles pin the ordered column set (name/DATA_TYPE/ordinal/IS_NULLABLE) with zero PK constraints regardless of the policy verdict. The A14 subset adds 60 table-option allowlist cases: 36 offline roles across three families (ddl.table.engine.allowlist values=[InnoDB], ddl.table.charset.allowlist values=[utf8mb4], ddl.table.row_format.allowlist values=[DYNAMIC]) under per-family strict/optional isolated blocker profiles plus the all-rules-disabled control — pinning the complete require_explicit contract (explicit disallowed values reject under both switches, omission rejects only under strict, omitted-optional stays loaded=1/applicable=1) — and 24 anchored roles whose driver-applied CREATEs record per-product catalog facts: MySQL engine/row_format storage values, TiDB's InnoDB/Compact compatibility display, and the declared charset through the real TABLE_COLLATION association.",
+ "description": "CREATE TABLE base semantics (issue #85 T06-A1/A2/A3/A4/A5/A7/A8/A9/A10/A11/A12/A13/A14): the accepted 56-case primary-key/nullability/default-presence subset plus 16 DEFAULT NULL cases, 12 provider default-identity cases, 40 declared CHAR/VARCHAR length cases, 64 charset/collation cases, 40 comment-fidelity cases, 28 explicit audit-time-column role cases, 36 AUTO_INCREMENT declaration cases, and 32 single-member primary-key BIGINT/UNSIGNED cases, and 36 ordinary-column NOT NULL cases, and 52 type-family forbid cases — the A13 subset isolates ddl.column.blob_text.forbid, ddl.column.json.forbid, ddl.column.bit.forbid, ddl.column.float_double.forbid, and ddl.column.timestamp.forbid under per-rule on/false blocker profiles with the all-rules-disabled control, pinning per-column finding attribution (blob/text excluding JSON, timestamp excluding DATETIME, the independent float/double metadata shape) plus the ordered nine-column DATA_TYPE oracle on all four anchors regardless of the policy verdict — the A11 offline matrix isolates ddl.table.primary_key.bigint.require and ddl.table.primary_key.unsigned.require (required=true) under single-rule blocker profiles across both dialects (composite primary keys skip the member check; the off controls reuse the all-rules-disabled profile), while the anchored roles pin DATA_TYPE, a finite-whitelist COLUMN_TYPE complete form, byte-empty EXTRA, and ordered single-member PK binding regardless of the policy verdict. The A12 subset adds three single-rule isolations of ddl.column.not_null.require (strict/time-allow/not-required) — the offline matrix pins per-column finding attribution and the loaded/applicable/absent rule_summary contract, while the anchored roles pin the ordered column set (name/DATA_TYPE/ordinal/IS_NULLABLE) with zero PK constraints regardless of the policy verdict. The A14 subset adds 60 table-option allowlist cases: 36 offline roles across three families (ddl.table.engine.allowlist values=[InnoDB], ddl.table.charset.allowlist values=[utf8mb4], ddl.table.row_format.allowlist values=[DYNAMIC]) under per-family strict/optional isolated blocker profiles plus the all-rules-disabled control — pinning the complete require_explicit contract (explicit disallowed values reject under both switches, omission rejects only under strict, omitted-optional stays loaded=1/applicable=1) — and 24 anchored roles whose driver-applied CREATEs record per-product catalog facts: MySQL engine/row_format storage values, TiDB's InnoDB/Compact compatibility display, and the declared charset through the real TABLE_COLLATION association. The A15 subset adds 24 offline row-size fact-resolution cases: ddl.table.row_size.max_bytes.require under on/not-required isolated profiles plus the all-off control, pinning the strict 65535 boundary, column-over-table charset precedence with the table-level metadata contract, the declared non-InnoDB scope skip, field-ordered missing_instance_fact gaps, and the determined-finding-plus-gap coexistence role.",
  "policy_profile": "all-rules-disabled",
  "policy": {
   "profiles": {
@@ -497,6 +497,28 @@
         "DYNAMIC"
        ],
        "require_explicit": false
+      }
+     }
+    }
+   },
+   "t06-a15-row-size-isolated": {
+    "enable": {
+     "ddl.table.row_size.max_bytes.require": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "required": true
+      }
+     }
+    }
+   },
+   "t06-a15-row-size-not-required-isolated": {
+    "enable": {
+     "ddl.table.row_size.max_bytes.require": {
+      "enabled": true,
+      "level": "blocker",
+      "params": {
+       "required": false
       }
      }
     }
@@ -10711,6 +10733,986 @@
     ],
     "statement_sql": [
      "CREATE TABLE t (c INT) ROW_FORMAT=COMPACT;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "t06-a15-mysql-below",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(65532)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;",
+   "policy": "t06-a15-row-size-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(65532)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t06-a15-mysql-equal",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(65533)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;",
+   "policy": "t06-a15-row-size-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(65533)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t06-a15-mysql-above",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;",
+   "policy": "t06-a15-row-size-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_size.max_bytes.require",
+      "level": "blocker",
+      "message": "estimated row size exceeds 65535 bytes (65536)",
+      "metadata": {
+       "table": "t",
+       "charset": "latin1",
+       "row_format": "DYNAMIC",
+       "estimated": 65536,
+       "limit": 65535
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a15-mysql-column-override",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16384) CHARACTER SET utf8mb4) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;",
+   "policy": "t06-a15-row-size-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16384) CHARACTER SET utf8mb4) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_size.max_bytes.require",
+      "level": "blocker",
+      "message": "estimated row size exceeds 65535 bytes (65538)",
+      "metadata": {
+       "table": "t",
+       "charset": "latin1",
+       "row_format": "DYNAMIC",
+       "estimated": 65538,
+       "limit": 65535
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a15-mysql-non-innodb-skip",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(65534)) ENGINE=MyISAM DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;",
+   "policy": "t06-a15-row-size-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(65534)) ENGINE=MyISAM DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t06-a15-mysql-missing-charset",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t06-a15-row-size-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_size.max_bytes.require",
+      "reason_code": "missing_instance_fact",
+      "required_facts": [
+       "instance.default_charset"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a15-mysql-missing-format-safe",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(65532)) ENGINE=InnoDB DEFAULT CHARSET=latin1;",
+   "policy": "t06-a15-row-size-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(65532)) ENGINE=InnoDB DEFAULT CHARSET=latin1;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_size.max_bytes.require",
+      "reason_code": "missing_instance_fact",
+      "required_facts": [
+       "instance.innodb_default_row_format"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a15-mysql-missing-format-over",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1;",
+   "policy": "t06-a15-row-size-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_size.max_bytes.require",
+      "level": "blocker",
+      "message": "estimated row size exceeds 65535 bytes (65536)",
+      "metadata": {
+       "table": "t",
+       "charset": "latin1",
+       "row_format": "",
+       "estimated": 65536,
+       "limit": 65535
+      },
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_size.max_bytes.require",
+      "reason_code": "missing_instance_fact",
+      "required_facts": [
+       "instance.innodb_default_row_format"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a15-mysql-missing-both",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB;",
+   "policy": "t06-a15-row-size-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_size.max_bytes.require",
+      "reason_code": "missing_instance_fact",
+      "required_facts": [
+       "instance.default_charset",
+       "instance.innodb_default_row_format"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a15-mysql-column-only-charset",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(16384) CHARACTER SET utf8mb4) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t06-a15-row-size-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16384) CHARACTER SET utf8mb4) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_size.max_bytes.require",
+      "level": "blocker",
+      "message": "estimated row size exceeds 65535 bytes (65538)",
+      "metadata": {
+       "table": "t",
+       "charset": "",
+       "row_format": "DYNAMIC",
+       "estimated": 65538,
+       "limit": 65535
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a15-mysql-not-required",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;",
+   "policy": "t06-a15-row-size-not-required-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 0
+   }
+  },
+  {
+   "id": "t06-a15-mysql-disabled",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "t06-a15-tidb-below",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(65532)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;",
+   "policy": "t06-a15-row-size-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(65532)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t06-a15-tidb-equal",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(65533)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;",
+   "policy": "t06-a15-row-size-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(65533)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t06-a15-tidb-above",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;",
+   "policy": "t06-a15-row-size-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_size.max_bytes.require",
+      "level": "blocker",
+      "message": "estimated row size exceeds 65535 bytes (65536)",
+      "metadata": {
+       "table": "t",
+       "charset": "latin1",
+       "row_format": "DYNAMIC",
+       "estimated": 65536,
+       "limit": 65535
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a15-tidb-column-override",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(16384) CHARACTER SET utf8mb4) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;",
+   "policy": "t06-a15-row-size-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16384) CHARACTER SET utf8mb4) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_size.max_bytes.require",
+      "level": "blocker",
+      "message": "estimated row size exceeds 65535 bytes (65538)",
+      "metadata": {
+       "table": "t",
+       "charset": "latin1",
+       "row_format": "DYNAMIC",
+       "estimated": 65538,
+       "limit": 65535
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a15-tidb-non-innodb-skip",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(65534)) ENGINE=MyISAM DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;",
+   "policy": "t06-a15-row-size-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(65534)) ENGINE=MyISAM DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t06-a15-tidb-missing-charset",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t06-a15-row-size-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_size.max_bytes.require",
+      "reason_code": "missing_instance_fact",
+      "required_facts": [
+       "instance.default_charset"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a15-tidb-missing-format-safe",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(65532)) ENGINE=InnoDB DEFAULT CHARSET=latin1;",
+   "policy": "t06-a15-row-size-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(65532)) ENGINE=InnoDB DEFAULT CHARSET=latin1;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_size.max_bytes.require",
+      "reason_code": "missing_instance_fact",
+      "required_facts": [
+       "instance.innodb_default_row_format"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a15-tidb-missing-format-over",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1;",
+   "policy": "t06-a15-row-size-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_size.max_bytes.require",
+      "level": "blocker",
+      "message": "estimated row size exceeds 65535 bytes (65536)",
+      "metadata": {
+       "table": "t",
+       "charset": "latin1",
+       "row_format": "",
+       "estimated": 65536,
+       "limit": 65535
+      },
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_size.max_bytes.require",
+      "reason_code": "missing_instance_fact",
+      "required_facts": [
+       "instance.innodb_default_row_format"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a15-tidb-missing-both",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB;",
+   "policy": "t06-a15-row-size-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_size.max_bytes.require",
+      "reason_code": "missing_instance_fact",
+      "required_facts": [
+       "instance.default_charset",
+       "instance.innodb_default_row_format"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a15-tidb-column-only-charset",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(16384) CHARACTER SET utf8mb4) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+   "policy": "t06-a15-row-size-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(16384) CHARACTER SET utf8mb4) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries_full": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.row_size.max_bytes.require",
+      "level": "blocker",
+      "message": "estimated row size exceeds 65535 bytes (65538)",
+      "metadata": {
+       "table": "t",
+       "charset": "",
+       "row_format": "DYNAMIC",
+       "estimated": 65538,
+       "limit": 65535
+      },
+      "line": 1,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t06-a15-tidb-not-required",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;",
+   "policy": "t06-a15-row-size-not-required-isolated",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;"
+    ],
+    "statement_indices": [
+     0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 0
+   }
+  },
+  {
+   "id": "t06-a15-tidb-disabled",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;"
     ],
     "statement_indices": [
      0
@@ -46122,6 +47124,30 @@
   "T06.cli.t06-a14-tidb-row-format-omitted-optional",
   "T06.cli.t06-a14-tidb-row-format-denied-optional",
   "T06.cli.t06-a14-tidb-row-format-denied-off",
+  "T06.cli.t06-a15-mysql-below",
+  "T06.cli.t06-a15-mysql-equal",
+  "T06.cli.t06-a15-mysql-above",
+  "T06.cli.t06-a15-mysql-column-override",
+  "T06.cli.t06-a15-mysql-non-innodb-skip",
+  "T06.cli.t06-a15-mysql-missing-charset",
+  "T06.cli.t06-a15-mysql-missing-format-safe",
+  "T06.cli.t06-a15-mysql-missing-format-over",
+  "T06.cli.t06-a15-mysql-missing-both",
+  "T06.cli.t06-a15-mysql-column-only-charset",
+  "T06.cli.t06-a15-mysql-not-required",
+  "T06.cli.t06-a15-mysql-disabled",
+  "T06.cli.t06-a15-tidb-below",
+  "T06.cli.t06-a15-tidb-equal",
+  "T06.cli.t06-a15-tidb-above",
+  "T06.cli.t06-a15-tidb-column-override",
+  "T06.cli.t06-a15-tidb-non-innodb-skip",
+  "T06.cli.t06-a15-tidb-missing-charset",
+  "T06.cli.t06-a15-tidb-missing-format-safe",
+  "T06.cli.t06-a15-tidb-missing-format-over",
+  "T06.cli.t06-a15-tidb-missing-both",
+  "T06.cli.t06-a15-tidb-column-only-charset",
+  "T06.cli.t06-a15-tidb-not-required",
+  "T06.cli.t06-a15-tidb-disabled",
   "T06.meta.t06-mysql57-no-pk",
   "T06.meta.t06-mysql57-inline-pk",
   "T06.meta.t06-mysql57-table-pk",

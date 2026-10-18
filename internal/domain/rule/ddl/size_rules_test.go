@@ -113,7 +113,13 @@ func TestIndexKeyLengthRuleFindsLargePrefixOverflow(t *testing.T) {
 	}
 }
 
-func TestSizeRulesSkipWithoutInstanceFacts(t *testing.T) {
+// TestSizeRulesWithoutInstanceFacts pins the T06-A15 row-size contract: a nil
+// instance object is not itself a stop condition — the column-free statement
+// still emits no findings, but the unresolvable row format now reports a
+// field-level missing_instance_fact gap instead of a silent skip. The
+// index-key rule portion is unchanged: without an instance object it stays
+// silent.
+func TestSizeRulesWithoutInstanceFacts(t *testing.T) {
 	t.Parallel()
 	rowRule, err := newTableRowSizeRule(policy.RulePolicy{Enabled: true, Params: map[string]any{"required": true}})
 	if err != nil {
@@ -125,7 +131,8 @@ func TestSizeRulesSkipWithoutInstanceFacts(t *testing.T) {
 	}
 
 	statement := spec.Statement{
-		Kind: spec.KindDDL,
+		Kind:    spec.KindDDL,
+		Dialect: spec.DialectMySQL,
 		DDL: &spec.DDL{
 			Operation: spec.DDLOperationCreateTable,
 			Table:     &spec.Table{Name: "users"},
@@ -134,7 +141,12 @@ func TestSizeRulesSkipWithoutInstanceFacts(t *testing.T) {
 	}
 
 	if findings, err := rowRule.Evaluate(context.Background(), statement); err != nil || len(findings) != 0 {
-		t.Fatalf("expected row-size rule to skip without metadata, got findings=%+v err=%v", findings, err)
+		t.Fatalf("expected row-size rule to emit no findings without metadata, got findings=%+v err=%v", findings, err)
+	}
+	rowGaps := rowRule.(rule.EvidenceReporter).EvidenceGaps(statement)
+	if len(rowGaps) != 1 || rowGaps[0].ReasonCode != "missing_instance_fact" ||
+		len(rowGaps[0].RequiredFacts) != 1 || rowGaps[0].RequiredFacts[0] != "instance.innodb_default_row_format" {
+		t.Fatalf("expected row-size row_format gap, got %+v", rowGaps)
 	}
 	if findings, err := indexRule.Evaluate(context.Background(), statement); err != nil || len(findings) != 0 {
 		t.Fatalf("expected key-length rule to skip without metadata, got findings=%+v err=%v", findings, err)

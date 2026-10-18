@@ -6,6 +6,7 @@
 package catalog
 
 import (
+	"strings"
 	"testing"
 
 	domainpolicy "github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -81,6 +82,44 @@ func TestLookupMarksMetadataAwareRules(t *testing.T) {
 	if len(entry.Dialects) != 2 || entry.Dialects[0] != "mysql" || entry.Dialects[1] != "tidb" {
 		t.Fatalf("expected advisory dialects [mysql tidb], got %#v", entry.Dialects)
 	}
+}
+
+// T06-A15: the row-size rule's metadata dependency is the instance-fact
+// object (optional defaults for undeclared charset/row_format), never a
+// target-table snapshot — and its notes must describe an optional source,
+// not a connectivity requirement.
+func TestLookupMarksRowSizeInstanceDependency(t *testing.T) {
+	t.Parallel()
+	entry, ok := Lookup("ddl.table.row_size.max_bytes.require")
+	if !ok {
+		t.Fatal("expected ddl.table.row_size.max_bytes.require to exist")
+	}
+	if !entry.MetadataAware {
+		t.Fatal("expected row-size rule to stay metadata-aware")
+	}
+	if entry.MetadataNotes == nil || len(entry.MetadataNotes.Kinds) != 1 ||
+		entry.MetadataNotes.Kinds[0] != MetadataKindInstance {
+		t.Fatalf("expected row-size metadata kinds [instance], got %#v", entry.MetadataNotes)
+	}
+	if entry.MetadataNotes.Required == "" || entry.MetadataNotes.Missing == "" {
+		t.Fatalf("expected both notes, got %#v", entry.MetadataNotes)
+	}
+	// The notes must never suggest the rule requires a live connection:
+	// declared-complete statements evaluate identically offline.
+	for _, note := range []string{entry.MetadataNotes.Required, entry.MetadataNotes.Missing} {
+		if containsAny(note, "must connect", "requires live", "requires metadata") {
+			t.Fatalf("note must not imply mandatory connectivity: %q", note)
+		}
+	}
+}
+
+func containsAny(text string, needles ...string) bool {
+	for _, needle := range needles {
+		if strings.Contains(text, needle) {
+			return true
+		}
+	}
+	return false
 }
 
 func TestSearchMatchesRuleIDAndSummaryText(t *testing.T) {

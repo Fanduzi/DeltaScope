@@ -987,13 +987,20 @@ Rules fall into two categories based on whether they require a live database con
 and AST alone. All rules not listed as metadata-backed below are offline rules.
 
 **Metadata-backed rules** normally silently skip when no `MetadataProvider` is active. During offline audits
-they do not claim unavailable state. The MODIFY unknown-prior-state advisory is the explicit exception: it runs offline at notice level, while the existing MODIFY blocker only fires after a confirmed source-column comparison.
+they do not claim unavailable state. Two rules are explicit exceptions: the MODIFY unknown-prior-state advisory
+runs offline at notice level while the existing MODIFY blocker only fires after a confirmed source-column
+comparison, and `ddl.table.row_size.max_bytes.require` resolves the facts its estimate consumes field by field —
+declaration-complete statements evaluate without an instance object, and a genuinely missing
+`instance.default_charset`/`instance.innodb_default_row_format` reports a `missing_instance_fact` evidence gap
+(lowering coverage to unverified) rather than silently passing (issue #85 T06-A15).
 
 ### Complete List of Metadata-Backed Rule IDs
 
 The unknown-prior-state advisory is listed because it consumes live metadata
 when available, but it intentionally remains metadata-optional and emits its
-bounded notice during offline audits.
+bounded notice during offline audits. `ddl.table.row_size.max_bytes.require`
+is listed for the same reason: instance facts are its optional fallback
+source, not a connectivity prerequisite.
 
 | Rule ID |
 |---------|

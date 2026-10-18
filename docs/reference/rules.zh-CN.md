@@ -969,11 +969,11 @@ rules:
 
 **离线规则**始终运行，即使未提供数据库连接。它们仅基于 SQL 文本和 AST 进行评估。所有未在下方列为元数据支撑的规则均属于离线规则。
 
-**元数据支撑规则**在没有活跃 `MetadataProvider` 时通常静默跳过。离线审计不会对无法取得的状态作出断言。唯一明确的例外是 MODIFY unknown-prior-state advisory：它以 notice 级别离线运行，而已有的 MODIFY blocker 只有在确认源列并完成比较后才触发。
+**元数据支撑规则**在没有活跃 `MetadataProvider` 时通常静默跳过。离线审计不会对无法取得的状态作出断言。有两个明确的例外：MODIFY unknown-prior-state advisory 以 notice 级别离线运行，而已有的 MODIFY blocker 只有在确认源列并完成比较后才触发；`ddl.table.row_size.max_bytes.require` 按字段级解析其估算所消费的事实——声明齐备的语句无需实例对象即可评估，而真正缺失的 `instance.default_charset`/`instance.innodb_default_row_format` 会报告 `missing_instance_fact` 证据缺口（将覆盖率降为 unverified），而非静默通过（issue #85 T06-A15）。
 
 ### 元数据支撑规则 ID 完整列表
 
-unknown-prior-state advisory 会在元数据可用时消费实时状态，因此列在此处；但它明确不要求元数据，离线审计也会发出有界 notice。
+unknown-prior-state advisory 会在元数据可用时消费实时状态，因此列在此处；但它明确不要求元数据，离线审计也会发出有界 notice。`ddl.table.row_size.max_bytes.require` 同理被列出：实例事实是它的可选缺省来源，而非连接性前提。
 
 | 规则 ID |
 |---------|

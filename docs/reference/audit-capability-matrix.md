@@ -88,7 +88,7 @@ This is not a whole-statement no-op, a promise that a procedure exists or can ex
 | `ddl.table.create_like.forbid` | CREATE TABLE … LIKE is not permitted | ✓ | ✗ | blocker |
 | `ddl.table.foreign_key.forbid` | Foreign key constraints are not permitted | ✓ | ✗ | blocker |
 | `ddl.table.partition.forbid` | Partitioned tables are not permitted | ✓ | ✗ | blocker |
-| `ddl.table.row_size.max_bytes.require` | Estimated row size exceeds the InnoDB row-size limit given the instance's row format | ✗ | ✓ | warning |
+| `ddl.table.row_size.max_bytes.require` | Estimated row size exceeds the InnoDB row-size limit under the resolved charset/row format (declared values first; instance defaults only as per-field fallbacks — missing fields report a `missing_instance_fact` gap) | ✗ | ✓ | warning |
 | `ddl.table.denylist.forbid` | Table name matches a schema- or table-level denylist entry | ✓ | ✗ | blocker |
 
 ### Column-Level Checks
@@ -1334,7 +1334,8 @@ Findings include `metadata_status` (`confirmed`/`not_found`/`unavailable`), `met
 | Feature | Rules Affected |
 |---------|---------------|
 | `innodb_large_prefix` | `ddl.index.key_length.max_bytes.require` — index key length limit depends on this setting |
-| `innodb_default_row_format` | `ddl.table.row_size.max_bytes.require` — row size estimation uses the instance row format |
+| `innodb_default_row_format` | `ddl.table.row_size.max_bytes.require` — fallback row format when `ROW_FORMAT` is undeclared (or `DEFAULT`) |
+| `default_charset` | `ddl.table.row_size.max_bytes.require` — fallback charset when a charset-sensitive column and the table omit a charset declaration |
 | `innodb_adaptive_hash_index` | `ddl.table.drop.adaptive_hash`, `ddl.table.truncate.adaptive_hash` — latency-spike cautions |
 | Engine / row-format checks | `ddl.table.engine.allowlist`, `ddl.table.row_format.allowlist` — MySQL storage engine governance |
 

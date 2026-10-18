@@ -929,9 +929,7 @@ rules:
 
 #### ddl.table.row_size.max_bytes.require
 
-> **Metadata-aware mode only.** This rule no-ops during offline audits. It activates when a live database connection is provided.
-
-Checks that the estimated row size does not exceed InnoDB row size limits, based on instance facts loaded from the connected database.
+Checks that the estimated row size does not exceed InnoDB row size limits. The estimate resolves the facts it consumes field by field: a declared column/table charset wins over `instance.default_charset`, and a declared `row_format` wins over `instance.innodb_default_row_format` (`ROW_FORMAT=DEFAULT` counts as unresolved). Declaration-complete statements evaluate identically with or without a live connection; when a required field cannot be resolved the rule reports a `missing_instance_fact` evidence gap instead of silently skipping. A declared non-InnoDB engine still scopes the rule out before any fact lookup.
 
 **Default:** `enabled: true`, `level: blocker`
 

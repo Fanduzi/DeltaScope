@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: task manifest testdata/ddl-golden/<TASK>.json, docker/ddl-golden-compose.yaml, freshly built deltascope CLI
-# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest, including synchronous execute verification and the frozen T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1–A12 oracles (the T06-A9 EXTRA whitelist compares CAST(LOWER(x) AS BINARY) byte-exact so PAD SPACE catalog collations cannot smuggle trailing-space text into a role marker; the T06-A10 observations enforce a string-typed stdout carrying the fixed client header plus exactly one bound data record — the allocator counter is verbatim-observed, never numerically asserted, and SHOW CREATE must name object `t` with the head opening `CREATE TABLE `t` (` before its opaque body; the T06-A11 observation additionally enforces a complete two-digit-pair HEX field shape so literal whitespace can never launder into the COLUMN_TYPE whitelist; T06-A12 pins per-column NOT NULL finding attribution, the loaded/applicable/absent rule_summary contract per role, and the ordered column-set oracle; T06-A12-R1 requires the absent key to be truly missing, enabled summaries to be JSON objects, and loaded/applicable to be strict JSON integers so bool/float/string/null and non-object shapes reject as failures, never == laundering or exceptions; T06-A13 binds each of the five type-family forbid roles to its own profile family/switch state, pins the absent vs loaded/applicable rule_summary per role, requires every mixed-hit finding to carry its family's rule_id, and verifies the ordered nine-column DATA_TYPE oracle per anchor; T06-A14 binds each table-option role to its own strict/optional isolated profile, pins loaded=1/applicable=1 on all five enabled roles (omitted-optional never degrades to 1/0), re-derives the per-product catalog oracle (MySQL storage/catalog values, TiDB compatibility display, charset through the real TABLE_COLLATION association) from frozen constants, and requires every reject finding to carry the family's complete frozen identity)
+# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest, including synchronous execute verification and the frozen T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1–A12 oracles (the T06-A9 EXTRA whitelist compares CAST(LOWER(x) AS BINARY) byte-exact so PAD SPACE catalog collations cannot smuggle trailing-space text into a role marker; the T06-A10 observations enforce a string-typed stdout carrying the fixed client header plus exactly one bound data record — the allocator counter is verbatim-observed, never numerically asserted, and SHOW CREATE must name object `t` with the head opening `CREATE TABLE `t` (` before its opaque body; the T06-A11 observation additionally enforces a complete two-digit-pair HEX field shape so literal whitespace can never launder into the COLUMN_TYPE whitelist; T06-A12 pins per-column NOT NULL finding attribution, the loaded/applicable/absent rule_summary contract per role, and the ordered column-set oracle; T06-A12-R1 requires the absent key to be truly missing, enabled summaries to be JSON objects, and loaded/applicable to be strict JSON integers so bool/float/string/null and non-object shapes reject as failures, never == laundering or exceptions; T06-A13 binds each of the five type-family forbid roles to its own profile family/switch state, pins the absent vs loaded/applicable rule_summary per role, requires every mixed-hit finding to carry its family's rule_id, and verifies the ordered nine-column DATA_TYPE oracle per anchor; T06-A14 binds each table-option role to its own strict/optional isolated profile, pins loaded=1/applicable=1 on all five enabled roles (omitted-optional never degrades to 1/0), re-derives the per-product catalog oracle (MySQL storage/catalog values, TiDB compatibility display, charset through the real TABLE_COLLATION association) from frozen constants, and requires every reject finding to carry the family's complete frozen identity; T06-A15 binds each row-size role to its on/not-required isolated profile or the all-off control, re-derives the strict-65535 finding identity (table-level metadata.charset, "" for unresolved row format) and the field-ordered missing_instance_fact required_facts from frozen constants, and requires gap roles to record unverified coverage while determined findings and gaps coexist)
 # pos: DDL golden-path runner and artifact validator behind `make ddl-golden TASK=Txx ARTIFACT_DIR=...`
 # note: if this file changes, update this header and module README.md.
 """DeltaScope DDL golden-path runner (milestone T02/#81, T04/#83).
@@ -3212,6 +3212,138 @@ def t06_a14_catalog_expect(anchor_key, family, role):
     return "golden:t:" + ("latin1" if denied else "utf8mb4")
 
 
+# T06-A15 (issue #85): row-size field-level fact resolution. The rough
+# estimate runs whenever every fact it actually consumes is declared or
+# supplied — a nil instance object is not a stop condition — and a genuinely
+# missing required field surfaces as a missing_instance_fact gap naming only
+# the absent field. The twelve roles pin the strict 65535 boundary, the
+# column-over-table charset precedence with the table-level metadata
+# contract, the declared non-InnoDB scope skip, both missing-fact shapes plus
+# the determined-finding-plus-gap combination, required=false, and the
+# all-off control. All roles stay offline: these are declaration/projection
+# proofs, never physical row-size or database-legality claims.
+T06_A15_RULE = "ddl.table.row_size.max_bytes.require"
+T06_A15_ON_PROFILE = "t06-a15-row-size-isolated"
+T06_A15_NR_PROFILE = "t06-a15-row-size-not-required-isolated"
+T06_A15_FACT_CHARSET = "instance.default_charset"
+T06_A15_FACT_ROW_FORMAT = "instance.innodb_default_row_format"
+T06_A15_GAP_REASON = "missing_instance_fact"
+T06_A15_MESSAGE_PREFIX = "estimated row size exceeds 65535 bytes"
+
+T06_A15_SQL = {
+    "below": "CREATE TABLE t (c VARCHAR(65532)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;",
+    "equal": "CREATE TABLE t (c VARCHAR(65533)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;",
+    "above": "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;",
+    "column-override": "CREATE TABLE t (c VARCHAR(16384) CHARACTER SET utf8mb4) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;",
+    "non-innodb-skip": "CREATE TABLE t (c VARCHAR(65534)) ENGINE=MyISAM DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;",
+    "missing-charset": "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+    "missing-format-safe": "CREATE TABLE t (c VARCHAR(65532)) ENGINE=InnoDB DEFAULT CHARSET=latin1;",
+    "missing-format-over": "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1;",
+    "missing-both": "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB;",
+    "column-only-charset": "CREATE TABLE t (c VARCHAR(16384) CHARACTER SET utf8mb4) ENGINE=InnoDB ROW_FORMAT=DYNAMIC;",
+}
+
+# Frozen per-role finding identity: (estimated, charset, row_format) — the
+# metadata map is complete, so a dropped or re-sourced key fails the pin.
+T06_A15_FINDINGS = {
+    "above": (65536, "latin1", "DYNAMIC"),
+    "column-override": (65538, "latin1", "DYNAMIC"),
+    "column-only-charset": (65538, "", "DYNAMIC"),
+    "missing-format-over": (65536, "latin1", ""),
+}
+
+# Frozen per-role gap facts: one gap per statement, required_facts in the
+# fixed declaration order — default_charset first, then the row format.
+T06_A15_GAPS = {
+    "missing-charset": [T06_A15_FACT_CHARSET],
+    "missing-format-safe": [T06_A15_FACT_ROW_FORMAT],
+    "missing-format-over": [T06_A15_FACT_ROW_FORMAT],
+    "missing-both": [T06_A15_FACT_CHARSET, T06_A15_FACT_ROW_FORMAT],
+}
+
+T06_A15_ALL_ROLES = list(T06_A15_SQL) + ["not-required", "disabled"]
+
+
+def t06_a15_role_shape(local_id):
+    """Decode an A15 local case id into its role; returns None for unknown
+    ids so an injected or renamed case can never launder past the oracle."""
+    tail = local_id[len("t06-a15-"):]
+    for token in ("mysql", "tidb"):
+        if tail.startswith(token + "-"):
+            tail = tail[len(token) + 1:]
+            break
+    return tail if tail in T06_A15_ALL_ROLES else None
+
+
+def t06_a15_finding(role):
+    """Complete expected finding identity for one A15 finding role — rule,
+    message, and the full metadata map including the resolved table-level
+    charset ("" when undeclared and unused) and the row format ("" when the
+    declaration resolved nothing and the branch stayed unverified)."""
+    estimated, charset, row_format = T06_A15_FINDINGS[role]
+    return {
+        "rule_id": T06_A15_RULE,
+        "level": "blocker",
+        "message": f"{T06_A15_MESSAGE_PREFIX} ({estimated})",
+        "metadata": {"table": "t", "charset": charset,
+                     "row_format": row_format, "estimated": estimated,
+                     "limit": 65535},
+    }
+
+
+def t06_a15_expect(role):
+    """Frozen offline expectation for one A15 role — the verdict, coverage,
+    finding/gap identities, and rule_summary shape are re-derived from the
+    role constants here, never from a mutable spec."""
+    sql = T06_A15_SQL.get(role, T06_A15_SQL["above"])
+    expect = {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": ["complete"],
+        "statement_sql": [sql],
+        "statement_indices": [0],
+        "evidence_gaps": 0,
+        "fail_on_triggered": False,
+    }
+    if role == "disabled":
+        # The all-off control: no rules load, so rule_summary is absent —
+        # never a present-but-empty object.
+        return expect
+    if role == "not-required":
+        expect["rule_summary_loaded"] = 1
+        expect["rule_summary_applicable"] = 0
+        return expect
+    expect["rule_summary_loaded"] = 1
+    expect["rule_summary_applicable"] = 1
+    if role in T06_A15_FINDINGS:
+        expect["exit"] = 1
+        expect["verdict"] = "reject"
+        expect["findings"] = 1
+        expect["fail_on_triggered"] = True
+        finding = t06_a15_finding(role)
+        expect["finding_entries_full"] = [{
+            "index": 0, "rule_id": finding["rule_id"],
+            "level": finding["level"], "message": finding["message"],
+            "metadata": dict(finding["metadata"]), "line": 1, "column": 1}]
+    if role in T06_A15_GAPS:
+        expect["coverage"] = "unverified"
+        expect["statement_coverage"] = ["unverified"]
+        expect["evidence_gaps"] = 1
+        expect["evidence_gap_entries"] = [{
+            "index": 0, "rule_id": T06_A15_RULE,
+            "reason_code": T06_A15_GAP_REASON,
+            "required_facts": list(T06_A15_GAPS[role])}]
+        if role not in T06_A15_FINDINGS:
+            # A gap alone never triggers --fail-on blocker.
+            expect["verdict"] = "review"
+    return expect
+
+
 T06_ANCHORS = {
     "mysql57": {
         "service": "mysql57",
@@ -4099,6 +4231,38 @@ def t06_a1_contract():
                 "args": ["--fail-on", "blocker"],
                 "expect": audit_expect(T06_A14_DENIED_SQL[family], False),
             })
+
+    # T06-A15 (issue #85): twelve roles per dialect pin the row-size
+    # field-level fact contract — declaration-complete inputs compute
+    # without an instance object, missing required fields surface as
+    # missing_instance_fact gaps, and a determined over-limit finding
+    # coexists with the row-format gap (missing-format-over). All roles
+    # run offline: no schema, no target version, no provider.
+    for dialect in ("mysql", "tidb"):
+        for role in T06_A15_SQL:
+            cli_cases.append({
+                "id": f"t06-a15-{dialect}-{role}",
+                "dialect": dialect,
+                "sql": T06_A15_SQL[role],
+                "policy": T06_A15_ON_PROFILE,
+                "args": ["--fail-on", "blocker"],
+                "expect": t06_a15_expect(role),
+            })
+        cli_cases.append({
+            "id": f"t06-a15-{dialect}-not-required",
+            "dialect": dialect,
+            "sql": T06_A15_SQL["above"],
+            "policy": T06_A15_NR_PROFILE,
+            "args": ["--fail-on", "blocker"],
+            "expect": t06_a15_expect("not-required"),
+        })
+        cli_cases.append({
+            "id": f"t06-a15-{dialect}-disabled",
+            "dialect": dialect,
+            "sql": T06_A15_SQL["above"],
+            "args": ["--fail-on", "blocker"],
+            "expect": t06_a15_expect("disabled"),
+        })
 
     connects = {
         "mysql57": {
@@ -5887,6 +6051,25 @@ def t06_a1_contract():
                 }
                 for family in T06_A14_RULES
             },
+            # T06-A15: the row-size rule isolated — required=true (on) and
+            # required=false (not-required) are the only switches; the rule
+            # never runs under the all-off control.
+            T06_A15_ON_PROFILE: {
+                "enable": {
+                    T06_A15_RULE: {
+                        "enabled": True, "level": "blocker",
+                        "params": {"required": True},
+                    },
+                }
+            },
+            T06_A15_NR_PROFILE: {
+                "enable": {
+                    T06_A15_RULE: {
+                        "enabled": True, "level": "blocker",
+                        "params": {"required": False},
+                    },
+                }
+            },
         },
         "anchors": T06_ANCHORS,
         "ddl_steps": T06_DDL_STEPS,
@@ -6738,6 +6921,132 @@ def t06_a14_artifact_failures(artifact, manifest):
     return failures
 
 
+def t06_a15_artifact_failures(artifact, manifest):
+    """T06-A15 (issue #85): pin the row-size field-level fact contract from
+    frozen constants, re-parsed from recorded raw stdout — never a stored
+    `parsed` blob or the mutable manifest spec. Every enabled role binds the
+    on/off profile declared by its role name, carries strict-integer
+    rule_summary counters (loaded=1; applicable=1 except not-required's 0),
+    and carries the per-role finding identity or the field-ordered
+    required_facts gap — a determined finding is never laundered into a
+    silent pass and a gap-only role never reports complete."""
+    if manifest.get("task_id") != "T06":
+        return []
+    frozen = {}
+    contract = t06_a1_contract()
+    for field, prefix in (("cli_cases", "T06.cli."), ("metadata_cases", "T06.meta.")):
+        for spec in contract[field]:
+            local = spec["id"]
+            if local.startswith("t06-a15-"):
+                frozen[prefix + local] = t06_a15_role_shape(local)
+    failures = []
+    for case in artifact.get("cases") or []:
+        case_id = case.get("case_id")
+        role = frozen.get(case_id)
+        if role is None:
+            continue
+        try:
+            parsed = json.loads((case.get("actual") or {}).get("stdout") or "")
+        except (json.JSONDecodeError, TypeError):
+            continue  # the generic validator already reports unparseable stdout
+        want_profile = {
+            "disabled": None,
+            "not-required": T06_A15_NR_PROFILE,
+        }.get(role, T06_A15_ON_PROFILE)
+        got_profile = case.get("policy_profile")
+        if want_profile is None:
+            if got_profile not in (None, "all-rules-disabled"):
+                failures.append(
+                    f"T06-A15 {case_id}: all-off control recorded profile "
+                    f"{got_profile!r}")
+            if isinstance(parsed, dict) and "rule_summary" in parsed:
+                failures.append(
+                    f"T06-A15 {case_id}: rule_summary key must be absent "
+                    f"under the all-off control, found "
+                    f"{parsed['rule_summary']!r}")
+            continue
+        if got_profile != want_profile:
+            failures.append(
+                f"T06-A15 {case_id}: policy_profile {got_profile!r} != "
+                f"frozen {want_profile!r} for role {role!r}")
+        if not isinstance(parsed, dict) or "rule_summary" not in parsed:
+            failures.append(
+                f"T06-A15 {case_id}: rule_summary must be present as a "
+                f"JSON object for role {role!r}")
+            continue
+        summary = parsed["rule_summary"]
+        if not isinstance(summary, dict):
+            failures.append(
+                f"T06-A15 {case_id}: rule_summary must be a JSON object "
+                f"for role {role!r}, found {summary!r}")
+            continue
+        want_summary = {"loaded": 1,
+                        "applicable": 0 if role == "not-required" else 1}
+        for key, want_value in want_summary.items():
+            if key not in summary:
+                failures.append(
+                    f"T06-A15 {case_id}: rule_summary.{key} missing for "
+                    f"role {role!r}")
+                continue
+            got = summary[key]
+            if type(got) is not int:
+                failures.append(
+                    f"T06-A15 {case_id}: rule_summary.{key}={got!r} must "
+                    "be a JSON integer (not bool/float/string/null)")
+            elif got != want_value:
+                failures.append(
+                    f"T06-A15 {case_id}: rule_summary.{key}={got} != "
+                    f"frozen {want_value} for role {role!r}")
+        statements = parsed.get("statements") or []
+        findings = [f for st in statements if isinstance(st, dict)
+                    for f in (st.get("findings") or [])]
+        gaps = [g for st in statements if isinstance(st, dict)
+                for g in (st.get("evidence_gaps") or [])]
+        want_finding = T06_A15_FINDINGS.get(role)
+        if want_finding is not None:
+            want = t06_a15_finding(role)
+            matched = [f for f in findings
+                       if isinstance(f, dict)
+                       and f.get("rule_id") == want["rule_id"]
+                       and f.get("message") == want["message"]
+                       and f.get("metadata") == want["metadata"]]
+            if len(matched) != 1 or len(findings) != 1:
+                failures.append(
+                    f"T06-A15 {case_id}: expected exactly the frozen "
+                    f"{want!r} finding, got {findings!r}")
+        elif findings:
+            failures.append(
+                f"T06-A15 {case_id}: role {role!r} must carry no "
+                f"findings, got {findings!r}")
+        want_facts = T06_A15_GAPS.get(role)
+        if want_facts is None:
+            if gaps:
+                failures.append(
+                    f"T06-A15 {case_id}: role {role!r} must carry no "
+                    f"evidence gaps, got {gaps!r}")
+        elif len(gaps) != 1:
+            failures.append(
+                f"T06-A15 {case_id}: role {role!r} must carry exactly one "
+                f"evidence gap, got {gaps!r}")
+        else:
+            gap = gaps[0]
+            if (not isinstance(gap, dict)
+                    or gap.get("rule_id") != T06_A15_RULE
+                    or gap.get("reason_code") != T06_A15_GAP_REASON
+                    or (gap.get("required_facts") or []) != want_facts):
+                failures.append(
+                    f"T06-A15 {case_id}: evidence gap identity mismatch — "
+                    f"want rule={T06_A15_RULE} reason={T06_A15_GAP_REASON} "
+                    f"facts={want_facts}, got {gap!r}")
+        if want_facts is not None:
+            got_cov = (parsed.get("coverage") or {}).get("status")
+            if got_cov != "unverified":
+                failures.append(
+                    f"T06-A15 {case_id}: coverage.status must be "
+                    f"'unverified' for role {role!r}, found {got_cov!r}")
+    return failures
+
+
 def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
     """Re-check an emitted artifact. Returns a list of failure strings."""
     failures = []
@@ -6762,6 +7071,7 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
     failures.extend(t06_a12_artifact_failures(artifact, manifest))
     failures.extend(t06_a13_artifact_failures(artifact, manifest))
     failures.extend(t06_a14_artifact_failures(artifact, manifest))
+    failures.extend(t06_a15_artifact_failures(artifact, manifest))
 
     if artifact.get("external_blocker"):
         failures.append(f"external blocker recorded: {artifact['external_blocker']}")
