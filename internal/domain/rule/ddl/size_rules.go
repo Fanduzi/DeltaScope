@@ -150,13 +150,15 @@ func (r tableRowSizeRule) Evaluate(ctx context.Context, statement spec.Statement
 //     the table charset option, then instance.default_charset. Fixed-width
 //     columns and fully declared character columns need neither. A missing
 //     width makes every estimate a guess, so no finding is emitted.
-//   - Row format resolves declaration-first: a recognized declared value
-//     (DYNAMIC, COMPACT, REDUNDANT, or another non-default keyword) wins;
-//     DEFAULT, absent, or unrecognized declarations resolve through
-//     instance.innodb_default_row_format and stay unknown when that field is
-//     empty. An unknown format never falls back to DYNAMIC: the 65535-byte
-//     total check still runs on resolved widths, but the COMPACT/REDUNDANT
-//     bounds stay unverified and report the missing fact instead.
+//   - Row format resolves declaration-first: a recognized declared InnoDB
+//     keyword (DYNAMIC, COMPACT, REDUNDANT, or COMPRESSED) wins and keeps
+//     its declared identity; DEFAULT, absent, or unrecognized declarations
+//     resolve through instance.innodb_default_row_format and stay unknown
+//     when that field is empty. An unknown format never falls back to
+//     DYNAMIC: the 65535-byte total check still runs on resolved widths,
+//     but the COMPACT/REDUNDANT bounds stay unverified and report the
+//     missing fact instead. COMPRESSED enters no payload branch — the
+//     slice models no compressed storage, only the declared identity.
 //   - Non-MySQL-family dialects keep the historical contract: no instance
 //     object means no evaluation, and the shared helpers keep their legacy
 //     hardcoded fallbacks when one is present.
@@ -209,7 +211,7 @@ func resolveRowSizeFacts(statement spec.Statement) rowSizeFactResolution {
 
 	declared := strings.ToUpper(strings.TrimSpace(normalizedTableOption(statement, "row_format")))
 	switch declared {
-	case "DYNAMIC", "COMPACT", "REDUNDANT":
+	case "DYNAMIC", "COMPACT", "REDUNDANT", "COMPRESSED":
 		resolution.rowFormat, resolution.rowFormatKnown = declared, true
 	default:
 		// An absent, DEFAULT, or unrecognized declaration is not evidence of

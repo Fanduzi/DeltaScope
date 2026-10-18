@@ -3,8 +3,8 @@
 Date: 2026-10-18
 Status: Accepted
 Related milestone/version: mysql-tidb-ddl-completion (#79), task T06 / issue #85
-Related commits: T06-A15 fix commit on milestone/mysql-tidb-ddl-completion
-Related tests: `internal/domain/rule/ddl/size_rules_t06a15_test.go`, `internal/domain/rule/ddl/size_rules_test.go` (`TestSizeRulesWithoutInstanceFacts`), `internal/domain/rule/catalog/catalog_test.go` (`TestLookupMarksRowSizeInstanceDependency`), `internal/application/audit/batch_state_t06a15_test.go`, `pkg/deltascope` and `internal/interfaces/http` A15 seam tests, `scripts/test_ddl_golden.py` T06-A15 mutation group
+Related commits: T06-A15 fix commit and T06-A15-R1 declared-COMPRESSED fix commit on milestone/mysql-tidb-ddl-completion
+Related tests: `internal/domain/rule/ddl/size_rules_t06a15_test.go`, `internal/domain/rule/ddl/size_rules_t06a15r1_test.go`, `internal/domain/rule/ddl/size_rules_test.go` (`TestSizeRulesWithoutInstanceFacts`), `internal/domain/rule/catalog/catalog_test.go` (`TestLookupMarksRowSizeInstanceDependency`), `internal/application/audit/batch_state_t06a15_test.go`, `internal/application/audit/batch_state_t06a15r1_test.go`, `pkg/deltascope` and `internal/interfaces/http` A15 seam tests, `scripts/test_ddl_golden.py` T06-A15 mutation group
 Related docs: `testdata/ddl-golden/T06.json`, `docs/reference/rules.md`, `docs/reference/config.md`, `docs/reference/audit-capability-matrix.md` (+ zh-CN mirrors), T06-A15 baseline `/tmp/ds-t06-a15-baseline/`
 
 ## Context
@@ -44,6 +44,13 @@ into an indistinguishable `pass`.
 - **`ROW_FORMAT=DEFAULT` is unresolved, not DYNAMIC.** A `DEFAULT`
   keyword, an absent option, and an unrecognized keyword are all routed
   to the instance default and stay unknown when that field is empty.
+  (T06-A15-R1) The recognized declared InnoDB keyword set is exactly
+  `{DYNAMIC, COMPACT, REDUNDANT, COMPRESSED}` — declaration-first means
+  a declared `COMPRESSED` keeps its own identity and never defers to
+  the instance default, while the instance default is trusted verbatim
+  only when the declaration is `DEFAULT`, absent, or unrecognized.
+  COMPRESSED enters no payload branch: it is declaration identity, not
+  a compressed-storage model.
 - **No instance object does not mean "cannot compute"; an empty object
   does not mean "facts are known".** A nil pointer, `&InstanceFacts{}`,
   and a fully populated object produce identical findings/gaps whenever
@@ -71,10 +78,11 @@ into an indistinguishable `pass`.
 - **The estimate stays a rough estimate.** Thresholds and formulas are
   frozen: 65535-byte row limit, COMPACT 8126 / REDUNDANT 8000 payload
   bounds with the `min(bytes, 768)` accumulator, and the existing
-  `estimatedColumnBytes`/`charsetBytes` dispatch unchanged. The estimate
-  is a conservative preflight bound, not a physical-storage model —
-  NULL bitmaps, row headers, page splitting, and engine-internal
-  encodings remain out of scope.
+  `estimatedColumnBytes`/`charsetBytes` dispatch unchanged. This is the
+  existing rough estimate — the slice did not prove it covers every
+  storage overhead or never underestimates — and not a
+  physical-storage model: NULL bitmaps, row headers, page splitting,
+  and engine-internal encodings remain out of scope.
 - **Explicit non-InnoDB stays a scope skip, not a safety proof.** A
   declared `ENGINE=MyISAM` (or other non-InnoDB value) still returns
   before any fact lookup — the rule does not check those engines, which
@@ -130,6 +138,10 @@ only the row-size rule learns the new contract.
 
 - No physical row-size model, page-size model, NULL-bitmap/row-header
   accounting, index-page accounting, or per-engine accuracy claims.
+  (T06-A15-R1) COMPRESSED is a recognized *declared* keyword only — it
+  enters no COMPACT/REDUNDANT payload branch and gains no compressed
+  storage model; `KEY_BLOCK_SIZE`, compression limits, version
+  acceptance, and other unknown `row_format` keywords stay untouched.
 - No charset-universe or alias framework, and no collation-derived
   charset inference — a declared charset name is trusted as declared.
 - No default-engine observation: an omitted `ENGINE` stays inside the
