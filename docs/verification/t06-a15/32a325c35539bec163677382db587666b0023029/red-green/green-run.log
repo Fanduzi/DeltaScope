@@ -1,0 +1,254 @@
+=== RUN   TestT06A15DeclaredInputsComputeWithoutInstance
+=== PAUSE TestT06A15DeclaredInputsComputeWithoutInstance
+=== RUN   TestT06A15ColumnCharsetOverridesTableCharset
+=== PAUSE TestT06A15ColumnCharsetOverridesTableCharset
+=== RUN   TestT06A15ColumnOnlyCharsetNeedsNoTableCharset
+=== PAUSE TestT06A15ColumnOnlyCharsetNeedsNoTableCharset
+=== RUN   TestT06A15MissingCharsetReportsGapNotEstimate
+=== PAUSE TestT06A15MissingCharsetReportsGapNotEstimate
+=== RUN   TestT06A15MissingRowFormatReportsGap
+=== PAUSE TestT06A15MissingRowFormatReportsGap
+=== RUN   TestT06A15MissingBothFactsOrderedOnce
+=== PAUSE TestT06A15MissingBothFactsOrderedOnce
+=== RUN   TestT06A15DefaultRowFormatNeedsInstanceFact
+=== PAUSE TestT06A15DefaultRowFormatNeedsInstanceFact
+=== RUN   TestT06A15DeclaredCompactRedundantNeedNoInstance
+=== PAUSE TestT06A15DeclaredCompactRedundantNeedNoInstance
+=== RUN   TestT06A15FixedWidthColumnsNeedNoCharset
+=== PAUSE TestT06A15FixedWidthColumnsNeedNoCharset
+=== RUN   TestT06A15DeclaredNonInnoDBStaysSilent
+=== PAUSE TestT06A15DeclaredNonInnoDBStaysSilent
+=== RUN   TestT06A15RequiredFalseProducesNothing
+=== PAUSE TestT06A15RequiredFalseProducesNothing
+=== RUN   TestT06A15EmptyInstanceEqualsNilInstance
+=== PAUSE TestT06A15EmptyInstanceEqualsNilInstance
+=== RUN   TestT06A15PostgreSQLKeepsLegacyGate
+=== PAUSE TestT06A15PostgreSQLKeepsLegacyGate
+=== RUN   TestSizeRulesWithoutInstanceFacts
+=== PAUSE TestSizeRulesWithoutInstanceFacts
+=== CONT  TestT06A15DeclaredInputsComputeWithoutInstance
+=== RUN   TestT06A15DeclaredInputsComputeWithoutInstance/mysql
+=== PAUSE TestT06A15DeclaredInputsComputeWithoutInstance/mysql
+=== RUN   TestT06A15DeclaredInputsComputeWithoutInstance/tidb
+=== CONT  TestT06A15DeclaredCompactRedundantNeedNoInstance
+=== CONT  TestT06A15EmptyInstanceEqualsNilInstance
+=== CONT  TestSizeRulesWithoutInstanceFacts
+=== CONT  TestT06A15PostgreSQLKeepsLegacyGate
+=== CONT  TestT06A15DeclaredNonInnoDBStaysSilent
+=== CONT  TestT06A15RequiredFalseProducesNothing
+=== CONT  TestT06A15MissingRowFormatReportsGap
+=== CONT  TestT06A15DefaultRowFormatNeedsInstanceFact
+=== CONT  TestT06A15MissingBothFactsOrderedOnce
+=== CONT  TestT06A15ColumnCharsetOverridesTableCharset
+=== CONT  TestT06A15MissingCharsetReportsGapNotEstimate
+=== PAUSE TestT06A15DeclaredInputsComputeWithoutInstance/tidb
+=== CONT  TestT06A15DeclaredInputsComputeWithoutInstance/mysql
+--- PASS: TestT06A15DeclaredCompactRedundantNeedNoInstance (0.00s)
+--- PASS: TestT06A15EmptyInstanceEqualsNilInstance (0.00s)
+--- PASS: TestSizeRulesWithoutInstanceFacts (0.00s)
+--- PASS: TestT06A15PostgreSQLKeepsLegacyGate (0.00s)
+--- PASS: TestT06A15DeclaredNonInnoDBStaysSilent (0.00s)
+--- PASS: TestT06A15RequiredFalseProducesNothing (0.00s)
+--- PASS: TestT06A15MissingBothFactsOrderedOnce (0.00s)
+--- PASS: TestT06A15ColumnCharsetOverridesTableCharset (0.00s)
+=== CONT  TestT06A15DeclaredInputsComputeWithoutInstance/tidb
+=== CONT  TestT06A15FixedWidthColumnsNeedNoCharset
+=== CONT  TestT06A15ColumnOnlyCharsetNeedsNoTableCharset
+--- PASS: TestT06A15ColumnOnlyCharsetNeedsNoTableCharset (0.00s)
+=== RUN   TestT06A15MissingRowFormatReportsGap/safe-total
+--- PASS: TestT06A15DefaultRowFormatNeedsInstanceFact (0.00s)
+=== RUN   TestT06A15DeclaredInputsComputeWithoutInstance/mysql/below
+--- PASS: TestT06A15FixedWidthColumnsNeedNoCharset (0.00s)
+=== RUN   TestT06A15DeclaredInputsComputeWithoutInstance/tidb/below
+=== RUN   TestT06A15DeclaredInputsComputeWithoutInstance/tidb/equal
+=== RUN   TestT06A15DeclaredInputsComputeWithoutInstance/tidb/above
+=== RUN   TestT06A15MissingCharsetReportsGapNotEstimate/mysql
+=== RUN   TestT06A15MissingRowFormatReportsGap/over-total
+=== PAUSE TestT06A15MissingCharsetReportsGapNotEstimate/mysql
+--- PASS: TestT06A15MissingRowFormatReportsGap (0.00s)
+    --- PASS: TestT06A15MissingRowFormatReportsGap/safe-total (0.00s)
+    --- PASS: TestT06A15MissingRowFormatReportsGap/over-total (0.00s)
+=== RUN   TestT06A15DeclaredInputsComputeWithoutInstance/mysql/equal
+=== RUN   TestT06A15DeclaredInputsComputeWithoutInstance/mysql/above
+--- PASS: TestT06A15DeclaredInputsComputeWithoutInstance (0.00s)
+    --- PASS: TestT06A15DeclaredInputsComputeWithoutInstance/tidb (0.00s)
+        --- PASS: TestT06A15DeclaredInputsComputeWithoutInstance/tidb/below (0.00s)
+        --- PASS: TestT06A15DeclaredInputsComputeWithoutInstance/tidb/equal (0.00s)
+        --- PASS: TestT06A15DeclaredInputsComputeWithoutInstance/tidb/above (0.00s)
+    --- PASS: TestT06A15DeclaredInputsComputeWithoutInstance/mysql (0.00s)
+        --- PASS: TestT06A15DeclaredInputsComputeWithoutInstance/mysql/below (0.00s)
+        --- PASS: TestT06A15DeclaredInputsComputeWithoutInstance/mysql/equal (0.00s)
+        --- PASS: TestT06A15DeclaredInputsComputeWithoutInstance/mysql/above (0.00s)
+=== RUN   TestT06A15MissingCharsetReportsGapNotEstimate/tidb
+=== PAUSE TestT06A15MissingCharsetReportsGapNotEstimate/tidb
+=== CONT  TestT06A15MissingCharsetReportsGapNotEstimate/mysql
+=== CONT  TestT06A15MissingCharsetReportsGapNotEstimate/tidb
+--- PASS: TestT06A15MissingCharsetReportsGapNotEstimate (0.00s)
+    --- PASS: TestT06A15MissingCharsetReportsGapNotEstimate/mysql (0.00s)
+    --- PASS: TestT06A15MissingCharsetReportsGapNotEstimate/tidb (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	0.537s
+=== RUN   TestLookupMarksRowSizeInstanceDependency
+=== PAUSE TestLookupMarksRowSizeInstanceDependency
+=== CONT  TestLookupMarksRowSizeInstanceDependency
+--- PASS: TestLookupMarksRowSizeInstanceDependency (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/catalog	0.897s
+=== RUN   TestT06A15OfflineRoleMatrix
+=== PAUSE TestT06A15OfflineRoleMatrix
+=== RUN   TestT06A15NotRequiredAndDisabled
+=== PAUSE TestT06A15NotRequiredAndDisabled
+=== RUN   TestT06A15InstancePointerShapesAgree
+=== PAUSE TestT06A15InstancePointerShapesAgree
+=== RUN   TestT06A15FieldLevelInstanceMatrix
+=== PAUSE TestT06A15FieldLevelInstanceMatrix
+=== RUN   TestT06A15ProviderErrorAndCancelPropagate
+=== PAUSE TestT06A15ProviderErrorAndCancelPropagate
+=== CONT  TestT06A15OfflineRoleMatrix
+=== RUN   TestT06A15OfflineRoleMatrix/mysql/below
+=== PAUSE TestT06A15OfflineRoleMatrix/mysql/below
+=== CONT  TestT06A15FieldLevelInstanceMatrix
+=== CONT  TestT06A15ProviderErrorAndCancelPropagate
+=== RUN   TestT06A15FieldLevelInstanceMatrix/mysql/nil
+=== CONT  TestT06A15InstancePointerShapesAgree
+=== CONT  TestT06A15NotRequiredAndDisabled
+=== RUN   TestT06A15InstancePointerShapesAgree/mysql/full
+=== RUN   TestT06A15NotRequiredAndDisabled/mysql/not-required
+=== RUN   TestT06A15OfflineRoleMatrix/mysql/equal
+=== PAUSE TestT06A15InstancePointerShapesAgree/mysql/full
+=== RUN   TestT06A15InstancePointerShapesAgree/mysql/nil
+=== PAUSE TestT06A15OfflineRoleMatrix/mysql/equal
+=== PAUSE TestT06A15InstancePointerShapesAgree/mysql/nil
+=== RUN   TestT06A15OfflineRoleMatrix/mysql/above
+=== RUN   TestT06A15InstancePointerShapesAgree/mysql/empty
+=== PAUSE TestT06A15OfflineRoleMatrix/mysql/above
+=== PAUSE TestT06A15NotRequiredAndDisabled/mysql/not-required
+=== RUN   TestT06A15OfflineRoleMatrix/mysql/column-override
+=== RUN   TestT06A15NotRequiredAndDisabled/mysql/disabled
+=== PAUSE TestT06A15OfflineRoleMatrix/mysql/column-override
+=== PAUSE TestT06A15FieldLevelInstanceMatrix/mysql/nil
+=== PAUSE TestT06A15NotRequiredAndDisabled/mysql/disabled
+=== PAUSE TestT06A15InstancePointerShapesAgree/mysql/empty
+=== RUN   TestT06A15OfflineRoleMatrix/mysql/non-innodb-skip
+=== PAUSE TestT06A15OfflineRoleMatrix/mysql/non-innodb-skip
+=== RUN   TestT06A15NotRequiredAndDisabled/tidb/not-required
+=== PAUSE TestT06A15NotRequiredAndDisabled/tidb/not-required
+=== RUN   TestT06A15OfflineRoleMatrix/mysql/missing-charset
+=== RUN   TestT06A15FieldLevelInstanceMatrix/mysql/empty
+=== PAUSE TestT06A15FieldLevelInstanceMatrix/mysql/empty
+=== RUN   TestT06A15InstancePointerShapesAgree/tidb/empty
+=== PAUSE TestT06A15OfflineRoleMatrix/mysql/missing-charset
+=== RUN   TestT06A15NotRequiredAndDisabled/tidb/disabled
+=== PAUSE TestT06A15NotRequiredAndDisabled/tidb/disabled
+=== CONT  TestT06A15NotRequiredAndDisabled/mysql/not-required
+=== CONT  TestT06A15NotRequiredAndDisabled/tidb/not-required
+=== CONT  TestT06A15NotRequiredAndDisabled/mysql/disabled
+=== CONT  TestT06A15NotRequiredAndDisabled/tidb/disabled
+=== PAUSE TestT06A15InstancePointerShapesAgree/tidb/empty
+=== RUN   TestT06A15FieldLevelInstanceMatrix/tidb/nil
+=== PAUSE TestT06A15FieldLevelInstanceMatrix/tidb/nil
+=== RUN   TestT06A15InstancePointerShapesAgree/tidb/full
+=== RUN   TestT06A15OfflineRoleMatrix/mysql/missing-format-safe
+=== PAUSE TestT06A15OfflineRoleMatrix/mysql/missing-format-safe
+=== PAUSE TestT06A15InstancePointerShapesAgree/tidb/full
+=== RUN   TestT06A15FieldLevelInstanceMatrix/tidb/empty
+=== PAUSE TestT06A15FieldLevelInstanceMatrix/tidb/empty
+=== CONT  TestT06A15FieldLevelInstanceMatrix/mysql/nil
+=== CONT  TestT06A15FieldLevelInstanceMatrix/tidb/empty
+=== CONT  TestT06A15FieldLevelInstanceMatrix/tidb/nil
+=== RUN   TestT06A15OfflineRoleMatrix/mysql/missing-format-over
+=== CONT  TestT06A15FieldLevelInstanceMatrix/mysql/empty
+=== RUN   TestT06A15InstancePointerShapesAgree/tidb/nil
+=== PAUSE TestT06A15OfflineRoleMatrix/mysql/missing-format-over
+=== PAUSE TestT06A15InstancePointerShapesAgree/tidb/nil
+=== CONT  TestT06A15InstancePointerShapesAgree/mysql/full
+=== CONT  TestT06A15InstancePointerShapesAgree/tidb/empty
+=== RUN   TestT06A15OfflineRoleMatrix/mysql/missing-both
+=== PAUSE TestT06A15OfflineRoleMatrix/mysql/missing-both
+=== RUN   TestT06A15OfflineRoleMatrix/mysql/column-only-charset
+=== PAUSE TestT06A15OfflineRoleMatrix/mysql/column-only-charset
+=== RUN   TestT06A15OfflineRoleMatrix/tidb/below
+=== PAUSE TestT06A15OfflineRoleMatrix/tidb/below
+=== RUN   TestT06A15OfflineRoleMatrix/tidb/equal
+=== PAUSE TestT06A15OfflineRoleMatrix/tidb/equal
+=== RUN   TestT06A15OfflineRoleMatrix/tidb/above
+=== PAUSE TestT06A15OfflineRoleMatrix/tidb/above
+=== RUN   TestT06A15OfflineRoleMatrix/tidb/column-override
+=== PAUSE TestT06A15OfflineRoleMatrix/tidb/column-override
+=== RUN   TestT06A15OfflineRoleMatrix/tidb/non-innodb-skip
+=== PAUSE TestT06A15OfflineRoleMatrix/tidb/non-innodb-skip
+=== RUN   TestT06A15OfflineRoleMatrix/tidb/missing-charset
+=== PAUSE TestT06A15OfflineRoleMatrix/tidb/missing-charset
+=== RUN   TestT06A15OfflineRoleMatrix/tidb/missing-format-safe
+=== PAUSE TestT06A15OfflineRoleMatrix/tidb/missing-format-safe
+=== RUN   TestT06A15OfflineRoleMatrix/tidb/missing-format-over
+=== PAUSE TestT06A15OfflineRoleMatrix/tidb/missing-format-over
+=== RUN   TestT06A15OfflineRoleMatrix/tidb/missing-both
+=== PAUSE TestT06A15OfflineRoleMatrix/tidb/missing-both
+=== RUN   TestT06A15OfflineRoleMatrix/tidb/column-only-charset
+=== PAUSE TestT06A15OfflineRoleMatrix/tidb/column-only-charset
+=== CONT  TestT06A15InstancePointerShapesAgree/tidb/nil
+=== CONT  TestT06A15InstancePointerShapesAgree/tidb/full
+=== CONT  TestT06A15InstancePointerShapesAgree/mysql/empty
+=== CONT  TestT06A15InstancePointerShapesAgree/mysql/nil
+--- PASS: TestT06A15NotRequiredAndDisabled (0.00s)
+    --- PASS: TestT06A15NotRequiredAndDisabled/mysql/disabled (0.02s)
+    --- PASS: TestT06A15NotRequiredAndDisabled/tidb/not-required (0.02s)
+    --- PASS: TestT06A15NotRequiredAndDisabled/tidb/disabled (0.02s)
+    --- PASS: TestT06A15NotRequiredAndDisabled/mysql/not-required (0.02s)
+=== CONT  TestT06A15OfflineRoleMatrix/tidb/non-innodb-skip
+=== CONT  TestT06A15OfflineRoleMatrix/tidb/missing-format-over
+=== CONT  TestT06A15OfflineRoleMatrix/tidb/column-only-charset
+--- PASS: TestT06A15ProviderErrorAndCancelPropagate (0.02s)
+=== CONT  TestT06A15OfflineRoleMatrix/tidb/missing-both
+=== CONT  TestT06A15OfflineRoleMatrix/tidb/missing-format-safe
+=== CONT  TestT06A15OfflineRoleMatrix/tidb/column-override
+=== CONT  TestT06A15OfflineRoleMatrix/mysql/missing-format-safe
+=== CONT  TestT06A15OfflineRoleMatrix/mysql/missing-charset
+=== CONT  TestT06A15OfflineRoleMatrix/mysql/non-innodb-skip
+=== CONT  TestT06A15OfflineRoleMatrix/mysql/column-override
+=== CONT  TestT06A15OfflineRoleMatrix/mysql/above
+=== CONT  TestT06A15OfflineRoleMatrix/mysql/equal
+--- PASS: TestT06A15InstancePointerShapesAgree (0.00s)
+    --- PASS: TestT06A15InstancePointerShapesAgree/tidb/empty (0.02s)
+    --- PASS: TestT06A15InstancePointerShapesAgree/tidb/nil (0.02s)
+    --- PASS: TestT06A15InstancePointerShapesAgree/mysql/full (0.02s)
+    --- PASS: TestT06A15InstancePointerShapesAgree/tidb/full (0.02s)
+    --- PASS: TestT06A15InstancePointerShapesAgree/mysql/empty (0.02s)
+    --- PASS: TestT06A15InstancePointerShapesAgree/mysql/nil (0.02s)
+=== CONT  TestT06A15OfflineRoleMatrix/mysql/below
+=== CONT  TestT06A15OfflineRoleMatrix/mysql/column-only-charset
+=== CONT  TestT06A15OfflineRoleMatrix/tidb/equal
+=== CONT  TestT06A15OfflineRoleMatrix/tidb/below
+=== CONT  TestT06A15OfflineRoleMatrix/mysql/missing-both
+=== CONT  TestT06A15OfflineRoleMatrix/mysql/missing-format-over
+=== CONT  TestT06A15OfflineRoleMatrix/tidb/missing-charset
+=== CONT  TestT06A15OfflineRoleMatrix/tidb/above
+--- PASS: TestT06A15FieldLevelInstanceMatrix (0.00s)
+    --- PASS: TestT06A15FieldLevelInstanceMatrix/tidb/nil (0.04s)
+    --- PASS: TestT06A15FieldLevelInstanceMatrix/tidb/empty (0.04s)
+    --- PASS: TestT06A15FieldLevelInstanceMatrix/mysql/empty (0.04s)
+    --- PASS: TestT06A15FieldLevelInstanceMatrix/mysql/nil (0.05s)
+--- PASS: TestT06A15OfflineRoleMatrix (0.00s)
+    --- PASS: TestT06A15OfflineRoleMatrix/tidb/non-innodb-skip (0.01s)
+    --- PASS: TestT06A15OfflineRoleMatrix/tidb/column-only-charset (0.01s)
+    --- PASS: TestT06A15OfflineRoleMatrix/tidb/missing-both (0.01s)
+    --- PASS: TestT06A15OfflineRoleMatrix/tidb/missing-format-over (0.02s)
+    --- PASS: TestT06A15OfflineRoleMatrix/tidb/missing-format-safe (0.01s)
+    --- PASS: TestT06A15OfflineRoleMatrix/mysql/missing-format-safe (0.01s)
+    --- PASS: TestT06A15OfflineRoleMatrix/tidb/column-override (0.01s)
+    --- PASS: TestT06A15OfflineRoleMatrix/mysql/missing-charset (0.01s)
+    --- PASS: TestT06A15OfflineRoleMatrix/mysql/below (0.01s)
+    --- PASS: TestT06A15OfflineRoleMatrix/mysql/equal (0.01s)
+    --- PASS: TestT06A15OfflineRoleMatrix/mysql/column-override (0.01s)
+    --- PASS: TestT06A15OfflineRoleMatrix/mysql/non-innodb-skip (0.01s)
+    --- PASS: TestT06A15OfflineRoleMatrix/mysql/above (0.01s)
+    --- PASS: TestT06A15OfflineRoleMatrix/tidb/below (0.01s)
+    --- PASS: TestT06A15OfflineRoleMatrix/mysql/column-only-charset (0.01s)
+    --- PASS: TestT06A15OfflineRoleMatrix/tidb/missing-charset (0.01s)
+    --- PASS: TestT06A15OfflineRoleMatrix/tidb/above (0.01s)
+    --- PASS: TestT06A15OfflineRoleMatrix/mysql/missing-format-over (0.01s)
+    --- PASS: TestT06A15OfflineRoleMatrix/tidb/equal (0.01s)
+    --- PASS: TestT06A15OfflineRoleMatrix/mysql/missing-both (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	1.374s

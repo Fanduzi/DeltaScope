@@ -1,0 +1,19 @@
+$ gofmt -l internal pkg
+rc=0
+
+$ three-level-doc
+[three-level-doc] OK
+rc=0
+
+$ golangci-lint on touched packages
+internal/interfaces/http/audit_char_length_t06a5_test.go:17:1: File is not properly formatted (goimports)
+	"github.com/Fanduzi/DeltaScope/internal/domain/rule/catalog"
+^
+pkg/deltascope/audit_char_length_t06a5_test.go:17:1: File is not properly formatted (goimports)
+	"github.com/Fanduzi/DeltaScope/internal/domain/rule/catalog"
+^
+2 issues:
+* goimports: 2
+rc=1
+
+Note: the 2 goimports issues are pre-existing baseline debt — identical output at 73717598.

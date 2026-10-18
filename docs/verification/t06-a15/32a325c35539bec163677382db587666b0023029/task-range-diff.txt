@@ -1,0 +1,26 @@
+ .../2026-10-18-ddl-row-size-fact-resolution.md     |  178 ++++
+ docs/reference/audit-capability-matrix.md          |    5 +-
+ docs/reference/audit-capability-matrix.zh-CN.md    |    5 +-
+ docs/reference/config.md                           |    4 +-
+ docs/reference/config.zh-CN.md                     |    6 +-
+ docs/reference/rules.md                            |   11 +-
+ docs/reference/rules.zh-CN.md                      |    4 +-
+ internal/application/audit/README.md               |    1 +
+ .../application/audit/batch_state_t06a15_test.go   |  335 +++++++
+ internal/domain/rule/catalog/README.md             |    2 +-
+ internal/domain/rule/catalog/catalog.go            |   18 +-
+ internal/domain/rule/catalog/catalog_test.go       |   39 +
+ internal/domain/rule/ddl/README.md                 |    5 +-
+ internal/domain/rule/ddl/size_rules.go             |  166 +++-
+ internal/domain/rule/ddl/size_rules_t06a15_test.go |  458 +++++++++
+ internal/domain/rule/ddl/size_rules_test.go        |   18 +-
+ internal/interfaces/http/README.md                 |    1 +
+ .../interfaces/http/audit_row_size_t06a15_test.go  |  139 +++
+ pkg/deltascope/README.md                           |    1 +
+ pkg/deltascope/audit_row_size_t06a15_test.go       |  115 +++
+ scripts/README.md                                  |    6 +-
+ scripts/ddl_golden.py                              |  312 +++++-
+ scripts/test_ddl_golden.py                         |  162 ++-
+ testdata/ddl-golden/T06.json                       | 1028 +++++++++++++++++++-
+ testdata/ddl-inventory/T06-base-traceability.md    |   19 +-
+ 25 files changed, 2990 insertions(+), 48 deletions(-)

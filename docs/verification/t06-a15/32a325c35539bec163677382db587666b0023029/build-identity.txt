@@ -1,0 +1,7 @@
+head_sha: 32a325c35539bec163677382db587666b0023029
+tree_state: tracked-clean except .mcp.json (external, unrelated to T06-A15)
+go: go version go1.26.1 darwin/arm64
+work_binary: /tmp/ds-t06-a15-work/deltascope
+work_binary_sha256: c3905cc5ab2e3d7d07fe9e477029c7900608e008a9a75f04bb25ec0afa7a6d7f
+golden_runner_binary: /tmp/ds-t06-a15-golden/T06/bin/deltascope
+golden_runner_binary_sha256: 98890297f64de81c7b8c182f22a1c843c3cbbb4eb96e6b88cf69d6972f4dbabd

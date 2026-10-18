@@ -1,0 +1,260 @@
+{
+  "case_id": "T06.cli.t06-a13-mysql-json-mixed-hit",
+  "kind": "cli_audit",
+  "cli_case": "t06-a13-mysql-json-mixed-hit",
+  "dialect": "mysql",
+  "input_sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+  "policy_profile": "t06-a13-json-on-isolated",
+  "policy_path": "/private/tmp/ds-t06-a15-golden/T06/golden-policy-t06-a13-json-on-isolated.yaml",
+  "command": [
+    "/private/tmp/ds-t06-a15-golden/T06/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+    "--config",
+    "/private/tmp/ds-t06-a15-golden/T06/golden-policy-t06-a13-json-on-isolated.yaml",
+    "--format",
+    "json",
+    "--fail-on",
+    "blocker"
+  ],
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "statement_sql": [
+      "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);"
+    ],
+    "statement_indices": [
+      0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.column.json.forbid",
+        "level": "blocker"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 0,
+        "rule_id": "ddl.column.json.forbid",
+        "metadata": {
+          "table": "t",
+          "column": "c_json",
+          "type": "json",
+          "family": "json",
+          "charset": ""
+        }
+      }
+    ],
+    "finding_locations": [
+      {
+        "index": 0,
+        "line": 1,
+        "column": 1
+      }
+    ],
+    "finding_message": "column \"c_json\" must not use the json type family",
+    "finding_entries_full": [
+      {
+        "index": 0,
+        "rule_id": "ddl.column.json.forbid",
+        "level": "blocker",
+        "message": "column \"c_json\" must not use the json type family",
+        "metadata": {
+          "table": "t",
+          "column": "c_json",
+          "type": "json",
+          "family": "json",
+          "charset": ""
+        },
+        "line": 1,
+        "column": 1
+      }
+    ]
+  },
+  "actual": {
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);\",\"normalized_sql\":\"CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT)\",\"findings\":[{\"rule_id\":\"ddl.column.json.forbid\",\"level\":\"blocker\",\"message\":\"column \\\"c_json\\\" must not use the json type family\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"store structured data in relational columns or relax the json policy intentionally\",\"metadata\":{\"charset\":\"\",\"column\":\"c_json\",\"family\":\"json\",\"table\":\"t\",\"type\":\"json\"},\"explanation\":{\"summary\":\"Forbid DDL column json forbid\",\"why\":\"The statement uses a construct that the shipped policy explicitly forbids.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"store structured data in relational columns or relax the json policy intentionally\"}}],\"coverage\":{\"status\":\"complete\"}}],\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);",
+          "normalized_sql": "CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT)",
+          "findings": [
+            {
+              "rule_id": "ddl.column.json.forbid",
+              "level": "blocker",
+              "message": "column \"c_json\" must not use the json type family",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "store structured data in relational columns or relax the json policy intentionally",
+              "metadata": {
+                "charset": "",
+                "column": "c_json",
+                "family": "json",
+                "table": "t",
+                "type": "json"
+              },
+              "explanation": {
+                "summary": "Forbid DDL column json forbid",
+                "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "store structured data in relational columns or relax the json policy intentionally"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "offline",
+        "dialect": "mysql",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=1"
+    },
+    {
+      "name": "applicable rule count",
+      "ok": true,
+      "detail": "applicable=1"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);'] expected=['CREATE TABLE t (c_blob BLOB, c_text TEXT, c_json JSON, c_bit BIT(1), c_float FLOAT, c_double DOUBLE, c_timestamp TIMESTAMP NULL, c_datetime DATETIME NULL, c_int INT);']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.column.json.forbid', 'blocker')] expected=[(0, 'ddl.column.json.forbid', 'blocker')]"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.column.json.forbid')",
+      "ok": true,
+      "detail": "findings=[{'charset': '', 'column': 'c_json', 'family': 'json', 'table': 't', 'type': 'json'}] expected_subset={'table': 't', 'column': 'c_json', 'type': 'json', 'family': 'json', 'charset': ''}"
+    },
+    {
+      "name": "finding location index=0",
+      "ok": true,
+      "detail": "locations=[{'line': 1, 'column': 1}] expected={'index': 0, 'line': 1, 'column': 1}"
+    },
+    {
+      "name": "fail_on_triggered",
+      "ok": true,
+      "detail": "fail_on_triggered=True"
+    }
+  ],
+  "status": "pass"
+}

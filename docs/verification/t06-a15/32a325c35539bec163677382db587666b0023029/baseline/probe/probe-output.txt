@@ -1,0 +1,158 @@
+##### FIELD PROBE #####
+=== L_MINUS dialect=mysql statements=1 ast-options=3
+  ast[0] tp=1 str="InnoDB" uint=0
+  ast[1] tp=2 str="latin1" uint=0
+  ast[2] tp=17 str="" uint=2
+  options=[charset engine row_format] unextracted=[]
+    Options["charset"]="latin1"
+    Options["engine"]="InnoDB"
+    Options["row_format"]="DYNAMIC"
+  col[0] name=c type="varchar(65532)" length=65532 charset="" collation=""
+  pk=<nil> indexes=0
+=== L_EQUAL dialect=mysql statements=1 ast-options=3
+  ast[0] tp=1 str="InnoDB" uint=0
+  ast[1] tp=2 str="latin1" uint=0
+  ast[2] tp=17 str="" uint=2
+  options=[charset engine row_format] unextracted=[]
+    Options["charset"]="latin1"
+    Options["engine"]="InnoDB"
+    Options["row_format"]="DYNAMIC"
+  col[0] name=c type="varchar(65533)" length=65533 charset="" collation=""
+  pk=<nil> indexes=0
+=== L_PLUS dialect=mysql statements=1 ast-options=3
+  ast[0] tp=1 str="InnoDB" uint=0
+  ast[1] tp=2 str="latin1" uint=0
+  ast[2] tp=17 str="" uint=2
+  options=[charset engine row_format] unextracted=[]
+    Options["charset"]="latin1"
+    Options["engine"]="InnoDB"
+    Options["row_format"]="DYNAMIC"
+  col[0] name=c type="varchar(65534)" length=65534 charset="" collation=""
+  pk=<nil> indexes=0
+=== OTHER_ENGINE dialect=mysql statements=1 ast-options=3
+  ast[0] tp=1 str="MyISAM" uint=0
+  ast[1] tp=2 str="latin1" uint=0
+  ast[2] tp=17 str="" uint=2
+  options=[charset engine row_format] unextracted=[]
+    Options["charset"]="latin1"
+    Options["engine"]="MyISAM"
+    Options["row_format"]="DYNAMIC"
+  col[0] name=c type="varchar(65534)" length=65534 charset="" collation=""
+  pk=<nil> indexes=0
+=== COLUMN_OVERRIDE dialect=mysql statements=1 ast-options=3
+  ast[0] tp=1 str="InnoDB" uint=0
+  ast[1] tp=2 str="latin1" uint=0
+  ast[2] tp=17 str="" uint=2
+  options=[charset engine row_format] unextracted=[]
+    Options["charset"]="latin1"
+    Options["engine"]="InnoDB"
+    Options["row_format"]="DYNAMIC"
+  col[0] name=c type="varchar(16384) character set utf8mb4" length=16384 charset="utf8mb4" collation=""
+  pk=<nil> indexes=0
+=== L_MINUS dialect=tidb statements=1 ast-options=3
+  ast[0] tp=1 str="InnoDB" uint=0
+  ast[1] tp=2 str="latin1" uint=0
+  ast[2] tp=17 str="" uint=2
+  options=[charset engine row_format] unextracted=[]
+    Options["charset"]="latin1"
+    Options["engine"]="InnoDB"
+    Options["row_format"]="DYNAMIC"
+  col[0] name=c type="varchar(65532)" length=65532 charset="" collation=""
+  pk=<nil> indexes=0
+=== L_EQUAL dialect=tidb statements=1 ast-options=3
+  ast[0] tp=1 str="InnoDB" uint=0
+  ast[1] tp=2 str="latin1" uint=0
+  ast[2] tp=17 str="" uint=2
+  options=[charset engine row_format] unextracted=[]
+    Options["charset"]="latin1"
+    Options["engine"]="InnoDB"
+    Options["row_format"]="DYNAMIC"
+  col[0] name=c type="varchar(65533)" length=65533 charset="" collation=""
+  pk=<nil> indexes=0
+=== L_PLUS dialect=tidb statements=1 ast-options=3
+  ast[0] tp=1 str="InnoDB" uint=0
+  ast[1] tp=2 str="latin1" uint=0
+  ast[2] tp=17 str="" uint=2
+  options=[charset engine row_format] unextracted=[]
+    Options["charset"]="latin1"
+    Options["engine"]="InnoDB"
+    Options["row_format"]="DYNAMIC"
+  col[0] name=c type="varchar(65534)" length=65534 charset="" collation=""
+  pk=<nil> indexes=0
+=== OTHER_ENGINE dialect=tidb statements=1 ast-options=3
+  ast[0] tp=1 str="MyISAM" uint=0
+  ast[1] tp=2 str="latin1" uint=0
+  ast[2] tp=17 str="" uint=2
+  options=[charset engine row_format] unextracted=[]
+    Options["charset"]="latin1"
+    Options["engine"]="MyISAM"
+    Options["row_format"]="DYNAMIC"
+  col[0] name=c type="varchar(65534)" length=65534 charset="" collation=""
+  pk=<nil> indexes=0
+=== COLUMN_OVERRIDE dialect=tidb statements=1 ast-options=3
+  ast[0] tp=1 str="InnoDB" uint=0
+  ast[1] tp=2 str="latin1" uint=0
+  ast[2] tp=17 str="" uint=2
+  options=[charset engine row_format] unextracted=[]
+    Options["charset"]="latin1"
+    Options["engine"]="InnoDB"
+    Options["row_format"]="DYNAMIC"
+  col[0] name=c type="varchar(16384) character set utf8mb4" length=16384 charset="utf8mb4" collation=""
+  pk=<nil> indexes=0
+##### AUDITSQL PROBE #####
+=== L_MINUS dialect=mysql facts=F_FULL err=<nil>
+  result={"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE TABLE t (c VARCHAR(65532)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;","normalized_sql":"CREATE TABLE t (c VARCHAR(65532)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC","coverage":{"status":"complete"}}],"rule_summary":{"loaded":1,"applicable":1},"version":{"product":"mysql","version":"8.4.10","major":8,"minor":4,"patch":10,"source":"observed","validated_range":true}}
+  ledger[0] LoadInstanceFacts(dialect=mysql schema="golden")
+  ledger[1] LoadTableSnapshot(dialect=mysql schema="golden" table="t")
+=== L_EQUAL dialect=mysql facts=F_FULL err=<nil>
+  result={"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE TABLE t (c VARCHAR(65533)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;","normalized_sql":"CREATE TABLE t (c VARCHAR(65533)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC","coverage":{"status":"complete"}}],"rule_summary":{"loaded":1,"applicable":1},"version":{"product":"mysql","version":"8.4.10","major":8,"minor":4,"patch":10,"source":"observed","validated_range":true}}
+  ledger[0] LoadInstanceFacts(dialect=mysql schema="golden")
+  ledger[1] LoadTableSnapshot(dialect=mysql schema="golden" table="t")
+=== L_PLUS dialect=mysql facts=F_FULL err=<nil>
+  result={"verdict":"reject","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":1,"warnings":0,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;","normalized_sql":"CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC","findings":[{"rule_id":"ddl.table.row_size.max_bytes.require","level":"blocker","message":"estimated row size exceeds 65535 bytes (65536)","statement_kind":"ddl","location":{"line":1,"column":1},"suggestion":"shrink wide columns, move large payloads out of the row, or review the table design explicitly","metadata":{"charset":"latin1","estimated":65536,"limit":65535,"row_format":"DYNAMIC","table":"t"},"explanation":{"summary":"Require DDL table row size max bytes require","why":"The statement is missing a clause, option, or object that the shipped policy requires.","risk":"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.","suggestion":"shrink wide columns, move large payloads out of the row, or review the table design explicitly","metadata":{"status":"available","note":"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."}}}],"coverage":{"status":"complete"},"explanation":{"summary":"Statement 1 has 1 finding(s)","reasons":["estimated row size exceeds 65535 bytes (65536)"]}}],"explanation":{"summary":"Audit produced 1 finding(s) across 1 statement(s)","reasons":["estimated row size exceeds 65535 bytes (65536)"]},"rule_summary":{"loaded":1,"applicable":1},"version":{"product":"mysql","version":"8.4.10","major":8,"minor":4,"patch":10,"source":"observed","validated_range":true}}
+  ledger[0] LoadInstanceFacts(dialect=mysql schema="golden")
+  ledger[1] LoadTableSnapshot(dialect=mysql schema="golden" table="t")
+=== L_PLUS dialect=mysql facts=F_EMPTY err=<nil>
+  result={"verdict":"reject","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":1,"warnings":0,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;","normalized_sql":"CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC","findings":[{"rule_id":"ddl.table.row_size.max_bytes.require","level":"blocker","message":"estimated row size exceeds 65535 bytes (65536)","statement_kind":"ddl","location":{"line":1,"column":1},"suggestion":"shrink wide columns, move large payloads out of the row, or review the table design explicitly","metadata":{"charset":"latin1","estimated":65536,"limit":65535,"row_format":"DYNAMIC","table":"t"},"explanation":{"summary":"Require DDL table row size max bytes require","why":"The statement is missing a clause, option, or object that the shipped policy requires.","risk":"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.","suggestion":"shrink wide columns, move large payloads out of the row, or review the table design explicitly","metadata":{"status":"available","note":"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."}}}],"coverage":{"status":"complete"},"explanation":{"summary":"Statement 1 has 1 finding(s)","reasons":["estimated row size exceeds 65535 bytes (65536)"]}}],"explanation":{"summary":"Audit produced 1 finding(s) across 1 statement(s)","reasons":["estimated row size exceeds 65535 bytes (65536)"]},"rule_summary":{"loaded":1,"applicable":1}}
+  ledger[0] LoadInstanceFacts(dialect=mysql schema="golden")
+  ledger[1] LoadTableSnapshot(dialect=mysql schema="golden" table="t")
+=== L_PLUS dialect=mysql facts=F_NIL err=<nil>
+  result={"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;","normalized_sql":"CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC","coverage":{"status":"complete"}}],"rule_summary":{"loaded":1,"applicable":1}}
+  ledger[0] LoadInstanceFacts(dialect=mysql schema="golden")
+  ledger[1] LoadTableSnapshot(dialect=mysql schema="golden" table="t")
+=== OTHER_ENGINE dialect=mysql facts=F_FULL err=<nil>
+  result={"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE TABLE t (c VARCHAR(65534)) ENGINE=MyISAM DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;","normalized_sql":"CREATE TABLE t (c VARCHAR(65534)) ENGINE=MyISAM DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC","coverage":{"status":"complete"}}],"rule_summary":{"loaded":1,"applicable":1},"version":{"product":"mysql","version":"8.4.10","major":8,"minor":4,"patch":10,"source":"observed","validated_range":true}}
+  ledger[0] LoadInstanceFacts(dialect=mysql schema="golden")
+  ledger[1] LoadTableSnapshot(dialect=mysql schema="golden" table="t")
+=== COLUMN_OVERRIDE dialect=mysql facts=F_FULL err=<nil>
+  result={"verdict":"reject","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":1,"warnings":0,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE TABLE t (c VARCHAR(16384) CHARACTER SET utf8mb4) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;","normalized_sql":"CREATE TABLE t (c VARCHAR(16384) CHARACTER SET utf8mb4) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC","findings":[{"rule_id":"ddl.table.row_size.max_bytes.require","level":"blocker","message":"estimated row size exceeds 65535 bytes (65538)","statement_kind":"ddl","location":{"line":1,"column":1},"suggestion":"shrink wide columns, move large payloads out of the row, or review the table design explicitly","metadata":{"charset":"latin1","estimated":65538,"limit":65535,"row_format":"DYNAMIC","table":"t"},"explanation":{"summary":"Require DDL table row size max bytes require","why":"The statement is missing a clause, option, or object that the shipped policy requires.","risk":"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.","suggestion":"shrink wide columns, move large payloads out of the row, or review the table design explicitly","metadata":{"status":"available","note":"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."}}}],"coverage":{"status":"complete"},"explanation":{"summary":"Statement 1 has 1 finding(s)","reasons":["estimated row size exceeds 65535 bytes (65538)"]}}],"explanation":{"summary":"Audit produced 1 finding(s) across 1 statement(s)","reasons":["estimated row size exceeds 65535 bytes (65538)"]},"rule_summary":{"loaded":1,"applicable":1},"version":{"product":"mysql","version":"8.4.10","major":8,"minor":4,"patch":10,"source":"observed","validated_range":true}}
+  ledger[0] LoadInstanceFacts(dialect=mysql schema="golden")
+  ledger[1] LoadTableSnapshot(dialect=mysql schema="golden" table="t")
+=== L_MINUS dialect=tidb facts=F_FULL err=<nil>
+  result={"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE TABLE t (c VARCHAR(65532)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;","normalized_sql":"CREATE TABLE t (c VARCHAR(65532)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC","coverage":{"status":"complete"}}],"rule_summary":{"loaded":1,"applicable":1},"version":{"product":"tidb","version":"8.5.0","major":8,"minor":5,"patch":0,"source":"observed","validated_range":true}}
+  ledger[0] LoadInstanceFacts(dialect=tidb schema="golden")
+  ledger[1] LoadTableSnapshot(dialect=tidb schema="golden" table="t")
+=== L_EQUAL dialect=tidb facts=F_FULL err=<nil>
+  result={"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE TABLE t (c VARCHAR(65533)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;","normalized_sql":"CREATE TABLE t (c VARCHAR(65533)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC","coverage":{"status":"complete"}}],"rule_summary":{"loaded":1,"applicable":1},"version":{"product":"tidb","version":"8.5.0","major":8,"minor":5,"patch":0,"source":"observed","validated_range":true}}
+  ledger[0] LoadInstanceFacts(dialect=tidb schema="golden")
+  ledger[1] LoadTableSnapshot(dialect=tidb schema="golden" table="t")
+=== L_PLUS dialect=tidb facts=F_FULL err=<nil>
+  result={"verdict":"reject","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":1,"warnings":0,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;","normalized_sql":"CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC","findings":[{"rule_id":"ddl.table.row_size.max_bytes.require","level":"blocker","message":"estimated row size exceeds 65535 bytes (65536)","statement_kind":"ddl","location":{"line":1,"column":1},"suggestion":"shrink wide columns, move large payloads out of the row, or review the table design explicitly","metadata":{"charset":"latin1","estimated":65536,"limit":65535,"row_format":"DYNAMIC","table":"t"},"explanation":{"summary":"Require DDL table row size max bytes require","why":"The statement is missing a clause, option, or object that the shipped policy requires.","risk":"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.","suggestion":"shrink wide columns, move large payloads out of the row, or review the table design explicitly","metadata":{"status":"available","note":"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."}}}],"coverage":{"status":"complete"},"explanation":{"summary":"Statement 1 has 1 finding(s)","reasons":["estimated row size exceeds 65535 bytes (65536)"]}}],"explanation":{"summary":"Audit produced 1 finding(s) across 1 statement(s)","reasons":["estimated row size exceeds 65535 bytes (65536)"]},"rule_summary":{"loaded":1,"applicable":1},"version":{"product":"tidb","version":"8.5.0","major":8,"minor":5,"patch":0,"source":"observed","validated_range":true}}
+  ledger[0] LoadInstanceFacts(dialect=tidb schema="golden")
+  ledger[1] LoadTableSnapshot(dialect=tidb schema="golden" table="t")
+=== L_PLUS dialect=tidb facts=F_EMPTY err=<nil>
+  result={"verdict":"reject","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":1,"warnings":0,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;","normalized_sql":"CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC","findings":[{"rule_id":"ddl.table.row_size.max_bytes.require","level":"blocker","message":"estimated row size exceeds 65535 bytes (65536)","statement_kind":"ddl","location":{"line":1,"column":1},"suggestion":"shrink wide columns, move large payloads out of the row, or review the table design explicitly","metadata":{"charset":"latin1","estimated":65536,"limit":65535,"row_format":"DYNAMIC","table":"t"},"explanation":{"summary":"Require DDL table row size max bytes require","why":"The statement is missing a clause, option, or object that the shipped policy requires.","risk":"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.","suggestion":"shrink wide columns, move large payloads out of the row, or review the table design explicitly","metadata":{"status":"available","note":"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."}}}],"coverage":{"status":"complete"},"explanation":{"summary":"Statement 1 has 1 finding(s)","reasons":["estimated row size exceeds 65535 bytes (65536)"]}}],"explanation":{"summary":"Audit produced 1 finding(s) across 1 statement(s)","reasons":["estimated row size exceeds 65535 bytes (65536)"]},"rule_summary":{"loaded":1,"applicable":1}}
+  ledger[0] LoadInstanceFacts(dialect=tidb schema="golden")
+  ledger[1] LoadTableSnapshot(dialect=tidb schema="golden" table="t")
+=== L_PLUS dialect=tidb facts=F_NIL err=<nil>
+  result={"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;","normalized_sql":"CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC","coverage":{"status":"complete"}}],"rule_summary":{"loaded":1,"applicable":1}}
+  ledger[0] LoadInstanceFacts(dialect=tidb schema="golden")
+  ledger[1] LoadTableSnapshot(dialect=tidb schema="golden" table="t")
+=== OTHER_ENGINE dialect=tidb facts=F_FULL err=<nil>
+  result={"verdict":"pass","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE TABLE t (c VARCHAR(65534)) ENGINE=MyISAM DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;","normalized_sql":"CREATE TABLE t (c VARCHAR(65534)) ENGINE=MyISAM DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC","coverage":{"status":"complete"}}],"rule_summary":{"loaded":1,"applicable":1},"version":{"product":"tidb","version":"8.5.0","major":8,"minor":5,"patch":0,"source":"observed","validated_range":true}}
+  ledger[0] LoadInstanceFacts(dialect=tidb schema="golden")
+  ledger[1] LoadTableSnapshot(dialect=tidb schema="golden" table="t")
+=== COLUMN_OVERRIDE dialect=tidb facts=F_FULL err=<nil>
+  result={"verdict":"reject","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":1,"warnings":0,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"CREATE TABLE t (c VARCHAR(16384) CHARACTER SET utf8mb4) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;","normalized_sql":"CREATE TABLE t (c VARCHAR(16384) CHARACTER SET utf8mb4) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC","findings":[{"rule_id":"ddl.table.row_size.max_bytes.require","level":"blocker","message":"estimated row size exceeds 65535 bytes (65538)","statement_kind":"ddl","location":{"line":1,"column":1},"suggestion":"shrink wide columns, move large payloads out of the row, or review the table design explicitly","metadata":{"charset":"latin1","estimated":65538,"limit":65535,"row_format":"DYNAMIC","table":"t"},"explanation":{"summary":"Require DDL table row size max bytes require","why":"The statement is missing a clause, option, or object that the shipped policy requires.","risk":"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.","suggestion":"shrink wide columns, move large payloads out of the row, or review the table design explicitly","metadata":{"status":"available","note":"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."}}}],"coverage":{"status":"complete"},"explanation":{"summary":"Statement 1 has 1 finding(s)","reasons":["estimated row size exceeds 65535 bytes (65538)"]}}],"explanation":{"summary":"Audit produced 1 finding(s) across 1 statement(s)","reasons":["estimated row size exceeds 65535 bytes (65538)"]},"rule_summary":{"loaded":1,"applicable":1},"version":{"product":"tidb","version":"8.5.0","major":8,"minor":5,"patch":0,"source":"observed","validated_range":true}}
+  ledger[0] LoadInstanceFacts(dialect=tidb schema="golden")
+  ledger[1] LoadTableSnapshot(dialect=tidb schema="golden" table="t")

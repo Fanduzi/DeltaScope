@@ -1,0 +1,1 @@
+deltascope audit --dialect mysql --config policies/p-on.yaml --format json --fail-on blocker --file sql/L_PLUS.sql

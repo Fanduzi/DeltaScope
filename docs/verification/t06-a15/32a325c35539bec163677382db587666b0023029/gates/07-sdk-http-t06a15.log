@@ -1,0 +1,60 @@
+$ go test -count=1 -run "T06A15" ./pkg/deltascope ./internal/interfaces/http -v
+=== RUN   TestT06A15DeclaredOverLimitRejectSDK
+--- PASS: TestT06A15DeclaredOverLimitRejectSDK (0.01s)
+=== RUN   TestT06A15MissingCharsetReviewSDK
+--- PASS: TestT06A15MissingCharsetReviewSDK (0.00s)
+=== RUN   TestT06A15MissingFormatOverRejectSDK
+--- PASS: TestT06A15MissingFormatOverRejectSDK (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.739s
+=== RUN   TestHandlerT06A15DeclaredOverLimitReject
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /healthz                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func1 (8 handlers)
+[GIN-debug] GET    /readyz                   --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func2 (8 handlers)
+[GIN-debug] GET    /version                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func3 (8 handlers)
+[GIN-debug] GET    /v1/rules                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func4 (8 handlers)
+[GIN-debug] GET    /v1/rules/:rule_id        --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func5 (8 handlers)
+[GIN-debug] GET    /v1/capabilities          --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func6 (8 handlers)
+[GIN-debug] POST   /v1/audit                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func7 (8 handlers)
+[GIN-debug] POST   /v1/query-access/analyze  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func8 (8 handlers)
+[GIN-debug] GET    /metrics                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.WrapH.func13 (8 handlers)
+2026/10/18 10:56:41 {"timestamp":"2026-10-18T02:56:41Z","level":"info","msg":"http request","method":"POST","path":"/v1/audit","status":200,"duration_ms":5,"request_id":"req-bd08af90e998e971087344c2"}
+--- PASS: TestHandlerT06A15DeclaredOverLimitReject (0.01s)
+=== RUN   TestHandlerT06A15MissingCharsetReview
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /healthz                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func1 (8 handlers)
+[GIN-debug] GET    /readyz                   --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func2 (8 handlers)
+[GIN-debug] GET    /version                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func3 (8 handlers)
+[GIN-debug] GET    /v1/rules                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func4 (8 handlers)
+[GIN-debug] GET    /v1/rules/:rule_id        --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func5 (8 handlers)
+[GIN-debug] GET    /v1/capabilities          --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func6 (8 handlers)
+[GIN-debug] POST   /v1/audit                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func7 (8 handlers)
+[GIN-debug] POST   /v1/query-access/analyze  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func8 (8 handlers)
+[GIN-debug] GET    /metrics                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.WrapH.func13 (8 handlers)
+2026/10/18 10:56:41 {"timestamp":"2026-10-18T02:56:41Z","level":"info","msg":"http request","method":"POST","path":"/v1/audit","status":200,"duration_ms":3,"request_id":"req-117edf15009eb5f2a40602aa"}
+--- PASS: TestHandlerT06A15MissingCharsetReview (0.01s)
+=== RUN   TestHandlerT06A15MissingFormatOverReject
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /healthz                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func1 (8 handlers)
+[GIN-debug] GET    /readyz                   --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func2 (8 handlers)
+[GIN-debug] GET    /version                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func3 (8 handlers)
+[GIN-debug] GET    /v1/rules                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func4 (8 handlers)
+[GIN-debug] GET    /v1/rules/:rule_id        --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func5 (8 handlers)
+[GIN-debug] GET    /v1/capabilities          --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func6 (8 handlers)
+[GIN-debug] POST   /v1/audit                 --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func7 (8 handlers)
+[GIN-debug] POST   /v1/query-access/analyze  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.func8 (8 handlers)
+[GIN-debug] GET    /metrics                  --> github.com/Fanduzi/DeltaScope/internal/interfaces/http.NewHandler.WrapH.func13 (8 handlers)
+2026/10/18 10:56:41 {"timestamp":"2026-10-18T02:56:41Z","level":"info","msg":"http request","method":"POST","path":"/v1/audit","status":200,"duration_ms":2,"request_id":"req-7325b1722ed93189d3e36375"}
+--- PASS: TestHandlerT06A15MissingFormatOverReject (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/http	0.954s
+rc=0

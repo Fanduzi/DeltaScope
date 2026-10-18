@@ -1,0 +1,74 @@
+$ go test -count=1 ./internal/domain/rule/ddl -run "IndexKey|indexKey|KeyLength" -v
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix
+=== PAUSE TestIndexKeyLengthVersionEvidenceMatrix
+=== RUN   TestIndexKeyLengthNoGapWhenNotApplicable
+=== PAUSE TestIndexKeyLengthNoGapWhenNotApplicable
+=== RUN   TestIndexKeyLengthRuleFindsLargePrefixOverflow
+=== PAUSE TestIndexKeyLengthRuleFindsLargePrefixOverflow
+=== CONT  TestIndexKeyLengthVersionEvidenceMatrix
+=== CONT  TestIndexKeyLengthNoGapWhenNotApplicable
+=== RUN   TestIndexKeyLengthNoGapWhenNotApplicable/required_false_stays_silent
+=== CONT  TestIndexKeyLengthRuleFindsLargePrefixOverflow
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_missing_version_yields_version_gap_not_finding
+=== RUN   TestIndexKeyLengthNoGapWhenNotApplicable/non_index_create_stays_silent
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_missing_version_still_reports_violation_proven_under_every_candidate_bound
+--- PASS: TestIndexKeyLengthNoGapWhenNotApplicable (0.00s)
+    --- PASS: TestIndexKeyLengthNoGapWhenNotApplicable/required_false_stays_silent (0.00s)
+    --- PASS: TestIndexKeyLengthNoGapWhenNotApplicable/non_index_create_stays_silent (0.00s)
+--- PASS: TestIndexKeyLengthRuleFindsLargePrefixOverflow (0.00s)
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_dynamic_small_index_with_unknown_page_size_is_an_instance-fact_gap
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_dynamic_oversized_index_exceeds_every_candidate_page_bound
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_dynamic_small_index_with_known_4KB_page_is_a_768_blocker
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_dynamic_small_index_with_known_8KB_page_fits_1536
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_dynamic_small_index_with_known_16KB_page_fits_3072
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.0_dynamic_oversized_index_with_known_16KB_page_is_a_3072_blocker
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_5.7_dynamic_without_large_prefix_or_page_facts_reports_both
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_5.7_dynamic_large_prefix_on_without_page_fact_is_a_page-size_gap
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_5.7_dynamic_large_prefix_on_4KB_page_caps_at_768
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_5.7_dynamic_large_prefix_on_16KB_page_oversized_is_a_3072_blocker
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_5.7_dynamic_large_prefix_off_caps_at_767
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_5.7_dynamic_large_prefix_off_small_index_passes
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_compact_resolves_767_without_any_version_fact
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_out-of-range_suppresses_finding_and_reports_range_gap
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/tidb_missing_version_yields_version_gap
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/tidb_8.5_unknown_max-index-length_leaves_mid-range_index_unverified
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/tidb_8.5_unknown_max-index-length_passes_totals_under_every_candidate
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/tidb_8.5_unknown_max-index-length_still_proves_totals_over_12288
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/tidb_8.5_configured_3072_blocks_the_3200-byte_index
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/tidb_8.5_configured_12288_passes_the_4000-byte_index
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/tidb_out-of-range_suppresses_finding
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_without_row-format_evidence_yields_instance_fact_gap
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_without_row-format_or_page_facts_reports_both
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_5.7_unknown_row_format_and_large_prefix_reports_all_missing_facts
+=== RUN   TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_missing_facts_never_suppress_a_proven_blocker
+--- PASS: TestIndexKeyLengthVersionEvidenceMatrix (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_missing_version_yields_version_gap_not_finding (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_missing_version_still_reports_violation_proven_under_every_candidate_bound (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_dynamic_small_index_with_unknown_page_size_is_an_instance-fact_gap (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_dynamic_oversized_index_exceeds_every_candidate_page_bound (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_dynamic_small_index_with_known_4KB_page_is_a_768_blocker (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_dynamic_small_index_with_known_8KB_page_fits_1536 (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_dynamic_small_index_with_known_16KB_page_fits_3072 (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.0_dynamic_oversized_index_with_known_16KB_page_is_a_3072_blocker (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_5.7_dynamic_without_large_prefix_or_page_facts_reports_both (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_5.7_dynamic_large_prefix_on_without_page_fact_is_a_page-size_gap (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_5.7_dynamic_large_prefix_on_4KB_page_caps_at_768 (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_5.7_dynamic_large_prefix_on_16KB_page_oversized_is_a_3072_blocker (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_5.7_dynamic_large_prefix_off_caps_at_767 (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_5.7_dynamic_large_prefix_off_small_index_passes (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_compact_resolves_767_without_any_version_fact (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_out-of-range_suppresses_finding_and_reports_range_gap (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/tidb_missing_version_yields_version_gap (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/tidb_8.5_unknown_max-index-length_leaves_mid-range_index_unverified (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/tidb_8.5_unknown_max-index-length_passes_totals_under_every_candidate (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/tidb_8.5_unknown_max-index-length_still_proves_totals_over_12288 (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/tidb_8.5_configured_3072_blocks_the_3200-byte_index (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/tidb_8.5_configured_12288_passes_the_4000-byte_index (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/tidb_out-of-range_suppresses_finding (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_without_row-format_evidence_yields_instance_fact_gap (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_without_row-format_or_page_facts_reports_both (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_5.7_unknown_row_format_and_large_prefix_reports_all_missing_facts (0.00s)
+    --- PASS: TestIndexKeyLengthVersionEvidenceMatrix/mysql_8.4_missing_facts_never_suppress_a_proven_blocker (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	0.284s
+rc=0

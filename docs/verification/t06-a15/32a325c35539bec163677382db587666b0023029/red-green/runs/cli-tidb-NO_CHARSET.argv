@@ -1,0 +1,1 @@
+/tmp/ds-t06-a15-work/deltascope audit --config policies/on.yaml --file sql/NO_CHARSET.sql --dialect tidb --format json --fail-on blocker
