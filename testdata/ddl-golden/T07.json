@@ -13,7 +13,8 @@
       "database": "golden",
       "exec_client": [
         "mysql",
-        "-uroot"
+        "-uroot",
+        "--default-character-set=utf8mb4"
       ],
       "needs_database_create": false,
       "exec_password_env": "T07_MYSQL_PASSWORD"
@@ -27,7 +28,8 @@
       "database": "golden",
       "exec_client": [
         "mysql",
-        "-uroot"
+        "-uroot",
+        "--default-character-set=utf8mb4"
       ],
       "needs_database_create": false,
       "exec_password_env": "T07_MYSQL_PASSWORD"
@@ -41,7 +43,8 @@
       "database": "golden",
       "exec_client": [
         "mysql",
-        "-uroot"
+        "-uroot",
+        "--default-character-set=utf8mb4"
       ],
       "needs_database_create": false,
       "exec_password_env": "T07_MYSQL_PASSWORD"
@@ -62,7 +65,8 @@
         "tidb85",
         "-P",
         "4000",
-        "-uroot"
+        "-uroot",
+        "--default-character-set=utf8mb4"
       ],
       "needs_database_create": true
     }

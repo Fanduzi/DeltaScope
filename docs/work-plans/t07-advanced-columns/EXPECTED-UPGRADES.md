@@ -221,3 +221,23 @@ Files: `testdata/ddl-golden/T03.json`, `T04.json`, `T05.json` — the same 19
 Reason: the frozen per-entry diagnostics contract. Cases with a single
 unsupported entry, parse-failure diagnostics, or zero unsupported keep their
 existing counts.
+## U09 — pinned exec client charset for expression HEX whitelists
+
+MySQL records string literals inside generated/default expressions in
+`information_schema` with the DDL *session's* connection charset introducer
+(`_utf8mb4\'a\'` under a utf8mb4 session, `_latin1\'a\'` under the image's
+latin1 client default). The collected native evidence used utf8mb4 sessions,
+so the frozen HEX whitelists name `_utf8mb4` forms. The first serial run
+showed the unpinned `mysql` exec client negotiating latin1 and producing
+`_latin1` introducers on 8.0.46/8.4.10 — an environment nondeterminism, not a
+semantic disagreement.
+
+The generator now appends `--default-character-set=utf8mb4` to every anchor's
+`exec_client` so DDL sessions reproduce the recorded evidence deterministically.
+No expectation, HEX whitelist, case identity, profile, or verdict changes; the
+207-identity digest is unchanged. Verified live: mysql:8.0.46 stores
+`HEX='5F757466386D62345C27615C27'` for `AS ('a') VIRTUAL` under a pinned
+utf8mb4 client, exactly the collected evidence form.
+
+Files: `scripts/t07_contract.py` (anchor construction),
+`testdata/ddl-golden/T07.json` (regenerated, anchor `exec_client` only).

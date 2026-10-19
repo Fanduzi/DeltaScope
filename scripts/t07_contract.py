@@ -311,6 +311,13 @@ def manifest():
     anchors=copy.deepcopy(baseline['anchors'])
     for name,anchor in anchors.items():
         anchor['exec_client']=[arg for arg in anchor['exec_client'] if not arg.startswith('-p')]
+        # The catalog records string literals inside generated/default
+        # expressions with the DDL session's connection charset introducer;
+        # the collected native evidence used utf8mb4 sessions. Pin the exec
+        # client's charset so expression HEX whitelists are deterministic
+        # instead of inheriting the image's latin1 client default.
+        if '--default-character-set=utf8mb4' not in anchor['exec_client']:
+            anchor['exec_client'].append('--default-character-set=utf8mb4')
         if name!='tidb85': anchor['exec_password_env']='T07_MYSQL_PASSWORD'
     native=[metadata_case(role,anchor) for role in native_roles() for anchor in VERSIONS]+provider_cases()
     cli=cli_cases()
