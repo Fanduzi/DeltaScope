@@ -3,6 +3,18 @@
 Per-task manifests for the milestone DDL golden-path runner
 (`make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>`, `scripts/ddl_golden.py`).
 
+## T07 advanced-column contract
+
+[T07.json](T07.json) materializes the independent
+[`scripts/t07_contract.py`](../../scripts/t07_contract.py) oracle: 207 cases
+(8 database, 2 baseline CLI, 34 offline CLI, 163 metadata). The contract and
+versioned/native source distinctions are indexed in
+[CONTRACT.md](../../docs/work-plans/t07-advanced-columns/CONTRACT.md).
+T06 remains 496; pre-contract observations and controlled sensitivity checks
+have separate denominators. Exact T07 SQL/profile/version/native structures
+are frozen before production implementation and must not be regenerated from
+product actuals. T07 fixture credentials are environment-only names, not values.
+
 ## Manifest contract
 
 - `task_id`: milestone task id (e.g. `T02`)
