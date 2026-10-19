@@ -83,7 +83,11 @@ Shared domain interfaces are `AssessAdvancedColumns(statement Statement)
 AdvancedColumnAssessment` and `ColumnDependents(table Table, columns []Column,
 name string) ColumnDependencyAssessment`. The former returns Applies, Issues,
 Gaps, InvalidTransition and UnresolvedTransition; the latter returns ordered
-Dependents plus Known. Each dependent carries Column, Kind and Dependency
+Dependents plus Known. The shared assessment additionally carries structured
+`DependencyEffects []ColumnDependencyEffect` (Column, Action, Dependents, Known)
+and separate DependencyGaps. Compatibility Applies/Features/Issues/Gaps do not
+absorb dependency-only actions or their evidence. This keeps the two rule
+applicability domains distinct while state consumes one assessment. Each dependent carries Column, Kind and Dependency
 (direct/transitive). Issues carry Column/Feature/Action/ReasonCode/MinimumVersion;
 gaps carry ReasonCode/RequiredFacts. These spec-owned data shapes import no
 rule/report/infrastructure packages. Rules map them to existing Finding/
@@ -113,6 +117,18 @@ single `ALTER [COLUMN] name SET VISIBLE|INVISIBLE` form. Do not infer support by
 regex/substring inspection of a failed parse. Run the supplement before the
 existing parse, bind every recovered fact to a successfully parsed table/column
 identity, and retain original statement text, counts, positions and siblings.
+
+The concrete infrastructure carrier is an adapter-owned statement wrapper
+embedding an underlying ast.StmtNode plus typed column/visibility supplements.
+WrapStatements classifies the underlying real node; extraction and legacy
+coverage switches also receive that node. Original text stays on the wrapper
+and underlying node. Supplements are applied to domain facts before coverage
+classification, after exact table/column/action binding. Do not add invented
+ColumnOptionType values to the third-party AST. For the visibility setter,
+parse the narrow syntax as its own typed adapter form with validated table/
+column identifiers (the existing SELECT-column grammar may validate identifiers
+statically), not by representing visibility as a fake DEFAULT or integer type.
+Non-T07 actions retain their existing grammar, order and unextracted markers.
 
 For parenthesized DEFAULT, parse its expression using the existing TiDB
 expression grammar (a SELECT expression, never executed), validate one
@@ -256,7 +272,11 @@ nondeterministic built-ins without evaluating them. The selected TiDB function
 forms must obey its documented restricted support, including CREATE/ALTER
 and type differences. Unknown function semantics or unreliably bound
 expressions remain explicit tool analysis boundaries, not a false complete
-zero-reference fact. The finite role oracle defines the promises, not arbitrary
+zero-reference fact. The existing JSON-generated corpus form also recognizes
+JSON_UNQUOTE/JSON_EXTRACT, UNHEX/SHA2 and CAST as deterministic structure;
+references come from their arguments, not the literal JSON path or a hash
+value. This is fact extraction, not a cryptographic/runtime evaluator. The
+finite role oracle defines the promises, not arbitrary
 SQL-string or function-version Cartesian coverage. On a version with known
 visibility support, `no_visible_columns` is the bounded reason for CREATE or
 SET visibility leaving no visible column. Version/vendor negatives take

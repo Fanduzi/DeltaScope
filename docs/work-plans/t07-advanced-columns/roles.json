@@ -1,6 +1,8 @@
 {
   "role_count": 38,
-  "cli_cases": 34,
+  "baseline_cli_cases": 2,
+  "offline_cli_cases": 34,
+  "cli_cases": 36,
   "metadata_cases": 163,
   "required_cases": 207,
   "required_case_ids": [

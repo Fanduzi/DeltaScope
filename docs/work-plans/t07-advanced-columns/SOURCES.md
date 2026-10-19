@@ -45,6 +45,9 @@ source snippets resolved to `trunk` and are not used as version-pinned proof.
 - The locked AST has index visibility but no column-visibility option. Valid
   MySQL visibility definitions currently fail parsing. The T07 parser adapter
   must add a narrow structural grammar, not regex inference from parse errors.
+- The locked DEFAULT grammar also rejects `(1+2)` and `(a+1)` in the valid
+  MySQL8 native cases. The supplement must preserve real expression ASTs, not
+  merely recover visibility or copy a literal placeholder into the model.
 - Existing ordered state clones known CREATE facts and conservatively refuses
   unrecomputable dependencies. The T07 work must deepen those existing seams,
   not introduce a second state machine or transport-specific analyzer.
@@ -66,6 +69,13 @@ records are separate from native DDL results. Collection rc=0 means records
 were captured, not that a feature is supported or the old product is correct.
 Native errors retain actual MySQL number, SQLSTATE and message; query/scan/
 Rows.Err/write/cleanup errors are not interpreted as feature negatives.
+Four additional roles per anchor are retained under native-supplement:
+G17/G18 referenced-base CHANGE/RENAME and D10/D11 UUID setter/JSON-default DROP.
+Together these are 38 roles × four anchors = 152 observation bindings, not 152
+product acceptance cases. MySQL5.7 G17 returns1054 (unknown referenced name),
+while the other anchors return3108; G18 returns1064 on5.7 and3108 elsewhere.
+TiDB8.5.0 accepts ALTER UUID on VARCHAR and DROP a CREATE-defined JSON default.
+These distinct ALTER positives do not establish ALTER SET JSON support.
 
 The catalog's column-label case differs across products. A lead review uses a
 label-normalized view only; no value, member byte, SQL, raw record or hash is
@@ -93,6 +103,12 @@ script failure, not a database or product result.
 - On MySQL 8.0.46/8.4.10, MODIFY/CHANGE with omitted visibility resets an
   invisible column to visible. This effective-state transition has native
   catalog and LIMIT-0 projection evidence; it is not an assumed inheritance.
+
+MySQL8.0/8.4 raw generation/default catalog text also escapes quote delimiters
+(e.g. `_utf8mb4\'a\'` and `json_object(_utf8mb4\'k\',1)`). Preserve
+both text and HEX; a label-normalized view does not decode or rewrite them.
+The provider's derived AST facts must handle that metadata representation
+without globally dropping literal backslashes or declaring unknown empty.
 
 ### Recorded documentation/native discrepancy
 
