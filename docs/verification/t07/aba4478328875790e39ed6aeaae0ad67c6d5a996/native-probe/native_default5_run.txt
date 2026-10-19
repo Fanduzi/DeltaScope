@@ -1,0 +1,25 @@
+### FTS_TS tidb85 rc=0 out=| cols=v=CURRENT_TIMESTAMP
+### FTS_DT tidb85 rc=0 out=| cols=v=CURRENT_TIMESTAMP
+### FTS_DATE tidb85 rc=0 out=| cols=v=CURRENT_TIMESTAMP
+### FTS_VC tidb85 rc=0 out=| cols=v=2026-10-19 15:55:37
+### FTS_INT tidb85 rc=1 out=ERROR 1067 (42000) at line 1: Invalid default value for 'v'| cols=v=<NULL>
+### C_ARITH_DATE tidb85 rc=0 out=| cols=v=<NULL>
+### CASE_UUID_INT tidb85 rc=1 out=ERROR 1067 (42000) at line 1: Invalid default value for 'v'| cols=v=<NULL>
+### DP_UUID_VC tidb85 rc=0 out=| cols=v=87350bc4-cbd5-11f1-b184-861e12850f0b
+### DP_UUID_INT tidb85 rc=1 out=ERROR 1067 (42000) at line 1: Invalid default value for 'v'| cols=v=<NULL>
+### DP_JSON_VC tidb85 rc=0 out=| cols=v={"k": 1}
+### DP_CTS_TS tidb85 rc=0 out=| cols=v=<NULL>
+### DP_ARITH_VC tidb85 rc=0 out=| cols=v=3
+### BARE_UUID_mysql80 mysql80 rc=1 out=ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'uuid()' at line 1| cols=v=<NULL>
+### BARE_UUID_mysql84 mysql84 rc=1 out=ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'uuid()' at line 1| cols=v=<NULL>
+### BARE_UUID_tidb85 tidb85 rc=1 out=ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 66 near "uuid()" | cols=v=<NULL>
+### BARE_NOW_TS tidb85 rc=1 out=ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 60 near "NOW()" | cols=v=<NULL>
+### BARE_CREATE_NOW_mysql57 mysql57 rc=0 out=| cols=v=CURRENT_TIMESTAMP
+### BARE_CREATE_NOW_mysql80 mysql80 rc=0 out=| cols=v=CURRENT_TIMESTAMP
+### BARE_CREATE_NOW_mysql84 mysql84 rc=0 out=| cols=v=CURRENT_TIMESTAMP
+### BARE_CREATE_NOW_tidb85 tidb85 rc=0 out=| cols=v=CURRENT_TIMESTAMP
+### CDP_UUID tidb85 rc=0 out=| cols=v=uuid()
+### C_ARITH_INT rc=0 out=| cols=v=3
+### DP_LOWER_VC rc=0 out=| cols=v=x
+### DP_NOW_TS rc=0 out=| cols=v=<NULL>
+### ARITH_CMP_VC rc=0 out=| cols=v=1

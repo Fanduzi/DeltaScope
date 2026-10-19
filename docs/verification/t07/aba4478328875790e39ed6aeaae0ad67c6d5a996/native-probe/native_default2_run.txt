@@ -1,0 +1,9 @@
+### P_ARITH rc=1 out=ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 44 near "1 + 2))" | cols=NULL
+### P_LIT rc=1 out=ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 53 near "'abc'))" | cols=NULL
+### P_NUM rc=1 out=ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 42 near "7))" | cols=NULL
+### P_UUID rc=0 out=| cols=v=uuid()
+### P_UUIDS rc=1 out=ERROR 3770 (HY000) at line 1: Default value expression of column 'v' contains a disallowed function: `uuid_short`.| cols=NULL
+### P_JARR rc=0 out=| cols=j=json_array()
+### P_NOW rc=1 out=ERROR 1067 (42000) at line 1: Invalid default value for 'v'| cols=NULL
+### P_WRAPFN rc=1 out=ERROR 3770 (HY000) at line 1: Default value expression of column 'v' contains a disallowed function: `lower`.| cols=NULL
+### P_JWRAP rc=0 out=| cols=j=json_object(_utf8mb4'k', json_array(1))

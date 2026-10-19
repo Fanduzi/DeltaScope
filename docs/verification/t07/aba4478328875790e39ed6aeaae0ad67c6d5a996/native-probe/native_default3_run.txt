@@ -1,0 +1,10 @@
+### S_JSON rc=0 out=| cols=v=json_object(_utf8mb4'k', 1),x=<NULL>
+### S_XREF rc=1 out=ERROR 1054 (42S22) at line 1: Unknown column 'x' in 'expression'| cols=v=<NULL>,x=<NULL>
+### S_UUID_INT rc=0 out=| cols=v=<NULL>,x=uuid()
+### S_UUID_INT2 rc=0 out=| cols=v=uuid(),x=<NULL>
+### S_LOWER rc=1 out=ERROR 3770 (HY000) at line 1: Default value expression of column 'v' contains a disallowed function: `lower`.| cols=v=<NULL>,x=<NULL>
+### S_SUBQ rc=1 out=ERROR 1105 (HY000) at line 1: planCtx is required when rewriting node: '*ast.SubqueryExpr'| cols=v=<NULL>,x=<NULL>
+### S_CASEX rc=1 out=ERROR 1054 (42S22) at line 1: Unknown column 'x' in 'expression'| cols=v=<NULL>,x=<NULL>
+### S_LIT rc=0 out=| cols=v=abc,x=<NULL>
+### S_LITNUM rc=0 out=| cols=v=42,x=<NULL>
+### S_UUID_ARG rc=1 out=ERROR 3770 (HY000) at line 1: Default value expression of column 'v' contains a disallowed function: `concat`.| cols=v=<NULL>,x=<NULL>

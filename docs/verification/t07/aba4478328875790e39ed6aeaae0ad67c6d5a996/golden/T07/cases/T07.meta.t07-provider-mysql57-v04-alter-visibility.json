@@ -1,0 +1,549 @@
+{
+  "case_id": "T07.meta.t07-provider-mysql57-v04-alter-visibility",
+  "kind": "cli_metadata",
+  "cli_case": "t07-provider-mysql57-v04-alter-visibility",
+  "anchor": "mysql57",
+  "dialect": "mysql",
+  "input_sql": "ALTER TABLE t ALTER COLUMN hidden_c SET INVISIBLE;",
+  "policy_profile": "t07-all",
+  "policy_path": "/private/tmp/ds-t07r1/golden-final/T07/T07/golden-policy-t07-all.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "T07_MYSQL_PASSWORD"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "statement_sql": [
+      "ALTER TABLE t ALTER COLUMN hidden_c SET INVISIBLE;"
+    ],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.column.advanced.compatibility.require",
+        "level": "blocker"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 0,
+        "rule_id": "ddl.column.advanced.compatibility.require",
+        "metadata": {
+          "table": "t",
+          "column": "hidden_c",
+          "feature": "visibility",
+          "action": "set_column_visibility",
+          "reason_code": "version_unsupported",
+          "product": "mysql",
+          "target_version": "5.7.44",
+          "minimum_version": "8.0.23"
+        }
+      }
+    ],
+    "finding_locations": [
+      {
+        "index": 0,
+        "line": 1,
+        "column": 1
+      }
+    ],
+    "unsupported_entries": [],
+    "t07_exact_findings": [
+      {
+        "index": 0,
+        "rule_id": "ddl.column.advanced.compatibility.require",
+        "level": "blocker",
+        "message": "column \"hidden_c\" advanced definition is not supported for the target (version_unsupported)",
+        "metadata": {
+          "table": "t",
+          "column": "hidden_c",
+          "feature": "visibility",
+          "action": "set_column_visibility",
+          "reason_code": "version_unsupported",
+          "product": "mysql",
+          "target_version": "5.7.44",
+          "minimum_version": "8.0.23"
+        }
+      }
+    ],
+    "statement_indices": [
+      0
+    ],
+    "rule_summary_loaded": 4
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:5.7.44",
+      "image_digest": "mysql@sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb",
+      "container": "deltascope-ddl-golden-mysql57",
+      "reachable": true,
+      "version": "5.7.44"
+    },
+    "setup": [
+      {
+        "name": "prove-prior-absence",
+        "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'",
+        "rc": 0,
+        "stdout": "COUNT(*)\n0",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "bound table count",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "create-provider-source",
+        "sql": "CREATE TABLE t (id INT PRIMARY KEY,hidden_c INT,visible_c INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "bound table count",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          },
+          {
+            "assert": "complete advanced column set",
+            "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(column_name,':',ordinal_position,':',CASE WHEN CAST(column_name AS BINARY)='id' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='' AND COALESCE(generation_expression,'')='' AND column_default IS NULL THEN 'ok' WHEN CAST(column_name AS BINARY)='hidden_c' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='' AND COALESCE(generation_expression,'')='' AND column_default IS NULL THEN 'ok' WHEN CAST(column_name AS BINARY)='visible_c' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='' AND COALESCE(generation_expression,'')='' AND column_default IS NULL THEN 'ok' ELSE 'bad' END) ORDER BY ordinal_position SEPARATOR ','),'') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t'",
+            "rc": 0,
+            "output": "id:1:ok,hidden_c:2:ok,visible_c:3:ok",
+            "stderr": ""
+          },
+          {
+            "assert": "complete index identity",
+            "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(index_name,':',seq_in_index,':',column_name) ORDER BY CAST(index_name AS BINARY),seq_in_index SEPARATOR ','),'') FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t'",
+            "rc": 0,
+            "output": "PRIMARY:1:id",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "bound table count",
+        "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'",
+        "rc": 0,
+        "output": "1",
+        "stderr": ""
+      },
+      {
+        "assert": "complete advanced column set",
+        "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(column_name,':',ordinal_position,':',CASE WHEN CAST(column_name AS BINARY)='id' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='' AND COALESCE(generation_expression,'')='' AND column_default IS NULL THEN 'ok' WHEN CAST(column_name AS BINARY)='hidden_c' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='' AND COALESCE(generation_expression,'')='' AND column_default IS NULL THEN 'ok' WHEN CAST(column_name AS BINARY)='visible_c' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='' AND COALESCE(generation_expression,'')='' AND column_default IS NULL THEN 'ok' ELSE 'bad' END) ORDER BY ordinal_position SEPARATOR ','),'') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t'",
+        "rc": 0,
+        "output": "id:1:ok,hidden_c:2:ok,visible_c:3:ok",
+        "stderr": ""
+      },
+      {
+        "assert": "complete index identity",
+        "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(index_name,':',seq_in_index,':',column_name) ORDER BY CAST(index_name AS BINARY),seq_in_index SEPARATOR ','),'') FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t'",
+        "rc": 0,
+        "output": "PRIMARY:1:id",
+        "stderr": ""
+      }
+    ],
+    "execute": [
+      {
+        "name": "step-1",
+        "sql": "ALTER TABLE t ALTER COLUMN hidden_c SET INVISIBLE;",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'INVISIBLE' at line 1",
+        "verify": [
+          {
+            "assert": "bound table count",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          },
+          {
+            "assert": "complete advanced column set",
+            "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(column_name,':',ordinal_position,':',CASE WHEN CAST(column_name AS BINARY)='id' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='' AND COALESCE(generation_expression,'')='' AND column_default IS NULL THEN 'ok' WHEN CAST(column_name AS BINARY)='hidden_c' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='' AND COALESCE(generation_expression,'')='' AND column_default IS NULL THEN 'ok' WHEN CAST(column_name AS BINARY)='visible_c' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='' AND COALESCE(generation_expression,'')='' AND column_default IS NULL THEN 'ok' ELSE 'bad' END) ORDER BY ordinal_position SEPARATOR ','),'') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t'",
+            "rc": 0,
+            "output": "id:1:ok,hidden_c:2:ok,visible_c:3:ok",
+            "stderr": ""
+          },
+          {
+            "assert": "complete index identity",
+            "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(index_name,':',seq_in_index,':',column_name) ORDER BY CAST(index_name AS BINARY),seq_in_index SEPARATOR ','),'') FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t'",
+            "rc": 0,
+            "output": "PRIMARY:1:id",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "structure": [
+      {
+        "assert": "bound table count",
+        "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'",
+        "rc": 0,
+        "output": "1",
+        "stderr": ""
+      },
+      {
+        "assert": "complete advanced column set",
+        "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(column_name,':',ordinal_position,':',CASE WHEN CAST(column_name AS BINARY)='id' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='' AND COALESCE(generation_expression,'')='' AND column_default IS NULL THEN 'ok' WHEN CAST(column_name AS BINARY)='hidden_c' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='' AND COALESCE(generation_expression,'')='' AND column_default IS NULL THEN 'ok' WHEN CAST(column_name AS BINARY)='visible_c' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='' AND COALESCE(generation_expression,'')='' AND column_default IS NULL THEN 'ok' ELSE 'bad' END) ORDER BY ordinal_position SEPARATOR ','),'') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t'",
+        "rc": 0,
+        "output": "id:1:ok,hidden_c:2:ok,visible_c:3:ok",
+        "stderr": ""
+      },
+      {
+        "assert": "complete index identity",
+        "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(index_name,':',seq_in_index,':',column_name) ORDER BY CAST(index_name AS BINARY),seq_in_index SEPARATOR ','),'') FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t'",
+        "rc": 0,
+        "output": "PRIMARY:1:id",
+        "stderr": ""
+      }
+    ],
+    "teardown": [
+      {
+        "name": "drop-owned-t",
+        "sql": "DROP TABLE t;",
+        "rc": 0,
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "bound table count",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t ALTER COLUMN hidden_c SET INVISIBLE;\",\"normalized_sql\":\"ALTER TABLE t ALTER COLUMN hidden_c SET INVISIBLE\",\"findings\":[{\"rule_id\":\"ddl.column.advanced.compatibility.require\",\"level\":\"blocker\",\"message\":\"column \\\"hidden_c\\\" advanced definition is not supported for the target (version_unsupported)\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"metadata\":{\"action\":\"set_column_visibility\",\"column\":\"hidden_c\",\"feature\":\"visibility\",\"minimum_version\":\"8.0.23\",\"product\":\"mysql\",\"reason_code\":\"version_unsupported\",\"table\":\"t\",\"target_version\":\"5.7.44\"},\"explanation\":{\"summary\":\"Require DDL column advanced compatibility require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"Add the required clause, option, or object explicitly so the rule no longer has to infer intent.\"}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"5.7.44\",\"major\":5,\"minor\":7,\"patch\":44,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":4,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t ALTER COLUMN hidden_c SET INVISIBLE;",
+          "normalized_sql": "ALTER TABLE t ALTER COLUMN hidden_c SET INVISIBLE",
+          "findings": [
+            {
+              "rule_id": "ddl.column.advanced.compatibility.require",
+              "level": "blocker",
+              "message": "column \"hidden_c\" advanced definition is not supported for the target (version_unsupported)",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "metadata": {
+                "action": "set_column_visibility",
+                "column": "hidden_c",
+                "feature": "visibility",
+                "minimum_version": "8.0.23",
+                "product": "mysql",
+                "reason_code": "version_unsupported",
+                "table": "t",
+                "target_version": "5.7.44"
+              },
+              "explanation": {
+                "summary": "Require DDL column advanced compatibility require",
+                "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "Add the required clause, option, or object explicitly so the rule no longer has to infer intent."
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "5.7.44",
+        "major": 5,
+        "minor": 7,
+        "patch": 44,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 4,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "5.7.44",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "5.7.44"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "5.7.44",
+        "major": 5,
+        "minor": 7,
+        "patch": 44,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='5.7.44' expected_contains='5.7.44'"
+    },
+    {
+      "name": "setup prove-prior-absence return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup prove-prior-absence: bound table count",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "setup create-provider-source return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup create-provider-source: bound table count",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "setup create-provider-source: complete advanced column set",
+      "ok": true,
+      "detail": "rc=0 output='id:1:ok,hidden_c:2:ok,visible_c:3:ok' expected='id:1:ok,hidden_c:2:ok,visible_c:3:ok'"
+    },
+    {
+      "name": "setup create-provider-source: complete index identity",
+      "ok": true,
+      "detail": "rc=0 output='PRIMARY:1:id' expected='PRIMARY:1:id'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=4"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "unsupported entries",
+      "ok": true,
+      "detail": "entries=[] expected=[]"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['ALTER TABLE t ALTER COLUMN hidden_c SET INVISIBLE;'] expected=['ALTER TABLE t ALTER COLUMN hidden_c SET INVISIBLE;']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[] expected=[]"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.column.advanced.compatibility.require', 'blocker')] expected=[(0, 'ddl.column.advanced.compatibility.require', 'blocker')]"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.column.advanced.compatibility.require')",
+      "ok": true,
+      "detail": "findings=[{'action': 'set_column_visibility', 'column': 'hidden_c', 'feature': 'visibility', 'minimum_version': '8.0.23', 'product': 'mysql', 'reason_code': 'version_unsupported', 'table': 't', 'target_version': '5.7.44'}] expected_subset={'table': 't', 'column': 'hidden_c', 'feature': 'visibility', 'action': 'set_column_visibility', 'reason_code': 'version_unsupported', 'product': 'mysql', 'target_version': '5.7.44', 'minimum_version': '8.0.23'}"
+    },
+    {
+      "name": "finding location index=0",
+      "ok": true,
+      "detail": "locations=[{'line': 1, 'column': 1}] expected={'index': 0, 'line': 1, 'column': 1}"
+    },
+    {
+      "name": "post-verify bound table count",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "post-verify complete advanced column set",
+      "ok": true,
+      "detail": "rc=0 output='id:1:ok,hidden_c:2:ok,visible_c:3:ok' expected='id:1:ok,hidden_c:2:ok,visible_c:3:ok'"
+    },
+    {
+      "name": "post-verify complete index identity",
+      "ok": true,
+      "detail": "rc=0 output='PRIMARY:1:id' expected='PRIMARY:1:id'"
+    },
+    {
+      "name": "execute step-1 return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'INVISIBLE' at line 1\""
+    },
+    {
+      "name": "execute step-1 stderr marker",
+      "ok": true,
+      "detail": "ERROR 1064"
+    },
+    {
+      "name": "execute step-1: bound table count",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "execute step-1: complete advanced column set",
+      "ok": true,
+      "detail": "rc=0 output='id:1:ok,hidden_c:2:ok,visible_c:3:ok' expected='id:1:ok,hidden_c:2:ok,visible_c:3:ok'"
+    },
+    {
+      "name": "execute step-1: complete index identity",
+      "ok": true,
+      "detail": "rc=0 output='PRIMARY:1:id' expected='PRIMARY:1:id'"
+    },
+    {
+      "name": "structure bound table count",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "structure complete advanced column set",
+      "ok": true,
+      "detail": "rc=0 output='id:1:ok,hidden_c:2:ok,visible_c:3:ok' expected='id:1:ok,hidden_c:2:ok,visible_c:3:ok'"
+    },
+    {
+      "name": "structure complete index identity",
+      "ok": true,
+      "detail": "rc=0 output='PRIMARY:1:id' expected='PRIMARY:1:id'"
+    },
+    {
+      "name": "teardown drop-owned-t return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop-owned-t: bound table count",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ds-t07r1/golden-final/T07/T07/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "ALTER TABLE t ALTER COLUMN hidden_c SET INVISIBLE;",
+    "--config",
+    "/private/tmp/ds-t07r1/golden-final/T07/T07/golden-policy-t07-all.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23357",
+    "--user",
+    "root",
+    "--password-env",
+    "T07_MYSQL_PASSWORD",
+    "--schema",
+    "golden"
+  ]
+}

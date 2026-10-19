@@ -1,0 +1,10 @@
+### J_DEC rc=0 out=| cols=v=json_object(_utf8mb4'k', 1),x=<NULL>
+### J_DATE rc=0 out=| cols=v=json_object(_utf8mb4'k', 1),x=<NULL>
+### J_TS rc=0 out=| cols=v=json_object(_utf8mb4'k', 1),x=<NULL>
+### JA_INT rc=0 out=| cols=v=json_array(1),x=<NULL>
+### A_INT rc=1 out=ERROR 1067 (42000) at line 1: Invalid default value for 'v'| cols=v=<NULL>,x=<NULL>
+### A_BIGINT rc=1 out=ERROR 1067 (42000) at line 1: Invalid default value for 'v'| cols=v=<NULL>,x=<NULL>
+### A_DATE rc=0 out=| cols=v=<NULL>,x=<NULL>
+### A_DEC rc=1 out=ERROR 1067 (42000) at line 1: Invalid default value for 'v'| cols=v=<NULL>,x=<NULL>
+### A_TS rc=0 out=| cols=v=<NULL>,x=<NULL>
+### A_CHAR rc=0 out=| cols=v=ec36bfac-cbd8-11f1-bf31-ee6ea3140807,x=<NULL>

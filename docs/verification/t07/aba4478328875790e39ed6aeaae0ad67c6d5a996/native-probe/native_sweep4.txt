@@ -1,0 +1,14 @@
+### A_TINY rc=1 out=ERROR 1067 (42000) at line 1: Invalid default value for 'v'| cols=v=<NULL>,x=<NULL>
+### A_FLOAT rc=1 out=ERROR 1067 (42000) at line 1: Invalid default value for 'v'| cols=v=<NULL>,x=<NULL>
+### A_DBL rc=1 out=ERROR 1067 (42000) at line 1: Invalid default value for 'v'| cols=v=<NULL>,x=<NULL>
+### A_BINF rc=0 out=| cols=v=36d3e882-cbd9-11f1-bf31-ee6ea3140807,x=<NULL>
+### A_YEAR rc=1 out=ERROR 1067 (42000) at line 1: Invalid default value for 'v'| cols=v=<NULL>,x=<NULL>
+### A_BIT rc=1 out=ERROR 8028 (HY000) at line 1: Information schema is changed during the execution of the statement(for example, table definition may be updated by other DDL ran in parallel). If you see this error often, try increasing `tidb_max_delta_schema_count`. [try again later]| cols=v=<NULL>,x=<NULL>
+### CS_BIG rc=1 out=ERROR 1067 (42000) at line 1: Invalid default value for 'v'| cols=v=<NULL>,x=<NULL>
+### CT_INT rc=1 out=ERROR 1067 (42000) at line 1: Invalid default value for 'v'| cols=v=<NULL>,x=<NULL>
+### CT_BIG rc=0 out=| cols=v=20261019162202,x=<NULL>
+### CT_DEC rc=1 out=ERROR 1067 (42000) at line 1: Invalid default value for 'v'| cols=v=<NULL>,x=<NULL>
+### C_SET rc=0 out=| cols=v=1,3,x=<NULL>
+### C_BIN rc=0 out=| cols=v=3,x=<NULL>
+### C_DT rc=0 out=| cols=v=<NULL>,x=<NULL>
+### C_DBL rc=0 out=| cols=v=3,x=<NULL>

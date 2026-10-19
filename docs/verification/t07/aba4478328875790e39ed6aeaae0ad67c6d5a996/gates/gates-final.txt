@@ -1,0 +1,86 @@
+=== git status ===
+ M .mcp.json
+=== go test ./... ===
+?   	github.com/Fanduzi/DeltaScope/cmd/deltascope	[no test files]
+ok  	github.com/Fanduzi/DeltaScope/cmd/deltascope-mcp	0.626s
+ok  	github.com/Fanduzi/DeltaScope/cmd/deltascope-server	2.006s
+?   	github.com/Fanduzi/DeltaScope/internal/application	[no test files]
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	4.580s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/auditmeta	0.497s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/configlint	1.404s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/configstatus	1.672s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/connresolve	2.713s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/online	3.015s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/policy	0.659s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/queryaccess	3.559s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/rulepresence	2.508s
+?   	github.com/Fanduzi/DeltaScope/internal/domain	[no test files]
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/policy	0.855s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/queryaccess	3.164s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/report	3.326s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule	3.372s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/catalog	3.408s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	3.146s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/dml	3.049s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/spec	2.915s
+?   	github.com/Fanduzi/DeltaScope/internal/infrastructure	[no test files]
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/config/viper	2.615s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/logger	2.590s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql	2.560s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/postgresql	2.227s
+?   	github.com/Fanduzi/DeltaScope/internal/infrastructure/output	[no test files]
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/githubactions	2.374s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/githubsummary	2.307s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/gitlabcodequality	2.263s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/json	2.184s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/markdown	2.057s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/sarif	2.175s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/postgresql	2.191s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	2.292s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig	2.204s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/cli	2.722s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/http	2.805s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/mcp	2.706s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/metadata	2.557s
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	2.916s
+ok  	github.com/Fanduzi/DeltaScope/scripts/t06a17proof	2.799s
+ok  	github.com/Fanduzi/DeltaScope/scripts/t07proof	2.835s
+=== race ===
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	13.836s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/spec	2.469s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	1.703s
+=== ddl-golden-validator-test ===
+PASS T07 fixture version-query-error preserves unowned resources
+PASS T07 fixture collision preserves unowned resources
+PASS T07 fixture owned intermediate failure cleans without audit
+PASS T07 fixture primary and cleanup errors preserved False
+PASS T07 fixture primary and cleanup errors preserved True
+PASS T07 fixture fixture credentials environment-only
+PASS T07 fixture missing fixture environment fails closed
+{
+  "constructed_checks": 86,
+  "failures": 0,
+  "note": "validator sensitivity only; not product or native execution"
+}
+=== sql-corpus-gates ===
+go test ./internal/application/audit -run 'TestSQLCorpusMySQLAndTiDB|TestSQLCorpusExpectedFilesAreWellFormed|TestSQLCorpusCoversSupportedRuleDialects' -count=1
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.622s
+=== ddl-inventory-gate ===
+go test ./internal/application/audit -run TestDDLInventoryContract -count=1
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.326s
+=== build ===
+mkdir -p bin
+CGO_ENABLED=1 go build -tags postgresql  -o bin/deltascope ./cmd/deltascope
+mkdir -p bin
+CGO_ENABLED=1 go build -tags postgresql  -o bin/deltascope-server ./cmd/deltascope-server
+mkdir -p bin
+CGO_ENABLED=1 go build -tags postgresql  -o bin/deltascope-mcp ./cmd/deltascope-mcp
+=== t07_contract ===
+{
+  "required_cases": 207,
+  "cli_cases": 36,
+  "metadata_cases": 163,
+  "id_sha256": "d723ac9553bf4e6ccc6ba1a73be2e4ba036903bb77a32c72f6b49878502f1d25"
+}
+=== three-level-doc ===
+[three-level-doc] OK

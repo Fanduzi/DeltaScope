@@ -1,0 +1,10 @@
+### J_INT rc=1 out=Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client| cols=Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+### J_DEC rc=1 out=Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client| cols=Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+### J_DATE rc=1 out=Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client| cols=Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+### J_TS rc=1 out=Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client| cols=Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+### J_CHAR rc=1 out=Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client| cols=Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+### JA_INT rc=1 out=Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client| cols=Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+### A_INT rc=1 out=Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client| cols=Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+### A_BIGINT rc=1 out=Error response from daemon: container 52a56a4a27d24f744938b7668a120cb7435e938d81244ed3b3d3f6fb4e90f3f4 is not running| cols=Error response from daemon: container 52a56a4a27d24f744938b7668a120cb7435e938d81244ed3b3d3f6fb4e90f3f4 is not running
+### A_DATE rc=1 out=Error response from daemon: container 52a56a4a27d24f744938b7668a120cb7435e938d81244ed3b3d3f6fb4e90f3f4 is not running| cols=Error response from daemon: container 52a56a4a27d24f744938b7668a120cb7435e938d81244ed3b3d3f6fb4e90f3f4 is not running
+### A_DEC rc=1 out=Error response from daemon: container 52a56a4a27d24f744938b7668a120cb7435e938d81244ed3b3d3f6fb4e90f3f4 is not running| cols=Error response from daemon: container 52a56a4a27d24f744938b7668a120cb7435e938d81244ed3b3d3f6fb4e90f3f4 is not running

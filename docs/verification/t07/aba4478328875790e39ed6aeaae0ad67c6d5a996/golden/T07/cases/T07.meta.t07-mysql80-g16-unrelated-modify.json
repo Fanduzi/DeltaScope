@@ -1,0 +1,450 @@
+{
+  "case_id": "T07.meta.t07-mysql80-g16-unrelated-modify",
+  "kind": "cli_metadata",
+  "cli_case": "t07-mysql80-g16-unrelated-modify",
+  "anchor": "mysql80",
+  "dialect": "mysql",
+  "input_sql": "CREATE TABLE t (a INT,b INT AS (a+1) STORED,c INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;\nALTER TABLE t MODIFY COLUMN c BIGINT;",
+  "policy_profile": "t07-all",
+  "policy_path": "/private/tmp/ds-t07r1/golden-final/T07/T07/golden-policy-t07-all.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "T07_MYSQL_PASSWORD"
+  },
+  "expected": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete",
+      "complete"
+    ],
+    "statement_sql": [
+      "CREATE TABLE t (a INT,b INT AS (a+1) STORED,c INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;",
+      "ALTER TABLE t MODIFY COLUMN c BIGINT;"
+    ],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "finding_entries": [],
+    "finding_metadata": [],
+    "finding_locations": [],
+    "unsupported_entries": [],
+    "t07_exact_findings": [],
+    "statement_indices": [
+      0,
+      1
+    ],
+    "rule_summary_loaded": 4
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:8.0.46",
+      "image_digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+      "container": "deltascope-ddl-golden-mysql80",
+      "reachable": true,
+      "version": "8.0.46"
+    },
+    "setup": [
+      {
+        "name": "prove-prior-absence",
+        "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'",
+        "rc": 0,
+        "stdout": "COUNT(*)\n0",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "bound table count",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "bound table count",
+        "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'",
+        "rc": 0,
+        "output": "0",
+        "stderr": ""
+      }
+    ],
+    "execute": [
+      {
+        "name": "step-0",
+        "sql": "CREATE TABLE t (a INT,b INT AS (a+1) STORED,c INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "bound table count",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          },
+          {
+            "assert": "complete advanced column set",
+            "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(column_name,':',ordinal_position,':',CASE WHEN CAST(column_name AS BINARY)='a' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='' AND COALESCE(generation_expression,'')='' AND column_default IS NULL THEN 'ok' WHEN CAST(column_name AS BINARY)='b' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='stored generated' AND HEX(generation_expression) IN ('606160202B2031','6061602B31','28606160202B203129','286061602B3129') AND column_default IS NULL THEN 'ok' WHEN CAST(column_name AS BINARY)='c' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='' AND COALESCE(generation_expression,'')='' AND column_default IS NULL THEN 'ok' ELSE 'bad' END) ORDER BY ordinal_position SEPARATOR ','),'') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t'",
+            "rc": 0,
+            "output": "a:1:ok,b:2:ok,c:3:ok",
+            "stderr": ""
+          },
+          {
+            "assert": "complete index identity",
+            "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(index_name,':',seq_in_index,':',column_name) ORDER BY CAST(index_name AS BINARY),seq_in_index SEPARATOR ','),'') FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t'",
+            "rc": 0,
+            "output": "",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "step-1",
+        "sql": "ALTER TABLE t MODIFY COLUMN c BIGINT;",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "bound table count",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          },
+          {
+            "assert": "complete advanced column set",
+            "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(column_name,':',ordinal_position,':',CASE WHEN CAST(column_name AS BINARY)='a' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='' AND COALESCE(generation_expression,'')='' AND column_default IS NULL THEN 'ok' WHEN CAST(column_name AS BINARY)='b' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='stored generated' AND HEX(generation_expression) IN ('606160202B2031','6061602B31','28606160202B203129','286061602B3129') AND column_default IS NULL THEN 'ok' WHEN CAST(column_name AS BINARY)='c' AND data_type='bigint' AND CAST(LOWER(extra) AS BINARY)='' AND COALESCE(generation_expression,'')='' AND column_default IS NULL THEN 'ok' ELSE 'bad' END) ORDER BY ordinal_position SEPARATOR ','),'') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t'",
+            "rc": 0,
+            "output": "a:1:ok,b:2:ok,c:3:ok",
+            "stderr": ""
+          },
+          {
+            "assert": "complete index identity",
+            "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(index_name,':',seq_in_index,':',column_name) ORDER BY CAST(index_name AS BINARY),seq_in_index SEPARATOR ','),'') FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t'",
+            "rc": 0,
+            "output": "",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "structure": [
+      {
+        "assert": "bound table count",
+        "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'",
+        "rc": 0,
+        "output": "1",
+        "stderr": ""
+      },
+      {
+        "assert": "complete advanced column set",
+        "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(column_name,':',ordinal_position,':',CASE WHEN CAST(column_name AS BINARY)='a' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='' AND COALESCE(generation_expression,'')='' AND column_default IS NULL THEN 'ok' WHEN CAST(column_name AS BINARY)='b' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='stored generated' AND HEX(generation_expression) IN ('606160202B2031','6061602B31','28606160202B203129','286061602B3129') AND column_default IS NULL THEN 'ok' WHEN CAST(column_name AS BINARY)='c' AND data_type='bigint' AND CAST(LOWER(extra) AS BINARY)='' AND COALESCE(generation_expression,'')='' AND column_default IS NULL THEN 'ok' ELSE 'bad' END) ORDER BY ordinal_position SEPARATOR ','),'') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t'",
+        "rc": 0,
+        "output": "a:1:ok,b:2:ok,c:3:ok",
+        "stderr": ""
+      },
+      {
+        "assert": "complete index identity",
+        "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(index_name,':',seq_in_index,':',column_name) ORDER BY CAST(index_name AS BINARY),seq_in_index SEPARATOR ','),'') FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t'",
+        "rc": 0,
+        "output": "",
+        "stderr": ""
+      }
+    ],
+    "teardown": [
+      {
+        "name": "drop-owned-t",
+        "sql": "DROP TABLE t;",
+        "rc": 0,
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "bound table count",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "exit": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":2,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t (a INT,b INT AS (a+1) STORED,c INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;\",\"normalized_sql\":\"CREATE TABLE t (a INT,b INT AS (a+1) STORED,c INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin\",\"coverage\":{\"status\":\"complete\"}},{\"index\":1,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t MODIFY COLUMN c BIGINT;\",\"normalized_sql\":\"ALTER TABLE t MODIFY COLUMN c BIGINT\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.0.46\",\"major\":8,\"minor\":0,\"patch\":46,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":4,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "pass",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 2,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t (a INT,b INT AS (a+1) STORED,c INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;",
+          "normalized_sql": "CREATE TABLE t (a INT,b INT AS (a+1) STORED,c INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 1,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t MODIFY COLUMN c BIGINT;",
+          "normalized_sql": "ALTER TABLE t MODIFY COLUMN c BIGINT",
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 4,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.46",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "8.0.46"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.46' expected_contains='8.0.46'"
+    },
+    {
+      "name": "setup prove-prior-absence return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup prove-prior-absence: bound table count",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='pass'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=2 expected=2"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=4"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0, 1]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete', 'complete']"
+    },
+    {
+      "name": "unsupported entries",
+      "ok": true,
+      "detail": "entries=[] expected=[]"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['CREATE TABLE t (a INT,b INT AS (a+1) STORED,c INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;', 'ALTER TABLE t MODIFY COLUMN c BIGINT;'] expected=['CREATE TABLE t (a INT,b INT AS (a+1) STORED,c INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;', 'ALTER TABLE t MODIFY COLUMN c BIGINT;']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[] expected=[]"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[] expected=[]"
+    },
+    {
+      "name": "post-verify bound table count",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute step-0 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute step-0: bound table count",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "execute step-0: complete advanced column set",
+      "ok": true,
+      "detail": "rc=0 output='a:1:ok,b:2:ok,c:3:ok' expected='a:1:ok,b:2:ok,c:3:ok'"
+    },
+    {
+      "name": "execute step-0: complete index identity",
+      "ok": true,
+      "detail": "rc=0 output='' expected=''"
+    },
+    {
+      "name": "execute step-1 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute step-1: bound table count",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "execute step-1: complete advanced column set",
+      "ok": true,
+      "detail": "rc=0 output='a:1:ok,b:2:ok,c:3:ok' expected='a:1:ok,b:2:ok,c:3:ok'"
+    },
+    {
+      "name": "execute step-1: complete index identity",
+      "ok": true,
+      "detail": "rc=0 output='' expected=''"
+    },
+    {
+      "name": "structure bound table count",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "structure complete advanced column set",
+      "ok": true,
+      "detail": "rc=0 output='a:1:ok,b:2:ok,c:3:ok' expected='a:1:ok,b:2:ok,c:3:ok'"
+    },
+    {
+      "name": "structure complete index identity",
+      "ok": true,
+      "detail": "rc=0 output='' expected=''"
+    },
+    {
+      "name": "teardown drop-owned-t return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop-owned-t: bound table count",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ds-t07r1/golden-final/T07/T07/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "CREATE TABLE t (a INT,b INT AS (a+1) STORED,c INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;\nALTER TABLE t MODIFY COLUMN c BIGINT;",
+    "--config",
+    "/private/tmp/ds-t07r1/golden-final/T07/T07/golden-policy-t07-all.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23380",
+    "--user",
+    "root",
+    "--password-env",
+    "T07_MYSQL_PASSWORD",
+    "--schema",
+    "golden"
+  ]
+}

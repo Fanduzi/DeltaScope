@@ -1,0 +1,10 @@
+### C_DEC rc=0 out=| cols=v=3,x=<NULL>
+### C_FLOAT rc=0 out=| cols=v=3,x=<NULL>
+### C_TIME rc=0 out=| cols=v=00:00:03,x=<NULL>
+### C_TS rc=0 out=| cols=v=<NULL>,x=<NULL>
+### C_ENUM rc=0 out=| cols=v=5,x=<NULL>
+### A_ENUM rc=1 out=ERROR 1067 (42000) at line 1: Invalid default value for 'v'| cols=v=<NULL>,x=<NULL>
+### A_SET rc=1 out=ERROR 1067 (42000) at line 1: Invalid default value for 'v'| cols=v=<NULL>,x=<NULL>
+### A_BIN rc=0 out=| cols=v=18b6860c-cbd9-11f1-bf31-ee6ea3140807,x=<NULL>
+### A_TIME rc=1 out=ERROR 1292 (22007) at line 1: Truncated incorrect time value: '18d425e3-cbd9-11f1-bf31-ee6ea3140807'| cols=v=<NULL>,x=<NULL>
+### CT_DBL rc=0 out=| cols=v=20261019162111,x=<NULL>

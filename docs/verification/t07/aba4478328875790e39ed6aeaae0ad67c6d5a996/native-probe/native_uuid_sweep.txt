@@ -1,0 +1,10 @@
+### U_CHAR rc=0 out=| cols=v=uuid(),x=<NULL>
+### U_BIGINT rc=0 out=| cols=v=uuid(),x=<NULL>
+### U_DOUBLE rc=0 out=| cols=v=uuid(),x=<NULL>
+### U_DATE rc=0 out=| cols=v=uuid(),x=<NULL>
+### U_TS rc=0 out=| cols=v=uuid(),x=<NULL>
+### U_DT rc=0 out=| cols=v=uuid(),x=<NULL>
+### U_YEAR rc=0 out=| cols=v=uuid(),x=<NULL>
+### U_BIT rc=0 out=| cols=v=uuid(),x=<NULL>
+### U_ENUM rc=0 out=| cols=v=uuid(),x=<NULL>
+### U_TEXT rc=1 out=ERROR 1101 (42000) at line 1: BLOB/TEXT/JSON column 'v' can't have a default value| cols=v=<NULL>,x=<NULL>

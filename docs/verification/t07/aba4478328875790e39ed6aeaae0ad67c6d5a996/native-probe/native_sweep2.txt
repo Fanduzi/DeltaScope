@@ -1,0 +1,10 @@
+### U_FLOAT rc=0 out=| cols=v=uuid(),x=<NULL>
+### U_TIME rc=0 out=| cols=v=uuid(),x=<NULL>
+### U_SET rc=0 out=| cols=v=uuid(),x=<NULL>
+### U_BIN rc=0 out=| cols=v=uuid(),x=<NULL>
+### U_TINY rc=0 out=| cols=v=uuid(),x=<NULL>
+### U_GEO rc=1 out=ERROR 1146 (42S02) at line 1: Table 'r1probe.t_r1p_u_geo' doesn't exist| cols=NULL
+### C_CHAR rc=0 out=| cols=v=3,x=<NULL>
+### C_BIGINT rc=0 out=| cols=v=3,x=<NULL>
+### CT_CHAR rc=0 out=| cols=v=2026-10-19 16:20:36,x=<NULL>
+### CS_CHAR rc=0 out=| cols=v=04a8ceab-cbd9-11f1-bf31-ee6ea3140807,x=<NULL>

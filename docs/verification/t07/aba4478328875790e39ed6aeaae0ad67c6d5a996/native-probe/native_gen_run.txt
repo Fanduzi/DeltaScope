@@ -1,0 +1,112 @@
+### G_VALID mysql57 table=t_r1g_valid pre=0
+rc=0 out=|
+cols=a:1,b:2
+post=0
+### G_SELF mysql57 table=t_r1g_self pre=0
+rc=1 out=ERROR 3107 (HY000) at line 1: Generated column can refer only to generated columns defined prior to it.|
+cols=NULL
+post=0
+### G_MISSING mysql57 table=t_r1g_missing pre=0
+rc=1 out=ERROR 1054 (42S22) at line 1: Unknown column 'missing_c' in 'generated column function'|
+cols=NULL
+post=0
+### G_BASE_FWD mysql57 table=t_r1g_basefwd pre=0
+rc=0 out=|
+cols=b:1,a:2
+post=0
+### G_GEN_FWD mysql57 table=t_r1g_genfwd pre=0
+rc=1 out=ERROR 3107 (HY000) at line 1: Generated column can refer only to generated columns defined prior to it.|
+cols=NULL
+post=0
+### G_CYCLE mysql57 table=t_r1g_cycle pre=0
+rc=1 out=ERROR 3107 (HY000) at line 1: Generated column can refer only to generated columns defined prior to it.|
+cols=NULL
+post=0
+### G_LITERAL mysql57 table=t_r1g_literal pre=0
+rc=0 out=|
+cols=a:1,b:2
+post=0
+### G_VALID mysql80 table=t_r1g_valid pre=0
+rc=0 out=|
+cols=a:1,b:2
+post=0
+### G_SELF mysql80 table=t_r1g_self pre=0
+rc=1 out=ERROR 3107 (HY000) at line 1: Generated column can refer only to generated columns defined prior to it.|
+cols=NULL
+post=0
+### G_MISSING mysql80 table=t_r1g_missing pre=0
+rc=1 out=ERROR 1054 (42S22) at line 1: Unknown column 'missing_c' in 'generated column function'|
+cols=NULL
+post=0
+### G_BASE_FWD mysql80 table=t_r1g_basefwd pre=0
+rc=0 out=|
+cols=b:1,a:2
+post=0
+### G_GEN_FWD mysql80 table=t_r1g_genfwd pre=0
+rc=1 out=ERROR 3107 (HY000) at line 1: Generated column can refer only to generated columns defined prior to it.|
+cols=NULL
+post=0
+### G_CYCLE mysql80 table=t_r1g_cycle pre=0
+rc=1 out=ERROR 3107 (HY000) at line 1: Generated column can refer only to generated columns defined prior to it.|
+cols=NULL
+post=0
+### G_LITERAL mysql80 table=t_r1g_literal pre=0
+rc=0 out=|
+cols=a:1,b:2
+post=0
+### G_VALID mysql84 table=t_r1g_valid pre=0
+rc=0 out=|
+cols=a:1,b:2
+post=0
+### G_SELF mysql84 table=t_r1g_self pre=0
+rc=1 out=ERROR 3107 (HY000) at line 1: Generated column can refer only to generated columns defined prior to it.|
+cols=NULL
+post=0
+### G_MISSING mysql84 table=t_r1g_missing pre=0
+rc=1 out=ERROR 1054 (42S22) at line 1: Unknown column 'missing_c' in 'generated column function'|
+cols=NULL
+post=0
+### G_BASE_FWD mysql84 table=t_r1g_basefwd pre=0
+rc=0 out=|
+cols=b:1,a:2
+post=0
+### G_GEN_FWD mysql84 table=t_r1g_genfwd pre=0
+rc=1 out=ERROR 3107 (HY000) at line 1: Generated column can refer only to generated columns defined prior to it.|
+cols=NULL
+post=0
+### G_CYCLE mysql84 table=t_r1g_cycle pre=0
+rc=1 out=ERROR 3107 (HY000) at line 1: Generated column can refer only to generated columns defined prior to it.|
+cols=NULL
+post=0
+### G_LITERAL mysql84 table=t_r1g_literal pre=0
+rc=0 out=|
+cols=a:1,b:2
+post=0
+### G_VALID tidb85 table=t_r1g_valid pre=0
+rc=0 out=|
+cols=a:1,b:2
+post=0
+### G_SELF tidb85 table=t_r1g_self pre=0
+rc=1 out=ERROR 3107 (HY000) at line 1: Generated column can refer only to generated columns defined prior to it.|
+cols=NULL
+post=0
+### G_MISSING tidb85 table=t_r1g_missing pre=0
+rc=1 out=ERROR 1054 (42S22) at line 1: Unknown column 'missing_c' in 'generated column function'|
+cols=NULL
+post=0
+### G_BASE_FWD tidb85 table=t_r1g_basefwd pre=0
+rc=0 out=|
+cols=b:1,a:2
+post=0
+### G_GEN_FWD tidb85 table=t_r1g_genfwd pre=0
+rc=1 out=ERROR 3107 (HY000) at line 1: Generated column can refer only to generated columns defined prior to it.|
+cols=NULL
+post=0
+### G_CYCLE tidb85 table=t_r1g_cycle pre=0
+rc=1 out=ERROR 3107 (HY000) at line 1: Generated column can refer only to generated columns defined prior to it.|
+cols=NULL
+post=0
+### G_LITERAL tidb85 table=t_r1g_literal pre=0
+rc=0 out=|
+cols=a:1,b:2
+post=0

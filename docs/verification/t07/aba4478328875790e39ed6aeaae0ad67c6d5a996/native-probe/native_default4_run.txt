@@ -1,0 +1,19 @@
+### M_CREF_CREATE mysql80 rc=0 out=|
+### M_CREF_ALTER mysql80 rc=0 out=|
+### M_PLIT_CREATE mysql80 rc=0 out=|
+### M_GEN_FWD2 mysql80 rc=0 out=|
+### M_CREF_CREATE mysql84 rc=0 out=|
+### M_CREF_ALTER mysql84 rc=0 out=|
+### M_PLIT_CREATE mysql84 rc=0 out=|
+### M_GEN_FWD2 mysql84 rc=0 out=|
+### M_CREF_CREATE mysql57 rc=1 out=ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '(a+1))' at line 1|
+### M_CREF_ALTER mysql57 rc=1 out=ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '(a+1)' at line 1|
+### M_PLIT_CREATE mysql57 rc=1 out=ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '('abc'))' at line 1|
+### M_GEN_FWD2 mysql57 rc=0 out=|
+### T_UUIDS_ALTER tidb rc=1 out=ERROR 3770 (HY000) at line 1: Default value expression of column 'v' contains a disallowed function: `uuid_short`.|
+### T_JARR_ALTER tidb rc=0 out=|
+### T_NOW_ALTER tidb rc=1 out=ERROR 3770 (HY000) at line 1: Default value expression of column 'v' contains a disallowed function: `now`.|
+### T_SUBQ_CREATE tidb rc=1 out=ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 56 near "select 1)))" |
+### T_PAREN_LIT tidb rc=1 out=ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 59 near "'abc'))" |
+### T_QUAL_REF tidb rc=0 out=|
+### T_GEN_TXT tidb rc=1 out=ERROR 1054 (42S22) at line 1: Unknown column 'missing_c' in 'generated column function'|

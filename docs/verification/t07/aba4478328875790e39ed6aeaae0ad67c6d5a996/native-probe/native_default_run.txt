@@ -1,0 +1,100 @@
+### D_UUID tidb85 table=t_r1d_uuid pre=0
+create_rc=0 create_out=|
+rc=0 out=|
+cols=v=uuid(),x=<NULL>
+post=0
+### D_ARITH tidb85 table=t_r1d_arith pre=0
+create_rc=0 create_out=|
+rc=1 out=ERROR 1292 (22007) at line 1: Truncated incorrect DOUBLE value: '31dbd915-cbce-11f1-b184-861e12850f0b'|
+cols=v=<NULL>,x=<NULL>
+post=0
+### D_CASE tidb85 table=t_r1d_case pre=0
+create_rc=0 create_out=|
+rc=0 out=|
+cols=v=31fd7447-cbce-11f1-b184-861e12850f0b,x=<NULL>
+post=0
+### D_PARENS tidb85 table=t_r1d_parens pre=0
+create_rc=0 create_out=|
+rc=0 out=|
+cols=v=321f29ee-cbce-11f1-b184-861e12850f0b,x=<NULL>
+post=0
+### D_CONSTANT tidb85 table=t_r1d_const pre=0
+create_rc=0 create_out=|
+rc=0 out=|
+cols=v=3,x=<NULL>
+post=0
+### D_UUID mysql80 table=t_r1d_uuid pre=0
+create_rc=0 create_out=|
+rc=0 out=|
+cols=v=uuid(),x=<NULL>
+post=0
+### D_ARITH mysql80 table=t_r1d_arith pre=0
+create_rc=0 create_out=|
+rc=0 out=|
+cols=v=(uuid() + 1),x=<NULL>
+post=0
+### D_CASE mysql80 table=t_r1d_case pre=0
+create_rc=0 create_out=|
+rc=0 out=|
+cols=v=(case when 1 then uuid() else _utf8mb4\\'x\\' end),x=<NULL>
+post=0
+### D_PARENS mysql80 table=t_r1d_parens pre=0
+create_rc=0 create_out=|
+rc=0 out=|
+cols=v=uuid(),x=<NULL>
+post=0
+### D_CONSTANT mysql80 table=t_r1d_const pre=0
+create_rc=0 create_out=|
+rc=0 out=|
+cols=v=(1 + 2),x=<NULL>
+post=0
+### D_UUID mysql84 table=t_r1d_uuid pre=0
+create_rc=0 create_out=|
+rc=0 out=|
+cols=v=uuid(),x=<NULL>
+post=0
+### D_ARITH mysql84 table=t_r1d_arith pre=0
+create_rc=0 create_out=|
+rc=0 out=|
+cols=v=(uuid() + 1),x=<NULL>
+post=0
+### D_CASE mysql84 table=t_r1d_case pre=0
+create_rc=0 create_out=|
+rc=0 out=|
+cols=v=(case when 1 then uuid() else _utf8mb4\\'x\\' end),x=<NULL>
+post=0
+### D_PARENS mysql84 table=t_r1d_parens pre=0
+create_rc=0 create_out=|
+rc=0 out=|
+cols=v=uuid(),x=<NULL>
+post=0
+### D_CONSTANT mysql84 table=t_r1d_const pre=0
+create_rc=0 create_out=|
+rc=0 out=|
+cols=v=(1 + 2),x=<NULL>
+post=0
+### C_JSON_OK tidb85 table=t_r1c_json pre=0
+create_rc=0 create_out=|
+rc=0 out=1|
+cols=j=json_object(_utf8mb4'k', 1)
+post=0
+### C_JSON_CASE tidb85 table=t_r1c_jcase pre=0
+create_rc=1 create_out=ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 46 near "CASE WHEN 1 THEN json_object('k',1) ELSE 'x' END))" |
+rc=0 out=1|
+cols=NULL
+post=0
+### C_UUID_CREATE tidb85 table=t_r1c_uuid pre=0
+create_rc=0 create_out=|
+rc=0 out=1|
+cols=v=uuid()
+post=0
+### C_UUID_WRAP tidb85 table=t_r1c_uuidw pre=0
+create_rc=1 create_out=ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 57 near "+ 1))" |
+rc=0 out=1|
+cols=NULL
+post=0
+### C_UUID_CCASE tidb85 table=t_r1c_uuidc pre=0
+create_rc=1 create_out=ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 53 near "CASE WHEN 1 THEN uuid() ELSE 'x' END))" |
+rc=0 out=1|
+cols=NULL
+post=0

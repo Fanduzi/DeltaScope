@@ -1,0 +1,5 @@
+### S_JSON_ONJSON rc=1 out=ERROR 1101 (42000) at line 1: BLOB/TEXT/JSON column 'j' can't have a default value| cols=j=<NULL>,x=<NULL>
+### S_UUID_ONJSON rc=1 out=ERROR 1101 (42000) at line 1: BLOB/TEXT/JSON column 'j' can't have a default value| cols=j=<NULL>,x=<NULL>
+### S_JARR_ONJ rc=1 out=ERROR 1101 (42000) at line 1: BLOB/TEXT/JSON column 'j' can't have a default value| cols=j=<NULL>,x=<NULL>
+### S_UUID_ONDEC rc=0 out=| cols=v=uuid(),x=<NULL>
+### S_JSON_ONINT rc=0 out=| cols=j=<NULL>,x=json_object(_utf8mb4'k', 1)

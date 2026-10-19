@@ -1,0 +1,24 @@
+===== T02 =====
+[ddl-golden] task=T02 head=aba447832887 cases=10 passed=10 assertions=57
+[ddl-golden] artifact=/private/tmp/ds-t07r1/golden-final/T02/T02/artifact.json
+[ddl-golden] PASS
+===== T03 =====
+[ddl-golden] task=T03 head=aba447832887 cases=118 passed=118 assertions=1394
+[ddl-golden] artifact=/private/tmp/ds-t07r1/golden-final/T03/T03/artifact.json
+[ddl-golden] PASS
+===== T04 =====
+[ddl-golden] task=T04 head=aba447832887 cases=163 passed=163 assertions=1898
+[ddl-golden] artifact=/private/tmp/ds-t07r1/golden-final/T04/T04/artifact.json
+[ddl-golden] PASS
+===== T05 =====
+[ddl-golden] task=T05 head=aba447832887 cases=247 passed=247 assertions=5116
+[ddl-golden] artifact=/private/tmp/ds-t07r1/golden-final/T05/T05/artifact.json
+[ddl-golden] PASS
+===== T06 =====
+[ddl-golden] task=T06 head=aba447832887 cases=496 passed=496 assertions=11772
+[ddl-golden] artifact=/private/tmp/ds-t07r1/golden-final/T06/T06/artifact.json
+[ddl-golden] PASS
+===== T07 =====
+[ddl-golden] task=T07 head=aba447832887 cases=207 passed=207 assertions=6190
+[ddl-golden] artifact=/private/tmp/ds-t07r1/golden-final/T07/T07/artifact.json
+[ddl-golden] PASS
