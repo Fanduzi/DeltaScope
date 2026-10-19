@@ -11,7 +11,8 @@ honestly — not a count of implemented rules.
 |------|----------------|
 | inventory.yaml | The inventory: verified official sources, status vocabulary, owner tasks (real issues), the `required_row_ids` denominator, and one row per statement family/subaction scoped to the versions where it exists |
 | required_rows.txt | Locked denominator baseline — one row ID per line, checked in independently of `inventory.yaml`. The gate requires `rows` == `required_row_ids` == this file, so shrinking both YAML fields together still fails |
-| T06-base-traceability.md | Bounded T06-A1 (#85) traceability table: maps each CREATE TABLE acceptance dimension on `mysql.create-table`/`tidb.create-table` to normalized spec fields, consuming rules, and concrete evidence; records honest gaps deferred to later T06 slices and other tasks |
+| T06-base-traceability.md | Bounded T06 (#85) traceability table: maps each CREATE TABLE acceptance dimension on `mysql.create-table`/`tidb.create-table` to normalized spec fields, consuming rules, and concrete evidence; records accepted representation limits and other-task boundaries |
+| T06-CLOSEOUT.md | Final T06 (#85) technical closeout index (T06技术收口材料齐备): binds every accepted dimension to the traceability rows, the SHA-frozen umbrella evidence, and the owner boundary for deferred dimensions; issue #85 stays open |
 
 ## Row contract
 

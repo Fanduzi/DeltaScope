@@ -1,10 +1,12 @@
-# T06 base CREATE TABLE traceability (issue #85, slices A1+A2+A3+A4+A5+A7+A8+A9+A10+A11+A12+A13+A14+A15+A17)
+# T06 base CREATE TABLE traceability (issue #85 — final T06 technical closeout over slices A1+A2+A3+A4+A5+A7+A8+A9+A10+A11+A12+A13+A14+A15+A17)
 
 Scope: the `mysql.create-table` and `tidb.create-table` inventory rows owned by
 T06. This file maps each #85 acceptance dimension to the normalized spec
 fields, consuming rules, and the evidence that actually proves it today. It is
-a bounded traceability table, not a 380-rule census: dimensions owned by later
-tasks are listed as deferred, not silently absorbed.
+a bounded traceability table, not a census against any volatile catalog/rule
+total: dimensions owned by later tasks are listed as deferred, not silently
+absorbed. The navigable closeout index that binds this table to the frozen
+umbrella evidence is [T06-CLOSEOUT.md](T06-CLOSEOUT.md).
 
 Status vocabulary:
 
@@ -20,9 +22,9 @@ Status vocabulary:
 
 ## Row ownership
 
-| Inventory row | Status in inventory | T06-A1/A2/A3/A4/A5/A7/A8 addition |
+| Inventory row | Status in inventory | T06-A1…A17 addition (all slices accepted) |
 |---|---|---|
-| `mysql.create-table` | `semantically_checked` | `file:testdata/ddl-golden/T06.json` + this file appended to `acceptance.refs` |
+| `mysql.create-table` | `semantically_checked` | `file:testdata/ddl-golden/T06.json` + this file + `T06-CLOSEOUT.md` appended to `acceptance.refs` |
 | `tidb.create-table` | `semantically_checked` | same |
 
 Neighboring rows share the CREATE TABLE grammar but stay with their owners:
@@ -61,7 +63,7 @@ Neighboring rows share the CREATE TABLE grammar but stay with their owners:
 | Other table options | `DDL.Options`, `DDL.UnextractedOptions` | `ddl.table.partition.forbid`, `ddl.table.create_as.forbid`, `ddl.table.create_like.forbid`, `ddl.table.collation.allowlist` (proved separately under A7) | corpus fixtures; `T06.json` ENGINE structure assertion on MySQL anchors | **earlier evidence** — option enumeration completeness belongs to T15 |
 | GIPK absence on MySQL 8.0/8.4 | `instance_facts` reads | — (fixture facts, not findings) | `T06.json` `expect.instance_facts` on `mysql80`/`mysql84` cases (`sql_require_primary_key`/`sql_generate_invisible_primary_key` OFF, `show_gipk_in_create_table_and_information_schema` ON) | **golden-proven (this slice)** |
 
-## Honest gaps recorded for later T06 slices
+## Accepted representation limits and other-owner boundaries
 
 - Version-conditional column forms (e.g. CHECK-as-parsed-but-ignored on 5.7 vs
   enforced on 8.0) are T12/T04 territory; this slice does not pin them.
@@ -148,13 +150,15 @@ Neighboring rows share the CREATE TABLE grammar but stay with their owners:
   completeness and ordering semantics are not claimed anywhere in this
   slice.
 
-## What this slice does NOT claim
+## What T06 does NOT claim at technical closeout
 
 `semantically_checked` on the two inventory rows predates T06-A1 and stays
-unchanged; the new refs record that the primary-key-presence path now has
-four-anchor product/database split evidence. No status was widened, no gap was
-relabeled to notice/unsupported to shrink the denominator, and #85 remains
-open — this slice covers one dimension, not the row. A5 extends the same
+unchanged; the accumulated refs record per-dimension four-anchor
+product/database split evidence. No status was widened and no gap was
+relabeled to notice/unsupported to shrink the denominator. T06技术收口材料齐备
+on the user-accepted scope — #85 stays open and every deferred dimension above
+keeps its named owner; the final navigable index binding these limits to the
+frozen umbrella evidence is [T06-CLOSEOUT.md](T06-CLOSEOUT.md). A5 extends the same
 discipline to the declared-length dimension: a policy `blocker` on
 `CHAR(9)`/`VARCHAR(9)` under `limit=8` is a team threshold verdict, never a
 claim that the four anchors reject the DDL — every anchored case records the
