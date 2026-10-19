@@ -1,0 +1,284 @@
+{
+  "case_id": "T07.cli.t07-mysql-generated-boundary-5.7.5",
+  "kind": "cli_audit",
+  "cli_case": "t07-mysql-generated-boundary-5.7.5",
+  "dialect": "mysql",
+  "input_sql": "CREATE TABLE t (\n  a INT,\n  b INT GENERATED ALWAYS AS (a + 1) STORED\n);",
+  "policy_profile": "t07-compat",
+  "policy_path": "/private/tmp/ds-t07-proof/final-golden/T07/T07/golden-policy-t07-compat.yaml",
+  "command": [
+    "/private/tmp/ds-t07-proof/final-golden/T07/T07/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "CREATE TABLE t (\n  a INT,\n  b INT GENERATED ALWAYS AS (a + 1) STORED\n);",
+    "--config",
+    "/private/tmp/ds-t07-proof/final-golden/T07/T07/golden-policy-t07-compat.yaml",
+    "--format",
+    "json",
+    "--target-version",
+    "5.7.5",
+    "--fail-on",
+    "blocker"
+  ],
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "statement_sql": [
+      "CREATE TABLE t (\n  a INT,\n  b INT GENERATED ALWAYS AS (a + 1) STORED\n);"
+    ],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.column.advanced.compatibility.require",
+        "level": "blocker"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 0,
+        "rule_id": "ddl.column.advanced.compatibility.require",
+        "metadata": {
+          "table": "t",
+          "column": "b",
+          "feature": "generated",
+          "action": "create_table",
+          "reason_code": "version_unsupported",
+          "product": "mysql",
+          "target_version": "5.7.5",
+          "minimum_version": "5.7.6"
+        }
+      }
+    ],
+    "finding_locations": [
+      {
+        "index": 0,
+        "line": 1,
+        "column": 1
+      }
+    ],
+    "unsupported_entries": [],
+    "t07_exact_findings": [
+      {
+        "index": 0,
+        "rule_id": "ddl.column.advanced.compatibility.require",
+        "level": "blocker",
+        "message": "column \"b\" advanced definition is not supported for the target (version_unsupported)",
+        "metadata": {
+          "table": "t",
+          "column": "b",
+          "feature": "generated",
+          "action": "create_table",
+          "reason_code": "version_unsupported",
+          "product": "mysql",
+          "target_version": "5.7.5",
+          "minimum_version": "5.7.6"
+        }
+      }
+    ],
+    "statement_indices": [
+      0
+    ],
+    "rule_summary_loaded": 1
+  },
+  "actual": {
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t (\\n  a INT,\\n  b INT GENERATED ALWAYS AS (a + 1) STORED\\n);\",\"normalized_sql\":\"CREATE TABLE t (\\n  a INT,\\n  b INT GENERATED ALWAYS AS (a + 1) STORED\\n)\",\"findings\":[{\"rule_id\":\"ddl.column.advanced.compatibility.require\",\"level\":\"blocker\",\"message\":\"column \\\"b\\\" advanced definition is not supported for the target (version_unsupported)\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"metadata\":{\"action\":\"create_table\",\"column\":\"b\",\"feature\":\"generated\",\"minimum_version\":\"5.7.6\",\"product\":\"mysql\",\"reason_code\":\"version_unsupported\",\"table\":\"t\",\"target_version\":\"5.7.5\"},\"explanation\":{\"summary\":\"Require DDL column advanced compatibility require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"Add the required clause, option, or object explicitly so the rule no longer has to infer intent.\"}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"5.7.5\",\"major\":5,\"minor\":7,\"patch\":5,\"source\":\"target\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t (\n  a INT,\n  b INT GENERATED ALWAYS AS (a + 1) STORED\n);",
+          "normalized_sql": "CREATE TABLE t (\n  a INT,\n  b INT GENERATED ALWAYS AS (a + 1) STORED\n)",
+          "findings": [
+            {
+              "rule_id": "ddl.column.advanced.compatibility.require",
+              "level": "blocker",
+              "message": "column \"b\" advanced definition is not supported for the target (version_unsupported)",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "metadata": {
+                "action": "create_table",
+                "column": "b",
+                "feature": "generated",
+                "minimum_version": "5.7.6",
+                "product": "mysql",
+                "reason_code": "version_unsupported",
+                "table": "t",
+                "target_version": "5.7.5"
+              },
+              "explanation": {
+                "summary": "Require DDL column advanced compatibility require",
+                "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "Add the required clause, option, or object explicitly so the rule no longer has to infer intent."
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "5.7.5",
+        "major": 5,
+        "minor": 7,
+        "patch": 5,
+        "source": "target",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "offline",
+        "dialect": "mysql",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": "5.7.5",
+      "target_canonical": "5.7.5",
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": {
+        "product": "mysql",
+        "version": "5.7.5",
+        "major": 5,
+        "minor": 7,
+        "patch": 5,
+        "source": "target",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=1"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "unsupported entries",
+      "ok": true,
+      "detail": "entries=[] expected=[]"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['CREATE TABLE t (\\n  a INT,\\n  b INT GENERATED ALWAYS AS (a + 1) STORED\\n);'] expected=['CREATE TABLE t (\\n  a INT,\\n  b INT GENERATED ALWAYS AS (a + 1) STORED\\n);']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[] expected=[]"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.column.advanced.compatibility.require', 'blocker')] expected=[(0, 'ddl.column.advanced.compatibility.require', 'blocker')]"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.column.advanced.compatibility.require')",
+      "ok": true,
+      "detail": "findings=[{'action': 'create_table', 'column': 'b', 'feature': 'generated', 'minimum_version': '5.7.6', 'product': 'mysql', 'reason_code': 'version_unsupported', 'table': 't', 'target_version': '5.7.5'}] expected_subset={'table': 't', 'column': 'b', 'feature': 'generated', 'action': 'create_table', 'reason_code': 'version_unsupported', 'product': 'mysql', 'target_version': '5.7.5', 'minimum_version': '5.7.6'}"
+    },
+    {
+      "name": "finding location index=0",
+      "ok": true,
+      "detail": "locations=[{'line': 1, 'column': 1}] expected={'index': 0, 'line': 1, 'column': 1}"
+    }
+  ],
+  "status": "pass"
+}

@@ -1,0 +1,8 @@
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	(cached)
+ok  	github.com/Fanduzi/DeltaScope/scripts/t06a17proof	(cached)
+ok  	github.com/Fanduzi/DeltaScope/scripts/t07proof	(cached)
+---
+  "constructed_checks": 86,
+  "failures": 0,
+  "note": "validator sensitivity only; not product or native execution"
+}

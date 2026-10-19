@@ -1,0 +1,29 @@
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g05-literal-not-reference execute complete step set
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g05-literal-not-reference execute intermediate strict query result
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g05-literal-not-reference teardown complete step set
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g05-literal-not-reference structure complete query set
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g05-literal-not-reference execute complete step set
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g05-literal-not-reference execute intermediate strict query result
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g05-literal-not-reference teardown complete step set
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g05-literal-not-reference structure complete query set
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d05-json-object execute intermediate strict query result
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d05-json-object teardown complete step set
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d05-json-object structure complete query set
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d05-json-object execute intermediate strict query result
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d05-json-object teardown complete step set
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d05-json-object structure complete query set
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d08-alter-json-set execute intermediate strict query result
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d08-alter-json-set teardown complete step set
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d08-alter-json-set structure complete query set
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d08-alter-json-set execute intermediate strict query result
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d08-alter-json-set teardown complete step set
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d08-alter-json-set structure complete query set
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d11-drop-json-expression-default execute complete step set
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d11-drop-json-expression-default execute intermediate strict query result
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d11-drop-json-expression-default teardown complete step set
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d11-drop-json-expression-default structure complete query set
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d11-drop-json-expression-default execute complete step set
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d11-drop-json-expression-default execute intermediate strict query result
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d11-drop-json-expression-default teardown complete step set
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d11-drop-json-expression-default structure complete query set
+[ddl-golden] task=T07 head=c5986c4c1e78 cases=207 passed=199 assertions=6142

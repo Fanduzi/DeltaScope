@@ -1,0 +1,31 @@
+########## T02 ##########
+python3 ./scripts/ddl_golden.py run --task "T02" --artifact-dir "/tmp/ds-t07-proof/final-golden/T02"
+[ddl-golden] task=T02 head=adf4652ebb08 cases=10 passed=10 assertions=57
+[ddl-golden] artifact=/private/tmp/ds-t07-proof/final-golden/T02/T02/artifact.json
+[ddl-golden] PASS
+RC=0
+########## T03 ##########
+python3 ./scripts/ddl_golden.py run --task "T03" --artifact-dir "/tmp/ds-t07-proof/final-golden/T03"
+[ddl-golden] task=T03 head=adf4652ebb08 cases=118 passed=118 assertions=1394
+[ddl-golden] artifact=/private/tmp/ds-t07-proof/final-golden/T03/T03/artifact.json
+[ddl-golden] PASS
+RC=0
+########## T04 ##########
+python3 ./scripts/ddl_golden.py run --task "T04" --artifact-dir "/tmp/ds-t07-proof/final-golden/T04"
+[ddl-golden] task=T04 head=adf4652ebb08 cases=163 passed=163 assertions=1898
+[ddl-golden] artifact=/private/tmp/ds-t07-proof/final-golden/T04/T04/artifact.json
+[ddl-golden] PASS
+RC=0
+########## T05 ##########
+python3 ./scripts/ddl_golden.py run --task "T05" --artifact-dir "/tmp/ds-t07-proof/final-golden/T05"
+[ddl-golden] task=T05 head=adf4652ebb08 cases=247 passed=247 assertions=5116
+[ddl-golden] artifact=/private/tmp/ds-t07-proof/final-golden/T05/T05/artifact.json
+[ddl-golden] PASS
+RC=0
+########## T06 ##########
+python3 ./scripts/ddl_golden.py run --task "T06" --artifact-dir "/tmp/ds-t07-proof/final-golden/T06"
+[ddl-golden] task=T06 head=adf4652ebb08 cases=496 passed=496 assertions=11772
+[ddl-golden] artifact=/private/tmp/ds-t07-proof/final-golden/T06/T06/artifact.json
+[ddl-golden] PASS
+RC=0
+DONE

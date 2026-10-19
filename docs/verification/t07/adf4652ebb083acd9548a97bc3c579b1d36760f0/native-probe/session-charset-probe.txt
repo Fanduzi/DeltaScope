@@ -1,0 +1,20 @@
+U09 root-cause probe — mysql:8.0.46 one-off container, golden schema.
+The catalog stores expression string literals with the DDL session's
+connection charset introducer; the frozen HEX whitelists assume the
+utf8mb4 sessions the native evidence was collected under.
+
+--- unpinned client (image default: latin1) ---
+mysql -uroot golden:
+  CREATE TABLE t (a INT,b VARCHAR(8) AS ('a') VIRTUAL,c INT) ...;
+  HEX(generation_expression) b = 5F6C6174696E315C27615C27  =>  _latin1\'a\'
+  CREATE TABLE t2 (j JSON DEFAULT (JSON_OBJECT('k',1))) ...;
+  HEX(column_default)        j = 6A736F6E5F6F626A656374285F6C6174696E315C276B5C272C3129
+     => json_object(_latin1\'k\',1)
+
+--- pinned client (--default-character-set=utf8mb4) ---
+HEX(generation_expression) b = 5F757466386D62345C27615C27  =>  _utf8mb4\'a\'
+HEX(column_default)        j = 6A736F6E5F6F626A656374285F757466386D62345C276B5C272C3129
+     => json_object(_utf8mb4\'k\',1)   (recorded evidence form)
+
+Fix: t07_contract.py pins --default-character-set=utf8mb4 on every anchor
+exec_client; oracle, whitelists, and the 207-identity digest unchanged.

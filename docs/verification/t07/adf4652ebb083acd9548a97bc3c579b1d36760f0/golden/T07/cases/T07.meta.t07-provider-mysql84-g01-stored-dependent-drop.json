@@ -1,0 +1,549 @@
+{
+  "case_id": "T07.meta.t07-provider-mysql84-g01-stored-dependent-drop",
+  "kind": "cli_metadata",
+  "cli_case": "t07-provider-mysql84-g01-stored-dependent-drop",
+  "anchor": "mysql84",
+  "dialect": "mysql",
+  "input_sql": "ALTER TABLE t DROP COLUMN a;",
+  "policy_profile": "t07-dependency",
+  "policy_path": "/private/tmp/ds-t07-proof/final-golden/T07/T07/golden-policy-t07-dependency.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "T07_MYSQL_PASSWORD"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "statement_sql": [
+      "ALTER TABLE t DROP COLUMN a;"
+    ],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.alter.column.dependency.require",
+        "level": "blocker"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 0,
+        "rule_id": "ddl.alter.column.dependency.require",
+        "metadata": {
+          "table": "t",
+          "column": "a",
+          "dependent_column": "b",
+          "dependency_kind": "generated",
+          "dependency": "direct",
+          "action": "drop_column"
+        }
+      }
+    ],
+    "finding_locations": [
+      {
+        "index": 0,
+        "line": 1,
+        "column": 1
+      }
+    ],
+    "unsupported_entries": [],
+    "t07_exact_findings": [
+      {
+        "index": 0,
+        "rule_id": "ddl.alter.column.dependency.require",
+        "level": "blocker",
+        "message": "cannot drop column \"a\": generated column \"b\" depends on it",
+        "metadata": {
+          "table": "t",
+          "column": "a",
+          "dependent_column": "b",
+          "dependency_kind": "generated",
+          "dependency": "direct",
+          "action": "drop_column"
+        }
+      }
+    ],
+    "statement_indices": [
+      0
+    ],
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:8.4.10",
+      "image_digest": "mysql@sha256:c592c15aaf4a1961e15d82eb31ea5987dda862d1c4b1e93424438c0e91dc1f8d",
+      "container": "deltascope-ddl-golden-mysql84",
+      "reachable": true,
+      "version": "8.4.10"
+    },
+    "setup": [
+      {
+        "name": "prove-prior-absence",
+        "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'",
+        "rc": 0,
+        "stdout": "COUNT(*)\n0",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "bound table count",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "create-provider-source",
+        "sql": "CREATE TABLE t (\n  a INT,\n  b INT GENERATED ALWAYS AS (a + 1) STORED\n);",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "bound table count",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          },
+          {
+            "assert": "complete advanced column set",
+            "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(column_name,':',ordinal_position,':',CASE WHEN CAST(column_name AS BINARY)='a' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='' AND COALESCE(generation_expression,'')='' AND column_default IS NULL THEN 'ok' WHEN CAST(column_name AS BINARY)='b' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='stored generated' AND HEX(generation_expression) IN ('606160202B2031','6061602B31','28606160202B203129','286061602B3129') AND column_default IS NULL THEN 'ok' ELSE 'bad' END) ORDER BY ordinal_position SEPARATOR ','),'') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t'",
+            "rc": 0,
+            "output": "a:1:ok,b:2:ok",
+            "stderr": ""
+          },
+          {
+            "assert": "complete index identity",
+            "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(index_name,':',seq_in_index,':',column_name) ORDER BY CAST(index_name AS BINARY),seq_in_index SEPARATOR ','),'') FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t'",
+            "rc": 0,
+            "output": "",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "bound table count",
+        "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'",
+        "rc": 0,
+        "output": "1",
+        "stderr": ""
+      },
+      {
+        "assert": "complete advanced column set",
+        "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(column_name,':',ordinal_position,':',CASE WHEN CAST(column_name AS BINARY)='a' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='' AND COALESCE(generation_expression,'')='' AND column_default IS NULL THEN 'ok' WHEN CAST(column_name AS BINARY)='b' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='stored generated' AND HEX(generation_expression) IN ('606160202B2031','6061602B31','28606160202B203129','286061602B3129') AND column_default IS NULL THEN 'ok' ELSE 'bad' END) ORDER BY ordinal_position SEPARATOR ','),'') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t'",
+        "rc": 0,
+        "output": "a:1:ok,b:2:ok",
+        "stderr": ""
+      },
+      {
+        "assert": "complete index identity",
+        "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(index_name,':',seq_in_index,':',column_name) ORDER BY CAST(index_name AS BINARY),seq_in_index SEPARATOR ','),'') FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t'",
+        "rc": 0,
+        "output": "",
+        "stderr": ""
+      }
+    ],
+    "execute": [
+      {
+        "name": "step-1",
+        "sql": "ALTER TABLE t DROP COLUMN a;",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 3108 (HY000) at line 1: Column 'a' has a generated column dependency.",
+        "verify": [
+          {
+            "assert": "bound table count",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          },
+          {
+            "assert": "complete advanced column set",
+            "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(column_name,':',ordinal_position,':',CASE WHEN CAST(column_name AS BINARY)='a' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='' AND COALESCE(generation_expression,'')='' AND column_default IS NULL THEN 'ok' WHEN CAST(column_name AS BINARY)='b' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='stored generated' AND HEX(generation_expression) IN ('606160202B2031','6061602B31','28606160202B203129','286061602B3129') AND column_default IS NULL THEN 'ok' ELSE 'bad' END) ORDER BY ordinal_position SEPARATOR ','),'') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t'",
+            "rc": 0,
+            "output": "a:1:ok,b:2:ok",
+            "stderr": ""
+          },
+          {
+            "assert": "complete index identity",
+            "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(index_name,':',seq_in_index,':',column_name) ORDER BY CAST(index_name AS BINARY),seq_in_index SEPARATOR ','),'') FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t'",
+            "rc": 0,
+            "output": "",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "structure": [
+      {
+        "assert": "bound table count",
+        "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'",
+        "rc": 0,
+        "output": "1",
+        "stderr": ""
+      },
+      {
+        "assert": "complete advanced column set",
+        "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(column_name,':',ordinal_position,':',CASE WHEN CAST(column_name AS BINARY)='a' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='' AND COALESCE(generation_expression,'')='' AND column_default IS NULL THEN 'ok' WHEN CAST(column_name AS BINARY)='b' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='stored generated' AND HEX(generation_expression) IN ('606160202B2031','6061602B31','28606160202B203129','286061602B3129') AND column_default IS NULL THEN 'ok' ELSE 'bad' END) ORDER BY ordinal_position SEPARATOR ','),'') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t'",
+        "rc": 0,
+        "output": "a:1:ok,b:2:ok",
+        "stderr": ""
+      },
+      {
+        "assert": "complete index identity",
+        "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(index_name,':',seq_in_index,':',column_name) ORDER BY CAST(index_name AS BINARY),seq_in_index SEPARATOR ','),'') FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t'",
+        "rc": 0,
+        "output": "",
+        "stderr": ""
+      }
+    ],
+    "teardown": [
+      {
+        "name": "drop-owned-t",
+        "sql": "DROP TABLE t;",
+        "rc": 0,
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "bound table count",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t DROP COLUMN a;\",\"normalized_sql\":\"ALTER TABLE t DROP COLUMN a\",\"findings\":[{\"rule_id\":\"ddl.alter.column.dependency.require\",\"level\":\"blocker\",\"message\":\"cannot drop column \\\"a\\\": generated column \\\"b\\\" depends on it\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"metadata\":{\"action\":\"drop_column\",\"column\":\"a\",\"dependency\":\"direct\",\"dependency_kind\":\"generated\",\"dependent_column\":\"b\",\"table\":\"t\"},\"explanation\":{\"summary\":\"Require DDL alter column dependency require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"Add the required clause, option, or object explicitly so the rule no longer has to infer intent.\"}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.4.10\",\"major\":8,\"minor\":4,\"patch\":10,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t DROP COLUMN a;",
+          "normalized_sql": "ALTER TABLE t DROP COLUMN a",
+          "findings": [
+            {
+              "rule_id": "ddl.alter.column.dependency.require",
+              "level": "blocker",
+              "message": "cannot drop column \"a\": generated column \"b\" depends on it",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "metadata": {
+                "action": "drop_column",
+                "column": "a",
+                "dependency": "direct",
+                "dependency_kind": "generated",
+                "dependent_column": "b",
+                "table": "t"
+              },
+              "explanation": {
+                "summary": "Require DDL alter column dependency require",
+                "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "Add the required clause, option, or object explicitly so the rule no longer has to infer intent."
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "8.4.10",
+        "major": 8,
+        "minor": 4,
+        "patch": 10,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.4.10",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "8.4.10"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "8.4.10",
+        "major": 8,
+        "minor": 4,
+        "patch": 10,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.4.10' expected_contains='8.4.10'"
+    },
+    {
+      "name": "setup prove-prior-absence return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup prove-prior-absence: bound table count",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "setup create-provider-source return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup create-provider-source: bound table count",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "setup create-provider-source: complete advanced column set",
+      "ok": true,
+      "detail": "rc=0 output='a:1:ok,b:2:ok' expected='a:1:ok,b:2:ok'"
+    },
+    {
+      "name": "setup create-provider-source: complete index identity",
+      "ok": true,
+      "detail": "rc=0 output='' expected=''"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=1"
+    },
+    {
+      "name": "applicable rule count",
+      "ok": true,
+      "detail": "applicable=1"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "unsupported entries",
+      "ok": true,
+      "detail": "entries=[] expected=[]"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['ALTER TABLE t DROP COLUMN a;'] expected=['ALTER TABLE t DROP COLUMN a;']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[] expected=[]"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.alter.column.dependency.require', 'blocker')] expected=[(0, 'ddl.alter.column.dependency.require', 'blocker')]"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.alter.column.dependency.require')",
+      "ok": true,
+      "detail": "findings=[{'action': 'drop_column', 'column': 'a', 'dependency': 'direct', 'dependency_kind': 'generated', 'dependent_column': 'b', 'table': 't'}] expected_subset={'table': 't', 'column': 'a', 'dependent_column': 'b', 'dependency_kind': 'generated', 'dependency': 'direct', 'action': 'drop_column'}"
+    },
+    {
+      "name": "finding location index=0",
+      "ok": true,
+      "detail": "locations=[{'line': 1, 'column': 1}] expected={'index': 0, 'line': 1, 'column': 1}"
+    },
+    {
+      "name": "post-verify bound table count",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "post-verify complete advanced column set",
+      "ok": true,
+      "detail": "rc=0 output='a:1:ok,b:2:ok' expected='a:1:ok,b:2:ok'"
+    },
+    {
+      "name": "post-verify complete index identity",
+      "ok": true,
+      "detail": "rc=0 output='' expected=''"
+    },
+    {
+      "name": "execute step-1 return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 3108 (HY000) at line 1: Column 'a' has a generated column dependency.\""
+    },
+    {
+      "name": "execute step-1 stderr marker",
+      "ok": true,
+      "detail": "ERROR 3108"
+    },
+    {
+      "name": "execute step-1: bound table count",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "execute step-1: complete advanced column set",
+      "ok": true,
+      "detail": "rc=0 output='a:1:ok,b:2:ok' expected='a:1:ok,b:2:ok'"
+    },
+    {
+      "name": "execute step-1: complete index identity",
+      "ok": true,
+      "detail": "rc=0 output='' expected=''"
+    },
+    {
+      "name": "structure bound table count",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "structure complete advanced column set",
+      "ok": true,
+      "detail": "rc=0 output='a:1:ok,b:2:ok' expected='a:1:ok,b:2:ok'"
+    },
+    {
+      "name": "structure complete index identity",
+      "ok": true,
+      "detail": "rc=0 output='' expected=''"
+    },
+    {
+      "name": "teardown drop-owned-t return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop-owned-t: bound table count",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ds-t07-proof/final-golden/T07/T07/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "ALTER TABLE t DROP COLUMN a;",
+    "--config",
+    "/private/tmp/ds-t07-proof/final-golden/T07/T07/golden-policy-t07-dependency.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23384",
+    "--user",
+    "root",
+    "--password-env",
+    "T07_MYSQL_PASSWORD",
+    "--schema",
+    "golden"
+  ]
+}

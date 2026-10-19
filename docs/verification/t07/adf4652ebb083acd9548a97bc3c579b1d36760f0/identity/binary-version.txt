@@ -1,0 +1,10 @@
+/tmp/ds-t07-proof/final-golden/T07/T07/bin/deltascope: go1.26.1
+	path	github.com/Fanduzi/DeltaScope/cmd/deltascope
+	mod	github.com/Fanduzi/DeltaScope	v0.511.2-0.20261019094651-adf4652ebb08+dirty	
+	dep	github.com/coreos/go-semver	v0.3.1	h1:yi21YpKnrx1gt5R+la8n5WgS0kCrsPp33dmEyHReZr4=
+	dep	github.com/fsnotify/fsnotify	v1.9.0	h1:2Ml+OJNzbYCTzsxtv8vKSFD9PbJjmhYF14k/jKC7S9k=
+	dep	github.com/go-sql-driver/mysql	v1.7.1	h1:lUIinVbN1DY0xBg0eMOzmmtGoHwWBbvnWubQUrtU8EI=
+	dep	github.com/go-viper/mapstructure/v2	v2.5.0	h1:vM5IJoUAy3d7zRSVtIwQgBj7BiWtMPfmPEgAXnvj1Ro=
+	dep	github.com/jackc/pgpassfile	v1.0.0	h1:/6Hmqy13Ss2zCq62VdNG8tM1wchn8zjSGOBJ6icpsIM=
+	dep	github.com/jackc/pgservicefile	v0.0.0-20240606120523-5a60cdf6a761	h1:iCEnooe7UlwOQYpKFhBabPMi4aNAfoODPEFNiAnClxo=
+	dep	github.com/jackc/pgx/v5	v5.9.1	h1:uwrxJXBnx76nyISkhr33kQLlUqjv7et7b9FjCen/tdc=
