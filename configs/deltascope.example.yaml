@@ -287,6 +287,19 @@ rules:
     params:
       required: true
 
+  ddl.alter.column.dependency.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
+
+  ddl.column.advanced.compatibility.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
+      features: [generated, expression_default, visibility]
+
   ddl.alter.rename_index.exists.require:
     enabled: true
     level: blocker

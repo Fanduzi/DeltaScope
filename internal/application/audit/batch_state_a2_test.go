@@ -33,10 +33,14 @@ type t05PresentProvider struct {
 	snapshots map[string]*spec.TableSnapshot
 	calls     []string
 	errOn     map[string]error
+	// t07InstanceVersion optionally supplies the observed instance banner
+	// (e.g. "8.0.11-TiDB-v8.5.0") so TiDB tests can bind a real observed
+	// version through the provider seam instead of TargetVersion.
+	t07InstanceVersion string
 }
 
 func (p *t05PresentProvider) LoadInstanceFacts(context.Context, spec.Dialect, string) (*spec.InstanceFacts, error) {
-	return &spec.InstanceFacts{}, nil
+	return &spec.InstanceFacts{Version: p.t07InstanceVersion}, nil
 }
 
 func (p *t05PresentProvider) LoadTableSnapshot(_ context.Context, _ spec.Dialect, schema, table string) (*spec.TableSnapshot, error) {

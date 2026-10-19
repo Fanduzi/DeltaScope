@@ -448,6 +448,19 @@ On MySQL and TiDB, one ordinary single-action `DROP COLUMN` removes that column 
 | `ddl.alter.drop_primary_key.exists.require` | DROP PRIMARY KEY requires a primary key to exist | blocker | **Yes** |
 | `ddl.create_index.columns.exists.require` | Standalone `CREATE INDEX` column references must exist on the target table | blocker | **Yes** |
 
+### Advanced Column Rules (2 rules)
+
+These rules cover the MySQL/TiDB advanced column family — generated columns, expression defaults (`DEFAULT (<expr>)` and `ALTER ... ALTER COLUMN ... SET/DROP DEFAULT`), and column visibility — through shared, evaluation-free expression facts collected from the parsed AST and the MySQL catalog.
+
+`ddl.alter.column.dependency.require` blocks a `DROP COLUMN`, `RENAME COLUMN`, or identity-changing `CHANGE COLUMN` whose source column is referenced by a sibling generated or expression-default definition, reporting one blocker per dependent in declaration order. A same-name `MODIFY COLUMN` keeps the column identity and is outside this rule's scope. A withheld column set or an unprovable dependency graph yields `unknown_table_state`/`incomplete_alter_dependency_effects` evidence gaps instead of a silent pass, and ordered state never publishes a provably rejected transition as a reusable success shape.
+
+`ddl.column.advanced.compatibility.require` applies the frozen product/version responsibility table: generated columns require MySQL 5.7.6+ or TiDB 8.5, expression defaults require MySQL 8.0.13+, and visibility requires MySQL 8.0.23+. The frozen TiDB default distinctions are explicit: `JSON_OBJECT`-family defaults on `CREATE` and `uuid()` on `ALTER ... SET DEFAULT` against `VARCHAR(36)` are observed positives; JSON expression defaults through `SET DEFAULT` and arithmetic/local-column defaults are observed negatives. Unobserved families — including standard functions absent from the observed sets — are reported as bounded evidence gaps, never as known database rejections. Subqueries, aggregates, nondeterministic generated functions, and storage-mode conversions are determined negatives. Declaration-level checks run offline; only checks that compare against the prior column consult the request-local ordered schema view and report `incomplete_source_column`/`target_version_out_of_validated_range` gaps rather than fabricating facts. The optional `features` list param narrows enforcement (`generated`, `expression_default`, `visibility`; omitted enables all three, `[]` leaves the rule loaded but inapplicable, and unknown names are rejected at load).
+
+| Rule ID | Description | Default Level | Metadata Required |
+|---------|-------------|:-------------:|:-----------------:|
+| `ddl.alter.column.dependency.require` | Column drop/rename/identity-change is blocked while a sibling generated or expression-default column references it (same-name MODIFY is out of scope) | blocker | **Yes** |
+| `ddl.column.advanced.compatibility.require` | Generated, expression-default, and visibility declarations and transitions must satisfy the target product/version contract | blocker | **Yes** |
+
 ---
 
 ## DDL: Object Lifecycle Rules (8 rules)
@@ -1031,6 +1044,8 @@ source, not a connectivity prerequisite.
 | `ddl.alter.rename_index.exists.require` |
 | `ddl.alter.drop_primary_key.exists.require` |
 | `ddl.create_index.columns.exists.require` |
+| `ddl.alter.column.dependency.require` |
+| `ddl.column.advanced.compatibility.require` |
 | `ddl.table.drop.exists.require` |
 | `ddl.table.drop.adaptive_hash.warn` |
 | `ddl.table.drop.rows.max_count` |

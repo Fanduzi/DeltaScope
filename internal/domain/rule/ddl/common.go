@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: normalized Statement specs emitted by application extraction, including alter-table and standalone rename payloads
-// output: reusable DDL rule predicates and rule identifier constants, including the CHANGE and RENAME destination-name and RENAME COLUMN version identifiers, plus shared alter-action and rename matching helpers
+// output: reusable DDL rule predicates and rule identifier constants, including the CHANGE and RENAME destination-name, RENAME COLUMN version, and T07 advanced-column identifiers, plus shared alter-action and rename matching helpers
 // pos: DDL rule common helpers shared across concrete rules and parser-neutral rename semantics
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -138,6 +138,8 @@ const (
 	ruleIDAlterRenameColumnExistsRequire                     = "ddl.alter.rename_column.exists.require"
 	ruleIDAlterRenameColumnTargetExistsForbid                = "ddl.alter.rename_column.target.exists.forbid"
 	ruleIDAlterRenameColumnVersionRequire                    = "ddl.alter.rename_column.version.require"
+	ruleIDAlterColumnDependencyRequire                       = "ddl.alter.column.dependency.require"
+	ruleIDColumnAdvancedCompatibilityRequire                 = "ddl.column.advanced.compatibility.require"
 	ruleIDAlterAddIndexExistsForbid                          = "ddl.alter.add_index.exists.forbid"
 	ruleIDAlterDropIndexExistsRequire                        = "ddl.alter.drop_index.exists.require"
 	ruleIDAlterRenameIndexExistsRequire                      = "ddl.alter.rename_index.exists.require"

@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: domain policy values and a shared rule registry
-// output: deterministic registration of shipped create-table and alter-table DDL rule batches, including the column-identity destination and RENAME version rules
+// output: deterministic registration of shipped create-table and alter-table DDL rule batches, including the column-identity destination, RENAME version, and T07 advanced-column rules
 // pos: DDL rule assembly entrypoint for application wiring
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -279,6 +279,8 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 			return newAlterColumnCompatibilityRule(ruleIDAlterChangeColumnCompatibilityRequire, "change_column", "change column", rule.LevelBlocker, cfg)
 		}},
 		{ruleID: ruleIDAlterTableOptionCompatibilityRequire, construct: newAlterTableOptionCompatibilityRule},
+		{ruleID: ruleIDAlterColumnDependencyRequire, construct: newColumnDependencyRule},
+		{ruleID: ruleIDColumnAdvancedCompatibilityRequire, construct: newAdvancedCompatibilityRule},
 		{ruleID: ruleIDAlterModifyColumnExplicitNullabilityChangeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newMetadataAwareForbiddenExplicitAlterColumnChangeRule(ruleIDAlterModifyColumnExplicitNullabilityChangeForbid, "modify_column", "modify column", "explicit_nullability_change", rule.LevelBlocker, alterTouchesExplicitNullability, cfg)
 		}},

@@ -86,13 +86,13 @@ func (c t06a4HTTPConn) QueryContext(_ context.Context, query string, _ []driver.
 		return &t06a4HTTPRows{cols: []string{"Variable_name", "Value"}, rows: [][]driver.Value{{"version", "8.4.10"}}}, nil
 	case strings.Contains(query, "information_schema.columns"):
 		return &t06a4HTTPRows{
-			cols: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra"},
+			cols: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"},
 			rows: [][]driver.Value{
-				{"id", "int", nil, nil, "", nil, "NO", ""},
-				{"a", "varchar(8)", nil, nil, "", nil, "YES", ""},
-				{"b", "varchar(8)", nil, nil, "", nil, "YES", ""},
-				{"c", "varchar(8)", nil, nil, "", c.cDefault, "YES", ""},
-				{"d", "varchar(8)", nil, nil, "", "<nil>", "YES", ""},
+				{"id", "int", nil, nil, "", nil, "NO", "", ""},
+				{"a", "varchar(8)", nil, nil, "", nil, "YES", "", ""},
+				{"b", "varchar(8)", nil, nil, "", nil, "YES", "", ""},
+				{"c", "varchar(8)", nil, nil, "", c.cDefault, "YES", "", ""},
+				{"d", "varchar(8)", nil, nil, "", "<nil>", "YES", "", ""},
 			},
 		}, nil
 	case strings.Contains(query, "information_schema.statistics"):

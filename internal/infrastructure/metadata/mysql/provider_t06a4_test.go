@@ -23,13 +23,13 @@ import (
 // is_nullable, extra. column_default nil models a stored SQL NULL.
 func t06a4ColumnRows(defaults []driver.Value) testQueryResult {
 	rows := make([][]driver.Value, 0, len(defaults)+1)
-	rows = append(rows, []driver.Value{"id", "int", nil, nil, "", nil, "NO", ""})
+	rows = append(rows, []driver.Value{"id", "int", nil, nil, "", nil, "NO", "", ""})
 	for i, def := range defaults {
 		name := string(rune('a' + i))
-		rows = append(rows, []driver.Value{name, "varchar(8)", nil, nil, "", def, "YES", ""})
+		rows = append(rows, []driver.Value{name, "varchar(8)", nil, nil, "", def, "YES", "", ""})
 	}
 	return testQueryResult{
-		columns: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra"},
+		columns: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"},
 		rows:    rows,
 	}
 }

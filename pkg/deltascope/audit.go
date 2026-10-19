@@ -466,7 +466,12 @@ func cloneTableSnapshot(in *spec.TableSnapshot) *spec.TableSnapshot {
 		table := *in.Table
 		out.Table = &table
 	}
-	out.Columns = append([]spec.Column(nil), in.Columns...)
+	if in.Columns != nil {
+		out.Columns = make([]spec.Column, len(in.Columns))
+		for i := range in.Columns {
+			out.Columns[i] = cloneSpecColumn(in.Columns[i])
+		}
+	}
 	if in.PrimaryKey != nil {
 		out.PrimaryKey = cloneIndex(in.PrimaryKey)
 	}
@@ -481,6 +486,23 @@ func cloneTableSnapshot(in *spec.TableSnapshot) *spec.TableSnapshot {
 		out.Options = nil
 	}
 	return &out
+}
+
+// cloneSpecColumn deep-copies one provider column so the request-owned
+// snapshot never aliases provider-owned nested facts (identity/unextracted
+// option collections and the T07 generated/default-expression records).
+func cloneSpecColumn(in spec.Column) spec.Column {
+	out := in
+	if in.IdentityOptions != nil {
+		out.IdentityOptions = make(map[string]any, len(in.IdentityOptions))
+		for key, value := range in.IdentityOptions {
+			out.IdentityOptions[key] = value
+		}
+	}
+	out.UnextractedOptions = append([]string(nil), in.UnextractedOptions...)
+	out.Generated = spec.CloneGeneratedColumn(in.Generated)
+	out.DefaultExpression = spec.CloneExpressionFacts(in.DefaultExpression)
+	return out
 }
 
 func cloneIndexes(in []spec.Index) []spec.Index {

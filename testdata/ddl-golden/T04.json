@@ -504,7 +504,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 2,
     "unsupported": 2,
     "coverage": "incomplete",
     "statement_coverage": [
@@ -872,28 +872,21 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
+     "complete"
     ],
-    "unsupported_features": [
-     "create_table.column.generated"
-    ],
+    "unsupported_features": [],
     "statement_sql": [
      "CREATE TABLE t (a INT, b INT GENERATED ALWAYS AS (a+1) STORED);"
     ],
-    "unsupported_entries": [
-     {
-      "feature": "create_table.column.generated",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
-     }
-    ]
+    "unsupported_entries": []
    }
   },
   {
@@ -1195,7 +1188,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 2,
     "unsupported": 2,
     "coverage": "incomplete",
     "statement_coverage": [
@@ -1607,7 +1600,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 2,
     "unsupported": 2,
     "coverage": "incomplete",
     "statement_coverage": [
@@ -1849,7 +1842,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 3,
     "unsupported": 3,
     "coverage": "incomplete",
     "statement_coverage": [
@@ -1907,7 +1900,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 3,
     "unsupported": 3,
     "coverage": "incomplete",
     "statement_coverage": [
@@ -2112,7 +2105,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 2,
     "unsupported": 2,
     "coverage": "incomplete",
     "statement_coverage": [
@@ -2157,7 +2150,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 2,
     "unsupported": 2,
     "coverage": "incomplete",
     "statement_coverage": [
@@ -2494,7 +2487,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 2,
     "unsupported": 2,
     "coverage": "incomplete",
     "statement_coverage": [
@@ -2539,7 +2532,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 2,
     "unsupported": 2,
     "coverage": "incomplete",
     "statement_coverage": [
@@ -2792,7 +2785,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 2,
     "unsupported": 2,
     "coverage": "incomplete",
     "statement_coverage": [
@@ -2929,7 +2922,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 2,
     "unsupported": 2,
     "coverage": "incomplete",
     "statement_coverage": [
@@ -3145,7 +3138,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 5,
     "coverage": "incomplete",
     "statement_coverage": [
      "incomplete"
@@ -3198,7 +3191,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 2,
     "coverage": "incomplete",
     "statement_coverage": [
      "incomplete"
@@ -3236,7 +3229,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 2,
     "coverage": "incomplete",
     "statement_coverage": [
      "incomplete"
@@ -3274,7 +3267,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 2,
     "coverage": "incomplete",
     "statement_coverage": [
      "incomplete"
@@ -3312,7 +3305,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 2,
     "coverage": "incomplete",
     "statement_coverage": [
      "incomplete"
@@ -3494,7 +3487,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 2,
     "coverage": "incomplete",
     "statement_coverage": [
      "incomplete"
@@ -3538,7 +3531,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 2,
     "coverage": "incomplete",
     "statement_coverage": [
      "incomplete"
@@ -3927,7 +3920,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 3,
     "coverage": "incomplete",
     "statement_coverage": [
      "incomplete"

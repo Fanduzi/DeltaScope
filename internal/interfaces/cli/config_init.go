@@ -8,6 +8,7 @@ package cli
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -69,10 +70,22 @@ func renderExampleConfig() ([]byte, error) {
 
 // formatConfigParamYAML encodes one default-policy param so the generated YAML
 // round-trips through config lint. Empty strings must be quoted; a bare
-// `suffix:` is YAML null and fails the string type check.
+// `suffix:` is YAML null and fails the string type check. String lists need
+// explicit flow syntax — `%v` renders `[a b]` which YAML reads as one scalar.
 func formatConfigParamYAML(value any) string {
-	if typed, ok := value.(string); ok && typed == "" {
-		return `""`
+	switch typed := value.(type) {
+	case string:
+		if typed == "" {
+			return `""`
+		}
+		return typed
+	case []string:
+		quoted := make([]string, len(typed))
+		for i, item := range typed {
+			quoted[i] = strconv.Quote(item)
+		}
+		return "[" + strings.Join(quoted, ", ") + "]"
+	default:
+		return fmt.Sprintf("%v", value)
 	}
-	return fmt.Sprintf("%v", value)
 }

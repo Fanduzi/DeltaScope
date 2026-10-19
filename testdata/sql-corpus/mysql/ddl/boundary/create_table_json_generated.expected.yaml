@@ -8,9 +8,8 @@ expect:
   statements:
     count: 1
   unsupported:
-    count: 2
-    include:
-      - create_table.column.generated
+    count: 0
+    include: []
   findings:
     include:
       - ddl.column.comment.require
@@ -18,5 +17,6 @@ expect:
       - ddl.column.not_null.require
       - ddl.table.audit_columns.require
     exclude:
+      - ddl.column.advanced.compatibility.require
       - ddl.column.json.forbid
       - ddl.table.primary_key.require

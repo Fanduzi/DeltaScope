@@ -26,8 +26,8 @@ func t06A10CatalogRows(allocator driver.Value) map[string]testQueryResult {
 			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_bin", "", allocator, "Dynamic", int64(0)}},
 		},
 		"from information_schema.columns": {
-			columns: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra"},
-			rows:    [][]driver.Value{{"id", "bigint(20)", nil, nil, "", nil, "NO", "auto_increment"}},
+			columns: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"},
+			rows:    [][]driver.Value{{"id", "bigint(20)", nil, nil, "", nil, "NO", "auto_increment", ""}},
 		},
 		"from information_schema.statistics": {
 			columns: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality"},

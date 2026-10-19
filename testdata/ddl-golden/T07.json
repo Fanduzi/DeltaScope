@@ -224,6 +224,60 @@
   },
   "cli_cases": [
     {
+      "id": "mysql",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t (a INT);",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE TABLE t (a INT);"
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [],
+        "finding_metadata": [],
+        "finding_locations": [],
+        "unsupported_entries": [],
+        "t07_exact_findings": []
+      }
+    },
+    {
+      "id": "tidb",
+      "dialect": "tidb",
+      "sql": "CREATE TABLE t (a INT);",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE TABLE t (a INT);"
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [],
+        "finding_metadata": [],
+        "finding_locations": [],
+        "unsupported_entries": [],
+        "t07_exact_findings": []
+      }
+    },
+    {
       "id": "t07-mysql-generated-not-required",
       "dialect": "mysql",
       "sql": "CREATE TABLE t (\n  a INT,\n  b INT GENERATED ALWAYS AS (a + 1) STORED\n);\nALTER TABLE t DROP COLUMN a;",
@@ -302,9 +356,7 @@
         "statement_indices": [
           0,
           1
-        ],
-        "rule_summary_loaded": 0,
-        "rule_summary_applicable": 0
+        ]
       }
     },
     {
@@ -386,9 +438,7 @@
         "statement_indices": [
           0,
           1
-        ],
-        "rule_summary_loaded": 0,
-        "rule_summary_applicable": 0
+        ]
       }
     },
     {
@@ -464,9 +514,7 @@
         "t07_exact_findings": [],
         "statement_indices": [
           0
-        ],
-        "rule_summary_loaded": 0,
-        "rule_summary_applicable": 0
+        ]
       }
     },
     {
@@ -683,9 +731,7 @@
         "statement_indices": [
           0,
           1
-        ],
-        "rule_summary_loaded": 0,
-        "rule_summary_applicable": 0
+        ]
       }
     },
     {
@@ -767,9 +813,7 @@
         "statement_indices": [
           0,
           1
-        ],
-        "rule_summary_loaded": 0,
-        "rule_summary_applicable": 0
+        ]
       }
     },
     {
@@ -863,9 +907,7 @@
         "t07_exact_findings": [],
         "statement_indices": [
           0
-        ],
-        "rule_summary_loaded": 0,
-        "rule_summary_applicable": 0
+        ]
       }
     },
     {
@@ -1496,9 +1538,7 @@
         "t07_exact_findings": [],
         "statement_indices": [
           0
-        ],
-        "rule_summary_loaded": 0,
-        "rule_summary_applicable": 0
+        ]
       }
     },
     {
@@ -1769,9 +1809,7 @@
         "t07_exact_findings": [],
         "statement_indices": [
           0
-        ],
-        "rule_summary_loaded": 0,
-        "rule_summary_applicable": 0
+        ]
       }
     },
     {
@@ -22823,6 +22861,31 @@
           "stderr_contains": [
             "ERROR 1064"
           ]
+        },
+        {
+          "name": "step-2",
+          "sql": "ALTER TABLE t ALTER COLUMN hidden_c SET VISIBLE;",
+          "expect_rc": 1,
+          "verify": [
+            {
+              "assert": "bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'",
+              "expect": "1"
+            },
+            {
+              "assert": "complete advanced column set",
+              "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(column_name,':',ordinal_position,':',CASE WHEN CAST(column_name AS BINARY)='id' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='' AND COALESCE(generation_expression,'')='' AND column_default IS NULL THEN 'ok' WHEN CAST(column_name AS BINARY)='hidden_c' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='' AND COALESCE(generation_expression,'')='' AND column_default IS NULL THEN 'ok' WHEN CAST(column_name AS BINARY)='visible_c' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='' AND COALESCE(generation_expression,'')='' AND column_default IS NULL THEN 'ok' ELSE 'bad' END) ORDER BY ordinal_position SEPARATOR ','),'') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t'",
+              "expect": "id:1:ok,hidden_c:2:ok,visible_c:3:ok"
+            },
+            {
+              "assert": "complete index identity",
+              "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(index_name,':',seq_in_index,':',column_name) ORDER BY CAST(index_name AS BINARY),seq_in_index SEPARATOR ','),'') FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t'",
+              "expect": "PRIMARY:1:id"
+            }
+          ],
+          "stderr_contains": [
+            "ERROR 1064"
+          ]
         }
       ],
       "structure": [
@@ -27730,6 +27793,31 @@
         {
           "name": "step-1",
           "sql": "ALTER TABLE t ALTER COLUMN hidden_c SET INVISIBLE;",
+          "expect_rc": 1,
+          "verify": [
+            {
+              "assert": "bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'",
+              "expect": "1"
+            },
+            {
+              "assert": "complete advanced column set",
+              "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(column_name,':',ordinal_position,':',CASE WHEN CAST(column_name AS BINARY)='id' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='' AND COALESCE(generation_expression,'')='' AND column_default IS NULL THEN 'ok' WHEN CAST(column_name AS BINARY)='hidden_c' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='' AND COALESCE(generation_expression,'')='' AND column_default IS NULL THEN 'ok' WHEN CAST(column_name AS BINARY)='visible_c' AND data_type='int' AND CAST(LOWER(extra) AS BINARY)='' AND COALESCE(generation_expression,'')='' AND column_default IS NULL THEN 'ok' ELSE 'bad' END) ORDER BY ordinal_position SEPARATOR ','),'') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t'",
+              "expect": "id:1:ok,hidden_c:2:ok,visible_c:3:ok"
+            },
+            {
+              "assert": "complete index identity",
+              "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(index_name,':',seq_in_index,':',column_name) ORDER BY CAST(index_name AS BINARY),seq_in_index SEPARATOR ','),'') FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t'",
+              "expect": "PRIMARY:1:id"
+            }
+          ],
+          "stderr_contains": [
+            "ERROR 1064"
+          ]
+        },
+        {
+          "name": "step-2",
+          "sql": "ALTER TABLE t ALTER COLUMN hidden_c SET VISIBLE;",
           "expect_rc": 1,
           "verify": [
             {

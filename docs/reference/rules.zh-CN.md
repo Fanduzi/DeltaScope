@@ -436,6 +436,19 @@ rules:
 | `ddl.alter.drop_primary_key.exists.require` | DROP PRIMARY KEY 要求主键存在 | blocker | **是** |
 | `ddl.create_index.columns.exists.require` | 独立 `CREATE INDEX` 引用的列必须在目标表上存在 | blocker | **是** |
 
+### 高级列规则（2 条）
+
+这组规则覆盖 MySQL/TiDB 高级列能力——生成列、表达式默认值（`DEFAULT (<expr>)` 与 `ALTER ... ALTER COLUMN ... SET/DROP DEFAULT`）以及列可见性——基于从解析 AST 与 MySQL catalog 收集的共享、不可求值的表达式事实。
+
+`ddl.alter.column.dependency.require` 阻止源列仍被兄弟列的生成列或表达式默认定义引用的 `DROP COLUMN`、`RENAME COLUMN` 或改名的 `CHANGE COLUMN`，按声明顺序为每个依赖方产出一条 blocker。同名的 `MODIFY COLUMN` 保留列身份，不在本规则范围内。列集合被扣留或依赖图无法证明时产生 `unknown_table_state`/`incomplete_alter_dependency_effects` 证据缺口而非静默通过；有序状态也绝不把已被证伪的转移发布为可复用的成功后态。
+
+`ddl.column.advanced.compatibility.require` 应用冻结的产品/版本责任表：生成列要求 MySQL 5.7.6+ 或 TiDB 8.5，表达式默认值要求 MySQL 8.0.13+，可见性要求 MySQL 8.0.23+。冻结的 TiDB 默认值区分是明确的：`CREATE` 上的 `JSON_OBJECT` 族默认值和针对 `VARCHAR(36)` 的 `ALTER ... SET DEFAULT (uuid())` 是已观测正例；通过 `SET DEFAULT` 的 JSON 表达式默认值和算术/本地列默认值是已观测负例。未观测族（包括不在已观测集合内的标准函数）报告为有界证据缺口，绝不当作已知的库内拒绝。子查询、聚合、非确定性生成函数、存储模式转换是已确定的负例。声明级检查在离线时同样执行；只有需要与旧列对比的检查才读取请求内有序 schema 视图，无法证明时报告 `incomplete_source_column`/`target_version_out_of_validated_range` 缺口而不是伪造事实。可选 `features` 列表参数可收窄执行范围（`generated`、`expression_default`、`visibility`；省略则三者全启用，`[]` 表示规则已加载但不适用，未知名称在加载时被拒绝）。
+
+| 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
+|---------|------|:--------:|:--------------:|
+| `ddl.alter.column.dependency.require` | 当兄弟生成列或表达式默认列仍引用源列时，阻止其删除/改名/变更身份（同名列的 MODIFY 不在范围内） | blocker | **是** |
+| `ddl.column.advanced.compatibility.require` | 生成列、表达式默认值与可见性声明及转移必须满足目标产品/版本契约 | blocker | **是** |
+
 ---
 
 ## DDL：对象生命周期规则（8 条）
@@ -1004,6 +1017,8 @@ unknown-prior-state advisory 会在元数据可用时消费实时状态，因此
 | `ddl.alter.rename_index.exists.require` |
 | `ddl.alter.drop_primary_key.exists.require` |
 | `ddl.create_index.columns.exists.require` |
+| `ddl.alter.column.dependency.require` |
+| `ddl.column.advanced.compatibility.require` |
 | `ddl.table.drop.exists.require` |
 | `ddl.table.drop.adaptive_hash.warn` |
 | `ddl.table.drop.rows.max_count` |

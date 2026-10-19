@@ -841,10 +841,10 @@ func TestLoadTableSnapshotPreservesIndexCardinalityFromStatisticsRows(t *testing
 			}},
 		},
 		"from information_schema.columns": {
-			columns: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra"},
+			columns: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"},
 			rows: [][]driver.Value{
-				{"id", "bigint(20)", nil, nil, "", nil, "NO", ""},
-				{"email", "varchar(255)", "utf8mb4", "utf8mb4_general_ci", "", nil, "YES", ""},
+				{"id", "bigint(20)", nil, nil, "", nil, "NO", "", ""},
+				{"email", "varchar(255)", "utf8mb4", "utf8mb4_general_ci", "", nil, "YES", "", ""},
 			},
 		},
 		"from information_schema.statistics": {

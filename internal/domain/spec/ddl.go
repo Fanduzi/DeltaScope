@@ -274,6 +274,23 @@ type Column struct {
 	// UnextractedOptions names parsed column options the extractor recognized
 	// but did not model; see DDL.UnextractedOptions.
 	UnextractedOptions []string `json:"unextracted_options,omitempty"`
+	// Generated is the internal generated-column fact: nil means no generated
+	// attribute; non-nil carries the effective storage (omitted storage is
+	// VIRTUAL) and structured expression facts. GeneratedWhen stays the
+	// PostgreSQL-side fact and is unrelated.
+	Generated *GeneratedColumn `json:"-"`
+	// DefaultExpression is the internal expression-default fact: nil means no
+	// expression default; a non-nil fact with Known=false is unknown, not an
+	// empty reference list.
+	DefaultExpression *ExpressionFacts `json:"-"`
+	// Visibility is the effective column visibility fact: "visible",
+	// "invisible", or empty when the fact is withheld/unresolved. CREATE
+	// omission resolves to visible; it is never catalog-declaration presence.
+	Visibility string `json:"-"`
+	// VisibilityExplicit records that a VISIBLE|INVISIBLE attribute was
+	// written. It is declaration presence only, never inferred from catalog
+	// normalization.
+	VisibilityExplicit bool `json:"-"`
 }
 
 // IndexKind identifies the semantic class of an index declaration.

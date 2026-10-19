@@ -45,9 +45,9 @@ type t06a17Rows struct {
 // t06a17Catalog is the constructed catalog fixture: five target-type columns
 // whose parameters/members must survive the provider verbatim.
 var t06a17Catalog = [][]driver.Value{
-	{"d", "decimal(12,2)", nil, nil, "", nil, "YES", ""},
-	{"e", "enum('Ready','Closed')", "utf8mb4", "utf8mb4_bin", "", nil, "YES", ""},
-	{"s", "set('Write','Read')", "utf8mb4", "utf8mb4_bin", "", nil, "YES", ""},
+	{"d", "decimal(12,2)", nil, nil, "", nil, "YES", "", ""},
+	{"e", "enum('Ready','Closed')", "utf8mb4", "utf8mb4_bin", "", nil, "YES", "", ""},
+	{"s", "set('Write','Read')", "utf8mb4", "utf8mb4_bin", "", nil, "YES", "", ""},
 }
 
 func openT06A17DB(t *testing.T) *sql.DB {
@@ -85,7 +85,7 @@ func (c t06a17Conn) QueryContext(_ context.Context, query string, _ []driver.Nam
 		}, nil
 	case strings.Contains(query, "information_schema.columns"):
 		return &t06a17Rows{
-			cols: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra"},
+			cols: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"},
 			rows: c.rows,
 		}, nil
 	case strings.Contains(query, "information_schema.statistics"):

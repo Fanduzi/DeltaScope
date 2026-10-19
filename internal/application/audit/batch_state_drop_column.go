@@ -1,7 +1,7 @@
 // Package audit publishes the T05-A6 dependency-free DROP COLUMN post-state.
 // input: one ALTER statement, its drop_column action, and the table identities it names
 // output: either a precise column removal with unrelated members kept and the accepted statistic set cleared, or one tombstone publication of every named identity and its loaded dependents
-// pos: ordered-state successor for a single ordinary DROP COLUMN; multi-action and dependency-bearing forms stay conservative
+// pos: ordered-state successor for a single ordinary DROP COLUMN; multi-action and dependency-bearing forms stay conservative; the T07 shared ColumnDependents answer proves which generated/default-expression siblings actually bind the dropped name
 // note: if this file changes, update this header and module README.md.
 package audit
 
@@ -176,6 +176,14 @@ func dropColumnLocalUnsafe(shape *spec.TableSnapshot, columnName string) bool {
 			return true
 		}
 	}
+	var table spec.Table
+	if shape.Table != nil {
+		table = *shape.Table
+	}
+	dependency := spec.ColumnDependents(table, shape.Columns, columnName)
+	if !dependency.Known || len(dependency.Dependents) > 0 {
+		return true
+	}
 	for _, column := range shape.Columns {
 		if strings.EqualFold(column.Name, columnName) {
 			continue
@@ -248,9 +256,13 @@ func dropConstraintProvesUnrelated(shape *spec.TableSnapshot, constraint spec.Co
 	return columnListProvesUnrelated(constraint.ReferencedColumns, columnName, 0)
 }
 
-// dropOtherColumnMayReference refuses a sibling whose stored expression or
-// default cannot be proved free of the dropped column. Default text is not
-// searched for the column name.
+// dropOtherColumnMayReference refuses a sibling carrying an unmodeled fact
+// that could still reference the dropped column — a PostgreSQL generation
+// attribute, an unextracted generated/reference/check option, or a default
+// whose text was never parsed into expression facts. Modeled Generated and
+// DefaultExpression records are already answered by the shared
+// ColumnDependents computation above. Default text is not searched for the
+// column name.
 func dropOtherColumnMayReference(column spec.Column) bool {
 	if strings.TrimSpace(column.GeneratedWhen) != "" {
 		return true
@@ -261,5 +273,5 @@ func dropOtherColumnMayReference(column spec.Column) bool {
 			return true
 		}
 	}
-	return column.HasDefault && !column.DefaultIsNull && !column.DefaultIsCurrentTimestamp
+	return column.HasDefault && !column.DefaultIsNull && !column.DefaultIsCurrentTimestamp && column.DefaultExpression == nil
 }

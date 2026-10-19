@@ -51,7 +51,7 @@ func t06a17Results() map[string]testQueryResult {
 	}
 	rows := make([][]driver.Value, 0, len(columnTypes))
 	for _, pair := range columnTypes {
-		rows = append(rows, []driver.Value{pair[0], pair[1], nil, nil, "", nil, "YES", ""})
+		rows = append(rows, []driver.Value{pair[0], pair[1], nil, nil, "", nil, "YES", "", ""})
 	}
 	return map[string]testQueryResult{
 		"from information_schema.tables": {
@@ -59,7 +59,7 @@ func t06a17Results() map[string]testQueryResult {
 			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0)}},
 		},
 		"from information_schema.columns": {
-			columns: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra"},
+			columns: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"},
 			rows:    rows,
 		},
 		"from information_schema.statistics": {

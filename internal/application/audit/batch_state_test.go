@@ -217,9 +217,10 @@ func TestBatchStateRepeatedAddColumnFiresOnDerivedState(t *testing.T) {
 	}
 }
 
-// D: an unaudited mutation invalidates only its own table — dependent checks
-// on t degrade to unknown while an unrelated table u still derives cleanly.
-func TestBatchStateUnauditedMutationInvalidatesOnlyItsTable(t *testing.T) {
+// D: an audited generated-column mutation keeps its table known — the T07
+// promotion means a fully modeled generated ADD no longer invalidates
+// dependent checks, and an unrelated table u still derives cleanly.
+func TestBatchStateAuditedGeneratedMutationKeepsTableState(t *testing.T) {
 	t.Parallel()
 	provider := &t05AbsentProvider{}
 	result, err := AuditSQL(context.Background(), Request{
@@ -231,8 +232,45 @@ func TestBatchStateUnauditedMutationInvalidatesOnlyItsTable(t *testing.T) {
 		ConfigPath:       t05FourRulePolicy(t),
 		MetadataProvider: provider,
 	})
-	// The generated-column aspect is recognized-but-unsupported evidence, so
-	// the audit returns its partial result with ErrUnsupportedStatement.
+	if err != nil {
+		t.Fatalf("generated-column ADD is fully audited, got %v", err)
+	}
+	if result.Statements[2].Coverage.Status != report.CoverageComplete {
+		t.Fatalf("generated-column ALTER must be coverage complete, got %+v", result.Statements[2].Coverage)
+	}
+	for i := 3; i < 5; i++ {
+		if len(result.Statements[i].Findings) != 0 || len(result.Statements[i].EvidenceGaps) != 0 {
+			t.Fatalf("statement %d must analyze cleanly, findings=%+v gaps=%+v", i, result.Statements[i].Findings, result.Statements[i].EvidenceGaps)
+		}
+		if result.Statements[i].Coverage.Status != report.CoverageComplete {
+			t.Fatalf("statement %d coverage = %+v, want complete", i, result.Statements[i].Coverage)
+		}
+	}
+	// Provider consulted once per touched table.
+	sort.Strings(provider.calls)
+	if strings.Join(provider.calls, ",") != "app.t,app.u" {
+		t.Fatalf("expected one provider read per table, got %#v", provider.calls)
+	}
+}
+
+// The same sequence with an unverifiable expression keeps the unaudited-
+// mutation contract: the recognized-but-unknown generated expression stays
+// coverage incomplete and invalidates only its own table.
+func TestBatchStateUnknownFunctionGeneratedInvalidatesOnlyItsTable(t *testing.T) {
+	t.Parallel()
+	provider := &t05AbsentProvider{}
+	result, err := AuditSQL(context.Background(), Request{
+		SQL: "CREATE TABLE t (id INT PRIMARY KEY); CREATE TABLE u (id INT PRIMARY KEY);" +
+			" ALTER TABLE t ADD COLUMN g INT GENERATED ALWAYS AS (T07_UNKNOWN_FN(id)) STORED;" +
+			" ALTER TABLE t ADD COLUMN c INT; ALTER TABLE u ADD COLUMN c INT;",
+		Dialect:          spec.DialectMySQL,
+		Schema:           "app",
+		ConfigPath:       t05FourRulePolicy(t),
+		MetadataProvider: provider,
+	})
+	// The unknown-function generated expression is recognized-but-unsupported
+	// evidence (the T07 expression_dependencies aspect), so the audit returns
+	// its partial result with ErrUnsupportedStatement.
 	if !errors.Is(err, ErrUnsupportedStatement) {
 		t.Fatalf("expected ErrUnsupportedStatement for the unaudited generated column, got %v", err)
 	}

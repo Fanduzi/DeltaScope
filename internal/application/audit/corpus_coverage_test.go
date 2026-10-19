@@ -222,7 +222,11 @@ func isMySQLFamilyOnlyRule(ruleID string) bool {
 		"ddl.alter.drop_column.notice",
 		"ddl.alter.modify_column.notice",
 		"ddl.alter.drop_index.notice",
-		"ddl.alter.drop_foreign_key.notice":
+		"ddl.alter.drop_foreign_key.notice",
+		// The advanced-column assessment only applies to MySQL/TiDB
+		// statements; PostgreSQL never binds these facts.
+		"ddl.alter.column.dependency.require",
+		"ddl.column.advanced.compatibility.require":
 		return true
 	default:
 		return false

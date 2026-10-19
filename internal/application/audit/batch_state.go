@@ -1,7 +1,7 @@
 // Package audit orchestrates audit use cases at the application layer.
 // input: request context, ordered statements, optional metadata provider, the request's already-resolved version identity, and parse-failure positions for one audit request
 // output: request-local ordered table facts (unknown / known-absent / known-present, per-collection member knowledge, including the declared table comment on complete CREATE-derived shapes) feeding per-statement pre-state snapshots
-// pos: prospective schema-state ownership for the first migration path — the effective (dialect, schema, table) identity drives provider reads, keys, writes, and invalidation; unsupported or executable-but-unmodeled effects settle before kind dispatch; deterministic conditional transitions update derived facts, including the bounded single-pair RENAME identity migration onto a known-absent destination, a bounded single-target DROP identity retirement, an ordinary single-column MODIFY definition replacement, a precise single CHANGE COLUMN or RENAME COLUMN identity migration, and an ordinary dependency-free single-column DROP COLUMN that removes only that column, keeps unrelated members, and clears the accepted MODIFY statistic set; each tombstones loaded dependents that the transition cannot keep; a non-precise MODIFY, CHANGE, RENAME, or DROP COLUMN tombstones every named table identity and the loaded dependents of those identities, a precise replacement is withheld when a loaded foreign key cannot be recomputed, an unsupported RENAME version withholds publication, and cancellation is checked before publishing effects; unaudited, unbound, or contaminated operations invalidate them; recognized CREATE/DROP PROCEDURE statements preserve outer table facts while keeping their own audit evidence
+// pos: prospective schema-state ownership for the first migration path — the effective (dialect, schema, table) identity drives provider reads, keys, writes, and invalidation; unsupported or executable-but-unmodeled effects settle before kind dispatch; deterministic conditional transitions update derived facts, including the bounded single-pair RENAME identity migration onto a known-absent destination, a bounded single-target DROP identity retirement, an ordinary single-column MODIFY definition replacement, a precise single CHANGE COLUMN or RENAME COLUMN identity migration, and an ordinary dependency-free single-column DROP COLUMN that removes only that column, keeps unrelated members, and clears the accepted MODIFY statistic set; each tombstones loaded dependents that the transition cannot keep; a non-precise MODIFY, CHANGE, RENAME, or DROP COLUMN tombstones every named table identity and the loaded dependents of those identities, a precise replacement is withheld when a loaded foreign key cannot be recomputed, an unsupported RENAME version withholds publication, and cancellation is checked before publishing effects; unaudited, unbound, or contaminated operations invalidate them; recognized CREATE/DROP PROCEDURE statements preserve outer table facts while keeping their own audit evidence; the shared T07 advanced-column assessment blocks publication of provably refused transitions
 // note: if this file changes, update this header and module README.md.
 package audit
 
@@ -272,6 +272,32 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 		return nil
 	}
 	ddl := statement.DDL
+	// The shared advanced-column assessment gates state publication,
+	// independently of policy switches. A provably rejected transition must
+	// not keep the prior shape reusable as a success fact, and a structurally
+	// ambiguous advanced transition must not publish an ordinary shape: both
+	// tombstone the affected identities plus their loaded dependents through
+	// the same publication seam as the legacy non-precise paths. Dep-scope
+	// uncertainty alone stays on the legacy per-action publications, which
+	// already withhold success shapes. The cancellation check precedes any
+	// publication from this gate.
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	assessment := spec.AssessAdvancedColumns(statement)
+	if assessment.InvalidTransition || (assessment.UnresolvedTransition && len(assessment.Features) > 0) {
+		targetKeys := s.modifyTargetKeys(ddl.TableTargets())
+		publication := modifyPublication{
+			invalidate: append(s.modifyIdentityDependentKeys(targetKeys), targetKeys...),
+		}
+		// Cancellation is rechecked after the assessment and dependent-set
+		// work, immediately before the publication lands.
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		publication.apply(s)
+		return nil
+	}
 	switch ddl.Operation {
 	case spec.DDLOperationCreateTable:
 		s.applyCreateTable(statement)
@@ -526,6 +552,12 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 	}
 	if alter.Action == "change_column" || alter.Action == "rename_column" {
 		return s.applyColumnIdentity(ctx, statement, alter, targets)
+	}
+	if alter.Action == "set_column_default" || alter.Action == "drop_column_default" {
+		return s.applyColumnDefault(ctx, statement, alter, targets)
+	}
+	if alter.Action == "set_column_visibility" {
+		return s.applyColumnVisibility(ctx, statement, alter, targets)
 	}
 	if alter.Action != "add_columns" || alter.Column == nil || alter.Column.Definition == nil {
 		s.invalidateAll(targets)
@@ -924,6 +956,8 @@ func cloneColumn(in spec.Column) spec.Column {
 		}
 	}
 	out.UnextractedOptions = append([]string(nil), in.UnextractedOptions...)
+	out.Generated = spec.CloneGeneratedColumn(in.Generated)
+	out.DefaultExpression = spec.CloneExpressionFacts(in.DefaultExpression)
 	return out
 }
 

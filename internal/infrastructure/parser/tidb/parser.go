@@ -35,9 +35,22 @@ func (p *Parser) Parse(ctx context.Context, sql string) (Result, error) {
 		return Result{}, fmt.Errorf("parse cancelled: %w", err)
 	}
 
-	parsed, warns, err := parser.New().Parse(sql, "", "")
-	if err != nil {
-		return Result{}, fmt.Errorf("parse sql: %w", err)
+	// Structural supplements run BEFORE the base parse: column-option
+	// DEFAULT (<expr>) sites, column VISIBLE/INVISIBLE attributes, and the
+	// narrow SET VISIBLE|INVISIBLE setter are planned from the token stream,
+	// rewritten same-width, then rebound to typed facts on real AST nodes.
+	// Any plan that does not bind exactly falls through to the untouched
+	// base parse so failures keep their original diagnostics.
+	var parsed []ast.StmtNode
+	var warns []error
+	if recovered, recoveredWarns, ok := runSupplementedParse(sql); ok {
+		parsed, warns = recovered, recoveredWarns
+	} else {
+		var err error
+		parsed, warns, err = parser.New().Parse(sql, "", "")
+		if err != nil {
+			return Result{}, fmt.Errorf("parse sql: %w", err)
+		}
 	}
 
 	result := Result{

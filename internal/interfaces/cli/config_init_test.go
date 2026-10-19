@@ -132,6 +132,38 @@ rules:
 	assertConfigLintsClean(t, path)
 }
 
+// TestConfigInitMultiValueParamRoundTrips pins the []string encoding fix: a
+// generated config must render the T07 compatibility features param as a real
+// YAML sequence, survive lint, and load into a working rule — a scalar-shaped
+// list must break loudly instead of silently disabling the rule.
+func TestConfigInitMultiValueParamRoundTrips(t *testing.T) {
+	code, yamlOut, stderr := runConfigCommand(t, "config", "init")
+	if code != 0 {
+		t.Fatalf("expected config init exit 0, got %d\nstderr=%q", code, stderr)
+	}
+	if !strings.Contains(yamlOut, `features: ["generated", "expression_default", "visibility"]`) {
+		t.Fatalf("expected generated config to render features as a YAML flow sequence, got:\n%s", yamlOut)
+	}
+	path := writeTempConfig(t, yamlOut)
+	assertConfigLintsClean(t, path)
+
+	// Semantic round-trip: under the generated config the compatibility rule
+	// must still see its list param — a generated column below the MySQL
+	// 5.7.6 boundary produces the version_unsupported blocker.
+	auditCode, auditOut, auditErr := runConfigCommand(t,
+		"audit", "--sql", "CREATE TABLE t (a INT, b INT GENERATED ALWAYS AS (a + 1) STORED);",
+		"--config", path, "--target-version", "5.7.5", "--format", "json", "--fail-on", "none")
+	if auditErr != "" {
+		t.Fatalf("generated-config audit stderr: %q", auditErr)
+	}
+	if auditCode != 0 {
+		t.Fatalf("generated-config audit exit = %d, want 0\noutput=%s", auditCode, auditOut)
+	}
+	if !strings.Contains(auditOut, "ddl.column.advanced.compatibility.require") {
+		t.Fatalf("compat rule must fire under the generated config, got %s", auditOut)
+	}
+}
+
 // TestGeneratedConfigPreservesDefaultAuditFindings compares a default-policy
 // audit with the same SQL audited under the generated config file.
 func TestGeneratedConfigPreservesDefaultAuditFindings(t *testing.T) {

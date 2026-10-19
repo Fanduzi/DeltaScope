@@ -39,6 +39,21 @@ Pack manifests assert retained statement count, statement kind, and meaningful
 finding include/exclude expectations. These are representative MySQL shapes,
 not official grammar-completeness coverage.
 
+## T07 advanced-column representatives
+
+MySQL and TiDB each add two fixed `ddl/findings` pairs:
+`advanced_column_dependency` keeps the #86 CREATE-generated/DROP-source batch,
+and `advanced_column_compatibility` uses a recognized forbidden generated
+RAND() declaration. The latter is static analysis, never function execution.
+Pinned fixture version metadata distinguishes policy findings from missing
+version evidence. The existing MySQL JSON-generated shape retains its SQL and
+ordinary policy controls while its typed generated facts replace the old
+unmodeled-column boundary.
+
+These four corpus representatives do not enlarge T07's 207 Golden identities;
+full statement/column/dependent/gap/coverage/native oracles live in the
+[T07 contract](../../docs/work-plans/t07-advanced-columns/CONTRACT.md).
+
 ## PostgreSQL Representative Pack
 
 The PostgreSQL corpus keeps production-shaped coverage bounded and separate:

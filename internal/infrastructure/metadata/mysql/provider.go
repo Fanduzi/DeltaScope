@@ -1,6 +1,6 @@
 // Package mysqlmeta implements metadata-aware audit adapters over the MySQL protocol.
 // input: sql.DB access plus connection configs, version/schema/table lookup requests, and MySQL/TiDB metadata queries
-// output: normalized instance facts with explicit known bits (innodb_page_size, 5.7 large-prefix, TiDB max-index-length via all-rows SHOW CONFIG verification — read failures propagate as provider errors, only absent/ambiguous values stay unknown), dialect detection, schema discovery, and table snapshots with preserved index cardinality, verbatim COLUMN_TYPE parameter spans on the five declared-parameter bases (DECIMAL/FLOAT/DOUBLE/ENUM/SET — member literals keep catalog case and attribute words inside quotes never set Unsigned), and stored-representation default facts (COLUMN_DEFAULT IS NOT NULL → HasDefault with verbatim DefaultValue bytes; NULL rows and literal "null" text never set DefaultIsNull on this path) for application-level audit enrichment
+// output: normalized instance facts with explicit known bits (innodb_page_size, 5.7 large-prefix, TiDB max-index-length via all-rows SHOW CONFIG verification — read failures propagate as provider errors, only absent/ambiguous values stay unknown), dialect detection, schema discovery, and table snapshots with preserved index cardinality, verbatim COLUMN_TYPE parameter spans on the five declared-parameter bases (DECIMAL/FLOAT/DOUBLE/ENUM/SET — member literals keep catalog case and attribute words inside quotes never set Unsigned), stored-representation default facts (COLUMN_DEFAULT IS NOT NULL → HasDefault with verbatim DefaultValue bytes; NULL rows and literal "null" text never set DefaultIsNull on this path), and T07 advanced-column facts read from the same COLUMNS row (EXTRA DEFAULT_GENERATED → parsed DefaultExpression facts, STORED/VIRTUAL GENERATED + GENERATION_EXPRESSION → generated storage + expression facts, INVISIBLE → effective visibility; undecodable expression text stays an explicit unknown fact) for application-level audit enrichment
 // pos: infrastructure metadata adapter between database/sql and domain metadata specs
 // note: if this file changes, update this header and module README.md.
 package mysqlmeta
@@ -15,11 +15,13 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	gomysql "github.com/go-sql-driver/mysql"
 
 	appaudit "github.com/Fanduzi/DeltaScope/internal/application/audit"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+	tidbparser "github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb"
 )
 
 // DefaultConnectTimeout is the default timeout for initial metadata connection.
@@ -361,7 +363,7 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, _ spec.Dialect, schema
 func (p *Provider) loadColumns(ctx context.Context, snapshot *spec.TableSnapshot) error {
 	rows, err := p.db.QueryContext(ctx, `
 		select column_name, column_type, character_set_name, collation_name, column_comment,
-		       column_default, is_nullable, extra
+		       column_default, is_nullable, extra, generation_expression
 		from information_schema.columns
 		where table_schema = ? and table_name = ?
 		order by ordinal_position
@@ -373,11 +375,12 @@ func (p *Provider) loadColumns(ctx context.Context, snapshot *spec.TableSnapshot
 
 	for rows.Next() {
 		var name, columnType, isNullable, extra string
-		var charset, collation, comment, defaultValue sql.NullString
-		if err := rows.Scan(&name, &columnType, &charset, &collation, &comment, &defaultValue, &isNullable, &extra); err != nil {
+		var charset, collation, comment, defaultValue, generationExpr sql.NullString
+		if err := rows.Scan(&name, &columnType, &charset, &collation, &comment, &defaultValue, &isNullable, &extra, &generationExpr); err != nil {
 			return fmt.Errorf("scan table column: %w", err)
 		}
 		typeText, length, unsigned := parseColumnType(columnType)
+		extraTokens := catalogExtraTokens(extra)
 		column := spec.Column{
 			Name:          name,
 			Type:          typeText,
@@ -402,12 +405,76 @@ func (p *Provider) loadColumns(ctx context.Context, snapshot *spec.TableSnapshot
 		if strings.Contains(strings.ToLower(extra), "on update current_timestamp") {
 			column.OnUpdateCurrentTimestamp = true
 		}
+		// T07: generation presence comes from the GENERATED EXTRA token or
+		// non-empty GENERATION_EXPRESSION text, never from declaration
+		// spelling. Storage comes only from unambiguous STORED/VIRTUAL
+		// tokens — a missing or contradictory pair stays explicit unknown
+		// storage. Absent or unparseable expression text stays an explicit
+		// unknown expression fact rather than collapsing into a known-empty
+		// one or a fake absent column.
+		generationText := ""
+		if generationExpr.Valid {
+			generationText = strings.TrimSpace(generationExpr.String)
+		}
+		if extraTokens["generated"] || generationText != "" {
+			generated := &spec.GeneratedColumn{Expression: spec.ExpressionFacts{}}
+			switch {
+			case extraTokens["stored"] && !extraTokens["virtual"]:
+				generated.Storage = spec.GeneratedStorageStored
+			case extraTokens["virtual"] && !extraTokens["stored"]:
+				generated.Storage = spec.GeneratedStorageVirtual
+			default:
+				generated.Storage = spec.GeneratedStorageUnknown
+			}
+			if generationText != "" {
+				generated.Expression = tidbparser.ParseCatalogExpressionFacts(generationText)
+			}
+			column.Generated = generated
+		}
+		// DEFAULT_GENERATED marks an expression default: keep the raw catalog
+		// bytes in DefaultValue and carry parsed facts separately. A bare
+		// temporal current_timestamp keeps the existing temporal contract
+		// (DefaultIsCurrentTimestamp, no DefaultExpression). Undecodable or
+		// absent expression text is an explicit unknown fact.
+		if extraTokens["default_generated"] && !column.DefaultIsCurrentTimestamp {
+			if defaultValue.Valid && strings.TrimSpace(defaultValue.String) != "" {
+				column.DefaultExpression = ptrExpressionFacts(tidbparser.ParseCatalogExpressionFacts(defaultValue.String))
+			} else {
+				column.DefaultExpression = &spec.ExpressionFacts{}
+			}
+		}
+		// EXTRA is complete for every catalog row: INVISIBLE is the only
+		// invisibility marker, so its absence proves effective visibility.
+		// VisibilityExplicit stays false — the catalog cannot prove the
+		// declaration carried the keyword.
+		if extraTokens["invisible"] {
+			column.Visibility = spec.ColumnVisibilityInvisible
+		} else {
+			column.Visibility = spec.ColumnVisibilityVisible
+		}
 		snapshot.Columns = append(snapshot.Columns, column)
 	}
 	if err := rows.Err(); err != nil {
 		return fmt.Errorf("iterate table columns: %w", err)
 	}
 	return nil
+}
+
+// catalogExtraTokens splits the EXTRA attribute string into lowercase word
+// tokens so compound markers like "VIRTUAL GENERATED" and "DEFAULT_GENERATED"
+// are matched exactly, never by substring bleed.
+func catalogExtraTokens(extra string) map[string]bool {
+	tokens := make(map[string]bool)
+	for _, token := range strings.FieldsFunc(strings.ToLower(extra), func(r rune) bool {
+		return !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '_'
+	}) {
+		tokens[token] = true
+	}
+	return tokens
+}
+
+func ptrExpressionFacts(facts spec.ExpressionFacts) *spec.ExpressionFacts {
+	return &facts
 }
 
 func (p *Provider) loadIndexes(ctx context.Context, snapshot *spec.TableSnapshot) error {

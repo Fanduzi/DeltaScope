@@ -1,6 +1,6 @@
 // Package tidbparser extracts parser-neutral statements from TiDB AST nodes.
 // input: TiDB parser statement nodes and parser-neutral dialect metadata
-// output: extractor-backed parsed statements for the application layer, including MutationTargets and mutation-target-only DML tables, normalized ALTER index/constraint actions, multi-target DDL Targets for DROP/RENAME/ALTER-rename, temporary-table scope facts, typed and unextracted column-option facts, primary-key metadata, inline PRIMARY KEY presence on column-change facts, parser-decoded COMMENT string content (no SQL quote wrapping), sentinel-faithful declared type parameters (DECIMAL/FLOAT/DOUBLE scale, byte-exact ENUM/SET members) on the five declared-parameter types, and if_exists/if_not_exists option markers for conditional-existence derivation
+// output: extractor-backed parsed statements for the application layer, including MutationTargets and mutation-target-only DML tables, normalized ALTER index/constraint actions, multi-target DDL Targets for DROP/RENAME/ALTER-rename, temporary-table scope facts, typed and unextracted column-option facts, primary-key metadata, inline PRIMARY KEY presence on column-change facts, parser-decoded COMMENT string content (no SQL quote wrapping), sentinel-faithful declared type parameters (DECIMAL/FLOAT/DOUBLE scale, byte-exact ENUM/SET members) on the five declared-parameter types, structured generated-column and expression-default facts via the shared expression-facts visitor, and if_exists/if_not_exists option markers for conditional-existence derivation
 // pos: infrastructure extraction adapter between TiDB AST and domain spec
 // note: if this file changes, update this header and module README.md.
 package tidbparser
@@ -61,6 +61,10 @@ type tidbExtractor struct {
 	kind     spec.Kind
 	warnings []string
 	node     ast.StmtNode
+	// supplements carries adapter-owned typed facts the locked grammar
+	// cannot represent (column visibility attributes, the visibility
+	// setter). nil for un-supplemented statements.
+	supplements *statementSupplements
 }
 
 func (e tidbExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statement, error) {
@@ -134,6 +138,7 @@ func (e tidbExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statem
 	default:
 		statement.Warnings = append(statement.Warnings, fmt.Sprintf("unsupported parsed statement kind %q", e.kind))
 	}
+	e.applySupplements(&statement)
 	applyCoverageBoundary(dialect, &statement, e.node)
 	return statement, nil
 }
@@ -141,14 +146,67 @@ func (e tidbExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statem
 func WrapStatements(stmts []ast.StmtNode, warnings []string) []ExtractedStatement {
 	wrapped := make([]ExtractedStatement, 0, len(stmts))
 	for _, stmt := range stmts {
-		kind := classify(stmt)
+		node := stmt
+		var supplements *statementSupplements
+		if carried, ok := stmt.(*supplementedStatement); ok {
+			// Classification and extraction always see the real underlying
+			// node; the typed supplements ride beside it.
+			node = carried.StmtNode
+			supplements = carried.supp
+		}
+		kind := classify(node)
 		wrapped = append(wrapped, ExtractedStatement{
 			Kind:      kind,
-			RawSQL:    stmt.Text(),
-			Extractor: tidbExtractor{kind: kind, warnings: warnings, node: stmt},
+			RawSQL:    node.Text(),
+			Extractor: tidbExtractor{kind: kind, warnings: warnings, node: node, supplements: supplements},
 		})
 	}
 	return wrapped
+}
+
+// applySupplements binds adapter-owned typed facts onto the domain statement:
+// declared column visibility attributes and the narrow visibility setter's
+// action. Facts were verified against the parsed node at bind time, so each
+// named column is guaranteed present.
+func (e tidbExtractor) applySupplements(statement *spec.Statement) {
+	supp := e.supplements
+	if supp == nil || statement.DDL == nil {
+		return
+	}
+	ddl := statement.DDL
+	switch ddl.Operation {
+	case spec.DDLOperationCreateTable:
+		for i := range ddl.Columns {
+			if visibility, ok := supp.visibility[ddl.Columns[i].Name]; ok {
+				ddl.Columns[i].Visibility = visibility
+				ddl.Columns[i].VisibilityExplicit = true
+			}
+		}
+	case spec.DDLOperationAlterTable:
+		for i := range ddl.Alter {
+			alter := &ddl.Alter[i]
+			if supp.setterVisibility != "" && alter.Column != nil {
+				// The setter's underlying node is the real AlterColumn
+				// identity; swap the default-placeholder action for the
+				// typed visibility fact without inventing option facts.
+				alter.Action = "set_column_visibility"
+				alter.Column.Change = nil
+				alter.Column.Definition.Visibility = supp.setterVisibility
+				alter.Column.Definition.VisibilityExplicit = true
+				continue
+			}
+			if alter.Column == nil || alter.Column.Definition == nil {
+				continue
+			}
+			switch alter.Action {
+			case "add_columns", "modify_column", "change_column":
+				if visibility, ok := supp.visibility[alter.Column.Definition.Name]; ok {
+					alter.Column.Definition.Visibility = visibility
+					alter.Column.Definition.VisibilityExplicit = true
+				}
+			}
+		}
+	}
 }
 
 func classify(stmt ast.StmtNode) spec.Kind {
@@ -542,6 +600,20 @@ func markAlterExistenceClauses(specification *ast.AlterTableSpec, alter *spec.Al
 }
 
 func alterActionNameForSpec(specification *ast.AlterTableSpec, clause string) string {
+	if specification.Tp == ast.AlterTableAlterColumn {
+		// ALTER [COLUMN] name SET|DROP DEFAULT is the MySQL/TiDB
+		// set_column_default/drop_column_default action space — deliberately
+		// not the PostgreSQL set_default/drop_default names, whose forbid
+		// rules must stay inert here.
+		if len(specification.NewColumns) > 0 && specification.NewColumns[0] != nil {
+			for _, option := range specification.NewColumns[0].Options {
+				if option != nil && option.Expr != nil {
+					return "set_column_default"
+				}
+			}
+		}
+		return "drop_column_default"
+	}
 	action := alterActionName(specification.Tp)
 	if action != "add_constraint" || specification.Constraint == nil || !constraintIsIndexAddition(specification.Constraint.Tp) {
 		return action
@@ -667,6 +739,10 @@ func declaredColumnType(tp *tidbtypes.FieldType) string {
 
 func extractColumn(col *ast.ColumnDef) spec.Column {
 	column := spec.Column{Name: col.Name.Name.L, Type: declaredColumnType(col.Tp), Length: col.Tp.GetFlen(), Unsigned: mysql.HasUnsignedFlag(col.Tp.GetFlag())}
+	// A complete column declaration that omits VISIBLE/INVISIBLE is
+	// effective-visible; an explicit attribute only arrives through the
+	// supplement, which also sets VisibilityExplicit.
+	column.Visibility = spec.ColumnVisibilityVisible
 	if tidbtypes.HasCharset(col.Tp) {
 		column.Charset = strings.ToLower(col.Tp.GetCharset())
 		column.Collation = strings.ToLower(col.Tp.GetCollate())
@@ -695,14 +771,19 @@ func extractColumn(col *ast.ColumnDef) spec.Column {
 		case ast.ColumnOptionAutoIncrement:
 			column.AutoIncrement = true
 		case ast.ColumnOptionDefaultValue:
-			column.HasDefault = true
-			column.DefaultIsNull = exprIsNullLiteral(option.Expr)
-			if column.DefaultIsNull {
-				column.DefaultValue = "NULL"
-			} else {
-				column.DefaultValue = normalizedExprText(option.Expr)
+			applyDefaultOptionFacts(&column, option.Expr)
+		case ast.ColumnOptionGenerated:
+			// The generated attribute is a modeled T07 fact, not an
+			// unextracted option. Omitted storage means effective VIRTUAL —
+			// the AST never proves the VIRTUAL keyword was written.
+			storage := spec.GeneratedStorageVirtual
+			if option.Stored {
+				storage = spec.GeneratedStorageStored
 			}
-			column.DefaultIsCurrentTimestamp = exprIsCurrentTimestamp(option.Expr)
+			column.Generated = &spec.GeneratedColumn{Storage: storage}
+			if option.Expr != nil {
+				column.Generated.Expression = expressionFacts(option.Expr)
+			}
 		case ast.ColumnOptionOnUpdate:
 			column.OnUpdateCurrentTimestamp = exprIsCurrentTimestamp(option.Expr)
 		case ast.ColumnOptionAutoRandom:
@@ -750,6 +831,27 @@ func columnOptionName(tp ast.ColumnOptionType) string {
 	}
 }
 
+// applyDefaultOptionFacts records one default option on the column: the
+// literal/NULL/temporal fields keep their existing contract, while a
+// non-literal default becomes the structural expression-default fact.
+func applyDefaultOptionFacts(column *spec.Column, expr ast.ExprNode) {
+	column.HasDefault = true
+	column.DefaultIsNull = exprIsNullLiteral(expr)
+	if column.DefaultIsNull {
+		column.DefaultValue = "NULL"
+	} else {
+		column.DefaultValue = normalizedExprText(expr)
+	}
+	column.DefaultIsCurrentTimestamp = exprIsCurrentTimestamp(expr)
+	if !exprIsLiteralValue(expr) && !column.DefaultIsCurrentTimestamp {
+		// A non-literal default is an expression default; the fact is
+		// structural (never evaluated) and keeps the literal/default
+		// distinction in HasDefault/DefaultValue untouched.
+		facts := expressionFacts(expr)
+		column.DefaultExpression = &facts
+	}
+}
+
 func extractAlterColumn(specification *ast.AlterTableSpec) *spec.AlterColumn {
 	switch specification.Tp {
 	case ast.AlterTableAddColumns, ast.AlterTableModifyColumn, ast.AlterTableChangeColumn:
@@ -764,6 +866,26 @@ func extractAlterColumn(specification *ast.AlterTableSpec) *spec.AlterColumn {
 			column.OldName = specification.OldColumnName.Name.L
 		}
 		return column
+	case ast.AlterTableAlterColumn:
+		// ALTER [COLUMN] c SET|DROP DEFAULT — the parser produces a name-only
+		// ColumnDef (Tp is nil, so the full extractColumn path does not apply)
+		// whose single expression option carries the new default. The T07
+		// contract shape is OldName + a default-only Definition.
+		if len(specification.NewColumns) == 0 || specification.NewColumns[0] == nil {
+			return nil
+		}
+		col := specification.NewColumns[0]
+		alter := &spec.AlterColumn{
+			OldName:    col.Name.Name.L,
+			Change:     &spec.AlterColumnChange{TouchesDefault: true},
+			Definition: &spec.Column{Name: col.Name.Name.L},
+		}
+		for _, option := range col.Options {
+			if option != nil && option.Expr != nil {
+				applyDefaultOptionFacts(alter.Definition, option.Expr)
+			}
+		}
+		return alter
 	case ast.AlterTableDropColumn:
 		if specification.OldColumnName == nil {
 			return nil

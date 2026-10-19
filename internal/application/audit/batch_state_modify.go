@@ -1,7 +1,8 @@
-// Package audit derives the conditional post-state of one ordinary MODIFY.
-// input: one ALTER TABLE MODIFY COLUMN, the immutable request-local entries
-// captured before the statement, and loaded constraint facts already present
-// in this batch
+// Package audit derives the conditional post-state of ordinary MODIFY and
+// T07 default-only setters.
+// input: one ALTER TABLE MODIFY COLUMN or ALTER COLUMN SET/DROP DEFAULT, the
+// immutable request-local entries captured before the statement, and loaded
+// constraint facts already present in this batch
 // output: an in-place column replacement, or one conservative invalidation of
 // every table identity the statement touches and the already-loaded dependents
 // that reference those identities
@@ -116,6 +117,169 @@ func (s *batchState) prepareModifyColumn(statement spec.Statement, alter *spec.A
 		next.NotNull = true
 	}
 	applyModifyColumnDefaults(&next, entry.shape)
+	shape := cloneTableSnapshot(entry.shape)
+	shape.Columns[index] = next
+	clearModifyAffectedStats(shape)
+	return modifyPublication{
+		replaceKey: primary,
+		replace: &batchTableEntry{
+			state:         tablePresent,
+			shape:         shape,
+			displaySchema: entry.displaySchema,
+			displayTable:  entry.displayTable,
+		},
+	}
+}
+
+// applyColumnDefault publishes the T07 default-only setter post-state: SET
+// DEFAULT replaces just the default facts on an existing column and DROP
+// DEFAULT clears them; every other fact (type, generated, visibility,
+// identity) is preserved. A missing column or any unprovable premise uses the
+// shared conservative tombstone, never a fabricated shape.
+func (s *batchState) applyColumnDefault(ctx context.Context, statement spec.Statement, alter *spec.Alter, targets []spec.Table) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	publication := s.prepareColumnDefault(statement, alter, targets)
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	publication.apply(s)
+	return nil
+}
+
+func (s *batchState) prepareColumnDefault(statement spec.Statement, alter *spec.Alter, targets []spec.Table) modifyPublication {
+	targetKeys := s.modifyTargetKeys(targets)
+	dependents := s.modifyIdentityDependentKeys(targetKeys)
+	invalidate := func(extra ...batchTableKey) modifyPublication {
+		keys := append([]batchTableKey{}, dependents...)
+		keys = append(keys, extra...)
+		return modifyPublication{invalidate: keys}
+	}
+	// The setter publishes only through one provable shape: exactly one bound
+	// target that matches the statement identity, exactly one audited action,
+	// and a default-only definition. Anything less is conservative — and a
+	// zero key is never invented as a tombstone target.
+	primary, singleBound := boundSingleTarget(s, statement.DDL, targets)
+	if !singleBound || !fullyAuditedStatement(s.dialect, statement) || statement.DDL == nil ||
+		len(statement.DDL.Alter) != 1 || alter == nil || alter.Column == nil || alter.Column.Definition == nil {
+		return invalidate(targetKeys...)
+	}
+	entry := s.entries[primary]
+	if entry == nil || entry.state == tableUnknown || entry.state == tableAbsent {
+		return invalidate(primary)
+	}
+	// A withheld column set cannot prove which column carries the default —
+	// keep the target's other known members but stay non-precise.
+	if entry.shape == nil || entry.shape.Columns == nil {
+		return invalidate()
+	}
+	index := modifyColumnIndex(entry.shape.Columns, alter.Column.OldName)
+	if index < 0 {
+		return invalidate(primary)
+	}
+	next := cloneColumn(entry.shape.Columns[index])
+	if alter.Action == "set_column_default" {
+		if next.Generated != nil {
+			// A generated column cannot carry a default: publishing both
+			// would fabricate a shape the server refuses.
+			return invalidate(primary)
+		}
+		definition := alter.Column.Definition
+		next.HasDefault = definition.HasDefault
+		next.DefaultIsNull = definition.DefaultIsNull
+		next.DefaultValue = definition.DefaultValue
+		next.DefaultIsCurrentTimestamp = definition.DefaultIsCurrentTimestamp
+		next.DefaultExpression = spec.CloneExpressionFacts(definition.DefaultExpression)
+		next.DefaultKind = definition.DefaultKind
+	} else {
+		next.HasDefault = false
+		next.DefaultIsNull = false
+		next.DefaultValue = ""
+		next.DefaultIsCurrentTimestamp = false
+		next.DefaultExpression = nil
+		next.DefaultKind = ""
+	}
+	shape := cloneTableSnapshot(entry.shape)
+	shape.Columns[index] = next
+	clearModifyAffectedStats(shape)
+	return modifyPublication{
+		replaceKey: primary,
+		replace: &batchTableEntry{
+			state:         tablePresent,
+			shape:         shape,
+			displaySchema: entry.displaySchema,
+			displayTable:  entry.displayTable,
+		},
+	}
+}
+
+// boundSingleTarget reports the one table identity the statement is bound to:
+// exactly one usable target, matching the statement's own Table identity.
+// A zero or ambiguous binding is never a publication target.
+func boundSingleTarget(s *batchState, ddl *spec.DDL, targets []spec.Table) (batchTableKey, bool) {
+	if ddl == nil || ddl.Table == nil || len(targets) != 1 {
+		return batchTableKey{}, false
+	}
+	keys := s.modifyTargetKeys(targets)
+	if len(keys) != 1 {
+		return batchTableKey{}, false
+	}
+	if keys[0] != s.keyFor(s.schema, *ddl.Table) {
+		return batchTableKey{}, false
+	}
+	return keys[0], true
+}
+
+// applyColumnVisibility publishes the T07 visibility-setter post-state: SET
+// VISIBLE|INVISIBLE replaces just the effective visibility on an existing
+// column; every other fact (type, generated, default, identity) is preserved.
+// Unprovable premises use the shared conservative tombstone.
+func (s *batchState) applyColumnVisibility(ctx context.Context, statement spec.Statement, alter *spec.Alter, targets []spec.Table) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	publication := s.prepareColumnVisibility(statement, alter, targets)
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	publication.apply(s)
+	return nil
+}
+
+func (s *batchState) prepareColumnVisibility(statement spec.Statement, alter *spec.Alter, targets []spec.Table) modifyPublication {
+	targetKeys := s.modifyTargetKeys(targets)
+	dependents := s.modifyIdentityDependentKeys(targetKeys)
+	invalidate := func(extra ...batchTableKey) modifyPublication {
+		keys := append([]batchTableKey{}, dependents...)
+		keys = append(keys, extra...)
+		return modifyPublication{invalidate: keys}
+	}
+	primary, singleBound := boundSingleTarget(s, statement.DDL, targets)
+	if !singleBound || !fullyAuditedStatement(s.dialect, statement) || statement.DDL == nil ||
+		len(statement.DDL.Alter) != 1 || alter == nil || alter.Column == nil || alter.Column.Definition == nil {
+		return invalidate(targetKeys...)
+	}
+	visibility := alter.Column.Definition.Visibility
+	if visibility != spec.ColumnVisibilityVisible && visibility != spec.ColumnVisibilityInvisible {
+		return invalidate(primary)
+	}
+	entry := s.entries[primary]
+	if entry == nil || entry.state == tableUnknown || entry.state == tableAbsent {
+		return invalidate(primary)
+	}
+	if entry.shape == nil || entry.shape.Columns == nil {
+		return invalidate()
+	}
+	index := modifyColumnIndex(entry.shape.Columns, alter.Column.OldName)
+	if index < 0 {
+		return invalidate(primary)
+	}
+	next := cloneColumn(entry.shape.Columns[index])
+	next.Visibility = visibility
+	// The stored fact is the effective visibility; whether the attribute was
+	// authored explicitly is a declaration fact state does not claim.
+	next.VisibilityExplicit = false
 	shape := cloneTableSnapshot(entry.shape)
 	shape.Columns[index] = next
 	clearModifyAffectedStats(shape)

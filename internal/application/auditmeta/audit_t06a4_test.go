@@ -124,13 +124,13 @@ func (c t06a4Conn) answer(query string) t06a4Result {
 		// id INT PRIMARY KEY, a/b VARCHAR(8) with SQL NULL defaults,
 		// c VARCHAR(8) carrying the variant default, d DEFAULT '<nil>'.
 		return t06a4Result{
-			cols: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra"},
+			cols: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"},
 			rows: [][]driver.Value{
-				{"id", "int", nil, nil, "", nil, "NO", ""},
-				{"a", "varchar(8)", nil, nil, "", nil, "YES", ""},
-				{"b", "varchar(8)", nil, nil, "", nil, "YES", ""},
-				{"c", "varchar(8)", nil, nil, "", c.fixture.cDefault, "YES", ""},
-				{"d", "varchar(8)", nil, nil, "", "<nil>", "YES", ""},
+				{"id", "int", nil, nil, "", nil, "NO", "", ""},
+				{"a", "varchar(8)", nil, nil, "", nil, "YES", "", ""},
+				{"b", "varchar(8)", nil, nil, "", nil, "YES", "", ""},
+				{"c", "varchar(8)", nil, nil, "", c.fixture.cDefault, "YES", "", ""},
+				{"d", "varchar(8)", nil, nil, "", "<nil>", "YES", "", ""},
 			},
 		}
 	case strings.Contains(query, "information_schema.statistics"):

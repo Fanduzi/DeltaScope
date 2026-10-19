@@ -1,6 +1,6 @@
 // Package audit computes statement and aggregate audit-coverage status.
 // input: extracted domain statements with parser-attached boundary markers, ordered-state resource-limit markers, and extraction facts
-// output: per-statement coverage status plus bounded unsupported evidence for unaudited aspects and exhausted-budget markers
+// output: per-statement coverage status plus bounded unsupported evidence for unaudited aspects (including the T07 expression_dependencies unknown-function boundary) and exhausted-budget markers
 // pos: application coverage classification between extraction and reporting (issue #82)
 // note: if this file changes, update this header and module README.md.
 package audit
@@ -34,11 +34,20 @@ var auditedAlterActionsMySQL = map[string]struct{}{
 	"rename_index":     {},
 	"drop_foreign_key": {},
 	"table_option":     {},
+	// T07: the canonical MySQL/TiDB SET/DROP DEFAULT actions are audited by
+	// the advanced-column facts and ordered-state setter. SET
+	// VISIBLE|INVISIBLE is audited under MySQL only; TiDB accepts the syntax
+	// at the vendor boundary below.
+	"set_column_default":    {},
+	"drop_column_default":   {},
+	"set_column_visibility": {},
 }
 
 // auditedAlterActionsTiDB extends the shared audited set with the TiDB
 // placement binding the inventory covers at notice level. DROP CHECK parses but
-// has no rule consumer, so it stays unaudited.
+// has no rule consumer, so it stays unaudited. SET VISIBLE|INVISIBLE stays in
+// the audited set for both dialects: the action itself is modeled, and the
+// column aspect below emits the TiDB vendor-boundary evidence.
 var auditedAlterActionsTiDB = func() map[string]struct{} {
 	set := make(map[string]struct{}, len(auditedAlterActionsMySQL)+1)
 	for action := range auditedAlterActionsMySQL {
@@ -174,6 +183,35 @@ func tidbOnlyTableOption(name string, dialect spec.Dialect) bool {
 	return false
 }
 
+// columnExpressionFacts returns the declared expression records on one
+// column — generated expression first, then the expression default.
+func columnExpressionFacts(column spec.Column) []spec.ExpressionFacts {
+	var exprs []spec.ExpressionFacts
+	if column.Generated != nil {
+		exprs = append(exprs, column.Generated.Expression)
+	}
+	if column.DefaultExpression != nil {
+		exprs = append(exprs, *column.DefaultExpression)
+	}
+	return exprs
+}
+
+// expressionFactsUnknownReason reports the bounded unaudited boundary marker
+// an expression carries: the specific unknown-function boundary, any other
+// unknown-expression shape or traversal limit, or empty when the facts are
+// fully known.
+func expressionFactsUnknownReason(expr spec.ExpressionFacts) string {
+	if expr.Known {
+		return ""
+	}
+	for _, feature := range expr.Features {
+		if feature == spec.ExpressionFeatureUnknownFunc {
+			return "unknown_function"
+		}
+	}
+	return "unknown_expression"
+}
+
 // columnAspectGaps emits bounded evidence for parsed column attributes no rule
 // audits: the typed AUTO_RANDOM fact (a TiDB-only feature, so a vendor
 // boundary under MySQL — owner T23) and every unextracted column option the
@@ -190,6 +228,25 @@ func columnAspectGaps(dialect spec.Dialect, op spec.DDLOperation, action string,
 			prefix+".auto_random", dialect == spec.DialectMySQL,
 			map[string]any{"aspect": "column"},
 		))
+	}
+	if column.VisibilityExplicit && dialect == spec.DialectTiDB {
+		// Column VISIBLE/INVISIBLE is MySQL-only syntax the shared parser
+		// accepts for TiDB: a vendor boundary, not unaudited analysis.
+		gaps = append(gaps, aspectGap(
+			prefix+".visibility", true,
+			map[string]any{"aspect": "column"},
+		))
+	}
+	for _, expr := range columnExpressionFacts(column) {
+		if reason := expressionFactsUnknownReason(expr); reason != "" {
+			// An unprovable expression is the bounded T07 unaudited boundary:
+			// the dependency answer is withheld even when the rules are off.
+			gaps = append(gaps, aspectGap(
+				prefix+".expression_dependencies", false,
+				map[string]any{"aspect": "column", "reason": reason},
+			))
+			break
+		}
 	}
 	for _, option := range column.UnextractedOptions {
 		// GLOBAL-qualified inline index options and the CLUSTERED/

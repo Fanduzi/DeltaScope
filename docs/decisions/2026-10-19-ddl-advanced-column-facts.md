@@ -1,13 +1,17 @@
 # Advanced column facts and conditional dependency analysis
 
-- Date: 2026-10-19
-- Status: Accepted for the bounded T07/#86 implementation contract, not an
-  external acceptance or issue-closure decision.
-- Context: #79 separates parser recognition, DDL Semantic Coverage, Audit
-  Evidence Gaps and policy Verdict. T05 already provides ordered conditional
-  schema state; T06 and A17 preserve ordinary-column source facts.
-- Contract: [T07 advanced columns](../work-plans/t07-advanced-columns/CONTRACT.md).
-- Sources: [versioned sources and native distinctions](../work-plans/t07-advanced-columns/SOURCES.md).
+Date: 2026-10-19
+Status: Accepted for the bounded T07/#86 implementation contract, not external
+acceptance or issue closure.
+Related milestone: #79; task #86/T07.
+Contract: [T07 advanced columns](../work-plans/t07-advanced-columns/CONTRACT.md).
+Sources: [versioned sources and native distinctions](../work-plans/t07-advanced-columns/SOURCES.md).
+
+## Context
+
+#79 separates parser recognition, DDL Semantic Coverage, Audit Evidence Gaps
+and policy Verdict. T05 already provides ordered conditional schema state;
+T06 and A17 preserve ordinary-column source facts.
 
 ## Decision
 

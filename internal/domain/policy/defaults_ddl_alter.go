@@ -385,6 +385,25 @@ func ddlAlterRules() map[string]RulePolicy {
 				"required": true,
 			},
 		},
+		"ddl.alter.column.dependency.require": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params: map[string]any{
+				"required": true,
+			},
+		},
+		"ddl.column.advanced.compatibility.require": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params: map[string]any{
+				"required": true,
+				"features": []string{
+					"generated",
+					"expression_default",
+					"visibility",
+				},
+			},
+		},
 		"ddl.alter.add_index.exists.forbid": {
 			Enabled: true,
 			Level:   rule.LevelBlocker,

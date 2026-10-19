@@ -22,7 +22,7 @@ CLI adapter layer for the DeltaScope application.
 | query_access_postgresql_no_leak_test.go | PostgreSQL 17 integration no-leak coverage for online `COUNT(1)`, excluded shapes, and default-offline CLI paths |
 | rules.go | Implements `rules list` (with dialect/level/kind/category/search/format/limit filters) and `rules explain <rule-id>` on top of the shipped rule catalog, including text and JSON output |
 | config.go | Implements the `config` command group, including `lint` (semantic validation plus rule-level replacement-hazard warnings and `--strict`), `show-default`, and wiring for `status` |
-| config_init.go | Implements `config init` and emits a deterministic default YAML template with empty string params encoded as `""` |
+| config_init.go | Implements `config init` and emits a deterministic default YAML template with empty string params encoded as `""` and string-list params encoded as quoted flow sequences |
 | config_init_test.go | Verifies `config init` / `show-default` / shipped example YAML lint clean, encode empty strings as quoted YAML, preserve a hand-written full-spec override, and leave default-policy audit findings unchanged |
 | config_status.go | Implements `config status <rule-id>`, showing the effective ON/OFF state, Loaded, level, default/current snapshots, config effect, and FK-forbid suppression for one rule via the config status application service, with text and JSON output |
 | capabilities.go | Implements the `capabilities` summary command and shared rendering helpers for human/agent discovery of shipped dialects, modes, inputs, outputs, and public surfaces (`cli`, `http`, `mcp`, `go-api`) |

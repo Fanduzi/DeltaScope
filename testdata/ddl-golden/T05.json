@@ -656,7 +656,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 2,
     "unsupported": 2,
     "coverage": "incomplete",
     "statement_coverage": [
@@ -1024,28 +1024,21 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
+     "complete"
     ],
-    "unsupported_features": [
-     "create_table.column.generated"
-    ],
+    "unsupported_features": [],
     "statement_sql": [
      "CREATE TABLE t (a INT, b INT GENERATED ALWAYS AS (a+1) STORED);"
     ],
-    "unsupported_entries": [
-     {
-      "feature": "create_table.column.generated",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
-     }
-    ]
+    "unsupported_entries": []
    }
   },
   {
@@ -1347,7 +1340,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 2,
     "unsupported": 2,
     "coverage": "incomplete",
     "statement_coverage": [
@@ -1759,7 +1752,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 2,
     "unsupported": 2,
     "coverage": "incomplete",
     "statement_coverage": [
@@ -2001,7 +1994,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 3,
     "unsupported": 3,
     "coverage": "incomplete",
     "statement_coverage": [
@@ -2059,7 +2052,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 3,
     "unsupported": 3,
     "coverage": "incomplete",
     "statement_coverage": [
@@ -2264,7 +2257,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 2,
     "unsupported": 2,
     "coverage": "incomplete",
     "statement_coverage": [
@@ -2309,7 +2302,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 2,
     "unsupported": 2,
     "coverage": "incomplete",
     "statement_coverage": [
@@ -2646,7 +2639,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 2,
     "unsupported": 2,
     "coverage": "incomplete",
     "statement_coverage": [
@@ -2691,7 +2684,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 2,
     "unsupported": 2,
     "coverage": "incomplete",
     "statement_coverage": [
@@ -2944,7 +2937,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 2,
     "unsupported": 2,
     "coverage": "incomplete",
     "statement_coverage": [
@@ -3081,7 +3074,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 2,
     "unsupported": 2,
     "coverage": "incomplete",
     "statement_coverage": [
@@ -3297,7 +3290,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 5,
     "coverage": "incomplete",
     "statement_coverage": [
      "incomplete"
@@ -3350,7 +3343,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 2,
     "coverage": "incomplete",
     "statement_coverage": [
      "incomplete"
@@ -3388,7 +3381,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 2,
     "coverage": "incomplete",
     "statement_coverage": [
      "incomplete"
@@ -3426,7 +3419,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 2,
     "coverage": "incomplete",
     "statement_coverage": [
      "incomplete"
@@ -3464,7 +3457,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 2,
     "coverage": "incomplete",
     "statement_coverage": [
      "incomplete"
@@ -3646,7 +3639,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 2,
     "coverage": "incomplete",
     "statement_coverage": [
      "incomplete"
@@ -3690,7 +3683,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 2,
     "coverage": "incomplete",
     "statement_coverage": [
      "incomplete"
@@ -4079,7 +4072,7 @@
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
+    "diagnostics": 3,
     "coverage": "incomplete",
     "statement_coverage": [
      "incomplete"
@@ -6311,47 +6304,23 @@
     }
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 5,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
      "complete",
      "complete",
-     "incomplete",
-     "unverified",
+     "complete",
+     "complete",
      "complete"
     ],
-    "evidence_gaps": 2,
-    "evidence_gap_entries": [
-     {
-      "index": 3,
-      "rule_id": "ddl.table.exists.alter.require",
-      "reason_code": "unknown_table_state",
-      "required_facts": [
-       "target_table.existence"
-      ]
-     },
-     {
-      "index": 3,
-      "rule_id": "ddl.alter.add_column.exists.forbid",
-      "reason_code": "unknown_table_state",
-      "required_facts": [
-       "target_table.columns",
-       "target_table.existence"
-      ]
-     }
-    ],
-    "unsupported_entries": [
-     {
-      "index": 2,
-      "feature": "alter_table.add_columns.column.generated",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
-     }
-    ],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "unsupported_entries": [],
     "fail_on_triggered": false
    },
    "post_verify": [
@@ -6688,17 +6657,17 @@
     }
    ],
    "expect": {
-    "exit": 1,
+    "exit": 0,
     "verdict": "review",
     "statements": 5,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
     "statement_coverage": [
      "complete",
      "complete",
-     "incomplete",
+     "complete",
      "unverified",
      "complete"
     ],
@@ -6722,13 +6691,7 @@
       ]
      }
     ],
-    "unsupported_entries": [
-     {
-      "index": 2,
-      "feature": "alter_table.add_columns.column.generated",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
-     }
-    ],
+    "unsupported_entries": [],
     "fail_on_triggered": false
    },
    "post_verify": [

@@ -204,18 +204,29 @@ func auditWithLimits(ctx context.Context, request Request, limits auditLimits) (
 			result.Verdict = report.VerdictReview
 		}
 		if len(result.Unsupported) > 0 {
-			result.Diagnostics = append(result.Diagnostics, newUnsupportedStatementDiagnostic(request.Dialect))
+			result.Diagnostics = append(result.Diagnostics, unsupportedStatementDiagnostics(request.Dialect, result.Unsupported)...)
 		}
 		return result, errParserUnsupported
 	}
 	if len(result.Unsupported) > 0 {
-		result.Diagnostics = append(result.Diagnostics, newUnsupportedStatementDiagnostic(request.Dialect))
+		result.Diagnostics = append(result.Diagnostics, unsupportedStatementDiagnostics(request.Dialect, result.Unsupported)...)
 		if result.Verdict == report.VerdictPass {
 			result.Verdict = report.VerdictReview
 		}
 		return result, fmt.Errorf("%w: %d item(s)", ErrUnsupportedStatement, len(result.Unsupported))
 	}
 	return result, nil
+}
+
+// unsupportedStatementDiagnostics emits one bounded diagnostic per
+// unsupported evidence entry — the frozen contract's diagnostics count
+// mirrors the unsupported-entry count exactly.
+func unsupportedStatementDiagnostics(dialect spec.Dialect, unsupported []spec.UnsupportedDetail) []spec.Diagnostic {
+	diagnostics := make([]spec.Diagnostic, 0, len(unsupported))
+	for range unsupported {
+		diagnostics = append(diagnostics, newUnsupportedStatementDiagnostic(dialect))
+	}
+	return diagnostics
 }
 
 func parserFailureDiagnostics(failures []parseFailure, dialect spec.Dialect) []spec.Diagnostic {
