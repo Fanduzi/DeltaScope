@@ -491,9 +491,9 @@ func TestT07ExpressionDefaultCompatVersions(t *testing.T) {
 			t.Fatalf("findings/gaps = %+v/%+v", result.Statements[0].Findings, result.Statements[0].EvidenceGaps)
 		}
 	})
-	t.Run("tidb_alter_set_default_uuid_non_varchar", func(t *testing.T) {
-		// uuid() off the observed VARCHAR family is an unobserved cell: a
-		// bounded source-type gap, never a clean pass.
+	t.Run("tidb_alter_set_default_uuid_int", func(t *testing.T) {
+		// uuid() on an INT target is an observed positive cell (TiDB 8.5.0
+		// stores the expression): a clean pass on the compat seam.
 		snapshot := presentTable("golden", "t", "a")
 		provider := &t05PresentProvider{snapshots: map[string]*spec.TableSnapshot{
 			"golden.t": snapshot,
@@ -509,13 +509,32 @@ func TestT07ExpressionDefaultCompatVersions(t *testing.T) {
 		if err != nil {
 			t.Fatalf("audit: %v", err)
 		}
-		if len(result.Statements[0].Findings) != 0 {
-			t.Fatalf("findings = %+v, want none", result.Statements[0].Findings)
+		if len(result.Statements[0].Findings) != 0 || len(result.Statements[0].EvidenceGaps) != 0 {
+			t.Fatalf("findings/gaps = %+v/%+v, want none", result.Statements[0].Findings, result.Statements[0].EvidenceGaps)
 		}
-		gaps := result.Statements[0].EvidenceGaps
-		if len(gaps) != 1 || gaps[0].ReasonCode != "incomplete_source_column" ||
-			len(gaps[0].RequiredFacts) != 1 || gaps[0].RequiredFacts[0] != "source_column.type" {
-			t.Fatalf("gaps = %+v, want incomplete_source_column[source_column.type]", gaps)
+	})
+	t.Run("tidb_alter_set_default_uuid_on_date", func(t *testing.T) {
+		// A single bare allowed call stores the expression verbatim on
+		// every non-BLOB/TEXT/JSON target — uuid() on DATE is an observed
+		// verbatim acceptance.
+		snapshot := presentTable("golden", "t", "a")
+		snapshot.Columns[0].Type = "date"
+		provider := &t05PresentProvider{snapshots: map[string]*spec.TableSnapshot{
+			"golden.t": snapshot,
+		}}
+		provider.t07InstanceVersion = "8.0.11-TiDB-v8.5.0"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:              "ALTER TABLE t ALTER COLUMN a SET DEFAULT (uuid())",
+			Dialect:          spec.DialectTiDB,
+			Schema:           "golden",
+			ConfigPath:       compatOnly(t),
+			MetadataProvider: provider,
+		})
+		if err != nil {
+			t.Fatalf("audit: %v", err)
+		}
+		if len(result.Statements[0].Findings) != 0 || len(result.Statements[0].EvidenceGaps) != 0 {
+			t.Fatalf("findings/gaps = %+v/%+v, want none", result.Statements[0].Findings, result.Statements[0].EvidenceGaps)
 		}
 	})
 	t.Run("mysql_set_default_on_prior_generated", func(t *testing.T) {
@@ -546,9 +565,14 @@ func TestT07ExpressionDefaultCompatVersions(t *testing.T) {
 			t.Fatalf("findings = %+v, want expression_construct_forbidden", findings)
 		}
 	})
-	t.Run("tidb_alter_set_json_default", func(t *testing.T) {
+	t.Run("tidb_alter_set_json_default_on_json_target", func(t *testing.T) {
+		// A JSON-target column cannot carry a default at all (observed
+		// 1101) — the rescoped tidb_alter_json_default issue, independent
+		// of which allowed callee is used.
+		snapshot := presentTable("golden", "t", "a")
+		snapshot.Columns[0].Type = "json"
 		provider := &t05PresentProvider{snapshots: map[string]*spec.TableSnapshot{
-			"golden.t": presentTable("golden", "t", "a"),
+			"golden.t": snapshot,
 		}}
 		provider.t07InstanceVersion = "8.0.11-TiDB-v8.5.0"
 		result, err := AuditSQL(context.Background(), Request{
@@ -564,6 +588,51 @@ func TestT07ExpressionDefaultCompatVersions(t *testing.T) {
 		findings := result.Statements[0].Findings
 		if len(findings) != 1 || findings[0].Metadata["reason_code"] != "tidb_alter_json_default" {
 			t.Fatalf("findings = %+v, want tidb_alter_json_default", findings)
+		}
+	})
+	t.Run("tidb_alter_set_json_default_varchar", func(t *testing.T) {
+		// json_object on a VARCHAR target is an observed positive cell —
+		// the function is allowed and the bare call stores the expression.
+		snapshot := presentTable("golden", "t", "a")
+		snapshot.Columns[0].Type = "varchar(255)"
+		provider := &t05PresentProvider{snapshots: map[string]*spec.TableSnapshot{
+			"golden.t": snapshot,
+		}}
+		provider.t07InstanceVersion = "8.0.11-TiDB-v8.5.0"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:              "ALTER TABLE t ALTER COLUMN a SET DEFAULT (json_object('k', 1))",
+			Dialect:          spec.DialectTiDB,
+			Schema:           "golden",
+			ConfigPath:       compatOnly(t),
+			MetadataProvider: provider,
+		})
+		if err != nil {
+			t.Fatalf("audit: %v", err)
+		}
+		if len(result.Statements[0].Findings) != 0 || len(result.Statements[0].EvidenceGaps) != 0 {
+			t.Fatalf("findings/gaps = %+v/%+v, want none", result.Statements[0].Findings, result.Statements[0].EvidenceGaps)
+		}
+	})
+	t.Run("tidb_alter_set_json_default_on_int", func(t *testing.T) {
+		// json_object on INT is an observed verbatim acceptance — the
+		// bare-call setter stores the expression, deferred to INSERT.
+		snapshot := presentTable("golden", "t", "a")
+		provider := &t05PresentProvider{snapshots: map[string]*spec.TableSnapshot{
+			"golden.t": snapshot,
+		}}
+		provider.t07InstanceVersion = "8.0.11-TiDB-v8.5.0"
+		result, err := AuditSQL(context.Background(), Request{
+			SQL:              "ALTER TABLE t ALTER COLUMN a SET DEFAULT (json_object('k', 1))",
+			Dialect:          spec.DialectTiDB,
+			Schema:           "golden",
+			ConfigPath:       compatOnly(t),
+			MetadataProvider: provider,
+		})
+		if err != nil {
+			t.Fatalf("audit: %v", err)
+		}
+		if len(result.Statements[0].Findings) != 0 || len(result.Statements[0].EvidenceGaps) != 0 {
+			t.Fatalf("findings/gaps = %+v/%+v, want none", result.Statements[0].Findings, result.Statements[0].EvidenceGaps)
 		}
 	})
 }

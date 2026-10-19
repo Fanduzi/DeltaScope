@@ -437,6 +437,9 @@ func (p *Provider) loadColumns(ctx context.Context, snapshot *spec.TableSnapshot
 		// (DefaultIsCurrentTimestamp, no DefaultExpression). Undecodable or
 		// absent expression text is an explicit unknown fact.
 		if extraTokens["default_generated"] && !column.DefaultIsCurrentTimestamp {
+			// Catalog-stored expression defaults are always parenthesized —
+			// the flag mirrors the authored-syntax fact, not the value.
+			column.DefaultParenthesized = true
 			if defaultValue.Valid && strings.TrimSpace(defaultValue.String) != "" {
 				column.DefaultExpression = ptrExpressionFacts(tidbparser.ParseCatalogExpressionFacts(defaultValue.String))
 			} else {

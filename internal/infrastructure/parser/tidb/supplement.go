@@ -25,20 +25,22 @@ type supplementedStatement struct {
 
 // statementSupplements carries the typed facts one statement's supplement
 // sites recovered: declared column visibility keyed by parsed column name,
-// and the visibility value of a narrow `ALTER COLUMN c SET VISIBLE|INVISIBLE`
+// authored `DEFAULT (<expr>)` paren presence keyed by column name, and the
+// visibility value of a narrow `ALTER COLUMN c SET VISIBLE|INVISIBLE`
 // statement.
 type statementSupplements struct {
 	visibility       map[string]string
 	setterVisibility string
+	defaultParens    map[string]bool
 }
 
 type sqlTokKind byte
 
 const (
 	tokWord   sqlTokKind = iota
-	tokQIdent           // `backtick` identifier
-	tokStr              // 'single' or "double" string literal
-	tokPunct            // one punctuation byte
+	tokQIdent            // `backtick` identifier
+	tokStr               // 'single' or "double" string literal
+	tokPunct             // one punctuation byte
 )
 
 // sqlTok is one lexical token. Comments and whitespace never become tokens,
@@ -123,11 +125,14 @@ func (t sqlTok) identText(sqlText string) string {
 // defaultExprSite marks one `DEFAULT (<expr>)` occurrence in a column-option
 // or SET DEFAULT position. open is the `(` offset and innerStart/innerEnd
 // bound the inner expression bytes; bound tracks one-to-one placeholder
-// consumption after the rewrite parse.
+// consumption after the rewrite parse. column is the declared column name
+// the site belongs to — the authored parens fact rides to the extractor on
+// this identity because the grammar absorbs the outer wrapper.
 type defaultExprSite struct {
 	open       int
 	innerStart int
 	innerEnd   int
+	column     string
 	bound      bool
 }
 
@@ -381,6 +386,7 @@ func analyzeAlterSpec(toks []sqlTok, sqlText string, lo, hi int, plan *stmtSuppl
 		if i >= hi || !isIdentToken(toks[i]) {
 			return
 		}
+		column := toks[i].identText(sqlText)
 		i++
 		if i >= hi || !toks[i].wordIs(sqlText, "set") {
 			return
@@ -390,6 +396,7 @@ func analyzeAlterSpec(toks []sqlTok, sqlText string, lo, hi int, plan *stmtSuppl
 			i++
 			if i < hi && toks[i].kind == tokPunct && toks[i].text(sqlText) == "(" {
 				if site, ok := parenSite(toks, sqlText, i, hi); ok {
+					site.column = column
 					plan.defaults = append(plan.defaults, site)
 				}
 			}
@@ -473,6 +480,7 @@ func scanColumnDef(toks []sqlTok, sqlText string, lo, hi int, column string, pla
 		case tok.wordIs(sqlText, "default"):
 			if i+1 < hi && toks[i+1].kind == tokPunct && toks[i+1].text(sqlText) == "(" {
 				if site, ok := parenSite(toks, sqlText, i+1, hi); ok {
+					site.column = column
 					plan.defaults = append(plan.defaults, site)
 				}
 			}
@@ -623,6 +631,15 @@ func bindSupplementPlan(sqlText string, plan supplementPlan, parsed []ast.StmtNo
 		if !bindDefaultSites(sqlText, stmt, node) {
 			return nil, false
 		}
+		for _, site := range stmt.defaults {
+			if site.column == "" {
+				continue
+			}
+			if supp.defaultParens == nil {
+				supp.defaultParens = map[string]bool{}
+			}
+			supp.defaultParens[site.column] = true
+		}
 		if len(stmt.visibility) > 0 {
 			supp.visibility = map[string]string{}
 			for _, fact := range stmt.visibility {
@@ -641,9 +658,12 @@ func bindSupplementPlan(sqlText string, plan supplementPlan, parsed []ast.StmtNo
 }
 
 // bindDefaultSites substitutes the placeholder option expressions with the
-// real inner-expression ASTs. Each parsed DEFAULT option anchors inside
-// exactly one site (sites are byte-disjoint); a site consumed twice or never
-// fails the binding.
+// real inner-expression ASTs. A parsed DEFAULT option that anchors inside a
+// planned site is rebound to the authored inner expression; options outside
+// every site (bare literal defaults such as `DEFAULT 2` that the base
+// grammar already produced correctly) are left untouched. Two options
+// landing in the same site, or a planned site left unbound, fails the
+// binding.
 func bindDefaultSites(sqlText string, stmt *stmtSupplementPlan, node ast.StmtNode) bool {
 	for _, option := range defaultOptionNodes(node) {
 		pos := option.Expr.OriginTextPosition()
@@ -657,7 +677,10 @@ func bindDefaultSites(sqlText string, stmt *stmtSupplementPlan, node ast.StmtNod
 				site = candidate
 			}
 		}
-		if site == nil || site.bound {
+		if site == nil {
+			continue
+		}
+		if site.bound {
 			return false
 		}
 		expr, ok := parseSelectExpressionAST(sqlText[site.innerStart:site.innerEnd])
@@ -749,16 +772,21 @@ func runSupplementedParse(sqlText string) ([]ast.StmtNode, []error, bool) {
 
 // defaultOptionNodes enumerates the column default-value options a statement
 // exposes: CREATE TABLE columns and every ALTER column spec that carries a
-// ColumnDef (ADD/MODIFY/CHANGE and the SET/DROP DEFAULT setter).
+// ColumnDef (ADD/MODIFY/CHANGE and the SET/DROP DEFAULT setter). The
+// SET/DROP DEFAULT setter carries its value in a ColumnOptionNoOption whose
+// Expr is set, so those options are enumerated too.
 func defaultOptionNodes(stmt ast.StmtNode) []*ast.ColumnOption {
 	var options []*ast.ColumnOption
-	appendDefs := func(defs []*ast.ColumnDef) {
+	appendDefs := func(defs []*ast.ColumnDef, setSetter bool) {
 		for _, def := range defs {
 			if def == nil {
 				continue
 			}
 			for _, option := range def.Options {
-				if option != nil && option.Tp == ast.ColumnOptionDefaultValue {
+				if option == nil {
+					continue
+				}
+				if option.Tp == ast.ColumnOptionDefaultValue || (setSetter && option.Expr != nil) {
 					options = append(options, option)
 				}
 			}
@@ -766,10 +794,10 @@ func defaultOptionNodes(stmt ast.StmtNode) []*ast.ColumnOption {
 	}
 	switch node := stmt.(type) {
 	case *ast.CreateTableStmt:
-		appendDefs(node.Cols)
+		appendDefs(node.Cols, false)
 	case *ast.AlterTableStmt:
 		for _, alterSpec := range node.Specs {
-			appendDefs(alterSpec.NewColumns)
+			appendDefs(alterSpec.NewColumns, alterSpec.Tp == ast.AlterTableAlterColumn)
 		}
 	}
 	return options

@@ -451,3 +451,237 @@ Normal ff push to origin/workfree only after review/gates; verify live refs,
 parent chain and key remote raw originals. No main push, PR/merge/tag/release,
 issue comments/checkbox/closure or T08 work. Stop at ready for human review,
 not a fabricated external Reviewer or hosted-CI conclusion.
+
+## 11. R1 semantic closure amendment (authorized rework, same task)
+
+This section is a same-contract amendment frozen inside the rework ticket. It
+does not shrink or alter the 207 frozen identities, their SQL, profiles, or any
+expectation verified in §6–§8; it adds the two missing premises the original
+freeze did not cover and rescopes one misgeneralized cell on new native
+evidence. All classifications below were confirmed on the pinned anchors
+(mysql:5.7.44, mysql:8.0.46, mysql:8.4.10, pingcap/tidb:v8.5.0) before being
+written down; the probe transcripts are archived with the R1 evidence.
+
+### 11.1 Generated-column reference premises (R1-1)
+
+`assessGeneratedFeature` previously checked version, functions, and ALTER
+transitions but never validated the *reference premises* of a generated
+declaration. ColumnDependents/assessDependencyScope only operate at
+destructive ALTER time, so a self-reference, a missing column, a forward
+generated reference, or a cycle passed clean and published a definite
+post-state the server never created.
+
+Native truth (identical on all four anchors, observed):
+
+- Self-reference `b AS (b+1)` → ERROR 3107 ("Generated column can refer only
+  to generated columns defined prior to it").
+- Reference to a non-existent column → ERROR 1054.
+- Reference to a *generated* column not declared before it — forward
+  generated reference or any cycle — → ERROR 3107. A cycle necessarily
+  contains a non-prior generated edge, so ordering covers cycles.
+- Reference to an ordinary (non-generated) column at ANY position — including
+  declared after the generated column — is legal (`b AS (a+1), a INT`
+  accepts on all anchors).
+- A same-table qualified reference `AS (t.a+1)` binds normally; other
+  qualifiers are unobserved and stay a bounded gap.
+- A string literal of the same text is not a reference.
+
+Frozen classification (both products, declaration time, create_table and
+single-action add_columns/modify_column/change_column):
+
+- `generated_self_reference` — a bound reference resolves to the declaring
+  column's own identity (unqualified or owner-qualified). Determined
+  negative.
+- `generated_missing_column` — a bound reference names no candidate column.
+  Determined negative.
+- `generated_column_order` — a bound reference names a generated column not
+  ordered before the declaring column. Determined negative.
+- References to ordinary columns at any ordinal, or to generated columns
+  ordered before, carry no premise outcome.
+
+Candidate ordered column set:
+
+- `create_table`: the declared columns in order; owner qualifiers bind
+  through the create target's table/schema identity.
+- single-action `add_columns`: prior ordered columns plus the new column
+  appended last. An explicit FIRST|AFTER clause (`HasColumnPosition`) makes
+  the ordering unprovable → bounded gap, never an assumed position.
+- single-action `modify_column`/`change_column`: prior ordered columns with
+  the new definition substituted at the replaced column's prior ordinal.
+- Missing or withheld prior column set, absent source member (owned by the
+  existence checks), duplicate/empty names, unbindable qualifiers, and
+  same-statement sibling binds under multi-action ALTER are bounded evidence
+  gaps (`incomplete_source_column`, `unknown_table_state`,
+  `incomplete_alter_dependency_effects`) plus `UnresolvedTransition` — never
+  an assumed empty dependency set.
+- A generated column's unknown `ExpressionFacts` (Known=false) keeps the
+  existing `incomplete_source_column`/`expression_dependencies` gap; the
+  premise check adds nothing on top of an unenumerable reference set.
+
+Every determined negative above sets `InvalidTransition`: a provably
+rejected declaration cannot publish a reusable success shape, independent of
+policy switches. Legitimate positives (forward ordinary reference, literal
+text, prior-generated chains) keep their conditional post-states — generated
+dependency facts are preserved, and a following ordinary CREATE INDEX sees
+the real column set.
+
+### 11.2 TiDB expression-default whole-shape boundary (R1-2)
+
+The frozen `tidbAlterDefaultFunctions={uuid}` positive only required the
+*function-name set* to match, so `uuid()+1` and `CASE WHEN 1 THEN uuid()
+ELSE 'x' END` took the observed positive. Native probing shows TiDB's SET
+DEFAULT path evaluates the expression: a bare allowed call is stored as an
+expression, foldable expressions are stored as literals, and non-foldable or
+disallowed composites are rejected — while TiDB's CREATE parens-default
+grammar accepts only a bare function call.
+
+New minimal facts:
+
+- `ExpressionFacts.TopForm` — the paren-transparent root shape, one of
+  `call`, `literal`, `column`, `arithmetic`, `unary`, `case`, `subquery`,
+  `aggregate`, `other` (empty = not computable). Structural fact, computed
+  even when Known=false, like the existing construct markers.
+- `Column.DefaultParenthesized` — the default clause carried an authored
+  `DEFAULT (<expr>)` paren wrapper. Internal fact, deep-copyable.
+
+TiDB `set_column_default` responsibility table (expression defaults only —
+plain literal setters stay outside the feature):
+
+1. Prior gates unchanged: withheld column set → `unknown_table_state` gap +
+   `UnresolvedTransition`; missing member → existence-owned; prior generated
+   column → `expression_construct_forbidden` + `InvalidTransition`.
+2. NEW: prior type in the BLOB/TEXT/JSON family → `tidb_alter_json_default`
+   determined negative + `InvalidTransition`. RESCOPE: the frozen cell's
+   native rejection (1101) is the column-type restriction, not the function
+   family — `json_object` on a VARCHAR/INT target is accepted, while `uuid()`
+   on a JSON target is rejected. Prior type present but not in that family
+   proceeds; a prior with no usable type fact stays a `source_column.type`
+   gap.
+3. `DefaultParenthesized=false` → `tidb_default_expression` + invalid
+   (expression SET DEFAULT requires parens — 1064 on mysql80/84/tidb85).
+4. Subquery/aggregate → `expression_construct_forbidden`; `!Known` →
+   `incomplete_source_column` gap + unresolved; any bound column reference
+   → `tidb_default_expression` (1054 — references are rejected whether or
+   not the named column exists).
+5. Function allowlist over the whole tree, applied only when the authored
+   root is NOT a parens wrapper: a root-wrapped expression takes the pure
+   evaluation path where no allowlist check runs (observed
+   `((lower('x')))` folds to `'x'`). On the bare path every function name
+   must be in the observed set: observed disallowed `lower`, `concat`,
+   `uuid_short`, `now` → `tidb_default_expression` (3770); any unobserved
+   function → `incomplete_source_column`/`source_column.default_function`
+   gap + unresolved, never a clean pass and never a fabricated rejection.
+6. Root shape adjudication — the authored root node (not the
+   paren-transparent `TopForm` alone) selects the setter's two paths.
+   `ExpressionFacts.RootParenthesized` records whether the authored
+   outermost node is a parens wrapper: `(uuid())` stores verbatim,
+   `((uuid()))` is evaluated (both observed). Bare-call path first:
+   - `TopForm == call`, root NOT parenthesized, exactly one callee ⊆
+     the observed allowed set → positive; the setter stores the
+     expression verbatim on EVERY non-BLOB/TEXT/JSON target, because
+     evaluation is deferred to INSERT (`uuid()` observed verbatim on
+     varchar, char, int, bigint, decimal, double, float, year, bit,
+     enum, set, time, date, datetime, timestamp, varbinary;
+     `json_object`/`json_array` observed verbatim on varchar, int,
+     decimal, date, timestamp). Nested/multi-callee bare calls are an
+     unobserved composite → `source_column.default_composite` gap.
+   - `TopForm == call`, root NOT parenthesized, callee ⊆
+     {`current_timestamp`} → the timestamp-fold target table:
+     TIMESTAMP/DATETIME/DATE store the verbatim `CURRENT_TIMESTAMP`
+     default (observed); `varchar`/`char`/`bigint`/`double`/`time`
+     store a folded literal (observed — BIGINT/DOUBLE take the numeric
+     YYYYMMDDHHMMSS form, TIME takes the time part); `int`/`decimal`/
+     `year` are observed 1067 rejections; every other base is an
+     unproven coercion → composite gap.
+   - `TopForm == call`, root parenthesized → the evaluation path: the
+     disallowed-callee gate does not apply (observed `((lower('x')))`
+     folds to `'x'`). Only folded-literal outcomes are adjudicated —
+     `uuid` (and the identical uuid-literal CASE fold below) stores a
+     literal on `varchar`/`char`/`binary`/`varbinary` (observed), is a
+     determined rejection on numeric families/YEAR/BIT/ENUM/SET (1067)
+     and TIME (1292) (all observed), and accepts-but-stores-NULL on
+     DATE/DATETIME/TIMESTAMP → composite gap; `lower` folds on
+     `varchar` and rejects on `int` (observed), every other base a
+     gap; any other callee or multi-function wrapped call —
+     `((current_timestamp))`, `((now()))`, `((json_object(...)))`
+     included, observed accepted but storing a NULL catalog default —
+     stays a `source_column.default_composite` gap.
+   - `TopForm == case` (ref-free, root not parenthesized) with callees ⊆
+     {`uuid`} → folds to the same uuid string literal and shares the
+     uuid-fold table (varchar/char observed positive; int/bigint
+     observed 1067); any other callee or a wrapped CASE stays a
+     `source_column.default_composite` gap.
+   - `TopForm ∈ {arithmetic, unary}` with no functions → pure constant
+     folding stores a literal — observed on string, numeric, TIME,
+     ENUM, SET, BIT, and YEAR targets; DATE/DATETIME/TIMESTAMP accept
+     but store a NULL catalog default (unprovable shape) and every
+     other base stays a composite gap. With functions the
+     unwrapped form is the observed `uuid()+1` → 1292 eager-eval
+     rejection (`tidb_default_expression`); a wrapped function-bearing
+     composite is an unobserved eval cell → gap.
+   - Any other root → `incomplete_source_column`/
+     `source_column.default_composite` gap + unresolved.
+7. Folded-literal and temporal publication: positives above publish the
+   catalog shape the native setter stored — verbatim cells keep
+   expression facts, the temporal/DATE current_timestamp cell publishes
+   `DefaultIsCurrentTimestamp` presence, and folded cells publish
+   `HasDefault` literal presence without expression facts or a computed
+   value. `TiDBSetDefaultPublication`/
+   `TiDBLiteralSetDefaultPublication` mirror the verdict table for the
+   ordered-state seam.
+
+TiDB create-family (`create_table`, `add_columns`, `modify_column`,
+`change_column`):
+
+1. `DefaultParenthesized && (DefaultExpression == nil || TopForm != "call")`
+   → `tidb_default_expression` + invalid. The parens grammar accepts only a
+   bare allowed call — literals, `NULL`, arithmetic, and CASE in parens are
+   all 1064 (frozen d03/d04 cells unchanged; same reason).
+2. Otherwise when `DefaultExpression != nil`: `!Known` → gap + unresolved;
+   subquery/aggregate → `expression_construct_forbidden`; functions ⊆
+   {`now`, `current_timestamp`} → the temporal cell: declared temporal type
+   (timestamp/datetime) → positive, any other known type →
+   `tidb_default_expression` (1067), no usable type → `source_column.type`
+   gap; functions ∈ observed-disallowed {`uuid_short`, `lower`} →
+   `tidb_default_expression` (3770); any unobserved function → the
+   `source_column.default_function` gap; `TopForm != "call"` →
+   `tidb_default_expression`; functions ⊆ {`uuid`, `json_object`,
+   `json_array`, `json_quote`} AND `TopForm == "call"` → positive. `uuid()`
+   joins the allowed set on CREATE — observed positive this round (bare
+   `DEFAULT uuid()` is also legal TiDB; parens are transparent).
+
+MySQL:
+
+- `DefaultExpression != nil && !DefaultParenthesized` → new bounded reason
+  `expression_default_shape` + invalid (MySQL requires parens for
+  non-literal defaults — 1064 observed on 8.0/8.4 for both CREATE and SET).
+  Parenthesized expression defaults keep the existing ≥8.0.13 version gate
+  only; composite shapes (arithmetic, CASE, column references) are legal
+  MySQL semantics — never propagated from the TiDB boundary.
+- `DefaultParenthesized` on MySQL is recorded but changes no outcome.
+
+Shared state consequence: every `appendIssue` (every compat-rule determined
+negative is a proven native rejection) sets `InvalidTransition` — rejected
+transitions invalidate the affected identities and loaded dependents instead
+of publishing either a new or a reusable-prior success shape. Gap outcomes
+keep `UnresolvedTransition`. Folded-literal positives publish
+`HasDefault=true`, `DefaultValue=""`, `DefaultIsNull=false`,
+`DefaultIsCurrentTimestamp=false`, `DefaultExpression=nil`,
+`DefaultParenthesized=false` — honest presence of a literal default whose
+value is not provable without evaluation. Temporal-positive cells (the
+literal-class `(current_timestamp)` setter on TIMESTAMP/DATETIME/DATE)
+publish the catalog-visible temporal default:
+`DefaultIsCurrentTimestamp=true` with the authored parens cleared. Bare-call
+positives keep their expression facts.
+
+### 11.3 R1 oracle and regression requirements
+
+- The 207 identities are unchanged. New R1 negatives/positives enter the
+  permanent shared test suite (real parser + AuditSQL) and the bounded
+  native proof — never inside the frozen 207 IDs.
+- Old-code entry results for the fixed inputs are preserved verbatim
+  (G_VALID/G_SELF/G_MISSING/G_BASE_FORWARD/G_GENERATED_FORWARD/G_CYCLE/
+  G_LITERAL and post-statement controls; D_UUID/D_ARITH/D_CASE/D_PARENS/
+  D_CONSTANT plus MySQL contrast and CREATE-side CASE cells).
+- `DefaultParenthesized`, `TopForm`, and the new reason/required-fact
+  vocabulary are pinned here before production edit, per ticket.

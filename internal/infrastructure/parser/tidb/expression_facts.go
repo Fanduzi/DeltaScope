@@ -16,6 +16,7 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pingcap/tidb/pkg/parser/format"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
+	"github.com/pingcap/tidb/pkg/parser/opcode"
 	_ "github.com/pingcap/tidb/pkg/parser/test_driver"
 )
 
@@ -59,7 +60,9 @@ func expressionFacts(expr ast.ExprNode) spec.ExpressionFacts {
 		References: v.references,
 		Functions:  sortedKeys(v.functions),
 		Features:   sortedKeys(v.features),
+		TopForm:    expressionTopForm(expr),
 	}
+	_, facts.RootParenthesized = expr.(*ast.ParenthesesExpr)
 	facts.Known = v.known && v.nodes <= expressionFactNodeLimit && !v.limitHit
 	if v.limitHit {
 		facts.Known = false
@@ -71,6 +74,57 @@ func expressionFacts(expr ast.ExprNode) spec.ExpressionFacts {
 		facts.Fingerprint = expressionFingerprint(expr)
 	}
 	return facts
+}
+
+// expressionTopForm classifies the paren-transparent root node of one
+// expression into the shared spec root-shape vocabulary. The shape is a
+// structural fact computed even when the fact record is incomplete —
+// subqueries and aggregates classify before their unknown markers do.
+func expressionTopForm(expr ast.ExprNode) string {
+	switch node := unwrapParenthesesExpr(expr).(type) {
+	case *ast.FuncCallExpr:
+		return spec.ExpressionTopCall
+	case ast.ValueExpr:
+		return spec.ExpressionTopLiteral
+	case *ast.ColumnNameExpr:
+		return spec.ExpressionTopColumn
+	case *ast.BinaryOperationExpr:
+		// Only the numeric-coercing operators are "arithmetic": TiDB
+		// evaluates function-bearing numeric composites and rejects them at
+		// the coercion boundary (observed uuid()+1 -> 1292), while
+		// comparison/logical roots fold to a boolean literal whose outcome
+		// is not the observed negative.
+		if numericCoerceBinaryOp(node.Op) {
+			return spec.ExpressionTopArithmetic
+		}
+		return spec.ExpressionTopOther
+	case *ast.UnaryOperationExpr:
+		return spec.ExpressionTopUnary
+	case *ast.CaseExpr:
+		return spec.ExpressionTopCase
+	case *ast.SubqueryExpr, *ast.ExistsSubqueryExpr, *ast.CompareSubqueryExpr:
+		return spec.ExpressionTopSubquery
+	case *ast.AggregateFuncExpr:
+		return spec.ExpressionTopAggregate
+	case nil:
+		return ""
+	default:
+		_ = node
+		return spec.ExpressionTopOther
+	}
+}
+
+// numericCoerceBinaryOp reports whether a binary operator coerces its
+// operands to numbers — the family the TiDB SET DEFAULT evaluation path
+// rejects for non-numeric function results.
+func numericCoerceBinaryOp(op opcode.Op) bool {
+	switch op {
+	case opcode.Plus, opcode.Minus, opcode.Mul, opcode.Div, opcode.Mod,
+		opcode.IntDiv, opcode.LeftShift, opcode.RightShift,
+		opcode.And, opcode.Or, opcode.Xor:
+		return true
+	}
+	return false
 }
 
 // expressionFactVisitor collects column references, callee names, and
@@ -277,8 +331,18 @@ func parseSelectExpressionAST(text string) (ast.ExprNode, bool) {
 	if field == nil || field.Expr == nil || field.WildCard != nil || field.AsName.O != "" {
 		return nil, false
 	}
-	expr := unwrapParenthesesExpr(field.Expr)
-	if _, row := expr.(*ast.RowExpr); row {
+	// Strip exactly the parentheses layer this function added around the
+	// authored text: deeper authored parens stay part of the expression
+	// structure so `uuid()` and `(uuid())` keep their distinct roots.
+	expr := field.Expr
+	if paren, ok := expr.(*ast.ParenthesesExpr); ok && paren.Expr != nil {
+		expr = paren.Expr
+	}
+	inner := expr
+	if paren, ok := inner.(*ast.ParenthesesExpr); ok && paren.Expr != nil {
+		inner = paren.Expr
+	}
+	if _, row := inner.(*ast.RowExpr); row {
 		// A row constructor smuggles a second field — not one scalar
 		// expression.
 		return nil, false

@@ -58,7 +58,15 @@ const (
 	AdvancedReasonTiDBAlterJSONDefault         = "tidb_alter_json_default"
 	AdvancedReasonNoVisibleColumns             = "no_visible_columns"
 	AdvancedReasonExpressionConstructForbidden = "expression_construct_forbidden"
-	AdvancedReasonGeneratedFunctionForbidden   = "generated_function_forbidden"
+	// R1-1: declaration-time generated reference premise negatives. All
+	// observed on every pinned anchor (3107/1054/3107), product-shared.
+	AdvancedReasonGeneratedSelfReference = "generated_self_reference"
+	AdvancedReasonGeneratedMissingColumn = "generated_missing_column"
+	AdvancedReasonGeneratedColumnOrder   = "generated_column_order"
+	// R1-2: non-literal defaults written without parens are a determined
+	// negative on both products (1064 on CREATE and ALTER SET DEFAULT).
+	AdvancedReasonExpressionDefaultShape     = "expression_default_shape"
+	AdvancedReasonGeneratedFunctionForbidden = "generated_function_forbidden"
 )
 
 // Required-fact names shared with rule evidence gaps.
@@ -72,6 +80,9 @@ const (
 	AdvancedFactSourceVisibility         = "source_column.visibility"
 	AdvancedFactSourceType               = "source_column.type"
 	AdvancedFactAlterColumnDepEffects    = "alter.column_dependency_effects"
+	AdvancedFactSourceDefaultFunction    = "source_column.default_function"
+	AdvancedFactSourceDefaultComposite   = "source_column.default_composite"
+	AdvancedFactAlterColumnPosition      = "alter.column_position"
 )
 
 // Expression feature markers recorded in ExpressionFacts.Features; they are
@@ -131,14 +142,38 @@ func (r ColumnReference) Qualified() bool {
 // construct markers. Fingerprint is the SHA-256 of the restored expression
 // structure — equal fingerprints prove sameness; missing or unequal ones
 // prove nothing. Known=false means the expression semantics are unknown,
-// not that the reference set is empty.
+// not that the reference set is empty. TopForm is the paren-transparent
+// root shape — a structural fact computed even when Known=false, like the
+// construct markers.
 type ExpressionFacts struct {
 	References  []ColumnReference
 	Known       bool
 	Functions   []string
 	Features    []string
 	Fingerprint string
+	TopForm     string
+	// RootParenthesized records that the authored expression's outermost
+	// node is a parentheses wrapper. TopForm stays paren-transparent, so
+	// callers see both facts: `(uuid())` is TopForm=call with the root
+	// wrapped, `uuid()` is TopForm=call unwrapped — the TiDB setter stores
+	// the first as an evaluated literal and the second verbatim.
+	RootParenthesized bool
 }
+
+// Expression root-shape names recorded in ExpressionFacts.TopForm: the
+// paren-transparent outermost node class. An empty TopForm means the shape
+// could not be computed — never a positive.
+const (
+	ExpressionTopCall       = "call"
+	ExpressionTopLiteral    = "literal"
+	ExpressionTopColumn     = "column"
+	ExpressionTopArithmetic = "arithmetic"
+	ExpressionTopUnary      = "unary"
+	ExpressionTopCase       = "case"
+	ExpressionTopSubquery   = "subquery"
+	ExpressionTopAggregate  = "aggregate"
+	ExpressionTopOther      = "other"
+)
 
 // LocalReferences returns unqualified references — the only form that binds
 // a column of the owning table without a qualifier.
@@ -536,9 +571,10 @@ func dependencyScopeAction(alter Alter) (string, bool) {
 // statementColumnFacts collects the (column, action) pairs carrying
 // potentially advanced definitions, in statement order.
 type advancedColumnFact struct {
-	column  *Column
-	action  string
-	oldName string
+	column     *Column
+	action     string
+	oldName    string
+	positioned bool
 }
 
 func statementColumnFacts(ddl *DDL) []advancedColumnFact {
@@ -560,7 +596,7 @@ func statementColumnFacts(ddl *DDL) []advancedColumnFact {
 			switch alter.Action {
 			case "add_columns", "modify_column", "change_column",
 				"set_column_default", "set_column_visibility":
-				out = append(out, advancedColumnFact{column: alter.Column.Definition, action: alter.Action, oldName: alter.Column.OldName})
+				out = append(out, advancedColumnFact{column: alter.Column.Definition, action: alter.Action, oldName: alter.Column.OldName, positioned: alter.HasColumnPosition})
 			}
 		}
 	}
@@ -573,7 +609,11 @@ func columnFeatures(column *Column, action string) []string {
 	if column.Generated != nil {
 		features = append(features, AdvancedFeatureGenerated)
 	}
-	if column.DefaultExpression != nil {
+	// An authored `DEFAULT (<expr>)` wrapper is expression-default surface
+	// even when the inner expression is a literal: TiDB's parens grammar
+	// rejects the literal form while MySQL accepts it — the feature must be
+	// present for the dialect-specific outcome to attach.
+	if column.DefaultExpression != nil || column.DefaultParenthesized {
 		features = append(features, AdvancedFeatureExpressionDefault)
 	}
 	if action == "set_column_visibility" || column.VisibilityExplicit {
@@ -609,22 +649,47 @@ var nondeterministicGeneratedFunctions = map[string]bool{
 }
 
 // tidbCreateDefaultFunctions is the observed TiDB expression-default function
-// set for CREATE-family declarations.
+// set for CREATE-family declarations. uuid() joined the observed positives in
+// the R1 evidence round (accepted on CREATE, stored verbatim).
 var tidbCreateDefaultFunctions = map[string]bool{
-	"json_object": true, "json_array": true, "json_quote": true,
+	"uuid": true, "json_object": true, "json_array": true, "json_quote": true,
 }
 
-// tidbAlterJSONDefaultFunctions is the observed TiDB ALTER SET JSON-default
-// function set (the 1101 negative family).
-var tidbAlterJSONDefaultFunctions = map[string]bool{
-	"json_object": true, "json_array": true, "json_quote": true,
-	"json_extract": true, "json_unquote": true,
-}
-
-// tidbAlterDefaultFunctions is the observed TiDB ALTER SET DEFAULT positive
-// expression set (nondeterministic UUID is allowed).
+// tidbAlterDefaultFunctions is the observed TiDB ALTER SET DEFAULT
+// expression-preserving set: bare calls of these callees store the
+// expression verbatim (uuid, json_object and json_array are the
+// anchor-observed acceptances).
 var tidbAlterDefaultFunctions = map[string]bool{
-	"uuid": true,
+	"uuid": true, "json_object": true, "json_array": true,
+}
+
+// tidbAlterFoldableFunctions are TiDB ALTER SET DEFAULT callees the setter
+// evaluates rather than preserves: current_timestamp folds to a timestamp
+// literal (accepted on temporal/DATE/VARCHAR targets, 1067 on numeric).
+var tidbAlterFoldableFunctions = map[string]bool{
+	"current_timestamp": true,
+}
+
+// tidbCreateDisallowedDefaultFunctions are observed TiDB CREATE-family
+// expression-default rejections (3770 disallowed function).
+var tidbCreateDisallowedDefaultFunctions = map[string]bool{
+	"uuid_short": true, "lower": true,
+}
+
+// tidbAlterDisallowedDefaultFunctions are observed TiDB ALTER SET DEFAULT
+// rejections under the disallowed-function check (3770) — now() included,
+// which is disallowed on the setter even where CREATE accepts it.
+var tidbAlterDisallowedDefaultFunctions = map[string]bool{
+	"lower": true, "concat": true, "uuid_short": true, "now": true,
+}
+
+// tidbTemporalDefaultFunctions are the temporal default callees: a bare
+// pure call of one of these is the classic temporal default accepted on
+// temporal columns by both products (now/current_timestamp/localtime
+// observed; localtimestamp is the documented synonym family), and a
+// parenthesized pure call is the type-gated cell on the TiDB create path.
+var tidbTemporalDefaultFunctions = map[string]bool{
+	"now": true, "current_timestamp": true, "localtime": true, "localtimestamp": true,
 }
 
 func allFunctionsIn(functions []string, allowed map[string]bool) bool {
@@ -660,6 +725,7 @@ func AssessAdvancedColumns(statement Statement) AdvancedColumnAssessment {
 		assessColumnFacts(&assessment, statement, ddl, item, snapshot, version)
 	}
 	assessGeneratedRemovals(&assessment, ddl, snapshot, version)
+	assessGeneratedReferencePremises(&assessment, ddl, snapshot)
 	assessDependencyScope(&assessment, ddl, snapshot)
 
 	assessment.Applies = len(assessment.Features) > 0
@@ -859,7 +925,11 @@ func priorColumn(snapshot *TableSnapshot, name string) (*Column, bool) {
 // assessExpressionDefaultFeature applies the expression-default version and
 // product responsibility table. (Expression-default production facts are
 // wired in the default-expression family; the checks live here so the
-// shared assessment shape is complete.)
+// shared assessment shape is complete.) The TiDB table adjudicates the
+// whole expression shape, not just the callee set — the R1 evidence shows
+// TiDB evaluates SET DEFAULT composites and restricts CREATE parens defaults
+// to a bare call, while both products reject non-literal defaults written
+// without parens.
 func assessExpressionDefaultFeature(assessment *AdvancedColumnAssessment, item advancedColumnFact, snapshot *TableSnapshot, version *VersionIdentity, versionKnown bool, dialect Dialect) {
 	column := item.column
 	if versionKnown && dialect == DialectMySQL && !versionAtLeast(version, advancedMinimumExpressionDefaultMySQL) {
@@ -873,11 +943,53 @@ func assessExpressionDefaultFeature(assessment *AdvancedColumnAssessment, item a
 		// by the grammar before it reaches this seam.
 		if prior, ok := priorColumn(snapshot, item.oldName); ok && prior.Generated != nil {
 			assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonExpressionConstructForbidden, "")
-			assessment.InvalidTransition = true
 			return
 		}
 	}
 	facts := column.DefaultExpression
+	if facts == nil {
+		// SET DEFAULT (current_timestamp) folds to a timestamp literal at
+		// the TiDB setter — the same outcome table as the foldable-call
+		// expression path, just arriving through the literal-class fact:
+		// temporal/DATE targets store verbatim CURRENT_TIMESTAMP, the
+		// positive bases store a folded literal, the issue bases answer
+		// 1067, and anything else is an unproven coercion.
+		if item.action == "set_column_default" && dialect == DialectTiDB &&
+			column.DefaultParenthesized && column.DefaultIsCurrentTimestamp {
+			if snapshot == nil || snapshot.Columns == nil {
+				assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonUnknownTableState, AdvancedFactTargetTableColumns)
+				assessment.UnresolvedTransition = true
+				return
+			}
+			prior, priorOK := priorColumn(snapshot, item.oldName)
+			if !priorOK {
+				// A missing source member stays owned by the existence
+				// checks.
+				return
+			}
+			switch base := baseColumnTypeName(prior.Type); {
+			case base == "":
+				assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceType)
+				assessment.UnresolvedTransition = true
+			case tidbTimestampFoldTemporalTargets[base] || tidbTimestampFoldPositiveTargets[base]:
+				// Observed accepted: verbatim temporal or folded literal.
+			case tidbTimestampFoldIssueTargets[base]:
+				assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonTiDBDefaultExpression, "")
+			default:
+				assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceDefaultComposite)
+				assessment.UnresolvedTransition = true
+			}
+			return
+		}
+		// An authored `DEFAULT (<expr>)` wrapper around a literal/NULL is
+		// outside the expression fact but inside the surface: only TiDB's
+		// create-family parens grammar rejects it (1064); MySQL and the
+		// ALTER setter fold it to a literal default.
+		if column.DefaultParenthesized && dialect == DialectTiDB && createFamilyAlterAction(item.action) {
+			assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonTiDBDefaultExpression, "")
+		}
+		return
+	}
 	for _, feature := range facts.Features {
 		if feature == ExpressionFeatureSubquery || feature == ExpressionFeatureAggregate {
 			assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonExpressionConstructForbidden, "")
@@ -889,52 +1001,496 @@ func assessExpressionDefaultFeature(assessment *AdvancedColumnAssessment, item a
 		assessment.UnresolvedTransition = true
 		return
 	}
+	if !column.DefaultParenthesized {
+		if item.action == "set_column_default" {
+			// The SET path requires parens for every non-literal default:
+			// bare function calls — temporal ones included — are a grammar
+			// rejection on both products (observed 1064).
+			if dialect == DialectMySQL {
+				assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonExpressionDefaultShape, "")
+			} else {
+				assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonTiDBDefaultExpression, "")
+			}
+			return
+		}
+		if facts.TopForm == ExpressionTopCall && len(facts.Functions) > 0 && allFunctionsIn(facts.Functions, tidbTemporalDefaultFunctions) {
+			// A bare pure temporal call is the classic temporal default,
+			// accepted on temporal columns by both products and a
+			// determined invalid-default rejection (observed 1067) on a
+			// proven non-temporal declared type.
+			base := baseColumnTypeName(column.Type)
+			if base == "" {
+				assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceType)
+				assessment.UnresolvedTransition = true
+			} else if !temporalFamilyType(base) {
+				if dialect == DialectMySQL {
+					assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonExpressionDefaultShape, "")
+				} else {
+					assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonTiDBDefaultExpression, "")
+				}
+			}
+			return
+		}
+		if dialect == DialectMySQL {
+			// Every other bare non-literal default is a grammar rejection
+			// (observed 1064 for uuid()/sysdate() and composite forms).
+			assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonExpressionDefaultShape, "")
+			return
+		}
+		// TiDB's create family additionally accepts a bare function call;
+		// it falls through to the create-side table.
+	}
 	if dialect != DialectTiDB {
 		return
 	}
 	switch item.action {
 	case "create_table", "add_columns", "modify_column", "change_column":
-		// TiDB pins only the observed function-default positives; constant
-		// arithmetic, column references, and any other function family are
-		// the recorded tidb_default_expression negative.
-		arithmetic := false
-		for _, feature := range facts.Features {
-			if feature == ExpressionFeatureArithmetic {
-				arithmetic = true
-			}
-		}
-		if arithmetic || len(facts.LocalReferences()) > 0 || !allFunctionsIn(facts.Functions, tidbCreateDefaultFunctions) {
-			assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonTiDBDefaultExpression, "")
-		}
+		assessTiDBCreateExpressionDefault(assessment, item, facts)
 	case "set_column_default":
-		if len(facts.LocalReferences()) > 0 {
+		assessTiDBAlterExpressionDefault(assessment, item, snapshot, facts)
+	}
+}
+
+// createFamilyAlterAction reports whether the action is a declare-side
+// column definition path (CREATE-family) as opposed to the ALTER setter.
+func createFamilyAlterAction(action string) bool {
+	switch action {
+	case "create_table", "add_columns", "modify_column", "change_column":
+		return true
+	}
+	return false
+}
+
+// assessTiDBCreateExpressionDefault adjudicates a TiDB CREATE-family
+// expression default. TiDB's parens grammar accepts only a bare function
+// call — literals, NULL, arithmetic, CASE, and composites are 1064 — then
+// applies the function allowlist over the whole expression tree, with the
+// temporal cell gated on the declared column type.
+func assessTiDBCreateExpressionDefault(assessment *AdvancedColumnAssessment, item advancedColumnFact, facts *ExpressionFacts) {
+	column := item.column
+	if column.DefaultParenthesized && facts.TopForm != ExpressionTopCall {
+		// A parens default whose unwrapped root is not a bare call cannot be
+		// expressed by the TiDB grammar (observed 1064 for literals,
+		// arithmetic, CASE, and subqueries).
+		assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonTiDBDefaultExpression, "")
+		return
+	}
+	if facts.TopForm != ExpressionTopCall {
+		// Unreachable for authored bare forms — the grammar only parses a
+		// bare call there — kept as a fail-closed guard.
+		assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonTiDBDefaultExpression, "")
+		return
+	}
+	for _, fn := range facts.Functions {
+		name := strings.ToLower(fn)
+		switch {
+		case tidbCreateDisallowedDefaultFunctions[name]:
 			assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonTiDBDefaultExpression, "")
 			return
-		}
-		if len(facts.Functions) > 0 && allFunctionsIn(facts.Functions, tidbAlterDefaultFunctions) {
-			// ALTER SET DEFAULT (uuid()) is the observed TiDB positive
-			// only on a VARCHAR source column; every other or unproven
-			// type family stays a bounded evidence gap instead of an
-			// inferred acceptance.
-			prior, priorOK := priorColumn(snapshot, item.oldName)
-			switch {
-			case snapshot == nil || snapshot.Columns == nil:
-				assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonUnknownTableState, AdvancedFactTargetTableColumns)
-				assessment.UnresolvedTransition = true
-			case !priorOK:
-				// A missing source member stays owned by the existence checks.
-			case !varcharFamilyType(prior.Type):
-				assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceType)
-				assessment.UnresolvedTransition = true
-			}
+		case !tidbCreateDefaultFunctions[name] && !tidbTemporalDefaultFunctions[name]:
+			assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceDefaultFunction)
+			assessment.UnresolvedTransition = true
 			return
 		}
-		if len(facts.Functions) > 0 && allFunctionsIn(facts.Functions, tidbAlterJSONDefaultFunctions) {
-			assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonTiDBAlterJSONDefault, "")
-			return
-		}
-		assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonTiDBDefaultExpression, "")
 	}
+	temporal := 0
+	for _, fn := range facts.Functions {
+		if tidbTemporalDefaultFunctions[strings.ToLower(fn)] {
+			temporal++
+		}
+	}
+	if temporal > 0 {
+		// A temporal callee mixes with nothing else observably; a pure
+		// temporal default is the type-gated cell.
+		if temporal != len(facts.Functions) {
+			assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceDefaultComposite)
+			assessment.UnresolvedTransition = true
+			return
+		}
+		switch base := baseColumnTypeName(column.Type); {
+		case base == "":
+			assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceType)
+			assessment.UnresolvedTransition = true
+		case !temporalFamilyType(base):
+			// Observed 1067: a temporal default on a non-temporal column.
+			assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonTiDBDefaultExpression, "")
+		}
+		return
+	}
+	// All functions are inside the observed allowed set and the root is a
+	// bare call — the observed positive family.
+}
+
+// assessTiDBAlterExpressionDefault adjudicates a TiDB ALTER SET DEFAULT
+// expression. TiDB evaluates the default: a bare allowed call stores the
+// expression, foldable composites store an unprovable literal, and
+// disallowed functions (3770), column references (1054), function-bearing
+// arithmetic (1292), and any expression on a BLOB/TEXT/JSON target (1101)
+// are determined rejections. Unobserved function families and unproven
+// composite roots stay bounded gaps.
+func assessTiDBAlterExpressionDefault(assessment *AdvancedColumnAssessment, item advancedColumnFact, snapshot *TableSnapshot, facts *ExpressionFacts) {
+	column := item.column
+	if len(facts.LocalReferences()) > 0 {
+		// Column references inside a default are rejected whether or not
+		// the named column exists (observed 1054 both ways).
+		assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonTiDBDefaultExpression, "")
+		return
+	}
+	if snapshot == nil || snapshot.Columns == nil {
+		assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonUnknownTableState, AdvancedFactTargetTableColumns)
+		assessment.UnresolvedTransition = true
+		return
+	}
+	prior, priorOK := priorColumn(snapshot, item.oldName)
+	if !priorOK {
+		// A missing source member stays owned by the existence checks.
+		return
+	}
+	switch base := baseColumnTypeName(prior.Type); {
+	case base == "":
+		assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceType)
+		assessment.UnresolvedTransition = true
+		return
+	case blobTextJSONFamilyType(base):
+		// BLOB/TEXT/JSON targets cannot carry a default at all (observed
+		// 1101), independent of the function family — the rescoped
+		// tidb_alter_json_default cell.
+		assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonTiDBAlterJSONDefault, "")
+		return
+	}
+	// The disallowed/unobserved callee gate applies to the authored bare
+	// call path only: a root parentheses wrapper routes the setter through
+	// pure evaluation, where `((lower('x')))` provably evaluates and stores
+	// a literal (observed) — no 3770 allowlist check runs.
+	if !facts.RootParenthesized {
+		for _, fn := range facts.Functions {
+			name := strings.ToLower(fn)
+			switch {
+			case tidbAlterDisallowedDefaultFunctions[name]:
+				assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonTiDBDefaultExpression, "")
+				return
+			case !tidbAlterDefaultFunctions[name] && !tidbAlterFoldableFunctions[name]:
+				assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceDefaultFunction)
+				assessment.UnresolvedTransition = true
+				return
+			}
+		}
+	}
+	priorBase := baseColumnTypeName(prior.Type)
+	switch {
+	case facts.TopForm == ExpressionTopCall && !facts.RootParenthesized:
+		if allFunctionsIn(facts.Functions, tidbAlterDefaultFunctions) {
+			if len(facts.Functions) != 1 {
+				// Nested allowed calls are an unobserved composite — a
+				// bare call positive never covers them.
+				assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceDefaultComposite)
+				assessment.UnresolvedTransition = true
+				return
+			}
+			// A single bare allowed call stores the expression verbatim
+			// on every non-BLOB/TEXT/JSON target (the 1101 gate ran
+			// above): uuid() is observed verbatim on varchar, char, int,
+			// bigint, decimal, double, float, year, bit, enum, set, time,
+			// date, datetime, timestamp, and varbinary; json_object and
+			// json_array are observed verbatim on varchar, int, decimal,
+			// date, and timestamp. Evaluation is deferred to INSERT, so
+			// no target coercion runs at the setter.
+			return
+		}
+		if allFunctionsIn(facts.Functions, tidbAlterFoldableFunctions) {
+			// A bare (current_timestamp) call folds to a timestamp
+			// literal: temporal/DATE targets store the verbatim
+			// CURRENT_TIMESTAMP default, the positive bases store the
+			// folded literal (BIGINT/DOUBLE take the numeric
+			// YYYYMMDDHHMMSS form, TIME takes the time part), and the
+			// observed rejections answer 1067.
+			switch {
+			case tidbTimestampFoldTemporalTargets[priorBase] || tidbTimestampFoldPositiveTargets[priorBase]:
+				return
+			case tidbTimestampFoldIssueTargets[priorBase]:
+				assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonTiDBDefaultExpression, "")
+				return
+			default:
+				assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceDefaultComposite)
+				assessment.UnresolvedTransition = true
+				return
+			}
+		}
+		// A call mixing expression-preserving and foldable callees is
+		// unobserved.
+		assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceDefaultComposite)
+		assessment.UnresolvedTransition = true
+	case facts.TopForm == ExpressionTopCall:
+		// A root-wrapped call takes the evaluation path — the callee
+		// allowlist does not apply (observed ((lower('x'))) folds to
+		// 'x'). The folded literal's coercion decides the cell; only the
+		// uuid and lower literal folds are observed. ((current_timestamp))
+		// and ((now())) are observed acceptances with a NULL catalog
+		// default — an unprovable stored shape, so every other callee
+		// composite stays a bounded gap.
+		if len(facts.Functions) == 1 {
+			switch strings.ToLower(facts.Functions[0]) {
+			case "uuid":
+				switch {
+				case tidbStringFoldTargets[priorBase]:
+					return
+				case tidbUUIDFoldRejects(priorBase):
+					assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonTiDBDefaultExpression, "")
+					return
+				default:
+					assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceDefaultComposite)
+					assessment.UnresolvedTransition = true
+					return
+				}
+			case "lower":
+				switch priorBase {
+				case "varchar":
+					return
+				case "int":
+					assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonTiDBDefaultExpression, "")
+					return
+				default:
+					assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceDefaultComposite)
+					assessment.UnresolvedTransition = true
+					return
+				}
+			}
+		}
+		assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceDefaultComposite)
+		assessment.UnresolvedTransition = true
+	case facts.TopForm == ExpressionTopCase && !facts.RootParenthesized:
+		// A ref-free CASE of the one observed callee folds to the same
+		// uuid string literal as a wrapped uuid() call, so it shares the
+		// folded-literal outcome table.
+		if allFunctionsIn(facts.Functions, tidbAlterCaseCallees) {
+			switch {
+			case tidbStringFoldTargets[priorBase]:
+				return
+			case tidbUUIDFoldRejects(priorBase):
+				assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonTiDBDefaultExpression, "")
+				return
+			}
+		}
+		assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceDefaultComposite)
+		assessment.UnresolvedTransition = true
+	case facts.TopForm == ExpressionTopArithmetic || facts.TopForm == ExpressionTopUnary:
+		if len(facts.Functions) == 0 {
+			// Pure constant arithmetic folds to a numeric literal —
+			// observed stored on string, numeric, time, enum, set, bit,
+			// and year targets. DATE/DATETIME/TIMESTAMP accept but store
+			// a NULL catalog default, an unprovable shape.
+			if tidbArithFoldTargets(priorBase) {
+				return
+			}
+			assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceDefaultComposite)
+			assessment.UnresolvedTransition = true
+			return
+		}
+		if facts.RootParenthesized {
+			// A wrapped function-bearing composite is an unobserved eval
+			// cell.
+			assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceDefaultComposite)
+			assessment.UnresolvedTransition = true
+			return
+		}
+		// A function-bearing numeric composite is eagerly evaluated and
+		// rejected at the coercion boundary (observed uuid()+1 -> 1292).
+		assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonTiDBDefaultExpression, "")
+	default:
+		assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceDefaultComposite)
+		assessment.UnresolvedTransition = true
+	}
+}
+
+// TiDB SET DEFAULT publication kinds: the catalog-visible shape a positive
+// setter outcome stores. The ordered-state seam publishes exactly the
+// matching post-state — never a computed value.
+const (
+	// TiDBSetDefaultVerbatim keeps the declaration's expression facts.
+	TiDBSetDefaultVerbatim = "verbatim"
+	// TiDBSetDefaultTemporal publishes a CURRENT_TIMESTAMP temporal
+	// default (the catalog-visible shape of the foldable-timestamp cell
+	// on temporal/DATE targets).
+	TiDBSetDefaultTemporal = "temporal"
+	// TiDBSetDefaultLiteral publishes literal default presence only: no
+	// expression facts, no computed value.
+	TiDBSetDefaultLiteral = "literal"
+)
+
+// TiDBSetDefaultPublication mirrors the assessTiDBAlterExpressionDefault
+// positive cells so the ordered-state seam publishes the same catalog shape
+// the native setter stored: verbatim expression facts, a verbatim temporal
+// CURRENT_TIMESTAMP default, or folded literal presence. Any cell the
+// assessment did not mark positive returns "" — those identities are
+// tombstoned before publication anyway, so the empty result is unreachable
+// on the gated path.
+func TiDBSetDefaultPublication(facts *ExpressionFacts, priorType string) string {
+	if facts == nil || !facts.Known || len(facts.LocalReferences()) > 0 {
+		return ""
+	}
+	base := baseColumnTypeName(priorType)
+	switch {
+	case facts.TopForm == ExpressionTopCall && !facts.RootParenthesized:
+		if allFunctionsIn(facts.Functions, tidbAlterDefaultFunctions) {
+			// A single bare allowed call stores the expression verbatim
+			// on every non-BLOB/TEXT/JSON target.
+			if len(facts.Functions) == 1 {
+				return TiDBSetDefaultVerbatim
+			}
+			return ""
+		}
+		if allFunctionsIn(facts.Functions, tidbAlterFoldableFunctions) {
+			switch {
+			case tidbTimestampFoldTemporalTargets[base]:
+				return TiDBSetDefaultTemporal
+			case tidbTimestampFoldPositiveTargets[base]:
+				return TiDBSetDefaultLiteral
+			}
+		}
+		return ""
+	case facts.TopForm == ExpressionTopCall:
+		// Root-wrapped calls fold: literal presence on the observed
+		// folded-literal target cells.
+		if len(facts.Functions) != 1 {
+			return ""
+		}
+		switch strings.ToLower(facts.Functions[0]) {
+		case "uuid":
+			if tidbStringFoldTargets[base] {
+				return TiDBSetDefaultLiteral
+			}
+		case "lower":
+			if base == "varchar" {
+				return TiDBSetDefaultLiteral
+			}
+		}
+		return ""
+	case facts.TopForm == ExpressionTopCase && !facts.RootParenthesized:
+		if allFunctionsIn(facts.Functions, tidbAlterCaseCallees) && tidbStringFoldTargets[base] {
+			return TiDBSetDefaultLiteral
+		}
+		return ""
+	case facts.TopForm == ExpressionTopArithmetic || facts.TopForm == ExpressionTopUnary:
+		if len(facts.Functions) == 0 && tidbArithFoldTargets(base) {
+			return TiDBSetDefaultLiteral
+		}
+	}
+	return ""
+}
+
+// TiDBLiteralSetDefaultPublication mirrors the literal-class
+// SET DEFAULT (current_timestamp) cell for the ordered-state seam: the
+// setter stores a verbatim temporal default on the temporal bases and a
+// folded literal on the positive bases — every other target is a
+// non-positive cell the assessment already gated.
+func TiDBLiteralSetDefaultPublication(priorType string) string {
+	base := baseColumnTypeName(priorType)
+	switch {
+	case tidbTimestampFoldTemporalTargets[base]:
+		return TiDBSetDefaultTemporal
+	case tidbTimestampFoldPositiveTargets[base]:
+		return TiDBSetDefaultLiteral
+	}
+	return ""
+}
+
+// tidbAlterCaseCallees are the callees observed folding inside a CASE
+// default on the TiDB setter path — uuid() only.
+var tidbAlterCaseCallees = map[string]bool{"uuid": true}
+
+// tidbStringFoldTargets are the normalized prior-type bases where a folded
+// string literal stores verbatim — observed for the wrapped-uuid fold on
+// varchar, char, binary, and varbinary, and the uuid-CASE fold on varchar
+// and char (the folded literal is identical, so the table is shared).
+var tidbStringFoldTargets = map[string]bool{
+	"varchar": true, "char": true, "binary": true, "varbinary": true,
+}
+
+// tidbUUIDFoldRejects reports whether the normalized prior-type base is an
+// observed rejection for the folded uuid string literal: numeric families
+// and YEAR/BIT answer 1067, value-restricted ENUM/SET answer 1067, and TIME
+// answers 1292 — all observed. DATE/DATETIME/TIMESTAMP accept but store a
+// NULL catalog default and stay bounded gaps.
+func tidbUUIDFoldRejects(base string) bool {
+	return numericFamilyType(base) || base == "enum" || base == "set" || base == "time"
+}
+
+// tidbArithFoldTargets reports whether the normalized prior-type base is an
+// observed positive for a folded constant-numeric literal: string and
+// numeric families (including YEAR and BIT) plus TIME, ENUM, and SET — all
+// observed storing the folded value. DATE/DATETIME/TIMESTAMP accept but
+// store a NULL catalog default and stay bounded gaps.
+func tidbArithFoldTargets(base string) bool {
+	if numericFamilyType(base) {
+		return true
+	}
+	switch base {
+	case "varchar", "char", "binary", "varbinary", "time", "enum", "set":
+		return true
+	}
+	return false
+}
+
+// tidbTimestampFoldTemporalTargets are the normalized prior-type bases
+// where a folded current_timestamp default stores the verbatim temporal
+// CURRENT_TIMESTAMP shape (observed TIMESTAMP, DATETIME, DATE).
+var tidbTimestampFoldTemporalTargets = map[string]bool{
+	"timestamp": true, "datetime": true, "date": true,
+}
+
+// tidbTimestampFoldPositiveTargets are the normalized prior-type bases
+// where a folded current_timestamp default stores a literal: VARCHAR and
+// CHAR take the string form, BIGINT and DOUBLE take the numeric
+// YYYYMMDDHHMMSS form, and TIME takes the time part (all observed).
+var tidbTimestampFoldPositiveTargets = map[string]bool{
+	"varchar": true, "char": true, "bigint": true, "double": true, "time": true,
+}
+
+// tidbTimestampFoldIssueTargets are the normalized prior-type bases where a
+// folded current_timestamp default is a determined 1067 rejection —
+// observed on INT, DECIMAL, and YEAR (the numeric YYYYMMDDHHMMSS form
+// overflows INT and YEAR and DECIMAL rejects the coercion).
+var tidbTimestampFoldIssueTargets = map[string]bool{
+	"int": true, "decimal": true, "year": true,
+}
+
+// numericFamilyType reports whether the normalized base type is a numeric
+// family — the observed 1067 rejection cell for folded non-numeric literals
+// (uuid/CASE and current_timestamp on INT).
+func numericFamilyType(typ string) bool {
+	switch typ {
+	case "tinyint", "smallint", "mediumint", "int", "integer", "bigint",
+		"decimal", "numeric", "float", "double", "real", "bit", "year":
+		return true
+	}
+	return false
+}
+
+// baseColumnTypeName normalizes a declared or catalog column type to its
+// lowercase base name without parameters.
+func baseColumnTypeName(typ string) string {
+	base := strings.ToLower(strings.TrimSpace(typ))
+	if i := strings.IndexByte(base, '('); i >= 0 {
+		base = strings.TrimSpace(base[:i])
+	}
+	return base
+}
+
+// blobTextJSONFamilyType reports whether the normalized base type cannot
+// carry any default on the TiDB ALTER path (observed 1101).
+func blobTextJSONFamilyType(typ string) bool {
+	switch typ {
+	case "json", "blob", "tinyblob", "mediumblob", "longblob",
+		"text", "tinytext", "mediumtext", "longtext":
+		return true
+	}
+	return false
+}
+
+// temporalFamilyType reports whether the normalized base type accepts a
+// temporal expression default on the TiDB CREATE path.
+func temporalFamilyType(typ string) bool {
+	return typ == "timestamp" || typ == "datetime"
 }
 
 // assessVisibilityFeature applies the MySQL visibility version gate and the
@@ -1020,6 +1576,259 @@ func allButInvisible(columns []Column, name string) (allInvisible, withheld bool
 	return seen, false
 }
 
+// assessGeneratedReferencePremises validates the declaration-time reference
+// premises of generated columns — the check ColumnDependents cannot cover
+// because it only fires at destructive ALTER time. The candidate column set
+// is the provable post-statement ordering: the complete CREATE declaration
+// set, or the prior set plus this statement's column declarations for a
+// provable single-column-clause ALTER. Native semantics are identical on
+// all four anchors: a self-reference, an absent name, or a reference to a
+// generated column not ordered earlier is a determined rejection; an
+// ordinary-column reference at any ordinal is legal. Same-statement binds,
+// positioned declarations, and name-space-touching clauses are unprovable
+// and stay bounded gaps — never silent passes.
+func assessGeneratedReferencePremises(assessment *AdvancedColumnAssessment, ddl *DDL, snapshot *TableSnapshot) {
+	if ddl == nil {
+		return
+	}
+	var table Table
+	if snapshot != nil && snapshot.Table != nil {
+		table = *snapshot.Table
+	}
+	if table.Name == "" && ddl.Table != nil {
+		table = *ddl.Table
+	}
+
+	// generatedDecl is one generated column definition plus its position
+	// inside the candidate ordering.
+	type generatedDecl struct {
+		column     *Column
+		index      int
+		positioned bool
+		located    bool // false when the self position is not provable
+	}
+
+	// premiseContext is the provable candidate view for one statement.
+	type premiseContext struct {
+		candidates []*Column
+		declared   map[int]bool // candidates (re)declared by this statement
+		touched    map[int]bool // prior candidates dropped/renamed this statement
+		tainted    bool         // name-space-changing clause present
+		priorKnown bool
+	}
+
+	ctx := premiseContext{declared: map[int]bool{}, touched: map[int]bool{}}
+	var decls []generatedDecl
+
+	switch ddl.Operation {
+	case DDLOperationCreateTable:
+		ctx.priorKnown = true
+		for i := range ddl.Columns {
+			ctx.candidates = append(ctx.candidates, &ddl.Columns[i])
+			if ddl.Columns[i].Generated != nil {
+				decls = append(decls, generatedDecl{column: &ddl.Columns[i], index: i, located: true})
+			}
+		}
+	case DDLOperationAlterTable:
+		ctx.priorKnown = snapshot != nil && snapshot.Columns != nil
+		if ctx.priorKnown {
+			for i := range snapshot.Columns {
+				ctx.candidates = append(ctx.candidates, &snapshot.Columns[i])
+			}
+		}
+		for i := range ddl.Alter {
+			alter := &ddl.Alter[i]
+			switch alter.Action {
+			case "drop_column", "rename_column":
+				ctx.tainted = true
+				if ctx.priorKnown {
+					if idx, ok := priorIndexByName(snapshot.Columns, alter.Name); ok {
+						ctx.touched[idx] = true
+					}
+				}
+			case "change_column":
+				// CHANGE can rename: the name space moves even when the
+				// old name stays, so absence is not provable around it.
+				ctx.tainted = true
+				fallthrough
+			case "add_columns", "modify_column":
+				if alter.Column == nil || alter.Column.Definition == nil {
+					continue
+				}
+				def := alter.Column.Definition
+				if alter.Action == "add_columns" {
+					idx := len(ctx.candidates)
+					ctx.candidates = append(ctx.candidates, def)
+					ctx.declared[idx] = true
+					if def.Generated != nil {
+						decls = append(decls, generatedDecl{column: def, index: idx, positioned: alter.HasColumnPosition, located: ctx.priorKnown})
+					}
+					continue
+				}
+				// modify/change substitute the definition at the prior
+				// position; an unresolvable prior name stays owned by the
+				// existence checks and contributes no premise verdict.
+				if ctx.priorKnown {
+					source := alterSourceName(def.Name, alter.Column.OldName)
+					if idx, ok := priorIndexByName(snapshot.Columns, source); ok {
+						ctx.candidates[idx] = def
+						ctx.declared[idx] = true
+						if alter.Action == "change_column" && !strings.EqualFold(def.Name, source) {
+							ctx.touched[idx] = true
+						}
+						if def.Generated != nil {
+							decls = append(decls, generatedDecl{column: def, index: idx, positioned: alter.HasColumnPosition, located: true})
+						}
+					}
+					// Prior set known but name absent: the existence checks
+					// own the outcome — no premise verdict from this seam.
+					continue
+				}
+				if def.Generated != nil {
+					decls = append(decls, generatedDecl{column: def, positioned: alter.HasColumnPosition})
+				}
+			}
+		}
+	default:
+		return
+	}
+	if len(decls) == 0 {
+		return
+	}
+
+	indexByName, resolved := columnIndexByName(ctx.candidates)
+	for _, decl := range decls {
+		expr := &decl.column.Generated.Expression
+		if !expr.Known {
+			// The expression completeness gap is already reported per
+			// column; the premise check needs the full reference set, so an
+			// unknown fact cannot produce either a negative or a positive.
+			continue
+		}
+		if len(expr.References) == 0 {
+			continue
+		}
+		declaredOnce := false
+		gap := func(reason, fact string) {
+			if !declaredOnce {
+				assessment.appendGap(AdvancedFeatureGenerated, reason, fact)
+				assessment.UnresolvedTransition = true
+				declaredOnce = true
+			}
+		}
+		issued := false
+		for _, ref := range expr.References {
+			if issued {
+				break
+			}
+			if ref.Qualified() {
+				if _, ok := bindColumnReference(table, indexByName, ref); !ok && !qualifierMatchesTable(table, ref) {
+					// The qualifier provably does not name the owning
+					// table — the reference cannot be bound locally.
+					gap(AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceExprDependencies)
+					continue
+				}
+			}
+			name := strings.ToLower(strings.TrimSpace(ref.Name))
+			idx, bound := indexByName[name]
+			action := ddlActionName(ddl, decl.column)
+			switch {
+			case !resolved || !decl.located:
+				// The candidate set or the self position is unprovable —
+				// bounded gap, never a guessed membership answer.
+				gap(AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceExprDependencies)
+			case !bound:
+				if ctx.tainted || !ctx.priorKnown {
+					// A name-space-changing clause or an unproven prior set
+					// makes absence unprovable.
+					gap(AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceExprDependencies)
+					continue
+				}
+				assessment.appendIssue(decl.column.Name, AdvancedFeatureGenerated, action, AdvancedReasonGeneratedMissingColumn, "")
+				issued = true
+			case idx == decl.index:
+				assessment.appendIssue(decl.column.Name, AdvancedFeatureGenerated, action, AdvancedReasonGeneratedSelfReference, "")
+				issued = true
+			case ctx.declared[idx] || ctx.touched[idx]:
+				// A bind to a column (re)declared, dropped, or renamed in
+				// the same statement is a net effect no single-action
+				// semantics can prove.
+				gap(AdvancedReasonIncompleteAlterDepEffects, AdvancedFactAlterColumnDepEffects)
+			case decl.positioned && ctx.candidates[idx].Generated != nil:
+				// A FIRST|AFTER clause moves the declaration's position, so
+				// "referenced generated column ordered earlier" is not
+				// provable.
+				gap(AdvancedReasonIncompleteAlterDepEffects, AdvancedFactAlterColumnPosition)
+			case ctx.candidates[idx].Generated != nil && idx > decl.index:
+				assessment.appendIssue(decl.column.Name, AdvancedFeatureGenerated, action, AdvancedReasonGeneratedColumnOrder, "")
+				issued = true
+			}
+		}
+	}
+}
+
+// columnIndexByName builds the name → position index for a candidate column
+// set; resolved=false marks a set whose member names cannot be trusted
+// (empty or duplicated names), matching ColumnDependents' convention.
+func columnIndexByName(columns []*Column) (map[string]int, bool) {
+	index := make(map[string]int, len(columns))
+	resolved := true
+	for i, column := range columns {
+		name := strings.ToLower(strings.TrimSpace(column.Name))
+		if name == "" {
+			resolved = false
+			continue
+		}
+		if _, dup := index[name]; dup {
+			resolved = false
+			continue
+		}
+		index[name] = i
+	}
+	return index, resolved
+}
+
+// priorIndexByName resolves a prior snapshot column name to its position.
+func priorIndexByName(columns []Column, name string) (int, bool) {
+	lower := strings.ToLower(strings.TrimSpace(name))
+	for i := range columns {
+		if strings.ToLower(strings.TrimSpace(columns[i].Name)) == lower {
+			return i, true
+		}
+	}
+	return -1, false
+}
+
+// qualifierMatchesTable reports whether a qualified reference's schema/table
+// qualifiers provably name the owning table — independent of whether the
+// column name itself resolves.
+func qualifierMatchesTable(table Table, ref ColumnReference) bool {
+	if !ref.Qualified() {
+		return true
+	}
+	if !strings.EqualFold(strings.TrimSpace(ref.Table), strings.TrimSpace(table.Name)) {
+		return false
+	}
+	schema := strings.TrimSpace(ref.Schema)
+	own := strings.TrimSpace(table.Schema)
+	return schema == "" || (own != "" && strings.EqualFold(schema, own))
+}
+
+// ddlActionName returns the action label attached to premise issues: the
+// statement operation for CREATE, or the clause action for ALTER.
+func ddlActionName(ddl *DDL, column *Column) string {
+	if ddl.Operation == DDLOperationAlterTable {
+		for i := range ddl.Alter {
+			alter := &ddl.Alter[i]
+			if alter.Column != nil && alter.Column.Definition == column {
+				return alter.Action
+			}
+		}
+		return "alter_table"
+	}
+	return "create_table"
+}
+
 // assessDependencyScope computes the dependency-side answer for DROP and
 // identity-changing CHANGE/RENAME actions, one effect per action in
 // statement order. A known break is an invalid transition independently of
@@ -1092,12 +1901,6 @@ func assessDependencyScope(assessment *AdvancedColumnAssessment, ddl *DDL, snaps
 		}
 		assessment.DependencyEffects = append(assessment.DependencyEffects, effect)
 	}
-}
-
-// varcharFamilyType reports whether a normalized column type is in the
-// observed VARCHAR family for the TiDB ALTER UUID positive.
-func varcharFamilyType(typ string) bool {
-	return strings.HasPrefix(strings.ToLower(strings.TrimSpace(typ)), "varchar")
 }
 
 // depAffectingAlterAction reports whether an ALTER clause can change the

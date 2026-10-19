@@ -241,3 +241,49 @@ utf8mb4 client, exactly the collected evidence form.
 
 Files: `scripts/t07_contract.py` (anchor construction),
 `testdata/ddl-golden/T07.json` (regenerated, anchor `exec_client` only).
+## U10 — R1 semantic closure contract amendment (§11)
+
+Two missing premises frozen in the original contract are closed by same-task
+rework, driven by new bounded native evidence on the pinned anchors. No frozen
+identity, SQL, profile, or verdict changes; the 207-identity digest is
+unchanged.
+
+R1-1 generated reference premises: the freeze validated version/function/
+alter-transition cells but never declared how declaration-time reference
+premises classify. New bounded reasons: `generated_self_reference`,
+`generated_missing_column`, `generated_column_order` (all four anchors:
+3107/1054/3107). Ordinary-column references at any ordinal and owner-qualified
+same-table binds are legal; unprovable candidates stay bounded gaps.
+
+R1-2 whole-shape boundary: the frozen `uuid()` positive required only the
+function-name set; native probing shows TiDB chooses between verbatim and
+evaluate-and-store paths on the *authored* root node. New facts
+`ExpressionFacts.TopForm` + `RootParenthesized` and
+`Column.DefaultParenthesized`; rescoped `tidb_alter_json_default` from
+"JSON-function-on-ALTER" to BLOB/TEXT/JSON target type (1101 evidence);
+verbatim-expression positives are target-agnostic — a single bare allowed
+call stores the expression verbatim on every non-BLOB/TEXT/JSON target
+(uuid() observed verbatim on sixteen type bases across every family;
+json_object/json_array observed on varchar/int/decimal/date/timestamp);
+`(current_timestamp)` stores the verbatim temporal default on
+TIMESTAMP/DATETIME/DATE, folds to a literal on varchar/char/bigint/double/
+time, and rejects 1067 on int/decimal/year; root-wrapped shapes evaluate —
+`((uuid()))` folds on varchar/char/binary/varbinary and rejects on
+numeric/enum/set/time (1067/1292), `((lower))` evaluates on varchar despite
+the bare-path 3770 gate, `((cts))`/`((now()))`/`((json_object))` accept but
+store a NULL catalog (bounded gap); ref-free `CASE` of uuid shares the
+uuid-fold table (1067 numeric); constant arithmetic folds on string,
+numeric, time, enum, set, bit, and year targets; `uuid()` joins the CREATE
+allowed set (observed positive); folded positives publish literal presence,
+temporal cells publish the catalog temporal default, verbatim cells keep
+typed facts; every compat-rule determined negative now sets
+`InvalidTransition`; MySQL bare non-literal defaults get the new
+`expression_default_shape` negative (1064 on 8.0/8.4); new bounded gap
+required-facts `source_column.default_function`,
+`source_column.default_composite`, `alter.column_position`.
+
+Files: `docs/work-plans/t07-advanced-columns/CONTRACT.md` (§11),
+`internal/domain/spec/advanced_columns.go`, `internal/domain/spec/ddl.go`,
+`internal/infrastructure/parser/tidb/expression_facts.go`,
+`internal/infrastructure/parser/tidb/extractor.go`,
+`internal/application/audit/batch_state_modify.go`, R1 tests and proof.

@@ -291,6 +291,13 @@ type Column struct {
 	// written. It is declaration presence only, never inferred from catalog
 	// normalization.
 	VisibilityExplicit bool `json:"-"`
+	// DefaultParenthesized records that the default clause carried an
+	// authored `DEFAULT (<expr>)` paren wrapper. Internal fact only: TiDB's
+	// create-side parens grammar accepts only a bare call (a parenthesized
+	// literal is a determined negative there while legal MySQL), and both
+	// products require parens for non-literal ALTER SET DEFAULT — the flag
+	// is never evidence about the stored value itself.
+	DefaultParenthesized bool `json:"-"`
 }
 
 // IndexKind identifies the semantic class of an index declaration.

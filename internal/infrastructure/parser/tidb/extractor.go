@@ -181,6 +181,9 @@ func (e tidbExtractor) applySupplements(statement *spec.Statement) {
 				ddl.Columns[i].Visibility = visibility
 				ddl.Columns[i].VisibilityExplicit = true
 			}
+			if supp.defaultParens[ddl.Columns[i].Name] {
+				ddl.Columns[i].DefaultParenthesized = true
+			}
 		}
 	case spec.DDLOperationAlterTable:
 		for i := range ddl.Alter {
@@ -197,6 +200,9 @@ func (e tidbExtractor) applySupplements(statement *spec.Statement) {
 			}
 			if alter.Column == nil || alter.Column.Definition == nil {
 				continue
+			}
+			if supp.defaultParens[alter.Column.Definition.Name] {
+				alter.Column.Definition.DefaultParenthesized = true
 			}
 			switch alter.Action {
 			case "add_columns", "modify_column", "change_column":
@@ -833,9 +839,15 @@ func columnOptionName(tp ast.ColumnOptionType) string {
 
 // applyDefaultOptionFacts records one default option on the column: the
 // literal/NULL/temporal fields keep their existing contract, while a
-// non-literal default becomes the structural expression-default fact.
+// non-literal default becomes the structural expression-default fact. The
+// authored paren wrapper is preserved separately: TiDB's create-side parens
+// grammar accepts only a bare call, and both products require parens for
+// non-literal ALTER SET DEFAULT — presence is syntax, not value evidence.
 func applyDefaultOptionFacts(column *spec.Column, expr ast.ExprNode) {
 	column.HasDefault = true
+	if _, ok := expr.(*ast.ParenthesesExpr); ok {
+		column.DefaultParenthesized = true
+	}
 	column.DefaultIsNull = exprIsNullLiteral(expr)
 	if column.DefaultIsNull {
 		column.DefaultValue = "NULL"

@@ -87,3 +87,88 @@ Full-entry validation must reject double-deleted checks, lost dependencies,
 wrong anchor/profile/position and JSON number-type laundering. Final T02–T07
 native Golden runs bind to one complete code SHA, with a separate evidence
 commit; local proofs do not claim hosted CI, issue closure or external review.
+
+## R1 amendment (T07-R1-SEMANTIC-CLOSURE)
+
+Two function-level gaps survived the original T07 review: declaration-time
+generated-column reference premises were never checked, and the TiDB
+expression-default whitelist matched function names without adjudicating the
+complete expression shape. The R1 rework closes both inside the existing
+contract — the frozen 207-role oracle is unchanged.
+
+**A parsed reference set is not a legal premise.** `References` being
+known-complete says nothing about whether the declaration may use them. The
+shared assessment now evaluates generated declarations against the complete
+CREATE declaration set — or the provable ALTER candidate set (prior snapshot
+plus same-statement declarations) — before dependency-scope analysis.
+Self-reference, references to absent names, and references to generated
+columns ordered later are determined issues (`generated_self_reference`,
+`generated_missing_column`, `generated_column_order`) that set
+`InvalidTransition` and tombstone the identity independently of policy
+switches. Ordinary-column references at any ordinal remain legal (MySQL and
+TiDB both allow forward ordinary references), qualifiers bind only when they
+provably name the owning table/schema, and same-statement binds, `FIRST|AFTER`
+positions, name-space-touching clauses, and unresolvable candidate sets stay
+bounded gaps — never guessed verdicts, never fabricated "no dependency"
+passes.
+
+**A recognized function name is not a supported composite.** The old positive
+branch read `Functions` as a set, so `uuid()+1` and `CASE WHEN 1 THEN uuid()`
+inherited the bare `uuid()` positive. `ExpressionFacts.TopForm` now classifies
+the unwrapped outer root and `Column.DefaultParenthesized` preserves the
+authored `DEFAULT (<expr>)` syntax separately from stored-value evidence, so
+the assessment adjudicates the complete shape per product and action:
+
+- TiDB CREATE-family `DEFAULT (...)`: the parens grammar accepts only a bare
+  function call (literals, arithmetic, CASE, subqueries are observed 1064
+  rejections), then applies the observed allowlist/disallowlist over the
+  whole tree with the temporal cell gated on the declared type.
+- TiDB ALTER `SET DEFAULT`: the setter chooses between two paths on the
+  *authored* root node, so `ExpressionFacts.RootParenthesized` records a
+  parens wrapper separately from the paren-transparent `TopForm`. A
+  single bare allowed call stores the verbatim expression on every
+  non-BLOB/TEXT/JSON target — evaluation is deferred to INSERT (uuid()
+  observed verbatim across sixteen type families; json_object/json_array
+  likewise). A bare `(current_timestamp)` folds to a timestamp literal:
+  verbatim temporal on TIMESTAMP/DATETIME/DATE, a folded literal on
+  varchar/char/bigint/double/time, and observed 1067 on int/decimal/year.
+  Every other shape takes the evaluation path — root-wrapped calls,
+  CASE, constant arithmetic — where the folded result is an unprovable
+  literal (publication records literal presence, never a computed value)
+  or an observed rejection: column references 1054, BLOB/TEXT/JSON
+  targets 1101, disallowed callees 3770 (bare path only —
+  `((lower('x')))` provably evaluates), function-bearing arithmetic
+  1292, the folded uuid literal on numeric/enum/set/time targets
+  1067/1292, and DATE-family targets that accept but store a NULL
+  catalog default stay bounded gaps alongside unobserved callees and
+  unproven composites.
+- MySQL keeps its expression-default support unchanged; the TiDB
+  restrictions never leak across dialects. `SET DEFAULT` requires parens for
+  non-literals on both products (observed 1064 for bare calls, temporal
+  ones included).
+
+**Known facts, support scope, and conditional post-state stay three separate
+dimensions.** `Known=true` marks complete extraction — never legality; a
+known-invalid premise produces a determined issue plus `InvalidTransition`,
+while a known-but-unproven cell produces a bounded gap plus
+`UnresolvedTransition`. The ordered-state publication seam consumes the same
+verdict: folded shapes publish literal presence, temporal cells publish the
+catalog temporal default, and verbatim shapes keep typed facts, so a
+rule-side gap can never coexist with a success-shape publication.
+
+Three implementation-level facts are part of the amendment. The
+`SET/DROP DEFAULT` setter carries its value in a `ColumnOptionNoOption`, so
+the supplement enumerates it alongside `ColumnOptionDefaultValue` — fixing a
+silent bind failure that previously fell back to the base parse. Options
+outside every planned site (bare literal defaults) no longer poison the site
+binding, fixing a mixed-default statement that previously failed closed to a
+parse error. `parseSelectExpressionAST` strips exactly the parentheses layer
+its own `SELECT (<text>)` wrapper added, so authored parens survive binding
+as the `RootParenthesized` fact. The `default_generated` catalog path sets
+`DefaultParenthesized=true` because catalog-stored expression defaults are
+always parenthesized syntax — metadata uncertainty about the authored
+spelling is unchanged.
+
+Verification evidence, native probes, and the R1 contract ledger live under
+`docs/work-plans/t07-advanced-columns/` (CONTRACT §11, EXPECTED-UPGRADES U10)
+and `docs/verification/t07/<r1-code-sha>/`.

@@ -186,12 +186,47 @@ func (s *batchState) prepareColumnDefault(statement spec.Statement, alter *spec.
 			return invalidate(primary)
 		}
 		definition := alter.Column.Definition
-		next.HasDefault = definition.HasDefault
-		next.DefaultIsNull = definition.DefaultIsNull
-		next.DefaultValue = definition.DefaultValue
-		next.DefaultIsCurrentTimestamp = definition.DefaultIsCurrentTimestamp
-		next.DefaultExpression = spec.CloneExpressionFacts(definition.DefaultExpression)
-		next.DefaultKind = definition.DefaultKind
+		publish := ""
+		if statement.Dialect == spec.DialectTiDB {
+			if definition.DefaultExpression != nil {
+				publish = spec.TiDBSetDefaultPublication(definition.DefaultExpression, next.Type)
+			} else if definition.DefaultParenthesized && definition.DefaultIsCurrentTimestamp {
+				publish = spec.TiDBLiteralSetDefaultPublication(next.Type)
+			}
+		}
+		switch publish {
+		case spec.TiDBSetDefaultLiteral:
+			// TiDB evaluates foldable composites at the setter and stores
+			// an unprovable literal: publish literal default presence —
+			// never the expression facts or a computed value.
+			next.HasDefault = true
+			next.DefaultIsNull = false
+			next.DefaultValue = ""
+			next.DefaultIsCurrentTimestamp = false
+			next.DefaultExpression = nil
+			next.DefaultKind = ""
+			next.DefaultParenthesized = false
+		case spec.TiDBSetDefaultTemporal:
+			// The foldable-timestamp cell stores a verbatim
+			// CURRENT_TIMESTAMP default on temporal/DATE targets:
+			// publish the temporal default the catalog keeps, without
+			// the authored parens or expression facts.
+			next.HasDefault = true
+			next.DefaultIsNull = false
+			next.DefaultValue = definition.DefaultValue
+			next.DefaultIsCurrentTimestamp = true
+			next.DefaultExpression = nil
+			next.DefaultKind = ""
+			next.DefaultParenthesized = false
+		default:
+			next.HasDefault = definition.HasDefault
+			next.DefaultIsNull = definition.DefaultIsNull
+			next.DefaultValue = definition.DefaultValue
+			next.DefaultIsCurrentTimestamp = definition.DefaultIsCurrentTimestamp
+			next.DefaultExpression = spec.CloneExpressionFacts(definition.DefaultExpression)
+			next.DefaultKind = definition.DefaultKind
+			next.DefaultParenthesized = definition.DefaultParenthesized
+		}
 	} else {
 		next.HasDefault = false
 		next.DefaultIsNull = false
@@ -199,6 +234,7 @@ func (s *batchState) prepareColumnDefault(statement spec.Statement, alter *spec.
 		next.DefaultIsCurrentTimestamp = false
 		next.DefaultExpression = nil
 		next.DefaultKind = ""
+		next.DefaultParenthesized = false
 	}
 	shape := cloneTableSnapshot(entry.shape)
 	shape.Columns[index] = next
