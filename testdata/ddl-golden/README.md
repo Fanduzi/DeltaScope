@@ -14,6 +14,15 @@ T06 remains 496; pre-contract observations and controlled sensitivity checks
 have separate denominators. Exact T07 SQL/profile/version/native structures
 are frozen before production implementation and must not be regenerated from
 product actuals. T07 fixture credentials are environment-only names, not values.
+Its `exec_password_env` anchor key passes a password to the mysql client through
+Docker's inherited `MYSQL_PWD` environment, never an argv value. T07 fixture
+steps mark `requires_absence`, `creates_fixture` and `drops_fixture`; the runner
+fails closed on missing prior COUNT0 and never drops a fixture it did not create.
+The existing runner chooses `cli_cases` instead of expanding `cli_audit` when
+both exist, so T07 explicitly lists its two baseline cases plus 34 semantic
+roles (36 list entries). Approved T03/T04/T05 generated promotions are enumerated
+in [EXPECTED-UPGRADES](../../docs/work-plans/t07-advanced-columns/EXPECTED-UPGRADES.md);
+their SQL, IDs, profiles and unrelated unsupported controls stay unchanged.
 
 ## Manifest contract
 

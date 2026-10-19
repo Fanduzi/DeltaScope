@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: task manifest testdata/ddl-golden/<TASK>.json, docker/ddl-golden-compose.yaml, freshly built deltascope CLI
-# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest, including synchronous execute verification, the independent frozen T07 advanced-column role/oracle, and the frozen T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1–A12 oracles (the T06-A9 EXTRA whitelist compares CAST(LOWER(x) AS BINARY) byte-exact so PAD SPACE catalog collations cannot smuggle trailing-space text into a role marker; the T06-A10 observations enforce a string-typed stdout carrying the fixed client header plus exactly one bound data record — the allocator counter is verbatim-observed, never numerically asserted, and SHOW CREATE must name object `t` with the head opening `CREATE TABLE `t` (` before its opaque body; the T06-A11 observation additionally enforces a complete two-digit-pair HEX field shape so literal whitespace can never launder into the COLUMN_TYPE whitelist; T06-A12 pins per-column NOT NULL finding attribution, the loaded/applicable/absent rule_summary contract per role, and the ordered column-set oracle; T06-A12-R1 requires the absent key to be truly missing, enabled summaries to be JSON objects, and loaded/applicable to be strict JSON integers so bool/float/string/null and non-object shapes reject as failures, never == laundering or exceptions; T06-A13 binds each of the five type-family forbid roles to its own profile family/switch state, pins the absent vs loaded/applicable rule_summary per role, requires every mixed-hit finding to carry its family's rule_id, and verifies the ordered nine-column DATA_TYPE oracle per anchor; T06-A14 binds each table-option role to its own strict/optional isolated profile, pins loaded=1/applicable=1 on all five enabled roles (omitted-optional never degrades to 1/0), re-derives the per-product catalog oracle (MySQL storage/catalog values, TiDB compatibility display, charset through the real TABLE_COLLATION association) from frozen constants, and requires every reject finding to carry the family's complete frozen identity; T06-A15 binds each row-size role to its on/not-required isolated profile or the all-off control, re-derives the strict-65535 finding identity (table-level metadata.charset, "" for unresolved row format) and the field-ordered missing_instance_fact required_facts from frozen constants, and requires gap roles to record unverified coverage while determined findings and gaps coexist)
+# output: inspectable golden artifact (artifact.json + generated policy files + per-case raw evidence) validated against the manifest, including synchronous execute verification, the independent frozen T07 advanced-column role/oracle with owned fixture cleanup and environment-only client credentials, and the frozen T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1–A12 oracles (the T06-A9 EXTRA whitelist compares CAST(LOWER(x) AS BINARY) byte-exact so PAD SPACE catalog collations cannot smuggle trailing-space text into a role marker; the T06-A10 observations enforce a string-typed stdout carrying the fixed client header plus exactly one bound data record — the allocator counter is verbatim-observed, never numerically asserted, and SHOW CREATE must name object `t` with the head opening `CREATE TABLE `t` (` before its opaque body; the T06-A11 observation additionally enforces a complete two-digit-pair HEX field shape so literal whitespace can never launder into the COLUMN_TYPE whitelist; T06-A12 pins per-column NOT NULL finding attribution, the loaded/applicable/absent rule_summary contract per role, and the ordered column-set oracle; T06-A12-R1 requires the absent key to be truly missing, enabled summaries to be JSON objects, and loaded/applicable to be strict JSON integers so bool/float/string/null and non-object shapes reject as failures, never == laundering or exceptions; T06-A13 binds each of the five type-family forbid roles to its own profile family/switch state, pins the absent vs loaded/applicable rule_summary per role, requires every mixed-hit finding to carry its family's rule_id, and verifies the ordered nine-column DATA_TYPE oracle per anchor; T06-A14 binds each table-option role to its own strict/optional isolated profile, pins loaded=1/applicable=1 on all five enabled roles (omitted-optional never degrades to 1/0), re-derives the per-product catalog oracle (MySQL storage/catalog values, TiDB compatibility display, charset through the real TABLE_COLLATION association) from frozen constants, and requires every reject finding to carry the family's complete frozen identity; T06-A15 binds each row-size role to its on/not-required isolated profile or the all-off control, re-derives the strict-65535 finding identity (table-level metadata.charset, "" for unresolved row format) and the field-ordered missing_instance_fact required_facts from frozen constants, and requires gap roles to record unverified coverage while determined findings and gaps coexist)
 # pos: DDL golden-path runner and artifact validator behind `make ddl-golden TASK=Txx ARTIFACT_DIR=...`
 # note: if this file changes, update this header and module README.md.
 """DeltaScope DDL golden-path runner (milestone T02/#81, T04/#83).
@@ -161,6 +161,13 @@ def mysql_exec(anchor, sql, database=None, silent=True):
     flag = "-Nse" if silent else "-e"
     client += [flag, sql]
     target = anchor.get("client_container") or anchor["container"]
+    password_env = anchor.get("exec_password_env")
+    if password_env:
+        password = os.environ.get(password_env)
+        if password is None:
+            return 1, "", "required fixture credential environment is unavailable"
+        env = {**os.environ, "MYSQL_PWD": password}
+        return run_cmd(["docker", "exec", "--env", "MYSQL_PWD", target, *client], timeout=120, env=env)
     return run_cmd(["docker", "exec", target, *client], timeout=120)
 
 
@@ -767,6 +774,38 @@ def metadata_case_spec_for(manifest, case):
 
 
 def execute_metadata_case(manifest, anchor_key, binary, policies, spec):
+    if manifest.get("task_id") != "T07":
+        return _execute_metadata_case(manifest, anchor_key, binary, policies, spec)
+    fixture = {"created": False, "absence_proved": False, "case": None}
+    try:
+        return _execute_metadata_case(manifest, anchor_key, binary, policies, spec, fixture=fixture)
+    except Exception as error:
+        case = fixture["case"]
+        if case is None:
+            raise
+        case["actual"]["fixture_error"] = {"type": type(error).__name__, "message": str(error)}
+        case["assertions"].append({"name": "T07 fixture primary error", "ok": False, "detail": type(error).__name__})
+        case["status"] = "fail"
+        return case
+    finally:
+        if fixture["created"]:
+            case = fixture["case"]
+            anchor = manifest["anchors"][anchor_key]
+            cleanup = {}
+            for name, sql in (("drop", "DROP TABLE t;"), ("count", "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'")):
+                try:
+                    rc, out, err = mysql_exec(anchor, sql, database=anchor["database"])
+                    cleanup[name] = {"sql": sql, "rc": rc, "stdout": out, "stderr": err}
+                except Exception as error:
+                    cleanup[name] = {"sql": sql, "exception_type": type(error).__name__, "exception_message": str(error)}
+            case["actual"]["owned_cleanup"] = cleanup
+            ok = type(cleanup["drop"].get("rc")) is int and cleanup["drop"]["rc"] == 0 and type(cleanup["count"].get("rc")) is int and cleanup["count"]["rc"] == 0 and cleanup["count"].get("stdout", "").strip() == "0"
+            case["assertions"].append({"name": "T07 owned fallback cleanup", "ok": ok, "detail": "owned table DROP and final COUNT"})
+            if not ok:
+                case["status"] = "fail"
+
+
+def _execute_metadata_case(manifest, anchor_key, binary, policies, spec, fixture=None):
     """Run the freshly built CLI audit against a live anchor database: fixture
     setup and teardown stay test-driven, the audit only reads metadata, and
     post_verify steps prove the audited object was not mutated."""
@@ -789,6 +828,8 @@ def execute_metadata_case(manifest, anchor_key, binary, policies, spec):
         "assertions": [],
         "status": "pass",
     }
+    if fixture is not None:
+        fixture["case"] = case
 
     database = {
         "product": anchor["product"],
@@ -807,12 +848,19 @@ def execute_metadata_case(manifest, anchor_key, binary, policies, spec):
         "ok": rc == 0 and anchor["version_contains"] in database["version"],
         "detail": f"SELECT VERSION() rc={rc} version={database['version']!r} expected_contains={anchor['version_contains']!r}",
     })
-    if not database["reachable"]:
+    if not database["reachable"] or fixture is not None and (type(rc) is not int or anchor["version_contains"] not in database["version"]):
         case["status"] = "fail"
         return case
 
     for step in spec.get("setup") or []:
+        if fixture is not None and step.get("creates_fixture") and not fixture["absence_proved"]:
+            case["assertions"].append({"name": "T07 prior fixture absence required", "ok": False, "detail": "no successful absence proof"})
+            case["status"] = "fail"
+            return case
         src, sout, serr = mysql_exec(anchor, step["sql"], database=anchor["database"], silent=False)
+        if fixture is not None and step.get("creates_fixture") and type(src) is int and src == 0:
+            fixture["created"] = True
+        step_ok = type(src) is int and src == step.get("expect_rc", 0)
         record = {"name": step["name"], "sql": step["sql"], "rc": src, "stdout": sout.strip(), "stderr": serr.strip()}
         case["actual"]["setup"].append(record)
         case["assertions"].append({
@@ -828,6 +876,13 @@ def execute_metadata_case(manifest, anchor_key, binary, policies, spec):
                 "ok": vrc == 0 and vout.strip() == verify["expect"],
                 "detail": f"rc={vrc} output={vout.strip()!r} expected={verify['expect']!r}",
             })
+            step_ok = step_ok and type(vrc) is int and vrc == 0 and vout.strip() == verify["expect"]
+        if fixture is not None:
+            if step.get("requires_absence"):
+                fixture["absence_proved"] = step_ok
+            if not step_ok:
+                case["status"] = "fail"
+                return case
 
     args = [
         binary, "audit",
@@ -888,7 +943,14 @@ def execute_metadata_case(manifest, anchor_key, binary, policies, spec):
     # statement — the product only ever reads; the fixture must prove the
     # audited SQL actually works on this anchor (issue #84 T05 oracle).
     for step in spec.get("execute") or []:
+        if fixture is not None and step.get("creates_fixture") and not fixture["absence_proved"]:
+            case["assertions"].append({"name": "T07 driver prior absence required", "ok": False, "detail": "no successful absence proof"})
+            case["status"] = "fail"
+            return case
         erc, eout, eerr = mysql_exec(anchor, step["sql"], database=anchor["database"], silent=False)
+        if fixture is not None and step.get("creates_fixture") and type(erc) is int and erc == 0:
+            fixture["created"] = True
+        step_ok = type(erc) is int and erc == step.get("expect_rc", 0)
         record = {"name": step["name"], "sql": step["sql"], "rc": erc, "stdout": eout.strip(), "stderr": eerr.strip()}
         case["actual"]["execute"].append(record)
         case["assertions"].append({
@@ -910,6 +972,10 @@ def execute_metadata_case(manifest, anchor_key, binary, policies, spec):
                 "ok": vrc == 0 and vout.strip() == verify["expect"],
                 "detail": f"rc={vrc} output={vout.strip()!r} expected={verify['expect']!r}",
             })
+            step_ok = step_ok and type(vrc) is int and vrc == 0 and vout.strip() == verify["expect"]
+        if fixture is not None and not step_ok:
+            case["status"] = "fail"
+            return case
 
     # Structure oracle: after the driver applies the audited statements the
     # resulting schema must match the frozen expectation exactly — column
@@ -924,7 +990,13 @@ def execute_metadata_case(manifest, anchor_key, binary, policies, spec):
         })
 
     for step in spec.get("teardown") or []:
+        if fixture is not None and step.get("drops_fixture") and not fixture["created"]:
+            case["assertions"].append({"name": "T07 drop requires current fixture ownership", "ok": False, "detail": "unowned table preserved"})
+            case["status"] = "fail"
+            return case
         trc, tout, terr = mysql_exec(anchor, step["sql"], database=anchor["database"], silent=False)
+        if fixture is not None and step.get("drops_fixture") and type(trc) is int and trc == 0:
+            fixture["created"] = False
         record = {"name": step["name"], "sql": step["sql"], "rc": trc, "stderr": terr.strip()}
         case["actual"]["teardown"].append(record)
         case["assertions"].append({

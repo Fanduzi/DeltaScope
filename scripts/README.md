@@ -7,6 +7,8 @@ Operational scripts for local DeltaScope workflows.
 | File | Responsibility |
 |------|---------------|
 | t07_contract.py | Independent frozen T07 advanced-column role/oracle and full-entry validator: 207 identities, exact statement/column/dependent findings, Known-vs-empty gaps, product/version/vendor roles, complete native schemas/step errors, strict JSON counters and privacy; source of the materialized T07 manifest, never product-actual-derived expectations |
+| test_t07_contract.py | Full-entry T07 constructed valid control and adversarial validator sensitivity, plus owned-fixture/version/count/error/cleanup and environment-only credential controls; no product or native acceptance claim |
+| t07proof/ | Bounded T07 supplemental native source/catalog/provider private-fact proof with exact ordered sets, raw catalog/HEX, LIMIT-0 fields, query ledger and owned cleanup; separate from Golden business cases; see [module README](t07proof/README.md) |
 | t06a17proof/ | Bounded T06-A17-R1 native catalog/provider proof command and constructed-fault tests: complete ordered 24-column collection, independent numeric/member facts, owned-table cleanup, failure propagation, and test-only old/new assertion sensitivity; see [module README](t06a17proof/README.md) |
 | verify_pg_manylinux_baseline.sh | Builds the converged Linux PG-capable binaries in a manylinux2014 container and fails if the Linux glibc baseline exceeds the approved threshold |
 | verify_homebrew_cask.sh | Verifies rendered Homebrew cask files against the release version, darwin archive URLs, sha256 values, and binary stanza |

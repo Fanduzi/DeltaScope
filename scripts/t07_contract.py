@@ -233,7 +233,7 @@ def metadata_case(row,anchor):
         if idx==0:step['creates_fixture']=True
         if fail: step['stderr_contains']=['ERROR '+str(fail)]
         execute.append(step);last_index=indexes
-        if fail: break
+        if fail and not state: break
     connect={'host':'127.0.0.1','port':PORTS[anchor],'user':'root','schema':'golden'}
     if anchor!='tidb85': connect['password_env']='T07_MYSQL_PASSWORD'
     exists=bool(variant['states'][len(execute)-1])
@@ -317,14 +317,15 @@ def manifest():
     for case in native+cli:
         selected=case.get('policy','all-rules-disabled')
         case['expect']['statement_indices']=list(range(case['expect']['statements']))
-        case['expect']['rule_summary_loaded']=0 if selected=='all-rules-disabled' else len(profiles()[selected]['enable'])
-        if selected in ('all-rules-disabled','t07-not-required'):case['expect']['rule_summary_applicable']=0
+        if selected!='all-rules-disabled':case['expect']['rule_summary_loaded']=len(profiles()[selected]['enable'])
+        if selected=='t07-not-required':case['expect']['rule_summary_applicable']=0
         if selected=='t07-dependency':case['expect']['rule_summary_applicable']=1
     ids=[f'T07.db.{anchor}.{suffix}' for anchor in VERSIONS for suffix in ('ddl','syntax_negative')]+['T07.cli.mysql','T07.cli.tidb']
     ids += ['T07.cli.'+row['id'] for row in cli]+['T07.meta.'+row['id'] for row in native]
     assert len(ids)==len(set(ids))==FROZEN_REQUIRED_CASES
     assert hashlib.sha256('\n'.join(ids).encode()).hexdigest()==FROZEN_IDS_SHA256
-    return {'task_id':'T07','issue':'https://github.com/Fanduzi/DeltaScope/issues/86','policy_profile':'all-rules-disabled','description':'Frozen generated/default-expression/visibility semantics; independent T07 acceptance contract','anchors':anchors,'ddl_steps':copy.deepcopy(baseline['ddl_steps']),'syntax_negative':copy.deepcopy(baseline['syntax_negative']),'cli_audit':{'dialects':['mysql','tidb'],'sql':'CREATE TABLE t (a INT);','expect':{'exit':0,'verdict':'pass','statements':1,'findings':0,'diagnostics':0,'unsupported':0,'coverage':'complete'}},'policy':{'profiles':profiles()},'cli_cases':cli,'metadata_cases':native,'required_case_ids':ids}
+    baseline_cli=[{'id':dialect,'dialect':dialect,'sql':'CREATE TABLE t (a INT);','expect':expected(['CREATE TABLE t (a INT);'])} for dialect in ('mysql','tidb')]
+    return {'task_id':'T07','issue':'https://github.com/Fanduzi/DeltaScope/issues/86','policy_profile':'all-rules-disabled','description':'Frozen generated/default-expression/visibility semantics; independent T07 acceptance contract','anchors':anchors,'ddl_steps':copy.deepcopy(baseline['ddl_steps']),'syntax_negative':copy.deepcopy(baseline['syntax_negative']),'cli_audit':{'dialects':['mysql','tidb'],'sql':'CREATE TABLE t (a INT);','expect':{'exit':0,'verdict':'pass','statements':1,'findings':0,'diagnostics':0,'unsupported':0,'coverage':'complete'}},'policy':{'profiles':profiles()},'cli_cases':baseline_cli+cli,'metadata_cases':native,'required_case_ids':ids}
 
 
 def strict_equal(left, right):
@@ -364,7 +365,9 @@ def t07_artifact_failures(artifact,data):
             allowed=allowed or len(path)==3 and path[0]=='unsupported' and type(path[1]) is int and path[2]=='sql'
             need(allowed,'private literal leaked outside existing input echo '+repr(path))
         elif isinstance(value,dict):
-            for key,item in value.items(): private_payload(item,path+(key,))
+            for key,item in value.items():
+                need(not isinstance(key,str) or MARKER not in key,'private literal leaked as a payload key')
+                private_payload(item,path+(key,))
         elif isinstance(value,list):
             for idx,item in enumerate(value): private_payload(item,path+(idx,))
     def query(actual,want,label):
@@ -465,7 +468,7 @@ def write_frozen_files():
     root=Path(__file__).resolve().parents[1];data=manifest()
     (root/'testdata/ddl-golden/T07.json').write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n')
     directory=root/'docs/work-plans/t07-advanced-columns'
-    (directory/'roles.json').write_text(json.dumps({'role_count':38,'cli_cases':len(data['cli_cases']),'metadata_cases':len(data['metadata_cases']),'required_cases':len(data['required_case_ids']),'required_case_ids':data['required_case_ids'],'native_roles':native_roles()},ensure_ascii=False,indent=2)+'\n')
+    (directory/'roles.json').write_text(json.dumps({'role_count':38,'baseline_cli_cases':2,'offline_cli_cases':len(data['cli_cases'])-2,'cli_cases':len(data['cli_cases']),'metadata_cases':len(data['metadata_cases']),'required_cases':len(data['required_case_ids']),'required_case_ids':data['required_case_ids'],'native_roles':native_roles()},ensure_ascii=False,indent=2)+'\n')
     print(json.dumps({'required_cases':len(data['required_case_ids']),'cli_cases':len(data['cli_cases']),'metadata_cases':len(data['metadata_cases']),'id_sha256':hashlib.sha256('\n'.join(data['required_case_ids']).encode()).hexdigest()},indent=2))
 
 

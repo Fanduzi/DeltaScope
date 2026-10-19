@@ -11,7 +11,7 @@ unchanged.
 |---|---|
 | `main.go` | Records native session/catalog/provider observations, propagates query/scan/iteration/encoding/write errors, and cleans up only a table this invocation successfully created |
 | `facts.go` | Keeps the original CREATE bytes, four fixed anchors, exact ordered 24-column identity, independent DECIMAL/member facts, and complete 21-target/3-control pairing |
-| `main_test.go` | Uses a controlled `database/sql` driver and failing writers to reject COUNT errors, incomplete/duplicate rows, provider omissions, and evidence failures without live fault injection |
+| `main_test.go` | Uses a controlled `database/sql` driver and failing writers to reject COUNT errors, incomplete/duplicate rows, provider omissions, and evidence failures without live fault injection; its `information_schema.columns` fixture mirrors the nine-column provider row shape including `generation_expression` |
 | `sensitivity.py` | Runs original and strict assertions with test-file-only Go overlays; missing/empty/duplicate columns and missing/malformed ALTER definitions must pass the old insufficient assertions and fail the new assertions explicitly |
 
 ## Exports and invocation

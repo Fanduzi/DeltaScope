@@ -62,7 +62,7 @@ func newFaultFixture() *faultFixture {
 			charset, collation = "utf8mb4", "utf8mb4_bin"
 		}
 		fixture.catalog = append(fixture.catalog, []driver.Value{name, int64(i + 1), columnFamilies[i], fixtureTypes[i], strings.ToUpper(hex.EncodeToString([]byte(fixtureTypes[i]))), precision, scale, charset, collation})
-		fixture.provider = append(fixture.provider, []driver.Value{name, fixtureTypes[i], charset, collation, "", nil, "YES", ""})
+		fixture.provider = append(fixture.provider, []driver.Value{name, fixtureTypes[i], charset, collation, "", nil, "YES", "", nil})
 	}
 	return fixture
 }
@@ -154,7 +154,7 @@ func (c *faultConn) QueryContext(_ context.Context, query string, _ []driver.Nam
 	}
 	if strings.Contains(query, "from information_schema.columns") {
 		f.providerQueries++
-		return newFaultRows([]string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra"}, f.provider, -1), nil
+		return newFaultRows([]string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"}, f.provider, -1), nil
 	}
 	if strings.Contains(query, "from information_schema.statistics") {
 		f.providerQueries++
