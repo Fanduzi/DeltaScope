@@ -1,0 +1,6 @@
+=== gofmt gate ===
+argv: gofmt -l <changed go files>
+head: 9538c05905d2cf78895bcdcc8346b251453c3151
+files: internal/application/audit/batch_state.go internal/application/audit/batch_state_modify.go internal/application/audit/batch_state_t07_r1_test.go internal/domain/spec/advanced_columns.go internal/domain/spec/advanced_columns_t07_r1_test.go internal/infrastructure/parser/tidb/expression_facts.go internal/infrastructure/parser/tidb/expression_facts_t07_r1_test.go 
+output: 
+rc: 0

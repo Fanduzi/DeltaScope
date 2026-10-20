@@ -1,0 +1,27 @@
+ .../2026-10-19-ddl-advanced-column-facts.md        |  57 +++
+ docs/work-plans/t07-advanced-columns/CONTRACT.md   | 112 ++++++
+ .../t07-advanced-columns/EXPECTED-UPGRADES.md      |  45 +++
+ internal/application/audit/README.md               |   4 +-
+ internal/application/audit/batch_state.go          |   2 +-
+ internal/application/audit/batch_state_modify.go   |  13 +-
+ .../application/audit/batch_state_t07_r1_test.go   | 210 ++++++----
+ internal/domain/spec/README.md                     |   6 +-
+ internal/domain/spec/advanced_columns.go           | 443 +++++++--------------
+ .../domain/spec/advanced_columns_t07_r1_test.go    |   3 +
+ internal/infrastructure/parser/tidb/README.md      |   2 +-
+ .../infrastructure/parser/tidb/expression_facts.go |   5 +-
+ .../parser/tidb/expression_facts_t07_r1_test.go    |  31 +-
+ 13 files changed, 516 insertions(+), 417 deletions(-)
+docs/decisions/2026-10-19-ddl-advanced-column-facts.md
+docs/work-plans/t07-advanced-columns/CONTRACT.md
+docs/work-plans/t07-advanced-columns/EXPECTED-UPGRADES.md
+internal/application/audit/README.md
+internal/application/audit/batch_state.go
+internal/application/audit/batch_state_modify.go
+internal/application/audit/batch_state_t07_r1_test.go
+internal/domain/spec/README.md
+internal/domain/spec/advanced_columns.go
+internal/domain/spec/advanced_columns_t07_r1_test.go
+internal/infrastructure/parser/tidb/README.md
+internal/infrastructure/parser/tidb/expression_facts.go
+internal/infrastructure/parser/tidb/expression_facts_t07_r1_test.go

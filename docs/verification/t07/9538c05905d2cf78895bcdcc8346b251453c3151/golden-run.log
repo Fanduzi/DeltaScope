@@ -1,0 +1,138 @@
+start: 2026-10-20T16:24:40Z
+head: 9538c05905d2cf78895bcdcc8346b251453c3151
+note: retry after compose project/docker network cleanup (attempt1 env failure preserved)
+argv: make ddl-golden TASK=T07 ARTIFACT_DIR=/tmp/ds-t07r2/golden-final/T07
+python3 ./scripts/ddl_golden.py run --task "T07" --artifact-dir "/tmp/ds-t07r2/golden-final/T07"
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g01-stored-dependent-drop raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g01-stored-dependent-drop raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g01-stored-dependent-drop raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g02-stored-unrelated-drop raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g02-stored-unrelated-drop raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g02-stored-unrelated-drop raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g03-virtual-transitive raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g03-virtual-transitive raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g03-virtual-transitive raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g04-omitted-storage raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g04-omitted-storage raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g04-omitted-storage raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g05-literal-not-reference raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g05-literal-not-reference raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g05-literal-not-reference raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g06-quoted-identifier raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g06-quoted-identifier raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g06-quoted-identifier raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g07-generated-index raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g07-generated-index raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g07-generated-index raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g08-add-virtual raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g08-add-virtual raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g08-add-virtual raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g09-add-stored raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g09-add-stored raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g09-add-stored raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g10-modify-stored-expression raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g10-modify-stored-expression raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g10-modify-stored-expression raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g11-change-stored-name raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g11-change-stored-name raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g11-change-stored-name raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g12-virtual-to-stored raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g12-virtual-to-stored raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g12-virtual-to-stored raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g13-ordinary-to-stored raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g13-ordinary-to-stored raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g13-ordinary-to-stored raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g14-stored-to-ordinary raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g14-stored-to-ordinary raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g14-stored-to-ordinary raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g15-drop-generated-leaf raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g15-drop-generated-leaf raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g15-drop-generated-leaf raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g16-unrelated-modify raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g16-unrelated-modify raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g16-unrelated-modify raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g17-change-referenced-base raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g17-change-referenced-base raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g17-change-referenced-base raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g18-rename-referenced-base raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g18-rename-referenced-base raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g18-rename-referenced-base raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-d01-literal raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d01-literal raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d01-literal raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-d02-sql-null raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d02-sql-null raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d02-sql-null raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-d03-constant-expression raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d03-constant-expression raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d03-constant-expression raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-d04-column-expression raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d04-column-expression raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d04-column-expression raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-d05-json-object raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d05-json-object raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d05-json-object raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-d06-alter-set-expression raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d06-alter-set-expression raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d06-alter-set-expression raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-d07-alter-literal-drop raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d07-alter-literal-drop raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d07-alter-literal-drop raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-d08-alter-json-set raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d08-alter-json-set raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d08-alter-json-set raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-d09-dependent-generated-chain raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d09-dependent-generated-chain raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d09-dependent-generated-chain raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-d10-alter-uuid-default raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d10-alter-uuid-default raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d10-alter-uuid-default raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-d11-drop-json-expression-default raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d11-drop-json-expression-default raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d11-drop-json-expression-default raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-v01-create-invisible raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-v01-create-invisible raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-v01-create-invisible raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-v02-create-explicit-visible raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-v02-create-explicit-visible raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-v02-create-explicit-visible raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-v03-create-omitted raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-v03-create-omitted raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-v03-create-omitted raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-v04-alter-visibility raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-v04-alter-visibility raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-v04-alter-visibility raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-v05-modify-omitted raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-v05-modify-omitted raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-v05-modify-omitted raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-v06-change-omitted raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-v06-change-omitted raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-v06-change-omitted raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-v07-all-invisible raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-v07-all-invisible raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-v07-all-invisible raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-v08-hidden-index raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-v08-hidden-index raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-v08-hidden-index raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-x01-generated-invisible raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-x01-generated-invisible raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-x01-generated-invisible raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-provider-mysql57-g01-stored-dependent-drop raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-provider-mysql80-g01-stored-dependent-drop raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-provider-mysql84-g01-stored-dependent-drop raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-provider-mysql80-d04-column-expression raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-provider-mysql80-v08-hidden-index raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-provider-mysql84-d04-column-expression raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-provider-mysql84-v08-hidden-index raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-provider-mysql57-v04-alter-visibility raw/parsed payload types
+[ddl-golden] task=T07 head=9538c05905d2 cases=207 passed=79 assertions=2166
+[ddl-golden] artifact=/private/tmp/ds-t07r2/golden-final/T07/T07/artifact.json
+make: *** [ddl-golden] Error 1
+T07 rc=2
+argv: make ddl-golden TASK=T06 ARTIFACT_DIR=/tmp/ds-t07r2/golden-final/T06
+python3 ./scripts/ddl_golden.py run --task "T06" --artifact-dir "/tmp/ds-t07r2/golden-final/T06"
+[ddl-golden] task=T06 head=9538c05905d2 cases=496 passed=496 assertions=11772
+[ddl-golden] artifact=/private/tmp/ds-t07r2/golden-final/T06/T06/artifact.json
+[ddl-golden] PASS
+T06 rc=0
+end: 2026-10-20T16:28:47Z

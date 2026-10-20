@@ -1,0 +1,221 @@
+{
+  "case_id": "T06.cli.t06-a15-mysql-above",
+  "kind": "cli_audit",
+  "cli_case": "t06-a15-mysql-above",
+  "dialect": "mysql",
+  "input_sql": "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;",
+  "policy_profile": "t06-a15-row-size-isolated",
+  "policy_path": "/private/tmp/ds-t07r2/golden-final/T06/T06/golden-policy-t06-a15-row-size-isolated.yaml",
+  "command": [
+    "/private/tmp/ds-t07r2/golden-final/T06/T06/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;",
+    "--config",
+    "/private/tmp/ds-t07r2/golden-final/T06/T06/golden-policy-t06-a15-row-size-isolated.yaml",
+    "--format",
+    "json",
+    "--fail-on",
+    "blocker"
+  ],
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "statement_sql": [
+      "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;"
+    ],
+    "statement_indices": [
+      0
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_entries_full": [
+      {
+        "index": 0,
+        "rule_id": "ddl.table.row_size.max_bytes.require",
+        "level": "blocker",
+        "message": "estimated row size exceeds 65535 bytes (65536)",
+        "metadata": {
+          "table": "t",
+          "charset": "latin1",
+          "row_format": "DYNAMIC",
+          "estimated": 65536,
+          "limit": 65535
+        },
+        "line": 1,
+        "column": 1
+      }
+    ]
+  },
+  "actual": {
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;\",\"normalized_sql\":\"CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC\",\"findings\":[{\"rule_id\":\"ddl.table.row_size.max_bytes.require\",\"level\":\"blocker\",\"message\":\"estimated row size exceeds 65535 bytes (65536)\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"shrink wide columns, move large payloads out of the row, or review the table design explicitly\",\"metadata\":{\"charset\":\"latin1\",\"estimated\":65536,\"limit\":65535,\"row_format\":\"DYNAMIC\",\"table\":\"t\"},\"explanation\":{\"summary\":\"Require DDL table row size max bytes require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"shrink wide columns, move large payloads out of the row, or review the table design explicitly\",\"metadata\":{\"status\":\"limited\",\"note\":\"Live instance facts are unavailable; the estimate runs on declared inputs only, and any required field left unresolved reports an evidence gap.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;",
+          "normalized_sql": "CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC",
+          "findings": [
+            {
+              "rule_id": "ddl.table.row_size.max_bytes.require",
+              "level": "blocker",
+              "message": "estimated row size exceeds 65535 bytes (65536)",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "shrink wide columns, move large payloads out of the row, or review the table design explicitly",
+              "metadata": {
+                "charset": "latin1",
+                "estimated": 65536,
+                "limit": 65535,
+                "row_format": "DYNAMIC",
+                "table": "t"
+              },
+              "explanation": {
+                "summary": "Require DDL table row size max bytes require",
+                "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+                "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                "suggestion": "shrink wide columns, move large payloads out of the row, or review the table design explicitly",
+                "metadata": {
+                  "status": "limited",
+                  "note": "Live instance facts are unavailable; the estimate runs on declared inputs only, and any required field left unresolved reports an evidence gap."
+                }
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "offline",
+        "dialect": "mysql",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=1"
+    },
+    {
+      "name": "applicable rule count",
+      "ok": true,
+      "detail": "applicable=1"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;'] expected=['CREATE TABLE t (c VARCHAR(65534)) ENGINE=InnoDB DEFAULT CHARSET=latin1 ROW_FORMAT=DYNAMIC;']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "fail_on_triggered",
+      "ok": true,
+      "detail": "fail_on_triggered=True"
+    }
+  ],
+  "status": "pass"
+}

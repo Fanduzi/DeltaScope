@@ -1,0 +1,8 @@
+T07 golden cli.sha256 (runner-built, head 9538c059):
+39b76649b2f837a1cee60b5a0657dc54353dfe3ccd1efee4d49049763f52aacf
+
+independent rebuild at HEAD (CGO_ENABLED=0 go build ./cmd/deltascope):
+39b76649b2f837a1cee60b5a0657dc54353dfe3ccd1efee4d49049763f52aacf
+
+red-side base binary (aba44783 worktree build):
+a933db209920cafc55150f0313c6a84254bad9e175cc1ba3b78236c574209e8c

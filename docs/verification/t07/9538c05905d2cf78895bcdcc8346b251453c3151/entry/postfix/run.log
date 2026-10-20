@@ -1,0 +1,9 @@
+# R2 green-side captures at the fixed worktree (pre-commit).
+# Binary: /tmp/ds-t07r2/bin/deltascope-r2 (worktree @ c5761f5c + R2 changes)
+# Policy: /tmp/ds-t07r1/policies/golden-policy-t07-compat.yaml
+# Input shape mirrors the red captures: "CREATE TABLE t (v INT, x INT);"
+# prefix + one SET DEFAULT per role.
+# F01-F07 -> verdict=review + one tidb_set_default_eval_unproven gap;
+# F08 -> verdict=pass (bare-call control preserved).
+# probe_test_run.txt: same TestR2Probe harness on the fixed tree —
+# UnresolvedTransition + eval-unproven gap + post_state withheld (nil).

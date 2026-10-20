@@ -1,0 +1,26 @@
+=== session ===
+8.0.11-TiDB-v8.5.0	ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_AUTO_CREATE_USER,NO_ENGINE_SUBSTITUTION	utf8mb4
+8.4.10	ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION	utf8mb4
+=== TiDB 8.5.0 F-roles ===
+### tidb85/F01 set_rc=0 set_out=| def=1|hex=31|extra=
+### tidb85/F01 cleanup drop_rc=0 final_count=0
+### tidb85/F02 set_rc=0 set_out=| def=1|hex=31|extra=
+### tidb85/F02 cleanup drop_rc=0 final_count=0
+### tidb85/F03 set_rc=1 set_out=ERROR 1067 (42000) at line 1: Invalid default value for 'v'| def=<NULL>|hex=<NULL>|extra=
+### tidb85/F03 cleanup drop_rc=0 final_count=0
+### tidb85/F04 set_rc=0 set_out=| def=1|hex=31|extra=
+### tidb85/F04 cleanup drop_rc=0 final_count=0
+### tidb85/F05 set_rc=1 set_out=ERROR 1067 (42000) at line 1: Invalid default value for 'v'| def=<NULL>|hex=<NULL>|extra=
+### tidb85/F05 cleanup drop_rc=0 final_count=0
+### tidb85/F06 set_rc=0 set_out=| def=3|hex=33|extra=
+### tidb85/F06 cleanup drop_rc=0 final_count=0
+### tidb85/F07 set_rc=1 set_out=ERROR 1292 (22007) at line 1: Truncated incorrect DOUBLE value: 'X'| def=<NULL>|hex=<NULL>|extra=
+### tidb85/F07 cleanup drop_rc=0 final_count=0
+### tidb85/F08 set_rc=0 set_out=| def=uuid()|hex=757569642829|extra=DEFAULT_GENERATED
+### tidb85/F08 cleanup drop_rc=0 final_count=0
+=== MySQL 8.4 opposite controls ===
+### mysql84/F01 set_rc=0 set_out=| def=(case when 1 then 1 else 2 end)|hex=2863617365207768656E2031207468656E203120656C7365203220656E6429|extra=DEFAULT_GENERATED
+### mysql84/F01 cleanup drop_rc=0 final_count=0
+### mysql84/F04 set_rc=0 set_out=| def=lower(_utf8mb4\\'1\\')|hex=6C6F776572285F757466386D62345C27315C2729|extra=DEFAULT_GENERATED
+### mysql84/F04 cleanup drop_rc=0 final_count=0
+=== done created=10 ===

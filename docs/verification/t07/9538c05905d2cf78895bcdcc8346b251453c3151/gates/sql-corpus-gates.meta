@@ -1,0 +1,8 @@
+=== gate: sql-corpus-gates
+argv: make sql-corpus-gates
+cwd: /Users/fan/GolangProjects/DeltaScope
+start: 2026-10-20T16:20:01Z
+head: 9538c05905d2cf78895bcdcc8346b251453c3151
+dirty: 1 tracked-modified
+end: 2026-10-20T16:20:02Z
+rc: 0

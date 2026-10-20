@@ -1,0 +1,41 @@
+# MUTATION M1 (test sensitivity, not DB behavior): callee-set generalization restored — RootParenthesized/TopForm/CallCount guards removed from tidbAlterSetDefaultOutcome
+head: 9538c05905d2cf78895bcdcc8346b251453c3151 + working-tree mutation
+start: 2026-10-20T16:33:24Z
+argv: go test ./internal/application/audit/ -run 'TestT07R' -count=1
+--- FAIL: TestT07R1TiDBFoldedLiteralPostState (0.01s)
+    --- FAIL: TestT07R1TiDBFoldedLiteralPostState/unproven_case (0.00s)
+        batch_state_t07_r1_test.go:595: post-state = &{Schema:golden Exists:true Table:0x3984a43ac000 Columns:[{Name:v Type:varchar(36) Length:0 Charset: Collation: Comment: Unsigned:false NotNull:false AutoIncrement:false HasDefault:true DefaultValue:CASE WHEN 1 THEN uuid() ELSE 'x' END DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[] Generated:<nil> DefaultExpression:0x3984a41f9100 Visibility: VisibilityExplicit:false DefaultParenthesized:true} {Name:x Type:int Length:0 Charset: Collation: Comment: Unsigned:false NotNull:false AutoIncrement:false HasDefault:false DefaultValue: DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[] Generated:<nil> DefaultExpression:<nil> Visibility: VisibilityExplicit:false DefaultParenthesized:false}] PrimaryKey:<nil> Indexes:[] Constraints:[] Options:map[] PrimaryKeyUnknown:false IndexesUnknown:false ConstraintsUnknown:false}, want the identity withheld
+    --- FAIL: TestT07R1TiDBFoldedLiteralPostState/unproven_wrapped_uuid (0.00s)
+        batch_state_t07_r1_test.go:595: post-state = &{Schema:golden Exists:true Table:0x3984a43ac4e0 Columns:[{Name:v Type:varchar(36) Length:0 Charset: Collation: Comment: Unsigned:false NotNull:false AutoIncrement:false HasDefault:true DefaultValue:(uuid()) DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[] Generated:<nil> DefaultExpression:0x3984a41f9780 Visibility: VisibilityExplicit:false DefaultParenthesized:true} {Name:x Type:int Length:0 Charset: Collation: Comment: Unsigned:false NotNull:false AutoIncrement:false HasDefault:false DefaultValue: DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[] Generated:<nil> DefaultExpression:<nil> Visibility: VisibilityExplicit:false DefaultParenthesized:false}] PrimaryKey:<nil> Indexes:[] Constraints:[] Options:map[] PrimaryKeyUnknown:false IndexesUnknown:false ConstraintsUnknown:false}, want the identity withheld
+    --- FAIL: TestT07R1TiDBFoldedLiteralPostState/unproven_nested (0.00s)
+        batch_state_t07_r1_test.go:595: post-state = &{Schema:golden Exists:true Table:0x3984a46311a0 Columns:[{Name:v Type:varchar(36) Length:0 Charset: Collation: Comment: Unsigned:false NotNull:false AutoIncrement:false HasDefault:true DefaultValue:uuid(uuid()) DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[] Generated:<nil> DefaultExpression:0x3984a3f10c00 Visibility: VisibilityExplicit:false DefaultParenthesized:true} {Name:x Type:int Length:0 Charset: Collation: Comment: Unsigned:false NotNull:false AutoIncrement:false HasDefault:false DefaultValue: DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[] Generated:<nil> DefaultExpression:<nil> Visibility: VisibilityExplicit:false DefaultParenthesized:false}] PrimaryKey:<nil> Indexes:[] Constraints:[] Options:map[] PrimaryKeyUnknown:false IndexesUnknown:false ConstraintsUnknown:false}, want the identity withheld
+--- FAIL: TestT07R1RequestIsolation (0.01s)
+    batch_state_t07_r1_test.go:881: concurrent run 0: gaps = [], want one tidb_set_default_eval_unproven gap
+--- FAIL: TestT07R1TiDBAlterExpressionShapes (0.13s)
+    --- FAIL: TestT07R1TiDBAlterExpressionShapes/f02_case_dead_uuid (0.00s)
+        batch_state_t07_r1_test.go:468: gaps = [], want one tidb_set_default_eval_unproven gap
+    --- FAIL: TestT07R1TiDBAlterExpressionShapes/f03_case_ret_uuid (0.00s)
+        batch_state_t07_r1_test.go:468: gaps = [], want one tidb_set_default_eval_unproven gap
+    --- FAIL: TestT07R1TiDBAlterExpressionShapes/f04_wrapped_lower_1 (0.00s)
+        batch_state_t07_r1_test.go:448: findings = [{RuleID:ddl.column.advanced.compatibility.require Level:blocker Message:column "x" advanced definition is not supported for the target (tidb_default_expression) StatementIndex:0 StatementKind:ddl Location:0x3984a44005e0 Suggestion: Metadata:map[action:set_column_default column:x feature:expression_default minimum_version: product:tidb reason_code:tidb_default_expression table:t target_version:8.5.0] Explanation:0x3984a3f44410}], want none
+    --- FAIL: TestT07R1TiDBAlterExpressionShapes/f05_wrapped_lower_x (0.00s)
+        batch_state_t07_r1_test.go:448: findings = [{RuleID:ddl.column.advanced.compatibility.require Level:blocker Message:column "x" advanced definition is not supported for the target (tidb_default_expression) StatementIndex:0 StatementKind:ddl Location:0x3984a44000d0 Suggestion: Metadata:map[action:set_column_default column:x feature:expression_default minimum_version: product:tidb reason_code:tidb_default_expression table:t target_version:8.5.0] Explanation:0x3984a42b0320}], want none
+    --- FAIL: TestT07R1TiDBAlterExpressionShapes/wrapped_uuid (0.00s)
+        batch_state_t07_r1_test.go:468: gaps = [], want one tidb_set_default_eval_unproven gap
+    --- FAIL: TestT07R1TiDBAlterExpressionShapes/wrapped_uuid_varchar (0.00s)
+        batch_state_t07_r1_test.go:468: gaps = [], want one tidb_set_default_eval_unproven gap
+    --- FAIL: TestT07R1TiDBAlterExpressionShapes/wrapped_lower_varchar (0.00s)
+        batch_state_t07_r1_test.go:448: findings = [{RuleID:ddl.column.advanced.compatibility.require Level:blocker Message:column "v" advanced definition is not supported for the target (tidb_default_expression) StatementIndex:0 StatementKind:ddl Location:0x3984a3e64430 Suggestion: Metadata:map[action:set_column_default column:v feature:expression_default minimum_version: product:tidb reason_code:tidb_default_expression table:t target_version:8.5.0] Explanation:0x3984a3e865a0}], want none
+    --- FAIL: TestT07R1TiDBAlterExpressionShapes/wrapped_json (0.00s)
+        batch_state_t07_r1_test.go:468: gaps = [], want one tidb_set_default_eval_unproven gap
+    --- FAIL: TestT07R1TiDBAlterExpressionShapes/wrapped_cts_ts (0.00s)
+        batch_state_t07_r1_test.go:468: gaps = [], want one tidb_set_default_eval_unproven gap
+    --- FAIL: TestT07R1TiDBAlterExpressionShapes/nested_same_callee (0.00s)
+        batch_state_t07_r1_test.go:468: gaps = [], want one tidb_set_default_eval_unproven gap
+    --- FAIL: TestT07R1TiDBAlterExpressionShapes/d_arith (0.00s)
+        batch_state_t07_r1_test.go:468: gaps = [], want one tidb_set_default_eval_unproven gap
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.457s
+FAIL
+rc=1
+end: 2026-10-20T16:33:25Z

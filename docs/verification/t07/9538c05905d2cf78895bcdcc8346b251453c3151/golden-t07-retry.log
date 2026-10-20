@@ -1,0 +1,10 @@
+start: 2026-10-20T16:28:56Z
+head: 9538c05905d2cf78895bcdcc8346b251453c3151
+env: T07_MYSQL_PASSWORD=<set, fixture root password from compose>
+argv: make ddl-golden TASK=T07 ARTIFACT_DIR=/tmp/ds-t07r2/golden-final/T07
+python3 ./scripts/ddl_golden.py run --task "T07" --artifact-dir "/tmp/ds-t07r2/golden-final/T07"
+[ddl-golden] task=T07 head=9538c05905d2 cases=207 passed=207 assertions=6190
+[ddl-golden] artifact=/private/tmp/ds-t07r2/golden-final/T07/T07/artifact.json
+[ddl-golden] PASS
+T07 rc=0
+end: 2026-10-20T16:31:13Z
