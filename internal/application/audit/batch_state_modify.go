@@ -195,19 +195,8 @@ func (s *batchState) prepareColumnDefault(statement spec.Statement, alter *spec.
 			}
 		}
 		switch publish {
-		case spec.TiDBSetDefaultLiteral:
-			// TiDB evaluates foldable composites at the setter and stores
-			// an unprovable literal: publish literal default presence —
-			// never the expression facts or a computed value.
-			next.HasDefault = true
-			next.DefaultIsNull = false
-			next.DefaultValue = ""
-			next.DefaultIsCurrentTimestamp = false
-			next.DefaultExpression = nil
-			next.DefaultKind = ""
-			next.DefaultParenthesized = false
 		case spec.TiDBSetDefaultTemporal:
-			// The foldable-timestamp cell stores a verbatim
+			// The current_timestamp cell stores a verbatim
 			// CURRENT_TIMESTAMP default on temporal/DATE targets:
 			// publish the temporal default the catalog keeps, without
 			// the authored parens or expression facts.

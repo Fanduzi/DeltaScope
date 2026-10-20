@@ -287,3 +287,48 @@ Files: `docs/work-plans/t07-advanced-columns/CONTRACT.md` (§11),
 `internal/infrastructure/parser/tidb/expression_facts.go`,
 `internal/infrastructure/parser/tidb/extractor.go`,
 `internal/application/audit/batch_state_modify.go`, R1 tests and proof.
+## U11 — R2 fold-boundary contract amendment (§12)
+
+Same-task rework correcting the one R1 root cause where *sample fold results
+were generalized into expression-category results*. No frozen identity, SQL,
+profile, or verdict changes; the 207-identity digest is unchanged. R1's
+native observations stay true as samples; what changes is that a sample's
+stored outcome no longer defines the whole expression family's verdict.
+
+Bounded native matrix on TiDB 8.5.0 (`golden.t (v INT, x INT)`, ten cells):
+`(CASE WHEN 1 THEN 1 ELSE 2 END)` and `(CASE WHEN 1 THEN 1 ELSE uuid() END)`
+fold to `1`; `(CASE WHEN 1 THEN uuid() ELSE 'x' END)` rejects 1067;
+`((LOWER('1')))` folds to `1` while `((LOWER('X')))` rejects 1067; `(1+2)`
+folds to `3` while `('X'+1)` rejects 1292; `(uuid())` stays verbatim.
+Function-presence, callee name, TopForm, and target base type do not carry
+the branch-selection, argument-value, or coercion outcome — the fold verdict
+is value-dependent. MySQL 8.4 controls store F01/F04 verbatim, unchanged.
+
+Frozen vocabulary before production edit: one new bounded-gap reason
+`tidb_set_default_eval_unproven` with required facts
+`source_column.default_evaluation` and `target_table.default_coercion` —
+the authored expression's evaluation result and the folded value's coercion
+are not statically proven. `Known` stays true; `UnresolvedTransition` set;
+the ordered-state seam withholds rather than publishing an unprovable
+literal. New internal fact `ExpressionFacts.CallCount` counts call nodes so
+the verbatim cell requires a true single-call root (the deduplicated
+Functions set cannot prove call count). The 3770 allowlist is rescoped to
+the single-call bare root only. Determined cells kept: bare allowed call
+verbatim on every non-1101 target; bare disallowed call 3770;
+`(current_timestamp)` bare/literal-class on TIMESTAMP/DATETIME/DATE
+publishing the verbatim temporal default; 1054 column references; 1101
+targets; all §11.2 prior gates. Every other evaluated-shape cell — all CASE
+roots, all wrapped roots, all arithmetic/unary/other roots, multi-call bare
+roots, and the non-temporal current_timestamp cells — is the honest
+eval-unproven gap. The folded-literal publication kind
+`TiDBSetDefaultLiteral` is withdrawn; publication consumes the single
+adjudication result. The §11.2 folded outcome tables (string/uuid/lower/
+CASE/constant/timestamp-fold) are retired as sample-generalized.
+
+Files: `docs/work-plans/t07-advanced-columns/CONTRACT.md` (§12),
+`docs/decisions/2026-10-19-ddl-advanced-column-facts.md` (R2 amendment),
+`internal/domain/spec/advanced_columns.go` (including `ExpressionFacts.CallCount`),
+`internal/infrastructure/parser/tidb/expression_facts.go`,
+`internal/application/audit/batch_state_modify.go`,
+`internal/application/audit/batch_state.go` (gate comment),
+R1/R2 regression tests and proof.

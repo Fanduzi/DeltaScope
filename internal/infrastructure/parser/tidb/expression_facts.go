@@ -1,6 +1,6 @@
 // Package tidbparser extracts evaluation-free expression facts from parsed expressions.
 // input: TiDB AST expression nodes from column declarations and catalog generation text
-// output: spec.ExpressionFacts (references/functions/features/fingerprint/known) plus ParseCatalogExpressionFacts
+// output: spec.ExpressionFacts (references/functions/call-count/features/fingerprint/known) plus ParseCatalogExpressionFacts
 // pos: shared expression-fact collector used by the column extractor and the MySQL metadata provider
 // note: if this file changes, update this header and module README.md.
 package tidbparser
@@ -61,6 +61,7 @@ func expressionFacts(expr ast.ExprNode) spec.ExpressionFacts {
 		Functions:  sortedKeys(v.functions),
 		Features:   sortedKeys(v.features),
 		TopForm:    expressionTopForm(expr),
+		CallCount:  v.calls,
 	}
 	_, facts.RootParenthesized = expr.(*ast.ParenthesesExpr)
 	facts.Known = v.known && v.nodes <= expressionFactNodeLimit && !v.limitHit
@@ -137,6 +138,7 @@ type expressionFactVisitor struct {
 	known      bool
 	limitHit   bool
 	nodes      int
+	calls      int
 }
 
 func (v *expressionFactVisitor) Enter(in ast.Node) (ast.Node, bool) {
@@ -172,6 +174,7 @@ func (v *expressionFactVisitor) Enter(in ast.Node) (ast.Node, bool) {
 		v.features[spec.ExpressionFeatureArithmetic] = true
 	case *ast.FuncCallExpr:
 		name := strings.ToLower(node.FnName.O)
+		v.calls++
 		v.functions[name] = true
 		if node.Schema.O != "" || !recognizedExpressionFunctions[name] {
 			// Schema-qualified callees and functions outside the recognized

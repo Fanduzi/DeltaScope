@@ -172,3 +172,60 @@ spelling is unchanged.
 Verification evidence, native probes, and the R1 contract ledger live under
 `docs/work-plans/t07-advanced-columns/` (CONTRACT §11, EXPECTED-UPGRADES U10)
 and `docs/verification/t07/<r1-code-sha>/`.
+
+## R2 amendment (T07-R2-FOLD-BOUNDARY)
+
+The R1 fold outcome tables generalized observed *sample* results into
+expression-*category* results — the same root cause class this ticket
+exists to close. A bounded native re-verification on the pinned TiDB
+8.5.0 anchor (F01–F08, controlled `golden.t (v INT, x INT)`, each setter an
+independent request, MySQL 8.4 F01/F04 as opposite controls) proved the
+fold verdict is **value-dependent**: the same `TopForm`, the same callee
+set, and even the same deduplicated callee name decide different outcomes
+(CASE with uuid in a dead branch accepts; CASE returning uuid rejects
+1067; `((lower('1')))` accepts; `((lower('X')))` rejects 1067; `(1+2)`
+accepts; `('X'+1)` rejects 1292). Static facts — `TopForm`, the deduplicated
+`Functions` set, the root-parens flag, the target base type — cannot prove
+which CASE branch returns, which literal a call folds to, or whether the
+folded literal coerces into the target.
+
+**Correction.** The R1 literal-fold outcome tables (uuid/lower/string
+folds, CASE share, constant arithmetic, non-temporal current_timestamp
+folds) are withdrawn. A single `tidbAlterSetDefaultOutcome` adjudication
+now owns the setter cell: only `TopForm == "call"` + **not**
+`RootParenthesized` + `CallCount == 1` + exactly one deduplicated callee
+has observed outcomes — the verbatim allowed set, the observed 3770
+disallowed set, `current_timestamp` on TIMESTAMP/DATETIME/DATE, and the
+unobserved-callee evidence gap. Every other evaluated shape — any CASE
+root, any root-wrapped expression, arithmetic/unary/other roots, and
+bare roots with more than one call node — produces the new bounded gap
+`tidb_set_default_eval_unproven` (required facts
+`source_column.default_evaluation` + `target_table.default_coercion`)
+plus `UnresolvedTransition`, and the literal-class `(current_timestamp)`
+on a non-temporal base takes the same gap. An observed native success
+stays true as a *sample*; the product honestly reports the cell as
+unproven rather than claiming a determined verdict it cannot derive.
+
+**New minimal fact.** `ExpressionFacts.CallCount` counts function-call
+nodes. It proves exactly one thing — whether the whole expression is a
+single call node — because a deduplicated name set cannot
+(`uuid(uuid())` is not `uuid()`). It proves nothing about evaluation,
+arguments, or results, and carries no expression content.
+
+**Same verdict, one seam.** Assessment and ordered-state publication
+consume the single adjudication: proven cells publish verbatim expression
+facts or the catalog temporal default; every unproven cell tombstones the
+identity through `UnresolvedTransition`, so a gap never coexists with a
+fabricated default shape. The `TiDBSetDefaultLiteral` folded-literal
+publication kind is withdrawn. The MySQL surface, the CREATE-family
+grammar tables, the determined negatives (1054 column refs, 1101
+BLOB/TEXT/JSON, parens grammar, subquery/aggregate), the bare-call
+positives, and the R1 generated-column premises are all unchanged.
+
+Test sensitivity was verified by two constructed faults (restoring the
+callee-set generalization flips the eval-unproven matrix cells; bypassing
+the unresolved-transition gate republishes fabricated post-state
+defaults) — constructs only, never claimed as server behavior.
+Verification evidence, native probe transcripts, and the R2 contract
+ledger live under `docs/work-plans/t07-advanced-columns/` (CONTRACT §12,
+EXPECTED-UPGRADES U11) and `docs/verification/t07/<r2-code-sha>/`.

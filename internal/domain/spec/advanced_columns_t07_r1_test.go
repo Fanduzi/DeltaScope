@@ -202,6 +202,7 @@ func TestT07R1CloneExpressionFacts(t *testing.T) {
 		Known:             true,
 		TopForm:           ExpressionTopArithmetic,
 		RootParenthesized: true,
+		CallCount:         2,
 		References:        []ColumnReference{{Name: "a"}},
 		Functions:         []string{"uuid"},
 		Features:          []string{"arithmetic"},
@@ -210,10 +211,12 @@ func TestT07R1CloneExpressionFacts(t *testing.T) {
 	clone := CloneExpressionFacts(src)
 	clone.TopForm = ExpressionTopCall
 	clone.RootParenthesized = false
+	clone.CallCount = 1
 	clone.References[0].Name = "mutated"
 	clone.Functions[0] = "mutated"
 	clone.Features[0] = "mutated"
 	if src.TopForm != ExpressionTopArithmetic || !src.RootParenthesized ||
+		src.CallCount != 2 ||
 		src.References[0].Name != "a" || src.Functions[0] != "uuid" ||
 		src.Features[0] != "arithmetic" {
 		t.Fatalf("mutating the clone changed the source: %+v", src)

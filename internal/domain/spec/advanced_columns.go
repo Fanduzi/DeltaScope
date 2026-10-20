@@ -67,6 +67,13 @@ const (
 	// negative on both products (1064 on CREATE and ALTER SET DEFAULT).
 	AdvancedReasonExpressionDefaultShape     = "expression_default_shape"
 	AdvancedReasonGeneratedFunctionForbidden = "generated_function_forbidden"
+
+	// AdvancedReasonTiDBSetDefaultEvalUnproven is the R2 evaluation-boundary
+	// gap: the TiDB setter evaluates the authored expression and neither the
+	// evaluation result nor the folded value's coercion into the target is
+	// statically proven. The facts are complete (Known=true); the outcome
+	// is not.
+	AdvancedReasonTiDBSetDefaultEvalUnproven = "tidb_set_default_eval_unproven"
 )
 
 // Required-fact names shared with rule evidence gaps.
@@ -82,7 +89,13 @@ const (
 	AdvancedFactAlterColumnDepEffects    = "alter.column_dependency_effects"
 	AdvancedFactSourceDefaultFunction    = "source_column.default_function"
 	AdvancedFactSourceDefaultComposite   = "source_column.default_composite"
-	AdvancedFactAlterColumnPosition      = "alter.column_position"
+	// AdvancedFactSourceDefaultEvaluation / AdvancedFactTargetDefaultCoercion
+	// name the two premises the eval-unproven gap requires: the authored
+	// expression's server-side evaluation result and the folded value's
+	// coercion into the target column.
+	AdvancedFactSourceDefaultEvaluation = "source_column.default_evaluation"
+	AdvancedFactTargetDefaultCoercion   = "target_table.default_coercion"
+	AdvancedFactAlterColumnPosition     = "alter.column_position"
 )
 
 // Expression feature markers recorded in ExpressionFacts.Features; they are
@@ -155,9 +168,16 @@ type ExpressionFacts struct {
 	// RootParenthesized records that the authored expression's outermost
 	// node is a parentheses wrapper. TopForm stays paren-transparent, so
 	// callers see both facts: `(uuid())` is TopForm=call with the root
-	// wrapped, `uuid()` is TopForm=call unwrapped — the TiDB setter stores
-	// the first as an evaluated literal and the second verbatim.
+	// wrapped, `uuid()` is TopForm=call unwrapped — the TiDB setter
+	// evaluates the first and stores the second verbatim.
 	RootParenthesized bool
+	// CallCount is the number of function-call nodes in the expression.
+	// It proves exactly one thing — whether the whole expression is a
+	// single call node — so a bare-call cell can require CallCount == 1
+	// where the deduplicated Functions set cannot (`uuid(uuid())` is not
+	// `uuid()`). It proves nothing about evaluation, argument values, or
+	// results; it is a count, not expression content.
+	CallCount int
 }
 
 // Expression root-shape names recorded in ExpressionFacts.TopForm: the
@@ -665,7 +685,8 @@ var tidbAlterDefaultFunctions = map[string]bool{
 
 // tidbAlterFoldableFunctions are TiDB ALTER SET DEFAULT callees the setter
 // evaluates rather than preserves: current_timestamp folds to a timestamp
-// literal (accepted on temporal/DATE/VARCHAR targets, 1067 on numeric).
+// literal — proven only on TIMESTAMP/DATETIME/DATE targets; every other
+// base is the eval-unproven boundary (R2 §12).
 var tidbAlterFoldableFunctions = map[string]bool{
 	"current_timestamp": true,
 }
@@ -948,12 +969,12 @@ func assessExpressionDefaultFeature(assessment *AdvancedColumnAssessment, item a
 	}
 	facts := column.DefaultExpression
 	if facts == nil {
-		// SET DEFAULT (current_timestamp) folds to a timestamp literal at
-		// the TiDB setter — the same outcome table as the foldable-call
-		// expression path, just arriving through the literal-class fact:
-		// temporal/DATE targets store verbatim CURRENT_TIMESTAMP, the
-		// positive bases store a folded literal, the issue bases answer
-		// 1067, and anything else is an unproven coercion.
+		// SET DEFAULT (current_timestamp) arrives through the literal-class
+		// fact: temporal targets store the verbatim temporal default
+		// (observed); every other base is the same value-dependent fold/
+		// coercion boundary as the expression path — the
+		// tidb_set_default_eval_unproven gap, never a generalized fold
+		// outcome.
 		if item.action == "set_column_default" && dialect == DialectTiDB &&
 			column.DefaultParenthesized && column.DefaultIsCurrentTimestamp {
 			if snapshot == nil || snapshot.Columns == nil {
@@ -971,12 +992,14 @@ func assessExpressionDefaultFeature(assessment *AdvancedColumnAssessment, item a
 			case base == "":
 				assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceType)
 				assessment.UnresolvedTransition = true
-			case tidbTimestampFoldTemporalTargets[base] || tidbTimestampFoldPositiveTargets[base]:
-				// Observed accepted: verbatim temporal or folded literal.
-			case tidbTimestampFoldIssueTargets[base]:
-				assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonTiDBDefaultExpression, "")
+			case tidbSetDefaultTemporalTargets[base]:
+				// Temporal targets store the verbatim temporal default —
+				// observed TIMESTAMP/DATETIME/DATE.
 			default:
-				assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceDefaultComposite)
+				// Non-temporal coercion of the folded timestamp value is
+				// value-dependent — not statically proven.
+				assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonTiDBSetDefaultEvalUnproven,
+					AdvancedFactSourceDefaultEvaluation, AdvancedFactTargetDefaultCoercion)
 				assessment.UnresolvedTransition = true
 			}
 			return
@@ -1122,12 +1145,19 @@ func assessTiDBCreateExpressionDefault(assessment *AdvancedColumnAssessment, ite
 }
 
 // assessTiDBAlterExpressionDefault adjudicates a TiDB ALTER SET DEFAULT
-// expression. TiDB evaluates the default: a bare allowed call stores the
-// expression, foldable composites store an unprovable literal, and
-// disallowed functions (3770), column references (1054), function-bearing
-// arithmetic (1292), and any expression on a BLOB/TEXT/JSON target (1101)
-// are determined rejections. Unobserved function families and unproven
-// composite roots stay bounded gaps.
+// expression. TiDB evaluates the setter's default: only the structurally
+// proven cells are determined — column references (1054), BLOB/TEXT/JSON
+// targets (1101), a single bare disallowed call (3770), a single bare
+// allowed call storing the expression verbatim, and a single bare
+// current_timestamp call publishing the verbatim temporal default on a
+// temporal target. Every other evaluated-shape cell — any CASE root, any
+// root-wrapped expression, any arithmetic/unary/other root, a bare call
+// root with more than one call node, and the non-temporal
+// current_timestamp cells — is the tidb_set_default_eval_unproven gap:
+// the evaluation result and the folded value's target coercion are
+// value-dependent and cannot be proven statically. R2 replaces the R1
+// folded-literal outcome tables, which generalized sample results into
+// expression-category results.
 func assessTiDBAlterExpressionDefault(assessment *AdvancedColumnAssessment, item advancedColumnFact, snapshot *TableSnapshot, facts *ExpressionFacts) {
 	column := item.column
 	if len(facts.LocalReferences()) > 0 {
@@ -1158,312 +1188,129 @@ func assessTiDBAlterExpressionDefault(assessment *AdvancedColumnAssessment, item
 		assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonTiDBAlterJSONDefault, "")
 		return
 	}
-	// The disallowed/unobserved callee gate applies to the authored bare
-	// call path only: a root parentheses wrapper routes the setter through
-	// pure evaluation, where `((lower('x')))` provably evaluates and stores
-	// a literal (observed) — no 3770 allowlist check runs.
-	if !facts.RootParenthesized {
-		for _, fn := range facts.Functions {
-			name := strings.ToLower(fn)
-			switch {
-			case tidbAlterDisallowedDefaultFunctions[name]:
-				assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonTiDBDefaultExpression, "")
-				return
-			case !tidbAlterDefaultFunctions[name] && !tidbAlterFoldableFunctions[name]:
-				assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceDefaultFunction)
-				assessment.UnresolvedTransition = true
-				return
-			}
-		}
-	}
-	priorBase := baseColumnTypeName(prior.Type)
-	switch {
-	case facts.TopForm == ExpressionTopCall && !facts.RootParenthesized:
-		if allFunctionsIn(facts.Functions, tidbAlterDefaultFunctions) {
-			if len(facts.Functions) != 1 {
-				// Nested allowed calls are an unobserved composite — a
-				// bare call positive never covers them.
-				assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceDefaultComposite)
-				assessment.UnresolvedTransition = true
-				return
-			}
-			// A single bare allowed call stores the expression verbatim
-			// on every non-BLOB/TEXT/JSON target (the 1101 gate ran
-			// above): uuid() is observed verbatim on varchar, char, int,
-			// bigint, decimal, double, float, year, bit, enum, set, time,
-			// date, datetime, timestamp, and varbinary; json_object and
-			// json_array are observed verbatim on varchar, int, decimal,
-			// date, and timestamp. Evaluation is deferred to INSERT, so
-			// no target coercion runs at the setter.
-			return
-		}
-		if allFunctionsIn(facts.Functions, tidbAlterFoldableFunctions) {
-			// A bare (current_timestamp) call folds to a timestamp
-			// literal: temporal/DATE targets store the verbatim
-			// CURRENT_TIMESTAMP default, the positive bases store the
-			// folded literal (BIGINT/DOUBLE take the numeric
-			// YYYYMMDDHHMMSS form, TIME takes the time part), and the
-			// observed rejections answer 1067.
-			switch {
-			case tidbTimestampFoldTemporalTargets[priorBase] || tidbTimestampFoldPositiveTargets[priorBase]:
-				return
-			case tidbTimestampFoldIssueTargets[priorBase]:
-				assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonTiDBDefaultExpression, "")
-				return
-			default:
-				assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceDefaultComposite)
-				assessment.UnresolvedTransition = true
-				return
-			}
-		}
-		// A call mixing expression-preserving and foldable callees is
-		// unobserved.
-		assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceDefaultComposite)
-		assessment.UnresolvedTransition = true
-	case facts.TopForm == ExpressionTopCall:
-		// A root-wrapped call takes the evaluation path — the callee
-		// allowlist does not apply (observed ((lower('x'))) folds to
-		// 'x'). The folded literal's coercion decides the cell; only the
-		// uuid and lower literal folds are observed. ((current_timestamp))
-		// and ((now())) are observed acceptances with a NULL catalog
-		// default — an unprovable stored shape, so every other callee
-		// composite stays a bounded gap.
-		if len(facts.Functions) == 1 {
-			switch strings.ToLower(facts.Functions[0]) {
-			case "uuid":
-				switch {
-				case tidbStringFoldTargets[priorBase]:
-					return
-				case tidbUUIDFoldRejects(priorBase):
-					assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonTiDBDefaultExpression, "")
-					return
-				default:
-					assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceDefaultComposite)
-					assessment.UnresolvedTransition = true
-					return
-				}
-			case "lower":
-				switch priorBase {
-				case "varchar":
-					return
-				case "int":
-					assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonTiDBDefaultExpression, "")
-					return
-				default:
-					assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceDefaultComposite)
-					assessment.UnresolvedTransition = true
-					return
-				}
-			}
-		}
-		assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceDefaultComposite)
-		assessment.UnresolvedTransition = true
-	case facts.TopForm == ExpressionTopCase && !facts.RootParenthesized:
-		// A ref-free CASE of the one observed callee folds to the same
-		// uuid string literal as a wrapped uuid() call, so it shares the
-		// folded-literal outcome table.
-		if allFunctionsIn(facts.Functions, tidbAlterCaseCallees) {
-			switch {
-			case tidbStringFoldTargets[priorBase]:
-				return
-			case tidbUUIDFoldRejects(priorBase):
-				assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonTiDBDefaultExpression, "")
-				return
-			}
-		}
-		assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceDefaultComposite)
-		assessment.UnresolvedTransition = true
-	case facts.TopForm == ExpressionTopArithmetic || facts.TopForm == ExpressionTopUnary:
-		if len(facts.Functions) == 0 {
-			// Pure constant arithmetic folds to a numeric literal —
-			// observed stored on string, numeric, time, enum, set, bit,
-			// and year targets. DATE/DATETIME/TIMESTAMP accept but store
-			// a NULL catalog default, an unprovable shape.
-			if tidbArithFoldTargets(priorBase) {
-				return
-			}
-			assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceDefaultComposite)
-			assessment.UnresolvedTransition = true
-			return
-		}
-		if facts.RootParenthesized {
-			// A wrapped function-bearing composite is an unobserved eval
-			// cell.
-			assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceDefaultComposite)
-			assessment.UnresolvedTransition = true
-			return
-		}
-		// A function-bearing numeric composite is eagerly evaluated and
-		// rejected at the coercion boundary (observed uuid()+1 -> 1292).
+	switch tidbAlterSetDefaultOutcome(facts, baseColumnTypeName(prior.Type)) {
+	case tidbSetDefaultVerbatim, tidbSetDefaultTemporal:
+		// Proven positives — nothing to append.
+	case tidbSetDefaultDisallowed:
 		assessment.appendIssue(column.Name, AdvancedFeatureExpressionDefault, item.action, AdvancedReasonTiDBDefaultExpression, "")
+	case tidbSetDefaultUnknownCallee:
+		// A bare single call of an unobserved callee is missing
+		// evidence, not a missing evaluation.
+		assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceDefaultFunction)
+		assessment.UnresolvedTransition = true
 	default:
-		assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonIncompleteSourceColumn, AdvancedFactSourceDefaultComposite)
+		// Every evaluated-shape cell — CASE, wrapped, arithmetic,
+		// unary, other, or multi-call roots — is value-dependent: the
+		// setter's evaluation result and the folded value's target
+		// coercion are not statically proven.
+		assessment.appendGap(AdvancedFeatureExpressionDefault, AdvancedReasonTiDBSetDefaultEvalUnproven,
+			AdvancedFactSourceDefaultEvaluation, AdvancedFactTargetDefaultCoercion)
 		assessment.UnresolvedTransition = true
 	}
 }
 
-// TiDB SET DEFAULT publication kinds: the catalog-visible shape a positive
-// setter outcome stores. The ordered-state seam publishes exactly the
-// matching post-state — never a computed value.
+// TiDB setter outcome kinds for the ALTER SET DEFAULT expression cell —
+// the single adjudication consumed by both the assessment and the
+// ordered-state publication seam.
+const (
+	// tidbSetDefaultVerbatim is the proven bare allowed call: the setter
+	// stores the expression verbatim on every non-1101 target because
+	// evaluation is deferred to INSERT.
+	tidbSetDefaultVerbatim = iota
+	// tidbSetDefaultTemporal is the proven current_timestamp cell on a
+	// TIMESTAMP/DATETIME/DATE target: the catalog stores the verbatim
+	// temporal default.
+	tidbSetDefaultTemporal
+	// tidbSetDefaultDisallowed is the determined 3770 rejection: a single
+	// bare call of an observed disallowed callee.
+	tidbSetDefaultDisallowed
+	// tidbSetDefaultUnknownCallee is a bare single call of an unobserved
+	// callee — a missing-evidence gap.
+	tidbSetDefaultUnknownCallee
+	// tidbSetDefaultUnproven is every other cell: the setter evaluates the
+	// expression and the outcome is value-dependent — neither the
+	// evaluation result nor the folded value's target coercion is
+	// statically proven.
+	tidbSetDefaultUnproven
+)
+
+// tidbAlterSetDefaultOutcome is the single R2 adjudication of the TiDB
+// setter expression cell. Only the single-call bare root has observed
+// outcomes; everything else is the unproven evaluation boundary. The
+// 1101, 1054, subquery/aggregate, !Known, and prior gates run before this
+// outcome is consulted.
+func tidbAlterSetDefaultOutcome(facts *ExpressionFacts, priorBase string) int {
+	if facts == nil || !facts.Known || facts.RootParenthesized ||
+		facts.TopForm != ExpressionTopCall || facts.CallCount != 1 ||
+		len(facts.Functions) != 1 {
+		return tidbSetDefaultUnproven
+	}
+	switch callee := strings.ToLower(facts.Functions[0]); {
+	case tidbAlterDefaultFunctions[callee]:
+		return tidbSetDefaultVerbatim
+	case tidbAlterDisallowedDefaultFunctions[callee]:
+		return tidbSetDefaultDisallowed
+	case tidbAlterFoldableFunctions[callee]:
+		// current_timestamp on a temporal target publishes the verbatim
+		// temporal default (observed); every other base is the unproven
+		// fold/coercion boundary.
+		if tidbSetDefaultTemporalTargets[priorBase] {
+			return tidbSetDefaultTemporal
+		}
+		return tidbSetDefaultUnproven
+	default:
+		return tidbSetDefaultUnknownCallee
+	}
+}
+
+// TiDB SET DEFAULT publication kinds: the catalog-visible shape a proven
+// positive setter outcome stores. The ordered-state seam publishes exactly
+// the matching post-state — never a computed value.
 const (
 	// TiDBSetDefaultVerbatim keeps the declaration's expression facts.
 	TiDBSetDefaultVerbatim = "verbatim"
 	// TiDBSetDefaultTemporal publishes a CURRENT_TIMESTAMP temporal
-	// default (the catalog-visible shape of the foldable-timestamp cell
-	// on temporal/DATE targets).
+	// default — the catalog-visible shape of the current_timestamp cell
+	// on TIMESTAMP/DATETIME/DATE targets.
 	TiDBSetDefaultTemporal = "temporal"
-	// TiDBSetDefaultLiteral publishes literal default presence only: no
-	// expression facts, no computed value.
-	TiDBSetDefaultLiteral = "literal"
 )
 
-// TiDBSetDefaultPublication mirrors the assessTiDBAlterExpressionDefault
-// positive cells so the ordered-state seam publishes the same catalog shape
-// the native setter stored: verbatim expression facts, a verbatim temporal
-// CURRENT_TIMESTAMP default, or folded literal presence. Any cell the
-// assessment did not mark positive returns "" — those identities are
-// tombstoned before publication anyway, so the empty result is unreachable
-// on the gated path.
+// TiDBSetDefaultPublication consumes the single
+// tidbAlterSetDefaultOutcome adjudication: only a proven verbatim or
+// temporal cell maps to a catalog shape; every other outcome — including
+// every evaluated-shape cell the assessment reports as the eval-unproven
+// gap — returns "" because those identities are withheld by
+// UnresolvedTransition before publication anyway.
 func TiDBSetDefaultPublication(facts *ExpressionFacts, priorType string) string {
 	if facts == nil || !facts.Known || len(facts.LocalReferences()) > 0 {
 		return ""
 	}
-	base := baseColumnTypeName(priorType)
-	switch {
-	case facts.TopForm == ExpressionTopCall && !facts.RootParenthesized:
-		if allFunctionsIn(facts.Functions, tidbAlterDefaultFunctions) {
-			// A single bare allowed call stores the expression verbatim
-			// on every non-BLOB/TEXT/JSON target.
-			if len(facts.Functions) == 1 {
-				return TiDBSetDefaultVerbatim
-			}
-			return ""
-		}
-		if allFunctionsIn(facts.Functions, tidbAlterFoldableFunctions) {
-			switch {
-			case tidbTimestampFoldTemporalTargets[base]:
-				return TiDBSetDefaultTemporal
-			case tidbTimestampFoldPositiveTargets[base]:
-				return TiDBSetDefaultLiteral
-			}
-		}
-		return ""
-	case facts.TopForm == ExpressionTopCall:
-		// Root-wrapped calls fold: literal presence on the observed
-		// folded-literal target cells.
-		if len(facts.Functions) != 1 {
-			return ""
-		}
-		switch strings.ToLower(facts.Functions[0]) {
-		case "uuid":
-			if tidbStringFoldTargets[base] {
-				return TiDBSetDefaultLiteral
-			}
-		case "lower":
-			if base == "varchar" {
-				return TiDBSetDefaultLiteral
-			}
-		}
-		return ""
-	case facts.TopForm == ExpressionTopCase && !facts.RootParenthesized:
-		if allFunctionsIn(facts.Functions, tidbAlterCaseCallees) && tidbStringFoldTargets[base] {
-			return TiDBSetDefaultLiteral
-		}
-		return ""
-	case facts.TopForm == ExpressionTopArithmetic || facts.TopForm == ExpressionTopUnary:
-		if len(facts.Functions) == 0 && tidbArithFoldTargets(base) {
-			return TiDBSetDefaultLiteral
-		}
+	switch tidbAlterSetDefaultOutcome(facts, baseColumnTypeName(priorType)) {
+	case tidbSetDefaultVerbatim:
+		return TiDBSetDefaultVerbatim
+	case tidbSetDefaultTemporal:
+		return TiDBSetDefaultTemporal
 	}
 	return ""
 }
 
 // TiDBLiteralSetDefaultPublication mirrors the literal-class
-// SET DEFAULT (current_timestamp) cell for the ordered-state seam: the
-// setter stores a verbatim temporal default on the temporal bases and a
-// folded literal on the positive bases — every other target is a
-// non-positive cell the assessment already gated.
+// SET DEFAULT (current_timestamp) cell for the ordered-state seam: only
+// the proven temporal-target cells publish the verbatim temporal default;
+// every other target is the eval-unproven gap the assessment already
+// gated, so "" is unreachable on the gated path.
 func TiDBLiteralSetDefaultPublication(priorType string) string {
-	base := baseColumnTypeName(priorType)
-	switch {
-	case tidbTimestampFoldTemporalTargets[base]:
+	if tidbSetDefaultTemporalTargets[baseColumnTypeName(priorType)] {
 		return TiDBSetDefaultTemporal
-	case tidbTimestampFoldPositiveTargets[base]:
-		return TiDBSetDefaultLiteral
 	}
 	return ""
 }
 
-// tidbAlterCaseCallees are the callees observed folding inside a CASE
-// default on the TiDB setter path — uuid() only.
-var tidbAlterCaseCallees = map[string]bool{"uuid": true}
-
-// tidbStringFoldTargets are the normalized prior-type bases where a folded
-// string literal stores verbatim — observed for the wrapped-uuid fold on
-// varchar, char, binary, and varbinary, and the uuid-CASE fold on varchar
-// and char (the folded literal is identical, so the table is shared).
-var tidbStringFoldTargets = map[string]bool{
-	"varchar": true, "char": true, "binary": true, "varbinary": true,
-}
-
-// tidbUUIDFoldRejects reports whether the normalized prior-type base is an
-// observed rejection for the folded uuid string literal: numeric families
-// and YEAR/BIT answer 1067, value-restricted ENUM/SET answer 1067, and TIME
-// answers 1292 — all observed. DATE/DATETIME/TIMESTAMP accept but store a
-// NULL catalog default and stay bounded gaps.
-func tidbUUIDFoldRejects(base string) bool {
-	return numericFamilyType(base) || base == "enum" || base == "set" || base == "time"
-}
-
-// tidbArithFoldTargets reports whether the normalized prior-type base is an
-// observed positive for a folded constant-numeric literal: string and
-// numeric families (including YEAR and BIT) plus TIME, ENUM, and SET — all
-// observed storing the folded value. DATE/DATETIME/TIMESTAMP accept but
-// store a NULL catalog default and stay bounded gaps.
-func tidbArithFoldTargets(base string) bool {
-	if numericFamilyType(base) {
-		return true
-	}
-	switch base {
-	case "varchar", "char", "binary", "varbinary", "time", "enum", "set":
-		return true
-	}
-	return false
-}
-
-// tidbTimestampFoldTemporalTargets are the normalized prior-type bases
-// where a folded current_timestamp default stores the verbatim temporal
-// CURRENT_TIMESTAMP shape (observed TIMESTAMP, DATETIME, DATE).
-var tidbTimestampFoldTemporalTargets = map[string]bool{
+// tidbSetDefaultTemporalTargets are the normalized prior-type bases where
+// the current_timestamp setter cell stores the verbatim temporal default —
+// observed TIMESTAMP, DATETIME, and DATE.
+var tidbSetDefaultTemporalTargets = map[string]bool{
 	"timestamp": true, "datetime": true, "date": true,
-}
-
-// tidbTimestampFoldPositiveTargets are the normalized prior-type bases
-// where a folded current_timestamp default stores a literal: VARCHAR and
-// CHAR take the string form, BIGINT and DOUBLE take the numeric
-// YYYYMMDDHHMMSS form, and TIME takes the time part (all observed).
-var tidbTimestampFoldPositiveTargets = map[string]bool{
-	"varchar": true, "char": true, "bigint": true, "double": true, "time": true,
-}
-
-// tidbTimestampFoldIssueTargets are the normalized prior-type bases where a
-// folded current_timestamp default is a determined 1067 rejection —
-// observed on INT, DECIMAL, and YEAR (the numeric YYYYMMDDHHMMSS form
-// overflows INT and YEAR and DECIMAL rejects the coercion).
-var tidbTimestampFoldIssueTargets = map[string]bool{
-	"int": true, "decimal": true, "year": true,
-}
-
-// numericFamilyType reports whether the normalized base type is a numeric
-// family — the observed 1067 rejection cell for folded non-numeric literals
-// (uuid/CASE and current_timestamp on INT).
-func numericFamilyType(typ string) bool {
-	switch typ {
-	case "tinyint", "smallint", "mediumint", "int", "integer", "bigint",
-		"decimal", "numeric", "float", "double", "real", "bit", "year":
-		return true
-	}
-	return false
 }
 
 // baseColumnTypeName normalizes a declared or catalog column type to its

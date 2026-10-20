@@ -1,6 +1,7 @@
-// Package audit verifies the T07-R1 semantic closure: declaration-time
-// generated-column reference premises and the complete TiDB expression-
-// default structure boundary.
+// Package audit verifies the T07-R1/R2 semantic closure: declaration-time
+// generated-column reference premises and the TiDB expression-default
+// boundary — proven bare/temporal positives, determined negatives, and the
+// R2 eval-unproven gap for value-dependent setter folds.
 // input: real-parser AuditSQL runs over the frozen R1 inputs with isolated
 // policies and controlled provider snapshots
 // output: exact reason_code findings, bounded evidence gaps, ordered-state
@@ -353,13 +354,16 @@ func TestT07R1GeneratedPremiseAlter(t *testing.T) {
 	}
 }
 
-// TestT07R1TiDBAlterExpressionShapes runs the frozen R1-2 inputs through the
-// real parser and AuditSQL on TiDB 8.5.0: the observed positive family, the
-// determined rejections, and the bounded gaps — never a function-name-only
-// verdict on a wrapped expression.
+// TestT07R1TiDBAlterExpressionShapes runs the frozen R1-2/R2 inputs through
+// the real parser and AuditSQL on TiDB 8.5.0: the structurally proven cells
+// (verbatim bare call, temporal-target current_timestamp, 3770/1054/1101
+// negatives) plus the R2 eval-unproven boundary — every evaluated-shape
+// cell is the same bounded gap because the fold verdict is value-dependent
+// and cannot be proven statically.
 func TestT07R1TiDBAlterExpressionShapes(t *testing.T) {
 	t.Parallel()
 	varcharX := []spec.Column{{Name: "v", Type: "varchar(36)"}, {Name: "x", Type: "int"}}
+	const evalGap = "tidb_set_default_eval_unproven"
 	for _, tc := range []struct {
 		name       string
 		sql        string
@@ -367,62 +371,58 @@ func TestT07R1TiDBAlterExpressionShapes(t *testing.T) {
 		wantReason string
 		wantGap    string
 	}{
+		// Structurally proven positives: a single bare allowed call stores
+		// verbatim on every non-1101 target.
 		{"d_uuid", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (uuid())", varcharX, "", ""},
-		{"d_arith", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (uuid() + 1)", varcharX, "tidb_default_expression", ""},
-		{"d_case", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (CASE WHEN 1 THEN uuid() ELSE 'x' END)", varcharX, "", ""},
-		{"d_parens", "ALTER TABLE t ALTER COLUMN v SET DEFAULT ((uuid()))", varcharX, "", ""},
-		{"d_constant", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (1 + 2)", varcharX, "", ""},
-		{"column_ref", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (x + 1)", varcharX, "tidb_default_expression", ""},
-		{"disallowed_function", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (lower('A'))", varcharX, "tidb_default_expression", ""},
-		{"foldable_ts_on_int", "ALTER TABLE t ALTER COLUMN x SET DEFAULT (current_timestamp)", varcharX, "tidb_default_expression", ""},
-		// A single bare allowed call stores verbatim on every non-1101
-		// target — uuid() is observed verbatim on date too.
 		{"uuid_on_date", "ALTER TABLE t ALTER COLUMN x SET DEFAULT (uuid())",
 			[]spec.Column{{Name: "v", Type: "varchar(36)"}, {Name: "x", Type: "date"}}, "", ""},
+		{"uuid_on_int", "ALTER TABLE t ALTER COLUMN x SET DEFAULT (uuid())", varcharX, "", ""},
 		{"json_object_on_int", "ALTER TABLE t ALTER COLUMN x SET DEFAULT (json_object('k',1))", varcharX, "", ""},
-		// R1 root-wrap cells: `((f(...)))` takes the evaluation path — the
-		// disallowed-callee gate does not apply (observed ((lower('x')))
-		// stores 'x'), observed folds keep their target coercion.
-		{"dp_uuid_int", "ALTER TABLE t ALTER COLUMN x SET DEFAULT ((uuid()))", varcharX, "tidb_default_expression", ""},
-		{"dp_uuid_enum", "ALTER TABLE t ALTER COLUMN x SET DEFAULT ((uuid()))",
-			[]spec.Column{{Name: "v", Type: "varchar(36)"}, {Name: "x", Type: "enum('a','b')"}}, "tidb_default_expression", ""},
-		{"dp_uuid_time", "ALTER TABLE t ALTER COLUMN x SET DEFAULT ((uuid()))",
-			[]spec.Column{{Name: "v", Type: "varchar(36)"}, {Name: "x", Type: "time"}}, "tidb_default_expression", ""},
-		{"dp_uuid_varbinary", "ALTER TABLE t ALTER COLUMN x SET DEFAULT ((uuid()))",
-			[]spec.Column{{Name: "v", Type: "varchar(36)"}, {Name: "x", Type: "varbinary(36)"}}, "", ""},
-		{"dp_uuid_date_null", "ALTER TABLE t ALTER COLUMN x SET DEFAULT ((uuid()))",
-			[]spec.Column{{Name: "v", Type: "varchar(36)"}, {Name: "x", Type: "date"}}, "", "incomplete_source_column"},
-		{"dp_json_vc", "ALTER TABLE t ALTER COLUMN v SET DEFAULT ((json_object('k',1)))", varcharX, "", "incomplete_source_column"},
-		{"dp_lower_vc", "ALTER TABLE t ALTER COLUMN v SET DEFAULT ((lower('x')))", varcharX, "", ""},
-		{"dp_lower_int", "ALTER TABLE t ALTER COLUMN x SET DEFAULT ((lower('x')))", varcharX, "tidb_default_expression", ""},
-		{"dp_cts_ts", "ALTER TABLE t ALTER COLUMN v SET DEFAULT ((current_timestamp))",
-			[]spec.Column{{Name: "v", Type: "timestamp"}}, "", "incomplete_source_column"},
-		{"c_arith_int", "ALTER TABLE t ALTER COLUMN x SET DEFAULT (1 + 2)", varcharX, "", ""},
-		{"c_arith_char", "ALTER TABLE t ALTER COLUMN x SET DEFAULT (1 + 2)",
-			[]spec.Column{{Name: "v", Type: "varchar(36)"}, {Name: "x", Type: "char(8)"}}, "", ""},
-		{"c_arith_set", "ALTER TABLE t ALTER COLUMN x SET DEFAULT (1 + 2)",
-			[]spec.Column{{Name: "v", Type: "varchar(36)"}, {Name: "x", Type: "set('1','3','5')"}}, "", ""},
-		{"c_arith_date", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (1 + 2)",
-			[]spec.Column{{Name: "v", Type: "date"}}, "", "incomplete_source_column"},
-		{"case_uuid_int", "ALTER TABLE t ALTER COLUMN x SET DEFAULT (CASE WHEN 1 THEN uuid() ELSE 'x' END)", varcharX, "tidb_default_expression", ""},
-		{"case_uuid_char", "ALTER TABLE t ALTER COLUMN x SET DEFAULT (CASE WHEN 1 THEN uuid() ELSE 'x' END)",
-			[]spec.Column{{Name: "v", Type: "varchar(36)"}, {Name: "x", Type: "char(40)"}}, "", ""},
-		// Literal-class (current_timestamp) cells: verbatim temporal on
-		// temporal/DATE targets, folded literal on the observed positive
-		// bases, determined 1067 on int/decimal/year.
-		{"fts_vc", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (current_timestamp)", varcharX, "", ""},
+		// Structurally proven negatives: 1054 column reference, bare
+		// disallowed call (3770), and the 1101 target family.
+		{"column_ref", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (x + 1)", varcharX, "tidb_default_expression", ""},
+		{"disallowed_function", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (lower('A'))", varcharX, "tidb_default_expression", ""},
+		{"disallowed_now", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (now())", varcharX, "tidb_default_expression", ""},
+		{"uuid_on_json", "ALTER TABLE t ALTER COLUMN x SET DEFAULT (uuid())",
+			[]spec.Column{{Name: "v", Type: "varchar(36)"}, {Name: "x", Type: "json"}}, "tidb_alter_json_default", ""},
+		// Literal-class temporal cells: only temporal/DATE targets are
+		// proven; every other base is the same eval-unproven boundary.
 		{"fts_ts", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (current_timestamp)",
 			[]spec.Column{{Name: "v", Type: "timestamp"}}, "", ""},
 		{"fts_date", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (current_timestamp)",
 			[]spec.Column{{Name: "v", Type: "date"}}, "", ""},
-		{"fts_bigint", "ALTER TABLE t ALTER COLUMN x SET DEFAULT (current_timestamp)",
-			[]spec.Column{{Name: "v", Type: "varchar(36)"}, {Name: "x", Type: "bigint"}}, "", ""},
-		{"fts_time", "ALTER TABLE t ALTER COLUMN x SET DEFAULT (current_timestamp)",
-			[]spec.Column{{Name: "v", Type: "varchar(36)"}, {Name: "x", Type: "time"}}, "", ""},
-		{"fts_decimal", "ALTER TABLE t ALTER COLUMN x SET DEFAULT (current_timestamp)",
-			[]spec.Column{{Name: "v", Type: "varchar(36)"}, {Name: "x", Type: "decimal(20,2)"}}, "tidb_default_expression", ""},
-		{"fts_tinyint_gap", "ALTER TABLE t ALTER COLUMN x SET DEFAULT (current_timestamp)",
-			[]spec.Column{{Name: "v", Type: "varchar(36)"}, {Name: "x", Type: "tinyint"}}, "", "incomplete_source_column"},
+		{"fts_vc", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (current_timestamp)", varcharX, "", evalGap},
+		{"foldable_ts_on_int", "ALTER TABLE t ALTER COLUMN x SET DEFAULT (current_timestamp)", varcharX, "", evalGap},
+		// R2 F-pairs: identical TopForm/callee-set/deduped-function shapes
+		// decide different native outcomes (F01/F02/F03, F04/F05, F06/F07)
+		// — every evaluated-shape cell is the same bounded gap, never a
+		// conviction derived from the sample table.
+		{"f01_case_no_func", "ALTER TABLE t ALTER COLUMN x SET DEFAULT (CASE WHEN 1 THEN 1 ELSE 2 END)", varcharX, "", evalGap},
+		{"f02_case_dead_uuid", "ALTER TABLE t ALTER COLUMN x SET DEFAULT (CASE WHEN 1 THEN 1 ELSE uuid() END)", varcharX, "", evalGap},
+		{"f03_case_ret_uuid", "ALTER TABLE t ALTER COLUMN x SET DEFAULT (CASE WHEN 1 THEN uuid() ELSE 'x' END)", varcharX, "", evalGap},
+		{"f04_wrapped_lower_1", "ALTER TABLE t ALTER COLUMN x SET DEFAULT ((LOWER('1')))", varcharX, "", evalGap},
+		{"f05_wrapped_lower_x", "ALTER TABLE t ALTER COLUMN x SET DEFAULT ((LOWER('X')))", varcharX, "", evalGap},
+		{"f06_arith_numeric", "ALTER TABLE t ALTER COLUMN x SET DEFAULT (1 + 2)", varcharX, "", evalGap},
+		{"f07_arith_string", "ALTER TABLE t ALTER COLUMN x SET DEFAULT ('X' + 1)", varcharX, "", evalGap},
+		// Bare vs wrapped: the verbatim path requires an unwrapped single
+		// call; the wrapped root always evaluates.
+		{"f08_bare_uuid", "ALTER TABLE t ALTER COLUMN x SET DEFAULT (uuid())", varcharX, "", ""},
+		{"wrapped_uuid", "ALTER TABLE t ALTER COLUMN x SET DEFAULT ((uuid()))", varcharX, "", evalGap},
+		{"wrapped_uuid_varchar", "ALTER TABLE t ALTER COLUMN v SET DEFAULT ((uuid()))", varcharX, "", evalGap},
+		{"wrapped_lower_varchar", "ALTER TABLE t ALTER COLUMN v SET DEFAULT ((lower('x')))", varcharX, "", evalGap},
+		{"wrapped_json", "ALTER TABLE t ALTER COLUMN v SET DEFAULT ((json_object('k',1)))", varcharX, "", evalGap},
+		{"wrapped_cts_ts", "ALTER TABLE t ALTER COLUMN v SET DEFAULT ((current_timestamp))",
+			[]spec.Column{{Name: "v", Type: "timestamp"}}, "", evalGap},
+		// Deduped functions are not a call count: uuid(uuid()) is not the
+		// observed bare uuid() cell.
+		{"nested_same_callee", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (uuid(uuid()))", varcharX, "", evalGap},
+		{"nested_mixed_calls", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (json_object(uuid()))", varcharX, "", evalGap},
+		// Function-bearing arithmetic and unobserved bare callees.
+		{"d_arith", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (uuid() + 1)", varcharX, "", evalGap},
+		{"unknown_callee_bare", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (abs(1))", varcharX, "", "incomplete_source_column"},
+		// A real missing target stays owned by the existence checks —
+		// distinct from "target known but conversion unproven".
+		{"missing_target", "ALTER TABLE t ALTER COLUMN missing_c SET DEFAULT (1 + 2)", varcharX, "", ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			result, err := AuditSQL(context.Background(), Request{
@@ -451,6 +451,17 @@ func TestT07R1TiDBAlterExpressionShapes(t *testing.T) {
 				for _, gap := range gaps {
 					if gap.ReasonCode == tc.wantGap {
 						found = true
+						if tc.wantGap == evalGap {
+							wantFacts := []string{"source_column.default_evaluation", "target_table.default_coercion"}
+							if len(gap.RequiredFacts) != len(wantFacts) {
+								t.Fatalf("gap required_facts = %v, want %v", gap.RequiredFacts, wantFacts)
+							}
+							for i, fact := range wantFacts {
+								if gap.RequiredFacts[i] != fact {
+									t.Fatalf("gap required_facts = %v, want %v", gap.RequiredFacts, wantFacts)
+								}
+							}
+						}
 					}
 				}
 				if !found {
@@ -512,9 +523,12 @@ func TestT07R1ExpressionShapeOppositeControls(t *testing.T) {
 	}
 }
 
-// TestT07R1TiDBFoldedLiteralPostState pins the publication seam: foldable
-// composites publish literal default presence — never expression facts or a
-// computed value — while a verbatim bare call keeps its expression facts.
+// TestT07R1TiDBFoldedLiteralPostState pins the R2 publication seam: only
+// the proven verbatim and temporal cells publish a default shape — a
+// verbatim bare call keeps its expression facts, the temporal-target
+// current_timestamp cell publishes the catalog temporal default, and every
+// eval-unproven cell tombstones the identity so no follow-up statement
+// observes a fabricated folded literal.
 func TestT07R1TiDBFoldedLiteralPostState(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -526,21 +540,26 @@ func TestT07R1TiDBFoldedLiteralPostState(t *testing.T) {
 		wantExpr       bool
 		wantCts        bool
 		wantHasDefault bool
+		wantTombstone  bool
 	}{
-		{"folded_arith", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (1 + 2)", "varchar(36)", false, false, true},
-		{"folded_arith_int", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (1 + 2)", "int", false, false, true},
-		{"folded_arith_time", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (1 + 2)", "time", false, false, true},
-		{"folded_case", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (CASE WHEN 1 THEN uuid() ELSE 'x' END)", "varchar(36)", false, false, true},
-		{"folded_wrapped_call", "ALTER TABLE t ALTER COLUMN v SET DEFAULT ((uuid()))", "varchar(36)", false, false, true},
-		{"folded_wrapped_call_char", "ALTER TABLE t ALTER COLUMN v SET DEFAULT ((uuid()))", "char(36)", false, false, true},
-		{"folded_wrapped_lower", "ALTER TABLE t ALTER COLUMN v SET DEFAULT ((lower('x')))", "varchar(36)", false, false, true},
-		{"folded_cts_varchar", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (current_timestamp)", "varchar(36)", false, false, true},
-		{"folded_cts_bigint", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (current_timestamp)", "bigint", false, false, true},
-		{"folded_cts_time", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (current_timestamp)", "time", false, false, true},
-		{"verbatim_cts_ts", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (current_timestamp)", "timestamp", false, true, true},
-		{"verbatim_uuid", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (uuid())", "varchar(36)", true, false, true},
-		{"verbatim_uuid_date", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (uuid())", "date", true, false, true},
-		{"verbatim_json_int", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (json_object('k',1))", "int", true, false, true},
+		// Proven positives.
+		{"verbatim_uuid", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (uuid())", "varchar(36)", true, false, true, false},
+		{"verbatim_uuid_date", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (uuid())", "date", true, false, true, false},
+		{"verbatim_json_int", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (json_object('k',1))", "int", true, false, true, false},
+		{"verbatim_cts_ts", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (current_timestamp)", "timestamp", false, true, true, false},
+		{"verbatim_cts_date", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (current_timestamp)", "date", false, true, true, false},
+		{"verbatim_cts_dt", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (current_timestamp)", "datetime", false, true, true, false},
+		// Eval-unproven cells tombstone: the setter outcome is
+		// value-dependent, so no default shape may be published.
+		{"unproven_arith", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (1 + 2)", "varchar(36)", false, false, false, true},
+		{"unproven_arith_int", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (1 + 2)", "int", false, false, false, true},
+		{"unproven_case", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (CASE WHEN 1 THEN uuid() ELSE 'x' END)", "varchar(36)", false, false, false, true},
+		{"unproven_wrapped_uuid", "ALTER TABLE t ALTER COLUMN v SET DEFAULT ((uuid()))", "varchar(36)", false, false, false, true},
+		{"unproven_wrapped_lower", "ALTER TABLE t ALTER COLUMN v SET DEFAULT ((lower('x')))", "varchar(36)", false, false, false, true},
+		{"unproven_cts_varchar", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (current_timestamp)", "varchar(36)", false, false, false, true},
+		{"unproven_cts_bigint", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (current_timestamp)", "bigint", false, false, false, true},
+		{"unproven_cts_time", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (current_timestamp)", "time", false, false, false, true},
+		{"unproven_nested", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (uuid(uuid()))", "varchar(36)", false, false, false, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			parsed, err := Parse(ctx, tc.sql, spec.DialectTiDB)
@@ -571,6 +590,12 @@ func TestT07R1TiDBFoldedLiteralPostState(t *testing.T) {
 			if err != nil {
 				t.Fatalf("preState: %v", err)
 			}
+			if tc.wantTombstone {
+				if post != nil && post.Exists {
+					t.Fatalf("post-state = %+v, want the identity withheld", post)
+				}
+				return
+			}
 			if post == nil || !post.Exists {
 				t.Fatalf("post-state = %+v, want present", post)
 			}
@@ -587,15 +612,13 @@ func TestT07R1TiDBFoldedLiteralPostState(t *testing.T) {
 				t.Fatalf("HasDefault = %v, want %v", got.HasDefault, tc.wantHasDefault)
 			}
 			if tc.wantExpr {
-				if got.DefaultExpression == nil || len(got.DefaultExpression.Functions) != 1 {
-					t.Fatalf("DefaultExpression = %+v, want single-callee call facts", got.DefaultExpression)
+				if got.DefaultExpression == nil || len(got.DefaultExpression.Functions) != 1 ||
+					got.DefaultExpression.CallCount != 1 {
+					t.Fatalf("DefaultExpression = %+v, want single-call verbatim facts", got.DefaultExpression)
 				}
 			} else {
 				if got.DefaultExpression != nil {
-					t.Fatalf("DefaultExpression = %+v, want nil for a folded literal", got.DefaultExpression)
-				}
-				if !tc.wantCts && got.DefaultValue != "" {
-					t.Fatalf("DefaultValue = %q, want empty — no fabricated value", got.DefaultValue)
+					t.Fatalf("DefaultExpression = %+v, want nil for a temporal default", got.DefaultExpression)
 				}
 			}
 			if got.DefaultIsCurrentTimestamp != tc.wantCts {
@@ -603,7 +626,7 @@ func TestT07R1TiDBFoldedLiteralPostState(t *testing.T) {
 			}
 			// A verbatim expression default keeps the authored parens fact
 			// (catalog expression defaults are always parenthesized); the
-			// folded shapes publish the catalog-normalized false.
+			// temporal cell publishes the catalog-normalized false.
 			if got.DefaultParenthesized != tc.wantExpr {
 				t.Fatalf("DefaultParenthesized = %v, want %v", got.DefaultParenthesized, tc.wantExpr)
 			}
@@ -763,11 +786,17 @@ func TestT07R1NoExpressionLeak(t *testing.T) {
 	for _, tc := range []struct {
 		name string
 		sql  string
+		tidb bool
 	}{
-		{"missing_column", "CREATE TABLE t (a INT, b INT AS (secret_col + 1) STORED)"},
-		{"self_reference", "CREATE TABLE t (a INT, b INT AS (b + 1) STORED)"},
-		{"tidb_arith_default", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (uuid() + 1)"},
-		{"tidb_literal_name", "CREATE TABLE t (a INT, b VARCHAR(32) AS ('secret_col') VIRTUAL)"},
+		{"missing_column", "CREATE TABLE t (a INT, b INT AS (secret_col + 1) STORED)", false},
+		{"self_reference", "CREATE TABLE t (a INT, b INT AS (b + 1) STORED)", false},
+		{"tidb_arith_default", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (uuid() + 1)", true},
+		{"tidb_literal_name", "CREATE TABLE t (a INT, b VARCHAR(32) AS ('secret_col') VIRTUAL)", false},
+		// The R2 eval-unproven gap carries the same fixed vocabulary — the
+		// CASE branches, the wrapped call's argument, and any callee name
+		// must never surface.
+		{"tidb_eval_gap_case", "ALTER TABLE t ALTER COLUMN v SET DEFAULT (CASE WHEN 1 THEN 1 ELSE 'SECRETLIT' END)", true},
+		{"tidb_eval_gap_wrapped", "ALTER TABLE t ALTER COLUMN v SET DEFAULT ((LOWER('SECRETLIT')))", true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			req := Request{
@@ -777,16 +806,16 @@ func TestT07R1NoExpressionLeak(t *testing.T) {
 				TargetVersion: "8.0.46",
 				ConfigPath:    r1CompatOnly(t),
 			}
-			if tc.name == "tidb_arith_default" {
+			if tc.tidb {
 				req.Dialect = spec.DialectTiDB
 				req.TargetVersion = ""
-				req.MetadataProvider = r1TiDBProvider(spec.Column{Name: "v", Type: "varchar(36)"})
+				req.MetadataProvider = r1TiDBProvider(spec.Column{Name: "v", Type: "int"})
 			}
 			result, err := AuditSQL(context.Background(), req)
 			if err != nil {
 				t.Fatalf("audit: %v", err)
 			}
-			leaks := []string{"secret_col", "uuid()", "fingerprint", "0x", "c1f300"}
+			leaks := []string{"secret_col", "SECRETLIT", "uuid", "lower", "fingerprint", "0x", "c1f300"}
 			check := func(label, s string) {
 				for _, leak := range leaks {
 					if strings.Contains(s, leak) {
@@ -835,8 +864,13 @@ func TestT07R1RequestIsolation(t *testing.T) {
 				return
 			}
 			findings := result.Statements[0].Findings
-			if len(findings) != 1 || findings[0].Metadata["reason_code"] != "tidb_default_expression" {
-				results <- fmt.Errorf("findings = %+v, want one tidb_default_expression", findings)
+			if len(findings) != 0 {
+				results <- fmt.Errorf("findings = %+v, want none", findings)
+				return
+			}
+			gaps := result.Statements[0].EvidenceGaps
+			if len(gaps) != 1 || gaps[0].ReasonCode != "tidb_set_default_eval_unproven" {
+				results <- fmt.Errorf("gaps = %+v, want one tidb_set_default_eval_unproven gap", gaps)
 				return
 			}
 			results <- nil

@@ -685,3 +685,115 @@ positives keep their expression facts.
   D_CONSTANT plus MySQL contrast and CREATE-side CASE cells).
 - `DefaultParenthesized`, `TopForm`, and the new reason/required-fact
   vocabulary are pinned here before production edit, per ticket.
+
+## 12. R2 fold-boundary amendment (authorized rework, same task)
+
+This section is a same-contract amendment frozen inside the rework ticket.
+It does not shrink or alter the 207 frozen identities, their SQL, profiles,
+or any expectation verified in §6–§8 and §11; it corrects the one R1 root
+cause where *sample fold results were generalized into expression-category
+results* and freezes the honest bounded-gap vocabulary for unprovable
+evaluation. All reclassifications below were confirmed on the pinned TiDB
+8.5.0 anchor (pingcap/tidb:v8.5.0) with the MySQL 8.4 opposite controls on
+the same fixed F01–F08 inputs; transcripts are archived with the R2
+evidence. The R1 observations in §11.2 stay true as *native samples*; what
+changes is that a sample's stored outcome no longer defines the whole
+expression family's verdict.
+
+### 12.1 What the R2 native matrix proved
+
+Controlled fixture `golden.t (v INT, x INT)`, each setter an independent
+request, catalog read on the real column:
+
+| cell | authored expression | native outcome |
+| --- | --- | --- |
+| F01 | `(CASE WHEN 1 THEN 1 ELSE 2 END)` | accept, stores literal `1` |
+| F02 | `(CASE WHEN 1 THEN 1 ELSE uuid() END)` | accept, stores literal `1` |
+| F03 | `(CASE WHEN 1 THEN uuid() ELSE 'x' END)` | reject 1067 |
+| F04 | `((LOWER('1')))` | accept, stores literal `1` |
+| F05 | `((LOWER('X')))` | reject 1067 |
+| F06 | `(1 + 2)` | accept, stores literal `3` |
+| F07 | `('X' + 1)` | reject 1292 |
+| F08 | `(uuid())` | accept, stores `uuid()` verbatim (control) |
+
+The same TopForm, the same callee set, even the same callee name decide
+different outcomes (F02 vs F03; F04 vs F05; F06 vs F07): the fold verdict is
+*value-dependent*. Static facts — TopForm, the deduplicated Functions set,
+the root-parens flag, the target base type — cannot prove which CASE branch
+returns, which literal a call folds to, or whether the folded literal
+coerces. The MySQL 8.4 controls store F01/F04 verbatim
+(`DEFAULT_GENERATED`), unchanged opposite evidence.
+
+### 12.2 Frozen gap vocabulary (pinned before production edit)
+
+One new bounded-gap reason for the whole evaluation boundary — never a
+per-function or per-shape vocabulary:
+
+- reason `tidb_set_default_eval_unproven` with required facts
+  `["source_column.default_evaluation", "target_table.default_coercion"]`:
+  the authored expression's server-side evaluation result and the folded
+  value's coercion into the target column are not statically proven.
+  `ExpressionFacts.Known` stays true — the facts are complete; the *outcome*
+  is not. The gap sets `UnresolvedTransition`; the ordered-state seam
+  withholds the default shape — no fabricated literal, temporal, or
+  verbatim post-state and no fabricated negative.
+
+The earlier `source_column.default_composite` / `default_function` gaps keep
+their meanings (unobserved callee families and unobserved composites are
+missing evidence, not missing evaluation).
+
+### 12.3 Corrected TiDB `set_column_default` responsibility table
+
+Steps 1–5 of §11.2 stand unchanged (prior gates, 1101, parens-grammar,
+subquery/aggregate, 1054, `!Known`). The bare-path function gate is
+rescoped: the observed 3770 allowlist applies only to the single-call bare
+root — function names nested inside evaluated composites are not
+allowlist-checked (F02/F03 prove CASE callees reach evaluation; the R1
+`((lower('x')))` observation proves wrapped roots skip the gate). Step 6
+becomes:
+
+- `TopForm == "call"`, root NOT parenthesized, `CallCount == 1` (the whole
+  expression is exactly one call node):
+  - callee ∈ {`uuid`, `json_object`, `json_array`} → verbatim positive on
+    every non-1101 target (unchanged; evaluation defers to INSERT).
+  - callee ∈ observed-disallowed {`lower`, `concat`, `uuid_short`, `now`} →
+    `tidb_default_expression` (3770) + `InvalidTransition`.
+  - callee = `current_timestamp` → prior base ∈ {timestamp, datetime,
+    date}: temporal positive, publishing the verbatim temporal default
+    (observed); any other base → `tidb_set_default_eval_unproven`.
+  - any other callee → `incomplete_source_column`/
+    `source_column.default_function` gap (unobserved-callee evidence).
+- Every other expression-class cell — any CASE root, any root-wrapped
+  expression, any arithmetic/unary/other root, a bare call root with
+  `CallCount > 1`, and every wrapped/literal coercion composite — →
+  `tidb_set_default_eval_unproven` + `UnresolvedTransition`. This replaces
+  the §11.2 folded-literal outcome tables (uuid/lower/string fold, CASE
+  share, constant-arithmetic fold, current_timestamp non-temporal fold):
+  they were sample results generalized into category results.
+- Literal-class `(current_timestamp)` (facts==nil, `DefaultParenthesized` +
+  `DefaultIsCurrentTimestamp`): prior base ∈ {timestamp, datetime, date} →
+  temporal positive; every other base → `tidb_set_default_eval_unproven`.
+- MySQL is unchanged; the CREATE-family table in §11.2 is unchanged — the
+  fold boundary is the ALTER setter's evaluation path only.
+
+### 12.4 New minimal fact
+
+`ExpressionFacts.CallCount` — the number of function-call nodes in the
+expression. It proves exactly one thing: whether the whole expression is a
+single call node, so the verbatim cell requires `CallCount == 1` rather
+than `len(Functions) == 1` (a deduplicated name set cannot prove the call
+count — `uuid(uuid())` is not `uuid()`). It proves nothing about
+evaluation, argument values, or results. Internal fact, value-typed,
+deep-copyable, no expression content — privacy and request isolation
+unchanged.
+
+### 12.5 Publication is the same verdict
+
+The ordered-state seam consumes the single adjudication result instead of
+mirroring tables: proven cells publish verbatim expression facts or the
+temporal default; everything else is unreachable on the gated path. The
+`TiDBSetDefaultLiteral` folded-literal publication kind is withdrawn — no
+cell may publish a folded literal the product cannot prove was stored.
+Gap'd setters tombstone the identity, so no follow-up statement observes a
+fabricated default; DROP DEFAULT and plain literal setters keep the
+existing contract.
