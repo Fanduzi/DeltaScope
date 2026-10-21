@@ -1,0 +1,13 @@
+command: go test (focused R1 packages) -count=1
+HEAD: 1d2c2fa48d89d64e0ebb6a608688eeb9df1484e6
+ts: 2026-10-21T14:45:13Z
+---
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	0.461s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/spec	0.824s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	1.335s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql	1.770s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	4.437s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/auditmeta	2.990s
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	3.222s
+---
+direct_rc=0

@@ -1,0 +1,428 @@
+{
+  "case_id": "T07.meta.t07-tidb85-x01-generated-invisible",
+  "kind": "cli_metadata",
+  "cli_case": "t07-tidb85-x01-generated-invisible",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "CREATE TABLE t (a INT,b INT AS (a+1) STORED INVISIBLE,c INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;",
+  "policy_profile": "t07-all",
+  "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t08/1d2c2fa48d89d64e0ebb6a608688eeb9df1484e6/golden/T07/T07/golden-policy-t07-all.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+      "incomplete"
+    ],
+    "statement_sql": [
+      "CREATE TABLE t (a INT,b INT AS (a+1) STORED INVISIBLE,c INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;"
+    ],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "finding_entries": [],
+    "finding_metadata": [],
+    "finding_locations": [],
+    "unsupported_entries": [
+      {
+        "index": 0,
+        "feature": "create_table.column.visibility",
+        "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+        "metadata": {
+          "aspect": "column"
+        }
+      }
+    ],
+    "t07_exact_findings": [],
+    "statement_indices": [
+      0
+    ],
+    "rule_summary_loaded": 4
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [
+      {
+        "name": "prove-prior-absence",
+        "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'",
+        "rc": 0,
+        "stdout": "COUNT(*)\n0",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "bound table count",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "bound table count",
+        "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'",
+        "rc": 0,
+        "output": "0",
+        "stderr": ""
+      }
+    ],
+    "execute": [
+      {
+        "name": "step-0",
+        "sql": "CREATE TABLE t (a INT,b INT AS (a+1) STORED INVISIBLE,c INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 53 near \"INVISIBLE,c INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin\"",
+        "verify": [
+          {
+            "assert": "bound table count",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          },
+          {
+            "assert": "complete advanced column set",
+            "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(column_name,':',ordinal_position,':','bad') ORDER BY ordinal_position SEPARATOR ','),'') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t'",
+            "rc": 0,
+            "output": "",
+            "stderr": ""
+          },
+          {
+            "assert": "complete index identity",
+            "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(index_name,':',seq_in_index,':',column_name) ORDER BY CAST(index_name AS BINARY),seq_in_index SEPARATOR ','),'') FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t'",
+            "rc": 0,
+            "output": "",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "structure": [
+      {
+        "assert": "bound table count",
+        "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'",
+        "rc": 0,
+        "output": "0",
+        "stderr": ""
+      },
+      {
+        "assert": "complete advanced column set",
+        "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(column_name,':',ordinal_position,':','bad') ORDER BY ordinal_position SEPARATOR ','),'') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t'",
+        "rc": 0,
+        "output": "",
+        "stderr": ""
+      },
+      {
+        "assert": "complete index identity",
+        "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(index_name,':',seq_in_index,':',column_name) ORDER BY CAST(index_name AS BINARY),seq_in_index SEPARATOR ','),'') FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t'",
+        "rc": 0,
+        "output": "",
+        "stderr": ""
+      }
+    ],
+    "teardown": [
+      {
+        "name": "verify-absent-t",
+        "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'",
+        "rc": 0,
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "bound table count",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"incomplete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t (a INT,b INT AS (a+1) STORED INVISIBLE,c INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;\",\"normalized_sql\":\"CREATE TABLE t (a INT,b INT AS (a+1) STORED INVISIBLE,c INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin\",\"coverage\":{\"status\":\"incomplete\"}}],\"unsupported\":[{\"feature\":\"create_table.column.visibility\",\"sql\":\"CREATE TABLE t (a INT,b INT AS (a+1) STORED INVISIBLE,c INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;\",\"reason\":\"parsed by the shared parser but outside the supported statement surface for this dialect\",\"metadata\":{\"aspect\":\"column\"}}],\"diagnostics\":[{\"classification\":\"unsupported_statement\",\"reason\":\"DeltaScope recognized this statement or feature but does not audit it yet\",\"action_hint\":\"treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release\",\"audited\":false,\"dialect\":\"tidb\"}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":4,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "incomplete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t (a INT,b INT AS (a+1) STORED INVISIBLE,c INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;",
+          "normalized_sql": "CREATE TABLE t (a INT,b INT AS (a+1) STORED INVISIBLE,c INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin",
+          "coverage": {
+            "status": "incomplete"
+          }
+        }
+      ],
+      "unsupported": [
+        {
+          "feature": "create_table.column.visibility",
+          "sql": "CREATE TABLE t (a INT,b INT AS (a+1) STORED INVISIBLE,c INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;",
+          "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+          "metadata": {
+            "aspect": "column"
+          }
+        }
+      ],
+      "diagnostics": [
+        {
+          "classification": "unsupported_statement",
+          "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+          "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+          "audited": false,
+          "dialect": "tidb"
+        }
+      ],
+      "version": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 4,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "tidb",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "setup prove-prior-absence return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup prove-prior-absence: bound table count",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[{'classification': 'unsupported_statement', 'reason': 'DeltaScope recognized this statement or feature but does not audit it yet', 'action_hint': 'treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release', 'audited': False, 'dialect': 'tidb'}]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[{'feature': 'create_table.column.visibility', 'sql': 'CREATE TABLE t (a INT,b INT AS (a+1) STORED INVISIBLE,c INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;', 'reason': 'parsed by the shared parser but outside the supported statement surface for this dialect', 'metadata': {'aspect': 'column'}}]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=4"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='incomplete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['incomplete']"
+    },
+    {
+      "name": "unsupported entries",
+      "ok": true,
+      "detail": "entries=[(0, 'create_table.column.visibility', 'parsed by the shared parser but outside the supported statement surface for this dialect')] expected=[(0, 'create_table.column.visibility', 'parsed by the shared parser but outside the supported statement surface for this dialect')]"
+    },
+    {
+      "name": "unsupported metadata (0, 'create_table.column.visibility', 'parsed by the shared parser but outside the supported statement surface for this dialect')",
+      "ok": true,
+      "detail": "entries=[{'feature': 'create_table.column.visibility', 'sql': 'CREATE TABLE t (a INT,b INT AS (a+1) STORED INVISIBLE,c INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;', 'reason': 'parsed by the shared parser but outside the supported statement surface for this dialect', 'metadata': {'aspect': 'column'}}] expected_metadata={'aspect': 'column'}"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['CREATE TABLE t (a INT,b INT AS (a+1) STORED INVISIBLE,c INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;'] expected=['CREATE TABLE t (a INT,b INT AS (a+1) STORED INVISIBLE,c INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;']"
+    },
+    {
+      "name": "unsupported sql identity index=0",
+      "ok": true,
+      "detail": "sql='CREATE TABLE t (a INT,b INT AS (a+1) STORED INVISIBLE,c INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;' expected='CREATE TABLE t (a INT,b INT AS (a+1) STORED INVISIBLE,c INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;'"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[] expected=[]"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[] expected=[]"
+    },
+    {
+      "name": "post-verify bound table count",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute step-0 return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr='ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 53 near \"INVISIBLE,c INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin\"'"
+    },
+    {
+      "name": "execute step-0 stderr marker",
+      "ok": true,
+      "detail": "ERROR 1064"
+    },
+    {
+      "name": "execute step-0: bound table count",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute step-0: complete advanced column set",
+      "ok": true,
+      "detail": "rc=0 output='' expected=''"
+    },
+    {
+      "name": "execute step-0: complete index identity",
+      "ok": true,
+      "detail": "rc=0 output='' expected=''"
+    },
+    {
+      "name": "structure bound table count",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "structure complete advanced column set",
+      "ok": true,
+      "detail": "rc=0 output='' expected=''"
+    },
+    {
+      "name": "structure complete index identity",
+      "ok": true,
+      "detail": "rc=0 output='' expected=''"
+    },
+    {
+      "name": "teardown verify-absent-t return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown verify-absent-t: bound table count",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t08/1d2c2fa48d89d64e0ebb6a608688eeb9df1484e6/golden/T07/T07/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "CREATE TABLE t (a INT,b INT AS (a+1) STORED INVISIBLE,c INT) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;",
+    "--config",
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t08/1d2c2fa48d89d64e0ebb6a608688eeb9df1484e6/golden/T07/T07/golden-policy-t07-all.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "golden"
+  ]
+}

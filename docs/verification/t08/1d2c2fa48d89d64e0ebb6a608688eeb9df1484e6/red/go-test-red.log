@@ -1,0 +1,177 @@
+red capture: unfix base 922771cd + committed T08-R1 test
+command: go test ./internal/application/auditmeta -run T08R1 -count=1 -v
+cwd: /tmp/t08r1-red (git worktree at 922771cd9ccaa58155373b52ffa46686cc14895d)
+HEAD: 922771cd9ccaa58155373b52ffa46686cc14895d
+go: go version go1.26.1 darwin/arm64
+start: 2026-10-21T14:44:30Z
+---
+=== RUN   TestT08R1ProviderLiteralMatrix
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/modify/s1_same_string
+    audit_t08r1_default_comparison_test.go:270: default findings under ddl.alter.modify_column.compatibility.require = 1, want 0 (all: []rule.Finding{rule.Finding{RuleID:"ddl.alter.modify_column.compatibility.require", Level:"blocker", Message:"column \"c\" changes its default value", StatementIndex:0, StatementKind:"ddl", Location:(*rule.Location)(0x35f9d2a40af0), Suggestion:"keep the declared default identical to the stored default or review the transition explicitly", Metadata:map[string]interface {}{"action":"modify_column", "column_name":"c", "name":"c", "source_default":"literal", "table":"r1_defaults", "target_default":"literal"}, Explanation:(*rule.FindingExplanation)(0x35f9d2b8a5a0)}})
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/modify/s2_same_empty
+    audit_t08r1_default_comparison_test.go:270: default findings under ddl.alter.modify_column.compatibility.require = 1, want 0 (all: []rule.Finding{rule.Finding{RuleID:"ddl.alter.modify_column.compatibility.require", Level:"blocker", Message:"column \"c\" changes its default value", StatementIndex:0, StatementKind:"ddl", Location:(*rule.Location)(0x35f9d3000ab0), Suggestion:"keep the declared default identical to the stored default or review the transition explicitly", Metadata:map[string]interface {}{"action":"modify_column", "column_name":"c", "name":"c", "source_default":"literal", "table":"r1_defaults", "target_default":"literal"}, Explanation:(*rule.FindingExplanation)(0x35f9d2b8a500)}})
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/modify/s3_same_text_null
+    audit_t08r1_default_comparison_test.go:270: default findings under ddl.alter.modify_column.compatibility.require = 1, want 0 (all: []rule.Finding{rule.Finding{RuleID:"ddl.alter.modify_column.compatibility.require", Level:"blocker", Message:"column \"c\" changes its default value", StatementIndex:0, StatementKind:"ddl", Location:(*rule.Location)(0x35f9d2b22960), Suggestion:"keep the declared default identical to the stored default or review the transition explicitly", Metadata:map[string]interface {}{"action":"modify_column", "column_name":"c", "name":"c", "source_default":"literal", "table":"r1_defaults", "target_default":"literal"}, Explanation:(*rule.FindingExplanation)(0x35f9d2b8a500)}})
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/modify/s4_content_quotes
+    audit_t08r1_default_comparison_test.go:270: default findings under ddl.alter.modify_column.compatibility.require = 0, want 1 (all: []rule.Finding(nil))
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/modify/s5_content_quotes_reverse
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/modify/s6_different
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/modify/s7_quote_in_content
+    audit_t08r1_default_comparison_test.go:270: default findings under ddl.alter.modify_column.compatibility.require = 1, want 0 (all: []rule.Finding{rule.Finding{RuleID:"ddl.alter.modify_column.compatibility.require", Level:"blocker", Message:"column \"c\" changes its default value", StatementIndex:0, StatementKind:"ddl", Location:(*rule.Location)(0x35f9d2a40b30), Suggestion:"keep the declared default identical to the stored default or review the transition explicitly", Metadata:map[string]interface {}{"action":"modify_column", "column_name":"c", "name":"c", "source_default":"literal", "table":"r1_defaults", "target_default":"literal"}, Explanation:(*rule.FindingExplanation)(0x35f9d2b8a5a0)}})
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/modify/keyword_string_stays_literal
+    audit_t08r1_default_comparison_test.go:270: default findings under ddl.alter.modify_column.compatibility.require = 1, want 0 (all: []rule.Finding{rule.Finding{RuleID:"ddl.alter.modify_column.compatibility.require", Level:"blocker", Message:"column \"c\" changes its default value", StatementIndex:0, StatementKind:"ddl", Location:(*rule.Location)(0x35f9d2b22a80), Suggestion:"keep the declared default identical to the stored default or review the transition explicitly", Metadata:map[string]interface {}{"action":"modify_column", "column_name":"c", "name":"c", "source_default":"current_timestamp", "table":"r1_defaults", "target_default":"literal"}, Explanation:(*rule.FindingExplanation)(0x35f9d2b8a5a0)}})
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/modify/numeric_same
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/modify/numeric_diff
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/change/s1_same_string
+    audit_t08r1_default_comparison_test.go:270: default findings under ddl.alter.change_column.compatibility.require = 1, want 0 (all: []rule.Finding{rule.Finding{RuleID:"ddl.alter.change_column.compatibility.require", Level:"blocker", Message:"column \"c\" changes its default value", StatementIndex:0, StatementKind:"ddl", Location:(*rule.Location)(0x35f9d2a41600), Suggestion:"keep the declared default identical to the stored default or review the transition explicitly", Metadata:map[string]interface {}{"action":"change_column", "column_name":"c", "name":"c", "source_default":"literal", "table":"r1_defaults", "target_default":"literal"}, Explanation:(*rule.FindingExplanation)(0x35f9d2b8a500)}})
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/change/s2_same_empty
+    audit_t08r1_default_comparison_test.go:270: default findings under ddl.alter.change_column.compatibility.require = 1, want 0 (all: []rule.Finding{rule.Finding{RuleID:"ddl.alter.change_column.compatibility.require", Level:"blocker", Message:"column \"c\" changes its default value", StatementIndex:0, StatementKind:"ddl", Location:(*rule.Location)(0x35f9d2a41260), Suggestion:"keep the declared default identical to the stored default or review the transition explicitly", Metadata:map[string]interface {}{"action":"change_column", "column_name":"c", "name":"c", "source_default":"literal", "table":"r1_defaults", "target_default":"literal"}, Explanation:(*rule.FindingExplanation)(0x35f9d2b8a500)}})
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/change/s3_same_text_null
+    audit_t08r1_default_comparison_test.go:270: default findings under ddl.alter.change_column.compatibility.require = 1, want 0 (all: []rule.Finding{rule.Finding{RuleID:"ddl.alter.change_column.compatibility.require", Level:"blocker", Message:"column \"c\" changes its default value", StatementIndex:0, StatementKind:"ddl", Location:(*rule.Location)(0x35f9d2b22a80), Suggestion:"keep the declared default identical to the stored default or review the transition explicitly", Metadata:map[string]interface {}{"action":"change_column", "column_name":"c", "name":"c", "source_default":"literal", "table":"r1_defaults", "target_default":"literal"}, Explanation:(*rule.FindingExplanation)(0x35f9d2f50320)}})
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/change/s4_content_quotes
+    audit_t08r1_default_comparison_test.go:270: default findings under ddl.alter.change_column.compatibility.require = 0, want 1 (all: []rule.Finding(nil))
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/change/s5_content_quotes_reverse
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/change/s6_different
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/change/s7_quote_in_content
+    audit_t08r1_default_comparison_test.go:270: default findings under ddl.alter.change_column.compatibility.require = 1, want 0 (all: []rule.Finding{rule.Finding{RuleID:"ddl.alter.change_column.compatibility.require", Level:"blocker", Message:"column \"c\" changes its default value", StatementIndex:0, StatementKind:"ddl", Location:(*rule.Location)(0x35f9d2a40200), Suggestion:"keep the declared default identical to the stored default or review the transition explicitly", Metadata:map[string]interface {}{"action":"change_column", "column_name":"c", "name":"c", "source_default":"literal", "table":"r1_defaults", "target_default":"literal"}, Explanation:(*rule.FindingExplanation)(0x35f9d2f503c0)}})
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/change/keyword_string_stays_literal
+    audit_t08r1_default_comparison_test.go:270: default findings under ddl.alter.change_column.compatibility.require = 1, want 0 (all: []rule.Finding{rule.Finding{RuleID:"ddl.alter.change_column.compatibility.require", Level:"blocker", Message:"column \"c\" changes its default value", StatementIndex:0, StatementKind:"ddl", Location:(*rule.Location)(0x35f9d2b22460), Suggestion:"keep the declared default identical to the stored default or review the transition explicitly", Metadata:map[string]interface {}{"action":"change_column", "column_name":"c", "name":"c", "source_default":"current_timestamp", "table":"r1_defaults", "target_default":"literal"}, Explanation:(*rule.FindingExplanation)(0x35f9d2b8a500)}})
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/change/numeric_same
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/change/numeric_diff
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/modify/s1_same_string
+    audit_t08r1_default_comparison_test.go:270: default findings under ddl.alter.modify_column.compatibility.require = 1, want 0 (all: []rule.Finding{rule.Finding{RuleID:"ddl.alter.modify_column.compatibility.require", Level:"blocker", Message:"column \"c\" changes its default value", StatementIndex:0, StatementKind:"ddl", Location:(*rule.Location)(0x35f9d2a401c0), Suggestion:"keep the declared default identical to the stored default or review the transition explicitly", Metadata:map[string]interface {}{"action":"modify_column", "column_name":"c", "name":"c", "source_default":"literal", "table":"r1_defaults", "target_default":"literal"}, Explanation:(*rule.FindingExplanation)(0x35f9d2e5a370)}})
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/modify/s2_same_empty
+    audit_t08r1_default_comparison_test.go:270: default findings under ddl.alter.modify_column.compatibility.require = 1, want 0 (all: []rule.Finding{rule.Finding{RuleID:"ddl.alter.modify_column.compatibility.require", Level:"blocker", Message:"column \"c\" changes its default value", StatementIndex:0, StatementKind:"ddl", Location:(*rule.Location)(0x35f9d3000080), Suggestion:"keep the declared default identical to the stored default or review the transition explicitly", Metadata:map[string]interface {}{"action":"modify_column", "column_name":"c", "name":"c", "source_default":"literal", "table":"r1_defaults", "target_default":"literal"}, Explanation:(*rule.FindingExplanation)(0x35f9d2e5a2d0)}})
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/modify/s3_same_text_null
+    audit_t08r1_default_comparison_test.go:270: default findings under ddl.alter.modify_column.compatibility.require = 1, want 0 (all: []rule.Finding{rule.Finding{RuleID:"ddl.alter.modify_column.compatibility.require", Level:"blocker", Message:"column \"c\" changes its default value", StatementIndex:0, StatementKind:"ddl", Location:(*rule.Location)(0x35f9d2a40110), Suggestion:"keep the declared default identical to the stored default or review the transition explicitly", Metadata:map[string]interface {}{"action":"modify_column", "column_name":"c", "name":"c", "source_default":"literal", "table":"r1_defaults", "target_default":"literal"}, Explanation:(*rule.FindingExplanation)(0x35f9d2b8a0f0)}})
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/modify/s4_content_quotes
+    audit_t08r1_default_comparison_test.go:270: default findings under ddl.alter.modify_column.compatibility.require = 0, want 1 (all: []rule.Finding(nil))
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/modify/s5_content_quotes_reverse
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/modify/s6_different
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/modify/s7_quote_in_content
+    audit_t08r1_default_comparison_test.go:270: default findings under ddl.alter.modify_column.compatibility.require = 1, want 0 (all: []rule.Finding{rule.Finding{RuleID:"ddl.alter.modify_column.compatibility.require", Level:"blocker", Message:"column \"c\" changes its default value", StatementIndex:0, StatementKind:"ddl", Location:(*rule.Location)(0x35f9d3000010), Suggestion:"keep the declared default identical to the stored default or review the transition explicitly", Metadata:map[string]interface {}{"action":"modify_column", "column_name":"c", "name":"c", "source_default":"literal", "table":"r1_defaults", "target_default":"literal"}, Explanation:(*rule.FindingExplanation)(0x35f9d30620a0)}})
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/modify/keyword_string_stays_literal
+    audit_t08r1_default_comparison_test.go:270: default findings under ddl.alter.modify_column.compatibility.require = 1, want 0 (all: []rule.Finding{rule.Finding{RuleID:"ddl.alter.modify_column.compatibility.require", Level:"blocker", Message:"column \"c\" changes its default value", StatementIndex:0, StatementKind:"ddl", Location:(*rule.Location)(0x35f9d2a40ae0), Suggestion:"keep the declared default identical to the stored default or review the transition explicitly", Metadata:map[string]interface {}{"action":"modify_column", "column_name":"c", "name":"c", "source_default":"current_timestamp", "table":"r1_defaults", "target_default":"literal"}, Explanation:(*rule.FindingExplanation)(0x35f9d30623c0)}})
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/modify/numeric_same
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/modify/numeric_diff
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/change/s1_same_string
+    audit_t08r1_default_comparison_test.go:270: default findings under ddl.alter.change_column.compatibility.require = 1, want 0 (all: []rule.Finding{rule.Finding{RuleID:"ddl.alter.change_column.compatibility.require", Level:"blocker", Message:"column \"c\" changes its default value", StatementIndex:0, StatementKind:"ddl", Location:(*rule.Location)(0x35f9d30009f0), Suggestion:"keep the declared default identical to the stored default or review the transition explicitly", Metadata:map[string]interface {}{"action":"change_column", "column_name":"c", "name":"c", "source_default":"literal", "table":"r1_defaults", "target_default":"literal"}, Explanation:(*rule.FindingExplanation)(0x35f9d2b8a690)}})
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/change/s2_same_empty
+    audit_t08r1_default_comparison_test.go:270: default findings under ddl.alter.change_column.compatibility.require = 1, want 0 (all: []rule.Finding{rule.Finding{RuleID:"ddl.alter.change_column.compatibility.require", Level:"blocker", Message:"column \"c\" changes its default value", StatementIndex:0, StatementKind:"ddl", Location:(*rule.Location)(0x35f9d2b22ea0), Suggestion:"keep the declared default identical to the stored default or review the transition explicitly", Metadata:map[string]interface {}{"action":"change_column", "column_name":"c", "name":"c", "source_default":"literal", "table":"r1_defaults", "target_default":"literal"}, Explanation:(*rule.FindingExplanation)(0x35f9d2b8a5a0)}})
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/change/s3_same_text_null
+    audit_t08r1_default_comparison_test.go:270: default findings under ddl.alter.change_column.compatibility.require = 1, want 0 (all: []rule.Finding{rule.Finding{RuleID:"ddl.alter.change_column.compatibility.require", Level:"blocker", Message:"column \"c\" changes its default value", StatementIndex:0, StatementKind:"ddl", Location:(*rule.Location)(0x35f9d2a40170), Suggestion:"keep the declared default identical to the stored default or review the transition explicitly", Metadata:map[string]interface {}{"action":"change_column", "column_name":"c", "name":"c", "source_default":"literal", "table":"r1_defaults", "target_default":"literal"}, Explanation:(*rule.FindingExplanation)(0x35f9d2b8a550)}})
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/change/s4_content_quotes
+    audit_t08r1_default_comparison_test.go:270: default findings under ddl.alter.change_column.compatibility.require = 0, want 1 (all: []rule.Finding(nil))
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/change/s5_content_quotes_reverse
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/change/s6_different
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/change/s7_quote_in_content
+    audit_t08r1_default_comparison_test.go:270: default findings under ddl.alter.change_column.compatibility.require = 1, want 0 (all: []rule.Finding{rule.Finding{RuleID:"ddl.alter.change_column.compatibility.require", Level:"blocker", Message:"column \"c\" changes its default value", StatementIndex:0, StatementKind:"ddl", Location:(*rule.Location)(0x35f9d2a40410), Suggestion:"keep the declared default identical to the stored default or review the transition explicitly", Metadata:map[string]interface {}{"action":"change_column", "column_name":"c", "name":"c", "source_default":"literal", "table":"r1_defaults", "target_default":"literal"}, Explanation:(*rule.FindingExplanation)(0x35f9d2f98460)}})
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/change/keyword_string_stays_literal
+    audit_t08r1_default_comparison_test.go:270: default findings under ddl.alter.change_column.compatibility.require = 1, want 0 (all: []rule.Finding{rule.Finding{RuleID:"ddl.alter.change_column.compatibility.require", Level:"blocker", Message:"column \"c\" changes its default value", StatementIndex:0, StatementKind:"ddl", Location:(*rule.Location)(0x35f9d2b22590), Suggestion:"keep the declared default identical to the stored default or review the transition explicitly", Metadata:map[string]interface {}{"action":"change_column", "column_name":"c", "name":"c", "source_default":"current_timestamp", "table":"r1_defaults", "target_default":"literal"}, Explanation:(*rule.FindingExplanation)(0x35f9d2b8a4b0)}})
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/change/numeric_same
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/change/numeric_diff
+--- FAIL: TestT08R1ProviderLiteralMatrix (0.12s)
+    --- FAIL: TestT08R1ProviderLiteralMatrix/mysql/modify/s1_same_string (0.00s)
+    --- FAIL: TestT08R1ProviderLiteralMatrix/mysql/modify/s2_same_empty (0.00s)
+    --- FAIL: TestT08R1ProviderLiteralMatrix/mysql/modify/s3_same_text_null (0.00s)
+    --- FAIL: TestT08R1ProviderLiteralMatrix/mysql/modify/s4_content_quotes (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/mysql/modify/s5_content_quotes_reverse (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/mysql/modify/s6_different (0.00s)
+    --- FAIL: TestT08R1ProviderLiteralMatrix/mysql/modify/s7_quote_in_content (0.00s)
+    --- FAIL: TestT08R1ProviderLiteralMatrix/mysql/modify/keyword_string_stays_literal (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/mysql/modify/numeric_same (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/mysql/modify/numeric_diff (0.00s)
+    --- FAIL: TestT08R1ProviderLiteralMatrix/mysql/change/s1_same_string (0.00s)
+    --- FAIL: TestT08R1ProviderLiteralMatrix/mysql/change/s2_same_empty (0.00s)
+    --- FAIL: TestT08R1ProviderLiteralMatrix/mysql/change/s3_same_text_null (0.00s)
+    --- FAIL: TestT08R1ProviderLiteralMatrix/mysql/change/s4_content_quotes (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/mysql/change/s5_content_quotes_reverse (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/mysql/change/s6_different (0.00s)
+    --- FAIL: TestT08R1ProviderLiteralMatrix/mysql/change/s7_quote_in_content (0.00s)
+    --- FAIL: TestT08R1ProviderLiteralMatrix/mysql/change/keyword_string_stays_literal (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/mysql/change/numeric_same (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/mysql/change/numeric_diff (0.00s)
+    --- FAIL: TestT08R1ProviderLiteralMatrix/tidb/modify/s1_same_string (0.00s)
+    --- FAIL: TestT08R1ProviderLiteralMatrix/tidb/modify/s2_same_empty (0.00s)
+    --- FAIL: TestT08R1ProviderLiteralMatrix/tidb/modify/s3_same_text_null (0.00s)
+    --- FAIL: TestT08R1ProviderLiteralMatrix/tidb/modify/s4_content_quotes (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/tidb/modify/s5_content_quotes_reverse (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/tidb/modify/s6_different (0.00s)
+    --- FAIL: TestT08R1ProviderLiteralMatrix/tidb/modify/s7_quote_in_content (0.00s)
+    --- FAIL: TestT08R1ProviderLiteralMatrix/tidb/modify/keyword_string_stays_literal (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/tidb/modify/numeric_same (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/tidb/modify/numeric_diff (0.00s)
+    --- FAIL: TestT08R1ProviderLiteralMatrix/tidb/change/s1_same_string (0.00s)
+    --- FAIL: TestT08R1ProviderLiteralMatrix/tidb/change/s2_same_empty (0.00s)
+    --- FAIL: TestT08R1ProviderLiteralMatrix/tidb/change/s3_same_text_null (0.00s)
+    --- FAIL: TestT08R1ProviderLiteralMatrix/tidb/change/s4_content_quotes (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/tidb/change/s5_content_quotes_reverse (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/tidb/change/s6_different (0.00s)
+    --- FAIL: TestT08R1ProviderLiteralMatrix/tidb/change/s7_quote_in_content (0.00s)
+    --- FAIL: TestT08R1ProviderLiteralMatrix/tidb/change/keyword_string_stays_literal (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/tidb/change/numeric_same (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/tidb/change/numeric_diff (0.00s)
+=== RUN   TestT08R1ChangeRenameReadsOldName
+    audit_t08r1_default_comparison_test.go:296: default findings under ddl.alter.change_column.compatibility.require = 1, want 0 (all: []rule.Finding{rule.Finding{RuleID:"ddl.alter.change_column.compatibility.require", Level:"blocker", Message:"column \"c\" changes its default value", StatementIndex:0, StatementKind:"ddl", Location:(*rule.Location)(0x35f9d30000d0), Suggestion:"keep the declared default identical to the stored default or review the transition explicitly", Metadata:map[string]interface {}{"action":"change_column", "column_name":"c2", "name":"c", "source_default":"literal", "table":"r1_defaults", "target_default":"literal"}, Explanation:(*rule.FindingExplanation)(0x35f9d2b8a730)}})
+--- FAIL: TestT08R1ChangeRenameReadsOldName (0.00s)
+=== RUN   TestT08R1ExpressionIdentityMatrix
+=== RUN   TestT08R1ExpressionIdentityMatrix/mysql/expr_same
+=== RUN   TestT08R1ExpressionIdentityMatrix/mysql/expr_diff
+=== RUN   TestT08R1ExpressionIdentityMatrix/mysql/expr_unknown_source
+    audit_t08r1_default_comparison_test.go:333: default findings under ddl.alter.modify_column.compatibility.require = 1, want 0 (all: []rule.Finding{rule.Finding{RuleID:"ddl.alter.modify_column.compatibility.require", Level:"blocker", Message:"column \"c\" changes its default value", StatementIndex:0, StatementKind:"ddl", Location:(*rule.Location)(0x35f9d30000f0), Suggestion:"keep the declared default identical to the stored default or review the transition explicitly", Metadata:map[string]interface {}{"action":"modify_column", "column_name":"c", "name":"c", "source_default":"expression", "table":"r1_defaults", "target_default":"expression"}, Explanation:(*rule.FindingExplanation)(0x35f9d2b8a500)}})
+=== RUN   TestT08R1ExpressionIdentityMatrix/mysql/literal_unknown_target
+    audit_t08r1_default_comparison_test.go:333: default findings under ddl.alter.modify_column.compatibility.require = 1, want 0 (all: []rule.Finding{rule.Finding{RuleID:"ddl.alter.modify_column.compatibility.require", Level:"blocker", Message:"column \"c\" changes its default value", StatementIndex:0, StatementKind:"ddl", Location:(*rule.Location)(0x35f9d3000270), Suggestion:"keep the declared default identical to the stored default or review the transition explicitly", Metadata:map[string]interface {}{"action":"modify_column", "column_name":"c", "name":"c", "source_default":"literal", "table":"r1_defaults", "target_default":"literal"}, Explanation:(*rule.FindingExplanation)(0x35f9d2b8a5f0)}})
+=== RUN   TestT08R1ExpressionIdentityMatrix/tidb/expr_same
+=== RUN   TestT08R1ExpressionIdentityMatrix/tidb/expr_diff
+=== RUN   TestT08R1ExpressionIdentityMatrix/tidb/expr_unknown_source
+    audit_t08r1_default_comparison_test.go:333: default findings under ddl.alter.modify_column.compatibility.require = 1, want 0 (all: []rule.Finding{rule.Finding{RuleID:"ddl.alter.modify_column.compatibility.require", Level:"blocker", Message:"column \"c\" changes its default value", StatementIndex:0, StatementKind:"ddl", Location:(*rule.Location)(0x35f9d2a40230), Suggestion:"keep the declared default identical to the stored default or review the transition explicitly", Metadata:map[string]interface {}{"action":"modify_column", "column_name":"c", "name":"c", "source_default":"expression", "table":"r1_defaults", "target_default":"expression"}, Explanation:(*rule.FindingExplanation)(0x35f9d308c410)}})
+=== RUN   TestT08R1ExpressionIdentityMatrix/tidb/literal_unknown_target
+    audit_t08r1_default_comparison_test.go:333: default findings under ddl.alter.modify_column.compatibility.require = 1, want 0 (all: []rule.Finding{rule.Finding{RuleID:"ddl.alter.modify_column.compatibility.require", Level:"blocker", Message:"column \"c\" changes its default value", StatementIndex:0, StatementKind:"ddl", Location:(*rule.Location)(0x35f9d3000210), Suggestion:"keep the declared default identical to the stored default or review the transition explicitly", Metadata:map[string]interface {}{"action":"modify_column", "column_name":"c", "name":"c", "source_default":"literal", "table":"r1_defaults", "target_default":"literal"}, Explanation:(*rule.FindingExplanation)(0x35f9d308c3c0)}})
+--- FAIL: TestT08R1ExpressionIdentityMatrix (0.02s)
+    --- PASS: TestT08R1ExpressionIdentityMatrix/mysql/expr_same (0.00s)
+    --- PASS: TestT08R1ExpressionIdentityMatrix/mysql/expr_diff (0.00s)
+    --- FAIL: TestT08R1ExpressionIdentityMatrix/mysql/expr_unknown_source (0.00s)
+    --- FAIL: TestT08R1ExpressionIdentityMatrix/mysql/literal_unknown_target (0.00s)
+    --- PASS: TestT08R1ExpressionIdentityMatrix/tidb/expr_same (0.00s)
+    --- PASS: TestT08R1ExpressionIdentityMatrix/tidb/expr_diff (0.00s)
+    --- FAIL: TestT08R1ExpressionIdentityMatrix/tidb/expr_unknown_source (0.00s)
+    --- FAIL: TestT08R1ExpressionIdentityMatrix/tidb/literal_unknown_target (0.00s)
+=== RUN   TestT08R1DerivedVsProviderSameOutcome
+=== RUN   TestT08R1DerivedVsProviderSameOutcome/mysql/same
+=== RUN   TestT08R1DerivedVsProviderSameOutcome/mysql/diff
+=== RUN   TestT08R1DerivedVsProviderSameOutcome/mysql/cleared
+=== RUN   TestT08R1DerivedVsProviderSameOutcome/tidb/same
+=== RUN   TestT08R1DerivedVsProviderSameOutcome/tidb/diff
+=== RUN   TestT08R1DerivedVsProviderSameOutcome/tidb/cleared
+--- PASS: TestT08R1DerivedVsProviderSameOutcome (0.02s)
+    --- PASS: TestT08R1DerivedVsProviderSameOutcome/mysql/same (0.00s)
+    --- PASS: TestT08R1DerivedVsProviderSameOutcome/mysql/diff (0.00s)
+    --- PASS: TestT08R1DerivedVsProviderSameOutcome/mysql/cleared (0.00s)
+    --- PASS: TestT08R1DerivedVsProviderSameOutcome/tidb/same (0.00s)
+    --- PASS: TestT08R1DerivedVsProviderSameOutcome/tidb/diff (0.00s)
+    --- PASS: TestT08R1DerivedVsProviderSameOutcome/tidb/cleared (0.00s)
+=== RUN   TestT08R1DerivedStateChains
+=== RUN   TestT08R1DerivedStateChains/mysql/set_default_publishes_new_identity
+=== RUN   TestT08R1DerivedStateChains/mysql/drop_default_clears_identity
+=== RUN   TestT08R1DerivedStateChains/mysql/change_rename_carries_identity
+=== RUN   TestT08R1DerivedStateChains/tidb/set_default_publishes_new_identity
+=== RUN   TestT08R1DerivedStateChains/tidb/drop_default_clears_identity
+=== RUN   TestT08R1DerivedStateChains/tidb/change_rename_carries_identity
+--- PASS: TestT08R1DerivedStateChains (0.02s)
+    --- PASS: TestT08R1DerivedStateChains/mysql/set_default_publishes_new_identity (0.00s)
+    --- PASS: TestT08R1DerivedStateChains/mysql/drop_default_clears_identity (0.00s)
+    --- PASS: TestT08R1DerivedStateChains/mysql/change_rename_carries_identity (0.00s)
+    --- PASS: TestT08R1DerivedStateChains/tidb/set_default_publishes_new_identity (0.00s)
+    --- PASS: TestT08R1DerivedStateChains/tidb/drop_default_clears_identity (0.00s)
+    --- PASS: TestT08R1DerivedStateChains/tidb/change_rename_carries_identity (0.00s)
+=== RUN   TestT08R1ExplicitPolicySeparation
+    audit_t08r1_default_comparison_test.go:511: same-value compat findings = 1, want 0 beside the explicit blocker (all: []rule.Finding{rule.Finding{RuleID:"ddl.alter.modify_column.compatibility.require", Level:"blocker", Message:"column \"c\" changes its default value", StatementIndex:0, StatementKind:"ddl", Location:(*rule.Location)(0x35f9d2e3e7b0), Suggestion:"keep the declared default identical to the stored default or review the transition explicitly", Metadata:map[string]interface {}{"action":"modify_column", "column_name":"c", "name":"c", "source_default":"literal", "table":"r1_defaults", "target_default":"literal"}, Explanation:(*rule.FindingExplanation)(0x35f9d2e5a410)}, rule.Finding{RuleID:"ddl.alter.modify_column.explicit_default_change.forbid", Level:"blocker", Message:"ALTER TABLE modify column explicitly changes default value for \"c\", which this policy forbids", StatementIndex:0, StatementKind:"ddl", Location:(*rule.Location)(0x35f9d2e3e7c0), Suggestion:"keep default value unchanged for \"c\" or relax the policy intentionally after review", Metadata:map[string]interface {}{"action":"modify_column", "change_kind":"explicit_default_change", "column_name":"c", "name":"c", "table":"r1_defaults"}, Explanation:(*rule.FindingExplanation)(0x35f9d2e5a4b0)}})
+--- FAIL: TestT08R1ExplicitPolicySeparation (0.00s)
+=== RUN   TestT08R1ProviderSnapshotUntouched
+--- PASS: TestT08R1ProviderSnapshotUntouched (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/auditmeta	0.527s
+FAIL
+---
+end: 2026-10-21T14:44:31Z
+direct_rc=1

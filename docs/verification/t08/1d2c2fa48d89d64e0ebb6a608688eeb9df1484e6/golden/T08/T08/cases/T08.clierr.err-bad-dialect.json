@@ -1,0 +1,52 @@
+{
+  "case_id": "T08.clierr.err-bad-dialect",
+  "kind": "cli_error",
+  "cli_case": "err-bad-dialect",
+  "dialect": "bogus",
+  "input_sql": "ALTER TABLE t ADD COLUMN a INT;",
+  "policy_profile": "all-rules-disabled",
+  "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t08/1d2c2fa48d89d64e0ebb6a608688eeb9df1484e6/golden/T08/T08/golden-policy-all-off.yaml",
+  "command": [
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t08/1d2c2fa48d89d64e0ebb6a608688eeb9df1484e6/golden/T08/T08/bin/deltascope",
+    "audit",
+    "--dialect",
+    "bogus",
+    "--sql",
+    "ALTER TABLE t ADD COLUMN a INT;",
+    "--config",
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t08/1d2c2fa48d89d64e0ebb6a608688eeb9df1484e6/golden/T08/T08/golden-policy-all-off.yaml",
+    "--format",
+    "json"
+  ],
+  "expected": {
+    "exit": 2,
+    "stderr_contains": [
+      "dialect must be"
+    ]
+  },
+  "actual": {
+    "exit": 2,
+    "stdout": "",
+    "stderr": "audit dialect must be mysql, tidb, or postgresql\n",
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=2 expected=2"
+    },
+    {
+      "name": "stderr contains 'dialect must be'",
+      "ok": true,
+      "detail": "stderr='audit dialect must be mysql, tidb, or postgresql' marker='dialect must be'"
+    }
+  ],
+  "status": "pass"
+}

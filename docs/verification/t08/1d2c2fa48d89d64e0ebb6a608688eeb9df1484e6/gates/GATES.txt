@@ -1,0 +1,26 @@
+T08-R1 gates at 1d2c2fa48d89d64e0ebb6a608688eeb9df1484e6
+
+go test (focused): see go-test-focused.log — 7/7 packages ok, rc=0
+go test -race (affected): see go-test-race.log — 5/5 packages ok, rc=0
+
+GOFLAGS=-count=1 make test — full repo PASS (all packages ok)
+make sql-corpus-gates — PASS
+make ddl-inventory-gate — PASS (TestDDLInventoryContract)
+make ddl-coverage-catalog-test — PASS
+make ddl-golden-validator-test — PASS (758 validator cases + 86 T07 + 25 T08 constructed checks, 0 failures)
+make pg-unit-test-gates — PASS (7 packages, postgresql tag)
+make docs-example-gates — PASS
+decision-record-gate (check_decision_record.sh main...HEAD) — PASS
+three-level-doc check — OK (L3 headers + L2 README sync verified; L1 reminder noted: root README unchanged — internal comparison internals only)
+gofmt -l on touched files — clean
+
+golden manifests at frozen SHA (ddl_golden.py, per-manifest owned anchors):
+  T04: 163/163 cases, 1889 assertions, artifact validates
+  T05: 247/247 cases, 5109 assertions, artifact validates
+  T06: 496/496 cases, 11772 assertions, artifact validates
+  T07: 207/207 cases, 6190 assertions, artifact validates
+  T08: 172/172 cases, 4240 assertions, artifact validates
+
+env note: T08 needs T08_MYSQL_PASSWORD, T07 needs T07_MYSQL_PASSWORD;
+two earlier environment-blocked attempts (missing env / stale containers
+from a killed run) were discarded — artifacts on disk are the passing set.

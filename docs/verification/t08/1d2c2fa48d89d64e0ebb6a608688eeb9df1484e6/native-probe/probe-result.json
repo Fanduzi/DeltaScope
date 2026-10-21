@@ -1,0 +1,2889 @@
+{
+ "started": "2026-10-21T23:01:07+0800",
+ "cells": [
+  {
+   "anchor": "mysql57",
+   "cell": "s1",
+   "table": "t08r1_mysql57_s1",
+   "steps": [
+    {
+     "name": "prove-absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_mysql57_s1'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    },
+    {
+     "name": "create",
+     "sql": "CREATE TABLE t08r1_mysql57_s1 (id INT PRIMARY KEY, c VARCHAR(16) NULL DEFAULT 'x');",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "modify",
+     "sql": "ALTER TABLE t08r1_mysql57_s1 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "drop",
+     "sql": "DROP TABLE t08r1_mysql57_s1;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "final-count",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_mysql57_s1'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    }
+   ],
+   "catalog_before": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_mysql57_s1' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int(11)",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "78",
+      "default_text": "x",
+      "extra": ""
+     }
+    ]
+   },
+   "audit": {
+    "argv": [
+     "/Users/fan/GolangProjects/DeltaScope/bin/deltascope",
+     "audit",
+     "--dialect",
+     "mysql",
+     "--sql",
+     "ALTER TABLE t08r1_mysql57_s1 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';",
+     "--config",
+     "docs/verification/t08/1d2c2fa48d89d64e0ebb6a608688eeb9df1484e6/native-probe/r1-compat-policy.yaml",
+     "--format",
+     "json",
+     "--host",
+     "127.0.0.1",
+     "--port",
+     "23357",
+     "--user",
+     "root",
+     "--schema",
+     "golden",
+     "--password-env",
+     "T08R1_MYSQL_PASSWORD"
+    ],
+    "rc": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t08r1_mysql57_s1 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';\",\"normalized_sql\":\"ALTER TABLE t08r1_mysql57_s1 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x'\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"5.7.44\",\"major\":5,\"minor\":7,\"patch\":44,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": ""
+   },
+   "audit_findings": 0,
+   "audit_parsed": {
+    "verdict": "pass",
+    "coverage": {
+     "status": "complete"
+    },
+    "summary": {
+     "statements": 1,
+     "blockers": 0,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "ALTER TABLE t08r1_mysql57_s1 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';",
+      "normalized_sql": "ALTER TABLE t08r1_mysql57_s1 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x'",
+      "coverage": {
+       "status": "complete"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44",
+     "major": 5,
+     "minor": 7,
+     "patch": 44,
+     "source": "observed",
+     "validated_range": true
+    },
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 1,
+     "applicable": 1,
+     "skipped": []
+    },
+    "context": {
+     "mode": "metadata-aware",
+     "dialect": "mysql",
+     "dialect_source": "detected",
+     "schema": "golden",
+     "schema_source": "flag"
+    }
+   },
+   "catalog_after": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_mysql57_s1' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int(11)",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "78",
+      "default_text": "x",
+      "extra": ""
+     }
+    ]
+   },
+   "byte_truth": {
+    "old_hex": "78",
+    "new_hex": "78",
+    "bytes_same": true,
+    "audit_findings": 0,
+    "want_findings": 0
+   },
+   "status": "pass"
+  },
+  {
+   "anchor": "mysql57",
+   "cell": "s2",
+   "table": "t08r1_mysql57_s2",
+   "steps": [
+    {
+     "name": "prove-absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_mysql57_s2'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    },
+    {
+     "name": "create",
+     "sql": "CREATE TABLE t08r1_mysql57_s2 (id INT PRIMARY KEY, c VARCHAR(16) NULL DEFAULT '');",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "modify",
+     "sql": "ALTER TABLE t08r1_mysql57_s2 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '';",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "drop",
+     "sql": "DROP TABLE t08r1_mysql57_s2;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "final-count",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_mysql57_s2'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    }
+   ],
+   "catalog_before": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_mysql57_s2' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int(11)",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "",
+      "default_text": "",
+      "extra": ""
+     }
+    ]
+   },
+   "audit": {
+    "argv": [
+     "/Users/fan/GolangProjects/DeltaScope/bin/deltascope",
+     "audit",
+     "--dialect",
+     "mysql",
+     "--sql",
+     "ALTER TABLE t08r1_mysql57_s2 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '';",
+     "--config",
+     "docs/verification/t08/1d2c2fa48d89d64e0ebb6a608688eeb9df1484e6/native-probe/r1-compat-policy.yaml",
+     "--format",
+     "json",
+     "--host",
+     "127.0.0.1",
+     "--port",
+     "23357",
+     "--user",
+     "root",
+     "--schema",
+     "golden",
+     "--password-env",
+     "T08R1_MYSQL_PASSWORD"
+    ],
+    "rc": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t08r1_mysql57_s2 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '';\",\"normalized_sql\":\"ALTER TABLE t08r1_mysql57_s2 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT ''\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"5.7.44\",\"major\":5,\"minor\":7,\"patch\":44,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": ""
+   },
+   "audit_findings": 0,
+   "audit_parsed": {
+    "verdict": "pass",
+    "coverage": {
+     "status": "complete"
+    },
+    "summary": {
+     "statements": 1,
+     "blockers": 0,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "ALTER TABLE t08r1_mysql57_s2 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '';",
+      "normalized_sql": "ALTER TABLE t08r1_mysql57_s2 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT ''",
+      "coverage": {
+       "status": "complete"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44",
+     "major": 5,
+     "minor": 7,
+     "patch": 44,
+     "source": "observed",
+     "validated_range": true
+    },
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 1,
+     "applicable": 1,
+     "skipped": []
+    },
+    "context": {
+     "mode": "metadata-aware",
+     "dialect": "mysql",
+     "dialect_source": "detected",
+     "schema": "golden",
+     "schema_source": "flag"
+    }
+   },
+   "catalog_after": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_mysql57_s2' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int(11)",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "",
+      "default_text": "",
+      "extra": ""
+     }
+    ]
+   },
+   "byte_truth": {
+    "old_hex": "",
+    "new_hex": "",
+    "bytes_same": true,
+    "audit_findings": 0,
+    "want_findings": 0
+   },
+   "status": "pass"
+  },
+  {
+   "anchor": "mysql57",
+   "cell": "s4",
+   "table": "t08r1_mysql57_s4",
+   "steps": [
+    {
+     "name": "prove-absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_mysql57_s4'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    },
+    {
+     "name": "create",
+     "sql": "CREATE TABLE t08r1_mysql57_s4 (id INT PRIMARY KEY, c VARCHAR(16) NULL DEFAULT '''x''');",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "modify",
+     "sql": "ALTER TABLE t08r1_mysql57_s4 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "drop",
+     "sql": "DROP TABLE t08r1_mysql57_s4;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "final-count",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_mysql57_s4'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    }
+   ],
+   "catalog_before": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_mysql57_s4' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int(11)",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "277827",
+      "default_text": "'x'",
+      "extra": ""
+     }
+    ]
+   },
+   "audit": {
+    "argv": [
+     "/Users/fan/GolangProjects/DeltaScope/bin/deltascope",
+     "audit",
+     "--dialect",
+     "mysql",
+     "--sql",
+     "ALTER TABLE t08r1_mysql57_s4 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';",
+     "--config",
+     "docs/verification/t08/1d2c2fa48d89d64e0ebb6a608688eeb9df1484e6/native-probe/r1-compat-policy.yaml",
+     "--format",
+     "json",
+     "--host",
+     "127.0.0.1",
+     "--port",
+     "23357",
+     "--user",
+     "root",
+     "--schema",
+     "golden",
+     "--password-env",
+     "T08R1_MYSQL_PASSWORD"
+    ],
+    "rc": 0,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":1,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t08r1_mysql57_s4 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';\",\"normalized_sql\":\"ALTER TABLE t08r1_mysql57_s4 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x'\",\"findings\":[{\"rule_id\":\"ddl.alter.modify_column.compatibility.require\",\"level\":\"warning\",\"message\":\"column \\\"c\\\" changes its default value\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"keep the declared default identical to the stored default or review the transition explicitly\",\"metadata\":{\"action\":\"modify_column\",\"column_name\":\"c\",\"name\":\"c\",\"source_default\":\"literal\",\"table\":\"t08r1_mysql57_s4\",\"target_default\":\"literal\"},\"explanation\":{\"summary\":\"Require DDL alter modify column compatibility require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"keep the declared default identical to the stored default or review the transition explicitly\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"5.7.44\",\"major\":5,\"minor\":7,\"patch\":44,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": ""
+   },
+   "audit_findings": 1,
+   "audit_parsed": {
+    "verdict": "review",
+    "coverage": {
+     "status": "complete"
+    },
+    "summary": {
+     "statements": 1,
+     "blockers": 0,
+     "warnings": 1,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "ALTER TABLE t08r1_mysql57_s4 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';",
+      "normalized_sql": "ALTER TABLE t08r1_mysql57_s4 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x'",
+      "findings": [
+       {
+        "rule_id": "ddl.alter.modify_column.compatibility.require",
+        "level": "warning",
+        "message": "column \"c\" changes its default value",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "keep the declared default identical to the stored default or review the transition explicitly",
+        "metadata": {
+         "action": "modify_column",
+         "column_name": "c",
+         "name": "c",
+         "source_default": "literal",
+         "table": "t08r1_mysql57_s4",
+         "target_default": "literal"
+        },
+        "explanation": {
+         "summary": "Require DDL alter modify column compatibility require",
+         "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "keep the declared default identical to the stored default or review the transition explicitly",
+         "metadata": {
+          "status": "available",
+          "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+         }
+        }
+       }
+      ],
+      "coverage": {
+       "status": "complete"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44",
+     "major": 5,
+     "minor": 7,
+     "patch": 44,
+     "source": "observed",
+     "validated_range": true
+    },
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 1,
+     "applicable": 1,
+     "skipped": []
+    },
+    "context": {
+     "mode": "metadata-aware",
+     "dialect": "mysql",
+     "dialect_source": "detected",
+     "schema": "golden",
+     "schema_source": "flag"
+    }
+   },
+   "catalog_after": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_mysql57_s4' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int(11)",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "78",
+      "default_text": "x",
+      "extra": ""
+     }
+    ]
+   },
+   "byte_truth": {
+    "old_hex": "277827",
+    "new_hex": "78",
+    "bytes_same": false,
+    "audit_findings": 1,
+    "want_findings": 1
+   },
+   "status": "pass"
+  },
+  {
+   "anchor": "mysql57",
+   "cell": "s5",
+   "table": "t08r1_mysql57_s5",
+   "steps": [
+    {
+     "name": "prove-absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_mysql57_s5'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    },
+    {
+     "name": "create",
+     "sql": "CREATE TABLE t08r1_mysql57_s5 (id INT PRIMARY KEY, c VARCHAR(16) NULL DEFAULT 'x');",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "modify",
+     "sql": "ALTER TABLE t08r1_mysql57_s5 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '''x''';",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "drop",
+     "sql": "DROP TABLE t08r1_mysql57_s5;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "final-count",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_mysql57_s5'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    }
+   ],
+   "catalog_before": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_mysql57_s5' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int(11)",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "78",
+      "default_text": "x",
+      "extra": ""
+     }
+    ]
+   },
+   "audit": {
+    "argv": [
+     "/Users/fan/GolangProjects/DeltaScope/bin/deltascope",
+     "audit",
+     "--dialect",
+     "mysql",
+     "--sql",
+     "ALTER TABLE t08r1_mysql57_s5 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '''x''';",
+     "--config",
+     "docs/verification/t08/1d2c2fa48d89d64e0ebb6a608688eeb9df1484e6/native-probe/r1-compat-policy.yaml",
+     "--format",
+     "json",
+     "--host",
+     "127.0.0.1",
+     "--port",
+     "23357",
+     "--user",
+     "root",
+     "--schema",
+     "golden",
+     "--password-env",
+     "T08R1_MYSQL_PASSWORD"
+    ],
+    "rc": 0,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":1,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t08r1_mysql57_s5 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '''x''';\",\"normalized_sql\":\"ALTER TABLE t08r1_mysql57_s5 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '''x'''\",\"findings\":[{\"rule_id\":\"ddl.alter.modify_column.compatibility.require\",\"level\":\"warning\",\"message\":\"column \\\"c\\\" changes its default value\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"keep the declared default identical to the stored default or review the transition explicitly\",\"metadata\":{\"action\":\"modify_column\",\"column_name\":\"c\",\"name\":\"c\",\"source_default\":\"literal\",\"table\":\"t08r1_mysql57_s5\",\"target_default\":\"literal\"},\"explanation\":{\"summary\":\"Require DDL alter modify column compatibility require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"keep the declared default identical to the stored default or review the transition explicitly\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"5.7.44\",\"major\":5,\"minor\":7,\"patch\":44,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": ""
+   },
+   "audit_findings": 1,
+   "audit_parsed": {
+    "verdict": "review",
+    "coverage": {
+     "status": "complete"
+    },
+    "summary": {
+     "statements": 1,
+     "blockers": 0,
+     "warnings": 1,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "ALTER TABLE t08r1_mysql57_s5 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '''x''';",
+      "normalized_sql": "ALTER TABLE t08r1_mysql57_s5 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '''x'''",
+      "findings": [
+       {
+        "rule_id": "ddl.alter.modify_column.compatibility.require",
+        "level": "warning",
+        "message": "column \"c\" changes its default value",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "keep the declared default identical to the stored default or review the transition explicitly",
+        "metadata": {
+         "action": "modify_column",
+         "column_name": "c",
+         "name": "c",
+         "source_default": "literal",
+         "table": "t08r1_mysql57_s5",
+         "target_default": "literal"
+        },
+        "explanation": {
+         "summary": "Require DDL alter modify column compatibility require",
+         "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "keep the declared default identical to the stored default or review the transition explicitly",
+         "metadata": {
+          "status": "available",
+          "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+         }
+        }
+       }
+      ],
+      "coverage": {
+       "status": "complete"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44",
+     "major": 5,
+     "minor": 7,
+     "patch": 44,
+     "source": "observed",
+     "validated_range": true
+    },
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 1,
+     "applicable": 1,
+     "skipped": []
+    },
+    "context": {
+     "mode": "metadata-aware",
+     "dialect": "mysql",
+     "dialect_source": "detected",
+     "schema": "golden",
+     "schema_source": "flag"
+    }
+   },
+   "catalog_after": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_mysql57_s5' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int(11)",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "277827",
+      "default_text": "'x'",
+      "extra": ""
+     }
+    ]
+   },
+   "byte_truth": {
+    "old_hex": "78",
+    "new_hex": "277827",
+    "bytes_same": false,
+    "audit_findings": 1,
+    "want_findings": 1
+   },
+   "status": "pass"
+  },
+  {
+   "anchor": "mysql80",
+   "cell": "s1",
+   "table": "t08r1_mysql80_s1",
+   "steps": [
+    {
+     "name": "prove-absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_mysql80_s1'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    },
+    {
+     "name": "create",
+     "sql": "CREATE TABLE t08r1_mysql80_s1 (id INT PRIMARY KEY, c VARCHAR(16) NULL DEFAULT 'x');",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "modify",
+     "sql": "ALTER TABLE t08r1_mysql80_s1 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "drop",
+     "sql": "DROP TABLE t08r1_mysql80_s1;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "final-count",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_mysql80_s1'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    }
+   ],
+   "catalog_before": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_mysql80_s1' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "78",
+      "default_text": "x",
+      "extra": ""
+     }
+    ]
+   },
+   "audit": {
+    "argv": [
+     "/Users/fan/GolangProjects/DeltaScope/bin/deltascope",
+     "audit",
+     "--dialect",
+     "mysql",
+     "--sql",
+     "ALTER TABLE t08r1_mysql80_s1 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';",
+     "--config",
+     "docs/verification/t08/1d2c2fa48d89d64e0ebb6a608688eeb9df1484e6/native-probe/r1-compat-policy.yaml",
+     "--format",
+     "json",
+     "--host",
+     "127.0.0.1",
+     "--port",
+     "23380",
+     "--user",
+     "root",
+     "--schema",
+     "golden",
+     "--password-env",
+     "T08R1_MYSQL_PASSWORD"
+    ],
+    "rc": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t08r1_mysql80_s1 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';\",\"normalized_sql\":\"ALTER TABLE t08r1_mysql80_s1 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x'\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.0.46\",\"major\":8,\"minor\":0,\"patch\":46,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": ""
+   },
+   "audit_findings": 0,
+   "audit_parsed": {
+    "verdict": "pass",
+    "coverage": {
+     "status": "complete"
+    },
+    "summary": {
+     "statements": 1,
+     "blockers": 0,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "ALTER TABLE t08r1_mysql80_s1 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';",
+      "normalized_sql": "ALTER TABLE t08r1_mysql80_s1 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x'",
+      "coverage": {
+       "status": "complete"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46",
+     "major": 8,
+     "minor": 0,
+     "patch": 46,
+     "source": "observed",
+     "validated_range": true
+    },
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 1,
+     "applicable": 1,
+     "skipped": []
+    },
+    "context": {
+     "mode": "metadata-aware",
+     "dialect": "mysql",
+     "dialect_source": "detected",
+     "schema": "golden",
+     "schema_source": "flag"
+    }
+   },
+   "catalog_after": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_mysql80_s1' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "78",
+      "default_text": "x",
+      "extra": ""
+     }
+    ]
+   },
+   "byte_truth": {
+    "old_hex": "78",
+    "new_hex": "78",
+    "bytes_same": true,
+    "audit_findings": 0,
+    "want_findings": 0
+   },
+   "status": "pass"
+  },
+  {
+   "anchor": "mysql80",
+   "cell": "s2",
+   "table": "t08r1_mysql80_s2",
+   "steps": [
+    {
+     "name": "prove-absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_mysql80_s2'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    },
+    {
+     "name": "create",
+     "sql": "CREATE TABLE t08r1_mysql80_s2 (id INT PRIMARY KEY, c VARCHAR(16) NULL DEFAULT '');",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "modify",
+     "sql": "ALTER TABLE t08r1_mysql80_s2 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '';",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "drop",
+     "sql": "DROP TABLE t08r1_mysql80_s2;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "final-count",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_mysql80_s2'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    }
+   ],
+   "catalog_before": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_mysql80_s2' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "",
+      "default_text": "",
+      "extra": ""
+     }
+    ]
+   },
+   "audit": {
+    "argv": [
+     "/Users/fan/GolangProjects/DeltaScope/bin/deltascope",
+     "audit",
+     "--dialect",
+     "mysql",
+     "--sql",
+     "ALTER TABLE t08r1_mysql80_s2 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '';",
+     "--config",
+     "docs/verification/t08/1d2c2fa48d89d64e0ebb6a608688eeb9df1484e6/native-probe/r1-compat-policy.yaml",
+     "--format",
+     "json",
+     "--host",
+     "127.0.0.1",
+     "--port",
+     "23380",
+     "--user",
+     "root",
+     "--schema",
+     "golden",
+     "--password-env",
+     "T08R1_MYSQL_PASSWORD"
+    ],
+    "rc": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t08r1_mysql80_s2 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '';\",\"normalized_sql\":\"ALTER TABLE t08r1_mysql80_s2 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT ''\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.0.46\",\"major\":8,\"minor\":0,\"patch\":46,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": ""
+   },
+   "audit_findings": 0,
+   "audit_parsed": {
+    "verdict": "pass",
+    "coverage": {
+     "status": "complete"
+    },
+    "summary": {
+     "statements": 1,
+     "blockers": 0,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "ALTER TABLE t08r1_mysql80_s2 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '';",
+      "normalized_sql": "ALTER TABLE t08r1_mysql80_s2 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT ''",
+      "coverage": {
+       "status": "complete"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46",
+     "major": 8,
+     "minor": 0,
+     "patch": 46,
+     "source": "observed",
+     "validated_range": true
+    },
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 1,
+     "applicable": 1,
+     "skipped": []
+    },
+    "context": {
+     "mode": "metadata-aware",
+     "dialect": "mysql",
+     "dialect_source": "detected",
+     "schema": "golden",
+     "schema_source": "flag"
+    }
+   },
+   "catalog_after": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_mysql80_s2' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "",
+      "default_text": "",
+      "extra": ""
+     }
+    ]
+   },
+   "byte_truth": {
+    "old_hex": "",
+    "new_hex": "",
+    "bytes_same": true,
+    "audit_findings": 0,
+    "want_findings": 0
+   },
+   "status": "pass"
+  },
+  {
+   "anchor": "mysql80",
+   "cell": "s4",
+   "table": "t08r1_mysql80_s4",
+   "steps": [
+    {
+     "name": "prove-absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_mysql80_s4'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    },
+    {
+     "name": "create",
+     "sql": "CREATE TABLE t08r1_mysql80_s4 (id INT PRIMARY KEY, c VARCHAR(16) NULL DEFAULT '''x''');",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "modify",
+     "sql": "ALTER TABLE t08r1_mysql80_s4 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "drop",
+     "sql": "DROP TABLE t08r1_mysql80_s4;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "final-count",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_mysql80_s4'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    }
+   ],
+   "catalog_before": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_mysql80_s4' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "277827",
+      "default_text": "'x'",
+      "extra": ""
+     }
+    ]
+   },
+   "audit": {
+    "argv": [
+     "/Users/fan/GolangProjects/DeltaScope/bin/deltascope",
+     "audit",
+     "--dialect",
+     "mysql",
+     "--sql",
+     "ALTER TABLE t08r1_mysql80_s4 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';",
+     "--config",
+     "docs/verification/t08/1d2c2fa48d89d64e0ebb6a608688eeb9df1484e6/native-probe/r1-compat-policy.yaml",
+     "--format",
+     "json",
+     "--host",
+     "127.0.0.1",
+     "--port",
+     "23380",
+     "--user",
+     "root",
+     "--schema",
+     "golden",
+     "--password-env",
+     "T08R1_MYSQL_PASSWORD"
+    ],
+    "rc": 0,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":1,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t08r1_mysql80_s4 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';\",\"normalized_sql\":\"ALTER TABLE t08r1_mysql80_s4 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x'\",\"findings\":[{\"rule_id\":\"ddl.alter.modify_column.compatibility.require\",\"level\":\"warning\",\"message\":\"column \\\"c\\\" changes its default value\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"keep the declared default identical to the stored default or review the transition explicitly\",\"metadata\":{\"action\":\"modify_column\",\"column_name\":\"c\",\"name\":\"c\",\"source_default\":\"literal\",\"table\":\"t08r1_mysql80_s4\",\"target_default\":\"literal\"},\"explanation\":{\"summary\":\"Require DDL alter modify column compatibility require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"keep the declared default identical to the stored default or review the transition explicitly\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.0.46\",\"major\":8,\"minor\":0,\"patch\":46,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": ""
+   },
+   "audit_findings": 1,
+   "audit_parsed": {
+    "verdict": "review",
+    "coverage": {
+     "status": "complete"
+    },
+    "summary": {
+     "statements": 1,
+     "blockers": 0,
+     "warnings": 1,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "ALTER TABLE t08r1_mysql80_s4 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';",
+      "normalized_sql": "ALTER TABLE t08r1_mysql80_s4 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x'",
+      "findings": [
+       {
+        "rule_id": "ddl.alter.modify_column.compatibility.require",
+        "level": "warning",
+        "message": "column \"c\" changes its default value",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "keep the declared default identical to the stored default or review the transition explicitly",
+        "metadata": {
+         "action": "modify_column",
+         "column_name": "c",
+         "name": "c",
+         "source_default": "literal",
+         "table": "t08r1_mysql80_s4",
+         "target_default": "literal"
+        },
+        "explanation": {
+         "summary": "Require DDL alter modify column compatibility require",
+         "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "keep the declared default identical to the stored default or review the transition explicitly",
+         "metadata": {
+          "status": "available",
+          "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+         }
+        }
+       }
+      ],
+      "coverage": {
+       "status": "complete"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46",
+     "major": 8,
+     "minor": 0,
+     "patch": 46,
+     "source": "observed",
+     "validated_range": true
+    },
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 1,
+     "applicable": 1,
+     "skipped": []
+    },
+    "context": {
+     "mode": "metadata-aware",
+     "dialect": "mysql",
+     "dialect_source": "detected",
+     "schema": "golden",
+     "schema_source": "flag"
+    }
+   },
+   "catalog_after": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_mysql80_s4' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "78",
+      "default_text": "x",
+      "extra": ""
+     }
+    ]
+   },
+   "byte_truth": {
+    "old_hex": "277827",
+    "new_hex": "78",
+    "bytes_same": false,
+    "audit_findings": 1,
+    "want_findings": 1
+   },
+   "status": "pass"
+  },
+  {
+   "anchor": "mysql80",
+   "cell": "s5",
+   "table": "t08r1_mysql80_s5",
+   "steps": [
+    {
+     "name": "prove-absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_mysql80_s5'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    },
+    {
+     "name": "create",
+     "sql": "CREATE TABLE t08r1_mysql80_s5 (id INT PRIMARY KEY, c VARCHAR(16) NULL DEFAULT 'x');",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "modify",
+     "sql": "ALTER TABLE t08r1_mysql80_s5 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '''x''';",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "drop",
+     "sql": "DROP TABLE t08r1_mysql80_s5;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "final-count",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_mysql80_s5'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    }
+   ],
+   "catalog_before": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_mysql80_s5' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "78",
+      "default_text": "x",
+      "extra": ""
+     }
+    ]
+   },
+   "audit": {
+    "argv": [
+     "/Users/fan/GolangProjects/DeltaScope/bin/deltascope",
+     "audit",
+     "--dialect",
+     "mysql",
+     "--sql",
+     "ALTER TABLE t08r1_mysql80_s5 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '''x''';",
+     "--config",
+     "docs/verification/t08/1d2c2fa48d89d64e0ebb6a608688eeb9df1484e6/native-probe/r1-compat-policy.yaml",
+     "--format",
+     "json",
+     "--host",
+     "127.0.0.1",
+     "--port",
+     "23380",
+     "--user",
+     "root",
+     "--schema",
+     "golden",
+     "--password-env",
+     "T08R1_MYSQL_PASSWORD"
+    ],
+    "rc": 0,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":1,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t08r1_mysql80_s5 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '''x''';\",\"normalized_sql\":\"ALTER TABLE t08r1_mysql80_s5 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '''x'''\",\"findings\":[{\"rule_id\":\"ddl.alter.modify_column.compatibility.require\",\"level\":\"warning\",\"message\":\"column \\\"c\\\" changes its default value\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"keep the declared default identical to the stored default or review the transition explicitly\",\"metadata\":{\"action\":\"modify_column\",\"column_name\":\"c\",\"name\":\"c\",\"source_default\":\"literal\",\"table\":\"t08r1_mysql80_s5\",\"target_default\":\"literal\"},\"explanation\":{\"summary\":\"Require DDL alter modify column compatibility require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"keep the declared default identical to the stored default or review the transition explicitly\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.0.46\",\"major\":8,\"minor\":0,\"patch\":46,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": ""
+   },
+   "audit_findings": 1,
+   "audit_parsed": {
+    "verdict": "review",
+    "coverage": {
+     "status": "complete"
+    },
+    "summary": {
+     "statements": 1,
+     "blockers": 0,
+     "warnings": 1,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "ALTER TABLE t08r1_mysql80_s5 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '''x''';",
+      "normalized_sql": "ALTER TABLE t08r1_mysql80_s5 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '''x'''",
+      "findings": [
+       {
+        "rule_id": "ddl.alter.modify_column.compatibility.require",
+        "level": "warning",
+        "message": "column \"c\" changes its default value",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "keep the declared default identical to the stored default or review the transition explicitly",
+        "metadata": {
+         "action": "modify_column",
+         "column_name": "c",
+         "name": "c",
+         "source_default": "literal",
+         "table": "t08r1_mysql80_s5",
+         "target_default": "literal"
+        },
+        "explanation": {
+         "summary": "Require DDL alter modify column compatibility require",
+         "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "keep the declared default identical to the stored default or review the transition explicitly",
+         "metadata": {
+          "status": "available",
+          "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+         }
+        }
+       }
+      ],
+      "coverage": {
+       "status": "complete"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46",
+     "major": 8,
+     "minor": 0,
+     "patch": 46,
+     "source": "observed",
+     "validated_range": true
+    },
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 1,
+     "applicable": 1,
+     "skipped": []
+    },
+    "context": {
+     "mode": "metadata-aware",
+     "dialect": "mysql",
+     "dialect_source": "detected",
+     "schema": "golden",
+     "schema_source": "flag"
+    }
+   },
+   "catalog_after": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_mysql80_s5' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "277827",
+      "default_text": "'x'",
+      "extra": ""
+     }
+    ]
+   },
+   "byte_truth": {
+    "old_hex": "78",
+    "new_hex": "277827",
+    "bytes_same": false,
+    "audit_findings": 1,
+    "want_findings": 1
+   },
+   "status": "pass"
+  },
+  {
+   "anchor": "mysql84",
+   "cell": "s1",
+   "table": "t08r1_mysql84_s1",
+   "steps": [
+    {
+     "name": "prove-absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_mysql84_s1'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    },
+    {
+     "name": "create",
+     "sql": "CREATE TABLE t08r1_mysql84_s1 (id INT PRIMARY KEY, c VARCHAR(16) NULL DEFAULT 'x');",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "modify",
+     "sql": "ALTER TABLE t08r1_mysql84_s1 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "drop",
+     "sql": "DROP TABLE t08r1_mysql84_s1;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "final-count",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_mysql84_s1'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    }
+   ],
+   "catalog_before": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_mysql84_s1' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "78",
+      "default_text": "x",
+      "extra": ""
+     }
+    ]
+   },
+   "audit": {
+    "argv": [
+     "/Users/fan/GolangProjects/DeltaScope/bin/deltascope",
+     "audit",
+     "--dialect",
+     "mysql",
+     "--sql",
+     "ALTER TABLE t08r1_mysql84_s1 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';",
+     "--config",
+     "docs/verification/t08/1d2c2fa48d89d64e0ebb6a608688eeb9df1484e6/native-probe/r1-compat-policy.yaml",
+     "--format",
+     "json",
+     "--host",
+     "127.0.0.1",
+     "--port",
+     "23384",
+     "--user",
+     "root",
+     "--schema",
+     "golden",
+     "--password-env",
+     "T08R1_MYSQL_PASSWORD"
+    ],
+    "rc": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t08r1_mysql84_s1 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';\",\"normalized_sql\":\"ALTER TABLE t08r1_mysql84_s1 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x'\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.4.10\",\"major\":8,\"minor\":4,\"patch\":10,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": ""
+   },
+   "audit_findings": 0,
+   "audit_parsed": {
+    "verdict": "pass",
+    "coverage": {
+     "status": "complete"
+    },
+    "summary": {
+     "statements": 1,
+     "blockers": 0,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "ALTER TABLE t08r1_mysql84_s1 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';",
+      "normalized_sql": "ALTER TABLE t08r1_mysql84_s1 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x'",
+      "coverage": {
+       "status": "complete"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10",
+     "major": 8,
+     "minor": 4,
+     "patch": 10,
+     "source": "observed",
+     "validated_range": true
+    },
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 1,
+     "applicable": 1,
+     "skipped": []
+    },
+    "context": {
+     "mode": "metadata-aware",
+     "dialect": "mysql",
+     "dialect_source": "detected",
+     "schema": "golden",
+     "schema_source": "flag"
+    }
+   },
+   "catalog_after": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_mysql84_s1' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "78",
+      "default_text": "x",
+      "extra": ""
+     }
+    ]
+   },
+   "byte_truth": {
+    "old_hex": "78",
+    "new_hex": "78",
+    "bytes_same": true,
+    "audit_findings": 0,
+    "want_findings": 0
+   },
+   "status": "pass"
+  },
+  {
+   "anchor": "mysql84",
+   "cell": "s2",
+   "table": "t08r1_mysql84_s2",
+   "steps": [
+    {
+     "name": "prove-absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_mysql84_s2'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    },
+    {
+     "name": "create",
+     "sql": "CREATE TABLE t08r1_mysql84_s2 (id INT PRIMARY KEY, c VARCHAR(16) NULL DEFAULT '');",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "modify",
+     "sql": "ALTER TABLE t08r1_mysql84_s2 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '';",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "drop",
+     "sql": "DROP TABLE t08r1_mysql84_s2;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "final-count",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_mysql84_s2'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    }
+   ],
+   "catalog_before": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_mysql84_s2' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "",
+      "default_text": "",
+      "extra": ""
+     }
+    ]
+   },
+   "audit": {
+    "argv": [
+     "/Users/fan/GolangProjects/DeltaScope/bin/deltascope",
+     "audit",
+     "--dialect",
+     "mysql",
+     "--sql",
+     "ALTER TABLE t08r1_mysql84_s2 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '';",
+     "--config",
+     "docs/verification/t08/1d2c2fa48d89d64e0ebb6a608688eeb9df1484e6/native-probe/r1-compat-policy.yaml",
+     "--format",
+     "json",
+     "--host",
+     "127.0.0.1",
+     "--port",
+     "23384",
+     "--user",
+     "root",
+     "--schema",
+     "golden",
+     "--password-env",
+     "T08R1_MYSQL_PASSWORD"
+    ],
+    "rc": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t08r1_mysql84_s2 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '';\",\"normalized_sql\":\"ALTER TABLE t08r1_mysql84_s2 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT ''\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.4.10\",\"major\":8,\"minor\":4,\"patch\":10,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": ""
+   },
+   "audit_findings": 0,
+   "audit_parsed": {
+    "verdict": "pass",
+    "coverage": {
+     "status": "complete"
+    },
+    "summary": {
+     "statements": 1,
+     "blockers": 0,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "ALTER TABLE t08r1_mysql84_s2 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '';",
+      "normalized_sql": "ALTER TABLE t08r1_mysql84_s2 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT ''",
+      "coverage": {
+       "status": "complete"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10",
+     "major": 8,
+     "minor": 4,
+     "patch": 10,
+     "source": "observed",
+     "validated_range": true
+    },
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 1,
+     "applicable": 1,
+     "skipped": []
+    },
+    "context": {
+     "mode": "metadata-aware",
+     "dialect": "mysql",
+     "dialect_source": "detected",
+     "schema": "golden",
+     "schema_source": "flag"
+    }
+   },
+   "catalog_after": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_mysql84_s2' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "",
+      "default_text": "",
+      "extra": ""
+     }
+    ]
+   },
+   "byte_truth": {
+    "old_hex": "",
+    "new_hex": "",
+    "bytes_same": true,
+    "audit_findings": 0,
+    "want_findings": 0
+   },
+   "status": "pass"
+  },
+  {
+   "anchor": "mysql84",
+   "cell": "s4",
+   "table": "t08r1_mysql84_s4",
+   "steps": [
+    {
+     "name": "prove-absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_mysql84_s4'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    },
+    {
+     "name": "create",
+     "sql": "CREATE TABLE t08r1_mysql84_s4 (id INT PRIMARY KEY, c VARCHAR(16) NULL DEFAULT '''x''');",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "modify",
+     "sql": "ALTER TABLE t08r1_mysql84_s4 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "drop",
+     "sql": "DROP TABLE t08r1_mysql84_s4;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "final-count",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_mysql84_s4'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    }
+   ],
+   "catalog_before": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_mysql84_s4' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "277827",
+      "default_text": "'x'",
+      "extra": ""
+     }
+    ]
+   },
+   "audit": {
+    "argv": [
+     "/Users/fan/GolangProjects/DeltaScope/bin/deltascope",
+     "audit",
+     "--dialect",
+     "mysql",
+     "--sql",
+     "ALTER TABLE t08r1_mysql84_s4 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';",
+     "--config",
+     "docs/verification/t08/1d2c2fa48d89d64e0ebb6a608688eeb9df1484e6/native-probe/r1-compat-policy.yaml",
+     "--format",
+     "json",
+     "--host",
+     "127.0.0.1",
+     "--port",
+     "23384",
+     "--user",
+     "root",
+     "--schema",
+     "golden",
+     "--password-env",
+     "T08R1_MYSQL_PASSWORD"
+    ],
+    "rc": 0,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":1,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t08r1_mysql84_s4 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';\",\"normalized_sql\":\"ALTER TABLE t08r1_mysql84_s4 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x'\",\"findings\":[{\"rule_id\":\"ddl.alter.modify_column.compatibility.require\",\"level\":\"warning\",\"message\":\"column \\\"c\\\" changes its default value\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"keep the declared default identical to the stored default or review the transition explicitly\",\"metadata\":{\"action\":\"modify_column\",\"column_name\":\"c\",\"name\":\"c\",\"source_default\":\"literal\",\"table\":\"t08r1_mysql84_s4\",\"target_default\":\"literal\"},\"explanation\":{\"summary\":\"Require DDL alter modify column compatibility require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"keep the declared default identical to the stored default or review the transition explicitly\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.4.10\",\"major\":8,\"minor\":4,\"patch\":10,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": ""
+   },
+   "audit_findings": 1,
+   "audit_parsed": {
+    "verdict": "review",
+    "coverage": {
+     "status": "complete"
+    },
+    "summary": {
+     "statements": 1,
+     "blockers": 0,
+     "warnings": 1,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "ALTER TABLE t08r1_mysql84_s4 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';",
+      "normalized_sql": "ALTER TABLE t08r1_mysql84_s4 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x'",
+      "findings": [
+       {
+        "rule_id": "ddl.alter.modify_column.compatibility.require",
+        "level": "warning",
+        "message": "column \"c\" changes its default value",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "keep the declared default identical to the stored default or review the transition explicitly",
+        "metadata": {
+         "action": "modify_column",
+         "column_name": "c",
+         "name": "c",
+         "source_default": "literal",
+         "table": "t08r1_mysql84_s4",
+         "target_default": "literal"
+        },
+        "explanation": {
+         "summary": "Require DDL alter modify column compatibility require",
+         "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "keep the declared default identical to the stored default or review the transition explicitly",
+         "metadata": {
+          "status": "available",
+          "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+         }
+        }
+       }
+      ],
+      "coverage": {
+       "status": "complete"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10",
+     "major": 8,
+     "minor": 4,
+     "patch": 10,
+     "source": "observed",
+     "validated_range": true
+    },
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 1,
+     "applicable": 1,
+     "skipped": []
+    },
+    "context": {
+     "mode": "metadata-aware",
+     "dialect": "mysql",
+     "dialect_source": "detected",
+     "schema": "golden",
+     "schema_source": "flag"
+    }
+   },
+   "catalog_after": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_mysql84_s4' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "78",
+      "default_text": "x",
+      "extra": ""
+     }
+    ]
+   },
+   "byte_truth": {
+    "old_hex": "277827",
+    "new_hex": "78",
+    "bytes_same": false,
+    "audit_findings": 1,
+    "want_findings": 1
+   },
+   "status": "pass"
+  },
+  {
+   "anchor": "mysql84",
+   "cell": "s5",
+   "table": "t08r1_mysql84_s5",
+   "steps": [
+    {
+     "name": "prove-absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_mysql84_s5'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    },
+    {
+     "name": "create",
+     "sql": "CREATE TABLE t08r1_mysql84_s5 (id INT PRIMARY KEY, c VARCHAR(16) NULL DEFAULT 'x');",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "modify",
+     "sql": "ALTER TABLE t08r1_mysql84_s5 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '''x''';",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "drop",
+     "sql": "DROP TABLE t08r1_mysql84_s5;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "final-count",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_mysql84_s5'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    }
+   ],
+   "catalog_before": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_mysql84_s5' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "78",
+      "default_text": "x",
+      "extra": ""
+     }
+    ]
+   },
+   "audit": {
+    "argv": [
+     "/Users/fan/GolangProjects/DeltaScope/bin/deltascope",
+     "audit",
+     "--dialect",
+     "mysql",
+     "--sql",
+     "ALTER TABLE t08r1_mysql84_s5 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '''x''';",
+     "--config",
+     "docs/verification/t08/1d2c2fa48d89d64e0ebb6a608688eeb9df1484e6/native-probe/r1-compat-policy.yaml",
+     "--format",
+     "json",
+     "--host",
+     "127.0.0.1",
+     "--port",
+     "23384",
+     "--user",
+     "root",
+     "--schema",
+     "golden",
+     "--password-env",
+     "T08R1_MYSQL_PASSWORD"
+    ],
+    "rc": 0,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":1,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t08r1_mysql84_s5 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '''x''';\",\"normalized_sql\":\"ALTER TABLE t08r1_mysql84_s5 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '''x'''\",\"findings\":[{\"rule_id\":\"ddl.alter.modify_column.compatibility.require\",\"level\":\"warning\",\"message\":\"column \\\"c\\\" changes its default value\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"keep the declared default identical to the stored default or review the transition explicitly\",\"metadata\":{\"action\":\"modify_column\",\"column_name\":\"c\",\"name\":\"c\",\"source_default\":\"literal\",\"table\":\"t08r1_mysql84_s5\",\"target_default\":\"literal\"},\"explanation\":{\"summary\":\"Require DDL alter modify column compatibility require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"keep the declared default identical to the stored default or review the transition explicitly\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.4.10\",\"major\":8,\"minor\":4,\"patch\":10,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": ""
+   },
+   "audit_findings": 1,
+   "audit_parsed": {
+    "verdict": "review",
+    "coverage": {
+     "status": "complete"
+    },
+    "summary": {
+     "statements": 1,
+     "blockers": 0,
+     "warnings": 1,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "ALTER TABLE t08r1_mysql84_s5 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '''x''';",
+      "normalized_sql": "ALTER TABLE t08r1_mysql84_s5 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '''x'''",
+      "findings": [
+       {
+        "rule_id": "ddl.alter.modify_column.compatibility.require",
+        "level": "warning",
+        "message": "column \"c\" changes its default value",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "keep the declared default identical to the stored default or review the transition explicitly",
+        "metadata": {
+         "action": "modify_column",
+         "column_name": "c",
+         "name": "c",
+         "source_default": "literal",
+         "table": "t08r1_mysql84_s5",
+         "target_default": "literal"
+        },
+        "explanation": {
+         "summary": "Require DDL alter modify column compatibility require",
+         "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "keep the declared default identical to the stored default or review the transition explicitly",
+         "metadata": {
+          "status": "available",
+          "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+         }
+        }
+       }
+      ],
+      "coverage": {
+       "status": "complete"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10",
+     "major": 8,
+     "minor": 4,
+     "patch": 10,
+     "source": "observed",
+     "validated_range": true
+    },
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 1,
+     "applicable": 1,
+     "skipped": []
+    },
+    "context": {
+     "mode": "metadata-aware",
+     "dialect": "mysql",
+     "dialect_source": "detected",
+     "schema": "golden",
+     "schema_source": "flag"
+    }
+   },
+   "catalog_after": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_mysql84_s5' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "277827",
+      "default_text": "'x'",
+      "extra": ""
+     }
+    ]
+   },
+   "byte_truth": {
+    "old_hex": "78",
+    "new_hex": "277827",
+    "bytes_same": false,
+    "audit_findings": 1,
+    "want_findings": 1
+   },
+   "status": "pass"
+  },
+  {
+   "anchor": "tidb85",
+   "cell": "s1",
+   "table": "t08r1_tidb85_s1",
+   "steps": [
+    {
+     "name": "prove-absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_tidb85_s1'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    },
+    {
+     "name": "create",
+     "sql": "CREATE TABLE t08r1_tidb85_s1 (id INT PRIMARY KEY, c VARCHAR(16) NULL DEFAULT 'x');",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "modify",
+     "sql": "ALTER TABLE t08r1_tidb85_s1 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "drop",
+     "sql": "DROP TABLE t08r1_tidb85_s1;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "final-count",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_tidb85_s1'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    }
+   ],
+   "catalog_before": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_tidb85_s1' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "78",
+      "default_text": "x",
+      "extra": ""
+     }
+    ]
+   },
+   "audit": {
+    "argv": [
+     "/Users/fan/GolangProjects/DeltaScope/bin/deltascope",
+     "audit",
+     "--dialect",
+     "tidb",
+     "--sql",
+     "ALTER TABLE t08r1_tidb85_s1 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';",
+     "--config",
+     "docs/verification/t08/1d2c2fa48d89d64e0ebb6a608688eeb9df1484e6/native-probe/r1-compat-policy.yaml",
+     "--format",
+     "json",
+     "--host",
+     "127.0.0.1",
+     "--port",
+     "24000",
+     "--user",
+     "root",
+     "--schema",
+     "golden"
+    ],
+    "rc": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t08r1_tidb85_s1 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';\",\"normalized_sql\":\"ALTER TABLE t08r1_tidb85_s1 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x'\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": ""
+   },
+   "audit_findings": 0,
+   "audit_parsed": {
+    "verdict": "pass",
+    "coverage": {
+     "status": "complete"
+    },
+    "summary": {
+     "statements": 1,
+     "blockers": 0,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "ALTER TABLE t08r1_tidb85_s1 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';",
+      "normalized_sql": "ALTER TABLE t08r1_tidb85_s1 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x'",
+      "coverage": {
+       "status": "complete"
+      }
+     }
+    ],
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0",
+     "major": 8,
+     "minor": 5,
+     "patch": 0,
+     "source": "observed",
+     "validated_range": true
+    },
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 1,
+     "applicable": 1,
+     "skipped": []
+    },
+    "context": {
+     "mode": "metadata-aware",
+     "dialect": "tidb",
+     "dialect_source": "detected",
+     "schema": "golden",
+     "schema_source": "flag"
+    }
+   },
+   "catalog_after": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_tidb85_s1' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "78",
+      "default_text": "x",
+      "extra": ""
+     }
+    ]
+   },
+   "byte_truth": {
+    "old_hex": "78",
+    "new_hex": "78",
+    "bytes_same": true,
+    "audit_findings": 0,
+    "want_findings": 0
+   },
+   "status": "pass"
+  },
+  {
+   "anchor": "tidb85",
+   "cell": "s2",
+   "table": "t08r1_tidb85_s2",
+   "steps": [
+    {
+     "name": "prove-absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_tidb85_s2'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    },
+    {
+     "name": "create",
+     "sql": "CREATE TABLE t08r1_tidb85_s2 (id INT PRIMARY KEY, c VARCHAR(16) NULL DEFAULT '');",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "modify",
+     "sql": "ALTER TABLE t08r1_tidb85_s2 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '';",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "drop",
+     "sql": "DROP TABLE t08r1_tidb85_s2;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "final-count",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_tidb85_s2'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    }
+   ],
+   "catalog_before": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_tidb85_s2' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "",
+      "default_text": "",
+      "extra": ""
+     }
+    ]
+   },
+   "audit": {
+    "argv": [
+     "/Users/fan/GolangProjects/DeltaScope/bin/deltascope",
+     "audit",
+     "--dialect",
+     "tidb",
+     "--sql",
+     "ALTER TABLE t08r1_tidb85_s2 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '';",
+     "--config",
+     "docs/verification/t08/1d2c2fa48d89d64e0ebb6a608688eeb9df1484e6/native-probe/r1-compat-policy.yaml",
+     "--format",
+     "json",
+     "--host",
+     "127.0.0.1",
+     "--port",
+     "24000",
+     "--user",
+     "root",
+     "--schema",
+     "golden"
+    ],
+    "rc": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t08r1_tidb85_s2 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '';\",\"normalized_sql\":\"ALTER TABLE t08r1_tidb85_s2 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT ''\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": ""
+   },
+   "audit_findings": 0,
+   "audit_parsed": {
+    "verdict": "pass",
+    "coverage": {
+     "status": "complete"
+    },
+    "summary": {
+     "statements": 1,
+     "blockers": 0,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "ALTER TABLE t08r1_tidb85_s2 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '';",
+      "normalized_sql": "ALTER TABLE t08r1_tidb85_s2 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT ''",
+      "coverage": {
+       "status": "complete"
+      }
+     }
+    ],
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0",
+     "major": 8,
+     "minor": 5,
+     "patch": 0,
+     "source": "observed",
+     "validated_range": true
+    },
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 1,
+     "applicable": 1,
+     "skipped": []
+    },
+    "context": {
+     "mode": "metadata-aware",
+     "dialect": "tidb",
+     "dialect_source": "detected",
+     "schema": "golden",
+     "schema_source": "flag"
+    }
+   },
+   "catalog_after": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_tidb85_s2' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "",
+      "default_text": "",
+      "extra": ""
+     }
+    ]
+   },
+   "byte_truth": {
+    "old_hex": "",
+    "new_hex": "",
+    "bytes_same": true,
+    "audit_findings": 0,
+    "want_findings": 0
+   },
+   "status": "pass"
+  },
+  {
+   "anchor": "tidb85",
+   "cell": "s4",
+   "table": "t08r1_tidb85_s4",
+   "steps": [
+    {
+     "name": "prove-absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_tidb85_s4'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    },
+    {
+     "name": "create",
+     "sql": "CREATE TABLE t08r1_tidb85_s4 (id INT PRIMARY KEY, c VARCHAR(16) NULL DEFAULT '''x''');",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "modify",
+     "sql": "ALTER TABLE t08r1_tidb85_s4 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "drop",
+     "sql": "DROP TABLE t08r1_tidb85_s4;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "final-count",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_tidb85_s4'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    }
+   ],
+   "catalog_before": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_tidb85_s4' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "277827",
+      "default_text": "'x'",
+      "extra": ""
+     }
+    ]
+   },
+   "audit": {
+    "argv": [
+     "/Users/fan/GolangProjects/DeltaScope/bin/deltascope",
+     "audit",
+     "--dialect",
+     "tidb",
+     "--sql",
+     "ALTER TABLE t08r1_tidb85_s4 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';",
+     "--config",
+     "docs/verification/t08/1d2c2fa48d89d64e0ebb6a608688eeb9df1484e6/native-probe/r1-compat-policy.yaml",
+     "--format",
+     "json",
+     "--host",
+     "127.0.0.1",
+     "--port",
+     "24000",
+     "--user",
+     "root",
+     "--schema",
+     "golden"
+    ],
+    "rc": 0,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":1,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t08r1_tidb85_s4 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';\",\"normalized_sql\":\"ALTER TABLE t08r1_tidb85_s4 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x'\",\"findings\":[{\"rule_id\":\"ddl.alter.modify_column.compatibility.require\",\"level\":\"warning\",\"message\":\"column \\\"c\\\" changes its default value\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"keep the declared default identical to the stored default or review the transition explicitly\",\"metadata\":{\"action\":\"modify_column\",\"column_name\":\"c\",\"name\":\"c\",\"source_default\":\"literal\",\"table\":\"t08r1_tidb85_s4\",\"target_default\":\"literal\"},\"explanation\":{\"summary\":\"Require DDL alter modify column compatibility require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"keep the declared default identical to the stored default or review the transition explicitly\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": ""
+   },
+   "audit_findings": 1,
+   "audit_parsed": {
+    "verdict": "review",
+    "coverage": {
+     "status": "complete"
+    },
+    "summary": {
+     "statements": 1,
+     "blockers": 0,
+     "warnings": 1,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "ALTER TABLE t08r1_tidb85_s4 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x';",
+      "normalized_sql": "ALTER TABLE t08r1_tidb85_s4 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT 'x'",
+      "findings": [
+       {
+        "rule_id": "ddl.alter.modify_column.compatibility.require",
+        "level": "warning",
+        "message": "column \"c\" changes its default value",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "keep the declared default identical to the stored default or review the transition explicitly",
+        "metadata": {
+         "action": "modify_column",
+         "column_name": "c",
+         "name": "c",
+         "source_default": "literal",
+         "table": "t08r1_tidb85_s4",
+         "target_default": "literal"
+        },
+        "explanation": {
+         "summary": "Require DDL alter modify column compatibility require",
+         "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "keep the declared default identical to the stored default or review the transition explicitly",
+         "metadata": {
+          "status": "available",
+          "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+         }
+        }
+       }
+      ],
+      "coverage": {
+       "status": "complete"
+      }
+     }
+    ],
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0",
+     "major": 8,
+     "minor": 5,
+     "patch": 0,
+     "source": "observed",
+     "validated_range": true
+    },
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 1,
+     "applicable": 1,
+     "skipped": []
+    },
+    "context": {
+     "mode": "metadata-aware",
+     "dialect": "tidb",
+     "dialect_source": "detected",
+     "schema": "golden",
+     "schema_source": "flag"
+    }
+   },
+   "catalog_after": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_tidb85_s4' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "78",
+      "default_text": "x",
+      "extra": ""
+     }
+    ]
+   },
+   "byte_truth": {
+    "old_hex": "277827",
+    "new_hex": "78",
+    "bytes_same": false,
+    "audit_findings": 1,
+    "want_findings": 1
+   },
+   "status": "pass"
+  },
+  {
+   "anchor": "tidb85",
+   "cell": "s5",
+   "table": "t08r1_tidb85_s5",
+   "steps": [
+    {
+     "name": "prove-absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_tidb85_s5'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    },
+    {
+     "name": "create",
+     "sql": "CREATE TABLE t08r1_tidb85_s5 (id INT PRIMARY KEY, c VARCHAR(16) NULL DEFAULT 'x');",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "modify",
+     "sql": "ALTER TABLE t08r1_tidb85_s5 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '''x''';",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "drop",
+     "sql": "DROP TABLE t08r1_tidb85_s5;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "final-count",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r1_tidb85_s5'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    }
+   ],
+   "catalog_before": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_tidb85_s5' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "78",
+      "default_text": "x",
+      "extra": ""
+     }
+    ]
+   },
+   "audit": {
+    "argv": [
+     "/Users/fan/GolangProjects/DeltaScope/bin/deltascope",
+     "audit",
+     "--dialect",
+     "tidb",
+     "--sql",
+     "ALTER TABLE t08r1_tidb85_s5 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '''x''';",
+     "--config",
+     "docs/verification/t08/1d2c2fa48d89d64e0ebb6a608688eeb9df1484e6/native-probe/r1-compat-policy.yaml",
+     "--format",
+     "json",
+     "--host",
+     "127.0.0.1",
+     "--port",
+     "24000",
+     "--user",
+     "root",
+     "--schema",
+     "golden"
+    ],
+    "rc": 0,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":1,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t08r1_tidb85_s5 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '''x''';\",\"normalized_sql\":\"ALTER TABLE t08r1_tidb85_s5 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '''x'''\",\"findings\":[{\"rule_id\":\"ddl.alter.modify_column.compatibility.require\",\"level\":\"warning\",\"message\":\"column \\\"c\\\" changes its default value\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"keep the declared default identical to the stored default or review the transition explicitly\",\"metadata\":{\"action\":\"modify_column\",\"column_name\":\"c\",\"name\":\"c\",\"source_default\":\"literal\",\"table\":\"t08r1_tidb85_s5\",\"target_default\":\"literal\"},\"explanation\":{\"summary\":\"Require DDL alter modify column compatibility require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"keep the declared default identical to the stored default or review the transition explicitly\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": ""
+   },
+   "audit_findings": 1,
+   "audit_parsed": {
+    "verdict": "review",
+    "coverage": {
+     "status": "complete"
+    },
+    "summary": {
+     "statements": 1,
+     "blockers": 0,
+     "warnings": 1,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "ALTER TABLE t08r1_tidb85_s5 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '''x''';",
+      "normalized_sql": "ALTER TABLE t08r1_tidb85_s5 MODIFY COLUMN c VARCHAR(16) NULL DEFAULT '''x'''",
+      "findings": [
+       {
+        "rule_id": "ddl.alter.modify_column.compatibility.require",
+        "level": "warning",
+        "message": "column \"c\" changes its default value",
+        "statement_kind": "ddl",
+        "location": {
+         "line": 1,
+         "column": 1
+        },
+        "suggestion": "keep the declared default identical to the stored default or review the transition explicitly",
+        "metadata": {
+         "action": "modify_column",
+         "column_name": "c",
+         "name": "c",
+         "source_default": "literal",
+         "table": "t08r1_tidb85_s5",
+         "target_default": "literal"
+        },
+        "explanation": {
+         "summary": "Require DDL alter modify column compatibility require",
+         "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+         "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+         "suggestion": "keep the declared default identical to the stored default or review the transition explicitly",
+         "metadata": {
+          "status": "available",
+          "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+         }
+        }
+       }
+      ],
+      "coverage": {
+       "status": "complete"
+      }
+     }
+    ],
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0",
+     "major": 8,
+     "minor": 5,
+     "patch": 0,
+     "source": "observed",
+     "validated_range": true
+    },
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 1,
+     "applicable": 1,
+     "skipped": []
+    },
+    "context": {
+     "mode": "metadata-aware",
+     "dialect": "tidb",
+     "dialect_source": "detected",
+     "schema": "golden",
+     "schema_source": "flag"
+    }
+   },
+   "catalog_after": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r1_tidb85_s5' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": ""
+     },
+     {
+      "name": "c",
+      "type": "varchar(16)",
+      "nullable": "YES",
+      "default_hex": "277827",
+      "default_text": "'x'",
+      "extra": ""
+     }
+    ]
+   },
+   "byte_truth": {
+    "old_hex": "78",
+    "new_hex": "277827",
+    "bytes_same": false,
+    "audit_findings": 1,
+    "want_findings": 1
+   },
+   "status": "pass"
+  }
+ ],
+ "failures": [],
+ "catalog_rules": 386,
+ "policy_path": "docs/verification/t08/1d2c2fa48d89d64e0ebb6a608688eeb9df1484e6/native-probe/r1-compat-policy.yaml",
+ "cli": "/Users/fan/GolangProjects/DeltaScope/bin/deltascope"
+}

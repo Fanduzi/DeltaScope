@@ -1,0 +1,9 @@
+command: T08R1_OUT=docs/verification/t08/1d2c2fa48d89d64e0ebb6a608688eeb9df1484e6/native-probe DELTASCOPE_BIN=$PWD/bin/deltascope python3 /tmp/t08r1_native_probe.py
+cwd: /Users/fan/GolangProjects/DeltaScope
+HEAD: 1d2c2fa48d89d64e0ebb6a608688eeb9df1484e6
+binary: bin/deltascope sha256=17239e20d8f1f160ab77de4be01e01cfbe6ce24627c6f860578505010db71f8e
+anchors: mysql57@23357(5.7.44) mysql80@23380(8.0.46) mysql84@23384(8.4.10) tidb85@24000(v8.5.0) — docker/ddl-golden-compose.yaml
+auth: MYSQL_PWD env on mysql anchors; tidb85 passwordless
+matrix: 4 anchors x {s1 'x'->'x', s2 ''->'', s4 '''x'''->'x', s5 'x'->'''x'''} = 16 cells
+policy: isolated ddl.alter.modify_column.compatibility.require (all other catalog rules disabled) — explicit_default_change.forbid excluded so it cannot mask the comparison
+result: 16/16 pass, audit rc=0 on every cell, byte truth == audit verdict per cell

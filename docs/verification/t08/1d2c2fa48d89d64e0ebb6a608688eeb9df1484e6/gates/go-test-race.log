@@ -1,0 +1,11 @@
+command: go test -race -count=1 (affected packages)
+HEAD: 1d2c2fa48d89d64e0ebb6a608688eeb9df1484e6
+ts: 2026-10-21T14:45:21Z
+---
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	1.529s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	13.637s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/auditmeta	4.809s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql	2.739s
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	5.144s
+---
+direct_rc=0

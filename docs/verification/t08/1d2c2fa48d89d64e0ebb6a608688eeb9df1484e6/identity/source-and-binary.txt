@@ -1,0 +1,15 @@
+task: T08-R1-DEFAULT-COMPARISON
+code_sha: 1d2c2fa48d89d64e0ebb6a608688eeb9df1484e6
+parent: 922771cd9ccaa58155373b52ffa46686cc14895d
+branch: milestone/mysql-tidb-ddl-completion
+recorded_at: 2026-10-21T14:45:09Z
+go: go version go1.26.1 darwin/arm64
+
+bin/deltascope sha256: 17239e20d8f1f160ab77de4be01e01cfbe6ce24627c6f860578505010db71f8e
+bin/deltascope version:
+deltascope v0.511.2-0.20261021144312-1d2c2fa48d89+dirty (mysql, tidb, postgresql)
+
+worktree dirty files at record time:
+ M .mcp.json
+
+note: +dirty in version string is the user-modified .mcp.json (untracked-scope), not source changes
