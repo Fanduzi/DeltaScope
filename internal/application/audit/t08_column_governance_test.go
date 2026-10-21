@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
+	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
@@ -324,6 +325,28 @@ func TestBatchStateT08MultiActionSuccessor(t *testing.T) {
 			t.Fatalf("TiDB multi-action AI-removal published %+v", enriched[2].Metadata.TargetTable)
 		}
 	})
+	t.Run("rename destination collides with sibling add tombstones", func(t *testing.T) {
+		t.Parallel()
+		// RENAME a TO x, ADD x is a server-side duplicate on both dialects:
+		// MySQL's accumulated premise sees x produced by the rename; TiDB's
+		// pre-state premise passes but the apply must still refuse the
+		// duplicate name instead of publishing a doubled column.
+		for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
+			enriched := enrich(t, "CREATE TABLE t (a INT);\nALTER TABLE t RENAME COLUMN a TO x, ADD COLUMN x INT;\nALTER TABLE t ADD COLUMN d INT;", dialect)
+			if enriched[2].Metadata.TargetTable != nil {
+				t.Fatalf("%s rename+add duplicate published %+v", dialect, enriched[2].Metadata.TargetTable)
+			}
+		}
+	})
+	t.Run("change destination collides with sibling add tombstones", func(t *testing.T) {
+		t.Parallel()
+		for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
+			enriched := enrich(t, "CREATE TABLE t (a INT);\nALTER TABLE t CHANGE COLUMN a x INT, ADD COLUMN x INT;\nALTER TABLE t ADD COLUMN d INT;", dialect)
+			if enriched[2].Metadata.TargetTable != nil {
+				t.Fatalf("%s change+add duplicate published %+v", dialect, enriched[2].Metadata.TargetTable)
+			}
+		}
+	})
 	t.Run("mysql modify dropping auto_increment publishes", func(t *testing.T) {
 		t.Parallel()
 		enriched := enrich(t, "CREATE TABLE t (pk INT PRIMARY KEY AUTO_INCREMENT, a INT);\nALTER TABLE t MODIFY COLUMN pk INT NOT NULL;\nALTER TABLE t ADD COLUMN d INT;", spec.DialectMySQL)
@@ -497,6 +520,69 @@ func TestAuditSQLT08ExistenceRules(t *testing.T) {
 			t.Fatalf("MySQL renamed-away AFTER missed the existence finding, got %v", ids)
 		}
 	})
+
+	// A setter or modify sibling targets an existing column — it never
+	// materializes the name, so a later AFTER reference to a name that is
+	// only ever a target still fails the MySQL accumulated premise.
+	t.Run("mysql setter target does not produce sibling name", func(t *testing.T) {
+		t.Parallel()
+		ids := findingsFor(t, "ALTER TABLE t ALTER COLUMN missing SET DEFAULT 1, ADD COLUMN c INT AFTER missing;",
+			spec.DialectMySQL, &t05PresentProvider{snapshots: snapshots})
+		if !contains(ids, "ddl.alter.column_position.exists.require") {
+			t.Fatalf("MySQL setter-target AFTER missed the existence finding, got %v", ids)
+		}
+	})
+	t.Run("mysql modify target does not produce sibling name", func(t *testing.T) {
+		t.Parallel()
+		ids := findingsFor(t, "ALTER TABLE t MODIFY COLUMN missing INT, ADD COLUMN c INT AFTER missing;",
+			spec.DialectMySQL, &t05PresentProvider{snapshots: snapshots})
+		if !contains(ids, "ddl.alter.column_position.exists.require") {
+			t.Fatalf("MySQL modify-target AFTER missed the existence finding, got %v", ids)
+		}
+	})
+}
+
+// TestAuditSQLT08EvalGapCoexistsWithBlocker pins the frozen
+// t08-cli-eval-gap-coexist-tidb role: the decided policy result (a
+// blocker under the explicit-default-change forbid policy) coexists with
+// the bounded TiDB set-default evaluation gap — a gap never erases a
+// decided policy result.
+func TestAuditSQLT08EvalGapCoexistsWithBlocker(t *testing.T) {
+	t.Parallel()
+	configPath := t07PolicyPath(t, map[string]string{
+		"ddl.alter.set_default.explicit_default_change.forbid": "      forbid: true\n",
+		t07RuleCompat: "      required: true\n",
+	})
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:              "ALTER TABLE t ALTER COLUMN x SET DEFAULT (1 + 2)",
+		Dialect:          spec.DialectTiDB,
+		Schema:           "golden",
+		ConfigPath:       configPath,
+		MetadataProvider: r1TiDBProvider(spec.Column{Name: "v", Type: "varchar(36)"}, spec.Column{Name: "x", Type: "int"}),
+	})
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	stmt := result.Statements[0]
+	var blocker *rule.Finding
+	for i := range stmt.Findings {
+		f := &stmt.Findings[i]
+		if f.RuleID == "ddl.alter.set_default.explicit_default_change.forbid" {
+			blocker = f
+		}
+	}
+	if blocker == nil || blocker.Level != "blocker" {
+		t.Fatalf("expected the explicit-default-change blocker, got %+v", stmt.Findings)
+	}
+	found := false
+	for _, gap := range stmt.EvidenceGaps {
+		if gap.ReasonCode == "tidb_set_default_eval_unproven" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected the eval-unproven gap beside the blocker, got %+v", stmt.EvidenceGaps)
+	}
 }
 
 // TestAuditSQLT08PositionFindingMetadata pins the frozen finding identity:

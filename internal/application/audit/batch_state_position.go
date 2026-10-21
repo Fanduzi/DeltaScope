@@ -18,8 +18,10 @@ import (
 // positionResolveIndex returns the index AFTER resolves to inside validation
 // columns, or -1 when the referenced column is absent. `self` names a column
 // identity the position must not point at (the moved or added column's own
-// final name is always out — FIRST carries no reference and reports -2).
-func positionResolveIndex(columns []spec.Column, position *spec.AlterPosition, self string) (index int, selfRef bool) {
+// final name is always out — FIRST carries no reference and reports -2, a
+// distinct "no premise" marker vs the -1 "premise failed" marker; callers
+// only branch on index < 0). The bool reports the reference resolved.
+func positionResolveIndex(columns []spec.Column, position *spec.AlterPosition, self string) (index int, resolved bool) {
 	if position == nil || position.Kind != "after" {
 		return -2, false
 	}
@@ -27,7 +29,7 @@ func positionResolveIndex(columns []spec.Column, position *spec.AlterPosition, s
 	if after == "" {
 		return -1, false
 	}
-	if self != "" && strings.EqualFold(after, self) {
+	if self = strings.TrimSpace(self); self != "" && strings.EqualFold(after, self) {
 		return -1, true
 	}
 	for i := range columns {

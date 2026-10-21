@@ -128,7 +128,7 @@
       "dialect": "tidb",
       "policy": "t08-set-default",
       "sql": "ALTER TABLE t ALTER COLUMN c SET DEFAULT (lower('X'));",
-      "expect": "reject blocker AND tidb_set_default_eval_unproven gap coexist — policy finding not erased by gap"
+      "expect": "reject — offline explicit-op blocker (lower('X') is a structurally proven negative, not eval-unproven); the blocker+tidb_set_default_eval_unproven coexistence on the provider path is pinned by TestAuditSQLT08EvalGapCoexistsWithBlocker — a gap never erases a decided policy result"
     },
     {
       "id": "t08-cli-modify-null-advisory",

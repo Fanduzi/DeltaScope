@@ -168,8 +168,11 @@ like other identifiers). `HasColumnPosition` keeps driving from the same AST
 check — the two facts are always consistent. ADD `(a, b, ...)` multi-column
 lists get one position at the spec level; per MySQL grammar a parenthesized
 column list carries no position clause, so a multi-column spec with a
-position is a parser-visible anomaly handled as extraction error, not a
-normalized fact (native N-cells confirm TiDB's behavior).
+position is a parser-visible anomaly: the extractor records
+`UnextractedOptions:["column_position"]` on the first emitted alter instead
+of attributing a per-column position, yielding incomplete coverage and a
+tombstoned successor — never a normalized position fact (native N-cells
+confirm the syntax error on all anchors).
 
 No other grammar changes. `ALTER COLUMN SET|DROP DEFAULT`, MODIFY, CHANGE,
 RENAME, ADD, DROP extraction is unchanged.

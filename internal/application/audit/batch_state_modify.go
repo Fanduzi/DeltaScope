@@ -194,51 +194,10 @@ func (s *batchState) prepareColumnDefault(statement spec.Statement, alter *spec.
 		return invalidate(primary)
 	}
 	next := cloneColumn(entry.shape.Columns[index])
-	if alter.Action == "set_column_default" {
-		if next.Generated != nil {
-			// A generated column cannot carry a default: publishing both
-			// would fabricate a shape the server refuses.
-			return invalidate(primary)
-		}
-		definition := alter.Column.Definition
-		publish := ""
-		if statement.Dialect == spec.DialectTiDB {
-			if definition.DefaultExpression != nil {
-				publish = spec.TiDBSetDefaultPublication(definition.DefaultExpression, next.Type)
-			} else if definition.DefaultParenthesized && definition.DefaultIsCurrentTimestamp {
-				publish = spec.TiDBLiteralSetDefaultPublication(next.Type)
-			}
-		}
-		switch publish {
-		case spec.TiDBSetDefaultTemporal:
-			// The current_timestamp cell stores a verbatim
-			// CURRENT_TIMESTAMP default on temporal/DATE targets:
-			// publish the temporal default the catalog keeps, without
-			// the authored parens or expression facts.
-			next.HasDefault = true
-			next.DefaultIsNull = false
-			next.DefaultValue = definition.DefaultValue
-			next.DefaultIsCurrentTimestamp = true
-			next.DefaultExpression = nil
-			next.DefaultKind = ""
-			next.DefaultParenthesized = false
-		default:
-			next.HasDefault = definition.HasDefault
-			next.DefaultIsNull = definition.DefaultIsNull
-			next.DefaultValue = definition.DefaultValue
-			next.DefaultIsCurrentTimestamp = definition.DefaultIsCurrentTimestamp
-			next.DefaultExpression = spec.CloneExpressionFacts(definition.DefaultExpression)
-			next.DefaultKind = definition.DefaultKind
-			next.DefaultParenthesized = definition.DefaultParenthesized
-		}
-	} else {
-		next.HasDefault = false
-		next.DefaultIsNull = false
-		next.DefaultValue = ""
-		next.DefaultIsCurrentTimestamp = false
-		next.DefaultExpression = nil
-		next.DefaultKind = ""
-		next.DefaultParenthesized = false
+	if !s.publishColumnDefault(&next, alter) {
+		// A generated column cannot carry a default: publishing both
+		// would fabricate a shape the server refuses.
+		return invalidate(primary)
 	}
 	shape := cloneTableSnapshot(entry.shape)
 	shape.Columns[index] = next
@@ -252,6 +211,53 @@ func (s *batchState) prepareColumnDefault(statement spec.Statement, alter *spec.
 			displayTable:  entry.displayTable,
 		},
 	}
+}
+
+// publishColumnDefault applies a set/drop_column_default effect onto next.
+// False when a generated column would carry a default the server refuses.
+// The TiDB current_timestamp cell publishes the temporal default the
+// catalog keeps, without the authored parens or expression facts.
+func (s *batchState) publishColumnDefault(next *spec.Column, alter *spec.Alter) bool {
+	if alter.Action == "set_column_default" {
+		if next.Generated != nil {
+			return false
+		}
+		definition := alter.Column.Definition
+		publish := ""
+		if s.dialect == spec.DialectTiDB {
+			if definition.DefaultExpression != nil {
+				publish = spec.TiDBSetDefaultPublication(definition.DefaultExpression, next.Type)
+			} else if definition.DefaultParenthesized && definition.DefaultIsCurrentTimestamp {
+				publish = spec.TiDBLiteralSetDefaultPublication(next.Type)
+			}
+		}
+		if publish == spec.TiDBSetDefaultTemporal {
+			next.HasDefault = true
+			next.DefaultIsNull = false
+			next.DefaultValue = definition.DefaultValue
+			next.DefaultIsCurrentTimestamp = true
+			next.DefaultExpression = nil
+			next.DefaultKind = ""
+			next.DefaultParenthesized = false
+		} else {
+			next.HasDefault = definition.HasDefault
+			next.DefaultIsNull = definition.DefaultIsNull
+			next.DefaultValue = definition.DefaultValue
+			next.DefaultIsCurrentTimestamp = definition.DefaultIsCurrentTimestamp
+			next.DefaultExpression = spec.CloneExpressionFacts(definition.DefaultExpression)
+			next.DefaultKind = definition.DefaultKind
+			next.DefaultParenthesized = definition.DefaultParenthesized
+		}
+		return true
+	}
+	next.HasDefault = false
+	next.DefaultIsNull = false
+	next.DefaultValue = ""
+	next.DefaultIsCurrentTimestamp = false
+	next.DefaultExpression = nil
+	next.DefaultKind = ""
+	next.DefaultParenthesized = false
+	return true
 }
 
 // boundSingleTarget reports the one table identity the statement is bound to:
@@ -389,7 +395,8 @@ func modifyColumnNames(ddl *spec.DDL, alter *spec.Alter) []string {
 
 // modifyColumnTemplate reports whether this single MODIFY is the frozen
 // ordinary replacement: one bounded target, matching identities, no
-// conditional or positional modifier, and a complete new column definition.
+// conditional modifier, at most a well-formed FIRST|AFTER positional
+// modifier, and a complete new column definition.
 func modifyColumnTemplate(s *batchState, statement spec.Statement, alter *spec.Alter, targets []spec.Table) bool {
 	ddl := statement.DDL
 	if ddl == nil || ddl.Table == nil || len(ddl.Alter) != 1 || len(targets) != 1 || alter == nil {

@@ -160,8 +160,8 @@ func firstColumnIdentityAlter(ddl *spec.DDL) *spec.Alter {
 
 // columnIdentityTemplate reports whether this single action is the frozen
 // identity migration: one bounded target, matching old-name identities, no
-// conditional or positional modifier. CHANGE also needs a non-empty new type.
-// RENAME COLUMN does not.
+// conditional modifier, at most a well-formed FIRST|AFTER positional
+// modifier. CHANGE also needs a non-empty new type. RENAME COLUMN does not.
 func columnIdentityTemplate(s *batchState, statement spec.Statement, alter *spec.Alter, targets []spec.Table) bool {
 	ddl := statement.DDL
 	if ddl == nil || ddl.Table == nil || len(ddl.Alter) != 1 || len(targets) != 1 || alter == nil {

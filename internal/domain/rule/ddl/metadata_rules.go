@@ -462,14 +462,23 @@ func alterRemovedColumnNames(alter spec.Alter) []string {
 }
 
 // alterProducedColumnNames returns the column names an alter action
-// materializes within the same statement — the target definition name when
-// present, else the created column's canonical name for pure additions.
+// materializes within the same statement — only additions and the
+// destination names of change/rename create a name. A setter, visibility,
+// or modify target definition names an existing column; counting it as
+// produced would launder a missing sibling reference.
 func alterProducedColumnNames(alter spec.Alter) []string {
-	if column, ok := alterColumnDefinition(alter); ok && strings.TrimSpace(column.Name) != "" {
-		return []string{column.Name}
-	}
-	if alter.Action == "add_columns" && strings.TrimSpace(alter.Name) != "" {
-		return []string{alter.Name}
+	switch alter.Action {
+	case "add_columns":
+		if column, ok := alterColumnDefinition(alter); ok && strings.TrimSpace(column.Name) != "" {
+			return []string{column.Name}
+		}
+		if strings.TrimSpace(alter.Name) != "" {
+			return []string{alter.Name}
+		}
+	case "change_column", "rename_column":
+		if column, ok := alterColumnDefinition(alter); ok && strings.TrimSpace(column.Name) != "" {
+			return []string{column.Name}
+		}
 	}
 	return nil
 }

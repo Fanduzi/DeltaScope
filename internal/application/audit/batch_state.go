@@ -1,7 +1,7 @@
 // Package audit orchestrates audit use cases at the application layer.
 // input: request context, ordered statements, optional metadata provider, the request's already-resolved version identity, and parse-failure positions for one audit request
 // output: request-local ordered table facts (unknown / known-absent / known-present, per-collection member knowledge, including the declared table comment on complete CREATE-derived shapes) feeding per-statement pre-state snapshots
-// pos: prospective schema-state ownership for the first migration path — the effective (dialect, schema, table) identity drives provider reads, keys, writes, and invalidation; unsupported or executable-but-unmodeled effects settle before kind dispatch; deterministic conditional transitions update derived facts, including the bounded single-pair RENAME identity migration onto a known-absent destination, a bounded single-target DROP identity retirement, an ordinary single-column MODIFY definition replacement, a precise single CHANGE COLUMN or RENAME COLUMN identity migration, and an ordinary dependency-free single-column DROP COLUMN that removes only that column, keeps unrelated members, and clears the accepted MODIFY statistic set; each tombstones loaded dependents that the transition cannot keep; a non-precise MODIFY, CHANGE, RENAME, or DROP COLUMN tombstones every named table identity and the loaded dependents of those identities, a precise replacement is withheld when a loaded foreign key cannot be recomputed, an unsupported RENAME version withholds publication, and cancellation is checked before publishing effects; unaudited, unbound, or contaminated operations invalidate them; recognized CREATE/DROP PROCEDURE statements preserve outer table facts while keeping their own audit evidence; the shared T07 advanced-column assessment blocks publication of provably refused or unresolved transitions
+// pos: prospective schema-state ownership for the first migration path — the effective (dialect, schema, table) identity drives provider reads, keys, writes, and invalidation; unsupported or executable-but-unmodeled effects settle before kind dispatch; deterministic conditional transitions update derived facts, including the bounded single-pair RENAME identity migration onto a known-absent destination, a bounded single-target DROP identity retirement, an ordinary single-column MODIFY definition replacement, a precise single CHANGE COLUMN or RENAME COLUMN identity migration, and an ordinary dependency-free single-column DROP COLUMN that removes only that column, keeps unrelated members, and clears the accepted MODIFY statistic set, FIRST|AFTER column-position moves inside admitted ADD/MODIFY/CHANGE templates, and the bounded dialect-parametrized multi-action successor (MySQL accumulated working state vs TiDB pre-statement premises, whole-statement tombstone on unprovable net effect); each tombstones loaded dependents that the transition cannot keep; a non-precise MODIFY, CHANGE, RENAME, or DROP COLUMN tombstones every named table identity and the loaded dependents of those identities, a precise replacement is withheld when a loaded foreign key cannot be recomputed, an unsupported RENAME version withholds publication, and cancellation is checked before publishing effects; unaudited, unbound, or contaminated operations invalidate them; recognized CREATE/DROP PROCEDURE statements preserve outer table facts while keeping their own audit evidence; the shared T07 advanced-column assessment blocks publication of provably refused or unresolved transitions
 // note: if this file changes, update this header and module README.md.
 package audit
 
@@ -500,15 +500,18 @@ func derivedCreateShape(schema, table string, ddl *spec.DDL) *spec.TableSnapshot
 }
 
 // applyAlterTable models the frozen transitions a fully audited ALTER can
-// carry: exactly one plain ADD COLUMN, exactly one ordinary single-column
-// MODIFY, or exactly one RENAME TO handled by the shared rename pair
-// migration. Anything else — multiple actions, position/scalar-conditioned
-// adds, or any other audited action — has no modeled post-state, so its
-// bound targets invalidate rather than fabricating a success shape (a
-// duplicate add inside a multi-action ALTER must never produce a definite
-// column set). Premise-broken adds — a duplicate column without IF NOT
-// EXISTS, or any add on a confirmed-absent table — invalidate instead of
-// fabricating a success structure. MODIFY never restores an unknown table.
+// carry: a bounded multi-action successor (dialect-parametrized — MySQL
+// accumulated working state vs TiDB pre-statement premises), exactly one
+// plain or positioned ADD COLUMN, exactly one ordinary single-column
+// MODIFY or CHANGE/RENAME COLUMN (each optionally positioned), or exactly
+// one RENAME TO handled by the shared rename pair migration. Anything
+// else — unprovable actions, scalar-conditioned adds, or unaudited
+// shapes — has no modeled post-state, so its bound targets invalidate
+// rather than fabricating a success shape (a duplicate add inside a
+// multi-action ALTER must never produce a definite column set).
+// Premise-broken adds — a duplicate column without IF NOT EXISTS, or any
+// add on a confirmed-absent table — invalidate instead of fabricating a
+// success structure. MODIFY never restores an unknown table.
 func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Statement) error {
 	ddl := statement.DDL
 	targets := ddl.TableTargets()

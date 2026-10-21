@@ -79,3 +79,27 @@ unit-admitted `err.cancel`, plus the 10 baseline health cases).
   AUTO_INCREMENT removal (`modifyTiDBAutoIncrementRemoval`) and completed the
   position rule's MySQL accumulated premise set (rename destinations and
   dropped names now resolve/flag sibling AFTER references).
+
+## Second review round (spec axis on 9c4fe175)
+
+- **S-multi-action-duplicate-apply**: `multiActionApply` `add_columns` never
+  rechecked the working shape, so TiDB's `RENAME a TO x, ADD x` /
+  `CHANGE a TO x, ADD x` published a duplicate-name successor — the apply now
+  refuses a name already materialized by a sibling (the server refuses it).
+- **S-produced-set-laundering**: `alterProducedColumnNames` counted setter /
+  visibility / modify target definitions as produced names, masking a later
+  `AFTER missing` premise on the MySQL accumulated set. Only `add_columns`
+  and change/rename destinations now count as produced; regression tests
+  pin setter-target and modify-target AFTER failures.
+- **S-eval-gap-coexist binding**: role `t08-cli-eval-gap-coexist-tidb`
+  over-claimed — `lower('X')` is a structurally proven negative, not the
+  eval-unproven cell, and the offline case carries no gap. The role's
+  declared expectation now binds the blocker case plus
+  `TestAuditSQLT08EvalGapCoexistsWithBlocker` for provider-path
+  blocker+gap coexistence (the live-anchor cell is unpinnable because the
+  boundary is value-dependent).
+- **S-extraction-anomaly-wording**: CONTRACT §4 described the parenthesized
+  multi-column `ADD (...) + position` anomaly as an "extraction error";
+  the shipped mechanism records `UnextractedOptions:["column_position"]`
+  on the first emitted alter → incomplete coverage + tombstone. Contract
+  wording amended to match.

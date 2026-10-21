@@ -677,8 +677,10 @@ def cli_cases():
                         loaded=1, applicable=1),
                  policy='t08-set-default', args=fo),
         # The eval-unproven gap needs the target column's type; offline the
-        # boundary stays silent and only the explicit-op finding fires. The
-        # gap coexistence cell is covered by the T08 unit tests.
+        # boundary stays silent and only the explicit-op finding fires.
+        # Blocker+gap coexistence on the provider path is pinned by
+        # TestAuditSQLT08EvalGapCoexistsWithBlocker (the live-anchor cell is
+        # unpinnable because the eval-unproven boundary is value-dependent).
         cli_case('eval-gap-coexist-tidb', 'tidb', "ALTER TABLE t ALTER COLUMN c SET DEFAULT (lower('X'));",
                  expect(["ALTER TABLE t ALTER COLUMN c SET DEFAULT (lower('X'));"], verdict='reject', findings=1,
                         finding_entries=[finding(0, SET_FORBID, 'blocker')],

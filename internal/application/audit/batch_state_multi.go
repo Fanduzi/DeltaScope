@@ -185,6 +185,12 @@ func multiActionApply(s *batchState, statement spec.Statement, alter *spec.Alter
 	switch alter.Action {
 	case "add_columns":
 		def := alter.Column.Definition
+		if modifyColumnIndex(working.Columns, def.Name) >= 0 {
+			// TiDB validates the add premise against the pre-state, so a
+			// name a sibling already materialized still passes there —
+			// the server then refuses the duplicate. Never publish it.
+			return false
+		}
 		next := cloneColumn(*def)
 		if alter.Position == nil {
 			working.Columns = append(working.Columns, next)
@@ -209,7 +215,7 @@ func multiActionApply(s *batchState, statement spec.Statement, alter *spec.Alter
 	case "drop_column":
 		return multiActionDrop(alter, working)
 	case "set_column_default", "drop_column_default":
-		return multiActionSetter(s, statement, alter, working)
+		return multiActionSetter(s, alter, working)
 	case "set_column_visibility":
 		return multiActionVisibility(alter, working)
 	default:
@@ -321,7 +327,7 @@ func multiActionDrop(alter *spec.Alter, working *spec.TableSnapshot) bool {
 	return true
 }
 
-func multiActionSetter(s *batchState, statement spec.Statement, alter *spec.Alter, working *spec.TableSnapshot) bool {
+func multiActionSetter(s *batchState, alter *spec.Alter, working *spec.TableSnapshot) bool {
 	if alter.Column == nil || alter.Column.Definition == nil {
 		return false
 	}
@@ -330,45 +336,8 @@ func multiActionSetter(s *batchState, statement spec.Statement, alter *spec.Alte
 		return false
 	}
 	next := cloneColumn(working.Columns[index])
-	if alter.Action == "set_column_default" {
-		if next.Generated != nil {
-			return false
-		}
-		definition := alter.Column.Definition
-		publish := ""
-		if s.dialect == spec.DialectTiDB {
-			if definition.DefaultExpression != nil {
-				publish = spec.TiDBSetDefaultPublication(definition.DefaultExpression, next.Type)
-			} else if definition.DefaultParenthesized && definition.DefaultIsCurrentTimestamp {
-				publish = spec.TiDBLiteralSetDefaultPublication(next.Type)
-			}
-		}
-		switch publish {
-		case spec.TiDBSetDefaultTemporal:
-			next.HasDefault = true
-			next.DefaultIsNull = false
-			next.DefaultValue = definition.DefaultValue
-			next.DefaultIsCurrentTimestamp = true
-			next.DefaultExpression = nil
-			next.DefaultKind = ""
-			next.DefaultParenthesized = false
-		default:
-			next.HasDefault = definition.HasDefault
-			next.DefaultIsNull = definition.DefaultIsNull
-			next.DefaultValue = definition.DefaultValue
-			next.DefaultIsCurrentTimestamp = definition.DefaultIsCurrentTimestamp
-			next.DefaultExpression = spec.CloneExpressionFacts(definition.DefaultExpression)
-			next.DefaultKind = definition.DefaultKind
-			next.DefaultParenthesized = definition.DefaultParenthesized
-		}
-	} else {
-		next.HasDefault = false
-		next.DefaultIsNull = false
-		next.DefaultValue = ""
-		next.DefaultIsCurrentTimestamp = false
-		next.DefaultExpression = nil
-		next.DefaultKind = ""
-		next.DefaultParenthesized = false
+	if !s.publishColumnDefault(&next, alter) {
+		return false
 	}
 	working.Columns[index] = next
 	return true
