@@ -1,0 +1,363 @@
+{
+  "case_id": "T08.meta.t08-mysql57-setter-set-strnull",
+  "kind": "cli_metadata",
+  "cli_case": "t08-mysql57-setter-set-strnull",
+  "anchor": "mysql57",
+  "dialect": "mysql",
+  "input_sql": "ALTER TABLE t8 ALTER COLUMN s SET DEFAULT 'NULL';",
+  "policy_profile": "all-rules-disabled",
+  "policy_path": "/private/tmp/ddl-golden-t08-final3/T08/golden-policy-all-off.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "T08_MYSQL_PASSWORD"
+  },
+  "expected": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "statement_sql": [
+      "ALTER TABLE t8 ALTER COLUMN s SET DEFAULT 'NULL';"
+    ],
+    "statement_indices": [
+      0
+    ],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "finding_entries": [],
+    "finding_metadata": [],
+    "unsupported_entries": []
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:5.7.44",
+      "image_digest": "mysql@sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb",
+      "container": "deltascope-ddl-golden-mysql57",
+      "reachable": true,
+      "version": "5.7.44"
+    },
+    "setup": [
+      {
+        "name": "prove-prior-absence-t8",
+        "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t8'",
+        "rc": 0,
+        "stdout": "COUNT(*)\n0",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "t8 bound table count",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t8'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "create-fixture-t8",
+        "sql": "CREATE TABLE t8 (pk INT NOT NULL AUTO_INCREMENT, c INT NULL DEFAULT 0, keep_c INT NULL, v VARCHAR(32) NULL, u INT UNSIGNED NOT NULL DEFAULT 0, s VARCHAR(16) NULL, PRIMARY KEY (pk));",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "t8 bound table count",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t8'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          },
+          {
+            "assert": "t8 ordered column set",
+            "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(column_name,':',ordinal_position,':',is_nullable,':',IFNULL(HEX(column_default),'x00'),':',LOWER(extra)) ORDER BY ordinal_position SEPARATOR '|'),'') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t8'",
+            "rc": 0,
+            "output": "pk:1:NO:x00:auto_increment|c:2:YES:30:|keep_c:3:YES:x00:|v:4:YES:x00:|u:5:NO:30:|s:6:YES:x00:",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "t8 ordered column set",
+        "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(column_name,':',ordinal_position,':',is_nullable,':',IFNULL(HEX(column_default),'x00'),':',LOWER(extra)) ORDER BY ordinal_position SEPARATOR '|'),'') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t8'",
+        "rc": 0,
+        "output": "pk:1:NO:x00:auto_increment|c:2:YES:30:|keep_c:3:YES:x00:|v:4:YES:x00:|u:5:NO:30:|s:6:YES:x00:",
+        "stderr": ""
+      },
+      {
+        "assert": "t8 index identity",
+        "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(index_name,':',seq_in_index,':',column_name) ORDER BY CAST(index_name AS BINARY),seq_in_index SEPARATOR ','),'') FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t8'",
+        "rc": 0,
+        "output": "PRIMARY:1:pk",
+        "stderr": ""
+      }
+    ],
+    "execute": [
+      {
+        "name": "apply",
+        "sql": "ALTER TABLE t8 ALTER COLUMN s SET DEFAULT 'NULL';",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "structure": [
+      {
+        "assert": "t8 ordered column set",
+        "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(column_name,':',ordinal_position,':',is_nullable,':',IFNULL(HEX(column_default),'x00'),':',LOWER(extra)) ORDER BY ordinal_position SEPARATOR '|'),'') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t8'",
+        "rc": 0,
+        "output": "pk:1:NO:x00:auto_increment|c:2:YES:30:|keep_c:3:YES:x00:|v:4:YES:x00:|u:5:NO:30:|s:6:YES:4E554C4C:",
+        "stderr": ""
+      }
+    ],
+    "teardown": [
+      {
+        "name": "drop-t8",
+        "sql": "DROP TABLE t8;",
+        "rc": 0,
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "t8 bound table count",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t8'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "exit": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t8 ALTER COLUMN s SET DEFAULT 'NULL';\",\"normalized_sql\":\"ALTER TABLE t8 ALTER COLUMN s SET DEFAULT 'NULL'\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"5.7.44\",\"major\":5,\"minor\":7,\"patch\":44,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "pass",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t8 ALTER COLUMN s SET DEFAULT 'NULL';",
+          "normalized_sql": "ALTER TABLE t8 ALTER COLUMN s SET DEFAULT 'NULL'",
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "5.7.44",
+        "major": 5,
+        "minor": 7,
+        "patch": 44,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": false,
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "5.7.44",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "5.7.44"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "5.7.44",
+        "major": 5,
+        "minor": 7,
+        "patch": 44,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='5.7.44' expected_contains='5.7.44'"
+    },
+    {
+      "name": "setup prove-prior-absence-t8 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup prove-prior-absence-t8: t8 bound table count",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "setup create-fixture-t8 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup create-fixture-t8: t8 bound table count",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "setup create-fixture-t8: t8 ordered column set",
+      "ok": true,
+      "detail": "rc=0 output='pk:1:NO:x00:auto_increment|c:2:YES:30:|keep_c:3:YES:x00:|v:4:YES:x00:|u:5:NO:30:|s:6:YES:x00:' expected='pk:1:NO:x00:auto_increment|c:2:YES:30:|keep_c:3:YES:x00:|v:4:YES:x00:|u:5:NO:30:|s:6:YES:x00:'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='pass'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "unsupported entries",
+      "ok": true,
+      "detail": "entries=[] expected=[]"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=[\"ALTER TABLE t8 ALTER COLUMN s SET DEFAULT 'NULL';\"] expected=[\"ALTER TABLE t8 ALTER COLUMN s SET DEFAULT 'NULL';\"]"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[] expected=[]"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[] expected=[]"
+    },
+    {
+      "name": "post-verify t8 ordered column set",
+      "ok": true,
+      "detail": "rc=0 output='pk:1:NO:x00:auto_increment|c:2:YES:30:|keep_c:3:YES:x00:|v:4:YES:x00:|u:5:NO:30:|s:6:YES:x00:' expected='pk:1:NO:x00:auto_increment|c:2:YES:30:|keep_c:3:YES:x00:|v:4:YES:x00:|u:5:NO:30:|s:6:YES:x00:'"
+    },
+    {
+      "name": "post-verify t8 index identity",
+      "ok": true,
+      "detail": "rc=0 output='PRIMARY:1:pk' expected='PRIMARY:1:pk'"
+    },
+    {
+      "name": "execute apply return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "structure t8 ordered column set",
+      "ok": true,
+      "detail": "rc=0 output='pk:1:NO:x00:auto_increment|c:2:YES:30:|keep_c:3:YES:x00:|v:4:YES:x00:|u:5:NO:30:|s:6:YES:4E554C4C:' expected='pk:1:NO:x00:auto_increment|c:2:YES:30:|keep_c:3:YES:x00:|v:4:YES:x00:|u:5:NO:30:|s:6:YES:4E554C4C:'"
+    },
+    {
+      "name": "teardown drop-t8 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop-t8: t8 bound table count",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ddl-golden-t08-final3/T08/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "ALTER TABLE t8 ALTER COLUMN s SET DEFAULT 'NULL';",
+    "--config",
+    "/private/tmp/ddl-golden-t08-final3/T08/golden-policy-all-off.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23357",
+    "--user",
+    "root",
+    "--password-env",
+    "T08_MYSQL_PASSWORD",
+    "--schema",
+    "golden"
+  ]
+}
