@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # input: synthetic ddl-golden artifacts and manifests built in a temp directory
-# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1/A2/A3/A4/A5/A7/A8/A9/A10 mutation coverage (T06-A9 includes the byte-exact EXTRA comparison mutations: plain-LOWER-IN rollback, catalog pad-space control deletion, and forged marker/sentinel outputs; T06-A10 includes the AUTO_INCREMENT declaration/allocator-observation mutations plus the T06-A10-R1 record-set controls: duplicate/hidden/wrong-target/header-only/forged-header records on all three observations, and legal allocator null|value:<digits> variants staying accepted; T06-A10-R2 adds non-string-stdout contract failures and the complete-`t` SHOW CREATE head boundary; T06-A11 adds the BIGINT/UNSIGNED policy mutations and T06-A11-R1 adds the raw HEX-field shape boundary: whitespace-corrupted, empty, odd-length, 0x-prefixed, and non-ASCII COLUMN_TYPE hex rejected while every frozen whitelist form and upper/lower/mixed-case hex stays accepted; T06-A12 adds the NOT NULL attribution and column-set mutations, and T06-A12-R1 adds the strict rule_summary shape controls: present-but-null/empty/false keys on the disabled role, missing or non-object summaries on enabled roles, missing counters, bool/float/string/null counts, and wrong per-role integer combos — all rejected through the full validate_artifact entry; T06-A13 adds the type-family forbid mutations: missed/forged findings, absorbed c_json/c_datetime, collapsed/duplicated/cross-paired findings, dropped or added metadata keys, same-SQL family profile/record swaps, switch-state laundering, weakened profiles, ordered-column-set corruptions, skipped or failed driver replay, and denominator shrinkage; T06-A14 adds the table-option allowlist mutations: missed/forged findings per role, the omitted-strict actual laundered to a server default, swapped option keys, widened allowed lists, dropped actual keys, duplicated findings, denied-optional pass laundering, the omitted-optional 1/0 forgery, fabricated/null/non-integer summaries, strict-optional-off record and profile swaps, cross-family borrowing, weakened profiles, forged MySQL/TiDB catalog identities (MyISAM-as-InnoDB, Dynamic-as-Compact, TiDB declarations recorded as catalog values), missing/multirow charset associations, skipped or failed driver replay, and denominator shrinkage; T06-A15 adds the row-size fact-resolution mutations: the over-limit role recorded as pass, safe boundary roles forged as blockers, a missing fact recorded as complete, wrong/reordered/duplicated required_facts, a declared fact listed as missing, the missing-format-over determined finding dropped beside its gap, the column charset laundered into table metadata or the estimate overwritten by the table charset, an unused undeclared table charset forged as required, on/not-required/off record and profile swaps, a fabricated rule_summary under the all-off control, and denominator shrinkage)
+# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1/A2/A3/A4/A5/A7/A8/A9/A10 mutation coverage (T06-A9 includes the byte-exact EXTRA comparison mutations: plain-LOWER-IN rollback, catalog pad-space control deletion, and forged marker/sentinel outputs; T06-A10 includes the AUTO_INCREMENT declaration/allocator-observation mutations plus the T06-A10-R1 record-set controls: duplicate/hidden/wrong-target/header-only/forged-header records on all three observations, and legal allocator null|value:<digits> variants staying accepted; T06-A10-R2 adds non-string-stdout contract failures and the complete-`t` SHOW CREATE head boundary; T06-A11 adds the BIGINT/UNSIGNED policy mutations and T06-A11-R1 adds the raw HEX-field shape boundary: whitespace-corrupted, empty, odd-length, 0x-prefixed, and non-ASCII COLUMN_TYPE hex rejected while every frozen whitelist form and upper/lower/mixed-case hex stays accepted; T06-A12 adds the NOT NULL attribution and column-set mutations, and T06-A12-R1 adds the strict rule_summary shape controls: present-but-null/empty/false keys on the disabled role, missing or non-object summaries on enabled roles, missing counters, bool/float/string/null counts, and wrong per-role integer combos — all rejected through the full validate_artifact entry; T06-A13 adds the type-family forbid mutations: missed/forged findings, absorbed c_json/c_datetime, collapsed/duplicated/cross-paired findings, dropped or added metadata keys, same-SQL family profile/record swaps, switch-state laundering, weakened profiles, ordered-column-set corruptions, skipped or failed driver replay, and denominator shrinkage; T06-A14 adds the table-option allowlist mutations: missed/forged findings per role, the omitted-strict actual laundered to a server default, swapped option keys, widened allowed lists, dropped actual keys, duplicated findings, denied-optional pass laundering, the omitted-optional 1/0 forgery, fabricated/null/non-integer summaries, strict-optional-off record and profile swaps, cross-family borrowing, weakened profiles, forged MySQL/TiDB catalog identities (MyISAM-as-InnoDB, Dynamic-as-Compact, TiDB declarations recorded as catalog values), missing/multirow charset associations, skipped or failed driver replay, and denominator shrinkage; T06-A15 adds the row-size fact-resolution mutations: the over-limit role recorded as pass, safe boundary roles forged as blockers, a missing fact recorded as complete, wrong/reordered/duplicated required_facts, a declared fact listed as missing, the missing-format-over determined finding dropped beside its gap, the column charset laundered into table metadata or the estimate overwritten by the table charset, an unused undeclared table charset forged as required, on/not-required/off record and profile swaps, a fabricated rule_summary under the all-off control, and denominator shrinkage; T08 oracle migration adds sensitivity for the eleven migrated cells: the nine column-position cli cells across T03/T04/T05 (legal audited fixture accepted, pre-T08 unsupported/incomplete revert rejected, preserved missing_source_column gap deletion rejected on T04/T05, identity/policy/SQL rebinds rejected, manifest+artifact shrink rejected via the independent position oracle) and the two T05-A4 omit-integer cells (effective-default finding kept as a distinct third finding — deletion, duplication, substitution, wrong statement/column/change-class, rebound policy/case/SQL, and both-sides shrink or undeclaration all rejected))
 # pos: offline negative tests for scripts/ddl_golden.py validation (no Docker required)
 # note: if this file changes, update this header and module README.md.
 """Validator contract tests for scripts/ddl_golden.py.
@@ -11,6 +11,7 @@ validator rejects it. A fully valid control artifact must pass, so the
 negatives prove specific checks rather than a validator that always fails.
 """
 
+import collections
 import copy
 import hashlib
 import json
@@ -1525,10 +1526,398 @@ def main():
 
         results.extend(a3_contract_tests(tmp))
         results.extend(t06_contract_tests(tmp))
+        results.extend(t08_oracle_migration_tests(tmp))
 
     failures = results.count(False)
     print(f"contract cases={len(results)} failures={failures}")
     return 1 if failures else 0
+
+
+def t08_oracle_migration_tests(tmp):
+    """Sensitivity for the eleven T08-migrated oracle cells. The nine
+    column-position cli cells across T03/T04/T05 and the two T05-A4
+    omit-integer metadata cells are validated through the full
+    validate_artifact entry: the migrated legal fixture must pass, while
+    reverting to the pre-T08 unsupported/incomplete shape, deleting a
+    preserved gap or finding, duplicating or cross-pairing findings,
+    rebinding identity/policy/SQL, and shrinking manifest+artifact together
+    must all still fail."""
+    baseline = ddl_golden.load_baseline()
+    results = []
+
+    def run(label, artifact, manifest, needle=""):
+        failures = ddl_golden.validate_artifact(artifact, manifest, baseline=baseline)
+        ok = any(needle in f for f in failures) if needle else not failures
+        print(("PASS " if ok else "FAIL ") + label)
+        if not ok:
+            print(f"  expected={needle!r} actual={failures}")
+        results.append(ok)
+
+    def query_records(queries):
+        return [{"assert": q["assert"], "sql": q["sql"], "rc": 0,
+                 "output": q["expect"], "stderr": ""} for q in queries]
+
+    def step_records(steps):
+        return [{"name": s["name"], "sql": s["sql"], "rc": s.get("expect_rc", 0),
+                 "stdout": " ".join(s.get("stdout_contains", [])),
+                 "stderr": " ".join(s.get("stderr_contains", [])),
+                 "verify": query_records(s.get("verify", []))} for s in steps]
+
+    def parsed_from_expect(expected):
+        statements = []
+        for i, sql in enumerate(expected["statement_sql"]):
+            statements.append({"index": i, "raw_sql": sql,
+                               "coverage": {"status": expected["statement_coverage"][i]},
+                               "findings": [], "evidence_gaps": [], "unsupported": []})
+        finding_metadata = collections.defaultdict(collections.deque)
+        for e in expected.get("finding_metadata", []):
+            finding_metadata[(e["index"], e["rule_id"])].append(e["metadata"])
+        for entry in expected.get("finding_entries", []):
+            key = (entry["index"], entry["rule_id"])
+            metadata = finding_metadata[key].popleft() if finding_metadata[key] else {}
+            statements[entry["index"]]["findings"].append({
+                "statement_index": entry["index"], "rule_id": entry["rule_id"],
+                "level": entry["level"],
+                "metadata": copy.deepcopy(metadata)})
+        for entry in expected.get("evidence_gap_entries", []):
+            statements[entry["index"]]["evidence_gaps"].append(
+                {k: v for k, v in entry.items() if k != "index"})
+        return {"verdict": expected["verdict"],
+                "coverage": {"status": expected["coverage"]},
+                "statements": statements, "global_findings": [],
+                "diagnostics": [], "unsupported": [],
+                "fail_on_triggered": expected.get("fail_on_triggered", False),
+                "rule_summary": {"loaded": expected.get("rule_summary_loaded", 4),
+                                 "applicable": expected.get("rule_summary_loaded", 4),
+                                 "skipped": []}}
+
+    def stub_binary(directory, rule_ids):
+        binary = directory / "deltascope"
+        catalog = json.dumps({"rules": [{"rule_id": rid} for rid in
+                                        sorted(rule_ids or {"ddl.stub.none"})]})
+        binary.write_text("#!/bin/sh\nprintf '%s' '" + catalog + "'\n")
+        binary.chmod(0o755)
+        return binary
+
+    def enabled_rule_ids(manifest):
+        ids = set()
+        policy = manifest.get("policy") or {}
+        ids.update((policy.get("enable") or {}).keys())
+        for spec in (policy.get("profiles") or {}).values():
+            ids.update((spec.get("enable") or {}).keys())
+        return ids
+
+    def db_baseline_cases(task, manifest, templates):
+        cases = []
+        for key, anchor in manifest["anchors"].items():
+            database = {"product": anchor["product"], "image": anchor["image"],
+                        "image_digest": anchor["image"].split(":")[0] + "@sha256:stub",
+                        "container": anchor["container"], "reachable": True,
+                        "version": anchor["version_contains"]}
+            for suffix, template in zip(("ddl", "syntax_negative"), templates):
+                case = copy.deepcopy(template)
+                case.update(case_id=f"{task}.db.{key}.{suffix}", anchor=key)
+                if suffix == "ddl":
+                    case["actual"]["database"] = database
+                cases.append(case)
+        return cases
+
+    def cli_audit_case(task, spec, manifest, binary, policies):
+        expected = spec["expect"]
+        parsed = parsed_from_expect(expected)
+        profile = spec.get("policy") or manifest.get("policy_profile", "all-rules-disabled")
+        command = ddl_golden.expected_cli_argv(str(binary), spec, policies[profile]["path"])
+        if ddl_golden.spec_target_version_raw(spec):
+            target_raw = ddl_golden.spec_target_version_raw(spec)
+            canonical = ddl_golden.canonical_target_version(target_raw)
+            product = "tidb" if spec["dialect"] == "tidb" else "mysql"
+            major, minor, patch = (int(p) for p in canonical.split("."))
+            validated = (product == "mysql" and (major, minor) in {(5, 7), (8, 0), (8, 4)}) or (product == "tidb" and (major, minor) == (8, 5))
+            parsed["version"] = {"product": product, "version": canonical, "major": major, "minor": minor,
+                                 "patch": patch, "source": "target", "validated_range": validated}
+        actual = {"exit": expected["exit"], "stdout": json.dumps(parsed),
+                  "stderr": "", "parsed": parsed}
+        if parsed.get("version"):
+            actual["version_evidence"] = ddl_golden.version_evidence_record(spec, parsed)
+        return {"case_id": f"{task}.cli.{spec['id']}", "kind": "cli_audit",
+                "cli_case": spec["id"], "dialect": spec["dialect"],
+                "input_sql": spec["sql"], "policy_profile": profile,
+                "policy_path": policies[profile]["path"], "command": command,
+                "expected": copy.deepcopy(expected),
+                "actual": actual,
+                "assertions": [{"name": "synthetic control", "ok": True,
+                                "detail": "offline validator fixture"}],
+                "status": "pass"}
+
+    def cli_metadata_case(task, spec, manifest, binary, policies):
+        expected = spec["expect"]
+        parsed = parsed_from_expect(expected)
+        profile = spec.get("policy") or manifest.get("policy_profile", "all-rules-disabled")
+        conn = spec.get("connect") or {}
+        command = ddl_golden.expected_cli_argv(str(binary), spec, policies[profile]["path"],
+                                               connect=conn)
+        anchor = manifest["anchors"][spec["anchor"]]
+        if ddl_golden.spec_target_version_raw(spec):
+            target_raw = ddl_golden.spec_target_version_raw(spec)
+            canonical = ddl_golden.canonical_target_version(target_raw)
+            product = "tidb" if spec["dialect"] == "tidb" else "mysql"
+            major, minor, patch = (int(p) for p in canonical.split("."))
+            validated = (product == "mysql" and (major, minor) in {(5, 7), (8, 0), (8, 4)}) or (product == "tidb" and (major, minor) == (8, 5))
+            parsed["version"] = {"product": product, "version": canonical, "major": major, "minor": minor,
+                                 "patch": patch, "source": "target", "validated_range": validated}
+        actual = {"exit": expected["exit"], "stdout": json.dumps(parsed),
+                  "stderr": "", "parsed": parsed,
+                  "database": {"product": anchor["product"], "image": anchor["image"],
+                               "image_digest": anchor["image"].split(":")[0] + "@sha256:stub",
+                               "container": anchor["container"], "reachable": True,
+                               "version": anchor["version_contains"]},
+                  "setup": step_records(spec.get("setup", [])),
+                  "execute": step_records(spec.get("execute", [])),
+                  "teardown": step_records(spec.get("teardown", [])),
+                  "post_verify": query_records(spec.get("post_verify", [])),
+                  "structure": query_records(spec.get("structure", []))}
+        target_raw = ddl_golden.spec_target_version_raw(spec)
+        if target_raw:
+            actual["version_evidence"] = ddl_golden.version_evidence_record(spec, parsed)
+        return {"case_id": f"{task}.meta.{spec['id']}", "kind": "cli_metadata",
+                "cli_case": spec["id"], "dialect": spec["dialect"], "anchor": spec["anchor"],
+                "input_sql": spec["sql"], "policy_profile": profile,
+                "policy_path": policies[profile]["path"],
+                "connect": {k: v for k, v in conn.items() if k != "password"},
+                "command": command, "expected": copy.deepcopy(expected),
+                "actual": actual,
+                "assertions": [{"name": "synthetic control", "ok": True,
+                                "detail": "offline validator fixture"}],
+                "status": "pass"}
+
+    def position_subset_artifact(task):
+        """Manifest + artifact covering the task's three migrated position cli
+        cells plus the locked baseline anchors/dialects."""
+        source = json.loads((ddl_golden.MANIFEST_DIR / f"{task}.json").read_text())
+        manifest = copy.deepcopy(MANIFEST)
+        manifest.update(task_id=task,
+                        anchors=copy.deepcopy(source["anchors"]),
+                        policy=copy.deepcopy(source.get("policy") or {}),
+                        policy_profile=source["policy_profile"],
+                        cli_cases=[copy.deepcopy(s) for s in source["cli_cases"]
+                                   if s["id"] in {"mysql-alter-add-column-position",
+                                                  "tidb-alter-add-column-position",
+                                                  "mysql-alter-modify-column-position"}])
+        directory = tmp / task.lower()
+        directory.mkdir()
+        artifact = make_artifact(directory)
+        binary = stub_binary(directory, enabled_rule_ids(manifest))
+        artifact["cli"]["sha256"] = ddl_golden.sha256_file(binary)
+        policies = ddl_golden.make_policies(str(binary), directory, manifest)
+        artifact.update(task_id=task, policies=list(policies.values()),
+                        policy_profile=policies[manifest["policy_profile"]])
+        templates = copy.deepcopy(artifact["cases"][:2])
+        artifact["cases"] = db_baseline_cases(task, manifest, templates)
+        artifact["cases"] += [cli_audit_case(task, spec, manifest, binary, policies)
+                              for spec in manifest["cli_cases"]]
+        manifest["required_case_ids"] = [c["case_id"] for c in artifact["cases"]]
+        artifact["required_case_ids"] = list(manifest["required_case_ids"])
+        artifact["executed_count"] = len(artifact["cases"])
+        return artifact, manifest
+
+    def update_stdout(case):
+        case["actual"]["stdout"] = json.dumps(case["actual"]["parsed"])
+
+    # --- T03/T04 position cells ------------------------------------------------
+    for task in ("T03", "T04"):
+        artifact, manifest = position_subset_artifact(task)
+        tag = task.lower()
+        run(f"{tag} migrated position control passes", artifact, manifest)
+
+        def fresh():
+            return copy.deepcopy(artifact)
+
+        # Reverting to the pre-T08 unsupported/incomplete shape must fail.
+        a = fresh()
+        case = next(c for c in a["cases"] if c.get("cli_case") == "mysql-alter-add-column-position")
+        case["actual"]["exit"] = 1
+        case["actual"]["parsed"] = {
+            "verdict": "review", "coverage": {"status": "incomplete"},
+            "statements": [{"index": 0, "raw_sql": "ALTER TABLE t ADD COLUMN c INT FIRST;",
+                            "coverage": {"status": "incomplete"}, "findings": [],
+                            "evidence_gaps": [], "unsupported": []}],
+            "global_findings": [],
+            "diagnostics": [{"level": "notice", "message": "column position unsupported"}],
+            "unsupported": [{"index": 0, "feature": "alter_table.add_columns.column_position",
+                             "reason": "parsed by the shared parser but not covered by audited semantics"}],
+            "fail_on_triggered": False}
+        update_stdout(case)
+        run(f"{tag} reverted pre-T08 unsupported shape rejected", a, manifest, "unsupported")
+
+        # Unverified state must stay unverified: complete coverage on the
+        # compat-gapped MODIFY cell is a fabrication.
+        if task != "T03":
+            a = fresh()
+            case = next(c for c in a["cases"] if c.get("cli_case") == "mysql-alter-modify-column-position")
+            case["actual"]["parsed"]["statements"][0]["evidence_gaps"] = []
+            case["actual"]["parsed"]["statements"][0]["coverage"]["status"] = "complete"
+            case["actual"]["parsed"]["coverage"]["status"] = "complete"
+            case["actual"]["parsed"]["verdict"] = "pass"
+            update_stdout(case)
+            run(f"{tag} deleted preserved gap laundered to complete rejected", a, manifest, "gap")
+
+        # Identity rebinding must fail on every axis.
+        a = fresh()
+        case = next(c for c in a["cases"] if c.get("cli_case") == "mysql-alter-add-column-position")
+        case["actual"]["parsed"]["statements"][0]["raw_sql"] = "ALTER TABLE t ADD COLUMN c INT AFTER id;"
+        update_stdout(case)
+        run(f"{tag} rebound statement SQL rejected", a, manifest, "raw SQL")
+        a = fresh()
+        case = next(c for c in a["cases"] if c.get("cli_case") == "mysql-alter-add-column-position")
+        case["policy_profile"] = "nonexistent-profile"
+        run(f"{tag} rebound policy profile rejected", a, manifest, "policy")
+        a = fresh()
+        case = next(c for c in a["cases"] if c.get("cli_case") == "mysql-alter-add-column-position")
+        case["cli_case"] = "mysql-alter-modify-column-position"
+        run(f"{tag} rebound case identity rejected", a, manifest, "differs")
+
+        # Deleting a migrated cell from manifest and artifact together must
+        # still fail on the independent oracle.
+        a = fresh()
+        m = copy.deepcopy(manifest)
+        victim = f"{task}.cli.mysql-alter-add-column-position"
+        a["cases"] = [c for c in a["cases"] if c["case_id"] != victim]
+        a["executed_count"] = len(a["cases"])
+        a["required_case_ids"].remove(victim)
+        m["cli_cases"] = [s for s in m["cli_cases"]
+                          if s["id"] != "mysql-alter-add-column-position"]
+        m["required_case_ids"].remove(victim)
+        run(f"{tag} migrated cell deleted on both sides rejected", a, m, "position migration")
+
+        # Weakening the authorized expect on the manifest side alone must fail.
+        m = copy.deepcopy(manifest)
+        spec = next(s for s in m["cli_cases"] if s["id"] == "mysql-alter-add-column-position")
+        spec["expect"]["coverage"] = "incomplete"
+        run(f"{tag} weakened manifest expect rejected", artifact, m, "position migration")
+
+    # --- T05: position cells + omit-integer metadata cells ---------------------
+    source = json.loads((ddl_golden.MANIFEST_DIR / "T05.json").read_text())
+    manifest = copy.deepcopy(MANIFEST)
+    manifest.update(task_id="T05", anchors=copy.deepcopy(source["anchors"]),
+                    policy=copy.deepcopy(source["policy"]),
+                    policy_profile=source["policy_profile"],
+                    metadata_cases=[copy.deepcopy(s) for s in source["metadata_cases"]
+                                    if s["id"].startswith(("t05-a3-", "t05-a4-", "t05-a5-", "t05-a6-"))],
+                    cli_cases=[copy.deepcopy(s) for s in source["cli_cases"]
+                               if s["id"].startswith(("t05-a3-", "t05-a4-", "t05-a5-", "t05-a6-"))
+                               or s["id"] in {"mysql-alter-add-column-position",
+                                              "tidb-alter-add-column-position",
+                                              "mysql-alter-modify-column-position"}])
+    directory = tmp / "t05"
+    directory.mkdir()
+    artifact = make_artifact(directory)
+    binary = stub_binary(directory, enabled_rule_ids(manifest))
+    artifact["cli"]["sha256"] = ddl_golden.sha256_file(binary)
+    policies = ddl_golden.make_policies(str(binary), directory, manifest)
+    artifact.update(task_id="T05", policies=list(policies.values()),
+                    policy_profile=policies[manifest["policy_profile"]])
+    templates = copy.deepcopy(artifact["cases"][:2])
+    artifact["cases"] = db_baseline_cases("T05", manifest, templates)
+    artifact["cases"] += [cli_metadata_case("T05", spec, manifest, binary, policies)
+                          for spec in manifest["metadata_cases"]]
+    artifact["cases"] += [cli_audit_case("T05", spec, manifest, binary, policies)
+                          for spec in manifest["cli_cases"]]
+    manifest["required_case_ids"] = [c["case_id"] for c in artifact["cases"]]
+    artifact["required_case_ids"] = list(manifest["required_case_ids"])
+    artifact["executed_count"] = len(artifact["cases"])
+
+    run("t05 migration control passes", artifact, manifest)
+
+    def fresh_omit():
+        candidate = copy.deepcopy(artifact)
+        case = next(c for c in candidate["cases"]
+                    if c.get("cli_case") == "t05-a4-mysql84-omit-integer")
+        return candidate, case
+
+    # The migrated default finding is load-bearing in both directions: deleting
+    # it, or deleting one of the original two, fails the full entry.
+    a, c = fresh_omit()
+    c["actual"]["parsed"]["statements"][1]["findings"].pop(1)
+    update_stdout(c)
+    run("t05 migrated default finding deleted rejected", a, manifest, "finding")
+    a, c = fresh_omit()
+    c["actual"]["parsed"]["statements"][1]["findings"].pop(0)
+    update_stdout(c)
+    run("t05 original unsigned finding deleted rejected", a, manifest, "finding")
+    a, c = fresh_omit()
+    c["actual"]["parsed"]["statements"][2]["findings"].pop()
+    update_stdout(c)
+    run("t05 original nullability finding deleted rejected", a, manifest, "finding")
+
+    # Duplication or substitution cannot launder the three-finding set.
+    a, c = fresh_omit()
+    f = copy.deepcopy(c["actual"]["parsed"]["statements"][1]["findings"][1])
+    c["actual"]["parsed"]["statements"][1]["findings"].append(f)
+    update_stdout(c)
+    run("t05 duplicated default finding rejected", a, manifest, "finding")
+    a, c = fresh_omit()
+    findings = c["actual"]["parsed"]["statements"][1]["findings"]
+    findings[0]["metadata"] = copy.deepcopy(findings[1]["metadata"])
+    update_stdout(c)
+    run("t05 default metadata substituted for unsigned rejected", a, manifest, "finding metadata")
+
+    # Wrong attribution axes on the default finding all fail.
+    a, c = fresh_omit()
+    f = c["actual"]["parsed"]["statements"][1]["findings"].pop(1)
+    f["statement_index"] = 2
+    c["actual"]["parsed"]["statements"][2]["findings"].append(f)
+    update_stdout(c)
+    run("t05 default finding moved to statement 2 rejected", a, manifest, "finding")
+    a, c = fresh_omit()
+    c["actual"]["parsed"]["statements"][1]["findings"][1]["metadata"]["column_name"] = "id"
+    c["actual"]["parsed"]["statements"][1]["findings"][1]["metadata"]["name"] = "id"
+    update_stdout(c)
+    run("t05 default finding wrong column rejected", a, manifest, "finding metadata")
+    a, c = fresh_omit()
+    c["actual"]["parsed"]["statements"][1]["findings"][1]["metadata"]["source_default"] = "null"
+    update_stdout(c)
+    run("t05 default finding wrong transition class rejected", a, manifest, "finding metadata")
+
+    # Policy, case identity, and SQL rebinding all fail.
+    a, c = fresh_omit()
+    c["policy_profile"] = "t05-a6-drop-column-isolated"
+    run("t05 omit-integer rebound policy rejected", a, manifest, "policy")
+    a, c = fresh_omit()
+    c["cli_case"] = "t05-a4-mysql84-pk-not-null"
+    run("t05 omit-integer rebound case rejected", a, manifest, "differs")
+    a, c = fresh_omit()
+    c["actual"]["parsed"]["statements"][1]["raw_sql"] = "ALTER TABLE t MODIFY COLUMN c BIGINT;"
+    update_stdout(c)
+    run("t05 omit-integer rebound statement SQL rejected", a, manifest, "raw SQL")
+
+    # Shrinking or weakening the migrated oracle on both sides still fails on
+    # the independent a4 contract and the position migration contract.
+    a, c = fresh_omit()
+    m = copy.deepcopy(manifest)
+    victim = "T05.meta.t05-a4-mysql84-omit-integer"
+    a["cases"] = [x for x in a["cases"] if x["case_id"] != victim]
+    a["executed_count"] = len(a["cases"])
+    a["required_case_ids"].remove(victim)
+    m["metadata_cases"] = [s for s in m["metadata_cases"] if s["id"] != c["cli_case"]]
+    m["required_case_ids"].remove(victim)
+    run("t05 omit-integer deleted on both sides rejected", a, m, "T05-A4")
+    m = copy.deepcopy(manifest)
+    spec = next(s for s in m["metadata_cases"] if s["id"] == "t05-a4-mysql84-omit-integer")
+    spec["expect"]["finding_metadata"].pop(1)
+    spec["expect"]["finding_entries"].pop(1)
+    spec["expect"]["findings"] = 2
+    run("t05 omit-integer default finding un-declared rejected", artifact, m, "T05-A4")
+    a = copy.deepcopy(artifact)
+    m = copy.deepcopy(manifest)
+    victim = "T05.cli.mysql-alter-add-column-position"
+    a["cases"] = [x for x in a["cases"] if x["case_id"] != victim]
+    a["executed_count"] = len(a["cases"])
+    a["required_case_ids"].remove(victim)
+    m["cli_cases"] = [s for s in m["cli_cases"] if s["id"] != "mysql-alter-add-column-position"]
+    m["required_case_ids"].remove(victim)
+    run("t05 position cell deleted on both sides rejected", a, m, "position migration")
+
+    return results
 
 
 def a3_contract_tests(tmp):
@@ -1546,7 +1935,11 @@ def a3_contract_tests(tmp):
                         a6_profile: copy.deepcopy(source["policy"]["profiles"][a6_profile]),
                     }},
                     metadata_cases=[copy.deepcopy(s) for s in source["metadata_cases"] if s["id"].startswith(("t05-a3-", "t05-a4-", "t05-a5-", "t05-a6-"))],
-                    cli_cases=[copy.deepcopy(s) for s in source["cli_cases"] if s["id"].startswith(("t05-a3-", "t05-a4-", "t05-a5-", "t05-a6-"))])
+                    cli_cases=[copy.deepcopy(s) for s in source["cli_cases"]
+                               if s["id"].startswith(("t05-a3-", "t05-a4-", "t05-a5-", "t05-a6-"))
+                               or s["id"] in {"mysql-alter-add-column-position",
+                                              "tidb-alter-add-column-position",
+                                              "mysql-alter-modify-column-position"}])
     baseline = ddl_golden.load_baseline()
     directory = tmp / "a3"
     directory.mkdir()
@@ -1584,17 +1977,20 @@ def a3_contract_tests(tmp):
             expected = spec["expect"]
             statements = [{"index": i, "raw_sql": sql, "coverage": {"status": expected["statement_coverage"][i]},
                            "findings": [], "evidence_gaps": []} for i, sql in enumerate(expected["statement_sql"])]
-            finding_metadata = {(entry["index"], entry["rule_id"]): entry["metadata"]
-                                for entry in expected.get("finding_metadata", [])}
+            finding_metadata = collections.defaultdict(collections.deque)
+            for entry in expected.get("finding_metadata", []):
+                finding_metadata[(entry["index"], entry["rule_id"])].append(entry["metadata"])
             for entry in expected.get("finding_entries", []):
+                key = (entry["index"], entry["rule_id"])
+                metadata = finding_metadata[key].popleft() if finding_metadata[key] else {}
                 statements[entry["index"]]["findings"].append({
                     "statement_index": entry["index"], "rule_id": entry["rule_id"], "level": entry["level"],
-                    "metadata": copy.deepcopy(finding_metadata.get((entry["index"], entry["rule_id"]), {}))})
+                    "metadata": copy.deepcopy(metadata)})
             for entry in expected.get("evidence_gap_entries", []):
                 statements[entry["index"]]["evidence_gaps"].append({k: v for k, v in entry.items() if k != "index"})
             parsed = {"verdict": expected["verdict"], "coverage": {"status": expected["coverage"]},
                       "statements": statements, "global_findings": [], "diagnostics": [], "unsupported": [],
-                      "fail_on_triggered": expected["fail_on_triggered"],
+                      "fail_on_triggered": expected.get("fail_on_triggered", False),
                       "rule_summary": {"loaded": expected.get("rule_summary_loaded", 5)}}
             target_raw = ddl_golden.spec_target_version_raw(spec)
             if target_raw:
@@ -1604,7 +2000,7 @@ def a3_contract_tests(tmp):
                 validated = (product == "mysql" and (major, minor) in {(5, 7), (8, 0), (8, 4)}) or (product == "tidb" and (major, minor) == (8, 5))
                 parsed["version"] = {"product": product, "version": canonical, "major": major, "minor": minor,
                                      "patch": patch, "source": "target", "validated_range": validated}
-            case_profile = spec.get("policy") or profile
+            case_profile = spec.get("policy") or manifest.get("policy_profile") or "all-rules-disabled"
             command = [str(binary), "audit", "--dialect", spec["dialect"], "--sql", spec["sql"],
                        "--config", policies[case_profile]["path"], "--format", "json"]
             case = {"case_id": f"T05.{kind}.{spec['id']}", "kind": "cli_metadata" if kind == "meta" else "cli_audit",
@@ -2205,8 +2601,9 @@ def t06_contract_tests(tmp):
                 "normalized_sql": sql[:-1] if sql.endswith(";") else sql,
                 "coverage": {"status": expected["statement_coverage"][i]},
                 "findings": [], "evidence_gaps": []})
-        finding_metadata = {(e["index"], e["rule_id"]): e["metadata"]
-                            for e in expected.get("finding_metadata", [])}
+        finding_metadata = collections.defaultdict(collections.deque)
+        for e in expected.get("finding_metadata", []):
+            finding_metadata[(e["index"], e["rule_id"])].append(e["metadata"])
         finding_locations = {e["index"]: e for e in expected.get("finding_locations", [])}
         entries_full = expected.get("finding_entries_full")
         if entries_full is not None:
@@ -2225,11 +2622,13 @@ def t06_contract_tests(tmp):
         else:
             for entry in expected.get("finding_entries", []):
                 location = finding_locations.get(entry["index"])
+                key = (entry["index"], entry["rule_id"])
+                metadata = finding_metadata[key].popleft() if finding_metadata[key] else {}
                 finding = {
                     "rule_id": entry["rule_id"], "level": entry["level"],
                     "message": expected.get("finding_message", "primary key is required"),
                     "statement_kind": "ddl",
-                    "metadata": copy.deepcopy(finding_metadata.get((entry["index"], entry["rule_id"]), {}))}
+                    "metadata": copy.deepcopy(metadata)}
                 if location is not None:
                     finding["location"] = {"line": location["line"], "column": location["column"]}
                 statements[entry["index"]]["findings"].append(finding)

@@ -1649,11 +1649,15 @@ def t05_a4_contract():
                          "ALTER TABLE t MODIFY COLUMN c INT",
                          "ALTER TABLE t MODIFY COLUMN c INT NOT NULL"]
             signed, signed_meta = attribute(1, {"source_unsigned": True, "target_unsigned": False})
+            # T08 §5.4 effective-default transition: MODIFY omitting DEFAULT
+            # clears the stored default (native-verified on all four anchors),
+            # so statement 1 also emits the literal->none default finding.
+            default, default_meta = attribute(1, {"source_default": "literal", "target_default": "none"})
             nullability, null_meta = attribute(2, {"source_not_null": False, "target_not_null": True})
             omit_expect, omit_execute = lifecycle(
                 omit_sqls, None, int_query,
                 ["int:unsigned:NO:1:old", "int:signed:YES:<nil>:", "int:signed:NO:<nil>:"],
-                "reject", ([signed, nullability], [signed_meta, null_meta]))
+                "reject", ([signed, default, nullability], [signed_meta, default_meta, null_meta]))
             metadata_cases.append(metadata_case(
                 f"t05-a4-{anchor}-omit-integer", anchor, port, dialect, omit_sqls, omit_expect, omit_execute, [
                     verify("t exists", table_query, "1"),
@@ -2396,6 +2400,72 @@ def t05_a6_manifest_failures(manifest):
                 failures.append(f"T05-A6 frozen oracle changed or missing: {wanted['id']}")
             if f"T05.{kind}.{wanted['id']}" not in required:
                 failures.append(f"T05-A6 required case missing: {wanted['id']}")
+    return failures
+
+
+# ---------------------------------------------------------------------------
+# T03/T04/T05 column-position oracle migration (issue #87): the nine cli cells
+# whose frozen pre-T08 expects recorded column_position as unsupported are
+# bound here to the authorized post-T08 shape — independent of the manifests —
+# so deleting, weakening, or re-fitting a migrated cell on the manifest side
+# alone still fails validation.
+# ---------------------------------------------------------------------------
+
+POSITION_MIGRATION_COMPAT_RULE = "ddl.alter.modify_column.compatibility.require"
+
+
+def position_migration_cases(task):
+    """Authorized post-T08 expects for the nine position cli cells across
+    T03/T04/T05. Position declarations are audited under T08, so the
+    unsupported entries and diagnostics are gone everywhere. T03's default
+    profile is all-rules-disabled so its MODIFY cell completes outright; the
+    T04/T05 compat-isolated defaults keep MODIFY review/unverified on the
+    preserved missing_source_column gap — offline audits still cannot read
+    the source column, and this migration must not fabricate a provider.
+    Statement SQL, dialect, args and case identity are unchanged."""
+    def audited_expect(sql):
+        return {"exit": 0, "verdict": "pass", "statements": 1, "findings": 0,
+                "diagnostics": 0, "unsupported": 0, "coverage": "complete",
+                "statement_coverage": ["complete"], "statement_sql": [sql]}
+
+    cases = [
+        {"id": "mysql-alter-add-column-position", "dialect": "mysql",
+         "sql": "ALTER TABLE t ADD COLUMN c INT FIRST;", "args": ["--fail-on", "none"],
+         "expect": audited_expect("ALTER TABLE t ADD COLUMN c INT FIRST;")},
+        {"id": "tidb-alter-add-column-position", "dialect": "tidb",
+         "sql": "ALTER TABLE t ADD COLUMN c INT AFTER id;", "args": ["--fail-on", "none"],
+         "expect": audited_expect("ALTER TABLE t ADD COLUMN c INT AFTER id;")},
+    ]
+    modify_sql = "ALTER TABLE t MODIFY COLUMN c INT AFTER id;"
+    if task == "T03":
+        modify_expect = audited_expect(modify_sql)
+    else:
+        modify_expect = {"exit": 0, "verdict": "review", "statements": 1, "findings": 0,
+                         "diagnostics": 0, "unsupported": 0, "coverage": "unverified",
+                         "statement_coverage": ["unverified"], "statement_sql": [modify_sql],
+                         "evidence_gaps": 1,
+                         "evidence_gap_entries": [{
+                             "index": 0, "rule_id": POSITION_MIGRATION_COMPAT_RULE,
+                             "reason_code": "missing_source_column",
+                             "required_facts": ["source_column.definition"]}]}
+    cases.append({"id": "mysql-alter-modify-column-position", "dialect": "mysql",
+                  "sql": modify_sql, "args": ["--fail-on", "none"], "expect": modify_expect})
+    return cases
+
+
+def position_migration_manifest_failures(manifest):
+    task = manifest.get("task_id")
+    if task not in ("T03", "T04", "T05"):
+        return []
+    failures = []
+    required = manifest.get("required_case_ids") or []
+    for wanted in position_migration_cases(task):
+        matches = [s for s in manifest.get("cli_cases", []) if s.get("id") == wanted["id"]]
+        if len(matches) != 1 or matches[0] != wanted:
+            failures.append(f"{task} position migration oracle changed or missing: {wanted['id']}")
+            continue
+        if f"{task}.cli.{wanted['id']}" not in required:
+            failures.append(f"{task} position migration required case missing: {wanted['id']}")
     return failures
 
 
@@ -7144,6 +7214,7 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
     failures.extend(t05_a4_manifest_failures(manifest))
     failures.extend(t05_a5_manifest_failures(manifest))
     failures.extend(t05_a6_manifest_failures(manifest))
+    failures.extend(position_migration_manifest_failures(manifest))
     failures.extend(t06_a1_manifest_failures(manifest))
     failures.extend(t06_a1_identity_failures(artifact, manifest))
     failures.extend(t06_a1_artifact_failures(artifact, manifest))

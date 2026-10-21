@@ -61,25 +61,29 @@ and the corpus only). This closeout does not edit expected files; each cell
 is recorded for independent adjudication.
 
 **Class 1 — column_position promotion (9 cells).**
-Frozen expectation: `exit=1`, `verdict=reject`, unsupported feature
-`alter_table.<action>.column_position`, `coverage=unverified`.
+Frozen expectation: `exit=1`, `verdict=review`, `coverage=incomplete`,
+`diagnostics=1`, `unsupported=1` with feature
+`alter_table.<action>.column_position`; the T04/T05 modify cells also
+declared `evidence_gaps=1` (`missing_source_column`).
 Actual at c983fc9d: `exit=0`, `verdict=pass`, `coverage=complete`,
-`unsupported=[]`, `diagnostics=[]`.
+`unsupported=[]`, `diagnostics=[]` for the six ADD cells and the T03
+MODIFY cell; `exit=0`, `verdict=review`, `coverage=unverified` with the
+`missing_source_column` gap preserved for the T04/T05 MODIFY cells.
 Producing change: `spec.AlterPosition` + ordered successor state +
 `ddl.alter.column_position.exists.require` (decision record
 `docs/decisions/2026-10-28-ddl-column-position-and-multi-action-state.md`).
 
-| Case id | Statement |
-|---|---|
-| `T03.cli.mysql-alter-add-column-position` | `ALTER TABLE t ADD COLUMN c INT AFTER b` |
-| `T03.cli.tidb-alter-add-column-position` | same, tidb dialect |
-| `T03.cli.mysql-alter-modify-column-position` | `ALTER TABLE t MODIFY COLUMN … AFTER` |
-| `T04.cli.mysql-alter-add-column-position` | same shape |
-| `T04.cli.tidb-alter-add-column-position` | same shape |
-| `T04.cli.mysql-alter-modify-column-position` | expected `unverified` + unsupported entry; actual `complete` |
-| `T05.cli.mysql-alter-add-column-position` | same shape |
-| `T05.cli.tidb-alter-add-column-position` | same shape |
-| `T05.cli.mysql-alter-modify-column-position` | same shape |
+| Case id | Statement | Actual at c983fc9d |
+|---|---|---|
+| `T03.cli.mysql-alter-add-column-position` | `ALTER TABLE t ADD COLUMN c INT FIRST;` | pass / complete |
+| `T03.cli.tidb-alter-add-column-position` | `ALTER TABLE t ADD COLUMN c INT AFTER id;` | pass / complete |
+| `T03.cli.mysql-alter-modify-column-position` | `ALTER TABLE t MODIFY COLUMN c INT AFTER id;` | pass / complete (all-rules-disabled profile — no compat gap) |
+| `T04.cli.mysql-alter-add-column-position` | `ALTER TABLE t ADD COLUMN c INT FIRST;` | pass / complete |
+| `T04.cli.tidb-alter-add-column-position` | `ALTER TABLE t ADD COLUMN c INT AFTER id;` | pass / complete |
+| `T04.cli.mysql-alter-modify-column-position` | `ALTER TABLE t MODIFY COLUMN c INT AFTER id;` | review / unverified + `missing_source_column` gap |
+| `T05.cli.mysql-alter-add-column-position` | `ALTER TABLE t ADD COLUMN c INT FIRST;` | pass / complete |
+| `T05.cli.tidb-alter-add-column-position` | `ALTER TABLE t ADD COLUMN c INT AFTER id;` | pass / complete |
+| `T05.cli.mysql-alter-modify-column-position` | `ALTER TABLE t MODIFY COLUMN c INT AFTER id;` | review / unverified + `missing_source_column` gap |
 
 **Class 2 — §5.4 effective-default transition (2 cells).**
 `T05.meta.t05-a4-{mysql84,tidb85}-omit-integer`, statement:
@@ -113,14 +117,19 @@ pre-T08 frozen cell.
 | three-level doc | `check_three_level_doc.sh` (skill path) | 0 | `../gates/three-level-doc.log` |
 | gofmt | `gofmt -l` over changed Go files | 0 | `../gates/gofmt.meta` |
 
-Race / request isolation: no `-race` target exists in the Makefile; the
-affected surfaces (ordered state, position, multi-action) are covered by
-`T07R1RequestIsolation` tests and the T08 multi-action/state tests inside
-`make test` (`-count=1`, no cache). SDK/CLI/HTTP/MCP representative checks
-are the `make test` package suite plus the CLI path exercised by every
-golden cli/metadata case above; the HTTP/MCP adapters do not consume the
-changed state layer (no diff under `internal/interfaces/` in the task
-range).
+Race / request isolation: this closeout carried **no `-race` evidence** —
+the paragraph below previously presented non-race coverage as a stand-in;
+that wording was corrected during the oracle-closure round (see §5
+Errata). The affected surfaces (ordered state, position, multi-action) are
+exercised by `T07R1RequestIsolation` tests and the T08 multi-action/state
+tests inside `make test` (`-count=1`, no cache), but those are ordinary
+runs, not race-detector evidence. Real `go test -race` originals were
+produced in the follow-up oracle-closure round and live under
+`docs/verification/t08/<oracle-closure proof sha>/race/`. SDK/CLI/HTTP/MCP
+representative checks are the `make test` package suite plus the CLI path
+exercised by every golden cli/metadata case above; the HTTP/MCP adapters
+do not consume the changed state layer (no diff under
+`internal/interfaces/` in the task range).
 
 ### D. Protected scope
 
@@ -144,11 +153,14 @@ range).
 ## 3. Blockers and unexecuted items
 
 1. **Frozen-oracle adjudication** — 11 cells across T03/T04/T05 manifest
-   assertions encode pre-T08 expectations against intentionally promoted
-   semantics. Per work order this closeout cannot edit expected files;
-   each cell is precisely attributed above. Resolution requires an owner
-   decision: re-freeze old manifests at the new contract, or treat the
-   cells as retired-by-upgrade.
+   assertions encoded pre-T08 expectations against intentionally promoted
+   semantics. At this closeout each cell was precisely attributed and left
+   pending an owner decision: re-freeze old manifests at the new contract,
+   or treat the cells as retired-by-upgrade. **Resolved:** the owner chose
+   precise oracle migration (not retirement); the eleven cells were
+   re-frozen at the T08 contract in the follow-up round — ledger in
+   `docs/work-plans/t08-column-governance/EXPECTED-UPGRADES.md` §"Old-golden
+   oracle migration".
 2. **CI status** — no authoritative CI run state was established for
    `18f34abb`; not claimed anywhere in this evidence.
 3. **Missing original** — the first live T08 golden run (129/170) was not
@@ -167,3 +179,29 @@ not external reviewer acceptance. This closeout's verifier pass is
 read-only and does not constitute milestone sign-off. `.mcp.json` and the
 untracked tool/residue paths in the root worktree are external/user-owned
 and were never staged, read for secrets, or committed.
+
+## 5. Errata (corrected during T08-REGRESSION-ORACLE-CLOSURE)
+
+This index text was corrected in the follow-up oracle-closure round; the
+original run artifacts, `run.log` files, policy files, and binary-hash
+records under `regressions/` are unchanged and remain the byte-exact
+originals of the c983fc9d reruns. Corrections made:
+
+- **Old verdict/coverage wording.** The frozen position expectations were
+  described as `verdict=reject` / `coverage=unverified`; the real frozen
+  cells bound `verdict=review` / `coverage=incomplete` (+1 diagnostic, +1
+  unsupported entry; the T04/T05 modify cells also carried the
+  `missing_source_column` evidence gap).
+- **Case naming / SQL.** The T03 MySQL add cell was transcribed as
+  `… AFTER b`; the frozen SQL is `ALTER TABLE t ADD COLUMN c INT FIRST;`.
+  Each task's tidb add cell binds `… AFTER id;` (not "same" as the mysql
+  cell's FIRST). There are no `*-change-column-position` cells among the
+  drifted eleven.
+- **Actual for T04/T05 modify cells.** Previously summarized as
+  `complete`; the recorded actual is `review`/`unverified` with the
+  `missing_source_column` gap preserved — the compat profile still cannot
+  observe the provider-side source column offline.
+- **Race wording.** The earlier paragraph presented ordinary `make test`
+  coverage as race-detector coverage. No `-race` run was performed in this
+  closeout; genuine race evidence was produced in the follow-up round and
+  is indexed from `docs/verification/t08/<oracle-closure proof sha>/race/`.

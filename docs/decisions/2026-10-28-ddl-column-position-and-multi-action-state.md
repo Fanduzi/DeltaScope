@@ -75,6 +75,22 @@ Two facts from the native matrix shaped the design:
   expression-default fingerprint comparison beyond the catalog class, and
   same-object multi-action sequences (always refused upstream anyway).
 
+## Old-oracle migration (post-delivery closure)
+
+The frozen T03/T04/T05 manifests still bound pre-T08 expectations for the
+two classes this decision promoted. Eleven cells were migrated in place —
+nine `*-column-position` cli cells (position is now audited: pass/complete
+under the all-off profile; `review`/`unverified` with the preserved
+`missing_source_column` gap under the compat isolation profiles) and the
+two `t05-a4-*-omit-integer` metadata cells (the effective-default
+`literal → none` transition is now a declared third finding beside the
+unsigned and nullability ones). SQL, ids, anchors, profiles, and all
+denominators (118/163/247) are unchanged; `EXPECTED-UPGRADES.md` carries
+the per-cell ledger and `scripts/ddl_golden.py` pins the migrated shape
+through `position_migration_manifest_failures` plus the extended
+`t05_a4_contract`. No production code changed; this is contract
+reconciliation, not new behavior.
+
 ## Verification
 
 - `go test ./internal/application/audit -run 'TestBatchStateT08|TestAuditSQLT08'`

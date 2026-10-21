@@ -1270,27 +1270,18 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
-    ],
-    "unsupported_features": [
-     "alter_table.add_columns.column_position"
+     "complete"
     ],
     "statement_sql": [
      "ALTER TABLE t ADD COLUMN c INT FIRST;"
-    ],
-    "unsupported_entries": [
-     {
-      "feature": "alter_table.add_columns.column_position",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
-     }
     ]
    }
   },
@@ -1303,27 +1294,18 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
-    ],
-    "unsupported_features": [
-     "alter_table.add_columns.column_position"
+     "complete"
     ],
     "statement_sql": [
      "ALTER TABLE t ADD COLUMN c INT AFTER id;"
-    ],
-    "unsupported_entries": [
-     {
-      "feature": "alter_table.add_columns.column_position",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
-     }
     ]
    }
   },
@@ -1572,27 +1554,18 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
+    "exit": 0,
     "verdict": "review",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
     "statement_coverage": [
-     "incomplete"
+     "unverified"
     ],
     "statement_sql": [
      "ALTER TABLE t MODIFY COLUMN c INT AFTER id;"
-    ],
-    "unsupported_features": [
-     "alter_table.modify_column.column_position"
-    ],
-    "unsupported_entries": [
-     {
-      "feature": "alter_table.modify_column.column_position",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
-     }
     ],
     "evidence_gaps": 1,
     "evidence_gap_entries": [
@@ -12281,7 +12254,7 @@
     "exit": 1,
     "verdict": "reject",
     "statements": 3,
-    "findings": 2,
+    "findings": 3,
     "diagnostics": 0,
     "unsupported": 0,
     "coverage": "complete",
@@ -12310,6 +12283,11 @@
       "level": "blocker"
      },
      {
+      "index": 1,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "level": "blocker"
+     },
+     {
       "index": 2,
       "rule_id": "ddl.alter.modify_column.compatibility.require",
       "level": "blocker"
@@ -12326,6 +12304,18 @@
        "column_name": "c",
        "source_unsigned": true,
        "target_unsigned": false
+      }
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "metadata": {
+       "action": "modify_column",
+       "table": "t",
+       "name": "c",
+       "column_name": "c",
+       "source_default": "literal",
+       "target_default": "none"
       }
      },
      {
@@ -13253,7 +13243,7 @@
     "exit": 1,
     "verdict": "reject",
     "statements": 3,
-    "findings": 2,
+    "findings": 3,
     "diagnostics": 0,
     "unsupported": 0,
     "coverage": "complete",
@@ -13282,6 +13272,11 @@
       "level": "blocker"
      },
      {
+      "index": 1,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "level": "blocker"
+     },
+     {
       "index": 2,
       "rule_id": "ddl.alter.modify_column.compatibility.require",
       "level": "blocker"
@@ -13298,6 +13293,18 @@
        "column_name": "c",
        "source_unsigned": true,
        "target_unsigned": false
+      }
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.alter.modify_column.compatibility.require",
+      "metadata": {
+       "action": "modify_column",
+       "table": "t",
+       "name": "c",
+       "column_name": "c",
+       "source_default": "literal",
+       "target_default": "none"
       }
      },
      {

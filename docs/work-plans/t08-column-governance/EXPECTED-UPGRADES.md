@@ -103,3 +103,93 @@ unit-admitted `err.cancel`, plus the 10 baseline health cases).
   the shipped mechanism records `UnextractedOptions:["column_position"]`
   on the first emitted alter → incomplete coverage + tombstone. Contract
   wording amended to match.
+
+## Old-golden oracle migration (regression-oracle closure)
+
+The T08 delivery-closeout rerun of the frozen T03/T04/T05 oracles at product
+SHA `c983fc9d` surfaced eleven cells whose old expectations still bound the
+pre-T08 contract. All eleven belong to the two upgrade classes authorized
+above (U-pos and U-compat-default); the migrated expectations below were
+derived from the T08 contract and cross-checked against the recorded
+product actuals — they were not copied wholesale from actual output. Case
+SQL, ids, dialects, anchors, profiles and args are byte-identical to the old
+cells; denominators are unchanged (T03 118, T04 163, T05 247).
+
+### Position capability cells (9)
+
+All nine cells ran under each task's default `policy_profile` with no
+per-case `policy` override.
+
+| case_id | dialect / sql | old expect | new expect |
+| --- | --- | --- | --- |
+| `T03.cli.mysql-alter-add-column-position` | mysql `ALTER TABLE t ADD COLUMN c INT FIRST;` | exit 1, review/incomplete, d=1, u=1 | exit 0, pass/complete, d=0, u=0 |
+| `T03.cli.tidb-alter-add-column-position` | tidb `ALTER TABLE t ADD COLUMN c INT AFTER id;` | exit 1, review/incomplete, d=1, u=1 | exit 0, pass/complete, d=0, u=0 |
+| `T03.cli.mysql-alter-modify-column-position` | mysql `ALTER TABLE t MODIFY COLUMN c INT AFTER id;` | exit 1, review/incomplete, d=1, u=1 | exit 0, pass/complete, d=0, u=0 |
+| `T04.cli.mysql-alter-add-column-position` | mysql `ALTER TABLE t ADD COLUMN c INT FIRST;` | exit 1, review/incomplete, d=1, u=1 | exit 0, pass/complete, d=0, u=0 |
+| `T04.cli.tidb-alter-add-column-position` | tidb `ALTER TABLE t ADD COLUMN c INT AFTER id;` | exit 1, review/incomplete, d=1, u=1 | exit 0, pass/complete, d=0, u=0 |
+| `T04.cli.mysql-alter-modify-column-position` | mysql `ALTER TABLE t MODIFY COLUMN c INT AFTER id;` | exit 1, review/incomplete, d=1, u=1, gaps=1 | exit 0, review/unverified, d=0, u=0, gaps=1 (unchanged) |
+| `T05.cli.mysql-alter-add-column-position` | mysql `ALTER TABLE t ADD COLUMN c INT FIRST;` | exit 1, review/incomplete, d=1, u=1 | exit 0, pass/complete, d=0, u=0 |
+| `T05.cli.tidb-alter-add-column-position` | tidb `ALTER TABLE t ADD COLUMN c INT AFTER id;` | exit 1, review/incomplete, d=1, u=1 | exit 0, pass/complete, d=0, u=0 |
+| `T05.cli.mysql-alter-modify-column-position` | mysql `ALTER TABLE t MODIFY COLUMN c INT AFTER id;` | exit 1, review/incomplete, d=1, u=1, gaps=1 | exit 0, review/unverified, d=0, u=0, gaps=1 (unchanged) |
+
+Old `unsupported_entries` carried `alter_table.add_columns.column_position`
+or `alter_table.modify_column.column_position` with reason
+"parsed by the shared parser but not covered by audited semantics". T08
+makes `column_position` an audited aspect on plain single-column `ADD` and
+`MODIFY`, so the unsupported entry and its diagnostic are no longer true.
+Two sub-shapes remain distinct, and the manifest keeps them honest:
+
+- **T03** runs `all-rules-disabled`, so nothing evaluates: the audited
+  position statement completes with `pass/complete`. This is the product
+  result under a policy that enables no rules — it does not claim the
+  `AFTER` target exists in any real database.
+- **T04/T05** run the modify-column compatibility isolation profile. Their
+  `MODIFY … AFTER id` cells keep `verdict=review`, `coverage=unverified`,
+  and the preserved `missing_source_column` evidence gap for
+  `ddl.alter.modify_column.compatibility.require` (required fact
+  `source_column.definition`) — the offline audit still cannot observe the
+  provider-side source column, so the protection is not removed, only the
+  stale unsupported marker is.
+
+The contract pins these exactly via `position_migration_cases` /
+`position_migration_manifest_failures` in `scripts/ddl_golden.py`, wired
+into `validate_artifact`; mutation coverage lives in
+`scripts/test_ddl_golden.py::t08_oracle_migration_tests`.
+
+### Effective-default transition cells (2)
+
+| case_id | anchor | sql | change |
+| --- | --- | --- | --- |
+| `T05.meta.t05-a4-mysql84-omit-integer` | mysql84 | `CREATE TABLE t (id INT PRIMARY KEY, c INT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'old'); ALTER TABLE t MODIFY COLUMN c INT; ALTER TABLE t MODIFY COLUMN c INT NOT NULL;` | findings 2 → 3 |
+| `T05.meta.t05-a4-tidb85-omit-integer` | tidb85 | same shape | findings 2 → 3 |
+
+Both cells stay `exit=1`, `verdict=reject`, `coverage=complete`,
+`fail_on_triggered=true`. The original two findings are kept verbatim:
+
+- index 1, unsigned `source_unsigned=true → target_unsigned=false`;
+- index 2, nullability `source_not_null=false → target_not_null=true`.
+
+The added third finding is index 1, rule
+`ddl.alter.modify_column.compatibility.require`, level `blocker`, with
+metadata `{action: "modify_column", table: "t", name: "c", column_name:
+"c", source_default: "literal", target_default: "none"}` — the
+U-compat-default upgrade: an omitted `DEFAULT` on `MODIFY` clears the
+stored default on all four anchors (native-verified), so the audit now
+reports the effective-default transition instead of silently passing it.
+The runner and validator treat `finding_entries`/`finding_metadata` at the
+same `(index, rule_id)` as an ordered one-to-one list, so the three
+findings cannot be collapsed or cross-paired.
+
+Unchanged by the migration: the manifest's native/setup/execute/structure/
+post_verify assertions, `expect_rc`s, teardown checks, SQL text, anchors,
+policy binding, and every other expectation field; the audit still does not
+execute SQL and the driver still replays the three statements in order.
+
+### Rationale
+
+Each migrated cell is capability fulfilment, not protection removal: the
+old expectations encoded "unsupported / not covered" or an absence of the
+default finding, while the new expectations encode exactly the audited
+result the T08 contract specifies — including the gaps T08 still keeps
+open (source-column definition under the compat profile). Cells outside
+the two authorized classes were not touched.

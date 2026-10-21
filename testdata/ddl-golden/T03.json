@@ -1057,27 +1057,18 @@
         "none"
       ],
       "expect": {
-        "exit": 1,
-        "verdict": "review",
+        "exit": 0,
+        "verdict": "pass",
         "statements": 1,
         "findings": 0,
-        "diagnostics": 1,
-        "unsupported": 1,
-        "coverage": "incomplete",
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
         "statement_coverage": [
-          "incomplete"
-        ],
-        "unsupported_features": [
-          "alter_table.add_columns.column_position"
+          "complete"
         ],
         "statement_sql": [
           "ALTER TABLE t ADD COLUMN c INT FIRST;"
-        ],
-        "unsupported_entries": [
-          {
-            "feature": "alter_table.add_columns.column_position",
-            "reason": "parsed by the shared parser but not covered by audited semantics"
-          }
         ]
       }
     },
@@ -1090,27 +1081,18 @@
         "none"
       ],
       "expect": {
-        "exit": 1,
-        "verdict": "review",
+        "exit": 0,
+        "verdict": "pass",
         "statements": 1,
         "findings": 0,
-        "diagnostics": 1,
-        "unsupported": 1,
-        "coverage": "incomplete",
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
         "statement_coverage": [
-          "incomplete"
-        ],
-        "unsupported_features": [
-          "alter_table.add_columns.column_position"
+          "complete"
         ],
         "statement_sql": [
           "ALTER TABLE t ADD COLUMN c INT AFTER id;"
-        ],
-        "unsupported_entries": [
-          {
-            "feature": "alter_table.add_columns.column_position",
-            "reason": "parsed by the shared parser but not covered by audited semantics"
-          }
         ]
       }
     },
@@ -1359,27 +1341,18 @@
         "none"
       ],
       "expect": {
-        "exit": 1,
-        "verdict": "review",
+        "exit": 0,
+        "verdict": "pass",
         "statements": 1,
         "findings": 0,
-        "diagnostics": 1,
-        "unsupported": 1,
-        "coverage": "incomplete",
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
         "statement_coverage": [
-          "incomplete"
+          "complete"
         ],
         "statement_sql": [
           "ALTER TABLE t MODIFY COLUMN c INT AFTER id;"
-        ],
-        "unsupported_features": [
-          "alter_table.modify_column.column_position"
-        ],
-        "unsupported_entries": [
-          {
-            "feature": "alter_table.modify_column.column_position",
-            "reason": "parsed by the shared parser but not covered by audited semantics"
-          }
         ]
       }
     },
