@@ -1,0 +1,8 @@
+=== gate: three-level-doc
+argv: bash /Users/fan/.agents/skills/check-three-level-doc/scripts/check_three_level_doc.sh
+cwd: /Users/fan/GolangProjects/DeltaScope
+start: 2026-10-21T03:15:08Z
+head: 6fb8e438e4d84bffb7a85c26b45fc64e8de9fcf9
+dirty: 1 tracked-modified
+end: 2026-10-21T03:15:08Z
+rc: 0
