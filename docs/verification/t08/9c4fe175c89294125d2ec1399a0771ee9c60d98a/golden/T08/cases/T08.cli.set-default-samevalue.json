@@ -1,0 +1,219 @@
+{
+  "case_id": "T08.cli.set-default-samevalue",
+  "kind": "cli_audit",
+  "cli_case": "set-default-samevalue",
+  "dialect": "mysql",
+  "input_sql": "ALTER TABLE t ALTER COLUMN c SET DEFAULT 0;",
+  "policy_profile": "t08-set-default",
+  "policy_path": "/private/tmp/ddl-golden-t08-final2/T08/golden-policy-t08-set-default.yaml",
+  "command": [
+    "/private/tmp/ddl-golden-t08-final2/T08/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "ALTER TABLE t ALTER COLUMN c SET DEFAULT 0;",
+    "--config",
+    "/private/tmp/ddl-golden-t08-final2/T08/golden-policy-t08-set-default.yaml",
+    "--format",
+    "json",
+    "--fail-on",
+    "blocker"
+  ],
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "statement_sql": [
+      "ALTER TABLE t ALTER COLUMN c SET DEFAULT 0;"
+    ],
+    "statement_indices": [
+      0
+    ],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.alter.set_default.explicit_default_change.forbid",
+        "level": "blocker"
+      }
+    ],
+    "finding_metadata": [],
+    "unsupported_entries": [],
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+  },
+  "actual": {
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t ALTER COLUMN c SET DEFAULT 0;\",\"normalized_sql\":\"ALTER TABLE t ALTER COLUMN c SET DEFAULT 0\",\"findings\":[{\"rule_id\":\"ddl.alter.set_default.explicit_default_change.forbid\",\"level\":\"blocker\",\"message\":\"ALTER TABLE set default explicitly changes default value for \\\"c\\\", which this policy forbids\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"keep default value unchanged for \\\"c\\\" or relax the policy intentionally after review\",\"metadata\":{\"action\":\"set_column_default\",\"change_kind\":\"explicit_default_change\",\"column_name\":\"c\",\"name\":\"c\",\"table\":\"t\"},\"explanation\":{\"summary\":\"Forbid DDL alter set default explicit default change forbid\",\"why\":\"The statement uses a construct that the shipped policy explicitly forbids.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"keep default value unchanged for \\\"c\\\" or relax the policy intentionally after review\"}}],\"coverage\":{\"status\":\"complete\"}}],\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t ALTER COLUMN c SET DEFAULT 0;",
+          "normalized_sql": "ALTER TABLE t ALTER COLUMN c SET DEFAULT 0",
+          "findings": [
+            {
+              "rule_id": "ddl.alter.set_default.explicit_default_change.forbid",
+              "level": "blocker",
+              "message": "ALTER TABLE set default explicitly changes default value for \"c\", which this policy forbids",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "keep default value unchanged for \"c\" or relax the policy intentionally after review",
+              "metadata": {
+                "action": "set_column_default",
+                "change_kind": "explicit_default_change",
+                "column_name": "c",
+                "name": "c",
+                "table": "t"
+              },
+              "explanation": {
+                "summary": "Forbid DDL alter set default explicit default change forbid",
+                "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "keep default value unchanged for \"c\" or relax the policy intentionally after review"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "offline",
+        "dialect": "mysql",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=1"
+    },
+    {
+      "name": "applicable rule count",
+      "ok": true,
+      "detail": "applicable=1"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "unsupported entries",
+      "ok": true,
+      "detail": "entries=[] expected=[]"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['ALTER TABLE t ALTER COLUMN c SET DEFAULT 0;'] expected=['ALTER TABLE t ALTER COLUMN c SET DEFAULT 0;']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[] expected=[]"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.alter.set_default.explicit_default_change.forbid', 'blocker')] expected=[(0, 'ddl.alter.set_default.explicit_default_change.forbid', 'blocker')]"
+    }
+  ],
+  "status": "pass"
+}

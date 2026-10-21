@@ -1,0 +1,26 @@
+PASS T08 complete constructed control
+PASS T08 strict denominator drift
+PASS T08 double-side deletion
+PASS T08 duplicate case ID
+PASS T08 missing executed case
+PASS T08 frozen expectation drift
+PASS T08 fabricated status
+PASS T08 failed assertion
+PASS T08 wrong finding metadata
+PASS T08 exists blocker laundered
+PASS T08 applicable drift
+PASS T08 native rejection erased
+PASS T08 native rejection class drift
+PASS T08 skipped setup
+PASS T08 skipped execute
+PASS T08 skipped structure
+PASS T08 skipped post_verify
+PASS T08 skipped teardown
+PASS T08 anchor rebind
+PASS T08 dialect split flattened
+PASS T08 failed execute side effects claimed
+PASS T08 unsupported aspect erased
+PASS T08 parser-negative fabricated statement
+PASS T08 applicable counter laundered
+PASS T08 manifest drift
+25/25 constructed-control checks passed

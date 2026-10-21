@@ -1,0 +1,3038 @@
+{
+ "mysql57": {
+  "version": "VERSION()\n5.7.44",
+  "cells": [
+   {
+    "cell": "omit-modify-both",
+    "table": "n_omit_modify_both",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint(11)\tYES\t\t\tx00\tx00\n2\tkeep_c\tint(11)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "omit-modify-default",
+    "table": "n_omit_modify_default",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint(11)\tYES\t\t\tx00\tx00\n2\tkeep_c\tint(11)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "omit-modify-nn",
+    "table": "n_omit_modify_nn",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint(11)\tNO\t\t\tx00\tx00\n2\tkeep_c\tint(11)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "omit-modify-u",
+    "table": "n_omit_modify_u",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint(11)\tNO\tPRI\tauto_increment\tx00\tx00\n2\tc\tint(11)\tYES\t\t\t0\t30\n3\tkeep_c\tint(11)\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint(11)\tYES\t\t\tx00\tx00\n6\ts\tvarchar(16)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "omit-change-both",
+    "table": "n_omit_change_both",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc2\tint(11)\tYES\t\t\tx00\tx00\n2\tkeep_c\tint(11)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "omit-ai-both",
+    "table": "n_omit_ai_both",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint(11)\tNO\tPRI\t\tx00\tx00\n2\tc\tint(11)\tYES\t\t\t0\t30\n3\tkeep_c\tint(11)\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint(10) unsigned\tNO\t\t\t0\t30\n6\ts\tvarchar(16)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "omit-ai-default-only",
+    "table": "n_omit_ai_default_only",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint(11)\tNO\tPRI\t\tx00\tx00\n2\tc\tint(11)\tYES\t\t\t0\t30\n3\tkeep_c\tint(11)\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint(10) unsigned\tNO\t\t\t0\t30\n6\ts\tvarchar(16)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "set-1",
+    "table": "n_set_1",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint(11)\tYES\t\t\t1\t31\n2\tkeep_c\tint(11)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "set-null",
+    "table": "n_set_null",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint(11)\tYES\t\t\tx00\tx00\n2\tkeep_c\tint(11)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "set-strnull",
+    "table": "n_set_strnull",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint(11)\tNO\tPRI\tauto_increment\tx00\tx00\n2\tc\tint(11)\tYES\t\t\t0\t30\n3\tkeep_c\tint(11)\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint(10) unsigned\tNO\t\t\t0\t30\n6\ts\tvarchar(16)\tYES\t\t\tNULL\t4E554C4C",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "set-empty",
+    "table": "n_set_empty",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint(11)\tNO\tPRI\tauto_increment\tx00\tx00\n2\tc\tint(11)\tYES\t\t\t0\t30\n3\tkeep_c\tint(11)\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint(10) unsigned\tNO\t\t\t0\t30\n6\ts\tvarchar(16)\tYES",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "drop-default",
+    "table": "n_drop_default",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint(11)\tYES\t\t\tx00\tx00\n2\tkeep_c\tint(11)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "set-missing-col",
+    "table": "n_set_missing_col",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1054 (42S22) at line 1: Unknown column 'ghost' in 'n_set_missing_col'"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint(11)\tYES\t\t\t0\t30\n2\tkeep_c\tint(11)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "drop-missing-col",
+    "table": "n_drop_missing_col",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1054 (42S22) at line 1: Unknown column 'ghost' in 'n_drop_missing_col'"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint(11)\tYES\t\t\t0\t30\n2\tkeep_c\tint(11)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pos-add-first",
+    "table": "n_pos_add_first",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tx\tint(11)\tYES\t\t\tx00\tx00\n2\ta\tint(11)\tYES\t\t\tx00\tx00\n3\tb\tint(11)\tYES\t\t\tx00\tx00\n4\tc\tint(11)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pos-add-after",
+    "table": "n_pos_add_after",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint(11)\tYES\t\t\tx00\tx00\n2\tb\tint(11)\tYES\t\t\tx00\tx00\n3\tx\tint(11)\tYES\t\t\tx00\tx00\n4\tc\tint(11)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pos-add-after-missing",
+    "table": "n_pos_add_after_missing",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1054 (42S22) at line 1: Unknown column 'missing' in 'n_pos_add_after_missing'"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint(11)\tYES\t\t\tx00\tx00\n2\tb\tint(11)\tYES\t\t\tx00\tx00\n3\tc\tint(11)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pos-modify-first",
+    "table": "n_pos_modify_first",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint(11)\tYES\t\t\tx00\tx00\n2\ta\tint(11)\tYES\t\t\tx00\tx00\n3\tb\tint(11)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pos-change-after",
+    "table": "n_pos_change_after",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tb\tint(11)\tYES\t\t\tx00\tx00\n2\tc\tint(11)\tYES\t\t\tx00\tx00\n3\ta2\tint(11)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pos-add-list-first",
+    "table": "n_pos_add_list_first",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'FIRST' at line 1"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint(11)\tYES\t\t\tx00\tx00\n2\tb\tint(11)\tYES\t\t\tx00\tx00\n3\tc\tint(11)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-add2",
+    "table": "n_multi_add2",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint(11)\tYES\t\t\tx00\tx00\n2\tb\tint(11)\tYES\t\t\tx00\tx00\n3\tc\tint(11)\tYES\t\t\tx00\tx00\n4\tm1\tint(11)\tYES\t\t\tx00\tx00\n5\tm2\tint(11)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-add-setter",
+    "table": "n_multi_add_setter",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint(11)\tYES\t\t\t2\t32\n2\tkeep_c\tint(11)\tYES\t\t\tx00\tx00\n3\ta\tint(11)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-after-sibling",
+    "table": "n_multi_after_sibling",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint(11)\tYES\t\t\tx00\tx00\n2\tb\tint(11)\tYES\t\t\tx00\tx00\n3\tc\tint(11)\tYES\t\t\tx00\tx00\n4\tc1\tint(11)\tYES\t\t\tx00\tx00\n5\tc2\tint(11)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-same-obj",
+    "table": "n_multi_same_obj",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1054 (42S22) at line 1: Unknown column 'a' in 'n_multi_same_obj'"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint(11)\tYES\t\t\tx00\tx00\n2\tb\tint(11)\tYES\t\t\tx00\tx00\n3\tc\tint(11)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-drop-add-same",
+    "table": "n_multi_drop_add_same",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint(11)\tYES\t\t\tx00\tx00\n2\tc\tint(11)\tYES\t\t\tx00\tx00\n3\tb\tint(11)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-add-drop",
+    "table": "n_multi_add_drop",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint(11)\tYES\t\t\tx00\tx00\n2\tc\tint(11)\tYES\t\t\tx00\tx00\n3\tx\tint(11)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-modify-x2",
+    "table": "n_multi_modify_x2",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint(11)\tYES\t\t\t9\t39\n2\tkeep_c\tint(11)\tNO\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-add-dup",
+    "table": "n_multi_add_dup",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1060 (42S21) at line 1: Duplicate column name 'd'"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint(11)\tYES\t\t\tx00\tx00\n2\tb\tint(11)\tYES\t\t\tx00\tx00\n3\tc\tint(11)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pk-modify-null",
+    "table": "n_pk_modify_null",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1171 (42000) at line 1: All parts of a PRIMARY KEY must be NOT NULL; if you need NULL in a key, use UNIQUE instead"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint(11)\tNO\tPRI\tauto_increment\tx00\tx00\n2\tc\tint(11)\tYES\t\t\t0\t30\n3\tkeep_c\tint(11)\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint(10) unsigned\tNO\t\t\t0\t30\n6\ts\tvarchar(16)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pk-modify-omit",
+    "table": "n_pk_modify_omit",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint(11)\tNO\tPRI\t\tx00\tx00\n2\tc\tint(11)\tYES\t\t\t0\t30\n3\tkeep_c\tint(11)\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint(10) unsigned\tNO\t\t\t0\t30\n6\ts\tvarchar(16)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pk-change-null",
+    "table": "n_pk_change_null",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1171 (42000) at line 1: All parts of a PRIMARY KEY must be NOT NULL; if you need NULL in a key, use UNIQUE instead"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint(11)\tNO\tPRI\tauto_increment\tx00\tx00\n2\tc\tint(11)\tYES\t\t\t0\t30\n3\tkeep_c\tint(11)\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint(10) unsigned\tNO\t\t\t0\t30\n6\ts\tvarchar(16)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "default-kinds",
+    "table": "n_default_kinds",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 1,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1067 (42000) at line 1: Invalid default value for 'd2'"
+    },
+    "verdict": "fixture-failed"
+   }
+  ]
+ },
+ "mysql80": {
+  "version": "VERSION()\n8.0.46",
+  "cells": [
+   {
+    "cell": "omit-modify-both",
+    "table": "n_omit_modify_both",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tYES\t\t\tx00\tx00\n2\tkeep_c\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "omit-modify-default",
+    "table": "n_omit_modify_default",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tYES\t\t\tx00\tx00\n2\tkeep_c\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "omit-modify-nn",
+    "table": "n_omit_modify_nn",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tNO\t\t\tx00\tx00\n2\tkeep_c\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "omit-modify-u",
+    "table": "n_omit_modify_u",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint\tNO\tPRI\tauto_increment\tx00\tx00\n2\tc\tint\tYES\t\t\t0\t30\n3\tkeep_c\tint\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint\tYES\t\t\tx00\tx00\n6\ts\tvarchar(16)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "omit-change-both",
+    "table": "n_omit_change_both",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc2\tint\tYES\t\t\tx00\tx00\n2\tkeep_c\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "omit-ai-both",
+    "table": "n_omit_ai_both",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint\tNO\tPRI\t\tx00\tx00\n2\tc\tint\tYES\t\t\t0\t30\n3\tkeep_c\tint\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint unsigned\tNO\t\t\t0\t30\n6\ts\tvarchar(16)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "omit-ai-default-only",
+    "table": "n_omit_ai_default_only",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint\tNO\tPRI\t\tx00\tx00\n2\tc\tint\tYES\t\t\t0\t30\n3\tkeep_c\tint\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint unsigned\tNO\t\t\t0\t30\n6\ts\tvarchar(16)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "set-1",
+    "table": "n_set_1",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tYES\t\t\t1\t31\n2\tkeep_c\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "set-null",
+    "table": "n_set_null",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tYES\t\t\tx00\tx00\n2\tkeep_c\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "set-strnull",
+    "table": "n_set_strnull",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint\tNO\tPRI\tauto_increment\tx00\tx00\n2\tc\tint\tYES\t\t\t0\t30\n3\tkeep_c\tint\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint unsigned\tNO\t\t\t0\t30\n6\ts\tvarchar(16)\tYES\t\t\tNULL\t4E554C4C",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "set-empty",
+    "table": "n_set_empty",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint\tNO\tPRI\tauto_increment\tx00\tx00\n2\tc\tint\tYES\t\t\t0\t30\n3\tkeep_c\tint\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint unsigned\tNO\t\t\t0\t30\n6\ts\tvarchar(16)\tYES",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "drop-default",
+    "table": "n_drop_default",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tYES\t\t\tx00\tx00\n2\tkeep_c\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "set-missing-col",
+    "table": "n_set_missing_col",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1054 (42S22) at line 1: Unknown column 'ghost' in 'n_set_missing_col'"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tYES\t\t\t0\t30\n2\tkeep_c\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "drop-missing-col",
+    "table": "n_drop_missing_col",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1054 (42S22) at line 1: Unknown column 'ghost' in 'n_drop_missing_col'"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tYES\t\t\t0\t30\n2\tkeep_c\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pos-add-first",
+    "table": "n_pos_add_first",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tx\tint\tYES\t\t\tx00\tx00\n2\ta\tint\tYES\t\t\tx00\tx00\n3\tb\tint\tYES\t\t\tx00\tx00\n4\tc\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pos-add-after",
+    "table": "n_pos_add_after",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint\tYES\t\t\tx00\tx00\n2\tb\tint\tYES\t\t\tx00\tx00\n3\tx\tint\tYES\t\t\tx00\tx00\n4\tc\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pos-add-after-missing",
+    "table": "n_pos_add_after_missing",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1054 (42S22) at line 1: Unknown column 'missing' in 'n_pos_add_after_missing'"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint\tYES\t\t\tx00\tx00\n2\tb\tint\tYES\t\t\tx00\tx00\n3\tc\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pos-modify-first",
+    "table": "n_pos_modify_first",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tYES\t\t\tx00\tx00\n2\ta\tint\tYES\t\t\tx00\tx00\n3\tb\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pos-change-after",
+    "table": "n_pos_change_after",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tb\tint\tYES\t\t\tx00\tx00\n2\tc\tint\tYES\t\t\tx00\tx00\n3\ta2\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pos-add-list-first",
+    "table": "n_pos_add_list_first",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'FIRST' at line 1"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint\tYES\t\t\tx00\tx00\n2\tb\tint\tYES\t\t\tx00\tx00\n3\tc\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-add2",
+    "table": "n_multi_add2",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint\tYES\t\t\tx00\tx00\n2\tb\tint\tYES\t\t\tx00\tx00\n3\tc\tint\tYES\t\t\tx00\tx00\n4\tm1\tint\tYES\t\t\tx00\tx00\n5\tm2\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-add-setter",
+    "table": "n_multi_add_setter",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tYES\t\t\t2\t32\n2\tkeep_c\tint\tYES\t\t\tx00\tx00\n3\ta\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-after-sibling",
+    "table": "n_multi_after_sibling",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint\tYES\t\t\tx00\tx00\n2\tb\tint\tYES\t\t\tx00\tx00\n3\tc\tint\tYES\t\t\tx00\tx00\n4\tc1\tint\tYES\t\t\tx00\tx00\n5\tc2\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-same-obj",
+    "table": "n_multi_same_obj",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1054 (42S22) at line 1: Unknown column 'a' in 'n_multi_same_obj'"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint\tYES\t\t\tx00\tx00\n2\tb\tint\tYES\t\t\tx00\tx00\n3\tc\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-drop-add-same",
+    "table": "n_multi_drop_add_same",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint\tYES\t\t\tx00\tx00\n2\tc\tint\tYES\t\t\tx00\tx00\n3\tb\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-add-drop",
+    "table": "n_multi_add_drop",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint\tYES\t\t\tx00\tx00\n2\tc\tint\tYES\t\t\tx00\tx00\n3\tx\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-modify-x2",
+    "table": "n_multi_modify_x2",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tYES\t\t\t9\t39\n2\tkeep_c\tint\tNO\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-add-dup",
+    "table": "n_multi_add_dup",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1060 (42S21) at line 1: Duplicate column name 'd'"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint\tYES\t\t\tx00\tx00\n2\tb\tint\tYES\t\t\tx00\tx00\n3\tc\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pk-modify-null",
+    "table": "n_pk_modify_null",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1171 (42000) at line 1: All parts of a PRIMARY KEY must be NOT NULL; if you need NULL in a key, use UNIQUE instead"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint\tNO\tPRI\tauto_increment\tx00\tx00\n2\tc\tint\tYES\t\t\t0\t30\n3\tkeep_c\tint\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint unsigned\tNO\t\t\t0\t30\n6\ts\tvarchar(16)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pk-modify-omit",
+    "table": "n_pk_modify_omit",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint\tNO\tPRI\t\tx00\tx00\n2\tc\tint\tYES\t\t\t0\t30\n3\tkeep_c\tint\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint unsigned\tNO\t\t\t0\t30\n6\ts\tvarchar(16)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pk-change-null",
+    "table": "n_pk_change_null",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1171 (42000) at line 1: All parts of a PRIMARY KEY must be NOT NULL; if you need NULL in a key, use UNIQUE instead"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint\tNO\tPRI\tauto_increment\tx00\tx00\n2\tc\tint\tYES\t\t\t0\t30\n3\tkeep_c\tint\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint unsigned\tNO\t\t\t0\t30\n6\ts\tvarchar(16)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "default-kinds",
+    "table": "n_default_kinds",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 1,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1067 (42000) at line 1: Invalid default value for 'd2'"
+    },
+    "verdict": "fixture-failed"
+   }
+  ]
+ },
+ "mysql84": {
+  "version": "VERSION()\n8.4.10",
+  "cells": [
+   {
+    "cell": "omit-modify-both",
+    "table": "n_omit_modify_both",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tYES\t\t\tx00\tx00\n2\tkeep_c\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "omit-modify-default",
+    "table": "n_omit_modify_default",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tYES\t\t\tx00\tx00\n2\tkeep_c\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "omit-modify-nn",
+    "table": "n_omit_modify_nn",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tNO\t\t\tx00\tx00\n2\tkeep_c\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "omit-modify-u",
+    "table": "n_omit_modify_u",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint\tNO\tPRI\tauto_increment\tx00\tx00\n2\tc\tint\tYES\t\t\t0\t30\n3\tkeep_c\tint\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint\tYES\t\t\tx00\tx00\n6\ts\tvarchar(16)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "omit-change-both",
+    "table": "n_omit_change_both",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc2\tint\tYES\t\t\tx00\tx00\n2\tkeep_c\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "omit-ai-both",
+    "table": "n_omit_ai_both",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint\tNO\tPRI\t\tx00\tx00\n2\tc\tint\tYES\t\t\t0\t30\n3\tkeep_c\tint\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint unsigned\tNO\t\t\t0\t30\n6\ts\tvarchar(16)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "omit-ai-default-only",
+    "table": "n_omit_ai_default_only",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint\tNO\tPRI\t\tx00\tx00\n2\tc\tint\tYES\t\t\t0\t30\n3\tkeep_c\tint\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint unsigned\tNO\t\t\t0\t30\n6\ts\tvarchar(16)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "set-1",
+    "table": "n_set_1",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tYES\t\t\t1\t31\n2\tkeep_c\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "set-null",
+    "table": "n_set_null",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tYES\t\t\tx00\tx00\n2\tkeep_c\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "set-strnull",
+    "table": "n_set_strnull",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint\tNO\tPRI\tauto_increment\tx00\tx00\n2\tc\tint\tYES\t\t\t0\t30\n3\tkeep_c\tint\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint unsigned\tNO\t\t\t0\t30\n6\ts\tvarchar(16)\tYES\t\t\tNULL\t4E554C4C",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "set-empty",
+    "table": "n_set_empty",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint\tNO\tPRI\tauto_increment\tx00\tx00\n2\tc\tint\tYES\t\t\t0\t30\n3\tkeep_c\tint\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint unsigned\tNO\t\t\t0\t30\n6\ts\tvarchar(16)\tYES",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "drop-default",
+    "table": "n_drop_default",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tYES\t\t\tx00\tx00\n2\tkeep_c\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "set-missing-col",
+    "table": "n_set_missing_col",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1054 (42S22) at line 1: Unknown column 'ghost' in 'n_set_missing_col'"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tYES\t\t\t0\t30\n2\tkeep_c\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "drop-missing-col",
+    "table": "n_drop_missing_col",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1054 (42S22) at line 1: Unknown column 'ghost' in 'n_drop_missing_col'"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tYES\t\t\t0\t30\n2\tkeep_c\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pos-add-first",
+    "table": "n_pos_add_first",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tx\tint\tYES\t\t\tx00\tx00\n2\ta\tint\tYES\t\t\tx00\tx00\n3\tb\tint\tYES\t\t\tx00\tx00\n4\tc\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pos-add-after",
+    "table": "n_pos_add_after",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint\tYES\t\t\tx00\tx00\n2\tb\tint\tYES\t\t\tx00\tx00\n3\tx\tint\tYES\t\t\tx00\tx00\n4\tc\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pos-add-after-missing",
+    "table": "n_pos_add_after_missing",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1054 (42S22) at line 1: Unknown column 'missing' in 'n_pos_add_after_missing'"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint\tYES\t\t\tx00\tx00\n2\tb\tint\tYES\t\t\tx00\tx00\n3\tc\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pos-modify-first",
+    "table": "n_pos_modify_first",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tYES\t\t\tx00\tx00\n2\ta\tint\tYES\t\t\tx00\tx00\n3\tb\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pos-change-after",
+    "table": "n_pos_change_after",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tb\tint\tYES\t\t\tx00\tx00\n2\tc\tint\tYES\t\t\tx00\tx00\n3\ta2\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pos-add-list-first",
+    "table": "n_pos_add_list_first",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'FIRST' at line 1"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint\tYES\t\t\tx00\tx00\n2\tb\tint\tYES\t\t\tx00\tx00\n3\tc\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-add2",
+    "table": "n_multi_add2",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint\tYES\t\t\tx00\tx00\n2\tb\tint\tYES\t\t\tx00\tx00\n3\tc\tint\tYES\t\t\tx00\tx00\n4\tm1\tint\tYES\t\t\tx00\tx00\n5\tm2\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-add-setter",
+    "table": "n_multi_add_setter",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tYES\t\t\t2\t32\n2\tkeep_c\tint\tYES\t\t\tx00\tx00\n3\ta\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-after-sibling",
+    "table": "n_multi_after_sibling",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint\tYES\t\t\tx00\tx00\n2\tb\tint\tYES\t\t\tx00\tx00\n3\tc\tint\tYES\t\t\tx00\tx00\n4\tc1\tint\tYES\t\t\tx00\tx00\n5\tc2\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-same-obj",
+    "table": "n_multi_same_obj",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1054 (42S22) at line 1: Unknown column 'a' in 'n_multi_same_obj'"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint\tYES\t\t\tx00\tx00\n2\tb\tint\tYES\t\t\tx00\tx00\n3\tc\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-drop-add-same",
+    "table": "n_multi_drop_add_same",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint\tYES\t\t\tx00\tx00\n2\tc\tint\tYES\t\t\tx00\tx00\n3\tb\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-add-drop",
+    "table": "n_multi_add_drop",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint\tYES\t\t\tx00\tx00\n2\tc\tint\tYES\t\t\tx00\tx00\n3\tx\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-modify-x2",
+    "table": "n_multi_modify_x2",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tYES\t\t\t9\t39\n2\tkeep_c\tint\tNO\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-add-dup",
+    "table": "n_multi_add_dup",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1060 (42S21) at line 1: Duplicate column name 'd'"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint\tYES\t\t\tx00\tx00\n2\tb\tint\tYES\t\t\tx00\tx00\n3\tc\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pk-modify-null",
+    "table": "n_pk_modify_null",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1171 (42000) at line 1: All parts of a PRIMARY KEY must be NOT NULL; if you need NULL in a key, use UNIQUE instead"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint\tNO\tPRI\tauto_increment\tx00\tx00\n2\tc\tint\tYES\t\t\t0\t30\n3\tkeep_c\tint\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint unsigned\tNO\t\t\t0\t30\n6\ts\tvarchar(16)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pk-modify-omit",
+    "table": "n_pk_modify_omit",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint\tNO\tPRI\t\tx00\tx00\n2\tc\tint\tYES\t\t\t0\t30\n3\tkeep_c\tint\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint unsigned\tNO\t\t\t0\t30\n6\ts\tvarchar(16)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pk-change-null",
+    "table": "n_pk_change_null",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1171 (42000) at line 1: All parts of a PRIMARY KEY must be NOT NULL; if you need NULL in a key, use UNIQUE instead"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint\tNO\tPRI\tauto_increment\tx00\tx00\n2\tc\tint\tYES\t\t\t0\t30\n3\tkeep_c\tint\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint unsigned\tNO\t\t\t0\t30\n6\ts\tvarchar(16)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "default-kinds",
+    "table": "n_default_kinds",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 1,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1067 (42000) at line 1: Invalid default value for 'd2'"
+    },
+    "verdict": "fixture-failed"
+   }
+  ]
+ },
+ "tidb85": {
+  "version": "VERSION()\n8.0.11-TiDB-v8.5.0",
+  "cells": [
+   {
+    "cell": "omit-modify-both",
+    "table": "n_omit_modify_both",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tYES\t\t\tx00\tx00\n2\tkeep_c\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "omit-modify-default",
+    "table": "n_omit_modify_default",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tYES\t\t\tx00\tx00\n2\tkeep_c\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "omit-modify-nn",
+    "table": "n_omit_modify_nn",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tNO\t\t\tx00\tx00\n2\tkeep_c\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "omit-modify-u",
+    "table": "n_omit_modify_u",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint\tNO\tPRI\tauto_increment\tx00\tx00\n2\tc\tint\tYES\t\t\t0\t30\n3\tkeep_c\tint\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint\tYES\t\t\tx00\tx00\n6\ts\tvarchar(16)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "omit-change-both",
+    "table": "n_omit_change_both",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc2\tint\tYES\t\t\tx00\tx00\n2\tkeep_c\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "omit-ai-both",
+    "table": "n_omit_ai_both",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 8200 (HY000) at line 1: Unsupported modify column: can't remove auto_increment without @@tidb_allow_remove_auto_inc enabled"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint\tNO\tPRI\tauto_increment\tx00\tx00\n2\tc\tint\tYES\t\t\t0\t30\n3\tkeep_c\tint\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint unsigned\tNO\t\t\t0\t30\n6\ts\tvarchar(16)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "omit-ai-default-only",
+    "table": "n_omit_ai_default_only",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 8200 (HY000) at line 1: Unsupported modify column: can't remove auto_increment without @@tidb_allow_remove_auto_inc enabled"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint\tNO\tPRI\tauto_increment\tx00\tx00\n2\tc\tint\tYES\t\t\t0\t30\n3\tkeep_c\tint\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint unsigned\tNO\t\t\t0\t30\n6\ts\tvarchar(16)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "set-1",
+    "table": "n_set_1",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tYES\t\t\t1\t31\n2\tkeep_c\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "set-null",
+    "table": "n_set_null",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tYES\t\t\tx00\tx00\n2\tkeep_c\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "set-strnull",
+    "table": "n_set_strnull",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint\tNO\tPRI\tauto_increment\tx00\tx00\n2\tc\tint\tYES\t\t\t0\t30\n3\tkeep_c\tint\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint unsigned\tNO\t\t\t0\t30\n6\ts\tvarchar(16)\tYES\t\t\tNULL\t4E554C4C",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "set-empty",
+    "table": "n_set_empty",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint\tNO\tPRI\tauto_increment\tx00\tx00\n2\tc\tint\tYES\t\t\t0\t30\n3\tkeep_c\tint\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint unsigned\tNO\t\t\t0\t30\n6\ts\tvarchar(16)\tYES",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "drop-default",
+    "table": "n_drop_default",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tYES\t\t\tx00\tx00\n2\tkeep_c\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "set-missing-col",
+    "table": "n_set_missing_col",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1054 (42S22) at line 1: Unknown column 'ghost' in 'n_set_missing_col'"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tYES\t\t\t0\t30\n2\tkeep_c\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "drop-missing-col",
+    "table": "n_drop_missing_col",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1054 (42S22) at line 1: Unknown column 'ghost' in 'n_drop_missing_col'"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tYES\t\t\t0\t30\n2\tkeep_c\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pos-add-first",
+    "table": "n_pos_add_first",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tx\tint\tYES\t\t\tx00\tx00\n2\ta\tint\tYES\t\t\tx00\tx00\n3\tb\tint\tYES\t\t\tx00\tx00\n4\tc\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pos-add-after",
+    "table": "n_pos_add_after",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint\tYES\t\t\tx00\tx00\n2\tb\tint\tYES\t\t\tx00\tx00\n3\tx\tint\tYES\t\t\tx00\tx00\n4\tc\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pos-add-after-missing",
+    "table": "n_pos_add_after_missing",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1054 (42S22) at line 1: Unknown column 'missing' in 'n_pos_add_after_missing'"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint\tYES\t\t\tx00\tx00\n2\tb\tint\tYES\t\t\tx00\tx00\n3\tc\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pos-modify-first",
+    "table": "n_pos_modify_first",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tYES\t\t\tx00\tx00\n2\ta\tint\tYES\t\t\tx00\tx00\n3\tb\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pos-change-after",
+    "table": "n_pos_change_after",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tb\tint\tYES\t\t\tx00\tx00\n2\tc\tint\tYES\t\t\tx00\tx00\n3\ta2\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pos-add-list-first",
+    "table": "n_pos_add_list_first",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 64 near \"FIRST\""
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint\tYES\t\t\tx00\tx00\n2\tb\tint\tYES\t\t\tx00\tx00\n3\tc\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-add2",
+    "table": "n_multi_add2",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint\tYES\t\t\tx00\tx00\n2\tb\tint\tYES\t\t\tx00\tx00\n3\tc\tint\tYES\t\t\tx00\tx00\n4\tm1\tint\tYES\t\t\tx00\tx00\n5\tm2\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-add-setter",
+    "table": "n_multi_add_setter",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tYES\t\t\t2\t32\n2\tkeep_c\tint\tYES\t\t\tx00\tx00\n3\ta\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-after-sibling",
+    "table": "n_multi_after_sibling",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1054 (42S22) at line 1: Unknown column 'c1' in 'n_multi_after_sibling'"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint\tYES\t\t\tx00\tx00\n2\tb\tint\tYES\t\t\tx00\tx00\n3\tc\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-same-obj",
+    "table": "n_multi_same_obj",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 8200 (HY000) at line 1: Unsupported operate same column 'a'"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint\tYES\t\t\tx00\tx00\n2\tb\tint\tYES\t\t\tx00\tx00\n3\tc\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-drop-add-same",
+    "table": "n_multi_drop_add_same",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1060 (42S21) at line 1: Duplicate column name 'b'"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint\tYES\t\t\tx00\tx00\n2\tb\tint\tYES\t\t\tx00\tx00\n3\tc\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-add-drop",
+    "table": "n_multi_add_drop",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint\tYES\t\t\tx00\tx00\n2\tc\tint\tYES\t\t\tx00\tx00\n3\tx\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-modify-x2",
+    "table": "n_multi_modify_x2",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 0,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tc\tint\tYES\t\t\t9\t39\n2\tkeep_c\tint\tNO\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "multi-add-dup",
+    "table": "n_multi_add_dup",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 8200 (HY000) at line 1: Unsupported operate same column 'd'"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\ta\tint\tYES\t\t\tx00\tx00\n2\tb\tint\tYES\t\t\tx00\tx00\n3\tc\tint\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pk-modify-null",
+    "table": "n_pk_modify_null",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1171 (42000) at line 1: All parts of a PRIMARY KEY must be NOT NULL; if you need NULL in a key, use UNIQUE instead"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint\tNO\tPRI\tauto_increment\tx00\tx00\n2\tc\tint\tYES\t\t\t0\t30\n3\tkeep_c\tint\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint unsigned\tNO\t\t\t0\t30\n6\ts\tvarchar(16)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pk-modify-omit",
+    "table": "n_pk_modify_omit",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 8200 (HY000) at line 1: Unsupported modify column: can't remove auto_increment without @@tidb_allow_remove_auto_inc enabled"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint\tNO\tPRI\tauto_increment\tx00\tx00\n2\tc\tint\tYES\t\t\t0\t30\n3\tkeep_c\tint\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint unsigned\tNO\t\t\t0\t30\n6\ts\tvarchar(16)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "pk-change-null",
+    "table": "n_pk_change_null",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 0,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "alter": {
+     "rc": 1,
+     "out": "",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1171 (42000) at line 1: All parts of a PRIMARY KEY must be NOT NULL; if you need NULL in a key, use UNIQUE instead"
+    },
+    "columns": {
+     "rc": 0,
+     "out": "ORDINAL_POSITION\tCOLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_KEY\tEXTRA\tIFNULL(COLUMN_DEFAULT,'\\x00')\tIFNULL(HEX(COLUMN_DEFAULT),'\\x00')\n1\tpk\tint\tNO\tPRI\tauto_increment\tx00\tx00\n2\tc\tint\tYES\t\t\t0\t30\n3\tkeep_c\tint\tYES\t\t\tx00\tx00\n4\tv\tvarchar(32)\tYES\t\t\tx00\tx00\n5\tu\tint unsigned\tNO\t\t\t0\t30\n6\ts\tvarchar(16)\tYES\t\t\tx00\tx00",
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "cleanup": {
+     "drop_rc": 0,
+     "err": "mysql: [Warning] Using a password on the command line interface can be insecure."
+    },
+    "residual": "COUNT(*)\n0"
+   },
+   {
+    "cell": "default-kinds",
+    "table": "n_default_kinds",
+    "setup": {
+     "drop_rc": 0,
+     "create_rc": 1,
+     "create_err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1067 (42000) at line 1: Invalid default value for 'd2'"
+    },
+    "verdict": "fixture-failed"
+   }
+  ]
+ }
+}

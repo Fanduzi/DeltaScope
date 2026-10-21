@@ -1,0 +1,2 @@
+cmd=python3 scripts/test_ddl_golden.py
+rc=0

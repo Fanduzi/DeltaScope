@@ -1,0 +1,3 @@
+cmd=gofmt -l changed-go
+rc=0
+output-bytes=0

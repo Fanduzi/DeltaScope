@@ -1,0 +1,258 @@
+{
+  "case_id": "T08.cli.multi-modify-x2",
+  "kind": "cli_audit",
+  "cli_case": "multi-modify-x2",
+  "dialect": "mysql",
+  "input_sql": "ALTER TABLE t MODIFY COLUMN a INT NULL, MODIFY COLUMN b INT NOT NULL;",
+  "policy_profile": "t08-nullability-all",
+  "policy_path": "/private/tmp/ddl-golden-t08-final2/T08/golden-policy-t08-nullability-all.yaml",
+  "command": [
+    "/private/tmp/ddl-golden-t08-final2/T08/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "ALTER TABLE t MODIFY COLUMN a INT NULL, MODIFY COLUMN b INT NOT NULL;",
+    "--config",
+    "/private/tmp/ddl-golden-t08-final2/T08/golden-policy-t08-nullability-all.yaml",
+    "--format",
+    "json"
+  ],
+  "expected": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "statement_sql": [
+      "ALTER TABLE t MODIFY COLUMN a INT NULL, MODIFY COLUMN b INT NOT NULL;"
+    ],
+    "statement_indices": [
+      0
+    ],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory",
+        "level": "notice"
+      },
+      {
+        "index": 0,
+        "rule_id": "ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory",
+        "level": "notice"
+      }
+    ],
+    "finding_metadata": [],
+    "unsupported_entries": [],
+    "rule_summary_loaded": 3,
+    "rule_summary_applicable": 2
+  },
+  "actual": {
+    "exit": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":2},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t MODIFY COLUMN a INT NULL, MODIFY COLUMN b INT NOT NULL;\",\"normalized_sql\":\"ALTER TABLE t MODIFY COLUMN a INT NULL, MODIFY COLUMN b INT NOT NULL\",\"findings\":[{\"rule_id\":\"ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory\",\"level\":\"notice\",\"message\":\"ALTER TABLE modify column explicitly states nullability for \\\"a\\\", but the prior state is unknown\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"run a metadata-aware audit to compare the requested nullability with the live column before applying\",\"metadata\":{\"action\":\"modify_column\",\"change_kind\":\"explicit_nullability_change\",\"column_name\":\"a\",\"name\":\"a\",\"prior_state\":\"unknown\",\"requested_not_null\":false,\"table\":\"t\"},\"explanation\":{\"summary\":\"Check DDL alter modify column explicit nullability change unknown prior state advisory\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"run a metadata-aware audit to compare the requested nullability with the live column before applying\",\"metadata\":{\"status\":\"limited\",\"note\":\"Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit.\"}}},{\"rule_id\":\"ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory\",\"level\":\"notice\",\"message\":\"ALTER TABLE modify column explicitly states nullability for \\\"b\\\", but the prior state is unknown\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"run a metadata-aware audit to compare the requested nullability with the live column before applying\",\"metadata\":{\"action\":\"modify_column\",\"change_kind\":\"explicit_nullability_change\",\"column_name\":\"b\",\"name\":\"b\",\"prior_state\":\"unknown\",\"requested_not_null\":true,\"table\":\"t\"},\"explanation\":{\"summary\":\"Check DDL alter modify column explicit nullability change unknown prior state advisory\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"run a metadata-aware audit to compare the requested nullability with the live column before applying\",\"metadata\":{\"status\":\"limited\",\"note\":\"Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":3,\"applicable\":2,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "pass",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 2
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t MODIFY COLUMN a INT NULL, MODIFY COLUMN b INT NOT NULL;",
+          "normalized_sql": "ALTER TABLE t MODIFY COLUMN a INT NULL, MODIFY COLUMN b INT NOT NULL",
+          "findings": [
+            {
+              "rule_id": "ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory",
+              "level": "notice",
+              "message": "ALTER TABLE modify column explicitly states nullability for \"a\", but the prior state is unknown",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "run a metadata-aware audit to compare the requested nullability with the live column before applying",
+              "metadata": {
+                "action": "modify_column",
+                "change_kind": "explicit_nullability_change",
+                "column_name": "a",
+                "name": "a",
+                "prior_state": "unknown",
+                "requested_not_null": false,
+                "table": "t"
+              },
+              "explanation": {
+                "summary": "Check DDL alter modify column explicit nullability change unknown prior state advisory",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                "suggestion": "run a metadata-aware audit to compare the requested nullability with the live column before applying",
+                "metadata": {
+                  "status": "limited",
+                  "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
+                }
+              }
+            },
+            {
+              "rule_id": "ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory",
+              "level": "notice",
+              "message": "ALTER TABLE modify column explicitly states nullability for \"b\", but the prior state is unknown",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "run a metadata-aware audit to compare the requested nullability with the live column before applying",
+              "metadata": {
+                "action": "modify_column",
+                "change_kind": "explicit_nullability_change",
+                "column_name": "b",
+                "name": "b",
+                "prior_state": "unknown",
+                "requested_not_null": true,
+                "table": "t"
+              },
+              "explanation": {
+                "summary": "Check DDL alter modify column explicit nullability change unknown prior state advisory",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                "suggestion": "run a metadata-aware audit to compare the requested nullability with the live column before applying",
+                "metadata": {
+                  "status": "limited",
+                  "note": "Live metadata is unavailable, so this explanation may be less accurate or cover less context than an online audit."
+                }
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 3,
+        "applicable": 2,
+        "skipped": []
+      },
+      "context": {
+        "mode": "offline",
+        "dialect": "mysql",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='pass'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=2"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=3"
+    },
+    {
+      "name": "applicable rule count",
+      "ok": true,
+      "detail": "applicable=2"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "unsupported entries",
+      "ok": true,
+      "detail": "entries=[] expected=[]"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['ALTER TABLE t MODIFY COLUMN a INT NULL, MODIFY COLUMN b INT NOT NULL;'] expected=['ALTER TABLE t MODIFY COLUMN a INT NULL, MODIFY COLUMN b INT NOT NULL;']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[] expected=[]"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory', 'notice'), (0, 'ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory', 'notice')] expected=[(0, 'ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory', 'notice'), (0, 'ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory', 'notice')]"
+    }
+  ],
+  "status": "pass"
+}

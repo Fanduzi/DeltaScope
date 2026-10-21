@@ -1,0 +1,2 @@
+cmd=python3 scripts/test_t08_contract.py
+rc=0

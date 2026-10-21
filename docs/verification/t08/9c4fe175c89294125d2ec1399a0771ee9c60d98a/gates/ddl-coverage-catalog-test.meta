@@ -1,0 +1,2 @@
+cmd=make ddl-coverage-catalog-test
+rc=0

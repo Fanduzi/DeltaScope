@@ -1,0 +1,2 @@
+cmd=env GOFLAGS=-count=1 make test
+rc=0
