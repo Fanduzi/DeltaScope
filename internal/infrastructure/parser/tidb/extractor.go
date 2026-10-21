@@ -1,6 +1,6 @@
 // Package tidbparser extracts parser-neutral statements from TiDB AST nodes.
 // input: TiDB parser statement nodes and parser-neutral dialect metadata
-// output: extractor-backed parsed statements for the application layer, including MutationTargets and mutation-target-only DML tables, normalized ALTER index/constraint actions, multi-target DDL Targets for DROP/RENAME/ALTER-rename, temporary-table scope facts, typed and unextracted column-option facts, primary-key metadata, inline PRIMARY KEY presence on column-change facts, parser-decoded COMMENT string content (no SQL quote wrapping), sentinel-faithful declared type parameters (DECIMAL/FLOAT/DOUBLE scale, byte-exact ENUM/SET members) on the five declared-parameter types, structured generated-column and expression-default facts via the shared expression-facts visitor, and if_exists/if_not_exists option markers for conditional-existence derivation
+// output: extractor-backed parsed statements for the application layer, including MutationTargets and mutation-target-only DML tables, normalized ALTER index/constraint actions, multi-target DDL Targets for DROP/RENAME/ALTER-rename, temporary-table scope facts, typed and unextracted column-option facts, primary-key metadata, inline PRIMARY KEY presence on column-change facts, parser-decoded COMMENT string content (no SQL quote wrapping), sentinel-faithful declared type parameters (DECIMAL/FLOAT/DOUBLE scale, byte-exact ENUM/SET members) on the five declared-parameter types, structured generated-column and expression-default facts via the shared expression-facts visitor, the comparable literal-default identity decoded from typed AST values, and if_exists/if_not_exists option markers for conditional-existence derivation
 // pos: infrastructure extraction adapter between TiDB AST and domain spec
 // note: if this file changes, update this header and module README.md.
 package tidbparser
@@ -882,6 +882,7 @@ func applyDefaultOptionFacts(column *spec.Column, expr ast.ExprNode) {
 		column.DefaultValue = normalizedExprText(expr)
 	}
 	column.DefaultIsCurrentTimestamp = exprIsCurrentTimestamp(expr)
+	column.DefaultLiteral = defaultLiteralFacts(expr)
 	if !exprIsLiteralValue(expr) && !column.DefaultIsCurrentTimestamp {
 		// A non-literal default is an expression default; the fact is
 		// structural (never evaluated) and keeps the literal/default
@@ -1754,6 +1755,44 @@ func normalizedExprText(expr ast.ExprNode) string {
 		}
 	}
 	return strings.TrimSpace(expr.Text())
+}
+
+// defaultLiteralFacts decodes the comparable literal identity from the
+// typed AST, the same node exprIsLiteralValue classifies: parens unwrap,
+// and a unary ± integer keeps its sign as provable digits. String values
+// are decoded bytes (never the re-quoted display text), integers decode to
+// canonical digits. Every other shape — floats, decimals, bit/hex/byte
+// literals, NULLs, and non-literal expressions — returns nil: an unproven
+// identity, not a fabricated value or a coercion guess.
+func defaultLiteralFacts(expr ast.ExprNode) *spec.LiteralDefaultFacts {
+	switch node := unwrapParenthesesExpr(expr).(type) {
+	case ast.ValueExpr:
+		switch value := node.GetValue().(type) {
+		case string:
+			return &spec.LiteralDefaultFacts{Kind: spec.LiteralDefaultString, Value: value}
+		case int64:
+			return &spec.LiteralDefaultFacts{Kind: spec.LiteralDefaultNumeric, Value: strconv.FormatInt(value, 10)}
+		case uint64:
+			return &spec.LiteralDefaultFacts{Kind: spec.LiteralDefaultNumeric, Value: strconv.FormatUint(value, 10)}
+		}
+	case *ast.UnaryOperationExpr:
+		if inner, ok := unwrapParenthesesExpr(node.V).(ast.ValueExpr); ok {
+			switch value := inner.GetValue().(type) {
+			case int64:
+				if node.Op == opcode.Minus {
+					return &spec.LiteralDefaultFacts{Kind: spec.LiteralDefaultNumeric, Value: strconv.FormatInt(-value, 10)}
+				}
+				if node.Op == opcode.Plus {
+					return &spec.LiteralDefaultFacts{Kind: spec.LiteralDefaultNumeric, Value: strconv.FormatInt(value, 10)}
+				}
+			case uint64:
+				if node.Op == opcode.Plus {
+					return &spec.LiteralDefaultFacts{Kind: spec.LiteralDefaultNumeric, Value: strconv.FormatUint(value, 10)}
+				}
+			}
+		}
+	}
+	return nil
 }
 
 func exprIsCurrentTimestamp(expr ast.ExprNode) bool {

@@ -193,3 +193,53 @@ default finding, while the new expectations encode exactly the audited
 result the T08 contract specifies — including the gaps T08 still keeps
 open (source-column definition under the compat profile). Cells outside
 the two authorized classes were not touched.
+
+## T08-R1 default-comparison fix (comparable literal identity)
+
+Root cause repaired by `docs/decisions/2026-10-21-ddl-default-comparable-identity.md`:
+the transition compared `source.DefaultValue` against `target.DefaultValue`
+— the display field — so provider-sourced decoded bytes (`x`) and
+declaration-rendered text (`'x'`) for the *same* stored literal produced a
+determined change finding, while an empty expression fingerprint was
+convicted as changed by text difference alone.
+
+### Golden manifest cells: zero moved
+
+Every `literal→literal` finding expectation in `testdata/ddl-golden/T02..T08.json`
+pairs INT columns (`DEFAULT 0 → DEFAULT 7`, `DEFAULT 9`, `DEFAULT 5`) whose
+display text and catalog bytes already agreed — the bug was unreachable there.
+No golden cell pairs a same-value *string* literal across the two
+representations, so no `expect`, `finding_entries`, `finding_metadata`,
+coverage, gap, verdict, or denominator entry required migration. The T05
+omit-integer cells (`literal→none` presence flips) and the nine position
+cells are unaffected: presence and class transitions never consulted the
+literal identity.
+
+### Unit-test expectation upgrades (1)
+
+| test | statement | rule_id | old result | new result | reason |
+| --- | --- | --- | --- | --- | --- |
+| `TestAlterColumnCompatibilityDefaultTransitions` cell `expression_empty_fingerprint_*`, `alter_compatibility_rules_test.go` | synthetic expression default, `Known:true` + empty `Fingerprint` on both sides | `ddl.alter.modify_column.compatibility.require` | `changes its default value` (1 finding) | no transition finding; `unproven_default_identity` gap over `source_column.default` + `target_column.default` | an empty fingerprint is an unknown identity, not a provable difference — the comparison must not convict an unknown |
+
+Renamed to `expression empty fingerprint unproven`; the input is kept as the
+unknown-state counterexample, not deleted.
+
+### Provider classification clarification (no expectation moved)
+
+`DefaultIsCurrentTimestamp` is now asserted only for temporal base types
+(`timestamp`/`datetime`, including `datetime(6)` via base-type reduction).
+Keyword-looking bytes on a `varchar`/`char` column are the string literal
+`CURRENT_TIMESTAMP`. No frozen cell stored CT bytes on a non-temporal
+column, and all T06-A9 temporal cells are `DATETIME` — verified unchanged.
+
+### New coverage (additive, no upgrades)
+
+- `internal/application/auditmeta/audit_t08r1_default_comparison_test.go` —
+  real parser + real provider + `AuditSQL` matrix over provider-sourced and
+  CREATE-derived pre-states (S1–S7 strings, numeric controls, expression
+  same/diff/unknown, target-unprovable literal, CHANGE old-name read,
+  SET/DROP/CHANGE state chains, explicit-policy separation).
+- `internal/infrastructure/metadata/mysql/provider_t08r1_test.go` —
+  base-type literal domain + temporal gate + expression routing.
+- `internal/infrastructure/parser/tidb/extractor_t08r1_test.go` —
+  AST-decoded identities + unprovable-shape nils.

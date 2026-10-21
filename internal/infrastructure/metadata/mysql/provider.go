@@ -1,6 +1,6 @@
 // Package mysqlmeta implements metadata-aware audit adapters over the MySQL protocol.
 // input: sql.DB access plus connection configs, version/schema/table lookup requests, and MySQL/TiDB metadata queries
-// output: normalized instance facts with explicit known bits (innodb_page_size, 5.7 large-prefix, TiDB max-index-length via all-rows SHOW CONFIG verification — read failures propagate as provider errors, only absent/ambiguous values stay unknown), dialect detection, schema discovery, and table snapshots with preserved index cardinality, verbatim COLUMN_TYPE parameter spans on the five declared-parameter bases (DECIMAL/FLOAT/DOUBLE/ENUM/SET — member literals keep catalog case and attribute words inside quotes never set Unsigned), stored-representation default facts (COLUMN_DEFAULT IS NOT NULL → HasDefault with verbatim DefaultValue bytes; NULL rows and literal "null" text never set DefaultIsNull on this path), and T07 advanced-column facts read from the same COLUMNS row (EXTRA DEFAULT_GENERATED → parsed DefaultExpression facts, STORED/VIRTUAL GENERATED + GENERATION_EXPRESSION → generated storage + expression facts, INVISIBLE → effective visibility; undecodable expression text stays an explicit unknown fact) for application-level audit enrichment
+// output: normalized instance facts with explicit known bits (innodb_page_size, 5.7 large-prefix, TiDB max-index-length via all-rows SHOW CONFIG verification — read failures propagate as provider errors, only absent/ambiguous values stay unknown), dialect detection, schema discovery, and table snapshots with preserved index cardinality, verbatim COLUMN_TYPE parameter spans on the five declared-parameter bases (DECIMAL/FLOAT/DOUBLE/ENUM/SET — member literals keep catalog case and attribute words inside quotes never set Unsigned), stored-representation default facts (COLUMN_DEFAULT IS NOT NULL → HasDefault with verbatim DefaultValue bytes; NULL rows and literal "null" text never set DefaultIsNull on this path), the comparable literal-default identity keyed by the column's own base type (temporal markers asserted only on temporal bases), and T07 advanced-column facts read from the same COLUMNS row (EXTRA DEFAULT_GENERATED → parsed DefaultExpression facts, STORED/VIRTUAL GENERATED + GENERATION_EXPRESSION → generated storage + expression facts, INVISIBLE → effective visibility; undecodable expression text stays an explicit unknown fact) for application-level audit enrichment
 // pos: infrastructure metadata adapter between database/sql and domain metadata specs
 // note: if this file changes, update this header and module README.md.
 package mysqlmeta
@@ -394,7 +394,13 @@ func (p *Provider) loadColumns(ctx context.Context, snapshot *spec.TableSnapshot
 			HasDefault:    defaultValue.Valid,
 			DefaultValue:  defaultValue.String,
 		}
-		if defaultValue.Valid && strings.EqualFold(defaultValue.String, "current_timestamp") {
+		// The CURRENT_TIMESTAMP marker is only meaningful on temporal
+		// columns: on a VARCHAR row the stored bytes are the string literal
+		// 'CURRENT_TIMESTAMP', not the temporal function. The catalog
+		// cannot recover which declaration produced them, but the column
+		// type is authoritative — a non-temporal base type never stores a
+		// temporal function default.
+		if defaultValue.Valid && strings.EqualFold(defaultValue.String, "current_timestamp") && temporalDefaultColumnType(typeText) {
 			column.DefaultIsCurrentTimestamp = true
 		}
 		// A non-NULL COLUMN_DEFAULT is always a stored representation, never
@@ -446,6 +452,16 @@ func (p *Provider) loadColumns(ctx context.Context, snapshot *spec.TableSnapshot
 				column.DefaultExpression = &spec.ExpressionFacts{}
 			}
 		}
+		// A stored literal carries its decoded value bytes verbatim on all
+		// anchors — the bytes are the comparable identity, so no quoting or
+		// unescaping applies. The kind comes from the column's own type
+		// family, never from guessing at the byte content.
+		if defaultValue.Valid && !column.DefaultIsCurrentTimestamp && column.DefaultExpression == nil {
+			column.DefaultLiteral = &spec.LiteralDefaultFacts{
+				Kind:  catalogLiteralKind(typeText),
+				Value: defaultValue.String,
+			}
+		}
 		// EXTRA is complete for every catalog row: INVISIBLE is the only
 		// invisibility marker, so its absence proves effective visibility.
 		// VisibilityExplicit stays false — the catalog cannot prove the
@@ -461,6 +477,47 @@ func (p *Provider) loadColumns(ctx context.Context, snapshot *spec.TableSnapshot
 		return fmt.Errorf("iterate table columns: %w", err)
 	}
 	return nil
+}
+
+// catalogBaseType reduces a parsed column type to its base keyword:
+// faithful forms like decimal(10,2) or enum('a','b') lose their parameter
+// span, and attribute text after the base is ignored.
+func catalogBaseType(typeText string) string {
+	lower := strings.ToLower(strings.TrimSpace(typeText))
+	if i := strings.IndexByte(lower, '('); i >= 0 {
+		lower = lower[:i]
+	}
+	if fields := strings.Fields(lower); len(fields) > 0 {
+		return fields[0]
+	}
+	return ""
+}
+
+// temporalDefaultColumnType reports the only column base types that can
+// carry a CURRENT_TIMESTAMP default under any supported anchor — TIMESTAMP
+// and DATETIME. Any other base type storing the bytes CURRENT_TIMESTAMP
+// carries the plain string literal.
+func temporalDefaultColumnType(typeText string) bool {
+	switch catalogBaseType(typeText) {
+	case "timestamp", "datetime":
+		return true
+	default:
+		return false
+	}
+}
+
+// catalogLiteralKind names the comparison domain for a stored literal from
+// the column's own type family: numeric bases decode to numeric literals,
+// every other family keeps string bytes. It never inspects the byte
+// content — the family is the authoritative domain.
+func catalogLiteralKind(typeText string) string {
+	switch catalogBaseType(typeText) {
+	case "tinyint", "smallint", "mediumint", "int", "integer", "bigint",
+		"decimal", "numeric", "float", "double", "real", "year":
+		return spec.LiteralDefaultNumeric
+	default:
+		return spec.LiteralDefaultString
+	}
 }
 
 // catalogExtraTokens splits the EXTRA attribute string into lowercase word

@@ -502,6 +502,7 @@ func cloneSpecColumn(in spec.Column) spec.Column {
 	out.UnextractedOptions = append([]string(nil), in.UnextractedOptions...)
 	out.Generated = spec.CloneGeneratedColumn(in.Generated)
 	out.DefaultExpression = spec.CloneExpressionFacts(in.DefaultExpression)
+	out.DefaultLiteral = spec.CloneLiteralDefaultFacts(in.DefaultLiteral)
 	return out
 }
 

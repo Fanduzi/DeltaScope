@@ -1,6 +1,7 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: metadata-enriched alter-table Statement specs with current and target column shapes
-// output: source-aware alter compatibility findings and bounded evidence gaps for change/modify column operations
+// output: source-aware alter compatibility findings and bounded evidence gaps for change/modify column operations,
+// with the shared three-state default comparison (proven-same / proven-different / unproven) driving both
 // pos: DDL compatibility rules layered above metadata-backed existence checks
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -24,11 +25,13 @@ import (
 const (
 	gapReasonMissingSourceColumn    = "missing_source_column"
 	gapReasonIncompleteSourceColumn = "incomplete_source_column"
+	gapReasonUnprovenDefault        = "unproven_default_identity"
 
 	factSourceColumnDefinition = "source_column.definition"
 	factSourceColumnType       = "source_column.type"
 	factSourceColumnLength     = "source_column.length"
 	factSourceColumnDefault    = "source_column.default"
+	factTargetColumnDefault    = "target_column.default"
 )
 
 // Effective-default classes for the MODIFY/CHANGE transition compare. These
@@ -138,6 +141,7 @@ func (r alterColumnCompatibilityRule) EvidenceGaps(statement spec.Statement) []r
 
 	missingDefinition := false
 	incomplete := make(map[string]struct{}, 2)
+	unproven := make(map[string]struct{}, 2)
 	snapshot, hasSnapshot := targetTableSnapshot(statement)
 	for _, alter := range matchingAlterActions(statement, r.action) {
 		target, hasTarget := alterColumnDefinition(alter)
@@ -156,12 +160,24 @@ func (r alterColumnCompatibilityRule) EvidenceGaps(statement spec.Statement) []r
 		if sourceLengthFactRequired(*source, target) && source.Length <= 0 {
 			incomplete[factSourceColumnLength] = struct{}{}
 		}
-		if sourceDefaultFactIncomplete(*source) {
+		// A source default whose comparable identity cannot be proven is a
+		// fact deficit regardless of the transition verdict — a determined
+		// presence flip or class switch does not wash the deficit away.
+		if sourceDefaultIdentityUnproven(*source) {
 			incomplete[factSourceColumnDefault] = struct{}{}
+		}
+		// The shared comparison is the one truth for unproven identity:
+		// whatever Evaluate cannot convict, it also cannot call changed.
+		_, factDeficits, pairDeficits := defaultComparison(*source, *target)
+		for _, fact := range factDeficits {
+			incomplete[fact] = struct{}{}
+		}
+		for _, fact := range pairDeficits {
+			unproven[fact] = struct{}{}
 		}
 	}
 
-	gaps := make([]rule.EvidenceGap, 0, 2)
+	gaps := make([]rule.EvidenceGap, 0, 3)
 	if missingDefinition {
 		gaps = append(gaps, rule.EvidenceGap{
 			ReasonCode:    gapReasonMissingSourceColumn,
@@ -176,6 +192,17 @@ func (r alterColumnCompatibilityRule) EvidenceGaps(statement spec.Statement) []r
 		sort.Strings(facts)
 		gaps = append(gaps, rule.EvidenceGap{
 			ReasonCode:    gapReasonIncompleteSourceColumn,
+			RequiredFacts: facts,
+		})
+	}
+	if len(unproven) > 0 {
+		facts := make([]string, 0, len(unproven))
+		for fact := range unproven {
+			facts = append(facts, fact)
+		}
+		sort.Strings(facts)
+		gaps = append(gaps, rule.EvidenceGap{
+			ReasonCode:    gapReasonUnprovenDefault,
 			RequiredFacts: facts,
 		})
 	}
@@ -217,52 +244,103 @@ func effectiveDefaultClass(column spec.Column) string {
 	}
 }
 
-// sourceDefaultFactIncomplete reports a loaded source column whose default
-// presence is known but whose value facts are not: an expression default the
-// catalog text could not be decoded into. Literal defaults carry verbatim
-// catalog bytes and a NULL COLUMN_DEFAULT is a complete absence, so those
-// are never incomplete.
-func sourceDefaultFactIncomplete(source spec.Column) bool {
-	return source.HasDefault && source.DefaultExpression != nil && !source.DefaultExpression.Known
+// sourceDefaultIdentityUnproven reports a source column whose stored
+// default exists but whose comparable identity cannot be proven: an
+// expression fact the catalog text could not decode (or that carries no
+// fingerprint), or a literal class with no comparable identity. A NULL or
+// absent COLUMN_DEFAULT is a complete absence, never a deficit.
+func sourceDefaultIdentityUnproven(source spec.Column) bool {
+	if !source.HasDefault {
+		return false
+	}
+	switch effectiveDefaultClass(source) {
+	case defaultClassExpression:
+		return source.DefaultExpression == nil || !source.DefaultExpression.Known || source.DefaultExpression.Fingerprint == ""
+	case defaultClassLiteral:
+		return source.DefaultLiteral == nil
+	default:
+		return false
+	}
 }
 
-// defaultTransitionMessage compares the source column's stored default to
-// the effective default a MODIFY/CHANGE full definition stores — an omitted
-// DEFAULT clause resolves to cleared on every validated MySQL/TiDB anchor,
-// and an explicit `DEFAULT NULL` resolves to no stored default either.
-// Unprovable facts (an expression identity without a fingerprint) count as
-// changed rather than unchanged. The return is the frozen transition
-// vocabulary: "" when identical, or the verb phrase for a presence flip or
-// a same-presence change.
-func defaultTransitionMessage(source spec.Column, target spec.Column) string {
+// defaultComparison is the single three-state comparison both Evaluate and
+// EvidenceGaps consume: presence flips and class switches are determined
+// transitions, a same-class identity is proven only through the comparable
+// facts, and anything unprovable reports the fact names it needed — never
+// a determined "changed" verdict on an unknown identity. The returned
+// deficit lists split honest bookkeeping: factDeficits are identities a
+// side could not produce (its own fact is incomplete), pairDeficits are
+// proven-but-incomparable pairs (the comparison, not the fact, is
+// unproven).
+func defaultComparison(source spec.Column, target spec.Column) (transition string, factDeficits []string, pairDeficits []string) {
 	sourceClass := effectiveDefaultClass(source)
 	targetClass := effectiveDefaultClass(target)
 	sourcePresent := sourceClass != defaultClassNone && sourceClass != defaultClassNull
 	targetPresent := targetClass != defaultClassNone && targetClass != defaultClassNull
 	if sourcePresent != targetPresent {
 		if sourcePresent {
-			return "loses its default value"
+			return "loses its default value", nil, nil
 		}
-		return "gains a default value"
+		return "gains a default value", nil, nil
 	}
 	if !sourcePresent {
-		return ""
+		return "", nil, nil
 	}
-	changed := sourceClass != targetClass
-	if !changed {
-		switch sourceClass {
-		case defaultClassLiteral:
-			changed = source.DefaultValue != target.DefaultValue
-		case defaultClassExpression:
-			changed = source.DefaultExpression.Fingerprint == "" ||
-				target.DefaultExpression.Fingerprint == "" ||
-				source.DefaultExpression.Fingerprint != target.DefaultExpression.Fingerprint
-		}
+	if sourceClass != targetClass {
+		return "changes its default value", nil, nil
 	}
-	if changed {
-		return "changes its default value"
+	if sourceClass == defaultClassCurrentTimestamp {
+		// The temporal class is a single fixed identity with nothing left
+		// to compare.
+		return "", nil, nil
 	}
-	return ""
+	switch sourceClass {
+	case defaultClassLiteral:
+		return literalDefaultComparison(source.DefaultLiteral, target.DefaultLiteral)
+	case defaultClassExpression:
+		return expressionDefaultComparison(source.DefaultExpression, target.DefaultExpression)
+	}
+	return "", nil, nil
+}
+
+// literalDefaultComparison compares two literal-class identities. Equal
+// kind+value proves same, equal kind with different value proves
+// different, a missing identity is that side's fact deficit, and a
+// cross-domain pair is a comparison deficit — kinds never coerce.
+func literalDefaultComparison(source, target *spec.LiteralDefaultFacts) (string, []string, []string) {
+	switch {
+	case source == nil && target == nil:
+		return "", []string{factSourceColumnDefault}, []string{factTargetColumnDefault}
+	case source == nil:
+		return "", []string{factSourceColumnDefault}, nil
+	case target == nil:
+		return "", nil, []string{factTargetColumnDefault}
+	case source.Kind != target.Kind:
+		return "", nil, []string{factSourceColumnDefault, factTargetColumnDefault}
+	case source.Value != target.Value:
+		return "changes its default value", nil, nil
+	}
+	return "", nil, nil
+}
+
+// expressionDefaultComparison compares two expression-class identities by
+// fingerprint — equal non-empty fingerprints on Known facts prove same.
+// A missing, unknown, or fingerprintless fact is unproven: an empty
+// fingerprint is an unknown identity, never a determined change.
+func expressionDefaultComparison(source, target *spec.ExpressionFacts) (string, []string, []string) {
+	sourceProven := source != nil && source.Known && source.Fingerprint != ""
+	targetProven := target != nil && target.Known && target.Fingerprint != ""
+	switch {
+	case !sourceProven && !targetProven:
+		return "", []string{factSourceColumnDefault}, []string{factTargetColumnDefault}
+	case !sourceProven:
+		return "", []string{factSourceColumnDefault}, nil
+	case !targetProven:
+		return "", nil, []string{factTargetColumnDefault}
+	case source.Fingerprint != target.Fingerprint:
+		return "changes its default value", nil, nil
+	}
+	return "", nil, nil
 }
 
 func (r alterTableOptionCompatibilityRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
@@ -348,7 +426,7 @@ func compatibilityFindings(ruleID string, level rule.Level, tableName string, al
 		))
 	}
 
-	if transition := defaultTransitionMessage(source, target); transition != "" {
+	if transition, _, _ := defaultComparison(source, target); transition != "" {
 		findings = append(findings, newCompatibilityFinding(ruleID, level, tableName, alter, columnName,
 			fmt.Sprintf("column %q %s", alter.Name, transition),
 			"keep the declared default identical to the stored default or review the transition explicitly",

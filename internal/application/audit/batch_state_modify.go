@@ -239,6 +239,7 @@ func (s *batchState) publishColumnDefault(next *spec.Column, alter *spec.Alter) 
 			next.DefaultExpression = nil
 			next.DefaultKind = ""
 			next.DefaultParenthesized = false
+			next.DefaultLiteral = nil
 		} else {
 			next.HasDefault = definition.HasDefault
 			next.DefaultIsNull = definition.DefaultIsNull
@@ -247,6 +248,7 @@ func (s *batchState) publishColumnDefault(next *spec.Column, alter *spec.Alter) 
 			next.DefaultExpression = spec.CloneExpressionFacts(definition.DefaultExpression)
 			next.DefaultKind = definition.DefaultKind
 			next.DefaultParenthesized = definition.DefaultParenthesized
+			next.DefaultLiteral = spec.CloneLiteralDefaultFacts(definition.DefaultLiteral)
 		}
 		return true
 	}
@@ -257,6 +259,7 @@ func (s *batchState) publishColumnDefault(next *spec.Column, alter *spec.Alter) 
 	next.DefaultExpression = nil
 	next.DefaultKind = ""
 	next.DefaultParenthesized = false
+	next.DefaultLiteral = nil
 	return true
 }
 

@@ -1,6 +1,7 @@
 // Package spec defines normalized statement specifications for rule evaluation.
 // input: DDL facts extracted from parser-specific AST adapters
-// output: parser-neutral DDL specification components for rules
+// output: parser-neutral DDL specification components for rules, including
+// the comparable literal-default identity (LiteralDefaultFacts) sources agree on
 // pos: domain DDL specification model under the unified Statement spec
 // note: if this file changes, update this header and module README.md.
 package spec
@@ -298,6 +299,46 @@ type Column struct {
 	// products require parens for non-literal ALTER SET DEFAULT — the flag
 	// is never evidence about the stored value itself.
 	DefaultParenthesized bool `json:"-"`
+	// DefaultLiteral is the comparable literal identity for a
+	// literal-class default: the decoded value bytes plus a literal kind.
+	// nil means the identity is unproven or the default is not literal —
+	// an empty declared string is a proven empty value, never the unknown
+	// sentinel. Source-shaped DefaultValue stays the display field; it is
+	// never read as identity (T08-R1). Every source writes this fact with
+	// the same decode contract — declaration AST yields decoded values,
+	// catalog COLUMN_DEFAULT bytes are already decoded value bytes.
+	DefaultLiteral *LiteralDefaultFacts `json:"-"`
+}
+
+// LiteralDefaultFacts is the comparable identity of a literal-class column
+// default. It carries no SQL text, quoting, or expression content — only
+// the decoded value bytes and the literal kind needed to keep the
+// comparison domains honest.
+type LiteralDefaultFacts struct {
+	// Kind names the literal's value domain: "string" or "numeric".
+	// Kinds never coerce — a string literal and a numeric literal never
+	// prove equality, they prove unproven.
+	Kind string
+	// Value is the decoded literal value bytes exactly as the catalog
+	// stores them: 'x' → x, '''x''' → 'x', 'O''Reilly' → O'Reilly.
+	Value string
+}
+
+// Literal kinds. Only kinds whose cross-source text identity is provable
+// without type coercion are named.
+const (
+	LiteralDefaultString  = "string"
+	LiteralDefaultNumeric = "numeric"
+)
+
+// CloneLiteralDefaultFacts deep-copies a literal-identity fact. Both fields
+// are value types, so a nil-safe struct copy is the whole clone.
+func CloneLiteralDefaultFacts(in *LiteralDefaultFacts) *LiteralDefaultFacts {
+	if in == nil {
+		return nil
+	}
+	out := *in
+	return &out
 }
 
 // IndexKind identifies the semantic class of an index declaration.

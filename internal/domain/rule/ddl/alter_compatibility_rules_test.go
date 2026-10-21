@@ -382,6 +382,9 @@ func TestAlterColumnCompatibilityDefaultTransitions(t *testing.T) {
 		return defaults
 	}
 
+	numberDefault := func(value string) *spec.LiteralDefaultFacts {
+		return &spec.LiteralDefaultFacts{Kind: spec.LiteralDefaultNumeric, Value: value}
+	}
 	cases := []struct {
 		name         string
 		source       spec.Column
@@ -392,18 +395,20 @@ func TestAlterColumnCompatibilityDefaultTransitions(t *testing.T) {
 		wantMessage  string
 		wantGapFacts []string
 	}{
-		{name: "omitted default clears stored literal", source: intCol(spec.Column{HasDefault: true, DefaultValue: "0"}), target: intCol(spec.Column{}), wantFinding: true, wantSource: "literal", wantTarget: "none", wantMessage: `column "c" loses its default value`},
-		{name: "same literal silent", source: intCol(spec.Column{HasDefault: true, DefaultValue: "0"}), target: intCol(spec.Column{HasDefault: true, DefaultValue: "0"})},
-		{name: "different literal changes", source: intCol(spec.Column{HasDefault: true, DefaultValue: "0"}), target: intCol(spec.Column{HasDefault: true, DefaultValue: "1"}), wantFinding: true, wantSource: "literal", wantTarget: "literal", wantMessage: `column "c" changes its default value`},
-		{name: "gains literal", source: intCol(spec.Column{}), target: intCol(spec.Column{HasDefault: true, DefaultValue: "7"}), wantFinding: true, wantSource: "none", wantTarget: "literal", wantMessage: `column "c" gains a default value`},
-		{name: "literal to explicit null loses", source: intCol(spec.Column{HasDefault: true, DefaultValue: "0"}), target: intCol(spec.Column{HasDefault: true, DefaultIsNull: true}), wantFinding: true, wantSource: "literal", wantTarget: "null", wantMessage: `column "c" loses its default value`},
+		{name: "omitted default clears stored literal", source: intCol(spec.Column{HasDefault: true, DefaultValue: "0", DefaultLiteral: numberDefault("0")}), target: intCol(spec.Column{}), wantFinding: true, wantSource: "literal", wantTarget: "none", wantMessage: `column "c" loses its default value`},
+		{name: "same literal silent", source: intCol(spec.Column{HasDefault: true, DefaultValue: "0", DefaultLiteral: numberDefault("0")}), target: intCol(spec.Column{HasDefault: true, DefaultValue: "0", DefaultLiteral: numberDefault("0")})},
+		{name: "different literal changes", source: intCol(spec.Column{HasDefault: true, DefaultValue: "0", DefaultLiteral: numberDefault("0")}), target: intCol(spec.Column{HasDefault: true, DefaultValue: "1", DefaultLiteral: numberDefault("1")}), wantFinding: true, wantSource: "literal", wantTarget: "literal", wantMessage: `column "c" changes its default value`},
+		{name: "gains literal", source: intCol(spec.Column{}), target: intCol(spec.Column{HasDefault: true, DefaultValue: "7", DefaultLiteral: numberDefault("7")}), wantFinding: true, wantSource: "none", wantTarget: "literal", wantMessage: `column "c" gains a default value`},
+		{name: "literal to explicit null loses", source: intCol(spec.Column{HasDefault: true, DefaultValue: "0", DefaultLiteral: numberDefault("0")}), target: intCol(spec.Column{HasDefault: true, DefaultIsNull: true}), wantFinding: true, wantSource: "literal", wantTarget: "null", wantMessage: `column "c" loses its default value`},
 		{name: "none to explicit null silent", source: intCol(spec.Column{}), target: intCol(spec.Column{HasDefault: true, DefaultIsNull: true})},
 		{name: "none to none silent", source: intCol(spec.Column{}), target: intCol(spec.Column{})},
 		{name: "current_timestamp same silent", source: intCol(spec.Column{HasDefault: true, DefaultIsCurrentTimestamp: true}), target: intCol(spec.Column{HasDefault: true, DefaultIsCurrentTimestamp: true})},
-		{name: "current_timestamp to literal changes", source: intCol(spec.Column{HasDefault: true, DefaultIsCurrentTimestamp: true}), target: intCol(spec.Column{HasDefault: true, DefaultValue: "0"}), wantFinding: true, wantSource: "current_timestamp", wantTarget: "literal", wantMessage: `column "c" changes its default value`},
+		{name: "current_timestamp to literal changes", source: intCol(spec.Column{HasDefault: true, DefaultIsCurrentTimestamp: true}), target: intCol(spec.Column{HasDefault: true, DefaultValue: "0", DefaultLiteral: numberDefault("0")}), wantFinding: true, wantSource: "current_timestamp", wantTarget: "literal", wantMessage: `column "c" changes its default value`},
 		{name: "expression same fingerprint silent", source: intCol(spec.Column{HasDefault: true, DefaultExpression: &spec.ExpressionFacts{Known: true, Fingerprint: "abc"}}), target: intCol(spec.Column{HasDefault: true, DefaultExpression: &spec.ExpressionFacts{Known: true, Fingerprint: "abc"}})},
 		{name: "expression different fingerprint changes", source: intCol(spec.Column{HasDefault: true, DefaultExpression: &spec.ExpressionFacts{Known: true, Fingerprint: "abc"}}), target: intCol(spec.Column{HasDefault: true, DefaultExpression: &spec.ExpressionFacts{Known: true, Fingerprint: "def"}}), wantFinding: true, wantSource: "expression", wantTarget: "expression", wantMessage: `column "c" changes its default value`},
-		{name: "expression empty fingerprint counts changed", source: intCol(spec.Column{HasDefault: true, DefaultExpression: &spec.ExpressionFacts{Known: true}}), target: intCol(spec.Column{HasDefault: true, DefaultExpression: &spec.ExpressionFacts{Known: true}}), wantFinding: true, wantSource: "expression", wantTarget: "expression", wantMessage: `column "c" changes its default value`},
+		{name: "expression empty fingerprint unproven", source: intCol(spec.Column{HasDefault: true, DefaultExpression: &spec.ExpressionFacts{Known: true}}), target: intCol(spec.Column{HasDefault: true, DefaultExpression: &spec.ExpressionFacts{Known: true}}), wantGapFacts: []string{factSourceColumnDefault, factTargetColumnDefault}},
+		{name: "literal cross-kind unproven", source: intCol(spec.Column{HasDefault: true, DefaultValue: "0", DefaultLiteral: numberDefault("0")}), target: intCol(spec.Column{HasDefault: true, DefaultValue: "'0'", DefaultLiteral: &spec.LiteralDefaultFacts{Kind: spec.LiteralDefaultString, Value: "0"}}), wantGapFacts: []string{factSourceColumnDefault, factTargetColumnDefault}},
+		{name: "literal target identity missing unproven", source: intCol(spec.Column{HasDefault: true, DefaultValue: "0", DefaultLiteral: numberDefault("0")}), target: intCol(spec.Column{HasDefault: true, DefaultValue: "b'1'"}), wantGapFacts: []string{factTargetColumnDefault}},
 	}
 	reporter := ruleUnderTest.(rule.EvidenceReporter)
 	for _, tc := range cases {
@@ -432,12 +437,25 @@ func TestAlterColumnCompatibilityDefaultTransitions(t *testing.T) {
 			} else if finding != nil {
 				t.Fatalf("unexpected default finding %+v", finding)
 			}
+			if tc.wantGapFacts != nil {
+				got := map[string]bool{}
+				for _, gap := range reporter.EvidenceGaps(statement) {
+					for _, fact := range gap.RequiredFacts {
+						got[fact] = true
+					}
+				}
+				for _, fact := range tc.wantGapFacts {
+					if !got[fact] {
+						t.Fatalf("unproven cell missing %q gap fact, got %#v", fact, got)
+					}
+				}
+			}
 		})
 	}
 
 	t.Run("undecodable source expression reports source_column.default gap", func(t *testing.T) {
 		source := intCol(spec.Column{HasDefault: true, DefaultValue: "uuid()", DefaultExpression: &spec.ExpressionFacts{Known: false}})
-		statement := statementWith(source, &spec.Column{Name: "c", Type: "int", HasDefault: true, DefaultValue: "x"})
+		statement := statementWith(source, &spec.Column{Name: "c", Type: "int", HasDefault: true, DefaultValue: "5", DefaultLiteral: &spec.LiteralDefaultFacts{Kind: spec.LiteralDefaultNumeric, Value: "5"}})
 		gaps := reporter.EvidenceGaps(statement)
 		found := false
 		for _, gap := range gaps {
@@ -452,7 +470,7 @@ func TestAlterColumnCompatibilityDefaultTransitions(t *testing.T) {
 		}
 	})
 	t.Run("complete literal source needs no default gap", func(t *testing.T) {
-		source := intCol(spec.Column{HasDefault: true, DefaultValue: "0"})
+		source := intCol(spec.Column{HasDefault: true, DefaultValue: "0", DefaultLiteral: &spec.LiteralDefaultFacts{Kind: spec.LiteralDefaultNumeric, Value: "0"}})
 		statement := statementWith(source, &spec.Column{Name: "c", Type: "int"})
 		for _, gap := range reporter.EvidenceGaps(statement) {
 			for _, fact := range gap.RequiredFacts {

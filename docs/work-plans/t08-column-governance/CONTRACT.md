@@ -245,23 +245,66 @@ default attribute, the last uncompared governed attribute:
   (omitted-DEFAULT resolution, dialect-parametrized).
 - `source.HasDefault` vs effective-target presence flips → findings
   `column "x" loses its default value` / `column "x" gains a default value`.
-- Both sides have a default → compare classification and literal identity:
-  `DefaultIsNull`/`DefaultIsCurrentTimestamp`/literal `DefaultValue` bytes
-  (literal vs literal only); expression defaults compare via
-  `DefaultExpression` fingerprint equality when both are non-nil and
-  `Known` — different fingerprints or unprovable facts count as changed.
-  A change emits `column "x" changes its default value`. Identical → silent.
+  Presence is a provable fact on both sides and stays determined.
+- Both sides have a default → the comparison is three-state (amended
+  T08-R1): proven-same → silent; proven-different →
+  `column "x" changes its default value`; unproven → no transition finding
+  and a bounded evidence gap instead. One shared comparison drives both
+  `Evaluate` and `EvidenceGaps` — a fact can never be convicted as changed
+  in one place and called unknown in the other.
 - Finding metadata carries classification only:
   `source_default`/`target_default` ∈ `none|literal|null|current_timestamp|
   expression` — never the literal text, expression, or fingerprint.
 - Source facts drive `EvidenceGaps`: `source_column.default` joins
-  `incomplete_source_column` when a loaded source column's default facts are
-  incomplete; `missing_source_column` stays as today. An unknown source
+  `incomplete_source_column` when a loaded source column's default identity
+  is unproven; `missing_source_column` stays as today. An unknown source
   produces a gap, never a "changed" or "unchanged" claim.
 
-This is an extension of the rule's own compare-source-vs-target intent, not
-a repurposing; the contract records it explicitly so it is not a silent
-semantic change.
+#### 5.4-R1 Comparable default identity (amended)
+
+`Column.DefaultValue` is source-shaped text by contract — declaration side
+it carries the rendered literal with its quote layer; provider side it
+carries verbatim `COLUMN_DEFAULT` bytes. The two representations are not a
+comparable identity, and an empty expression fingerprint is an unknown
+fact, never a determined change (both pre-R1 defects).
+
+- `spec.Column.DefaultLiteral *spec.LiteralDefaultFacts` (internal,
+  `json:"-"`) is the comparable literal identity: `Kind` ∈
+  `{"string","numeric"}` plus `Value`, the decoded literal value bytes.
+  nil means the identity is unproven or the default is not literal-class —
+  an empty declared string is a proven `""`, never the unknown sentinel.
+- Declaration side: the typed AST yields the decoded value — `'x'` → `x`,
+  `'''x'''` → `'x'`, `'O''Reilly'` → `O'Reilly`, `'NULL'` → `NULL` —
+  with kind `string`; integer literals (including a unary `±`) decode to
+  kind `numeric`. Non-string/non-integer literal forms (decimal, bit, hex,
+  bool, bytes) and non-literal expressions carry no literal identity —
+  bounded scope, not a coercion simulator.
+- Provider side: `COLUMN_DEFAULT` stores the decoded literal value bytes
+  on all four anchors (`'x'`→`x`, `'''x'''`→`'x'`, `'O''Reilly'`→
+  `O'Reilly` — content quotes are data, not a representation layer), so
+  the stored bytes are the literal identity verbatim; kind comes from the
+  column's type family (integer/decimal/float → `numeric`, otherwise
+  `string`). A keyword-looking stored string like `CURRENT_TIMESTAMP` on
+  a non-temporal column stays literal — `DefaultIsCurrentTimestamp` is
+  asserted only for temporal column families.
+- Same literal class on both sides: kind equal + value equal → same; kind
+  equal + value different → different; kind different → unproven (cross-
+  domain coercion is not modeled). Expression class compares
+  `DefaultExpression.Fingerprint` only when both sides are `Known` with a
+  non-empty fingerprint — equal → same, unequal → different, anything
+  else → unproven.
+- Unproven never emits a transition finding. The gap vocabulary keeps
+  `incomplete_source_column`/`source_column.default` for source-side
+  unproven; target-side or cross-domain unproven adds reason
+  `unproven_default_identity` with `target_column.default` (plus
+  `source_column.default` when the comparison domain itself is shared-
+  unknowable). Reason codes and fact names stay machine-readable — never
+  values.
+- Derived state carries the same fact: CREATE/SET DEFAULT publish the
+  declared literal identity, DROP DEFAULT clears it, MODIFY/CHANGE publish
+  the full new definition's identity, and `cloneColumn` deep-copies the
+  pointer — so a provider-sourced and a declaration-derived pre-state
+  judge identically.
 
 ### 5.5 Explicit-operation vs effective-change, separated
 

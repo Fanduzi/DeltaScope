@@ -52,6 +52,13 @@ func t07OwnerSnapshot() *spec.TableSnapshot {
 					References: []spec.ColumnReference{{Name: "a"}},
 				},
 			},
+			{
+				Name: "d", Type: "varchar(16)",
+				Visibility:     spec.ColumnVisibilityVisible,
+				HasDefault:     true,
+				DefaultValue:   "'x'",
+				DefaultLiteral: &spec.LiteralDefaultFacts{Kind: spec.LiteralDefaultString, Value: "x"},
+			},
 		},
 		Indexes:     []spec.Index{},
 		Constraints: []spec.Constraint{},
@@ -60,13 +67,18 @@ func t07OwnerSnapshot() *spec.TableSnapshot {
 
 func t07OwnerFingerprint(p *t07OwnerProvider) any {
 	b := p.snapshot.Columns[1]
+	d := p.snapshot.Columns[2]
 	return struct {
 		storage    string
 		genRef     string
 		defaultRef string
 		genFP      string
+		litKind    string
+		litValue   string
+		litPtr     *spec.LiteralDefaultFacts
 	}{b.Generated.Storage, b.Generated.Expression.References[0].Name,
-		b.DefaultExpression.References[0].Name, b.Generated.Expression.Fingerprint}
+		b.DefaultExpression.References[0].Name, b.Generated.Expression.Fingerprint,
+		d.DefaultLiteral.Kind, d.DefaultLiteral.Value, d.DefaultLiteral}
 }
 
 // TestT07ProviderSnapshotOwnership proves request-side ordered-state work on
