@@ -1,0 +1,35 @@
+# T08-DELIVERY-CLOSEOUT preflight identity record
+# All values captured live during closeout (2026-10-21, session TZ +08:00).
+
+branch: milestone/mysql-tidb-ddl-completion
+remote baseline (origin/workfree before push): 45463ffbb31f649aa33af0cacb7a556b2959599f
+tested code SHA (full):                       c983fc9d2e8f887981a5f031b1d55b699d711e84
+evidence SHA resolved locally (full):         18f34abb32c411329c0be36c4eb61a6a4ce3f70b
+  resolution: `git rev-parse 18f34abb` -> single full object; commit
+  subject "docs(verification): T08 evidence re-archive at c983fc9d"
+chain: 45463ffb (workfree base) -> ... -> 65b88f98 (T07 closeout docs)
+  -> 9a18e143 (T08 feature) -> 6fb8e438 (T08 golden/validator)
+  -> 9c4fe175 (review fix 1) -> 4762fb44 (evidence @9c4fe175)
+  -> c983fc9d (review fix 2 = tested code) -> 18f34abb (evidence re-archive)
+ancestry: `git merge-base --is-ancestor 45463ffb 18f34abb` -> true
+post-tested-code delta (c983fc9d..18f34abb): evidence-only
+  (deletes superseded 9c4fe175 archive; adds c983fc9d archive)
+uncommitted local state at closeout start: .mcp.json (external, preserved,
+  never staged), untracked tool dirs (.agents/.codex/.cursor/.devin/.grok/
+  .opencode/.pi-subagents/.qoder), other untracked residue — none from this
+  delivery slice
+artifact.head_sha in archived artifact: c983fc9d2e8f887981a5f031b1d55b699d711e84
+archived cli.sha256: dd30c68438272ee2cfa8a4efd4e0fb6ddfc55958e932ece6d67b377c54b57dc2
+  (32 MB binary not committed; digest + go version -m recorded in identity/)
+T08 manifest denominator: 172 cases (8 db + 39 cli + 3 clierr + 122 meta);
+  ids sha256 fb4721077cb94d0a6dab9cc826fea8f16d3bb13615da20d71d9749e22d31b18c
+old evidence reachability: 6fb8e438/9c4fe175 archives readable via git history
+  (`git show <sha>:docs/verification/t08/...`) — deleted from working tree only
+
+# Push transaction (authorized normal fast-forward)
+pre-push live remote:  45463ffb (ancestor of candidate) -> normal ff
+push argv: git push origin 18f34abb32c411329c0be36c4eb61a6a4ce3f70b:refs/heads/workfree
+push result: 45463ffbb31f649aa33af0cacb7a556b2959599f..18f34abb32c411329c0be36c4eb61a6a4ce3f70b  workfree -> workfree
+post-push ls-remote: 18f34abb32c411329c0be36c4eb61a6a4ce3f70b refs/heads/workfree
+remote readability: code commit c983fc9d and evidence commit 18f34abb both
+  reachable via remote ref; archived artifact.json + README.md readable.

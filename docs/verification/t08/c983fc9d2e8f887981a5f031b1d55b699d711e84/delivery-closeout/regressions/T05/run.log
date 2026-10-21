@@ -1,0 +1,30 @@
+# T05 golden regression — delivery-closeout provenance
+# Run performed on detached worktree pinned to the frozen tested code SHA.
+argv: python3 ./scripts/ddl_golden.py run --task T05 --artifact-dir /tmp/t08-closeout-evidence/T05
+cwd: /tmp/ds-t08-closeout  (detached worktree: git worktree add --detach; macOS /tmp -> /private/tmp)
+actual HEAD: c983fc9d2e8f887981a5f031b1d55b699d711e84  (matches artifact.head_sha; == tested code c983fc9d)
+worktree dirty state at run time: clean (git status --porcelain empty; verified post-run)
+credential env required by manifest: DS_T05_GOLDEN_PW  (name only; value never recorded or committed)
+cli.path: /private/tmp/t08-closeout-evidence/T05/T05/bin/deltascope
+cli.sha256: 42c468d53424a03838adcf075c68458d97b97650e38623d270d0b48ca0798a4d
+cli.build.command: CGO_ENABLED=0 go build -o <artifact>/deltascope ./cmd/deltascope
+cli.build.go_version: go1.26.1
+cli.build.built_at: 2026-10-21T05:28:28.711541+00:00
+cli.build.head_sha: c983fc9d2e8f887981a5f031b1d55b699d711e84
+artifact generated_at: 2026-10-21T05:30:03.597986+00:00  (run end bound; serial order T03->T04->T05->T06->T07)
+executed: 247  passed: 242  assertions: 5113
+failing case_ids: ['T05.cli.mysql-alter-add-column-position', 'T05.cli.tidb-alter-add-column-position', 'T05.cli.mysql-alter-modify-column-position', 'T05.meta.t05-a4-mysql84-omit-integer', 'T05.meta.t05-a4-tidb85-omit-integer']
+runner exit code: 1
+  derivation: scripts/ddl_golden.py main() returns 1 iff validate_artifact() reports
+  failures (lines ~7670-7678: print FAIL lines to stderr, return 1; else print PASS,
+  return 0). The assistant-side capture piped stdout through `tail`, so the shell rc
+  seen at capture time was tail's, not the runner's; the runner rc recorded here is
+  derived from the artifact failure list + runner source, and the PASS/FAIL markers
+  observed in console output are consistent with it.
+console summary observed:
+  [ddl-golden] task=T05 head=c983fc9d2e8f cases=247 passed=242 assertions=5113
+  [ddl-golden] artifact=/private/tmp/t08-closeout-evidence/T05/T05/artifact.json
+  [ddl-golden][FAIL] <per-case failure lines on stderr>
+note: per-case command invocations, stdout/stderr, docker exec outputs, catalog
+      verification results and compose cleanup are embedded in artifact.json
+      (fields: cases[].command / actual / assertions; cleanup.compose_down_rc=0).
