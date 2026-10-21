@@ -111,6 +111,7 @@ func (s *batchState) prepareModifyColumn(statement spec.Statement, alter *spec.A
 	if !modifyTypeTemplate(source, *definition) ||
 		modifyDeclaresExtraMember(alter, *definition) ||
 		modifyTiDBPrimaryKeySignedness(s.dialect, inPK, source, *definition) ||
+		modifyTiDBAutoIncrementRemoval(s.dialect, source, *definition) ||
 		(!pkKnown && !modifyExplicitNotNull(alter, *definition)) ||
 		(inPK && modifyExplicitNull(alter, *definition)) ||
 		modifyLocalUnsafe(entry.shape, source.Name) ||
@@ -479,6 +480,14 @@ func modifyDeclaresExtraMember(alter *spec.Alter, definition spec.Column) bool {
 
 func modifyDeclaresPrimaryKey(alter *spec.Alter) bool {
 	return alter != nil && alter.Column != nil && alter.Column.Change != nil && alter.Column.Change.DeclaresPrimaryKey
+}
+
+// modifyTiDBAutoIncrementRemoval reports the TiDB 8.5 rejection of a
+// MODIFY/CHANGE that drops AUTO_INCREMENT — natively ERROR 8200
+// ("can't remove auto_increment"), so no successor is published. Every
+// validated MySQL anchor applies the removal silently instead.
+func modifyTiDBAutoIncrementRemoval(dialect spec.Dialect, source, target spec.Column) bool {
+	return dialect == spec.DialectTiDB && source.AutoIncrement && !target.AutoIncrement
 }
 
 // modifyTiDBPrimaryKeySignedness reports the TiDB 8.5 primary-key boundary

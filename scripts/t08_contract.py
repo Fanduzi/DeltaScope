@@ -42,8 +42,8 @@ MYSQL3 = ('mysql57', 'mysql80', 'mysql84')
 M57 = ('mysql57',)
 M84 = ('mysql84',)
 
-FROZEN_REQUIRED_CASES = 171
-FROZEN_IDS_SHA256 = '0c21190ccd5c8c560cd1223e94f904511d6617ca4afb0fcde0a9eacfb956dc9b'
+FROZEN_REQUIRED_CASES = 172
+FROZEN_IDS_SHA256 = 'fb4721077cb94d0a6dab9cc826fea8f16d3bb13615da20d71d9749e22d31b18c'
 
 FIXTURE_DEFS = {
     't': 'CREATE TABLE t (c INT NULL DEFAULT 0, keep_c INT NULL);',
@@ -374,9 +374,11 @@ def metadata_cases():
 
     # MySQL drops auto_increment on an omitted AUTO_INCREMENT clause; TiDB 8.5
     # rejects the same statement natively (8200). The audit expectation is
-    # identical — the warning is about the declared transition.
+    # identical — the warning is about the declared transition — while the
+    # native outcome and resulting catalog split per anchor.
     for anchor, rc, err, final in (('mysql57', 0, (), 'pk:1:NO:x00:|c:2:YES:30:|keep_c:3:YES:x00:|v:4:YES:x00:|u:5:NO:30:|s:6:YES:x00:'),
-                                   ('mysql84', 0, (), 'pk:1:NO:x00:|c:2:YES:30:|keep_c:3:YES:x00:|v:4:YES:x00:|u:5:NO:30:|s:6:YES:x00:')):
+                                   ('mysql84', 0, (), 'pk:1:NO:x00:|c:2:YES:30:|keep_c:3:YES:x00:|v:4:YES:x00:|u:5:NO:30:|s:6:YES:x00:'),
+                                   ('tidb85', 1, E8200, FIXTURE_COLS['t8'])):
         cases.append(meta_case('modify-ai-drop', anchor, 't8',
                                ['ALTER TABLE t8 MODIFY COLUMN pk INT NOT NULL;'],
                                expect(['ALTER TABLE t8 MODIFY COLUMN pk INT NOT NULL;'], verdict='review', findings=1,

@@ -65,3 +65,17 @@ The manifest additionally binds 8 baseline db roles (`T08.db.<anchor>.ddl` /
 anchor health. The executed manifest denominator is therefore 171 =
 8 db + 39 cli + 3 clierr + 121 meta (the 162-role denominator minus the
 unit-admitted `err.cancel`, plus the 10 baseline health cases).
+
+## Post-review amendments
+
+- **A-tidb-ai-drop** (`t08-{A}-modify-ai-drop`, anchors `all4`): the role
+  declared TiDB coverage but the manifest only materialized mysql57/mysql84.
+  `T08.meta.t08-tidb85-modify-ai-drop` now binds the native split confirmed in
+  `native-matrix.json` — audit emits the same declared-transition warning,
+  the statement is rejected with `ERROR 8200`, and the catalog stays the
+  fixture shape. Denominator 162 → 163 role ids, manifest 171 → 172,
+  ids-sha256 `fb4721077cb94d0a6dab9cc826fea8f16d3bb13615da20d71d9749e22d31b18c`.
+  The same review pass tombstoned the TiDB ordered-state successor for
+  AUTO_INCREMENT removal (`modifyTiDBAutoIncrementRemoval`) and completed the
+  position rule's MySQL accumulated premise set (rename destinations and
+  dropped names now resolve/flag sibling AFTER references).

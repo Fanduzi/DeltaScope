@@ -375,23 +375,34 @@ func (r alterColumnPositionExistsRule) Evaluate(ctx context.Context, statement s
 
 // evaluateAccumulated mirrors alterObjectExistenceRule.Evaluate but resolves
 // each AFTER reference against the state MySQL validates: the pre-state plus
-// column names materialized by earlier actions in the same statement
-// (left-to-right clause semantics).
+// column names materialized by earlier actions in the same statement minus
+// names those actions destroyed (left-to-right clause semantics). Actions
+// outside the position-capable set — DROP, RENAME — still update the
+// accumulated name set so sibling premises match the server's working state.
 func (r alterColumnPositionExistsRule) evaluateAccumulated(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	snapshot, ok := targetTableSnapshot(statement)
 	if !ok || snapshot == nil || !snapshot.Exists || snapshot.Columns == nil {
 		return nil, nil
 	}
 
+	if statement.DDL == nil {
+		return nil, nil
+	}
+	actions := statement.DDL.Alter
 	findings := make([]rule.Finding, 0)
 	tableName := metadataTargetTableName(statement, snapshot)
 	produced := make(map[string]struct{})
-	for _, alter := range matchingAlterObjectActions(statement, r.inner.actions...) {
+	removed := make(map[string]struct{})
+	positioned := map[string]bool{}
+	for _, action := range r.inner.actions {
+		positioned[action] = true
+	}
+	for _, alter := range actions {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		if name := alterPositionAfterName(alter); name != "" &&
-			!snapshotHasColumn(snapshot, name) && !producedName(produced, name) {
+		if name := alterPositionAfterName(alter); positioned[alter.Action] && name != "" &&
+			!producedName(produced, name) && !(snapshotHasColumn(snapshot, name) && !removedName(removed, name)) {
 			findings = append(findings, rule.Finding{
 				Level:      r.inner.level,
 				Message:    fmt.Sprintf("column %q does not exist on table %q", name, tableName),
@@ -404,8 +415,15 @@ func (r alterColumnPositionExistsRule) evaluateAccumulated(ctx context.Context, 
 				},
 			})
 		}
+		for _, name := range alterRemovedColumnNames(alter) {
+			lower := strings.ToLower(name)
+			removed[lower] = struct{}{}
+			delete(produced, lower)
+		}
 		for _, name := range alterProducedColumnNames(alter) {
-			produced[strings.ToLower(name)] = struct{}{}
+			lower := strings.ToLower(name)
+			produced[lower] = struct{}{}
+			delete(removed, lower)
 		}
 	}
 	return findings, nil
@@ -414,6 +432,33 @@ func (r alterColumnPositionExistsRule) evaluateAccumulated(ctx context.Context, 
 func producedName(produced map[string]struct{}, name string) bool {
 	_, hit := produced[strings.ToLower(name)]
 	return hit
+}
+
+func removedName(removed map[string]struct{}, name string) bool {
+	_, hit := removed[strings.ToLower(name)]
+	return hit
+}
+
+// alterRemovedColumnNames returns the column identities an alter action
+// destroys within the same statement — a dropped column, or the source name
+// a rename/change migrates away from. A same-name change removes nothing.
+func alterRemovedColumnNames(alter spec.Alter) []string {
+	switch alter.Action {
+	case "drop_column":
+		if strings.TrimSpace(alter.Name) != "" {
+			return []string{alter.Name}
+		}
+	case "change_column", "rename_column":
+		oldName := strings.TrimSpace(alter.Name)
+		column, ok := alterColumnDefinition(alter)
+		if !ok {
+			return nil
+		}
+		if oldName != "" && !strings.EqualFold(oldName, strings.TrimSpace(column.Name)) {
+			return []string{oldName}
+		}
+	}
+	return nil
 }
 
 // alterProducedColumnNames returns the column names an alter action

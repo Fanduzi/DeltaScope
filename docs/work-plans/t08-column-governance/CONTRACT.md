@@ -146,7 +146,7 @@ premise.
 
 ## 3. Fixed internal facts
 
-- `spec.Alter` gains `Position *spec.ColumnPosition`. `ColumnPosition` is a
+- `spec.Alter` gains `Position *spec.AlterPosition`. `AlterPosition` is a
   spec-owned type: `Kind string` (`"first"` or `"after"`) and `After string`
   (normalized relative column name; empty for `first`). `HasColumnPosition`
   remains the presence flag; `Position` non-nil ⇔ `HasColumnPosition` true.

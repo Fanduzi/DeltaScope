@@ -24,6 +24,24 @@ roles (36 list entries). Approved T03/T04/T05 generated promotions are enumerate
 in [EXPECTED-UPGRADES](../../docs/work-plans/t07-advanced-columns/EXPECTED-UPGRADES.md);
 their SQL, IDs, profiles and unrelated unsupported controls stay unchanged.
 
+## T08 column-governance contract
+
+[T08.json](T08.json) materializes the independent
+[`scripts/t08_contract.py`](../../scripts/t08_contract.py) oracle: 171 cases
+(8 database baselines, 39 offline CLI, 121 metadata, 3 `cli_error` records —
+the 162-role denominator maps to 161 executable cases plus the unit-proven
+`err.cancel` role, with the 8 baseline db and 2 baseline CLI dialect cases
+added on top). The
+contract and versioned/native source distinctions are indexed in
+[CONTRACT.md](../../docs/work-plans/t08-column-governance/CONTRACT.md). Exact
+T08 SQL/profile/version/native structures are frozen before production
+implementation and must not be regenerated from product actuals. T08 reuses
+the T07 fixture-credential shape: `exec_password_env` passes the MySQL
+password through Docker's inherited `MYSQL_PWD` environment, never an argv
+value; the run requires `T08_MYSQL_PASSWORD` to be exported. Approved upgrades
+over earlier frozen expectations are enumerated in
+[EXPECTED-UPGRADES](../../docs/work-plans/t08-column-governance/EXPECTED-UPGRADES.md).
+
 ## Manifest contract
 
 - `task_id`: milestone task id (e.g. `T02`)

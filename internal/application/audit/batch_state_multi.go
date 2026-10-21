@@ -231,6 +231,7 @@ func multiActionModify(s *batchState, alter *spec.Alter, working *spec.TableSnap
 	if !modifyTypeTemplate(source, *definition) ||
 		modifyDeclaresExtraMember(alter, *definition) ||
 		modifyTiDBPrimaryKeySignedness(s.dialect, inPK, source, *definition) ||
+		modifyTiDBAutoIncrementRemoval(s.dialect, source, *definition) ||
 		(!pkKnown && !modifyExplicitNotNull(alter, *definition)) ||
 		(inPK && modifyExplicitNull(alter, *definition)) ||
 		modifyLocalUnsafe(working, source.Name) {
@@ -268,6 +269,7 @@ func multiActionChange(s *batchState, alter *spec.Alter, working *spec.TableSnap
 	if !modifyTypeTemplate(source, *definition) ||
 		modifyDeclaresExtraMember(alter, *definition) ||
 		modifyTiDBPrimaryKeySignedness(s.dialect, inPK, source, *definition) ||
+		modifyTiDBAutoIncrementRemoval(s.dialect, source, *definition) ||
 		(!pkKnown && !modifyExplicitNotNull(alter, *definition)) ||
 		(inPK && modifyExplicitNull(alter, *definition)) {
 		return false

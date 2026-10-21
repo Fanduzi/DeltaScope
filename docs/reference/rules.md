@@ -410,14 +410,15 @@ These rules check that column type and attribute changes made via `MODIFY COLUMN
 | `ddl.alter.change_column.explicit_auto_increment_change.forbid` | CHANGE COLUMN must not add or remove AUTO_INCREMENT | blocker | **Yes** |
 | `ddl.alter.table_option.compatibility.require` | Table option changes must be compatible with current table options | warning | **Yes** |
 
-### Existence and Column-Identity Rules (15 rules — metadata-backed)
+### Existence and Column-Identity Rules (18 rules — metadata-backed)
 
 These rules verify that the objects referenced by a DDL statement actually exist (or do not
 already exist) in the request-local ordered schema view: a live table snapshot when metadata
 is configured, or a state derived from earlier statements in the same audit batch for MySQL
 and TiDB. On MySQL/TiDB the table-existence rules (`exists.alter`, `exists.create`), every
-column/index member-existence rule (`add`/`drop`/`modify`/`change`/`rename` column and
-`add`/`drop`/`rename` index), the CHANGE and RENAME destination-name rules, `ddl.alter.drop_primary_key.exists.require`,
+column/index member-existence rule (`add`/`drop`/`modify`/`change`/`rename` column,
+`add`/`drop`/`rename` index, the `set_default`/`drop_default` column targets, and
+`AFTER`-relative column-position references), the CHANGE and RENAME destination-name rules, `ddl.alter.drop_primary_key.exists.require`,
 `ddl.create_index.columns.exists.require`, and `ddl.table.drop.exists.require` emit
 `unknown_table_state` evidence gaps when
 that state cannot be established; the remaining rules are still silently skipped without
@@ -442,6 +443,9 @@ On MySQL and TiDB, one ordinary single-action `DROP COLUMN` removes that column 
 | `ddl.alter.rename_column.exists.require` | RENAME COLUMN source must exist | blocker | **Yes** |
 | `ddl.alter.rename_column.target.exists.forbid` | RENAME COLUMN new name must not already belong to another column | blocker | **Yes** |
 | `ddl.alter.rename_column.version.require` | RENAME COLUMN requires MySQL 8.0.3+ in 8.0, MySQL 8.4, or TiDB 8.5; a known older MySQL version is one blocker | blocker | **Yes** |
+| `ddl.alter.set_default.exists.require` | ALTER COLUMN SET DEFAULT target must exist | blocker | **Yes** |
+| `ddl.alter.drop_default.exists.require` | ALTER COLUMN DROP DEFAULT target must exist | blocker | **Yes** |
+| `ddl.alter.column_position.exists.require` | The column an AFTER position clause references must exist (MySQL evaluates same-statement sibling columns from the accumulated working state; TiDB uses the pre-statement state) | blocker | **Yes** |
 | `ddl.alter.add_index.exists.forbid` | ADD INDEX name must not already exist | blocker | **Yes** |
 | `ddl.alter.drop_index.exists.require` | DROP INDEX target must exist | blocker | **Yes** |
 | `ddl.alter.rename_index.exists.require` | RENAME INDEX source must exist | blocker | **Yes** |

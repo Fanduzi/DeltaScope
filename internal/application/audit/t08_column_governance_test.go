@@ -299,6 +299,40 @@ func TestBatchStateT08MultiActionSuccessor(t *testing.T) {
 		enriched := enrich(t, "CREATE TABLE t (a INT, b INT);\nALTER TABLE t MODIFY COLUMN a BIGINT AFTER b, ADD COLUMN c INT;\nALTER TABLE t ADD COLUMN d INT;", spec.DialectMySQL)
 		wantColumnOrder(t, enriched[2].Metadata.TargetTable, "b", "a", "c")
 	})
+	t.Run("tidb auto_increment removal tombstones", func(t *testing.T) {
+		t.Parallel()
+		// TiDB 8.5 rejects dropping AUTO_INCREMENT (8200); no successor may
+		// be published for a statement the server refuses.
+		enriched := enrich(t, "CREATE TABLE t (pk INT PRIMARY KEY AUTO_INCREMENT, a INT);\nALTER TABLE t MODIFY COLUMN pk INT NOT NULL;\nALTER TABLE t ADD COLUMN d INT;", spec.DialectTiDB)
+		if enriched[2].Metadata.TargetTable != nil {
+			t.Fatalf("TiDB AI-removal published %+v", enriched[2].Metadata.TargetTable)
+		}
+	})
+	t.Run("tidb change dropping auto_increment tombstones", func(t *testing.T) {
+		t.Parallel()
+		enriched := enrich(t, "CREATE TABLE t (pk INT PRIMARY KEY AUTO_INCREMENT, a INT);\nALTER TABLE t CHANGE COLUMN pk pk INT NOT NULL;\nALTER TABLE t ADD COLUMN d INT;", spec.DialectTiDB)
+		if enriched[2].Metadata.TargetTable != nil {
+			t.Fatalf("TiDB change AI-removal published %+v", enriched[2].Metadata.TargetTable)
+		}
+	})
+	t.Run("tidb multi-action ai removal tombstones whole statement", func(t *testing.T) {
+		t.Parallel()
+		// The add is provable but the modify premise fails natively, so
+		// nothing publishes.
+		enriched := enrich(t, "CREATE TABLE t (pk INT PRIMARY KEY AUTO_INCREMENT, a INT);\nALTER TABLE t MODIFY COLUMN pk INT NOT NULL, ADD COLUMN c INT;\nALTER TABLE t ADD COLUMN d INT;", spec.DialectTiDB)
+		if enriched[2].Metadata.TargetTable != nil {
+			t.Fatalf("TiDB multi-action AI-removal published %+v", enriched[2].Metadata.TargetTable)
+		}
+	})
+	t.Run("mysql modify dropping auto_increment publishes", func(t *testing.T) {
+		t.Parallel()
+		enriched := enrich(t, "CREATE TABLE t (pk INT PRIMARY KEY AUTO_INCREMENT, a INT);\nALTER TABLE t MODIFY COLUMN pk INT NOT NULL;\nALTER TABLE t ADD COLUMN d INT;", spec.DialectMySQL)
+		shape := enriched[2].Metadata.TargetTable
+		wantColumnOrder(t, shape, "pk", "a")
+		if pk := shape.FindColumn("pk"); pk == nil || pk.AutoIncrement {
+			t.Fatalf("MySQL AI removal not applied: %+v", pk)
+		}
+	})
 }
 
 // TestAuditSQLT08ExistenceRules pins the three frozen rule bindings: the
@@ -433,6 +467,34 @@ func TestAuditSQLT08ExistenceRules(t *testing.T) {
 			spec.DialectTiDB, &t05PresentProvider{snapshots: snapshots})
 		if !contains(ids, "ddl.alter.column_position.exists.require") {
 			t.Fatalf("TiDB sibling AFTER missed the pre-state existence finding, got %v", ids)
+		}
+	})
+
+	// The accumulated set tracks every sibling action, not only positioned
+	// ones: a rename destination is visible to a later AFTER, while names a
+	// sibling drop or rename destroys no longer resolve.
+	t.Run("mysql rename destination satisfies sibling after", func(t *testing.T) {
+		t.Parallel()
+		ids := findingsFor(t, "ALTER TABLE t RENAME COLUMN existing TO renamed, ADD COLUMN c INT AFTER renamed;",
+			spec.DialectMySQL, &t05PresentProvider{snapshots: snapshots})
+		if contains(ids, "ddl.alter.column_position.exists.require") {
+			t.Fatalf("MySQL rename destination emitted a position-existence finding, got %v", ids)
+		}
+	})
+	t.Run("mysql dropped sibling fails after premise", func(t *testing.T) {
+		t.Parallel()
+		ids := findingsFor(t, "ALTER TABLE t DROP COLUMN existing, ADD COLUMN c INT AFTER existing;",
+			spec.DialectMySQL, &t05PresentProvider{snapshots: snapshots})
+		if !contains(ids, "ddl.alter.column_position.exists.require") {
+			t.Fatalf("MySQL dropped-name AFTER missed the existence finding, got %v", ids)
+		}
+	})
+	t.Run("mysql renamed-away name fails after premise", func(t *testing.T) {
+		t.Parallel()
+		ids := findingsFor(t, "ALTER TABLE t RENAME COLUMN existing TO renamed, ADD COLUMN c INT AFTER existing;",
+			spec.DialectMySQL, &t05PresentProvider{snapshots: snapshots})
+		if !contains(ids, "ddl.alter.column_position.exists.require") {
+			t.Fatalf("MySQL renamed-away AFTER missed the existence finding, got %v", ids)
 		}
 	})
 }

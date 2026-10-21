@@ -3,7 +3,7 @@
   "issue": "https://github.com/Fanduzi/DeltaScope/issues/87",
   "contract": "docs/work-plans/t08-column-governance/CONTRACT.md",
   "status": "frozen",
-  "role_count": 162,
+  "role_count": 163,
   "denominator_contract": "Every id in required_case_ids must exist in testdata/ddl-golden/T08.json or in a named unit/e2e test. Removing a case, loosening an expectation, or shrinking the denominator without amending this file is a contract violation. Role ids frozen to golden-runner namespaces T08.cli/T08.clierr/T08.meta (previously written T08.db.<anchor>.<role>). err.cancel and err.policy-invalid are admission-bound to named unit tests; err.unsupported-aspect to the T08.cli.unsupported-aspect golden case. The manifest additionally binds the 8 baseline db and 2 baseline cli roles for anchor health. err.syntax is admitted as the T08.cli.err-syntax golden case (parse failures emit a result JSON, so it is a cli case not a clierr case); err.policy-invalid is admitted as T08.clierr.err-policy-invalid (missing policy config exits before any audit result); err.cancel remains a named unit-test role.",
   "fixtures": {
     "golden.t": "c INT NULL DEFAULT 0, keep_c INT NULL",
@@ -422,7 +422,7 @@
       "fixture": "golden.t8",
       "sql": "ALTER TABLE t8 MODIFY COLUMN pk INT NOT NULL;",
       "policy": "t08-all",
-      "expect": "compat auto_increment removal warning; EXTRA loses auto_increment; PK member stays NOT NULL (omitted NULL on PK member is not a user NULL downgrade)"
+      "expect": "compat auto_increment removal warning on all anchors; MySQL anchors: EXTRA loses auto_increment, PK member stays NOT NULL (omitted NULL on PK member is not a user NULL downgrade); TiDB 8.5: statement rejected natively (8200), catalog unchanged, ordered state tombstoned"
     },
     {
       "id": "t08-{A}-modify-omit-default",
@@ -750,6 +750,7 @@
     "T08.meta.t08-mysql84-modify-family-change",
     "T08.meta.t08-mysql84-modify-unsigned-drop",
     "T08.meta.t08-mysql84-modify-ai-drop",
+    "T08.meta.t08-tidb85-modify-ai-drop",
     "T08.meta.t08-mysql84-modify-omit-default",
     "T08.meta.t08-mysql84-modify-default-same",
     "T08.meta.t08-mysql84-modify-default-diff",

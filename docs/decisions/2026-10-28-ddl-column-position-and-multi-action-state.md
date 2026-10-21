@@ -31,7 +31,7 @@ Two facts from the native matrix shaped the design:
 
 ## Decision
 
-1. `spec.Alter` carries `Position *spec.ColumnPosition` populated by the
+1. `spec.Alter` carries `Position *spec.AlterPosition` populated by the
    extractors. `FIRST` is an ordering operation with no existence premise;
    `AFTER <col>` requires the referenced column to exist and is governed by
    the new `ddl.alter.column_position.exists.require` rule.

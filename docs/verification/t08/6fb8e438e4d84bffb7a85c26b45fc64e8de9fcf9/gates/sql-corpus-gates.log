@@ -1,2 +1,0 @@
-go test ./internal/application/audit -run 'TestSQLCorpusMySQLAndTiDB|TestSQLCorpusExpectedFilesAreWellFormed|TestSQLCorpusCoversSupportedRuleDialects' -count=1
-ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.394s

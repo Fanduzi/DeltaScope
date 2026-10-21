@@ -226,35 +226,43 @@ func sourceDefaultFactIncomplete(source spec.Column) bool {
 	return source.HasDefault && source.DefaultExpression != nil && !source.DefaultExpression.Known
 }
 
-// defaultTransitionChanged compares the source column's stored default to
+// defaultTransitionMessage compares the source column's stored default to
 // the effective default a MODIFY/CHANGE full definition stores — an omitted
 // DEFAULT clause resolves to cleared on every validated MySQL/TiDB anchor,
 // and an explicit `DEFAULT NULL` resolves to no stored default either.
 // Unprovable facts (an expression identity without a fingerprint) count as
-// changed rather than unchanged.
-func defaultTransitionChanged(source spec.Column, target spec.Column) (changed bool) {
+// changed rather than unchanged. The return is the frozen transition
+// vocabulary: "" when identical, or the verb phrase for a presence flip or
+// a same-presence change.
+func defaultTransitionMessage(source spec.Column, target spec.Column) string {
 	sourceClass := effectiveDefaultClass(source)
 	targetClass := effectiveDefaultClass(target)
 	sourcePresent := sourceClass != defaultClassNone && sourceClass != defaultClassNull
 	targetPresent := targetClass != defaultClassNone && targetClass != defaultClassNull
 	if sourcePresent != targetPresent {
-		return true
+		if sourcePresent {
+			return "loses its default value"
+		}
+		return "gains a default value"
 	}
 	if !sourcePresent {
-		return false
+		return ""
 	}
-	if sourceClass != targetClass {
-		return true
+	changed := sourceClass != targetClass
+	if !changed {
+		switch sourceClass {
+		case defaultClassLiteral:
+			changed = source.DefaultValue != target.DefaultValue
+		case defaultClassExpression:
+			changed = source.DefaultExpression.Fingerprint == "" ||
+				target.DefaultExpression.Fingerprint == "" ||
+				source.DefaultExpression.Fingerprint != target.DefaultExpression.Fingerprint
+		}
 	}
-	switch sourceClass {
-	case defaultClassLiteral:
-		return source.DefaultValue != target.DefaultValue
-	case defaultClassExpression:
-		return source.DefaultExpression.Fingerprint == "" ||
-			target.DefaultExpression.Fingerprint == "" ||
-			source.DefaultExpression.Fingerprint != target.DefaultExpression.Fingerprint
+	if changed {
+		return "changes its default value"
 	}
-	return false
+	return ""
 }
 
 func (r alterTableOptionCompatibilityRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
@@ -340,9 +348,9 @@ func compatibilityFindings(ruleID string, level rule.Level, tableName string, al
 		))
 	}
 
-	if defaultTransitionChanged(source, target) {
+	if transition := defaultTransitionMessage(source, target); transition != "" {
 		findings = append(findings, newCompatibilityFinding(ruleID, level, tableName, alter, columnName,
-			fmt.Sprintf("column %q changes its effective default value", alter.Name),
+			fmt.Sprintf("column %q %s", alter.Name, transition),
 			"keep the declared default identical to the stored default or review the transition explicitly",
 			map[string]any{
 				"source_default": effectiveDefaultClass(source),
