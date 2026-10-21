@@ -69,6 +69,18 @@ func auditedAlterAction(dialect spec.Dialect, action string) bool {
 	return ok
 }
 
+// auditedPositionAction reports whether a parsed FIRST|AFTER position is
+// modeled for the action. The grammar only emits positions on these three;
+// a position on any other action is an anomaly that keeps the aspect gap.
+func auditedPositionAction(action string) bool {
+	switch action {
+	case "add_columns", "modify_column", "change_column":
+		return true
+	default:
+		return false
+	}
+}
+
 // extensionTypeVendor reports whether TiDB-extension index/constraint types
 // (vector, columnar) are a vendor boundary under the dialect: MySQL has no such
 // types, while TiDB ships them without audited semantics yet.
@@ -481,7 +493,7 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 		if alter.Column != nil && alter.Column.Definition != nil {
 			gaps = append(gaps, columnAspectGaps(dialect, ddl.Operation, alter.Action, *alter.Column.Definition)...)
 		}
-		if alter.HasColumnPosition {
+		if alter.HasColumnPosition && !auditedPositionAction(alter.Action) {
 			gaps = append(gaps, aspectGap(
 				fmt.Sprintf("%s.%s.column_position", ddl.Operation, alter.Action), false,
 				map[string]any{"aspect": "column_position", "action": alter.Action},

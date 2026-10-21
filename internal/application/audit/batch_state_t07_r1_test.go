@@ -252,12 +252,13 @@ func TestT07R1GeneratedPremiseAlter(t *testing.T) {
 							},
 						}},
 					},
-					// FIRST|AFTER positioning is outside audited semantics
-					// — the coverage layer returns the statement to the
-					// unsupported channel before the premise check can
-					// produce a guessed verdict.
-					sql:             "ALTER TABLE t ADD COLUMN b INT AS (g + 1) VIRTUAL FIRST",
-					wantUnsupported: true,
+					// FIRST positioning is now an audited fact, so the
+					// generated-premise check runs and reports the
+					// position-dependent ordering proof as a bounded gap
+					// rather than returning the whole statement to the
+					// unsupported channel.
+					sql:     "ALTER TABLE t ADD COLUMN b INT AS (g + 1) VIRTUAL FIRST",
+					wantGap: "incomplete_alter_dependency_effects",
 				},
 				{
 					name: "add_generated_references_prior_generated",

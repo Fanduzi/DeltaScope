@@ -196,8 +196,11 @@ func TestBatchStateA4OmittedAttributesAndCharset(t *testing.T) {
 	t.Parallel()
 	sql := "CREATE TABLE t (id INT PRIMARY KEY, c INT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'old');\nALTER TABLE t MODIFY COLUMN c INT;\nALTER TABLE t MODIFY COLUMN c INT NOT NULL;"
 	result := t05A4Audit(t, sql, spec.DialectMySQL, &t05AbsentProvider{}, t05A4FourRulePolicy(t))
-	if len(t05FindingsByRule(result, 1, t05RuleModifyCompat)) != 1 || len(t05FindingsByRule(result, 2, t05RuleModifyCompat)) != 1 {
-		t.Fatalf("want one signedness blocker then one nullability blocker, got %#v / %#v", result.Statements[1].Findings, result.Statements[2].Findings)
+	// Statement 1 drops UNSIGNED and omits DEFAULT (the effective default is
+	// cleared): one signedness blocker plus one default-transition blocker.
+	// Statement 2 then tightens nullability.
+	if len(t05FindingsByRule(result, 1, t05RuleModifyCompat)) != 2 || len(t05FindingsByRule(result, 2, t05RuleModifyCompat)) != 1 {
+		t.Fatalf("want signedness+default blockers then one nullability blocker, got %#v / %#v", result.Statements[1].Findings, result.Statements[2].Findings)
 	}
 	if result.Statements[1].Findings[0].Metadata["source_unsigned"] != true || result.Statements[2].Findings[0].Metadata["source_not_null"] != false {
 		t.Fatalf("finding metadata = %#v / %#v", result.Statements[1].Findings[0].Metadata, result.Statements[2].Findings[0].Metadata)
@@ -401,8 +404,6 @@ func TestBatchStateA4UnsafeDependentsInvalidate(t *testing.T) {
 func TestBatchStateA4NonTemplateStaysConservative(t *testing.T) {
 	t.Parallel()
 	cases := []string{
-		"CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10)); ALTER TABLE t MODIFY COLUMN c VARCHAR(20), ADD COLUMN d INT; ALTER TABLE t MODIFY COLUMN c VARCHAR(15);",
-		"CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10)); ALTER TABLE t MODIFY COLUMN c VARCHAR(20) FIRST; ALTER TABLE t MODIFY COLUMN c VARCHAR(15);",
 		"CREATE TABLE t (id INT PRIMARY KEY, c VARCHAR(10)); ALTER TABLE t MODIFY COLUMN c INT; ALTER TABLE t MODIFY COLUMN c BIGINT;",
 		"CREATE TABLE t (id INT PRIMARY KEY, c INT); ALTER TABLE t MODIFY COLUMN c INT AUTO_INCREMENT; ALTER TABLE t MODIFY COLUMN c BIGINT;",
 	}

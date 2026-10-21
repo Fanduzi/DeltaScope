@@ -520,11 +520,24 @@ func extractDropDatabase(stmt *ast.DropDatabaseStmt) *spec.DDL {
 func extractAlterSpecs(specification *ast.AlterTableSpec, clause string) []spec.Alter {
 	if specification.Tp == ast.AlterTableAddColumns {
 		alters := make([]spec.Alter, 0, len(specification.NewColumns)+len(specification.NewConstraints))
+		// A position clause on a parenthesized multi-column list applies to
+		// the whole spec, not to one column — no per-column position can be
+		// attributed, so the clause is recorded as an unextracted option
+		// instead of duplicating it onto every emitted action.
+		specLevelPosition := len(specification.NewColumns) > 1 && hasColumnPositionClause(specification)
 		for _, column := range specification.NewColumns {
 			if column == nil {
 				continue
 			}
-			alter := spec.Alter{Action: alterActionName(specification.Tp), Name: column.Name.Name.L, Column: alterColumnFromColumnDef(column), HasColumnPosition: hasColumnPositionClause(specification)}
+			alter := spec.Alter{Action: alterActionName(specification.Tp), Name: column.Name.Name.L, Column: alterColumnFromColumnDef(column)}
+			if specLevelPosition {
+				if len(alters) == 0 {
+					alter.UnextractedOptions = append(alter.UnextractedOptions, "column_position")
+				}
+			} else {
+				alter.HasColumnPosition = hasColumnPositionClause(specification)
+				alter.Position = extractAlterPosition(specification)
+			}
 			markAlterExistenceClauses(specification, &alter)
 			alters = append(alters, alter)
 		}
@@ -553,8 +566,22 @@ func hasColumnPositionClause(specification *ast.AlterTableSpec) bool {
 	return specification.Position != nil && specification.Position.Tp != ast.ColumnPositionNone
 }
 
+func extractAlterPosition(specification *ast.AlterTableSpec) *spec.AlterPosition {
+	if !hasColumnPositionClause(specification) {
+		return nil
+	}
+	position := &spec.AlterPosition{Kind: "first"}
+	if specification.Position.Tp == ast.ColumnPositionAfter {
+		position.Kind = "after"
+		if specification.Position.RelativeColumn != nil {
+			position.After = specification.Position.RelativeColumn.Name.L
+		}
+	}
+	return position
+}
+
 func extractAlterSpec(specification *ast.AlterTableSpec, clause string) spec.Alter {
-	alter := spec.Alter{Action: alterActionNameForSpec(specification, clause), Name: extractAlterName(specification), HasColumnPosition: hasColumnPositionClause(specification)}
+	alter := spec.Alter{Action: alterActionNameForSpec(specification, clause), Name: extractAlterName(specification), HasColumnPosition: hasColumnPositionClause(specification), Position: extractAlterPosition(specification)}
 	if column := extractAlterColumn(specification); column != nil {
 		alter.Column = column
 	}

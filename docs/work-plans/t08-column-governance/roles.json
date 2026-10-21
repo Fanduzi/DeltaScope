@@ -1,0 +1,836 @@
+{
+  "task_id": "T08",
+  "issue": "https://github.com/Fanduzi/DeltaScope/issues/87",
+  "contract": "docs/work-plans/t08-column-governance/CONTRACT.md",
+  "status": "frozen",
+  "role_count": 162,
+  "denominator_contract": "Every id in required_case_ids must exist in testdata/ddl-golden/T08.json or in a named unit/e2e test. Removing a case, loosening an expectation, or shrinking the denominator without amending this file is a contract violation. Role ids frozen to golden-runner namespaces T08.cli/T08.clierr/T08.meta (previously written T08.db.<anchor>.<role>). err.cancel and err.policy-invalid are admission-bound to named unit tests; err.unsupported-aspect to the T08.cli.unsupported-aspect golden case. The manifest additionally binds the 8 baseline db and 2 baseline cli roles for anchor health. err.syntax is admitted as the T08.cli.err-syntax golden case (parse failures emit a result JSON, so it is a cli case not a clierr case); err.policy-invalid is admitted as T08.clierr.err-policy-invalid (missing policy config exits before any audit result); err.cancel remains a named unit-test role.",
+  "fixtures": {
+    "golden.t": "c INT NULL DEFAULT 0, keep_c INT NULL",
+    "golden.t8": "pk INT NOT NULL AUTO_INCREMENT, c INT NULL DEFAULT 0, keep_c INT NULL, v VARCHAR(32) NULL, u INT UNSIGNED NOT NULL DEFAULT 0, s VARCHAR(16) NULL, PRIMARY KEY (pk)",
+    "golden.t8p": "a INT, b INT, c INT",
+    "golden.t8e": "keep_c INT NULL"
+  },
+  "policies": {
+    "t08-off": "all rules disabled (baseline pass profile)",
+    "t08-set-default": "only ddl.alter.set_default.explicit_default_change.forbid enabled @ blocker",
+    "t08-drop-default": "only ddl.alter.drop_default.explicit_default_change.forbid enabled @ blocker",
+    "t08-modify-default": "only ddl.alter.modify_column.explicit_default_change.forbid enabled @ blocker",
+    "t08-change-default": "only ddl.alter.change_column.explicit_default_change.forbid enabled @ blocker",
+    "t08-default-all": "set+drop+modify+change explicit_default_change enabled @ blocker",
+    "t08-nullability-all": "modify+change explicit_nullability_change enabled @ blocker + unknown_prior_state advisory on",
+    "t08-ai": "modify+change explicit_auto_increment_change enabled @ blocker",
+    "t08-compat": "modify+change compatibility.require enabled @ warning",
+    "t08-existence": "ddl.alter.set_default.exists.require + ddl.alter.drop_default.exists.require + ddl.alter.column_position.exists.require + table.exists.alter.require enabled @ blocker",
+    "t08-all": "default shipped policy (everything on)"
+  },
+  "cli_cases": [
+    {
+      "id": "t08-cli-set-default-blocker",
+      "dialect": "mysql",
+      "policy": "t08-set-default",
+      "sql": "ALTER TABLE t ALTER COLUMN c SET DEFAULT 1;",
+      "expect": "reject; exactly 1 blocker ddl.alter.set_default.explicit_default_change.forbid (action=set_column_default,name=c); exit1 under --fail-on blocker"
+    },
+    {
+      "id": "t08-cli-set-default-blocker-tidb",
+      "dialect": "tidb",
+      "policy": "t08-set-default",
+      "sql": "ALTER TABLE t ALTER COLUMN c SET DEFAULT 1;",
+      "expect": "same as mysql cell"
+    },
+    {
+      "id": "t08-cli-modify-default-blocker",
+      "dialect": "mysql",
+      "policy": "t08-modify-default",
+      "sql": "ALTER TABLE t MODIFY COLUMN c INT NULL DEFAULT 1;",
+      "expect": "reject; 1 blocker ddl.alter.modify_column.explicit_default_change.forbid"
+    },
+    {
+      "id": "t08-cli-change-default-blocker",
+      "dialect": "mysql",
+      "policy": "t08-change-default",
+      "sql": "ALTER TABLE t CHANGE COLUMN c c2 INT NULL DEFAULT 1;",
+      "expect": "reject; 1 blocker ddl.alter.change_column.explicit_default_change.forbid"
+    },
+    {
+      "id": "t08-cli-drop-default-blocker",
+      "dialect": "mysql",
+      "policy": "t08-drop-default",
+      "sql": "ALTER TABLE t ALTER COLUMN c DROP DEFAULT;",
+      "expect": "reject; 1 blocker ddl.alter.drop_default.explicit_default_change.forbid (action=drop_column_default)"
+    },
+    {
+      "id": "t08-cli-set-under-drop-policy",
+      "dialect": "mysql",
+      "policy": "t08-drop-default",
+      "sql": "ALTER TABLE t ALTER COLUMN c SET DEFAULT 1;",
+      "expect": "pass, 0 findings — set and drop policies are independent"
+    },
+    {
+      "id": "t08-cli-drop-under-set-policy",
+      "dialect": "mysql",
+      "policy": "t08-set-default",
+      "sql": "ALTER TABLE t ALTER COLUMN c DROP DEFAULT;",
+      "expect": "pass, 0 findings"
+    },
+    {
+      "id": "t08-cli-default-non-target",
+      "dialect": "mysql",
+      "policy": "t08-default-all",
+      "sql": "ALTER TABLE t ADD COLUMN other_c INT NULL;",
+      "expect": "pass, 0 findings"
+    },
+    {
+      "id": "t08-cli-set-default-off",
+      "dialect": "mysql",
+      "policy": "t08-off",
+      "sql": "ALTER TABLE t ALTER COLUMN c SET DEFAULT 1;",
+      "expect": "pass, 0 findings, coverage complete"
+    },
+    {
+      "id": "t08-cli-set-default-forbid-false",
+      "dialect": "mysql",
+      "policy": "t08-set-default with forbid=false",
+      "sql": "ALTER TABLE t ALTER COLUMN c SET DEFAULT 1;",
+      "expect": "pass, 0 findings — param-off is a loaded-but-inapplicable rule"
+    },
+    {
+      "id": "t08-cli-set-default-samevalue",
+      "dialect": "mysql",
+      "policy": "t08-set-default",
+      "sql": "ALTER TABLE t ALTER COLUMN c SET DEFAULT 0;",
+      "expect": "reject — explicit-op policy fires regardless of prior value (no no-op exemption)"
+    },
+    {
+      "id": "t08-cli-set-default-strnull",
+      "dialect": "mysql",
+      "policy": "t08-set-default",
+      "sql": "ALTER TABLE t ALTER COLUMN c SET DEFAULT 'NULL';",
+      "expect": "reject — authored literal-class irrelevant to the op policy"
+    },
+    {
+      "id": "t08-cli-expr-default-off-tidb",
+      "dialect": "tidb",
+      "policy": "t08-off",
+      "sql": "ALTER TABLE t ALTER COLUMN c SET DEFAULT (uuid());",
+      "expect": "pass — T07 observed verbatim cell stays clean"
+    },
+    {
+      "id": "t08-cli-expr-default-policy-tidb",
+      "dialect": "tidb",
+      "policy": "t08-set-default",
+      "sql": "ALTER TABLE t ALTER COLUMN c SET DEFAULT (uuid());",
+      "expect": "reject — explicit-op policy independent of T07 adjudication"
+    },
+    {
+      "id": "t08-cli-eval-gap-coexist-tidb",
+      "dialect": "tidb",
+      "policy": "t08-set-default",
+      "sql": "ALTER TABLE t ALTER COLUMN c SET DEFAULT (lower('X'));",
+      "expect": "reject blocker AND tidb_set_default_eval_unproven gap coexist — policy finding not erased by gap"
+    },
+    {
+      "id": "t08-cli-modify-null-advisory",
+      "dialect": "mysql",
+      "policy": "t08-nullability-all",
+      "sql": "ALTER TABLE t MODIFY COLUMN c INT NULL;",
+      "expect": "review; 1 notice ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory (prior unknown), no blocker"
+    },
+    {
+      "id": "t08-cli-modify-notnull-advisory",
+      "dialect": "mysql",
+      "policy": "t08-nullability-all",
+      "sql": "ALTER TABLE t MODIFY COLUMN c INT NOT NULL;",
+      "expect": "review; same advisory — metadata-aware modify cannot prove transition without prior"
+    },
+    {
+      "id": "t08-cli-change-notnull-blocker",
+      "dialect": "mysql",
+      "policy": "t08-nullability-all",
+      "sql": "ALTER TABLE t CHANGE COLUMN c c INT NOT NULL;",
+      "expect": "reject; 1 blocker change_column explicit_nullability_change (non-metadata-aware variant always fires on authored NULL/NOT NULL)"
+    },
+    {
+      "id": "t08-cli-change-null-blocker",
+      "dialect": "mysql",
+      "policy": "t08-nullability-all",
+      "sql": "ALTER TABLE t CHANGE COLUMN c c INT NULL;",
+      "expect": "reject"
+    },
+    {
+      "id": "t08-cli-modify-omit-null",
+      "dialect": "mysql",
+      "policy": "t08-nullability-all",
+      "sql": "ALTER TABLE t MODIFY COLUMN c INT;",
+      "expect": "pass, 0 findings — omitted nullability is not an authored nullability operation"
+    },
+    {
+      "id": "t08-cli-modify-ai-blocker",
+      "dialect": "mysql",
+      "policy": "t08-ai",
+      "sql": "ALTER TABLE t MODIFY COLUMN c INT AUTO_INCREMENT;",
+      "expect": "reject; 1 blocker modify explicit_auto_increment_change"
+    },
+    {
+      "id": "t08-cli-change-ai-blocker",
+      "dialect": "mysql",
+      "policy": "t08-ai",
+      "sql": "ALTER TABLE t CHANGE COLUMN c c INT AUTO_INCREMENT;",
+      "expect": "reject"
+    },
+    {
+      "id": "t08-cli-modify-json-family",
+      "dialect": "mysql",
+      "policy": "t08-all",
+      "sql": "ALTER TABLE t MODIFY COLUMN c JSON;",
+      "expect": "review; target_type_family allowlist warning + missing_source_column gap (compat, prior unknown)"
+    },
+    {
+      "id": "t08-cli-modify-bigint-gap",
+      "dialect": "mysql",
+      "policy": "t08-all",
+      "sql": "ALTER TABLE t MODIFY COLUMN c BIGINT;",
+      "expect": "review, 0 findings, 1 missing_source_column evidence gap — gap distinct from finding"
+    },
+    {
+      "id": "t08-cli-add-first",
+      "dialect": "mysql",
+      "policy": "t08-off",
+      "sql": "ALTER TABLE t ADD COLUMN x INT FIRST;",
+      "expect": "pass, coverage complete, normalized alter carries position kind=first"
+    },
+    {
+      "id": "t08-cli-add-after",
+      "dialect": "mysql",
+      "policy": "t08-off",
+      "sql": "ALTER TABLE t ADD COLUMN x INT AFTER b;",
+      "expect": "pass, position kind=after rel=b"
+    },
+    {
+      "id": "t08-cli-modify-after",
+      "dialect": "mysql",
+      "policy": "t08-off",
+      "sql": "ALTER TABLE t MODIFY COLUMN b INT AFTER a;",
+      "expect": "pass, position on modify"
+    },
+    {
+      "id": "t08-cli-change-first",
+      "dialect": "mysql",
+      "policy": "t08-off",
+      "sql": "ALTER TABLE t CHANGE COLUMN b b2 INT FIRST;",
+      "expect": "pass"
+    },
+    {
+      "id": "t08-cli-multi-add2",
+      "dialect": "mysql",
+      "policy": "t08-off",
+      "sql": "ALTER TABLE t ADD COLUMN a INT, ADD COLUMN b INT;",
+      "expect": "pass, 2 actions, coverage complete"
+    },
+    {
+      "id": "t08-cli-multi-add-setter",
+      "dialect": "mysql",
+      "policy": "t08-set-default",
+      "sql": "ALTER TABLE t ADD COLUMN a INT, ALTER COLUMN c SET DEFAULT 1;",
+      "expect": "reject; 1 blocker on the setter action only"
+    },
+    {
+      "id": "t08-cli-multi-modify-x2",
+      "dialect": "mysql",
+      "policy": "t08-nullability-all",
+      "sql": "ALTER TABLE t MODIFY COLUMN a INT NULL, MODIFY COLUMN b INT NOT NULL;",
+      "expect": "review; 2 per-action advisories — findings not keyed/collapsed by rule_id"
+    },
+    {
+      "id": "t08-cli-multi-same-obj",
+      "dialect": "mysql",
+      "policy": "t08-off",
+      "sql": "ALTER TABLE t MODIFY COLUMN a INT, MODIFY COLUMN a BIGINT;",
+      "expect": "pass offline (no rule finding); state unprovable proven in unit/metadata roles"
+    },
+    {
+      "id": "t08-cli-multi-add-drop",
+      "dialect": "mysql",
+      "policy": "t08-off",
+      "sql": "ALTER TABLE t ADD COLUMN a INT, DROP COLUMN b;",
+      "expect": "pass, complete"
+    },
+    {
+      "id": "t08-cli-parser-neg",
+      "dialect": "mysql",
+      "policy": "t08-off",
+      "sql": "ALTER TABLE t ALTER COLUMN c SET DEFAULT;",
+      "expect": "parser diagnostic, not a finding"
+    },
+    {
+      "id": "t08-cli-offline-no-connect",
+      "dialect": "mysql",
+      "policy": "t08-off",
+      "sql": "ALTER TABLE t MODIFY COLUMN c INT;",
+      "expect": "offline mode performs no connection (existing flag contract)"
+    }
+  ],
+  "metadata_cases": [
+    {
+      "id": "t08-{A}-fp-set-blocker",
+      "anchors": "all4",
+      "sql": "ALTER TABLE t ALTER COLUMN c SET DEFAULT 1;",
+      "policy": "t08-set-default",
+      "expect": "reject, 1 blocker, action=set_column_default, name=c; catalog COLUMN_DEFAULT unchanged ('0'); post-setter derived state keeps c present"
+    },
+    {
+      "id": "t08-{A}-fp-modify-equiv",
+      "anchors": "all4",
+      "sql": "ALTER TABLE t MODIFY COLUMN c INT NULL DEFAULT 1;",
+      "policy": "t08-modify-default",
+      "expect": "reject, 1 blocker modify explicit_default_change"
+    },
+    {
+      "id": "t08-{A}-fp-drop-blocker",
+      "anchors": "all4",
+      "sql": "ALTER TABLE t ALTER COLUMN c DROP DEFAULT;",
+      "policy": "t08-drop-default",
+      "expect": "reject, 1 blocker drop explicit_default_change"
+    },
+    {
+      "id": "t08-{A}-fp-non-target",
+      "anchors": "all4",
+      "sql": "ALTER TABLE t ADD COLUMN other_c INT NULL;",
+      "policy": "t08-default-all",
+      "expect": "pass, 0 findings; catalog gains other_c"
+    },
+    {
+      "id": "t08-{A}-setter-set-default",
+      "anchors": "all4",
+      "sql": "ALTER TABLE t ALTER COLUMN c SET DEFAULT 1;",
+      "policy": "t08-off",
+      "expect": "pass; catalog COLUMN_DEFAULT='1' (raw), IS_NULLABLE=YES unchanged"
+    },
+    {
+      "id": "t08-{A}-setter-set-null",
+      "anchors": "all4",
+      "sql": "ALTER TABLE t ALTER COLUMN c SET DEFAULT NULL;",
+      "policy": "t08-off",
+      "expect": "pass; catalog COLUMN_DEFAULT NULL"
+    },
+    {
+      "id": "t08-{A}-setter-set-strnull",
+      "anchors": "all4",
+      "sql": "ALTER TABLE t ALTER COLUMN c SET DEFAULT 'NULL';",
+      "policy": "t08-off",
+      "expect": "pass; catalog COLUMN_DEFAULT raw bytes HEX checked — documents the retained A4 authored-NULL boundary"
+    },
+    {
+      "id": "t08-{A}-setter-drop",
+      "anchors": "all4",
+      "sql": "ALTER TABLE t ALTER COLUMN c DROP DEFAULT;",
+      "policy": "t08-off",
+      "expect": "pass; COLUMN_DEFAULT NULL"
+    },
+    {
+      "id": "t08-{A}-setter-missing-column",
+      "anchors": "all4",
+      "fixture": "golden.t8e",
+      "sql": "ALTER TABLE t8e ALTER COLUMN c SET DEFAULT 1;",
+      "policy": "t08-existence",
+      "expect": "reject; 1 blocker ddl.alter.set_default.exists.require (exists=false); native fails 1054-class"
+    },
+    {
+      "id": "t08-{A}-setter-missing-table",
+      "anchors": "all4",
+      "sql": "ALTER TABLE no_such_t ALTER COLUMN c SET DEFAULT 1;",
+      "policy": "t08-existence",
+      "expect": "reject; ddl.table.exists.alter.require blocker; no member gap"
+    },
+    {
+      "id": "t08-{A}-drop-missing-column",
+      "anchors": "all4",
+      "fixture": "golden.t8e",
+      "sql": "ALTER TABLE t8e ALTER COLUMN c DROP DEFAULT;",
+      "policy": "t08-existence",
+      "expect": "reject; 1 blocker ddl.alter.drop_default.exists.require"
+    },
+    {
+      "id": "t08-{A}-modify-notnull",
+      "anchors": "all4",
+      "fixture": "golden.t8",
+      "sql": "ALTER TABLE t8 MODIFY COLUMN c INT NOT NULL;",
+      "policy": "t08-all",
+      "expect": "compat tightening warning (nullable→not null) + IS_NULLABLE=NO catalog + default resolved per N-omit"
+    },
+    {
+      "id": "t08-{A}-modify-null",
+      "anchors": "all4",
+      "fixture": "golden.t8",
+      "sql": "ALTER TABLE t8 MODIFY COLUMN u INT NULL;",
+      "policy": "t08-all",
+      "expect": "IS_NULLABLE=YES (NN→nullable); no tightening finding; unsigned+default resolved per §6"
+    },
+    {
+      "id": "t08-{A}-modify-shrink",
+      "anchors": "all4",
+      "fixture": "golden.t8",
+      "sql": "ALTER TABLE t8 MODIFY COLUMN v VARCHAR(8);",
+      "policy": "t08-all",
+      "expect": "warning column shrinks string length 32→8"
+    },
+    {
+      "id": "t08-{A}-modify-widen",
+      "anchors": "all4",
+      "fixture": "golden.t8",
+      "sql": "ALTER TABLE t8 MODIFY COLUMN v VARCHAR(64);",
+      "policy": "t08-all",
+      "expect": "no compat finding for widening"
+    },
+    {
+      "id": "t08-{A}-modify-family",
+      "anchors": "all4",
+      "fixture": "golden.t8",
+      "sql": "ALTER TABLE t8 MODIFY COLUMN v TEXT;",
+      "policy": "t08-all",
+      "expect": "warning type family string→string? TEXT stays string family — assert actual family per columnTypeFamily; see note",
+      "note": "VARCHAR→TEXT is same-family string widening — expected no finding; family-change cell uses MODIFY s DATETIME on s VARCHAR(16) → family change string→time"
+    },
+    {
+      "id": "t08-{A}-modify-family-change",
+      "anchors": "all4",
+      "fixture": "golden.t8",
+      "sql": "ALTER TABLE t8 MODIFY COLUMN s DATETIME;",
+      "policy": "t08-all",
+      "expect": "warning changes type family string→time"
+    },
+    {
+      "id": "t08-{A}-modify-unsigned-drop",
+      "anchors": "all4",
+      "fixture": "golden.t8",
+      "sql": "ALTER TABLE t8 MODIFY COLUMN u INT;",
+      "policy": "t08-all",
+      "expect": "warning changes unsigned mode true→false + (default 0 handled per §5.4)"
+    },
+    {
+      "id": "t08-{A}-modify-ai-keep",
+      "anchors": "all4",
+      "fixture": "golden.t8",
+      "sql": "ALTER TABLE t8 MODIFY COLUMN pk INT NOT NULL AUTO_INCREMENT;",
+      "policy": "t08-all",
+      "expect": "no AI finding; PK stays NN; EXTRA retains auto_increment"
+    },
+    {
+      "id": "t08-{A}-modify-ai-drop",
+      "anchors": "all4",
+      "fixture": "golden.t8",
+      "sql": "ALTER TABLE t8 MODIFY COLUMN pk INT NOT NULL;",
+      "policy": "t08-all",
+      "expect": "compat auto_increment removal warning; EXTRA loses auto_increment; PK member stays NOT NULL (omitted NULL on PK member is not a user NULL downgrade)"
+    },
+    {
+      "id": "t08-{A}-modify-omit-default",
+      "anchors": "all4",
+      "fixture": "golden.t",
+      "sql": "ALTER TABLE t MODIFY COLUMN c INT NULL;",
+      "policy": "t08-all",
+      "expect": "MySQL anchors: compat 'loses its default' warning + COLUMN_DEFAULT NULL; TiDB: resolved by N-tidb-omit — contract mechanism identical, per-anchor expectation bound to native"
+    },
+    {
+      "id": "t08-{A}-modify-default-same",
+      "anchors": "all4",
+      "fixture": "golden.t",
+      "sql": "ALTER TABLE t MODIFY COLUMN c INT NULL DEFAULT 0;",
+      "policy": "t08-all",
+      "expect": "no default-change finding (same literal); catalog DEFAULT '0'"
+    },
+    {
+      "id": "t08-{A}-modify-default-diff",
+      "anchors": "all4",
+      "fixture": "golden.t",
+      "sql": "ALTER TABLE t MODIFY COLUMN c INT NULL DEFAULT 7;",
+      "policy": "t08-all",
+      "expect": "warning 'changes its default value' (classification metadata only)"
+    },
+    {
+      "id": "t08-{A}-modify-default-added",
+      "anchors": "all4",
+      "fixture": "golden.t8",
+      "sql": "ALTER TABLE t8 MODIFY COLUMN keep_c INT NULL DEFAULT 5;",
+      "policy": "t08-all",
+      "expect": "warning 'gains a default value'"
+    },
+    {
+      "id": "t08-{A}-modify-pk-null",
+      "anchors": "all4",
+      "fixture": "golden.t8",
+      "sql": "ALTER TABLE t8 MODIFY COLUMN pk INT NULL;",
+      "policy": "t08-all",
+      "expect": "per-anchor native: accept+coerce-to-NN or error — no fabricated success; if accepted, pk stays NOT NULL in catalog AND post-state"
+    },
+    {
+      "id": "t08-{A}-pos-add-first",
+      "anchors": "all4",
+      "fixture": "golden.t8p",
+      "sql": "ALTER TABLE t8p ADD COLUMN x INT FIRST;",
+      "policy": "t08-off",
+      "expect": "pass; ORDINAL_POSITION order [x,a,b,c]"
+    },
+    {
+      "id": "t08-{A}-pos-add-after",
+      "anchors": "all4",
+      "fixture": "golden.t8p",
+      "sql": "ALTER TABLE t8p ADD COLUMN x INT AFTER b;",
+      "policy": "t08-off",
+      "expect": "pass; order [a,b,x,c]"
+    },
+    {
+      "id": "t08-{A}-pos-add-after-missing",
+      "anchors": "all4",
+      "fixture": "golden.t8p",
+      "sql": "ALTER TABLE t8p ADD COLUMN x INT AFTER missing;",
+      "policy": "t08-existence",
+      "expect": "reject; 1 blocker ddl.alter.column_position.exists.require; native fails"
+    },
+    {
+      "id": "t08-{A}-pos-modify-first",
+      "anchors": "all4",
+      "fixture": "golden.t8p",
+      "sql": "ALTER TABLE t8p MODIFY COLUMN c INT FIRST;",
+      "policy": "t08-off",
+      "expect": "pass; order [c,a,b]"
+    },
+    {
+      "id": "t08-{A}-pos-change-after",
+      "anchors": "all4",
+      "fixture": "golden.t8p",
+      "sql": "ALTER TABLE t8p CHANGE COLUMN a a2 INT AFTER c;",
+      "policy": "t08-off",
+      "expect": "pass; order [b,c,a2] + rename"
+    },
+    {
+      "id": "t08-{A}-pos-derived-chain",
+      "anchors": "all4",
+      "fixture": "golden.t8p",
+      "sql": "ALTER TABLE t8p ADD COLUMN x INT FIRST; ALTER TABLE t8p ADD COLUMN y INT AFTER x; ALTER TABLE t8p ADD COLUMN z INT AFTER phantom;",
+      "policy": "t08-existence",
+      "expect": "stmt2 passes (x resolved in derived order [x,a,b,c,y]); stmt3 reject position-exists on phantom"
+    },
+    {
+      "id": "t08-{A}-multi-add2",
+      "anchors": "all4",
+      "fixture": "golden.t8p",
+      "sql": "ALTER TABLE t8p ADD COLUMN m1 INT, ADD COLUMN m2 INT;",
+      "policy": "t08-off",
+      "expect": "pass; order [a,b,c,m1,m2]"
+    },
+    {
+      "id": "t08-{A}-multi-add-setter",
+      "anchors": "all4",
+      "sql": "ALTER TABLE t ADD COLUMN a INT, ALTER COLUMN c SET DEFAULT 2;",
+      "policy": "t08-off",
+      "expect": "pass; a appended, COLUMN_DEFAULT='2'"
+    },
+    {
+      "id": "t08-{A}-multi-add2-after-sibling",
+      "anchors": "all4",
+      "fixture": "golden.t8p",
+      "sql": "ALTER TABLE t8p ADD COLUMN c1 INT, ADD COLUMN c2 INT AFTER c1;",
+      "policy": "t08-existence",
+      "expect": "MySQL: pass, order [a,b,c,c1,c2] (left-to-right). TiDB: known failure — position ref validated against pre-state, c1 absent → no successor published (tombstone)"
+    },
+    {
+      "id": "t08-{A}-multi-same-obj",
+      "anchors": "all4",
+      "fixture": "golden.t8p",
+      "sql": "ALTER TABLE t8p MODIFY COLUMN a INT, MODIFY COLUMN a BIGINT;",
+      "policy": "t08-off",
+      "expect": "native outcome per anchor (expected reject/error → tombstone); no partial successor"
+    },
+    {
+      "id": "t08-{A}-multi-drop-add-same",
+      "anchors": "all4",
+      "fixture": "golden.t8p",
+      "sql": "ALTER TABLE t8p DROP COLUMN b, ADD COLUMN b INT;",
+      "policy": "t08-off",
+      "expect": "per-anchor: MySQL left-to-right recreates b at end vs TiDB pre-state conflict — bound to native; unprovable → tombstone"
+    },
+    {
+      "id": "t08-{A}-multi-modify-x2",
+      "anchors": "all4",
+      "fixture": "golden.t",
+      "sql": "ALTER TABLE t MODIFY COLUMN c INT NULL DEFAULT 9, MODIFY COLUMN keep_c INT NOT NULL;",
+      "policy": "t08-all",
+      "expect": "pass findings per action (default-change warning on c, tightening on keep_c); both column facts updated"
+    },
+    {
+      "id": "t08-{A}-chain-setter-then-modify",
+      "anchors": "all4",
+      "sql": "ALTER TABLE t ALTER COLUMN c SET DEFAULT 1; ALTER TABLE t MODIFY COLUMN c INT NULL DEFAULT 1;",
+      "policy": "t08-all",
+      "expect": "stmt2 compat sees derived default=1 → no 'changes default' finding (proves post-state read)"
+    },
+    {
+      "id": "t08-{A}-chain-drop-then-modify",
+      "anchors": "all4",
+      "sql": "ALTER TABLE t ALTER COLUMN c DROP DEFAULT; ALTER TABLE t MODIFY COLUMN c INT NULL DEFAULT 9;",
+      "policy": "t08-all",
+      "expect": "stmt2 'gains a default value' warning (proves cleared post-state)"
+    },
+    {
+      "id": "t08-{A}-chain-add-rename-index",
+      "anchors": "mysql80,mysql84,tidb85",
+      "fixture": "golden.t8p",
+      "sql": "ALTER TABLE t8p ADD COLUMN n INT; ALTER TABLE t8p RENAME COLUMN n n2; CREATE INDEX idx_n ON t8p (n2);",
+      "policy": "t08-off",
+      "expect": "pass; derived n→n2 rename feeds index existence check"
+    },
+    {
+      "id": "t08-{A}-chain-change-oldname",
+      "anchors": "all4",
+      "fixture": "golden.t8p",
+      "sql": "ALTER TABLE t8p CHANGE COLUMN b b2 INT; ALTER TABLE t8p ALTER COLUMN b SET DEFAULT 1;",
+      "policy": "t08-existence",
+      "expect": "stmt2 reject: set_default.exists.require on old name b (absent post-change); b2 present"
+    },
+    {
+      "id": "t08-{A}-rename-mysql57-gate",
+      "anchors": "mysql57",
+      "fixture": "golden.t8p",
+      "sql": "ALTER TABLE t8p RENAME COLUMN a a2;",
+      "policy": "t08-all",
+      "expect": "rename_column.version.require negative (5.7 lacks the action)"
+    },
+    {
+      "id": "t08-{A}-chain-drop-col",
+      "anchors": "all4",
+      "fixture": "golden.t8p",
+      "sql": "ALTER TABLE t8p DROP COLUMN c; ALTER TABLE t8p ADD COLUMN z INT AFTER b;",
+      "policy": "t08-existence",
+      "expect": "pass; c absent, a,b retained, z positioned after b (order [a,b,z])"
+    }
+  ],
+  "error_cases": [
+    {
+      "id": "t08-err-syntax",
+      "expect": "real parser diagnostic on malformed ALTER COLUMN"
+    },
+    {
+      "id": "t08-err-bad-dialect",
+      "expect": "startup/config failure distinct from product semantic failure"
+    },
+    {
+      "id": "t08-err-policy-invalid",
+      "expect": "strict bool params reject non-bool config"
+    },
+    {
+      "id": "t08-err-unsupported-aspect",
+      "sql": "ALTER TABLE t MODIFY COLUMN c INT, ALGORITHM=INPLACE;",
+      "expect": "coverage incomplete (unextracted option aspect) + tombstone — not conflated with product reject"
+    },
+    {
+      "id": "t08-err-cancel",
+      "expect": "context cancellation propagates, no post-state write (unit role)"
+    },
+    {
+      "id": "t08-err-provider-failure",
+      "expect": "provider error surfaces as error, not metadata gap or empty snapshot (unit role)"
+    }
+  ],
+  "native_roles": {
+    "N-omit": "MODIFY omitting NULL/DEFAULT on c INT NULL DEFAULT 0 — effective IS_NULLABLE + COLUMN_DEFAULT, 4 anchors; also CHANGE variant",
+    "N-omit-ai": "MODIFY omitting AUTO_INCREMENT — effective EXTRA, 4 anchors",
+    "N-setter": "SET DEFAULT literal/NULL/'NULL'/'' + DROP DEFAULT catalog facts, 4 anchors",
+    "N-pos": "ADD FIRST / AFTER known / AFTER missing / MODIFY FIRST / CHANGE AFTER — ORDINAL_POSITION sets + error classes, 4 anchors",
+    "N-multi": "independent adds; mixed add+setter; sibling position ref (doc-proven TiDB pre-state split); same-object twice; drop+re-add — 4 anchors",
+    "N-pk": "MODIFY pk INT [NULL] on PK member — accept/coerce/error per anchor",
+    "N-default-kind": "COLUMN_DEFAULT raw+HEX distinguishes authored DEFAULT 'NULL' from SQL NULL vs omitted — A4 boundary record"
+  },
+  "required_case_ids": [
+    "T08.cli.set-default-blocker",
+    "T08.cli.set-default-blocker-tidb",
+    "T08.cli.modify-default-blocker",
+    "T08.cli.change-default-blocker",
+    "T08.cli.drop-default-blocker",
+    "T08.cli.set-under-drop-policy",
+    "T08.cli.drop-under-set-policy",
+    "T08.cli.default-non-target",
+    "T08.cli.set-default-off",
+    "T08.cli.set-default-forbid-false",
+    "T08.cli.set-default-samevalue",
+    "T08.cli.set-default-strnull",
+    "T08.cli.expr-default-off-tidb",
+    "T08.cli.expr-default-policy-tidb",
+    "T08.cli.eval-gap-coexist-tidb",
+    "T08.cli.modify-null-advisory",
+    "T08.cli.modify-notnull-advisory",
+    "T08.cli.change-notnull-blocker",
+    "T08.cli.change-null-blocker",
+    "T08.cli.modify-omit-null",
+    "T08.cli.modify-ai-blocker",
+    "T08.cli.change-ai-blocker",
+    "T08.cli.modify-json-family",
+    "T08.cli.modify-bigint-gap",
+    "T08.cli.add-first",
+    "T08.cli.add-after",
+    "T08.cli.modify-after",
+    "T08.cli.change-first",
+    "T08.cli.multi-add2",
+    "T08.cli.multi-add-setter",
+    "T08.cli.multi-modify-x2",
+    "T08.cli.multi-same-obj",
+    "T08.cli.multi-add-drop",
+    "T08.cli.parser-neg",
+    "T08.cli.offline-no-connect",
+    "T08.meta.t08-mysql57-fp-set-blocker",
+    "T08.meta.t08-mysql57-setter-set-default",
+    "T08.meta.t08-mysql57-setter-set-null",
+    "T08.meta.t08-mysql57-setter-set-strnull",
+    "T08.meta.t08-mysql57-setter-drop",
+    "T08.meta.t08-mysql57-setter-missing-column",
+    "T08.meta.t08-mysql57-setter-missing-table",
+    "T08.meta.t08-mysql57-drop-missing-column",
+    "T08.meta.t08-mysql57-modify-notnull",
+    "T08.meta.t08-mysql57-modify-null",
+    "T08.meta.t08-mysql57-modify-shrink",
+    "T08.meta.t08-mysql57-modify-widen",
+    "T08.meta.t08-mysql57-modify-family-change",
+    "T08.meta.t08-mysql57-modify-unsigned-drop",
+    "T08.meta.t08-mysql57-modify-ai-keep",
+    "T08.meta.t08-mysql57-modify-ai-drop",
+    "T08.meta.t08-mysql57-modify-omit-default",
+    "T08.meta.t08-mysql57-modify-default-same",
+    "T08.meta.t08-mysql57-modify-default-diff",
+    "T08.meta.t08-mysql57-modify-default-added",
+    "T08.meta.t08-mysql57-modify-pk-null",
+    "T08.meta.t08-mysql57-pos-add-first",
+    "T08.meta.t08-mysql57-pos-add-after",
+    "T08.meta.t08-mysql57-pos-add-after-missing",
+    "T08.meta.t08-mysql57-pos-modify-first",
+    "T08.meta.t08-mysql57-pos-change-after",
+    "T08.meta.t08-mysql57-pos-derived-chain",
+    "T08.meta.t08-mysql57-multi-add2",
+    "T08.meta.t08-mysql57-multi-add-setter",
+    "T08.meta.t08-mysql57-multi-add2-after-sibling",
+    "T08.meta.t08-mysql57-multi-same-obj",
+    "T08.meta.t08-mysql57-multi-drop-add-same",
+    "T08.meta.t08-mysql57-multi-modify-x2",
+    "T08.meta.t08-mysql57-chain-setter-then-modify",
+    "T08.meta.t08-mysql57-chain-drop-then-modify",
+    "T08.meta.t08-mysql57-chain-change-oldname",
+    "T08.meta.t08-mysql57-rename-mysql57-gate",
+    "T08.meta.t08-mysql57-chain-drop-col",
+    "T08.meta.t08-mysql80-fp-set-blocker",
+    "T08.meta.t08-mysql80-setter-set-default",
+    "T08.meta.t08-mysql80-setter-missing-column",
+    "T08.meta.t08-mysql80-setter-missing-table",
+    "T08.meta.t08-mysql80-modify-notnull",
+    "T08.meta.t08-mysql80-modify-omit-default",
+    "T08.meta.t08-mysql80-modify-default-diff",
+    "T08.meta.t08-mysql80-pos-add-first",
+    "T08.meta.t08-mysql80-pos-add-after",
+    "T08.meta.t08-mysql80-pos-add-after-missing",
+    "T08.meta.t08-mysql80-pos-modify-first",
+    "T08.meta.t08-mysql80-pos-derived-chain",
+    "T08.meta.t08-mysql80-multi-add2",
+    "T08.meta.t08-mysql80-multi-add2-after-sibling",
+    "T08.meta.t08-mysql80-chain-setter-then-modify",
+    "T08.meta.t08-mysql80-chain-add-rename-index",
+    "T08.meta.t08-mysql80-chain-change-oldname",
+    "T08.meta.t08-mysql84-fp-set-blocker",
+    "T08.meta.t08-mysql84-fp-modify-equiv",
+    "T08.meta.t08-mysql84-fp-drop-blocker",
+    "T08.meta.t08-mysql84-fp-non-target",
+    "T08.meta.t08-mysql84-setter-set-default",
+    "T08.meta.t08-mysql84-setter-set-null",
+    "T08.meta.t08-mysql84-setter-set-strnull",
+    "T08.meta.t08-mysql84-setter-drop",
+    "T08.meta.t08-mysql84-setter-missing-column",
+    "T08.meta.t08-mysql84-setter-missing-table",
+    "T08.meta.t08-mysql84-drop-missing-column",
+    "T08.meta.t08-mysql84-modify-notnull",
+    "T08.meta.t08-mysql84-modify-null",
+    "T08.meta.t08-mysql84-modify-shrink",
+    "T08.meta.t08-mysql84-modify-family-change",
+    "T08.meta.t08-mysql84-modify-unsigned-drop",
+    "T08.meta.t08-mysql84-modify-ai-drop",
+    "T08.meta.t08-mysql84-modify-omit-default",
+    "T08.meta.t08-mysql84-modify-default-same",
+    "T08.meta.t08-mysql84-modify-default-diff",
+    "T08.meta.t08-mysql84-modify-pk-null",
+    "T08.meta.t08-mysql84-pos-add-first",
+    "T08.meta.t08-mysql84-pos-add-after",
+    "T08.meta.t08-mysql84-pos-add-after-missing",
+    "T08.meta.t08-mysql84-pos-modify-first",
+    "T08.meta.t08-mysql84-pos-change-after",
+    "T08.meta.t08-mysql84-pos-derived-chain",
+    "T08.meta.t08-mysql84-multi-add2",
+    "T08.meta.t08-mysql84-multi-add-setter",
+    "T08.meta.t08-mysql84-multi-add2-after-sibling",
+    "T08.meta.t08-mysql84-multi-same-obj",
+    "T08.meta.t08-mysql84-multi-drop-add-same",
+    "T08.meta.t08-mysql84-multi-modify-x2",
+    "T08.meta.t08-mysql84-chain-setter-then-modify",
+    "T08.meta.t08-mysql84-chain-drop-then-modify",
+    "T08.meta.t08-mysql84-chain-add-rename-index",
+    "T08.meta.t08-mysql84-chain-change-oldname",
+    "T08.meta.t08-mysql84-chain-drop-col",
+    "T08.meta.t08-tidb85-fp-set-blocker",
+    "T08.meta.t08-tidb85-fp-modify-equiv",
+    "T08.meta.t08-tidb85-fp-drop-blocker",
+    "T08.meta.t08-tidb85-setter-set-default",
+    "T08.meta.t08-tidb85-setter-set-null",
+    "T08.meta.t08-tidb85-setter-set-strnull",
+    "T08.meta.t08-tidb85-setter-drop",
+    "T08.meta.t08-tidb85-setter-missing-column",
+    "T08.meta.t08-tidb85-setter-missing-table",
+    "T08.meta.t08-tidb85-drop-missing-column",
+    "T08.meta.t08-tidb85-modify-notnull",
+    "T08.meta.t08-tidb85-modify-null",
+    "T08.meta.t08-tidb85-modify-omit-default",
+    "T08.meta.t08-tidb85-modify-default-diff",
+    "T08.meta.t08-tidb85-modify-pk-null",
+    "T08.meta.t08-tidb85-pos-add-first",
+    "T08.meta.t08-tidb85-pos-add-after",
+    "T08.meta.t08-tidb85-pos-add-after-missing",
+    "T08.meta.t08-tidb85-pos-modify-first",
+    "T08.meta.t08-tidb85-pos-derived-chain",
+    "T08.meta.t08-tidb85-multi-add2",
+    "T08.meta.t08-tidb85-multi-add-setter",
+    "T08.meta.t08-tidb85-multi-add2-after-sibling",
+    "T08.meta.t08-tidb85-multi-same-obj",
+    "T08.meta.t08-tidb85-multi-drop-add-same",
+    "T08.meta.t08-tidb85-chain-setter-then-modify",
+    "T08.meta.t08-tidb85-chain-add-rename-index",
+    "T08.meta.t08-tidb85-chain-change-oldname",
+    "T08.cli.err-syntax",
+    "T08.clierr.err-bad-dialect",
+    "T08.clierr.err-policy-invalid",
+    "T08.cli.unsupported-aspect",
+    "T08.err.cancel",
+    "T08.clierr.err-provider-failure"
+  ],
+  "cross_surface": {
+    "sdk": [
+      "pass",
+      "policy reject",
+      "missing-prior review",
+      "parser failure",
+      "privacy",
+      "cancellation"
+    ],
+    "http": [
+      "pass",
+      "reject verdict (HTTP 200, not 400)",
+      "review",
+      "privacy"
+    ],
+    "mcp": [
+      "pass",
+      "reject result object",
+      "privacy"
+    ],
+    "note": "transport roles live in existing unit/e2e suites; manifest cli_cases is the CLI golden surface"
+  },
+  "regression_held": {
+    "T07": 207,
+    "T06": 496,
+    "note": "T05/T03/T04/T02 regression on final SHA; PG defaults unchanged"
+  }
+}

@@ -98,6 +98,13 @@ func (s *batchState) prepareModifyColumn(statement spec.Statement, alter *spec.A
 	if index < 0 {
 		return invalidate(primary)
 	}
+	if alter.Position != nil && alter.Position.Kind == "after" {
+		// AFTER must resolve against the known column set and never at the
+		// moved column itself; an unresolvable premise is never published.
+		if idx, _ := positionResolveIndex(entry.shape.Columns, alter.Position, alter.Name); idx < 0 {
+			return invalidate(primary)
+		}
+	}
 	source := entry.shape.Columns[index]
 	definition := alter.Column.Definition
 	inPK, pkKnown := primaryKeyMembership(entry.shape, source.Name)
@@ -119,6 +126,13 @@ func (s *batchState) prepareModifyColumn(statement spec.Statement, alter *spec.A
 	applyModifyColumnDefaults(&next, entry.shape)
 	shape := cloneTableSnapshot(entry.shape)
 	shape.Columns[index] = next
+	if alter.Position != nil {
+		moved, ok := applyColumnPosition(shape.Columns, index, alter.Position, next.Name)
+		if !ok {
+			return invalidate(primary)
+		}
+		shape.Columns = moved
+	}
 	clearModifyAffectedStats(shape)
 	return modifyPublication{
 		replaceKey: primary,
@@ -386,7 +400,10 @@ func modifyColumnTemplate(s *batchState, statement spec.Statement, alter *spec.A
 	if s.keyFor(s.schema, targets[0]) != s.keyFor(s.schema, *ddl.Table) {
 		return false
 	}
-	if alter.Action != "modify_column" || alter.HasColumnPosition {
+	if alter.Action != "modify_column" {
+		return false
+	}
+	if alter.HasColumnPosition && (alter.Position == nil || (alter.Position.Kind != "first" && alter.Position.Kind != "after")) {
 		return false
 	}
 	if alter.Options["if_exists"] == "true" || alter.Options["if_not_exists"] == "true" {

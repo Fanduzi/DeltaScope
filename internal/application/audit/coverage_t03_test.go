@@ -364,8 +364,10 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 		{name: "mysql create table auto_random", sql: "CREATE TABLE t (id BIGINT PRIMARY KEY AUTO_RANDOM);", dialect: spec.DialectMySQL, wantFeature: "create_table.column.auto_random", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
 		{name: "tidb alter add column auto_random", sql: "ALTER TABLE t ADD COLUMN id BIGINT AUTO_RANDOM;", dialect: spec.DialectTiDB, wantFeature: "alter_table.add_columns.column.auto_random", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql alter add column auto_random", sql: "ALTER TABLE t ADD COLUMN id BIGINT AUTO_RANDOM;", dialect: spec.DialectMySQL, wantFeature: "alter_table.add_columns.column.auto_random", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
-		{name: "mysql alter add column first", sql: "ALTER TABLE t ADD COLUMN c INT FIRST;", dialect: spec.DialectMySQL, wantFeature: "alter_table.add_columns.column_position", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
-		{name: "tidb alter add column after", sql: "ALTER TABLE t ADD COLUMN c INT AFTER id;", dialect: spec.DialectTiDB, wantFeature: "alter_table.add_columns.column_position", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		// Positioned add/modify/change column_position is audited semantics
+		// (T08): those statements complete cleanly and are covered by
+		// TestAuditSQLT08PositionedAlterActionsComplete instead.
+
 		{name: "mysql create table tidb-only options", sql: "CREATE TABLE t (id INT) SHARD_ROW_ID_BITS=4 PRE_SPLIT_REGIONS=2;", dialect: spec.DialectMySQL, wantFeature: "create_table.option.shard_row_id_bits", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
 		{name: "mysql create table auto_random_base", sql: "CREATE TABLE t (id INT) AUTO_RANDOM_BASE=10;", dialect: spec.DialectMySQL, wantFeature: "create_table.option.auto_random_base", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
 		{name: "tidb create table auto_random_base", sql: "CREATE TABLE t (id INT) AUTO_RANDOM_BASE=10;", dialect: spec.DialectTiDB, wantFeature: "create_table.option.auto_random_base", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
@@ -421,8 +423,9 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 		{name: "tidb create table split index", sql: "CREATE TABLE t (id INT PRIMARY KEY) SPLIT PRIMARY KEY BETWEEN (0) AND (100) REGIONS 4;", dialect: spec.DialectTiDB, wantFeature: "create_table.option.split_index", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql create table update indexes", sql: "CREATE TABLE t (id INT, KEY ix (id)) PARTITION BY HASH(id) PARTITIONS 2 UPDATE INDEXES (ix GLOBAL);", dialect: spec.DialectMySQL, wantFeature: "create_table.option.partition_update_indexes", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
 		{name: "mysql alter tidb-only option", sql: "ALTER TABLE t AUTO_RANDOM_BASE=10;", dialect: spec.DialectMySQL, wantFeature: "alter_table.option.auto_random_base", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
-		{name: "mysql alter modify column position", sql: "ALTER TABLE t MODIFY COLUMN c INT AFTER id;", dialect: spec.DialectMySQL, wantFeature: "alter_table.modify_column.column_position", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
-		{name: "mysql alter change column position", sql: "ALTER TABLE t CHANGE COLUMN c c2 INT FIRST;", dialect: spec.DialectMySQL, wantFeature: "alter_table.change_column.column_position", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		// modify_column/change_column column_position aspects are audited
+		// since T08 — see TestAuditSQLT08PositionedAlterActionsComplete.
+
 		{name: "mysql create procedure body", sql: "CREATE PROCEDURE p() SELECT 1;", dialect: spec.DialectMySQL, wantFeature: "create_procedure.body", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql create table generated column unknown function", sql: "CREATE TABLE t (a INT, b INT GENERATED ALWAYS AS (T07_UNKNOWN_FN(a)) STORED);", dialect: spec.DialectMySQL, wantFeature: "create_table.column.expression_dependencies", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql create table inline reference", sql: "CREATE TABLE t (id INT, pid INT REFERENCES parent(id));", dialect: spec.DialectMySQL, wantFeature: "create_table.column.reference", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},

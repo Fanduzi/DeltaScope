@@ -404,6 +404,21 @@ func ddlAlterRules() map[string]RulePolicy {
 				},
 			},
 		},
+		"ddl.alter.set_default.exists.require": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
+		"ddl.alter.drop_default.exists.require": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
+		"ddl.alter.column_position.exists.require": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
 		"ddl.alter.add_index.exists.forbid": {
 			Enabled: true,
 			Level:   rule.LevelBlocker,

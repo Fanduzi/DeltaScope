@@ -392,7 +392,7 @@ var fieldDispositions = map[string]map[string]string{
 		"NewConstraints":           "projected — expanded into alter actions",
 		"OldColumnName":            "projected",
 		"NewColumnName":            "projected",
-		"Position":                 "projected — HasColumnPosition presence",
+		"Position":                 "projected — HasColumnPosition + normalized AlterPosition (kind/after)",
 		"LockType":                 "subsumed:unaudited_action — lock action flagged by name",
 		"Algorithm":                "subsumed:unaudited_action — algorithm action flagged by name",
 		"Comment":                  "subsumed:unaudited_action",

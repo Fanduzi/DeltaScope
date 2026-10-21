@@ -319,7 +319,7 @@ func TestBatchStateA5UnsafeAndNonPrecise(t *testing.T) {
 			t.Fatalf("expression index RENAME published %+v", enriched[1].Metadata.TargetTable)
 		}
 	})
-	t.Run("multi-action and position stay unknown", func(t *testing.T) {
+	t.Run("mixed rename-table multi-action stays unknown", func(t *testing.T) {
 		t.Parallel()
 		sql := "CREATE TABLE t (id INT PRIMARY KEY, c INT);\nALTER TABLE t CHANGE COLUMN c c2 INT, RENAME TO u;\nALTER TABLE u ADD COLUMN d INT;"
 		provider := &t05AbsentProvider{}
@@ -332,10 +332,14 @@ func TestBatchStateA5UnsafeAndNonPrecise(t *testing.T) {
 				t.Fatalf("new name reread the provider: %#v", provider.calls)
 			}
 		}
+	})
+	t.Run("positional change publishes moved column", func(t *testing.T) {
+		t.Parallel()
 		position := "CREATE TABLE t (id INT PRIMARY KEY, c INT);\nALTER TABLE t CHANGE COLUMN c c2 INT FIRST;\nALTER TABLE t ADD COLUMN d INT;"
-		enriched = enrichA3(t, position, spec.DialectMySQL, &t05AbsentProvider{})
-		if enriched[2].Metadata.TargetTable != nil {
-			t.Fatal("positional CHANGE published a column")
+		enriched := enrichA3(t, position, spec.DialectMySQL, &t05AbsentProvider{})
+		next := enriched[2].Metadata.TargetTable
+		if next == nil || len(next.Columns) != 2 || next.Columns[0].Name != "c2" || next.Columns[1].Name != "id" {
+			t.Fatalf("positional CHANGE must publish c2 moved first, got %+v", next)
 		}
 	})
 	t.Run("prior parser error does not publish", func(t *testing.T) {

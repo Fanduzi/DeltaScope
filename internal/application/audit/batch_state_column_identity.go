@@ -85,6 +85,15 @@ func (s *batchState) prepareColumnIdentity(statement spec.Statement, alter *spec
 	if index < 0 || columnIdentityConflict(entry.shape.Columns, index, oldName, newName) {
 		return invalidate(primary)
 	}
+	if alter.Position != nil && alter.Position.Kind == "after" {
+		// AFTER must resolve against the known column set and never at the
+		// moved column itself — either of its two identities.
+		after := strings.TrimSpace(alter.Position.After)
+		idx, _ := positionResolveIndex(entry.shape.Columns, alter.Position, newName)
+		if idx < 0 || strings.EqualFold(after, oldName) {
+			return invalidate(primary)
+		}
+	}
 	if columnIdentityLocalUnsafe(entry.shape, oldName, newName) || len(dependents) > 0 {
 		return invalidate(primary)
 	}
@@ -113,6 +122,13 @@ func (s *batchState) prepareColumnIdentity(statement spec.Statement, alter *spec
 		next.Name = newName
 		shape.Columns[index] = next
 		rewriteIdentityColumnRefs(shape, oldName, newName)
+	}
+	if alter.Position != nil {
+		moved, ok := applyColumnPosition(shape.Columns, index, alter.Position, newName)
+		if !ok {
+			return invalidate(primary)
+		}
+		shape.Columns = moved
 	}
 	return modifyPublication{
 		replaceKey: primary,
@@ -159,7 +175,7 @@ func columnIdentityTemplate(s *batchState, statement spec.Statement, alter *spec
 	if alter.Action != "change_column" && alter.Action != "rename_column" {
 		return false
 	}
-	if alter.HasColumnPosition {
+	if alter.HasColumnPosition && (alter.Position == nil || (alter.Position.Kind != "first" && alter.Position.Kind != "after")) {
 		return false
 	}
 	if alter.Options["if_exists"] == "true" || alter.Options["if_not_exists"] == "true" {

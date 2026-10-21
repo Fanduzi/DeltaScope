@@ -282,39 +282,39 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDAlterColumnDependencyRequire, construct: newColumnDependencyRule},
 		{ruleID: ruleIDColumnAdvancedCompatibilityRequire, construct: newAdvancedCompatibilityRule},
 		{ruleID: ruleIDAlterModifyColumnExplicitNullabilityChangeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
-			return newMetadataAwareForbiddenExplicitAlterColumnChangeRule(ruleIDAlterModifyColumnExplicitNullabilityChangeForbid, "modify_column", "modify column", "explicit_nullability_change", rule.LevelBlocker, alterTouchesExplicitNullability, cfg)
+			return newMetadataAwareForbiddenExplicitAlterColumnChangeRule(ruleIDAlterModifyColumnExplicitNullabilityChangeForbid, []string{"modify_column"}, "modify column", "explicit_nullability_change", rule.LevelBlocker, alterTouchesExplicitNullability, cfg)
 		}},
 		{ruleID: ruleIDAlterModifyColumnExplicitNullabilityUnknownPriorStateAdvisory, construct: newUnknownPriorNullabilityAdvisoryRule},
 		{ruleID: ruleIDAlterChangeColumnExplicitNullabilityChangeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
-			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterChangeColumnExplicitNullabilityChangeForbid, "change_column", "change column", "explicit_nullability_change", rule.LevelBlocker, alterTouchesExplicitNullability, cfg)
+			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterChangeColumnExplicitNullabilityChangeForbid, []string{"change_column"}, "change column", "explicit_nullability_change", rule.LevelBlocker, alterTouchesExplicitNullability, cfg)
 		}},
 		{ruleID: ruleIDAlterModifyColumnExplicitDefaultChangeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
-			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterModifyColumnExplicitDefaultChangeForbid, "modify_column", "modify column", "explicit_default_change", rule.LevelBlocker, alterTouchesExplicitDefault, cfg)
+			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterModifyColumnExplicitDefaultChangeForbid, []string{"modify_column"}, "modify column", "explicit_default_change", rule.LevelBlocker, alterTouchesExplicitDefault, cfg)
 		}},
 		{ruleID: ruleIDAlterChangeColumnExplicitDefaultChangeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
-			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterChangeColumnExplicitDefaultChangeForbid, "change_column", "change column", "explicit_default_change", rule.LevelBlocker, alterTouchesExplicitDefault, cfg)
+			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterChangeColumnExplicitDefaultChangeForbid, []string{"change_column"}, "change column", "explicit_default_change", rule.LevelBlocker, alterTouchesExplicitDefault, cfg)
 		}},
 
 		// PG-native explicit default change semantic rules (action-space isolated).
 		{ruleID: ruleIDAlterSetDefaultExplicitDefaultChangeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
-			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterSetDefaultExplicitDefaultChangeForbid, "set_default", "set default", "explicit_default_change", rule.LevelBlocker, alterTouchesExplicitDefault, cfg)
+			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterSetDefaultExplicitDefaultChangeForbid, []string{"set_default", "set_column_default"}, "set default", "explicit_default_change", rule.LevelBlocker, alterTouchesExplicitDefault, cfg)
 		}},
 		{ruleID: ruleIDAlterDropDefaultExplicitDefaultChangeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
-			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterDropDefaultExplicitDefaultChangeForbid, "drop_default", "drop default", "explicit_default_change", rule.LevelBlocker, alterTouchesExplicitDefault, cfg)
+			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterDropDefaultExplicitDefaultChangeForbid, []string{"drop_default", "drop_column_default"}, "drop default", "explicit_default_change", rule.LevelBlocker, alterTouchesExplicitDefault, cfg)
 		}},
 
 		// PG-native explicit nullability change semantic rules (action-space isolated).
 		{ruleID: ruleIDAlterSetNotNullExplicitNullabilityChangeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
-			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterSetNotNullExplicitNullabilityChangeForbid, "set_not_null", "set not null", "explicit_nullability_change", rule.LevelBlocker, alterTouchesExplicitNullability, cfg)
+			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterSetNotNullExplicitNullabilityChangeForbid, []string{"set_not_null"}, "set not null", "explicit_nullability_change", rule.LevelBlocker, alterTouchesExplicitNullability, cfg)
 		}},
 		{ruleID: ruleIDAlterDropNotNullExplicitNullabilityChangeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
-			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterDropNotNullExplicitNullabilityChangeForbid, "drop_not_null", "drop not null", "explicit_nullability_change", rule.LevelBlocker, alterTouchesExplicitNullability, cfg)
+			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterDropNotNullExplicitNullabilityChangeForbid, []string{"drop_not_null"}, "drop not null", "explicit_nullability_change", rule.LevelBlocker, alterTouchesExplicitNullability, cfg)
 		}},
 		{ruleID: ruleIDAlterModifyColumnExplicitAutoIncrementChangeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
-			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterModifyColumnExplicitAutoIncrementChangeForbid, "modify_column", "modify column", "explicit_auto_increment_change", rule.LevelBlocker, alterTouchesExplicitAutoIncrement, cfg)
+			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterModifyColumnExplicitAutoIncrementChangeForbid, []string{"modify_column"}, "modify column", "explicit_auto_increment_change", rule.LevelBlocker, alterTouchesExplicitAutoIncrement, cfg)
 		}},
 		{ruleID: ruleIDAlterChangeColumnExplicitAutoIncrementChangeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
-			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterChangeColumnExplicitAutoIncrementChangeForbid, "change_column", "change column", "explicit_auto_increment_change", rule.LevelBlocker, alterTouchesExplicitAutoIncrement, cfg)
+			return newForbiddenExplicitAlterColumnChangeRule(ruleIDAlterChangeColumnExplicitAutoIncrementChangeForbid, []string{"change_column"}, "change column", "explicit_auto_increment_change", rule.LevelBlocker, alterTouchesExplicitAutoIncrement, cfg)
 		}},
 		{ruleID: ruleIDTableCommentMaxLength, construct: newTableCommentMaxLengthRule},
 		{ruleID: ruleIDTableEngineAllowlist, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
@@ -404,6 +404,13 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 			return newColumnTargetExistsRule(ruleIDAlterRenameColumnTargetExistsForbid, "rename_column", rule.LevelBlocker, cfg)
 		}},
 		{ruleID: ruleIDAlterRenameColumnVersionRequire, construct: newRenameColumnVersionRule},
+		{ruleID: ruleIDAlterSetDefaultExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newAlterObjectExistenceRule(ruleIDAlterSetDefaultExistsRequire, []string{"set_column_default"}, "column", false, rule.LevelBlocker, cfg, alterObjectName, snapshotHasColumn)
+		}},
+		{ruleID: ruleIDAlterDropDefaultExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newAlterObjectExistenceRule(ruleIDAlterDropDefaultExistsRequire, []string{"drop_column_default"}, "column", false, rule.LevelBlocker, cfg, alterObjectName, snapshotHasColumn)
+		}},
+		{ruleID: ruleIDAlterColumnPositionExistsRequire, construct: newAlterColumnPositionExistsRule},
 		{ruleID: ruleIDAlterAddIndexExistsForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAlterObjectExistenceRule(ruleIDAlterAddIndexExistsForbid, []string{"add_constraint", "add_index"}, "index", true, rule.LevelBlocker, cfg, alterObjectName, snapshotHasIndex)
 		}},

@@ -331,6 +331,123 @@ func primaryKeyConstraintName(snapshot *spec.TableSnapshot) string {
 	return ""
 }
 
+// alterColumnPositionExistsRule requires the AFTER relative column of a
+// positioned add_columns/modify_column/change_column action to exist on the
+// target table. FIRST carries no relative-column premise, so the rule only
+// applies when at least one action declares an AFTER reference.
+type alterColumnPositionExistsRule struct {
+	inner alterObjectExistenceRule
+}
+
+func newAlterColumnPositionExistsRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	inner, err := newAlterObjectExistenceRule(
+		ruleIDAlterColumnPositionExistsRequire,
+		[]string{"add_columns", "modify_column", "change_column"},
+		"column", false, rule.LevelBlocker, cfg, alterPositionAfterName, snapshotHasColumn)
+	if err != nil {
+		return nil, err
+	}
+	return alterColumnPositionExistsRule{inner: inner.(alterObjectExistenceRule)}, nil
+}
+
+func (r alterColumnPositionExistsRule) ID() string { return r.inner.ruleID }
+
+func (r alterColumnPositionExistsRule) AppliesTo(statement spec.Statement) bool {
+	for _, alter := range matchingAlterObjectActions(statement, r.inner.actions...) {
+		if alter.Position != nil && alter.Position.Kind == "after" {
+			return true
+		}
+	}
+	return false
+}
+
+func (r alterColumnPositionExistsRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
+	if !r.AppliesTo(statement) {
+		return nil, nil
+	}
+	if statement.Dialect != spec.DialectMySQL {
+		// TiDB (and any other ordered-state dialect) validates AFTER
+		// references against the pre-state only.
+		return r.inner.Evaluate(ctx, statement)
+	}
+	return r.evaluateAccumulated(ctx, statement)
+}
+
+// evaluateAccumulated mirrors alterObjectExistenceRule.Evaluate but resolves
+// each AFTER reference against the state MySQL validates: the pre-state plus
+// column names materialized by earlier actions in the same statement
+// (left-to-right clause semantics).
+func (r alterColumnPositionExistsRule) evaluateAccumulated(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
+	snapshot, ok := targetTableSnapshot(statement)
+	if !ok || snapshot == nil || !snapshot.Exists || snapshot.Columns == nil {
+		return nil, nil
+	}
+
+	findings := make([]rule.Finding, 0)
+	tableName := metadataTargetTableName(statement, snapshot)
+	produced := make(map[string]struct{})
+	for _, alter := range matchingAlterObjectActions(statement, r.inner.actions...) {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		if name := alterPositionAfterName(alter); name != "" &&
+			!snapshotHasColumn(snapshot, name) && !producedName(produced, name) {
+			findings = append(findings, rule.Finding{
+				Level:      r.inner.level,
+				Message:    fmt.Sprintf("column %q does not exist on table %q", name, tableName),
+				Suggestion: "fix the column name or refresh metadata before auditing this change",
+				Metadata: map[string]any{
+					"table":  tableName,
+					"action": alter.Action,
+					"name":   name,
+					"exists": false,
+				},
+			})
+		}
+		for _, name := range alterProducedColumnNames(alter) {
+			produced[strings.ToLower(name)] = struct{}{}
+		}
+	}
+	return findings, nil
+}
+
+func producedName(produced map[string]struct{}, name string) bool {
+	_, hit := produced[strings.ToLower(name)]
+	return hit
+}
+
+// alterProducedColumnNames returns the column names an alter action
+// materializes within the same statement — the target definition name when
+// present, else the created column's canonical name for pure additions.
+func alterProducedColumnNames(alter spec.Alter) []string {
+	if column, ok := alterColumnDefinition(alter); ok && strings.TrimSpace(column.Name) != "" {
+		return []string{column.Name}
+	}
+	if alter.Action == "add_columns" && strings.TrimSpace(alter.Name) != "" {
+		return []string{alter.Name}
+	}
+	return nil
+}
+
+// EvidenceGaps mirrors the inner member-existence projection but stays
+// gated on an actual AFTER premise — a positioned-FIRST or unpositioned
+// alter never reports a position-existence gap.
+func (r alterColumnPositionExistsRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
+	if !r.AppliesTo(statement) {
+		return nil
+	}
+	return r.inner.EvidenceGaps(statement)
+}
+
+// alterPositionAfterName selects the relative column an AFTER clause
+// references; FIRST and unpositioned actions carry no existence premise.
+func alterPositionAfterName(alter spec.Alter) string {
+	if alter.Position == nil || alter.Position.Kind != "after" {
+		return ""
+	}
+	return alter.Position.After
+}
+
 func alterObjectName(alter spec.Alter) string {
 	return alter.Name
 }

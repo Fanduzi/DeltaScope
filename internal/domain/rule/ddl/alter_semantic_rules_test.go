@@ -173,7 +173,7 @@ func TestAlterColumnTransitionRuleBlocksConfiguredChanges(t *testing.T) {
 			t.Parallel()
 			statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
 				tt.ruleID,
-				tt.action,
+				[]string{tt.action},
 				tt.label,
 				tt.changeKind,
 				rule.LevelBlocker,
@@ -208,7 +208,7 @@ func TestAlterColumnTransitionRuleAllowsUntouchedChanges(t *testing.T) {
 	t.Parallel()
 	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
 		ruleIDAlterModifyColumnExplicitDefaultChangeForbid,
-		"modify_column",
+		[]string{"modify_column"},
 		"modify column",
 		"explicit_default_change",
 		rule.LevelBlocker,
@@ -951,7 +951,7 @@ func TestPGSetDefaultExplicitDefaultChangeRule_FiresWhenTouchesDefault(t *testin
 	t.Parallel()
 	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
 		ruleIDAlterSetDefaultExplicitDefaultChangeForbid,
-		"set_default",
+		[]string{"set_default"},
 		"set default",
 		"explicit_default_change",
 		rule.LevelBlocker,
@@ -991,7 +991,7 @@ func TestPGDropDefaultExplicitDefaultChangeRule_FiresWhenTouchesDefault(t *testi
 	t.Parallel()
 	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
 		ruleIDAlterDropDefaultExplicitDefaultChangeForbid,
-		"drop_default",
+		[]string{"drop_default"},
 		"drop default",
 		"explicit_default_change",
 		rule.LevelBlocker,
@@ -1031,7 +1031,7 @@ func TestPGSetDefaultExplicitDefaultChangeRule_SkipsWhenTouchesDefaultFalse(t *t
 	t.Parallel()
 	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
 		ruleIDAlterSetDefaultExplicitDefaultChangeForbid,
-		"set_default",
+		[]string{"set_default"},
 		"set default",
 		"explicit_default_change",
 		rule.LevelBlocker,
@@ -1068,7 +1068,7 @@ func TestPGDropDefaultExplicitDefaultChangeRule_SkipsWhenTouchesDefaultFalse(t *
 	t.Parallel()
 	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
 		ruleIDAlterDropDefaultExplicitDefaultChangeForbid,
-		"drop_default",
+		[]string{"drop_default"},
 		"drop default",
 		"explicit_default_change",
 		rule.LevelBlocker,
@@ -1105,7 +1105,7 @@ func TestPGExplicitDefaultChangeRule_SkipsWhenForbidFalse(t *testing.T) {
 	t.Parallel()
 	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
 		ruleIDAlterSetDefaultExplicitDefaultChangeForbid,
-		"set_default",
+		[]string{"set_default"},
 		"set default",
 		"explicit_default_change",
 		rule.LevelBlocker,
@@ -1142,7 +1142,7 @@ func TestPGExplicitDefaultChangeRule_MySQLModifyColumnDoesNotTrigger(t *testing.
 	t.Parallel()
 	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
 		ruleIDAlterSetDefaultExplicitDefaultChangeForbid,
-		"set_default",
+		[]string{"set_default"},
 		"set default",
 		"explicit_default_change",
 		rule.LevelBlocker,
@@ -1248,7 +1248,7 @@ func TestPGSetNotNullExplicitNullabilityChangeRule_FiresWhenTouchesNullability(t
 	t.Parallel()
 	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
 		ruleIDAlterSetNotNullExplicitNullabilityChangeForbid,
-		"set_not_null",
+		[]string{"set_not_null"},
 		"set not null",
 		"explicit_nullability_change",
 		rule.LevelBlocker,
@@ -1288,7 +1288,7 @@ func TestPGDropNotNullExplicitNullabilityChangeRule_FiresWhenTouchesNullability(
 	t.Parallel()
 	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
 		ruleIDAlterDropNotNullExplicitNullabilityChangeForbid,
-		"drop_not_null",
+		[]string{"drop_not_null"},
 		"drop not null",
 		"explicit_nullability_change",
 		rule.LevelBlocker,
@@ -1328,7 +1328,7 @@ func TestPGSetNotNullExplicitNullabilityChangeRule_SkipsWhenTouchesNullabilityFa
 	t.Parallel()
 	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
 		ruleIDAlterSetNotNullExplicitNullabilityChangeForbid,
-		"set_not_null",
+		[]string{"set_not_null"},
 		"set not null",
 		"explicit_nullability_change",
 		rule.LevelBlocker,
@@ -1365,7 +1365,7 @@ func TestPGDropNotNullExplicitNullabilityChangeRule_SkipsWhenTouchesNullabilityF
 	t.Parallel()
 	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
 		ruleIDAlterDropNotNullExplicitNullabilityChangeForbid,
-		"drop_not_null",
+		[]string{"drop_not_null"},
 		"drop not null",
 		"explicit_nullability_change",
 		rule.LevelBlocker,
@@ -1402,7 +1402,7 @@ func TestPGExplicitNullabilityChangeRule_SkipsWhenForbidFalse(t *testing.T) {
 	t.Parallel()
 	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
 		ruleIDAlterSetNotNullExplicitNullabilityChangeForbid,
-		"set_not_null",
+		[]string{"set_not_null"},
 		"set not null",
 		"explicit_nullability_change",
 		rule.LevelBlocker,
@@ -1439,7 +1439,7 @@ func TestPGExplicitNullabilityChangeRule_MySQLModifyColumnDoesNotTrigger(t *test
 	t.Parallel()
 	statementRule, err := newForbiddenExplicitAlterColumnChangeRule(
 		ruleIDAlterSetNotNullExplicitNullabilityChangeForbid,
-		"set_not_null",
+		[]string{"set_not_null"},
 		"set not null",
 		"explicit_nullability_change",
 		rule.LevelBlocker,

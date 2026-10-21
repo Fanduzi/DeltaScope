@@ -327,3 +327,135 @@ func TestAlterChangeColumnEvidenceGapsUsesOldName(t *testing.T) {
 		t.Fatalf("expected missing_source_column when old-name column is absent, got %#v", gaps)
 	}
 }
+
+// TestAlterColumnCompatibilityDefaultTransitions pins the T08 §5.4
+// effective-default compare: MODIFY/CHANGE redefines the column in full, so
+// an omitted DEFAULT clause clears the stored default on every validated
+// anchor, and DEFAULT NULL resolves to no stored default. Diagnostics carry
+// classification names only — never literal text or expression fingerprints.
+func TestAlterColumnCompatibilityDefaultTransitions(t *testing.T) {
+	t.Parallel()
+	ruleUnderTest, err := newAlterColumnCompatibilityRule(ruleIDAlterModifyColumnCompatibilityRequire, "modify_column", "modify column", rule.LevelBlocker, policy.RulePolicy{
+		Enabled: true,
+		Params:  map[string]any{"required": true},
+	})
+	if err != nil {
+		t.Fatalf("new compatibility rule: %v", err)
+	}
+
+	statementWith := func(source spec.Column, target *spec.Column) spec.Statement {
+		return spec.Statement{
+			Kind: spec.KindDDL,
+			DDL: &spec.DDL{
+				Table: &spec.Table{Name: "users"},
+				Alter: []spec.Alter{{
+					Action: "modify_column",
+					Name:   "c",
+					Column: &spec.AlterColumn{Definition: target},
+				}},
+			},
+			Metadata: &spec.Metadata{
+				TargetTable: &spec.TableSnapshot{
+					Exists:  true,
+					Table:   &spec.Table{Name: "users"},
+					Columns: []spec.Column{source},
+				},
+			},
+		}
+	}
+	defaultFinding := func(t *testing.T, statement spec.Statement) *rule.Finding {
+		t.Helper()
+		findings, err := ruleUnderTest.Evaluate(context.Background(), statement)
+		if err != nil {
+			t.Fatalf("evaluate: %v", err)
+		}
+		for i := range findings {
+			if findings[i].Metadata["source_default"] != nil || findings[i].Metadata["target_default"] != nil {
+				return &findings[i]
+			}
+		}
+		return nil
+	}
+	intCol := func(defaults spec.Column) spec.Column {
+		defaults.Name = "c"
+		defaults.Type = "int"
+		return defaults
+	}
+
+	cases := []struct {
+		name         string
+		source       spec.Column
+		target       spec.Column
+		wantFinding  bool
+		wantSource   string
+		wantTarget   string
+		wantGapFacts []string
+	}{
+		{name: "omitted default clears stored literal", source: intCol(spec.Column{HasDefault: true, DefaultValue: "0"}), target: intCol(spec.Column{}), wantFinding: true, wantSource: "literal", wantTarget: "none"},
+		{name: "same literal silent", source: intCol(spec.Column{HasDefault: true, DefaultValue: "0"}), target: intCol(spec.Column{HasDefault: true, DefaultValue: "0"})},
+		{name: "different literal changes", source: intCol(spec.Column{HasDefault: true, DefaultValue: "0"}), target: intCol(spec.Column{HasDefault: true, DefaultValue: "1"}), wantFinding: true, wantSource: "literal", wantTarget: "literal"},
+		{name: "gains literal", source: intCol(spec.Column{}), target: intCol(spec.Column{HasDefault: true, DefaultValue: "7"}), wantFinding: true, wantSource: "none", wantTarget: "literal"},
+		{name: "literal to explicit null loses", source: intCol(spec.Column{HasDefault: true, DefaultValue: "0"}), target: intCol(spec.Column{HasDefault: true, DefaultIsNull: true}), wantFinding: true, wantSource: "literal", wantTarget: "null"},
+		{name: "none to explicit null silent", source: intCol(spec.Column{}), target: intCol(spec.Column{HasDefault: true, DefaultIsNull: true})},
+		{name: "none to none silent", source: intCol(spec.Column{}), target: intCol(spec.Column{})},
+		{name: "current_timestamp same silent", source: intCol(spec.Column{HasDefault: true, DefaultIsCurrentTimestamp: true}), target: intCol(spec.Column{HasDefault: true, DefaultIsCurrentTimestamp: true})},
+		{name: "current_timestamp to literal changes", source: intCol(spec.Column{HasDefault: true, DefaultIsCurrentTimestamp: true}), target: intCol(spec.Column{HasDefault: true, DefaultValue: "0"}), wantFinding: true, wantSource: "current_timestamp", wantTarget: "literal"},
+		{name: "expression same fingerprint silent", source: intCol(spec.Column{HasDefault: true, DefaultExpression: &spec.ExpressionFacts{Known: true, Fingerprint: "abc"}}), target: intCol(spec.Column{HasDefault: true, DefaultExpression: &spec.ExpressionFacts{Known: true, Fingerprint: "abc"}})},
+		{name: "expression different fingerprint changes", source: intCol(spec.Column{HasDefault: true, DefaultExpression: &spec.ExpressionFacts{Known: true, Fingerprint: "abc"}}), target: intCol(spec.Column{HasDefault: true, DefaultExpression: &spec.ExpressionFacts{Known: true, Fingerprint: "def"}}), wantFinding: true, wantSource: "expression", wantTarget: "expression"},
+		{name: "expression empty fingerprint counts changed", source: intCol(spec.Column{HasDefault: true, DefaultExpression: &spec.ExpressionFacts{Known: true}}), target: intCol(spec.Column{HasDefault: true, DefaultExpression: &spec.ExpressionFacts{Known: true}}), wantFinding: true, wantSource: "expression", wantTarget: "expression"},
+	}
+	reporter := ruleUnderTest.(rule.EvidenceReporter)
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			statement := statementWith(tc.source, &tc.target)
+			finding := defaultFinding(t, statement)
+			if tc.wantFinding {
+				if finding == nil {
+					t.Fatalf("expected a default-transition finding")
+				}
+				if finding.Metadata["source_default"] != tc.wantSource || finding.Metadata["target_default"] != tc.wantTarget {
+					t.Fatalf("classes = %v/%v, want %v/%v", finding.Metadata["source_default"], finding.Metadata["target_default"], tc.wantSource, tc.wantTarget)
+				}
+				// Privacy: the finding must not carry the literal bytes or
+				// any expression material.
+				for key, value := range finding.Metadata {
+					if s, ok := value.(string); ok && (s == "0" || s == "1" || s == "7" || s == "abc" || s == "def") {
+						t.Fatalf("default material leaked in metadata[%s]=%q", key, s)
+					}
+				}
+			} else if finding != nil {
+				t.Fatalf("unexpected default finding %+v", finding)
+			}
+		})
+	}
+
+	t.Run("undecodable source expression reports source_column.default gap", func(t *testing.T) {
+		source := intCol(spec.Column{HasDefault: true, DefaultValue: "uuid()", DefaultExpression: &spec.ExpressionFacts{Known: false}})
+		statement := statementWith(source, &spec.Column{Name: "c", Type: "int", HasDefault: true, DefaultValue: "x"})
+		gaps := reporter.EvidenceGaps(statement)
+		found := false
+		for _, gap := range gaps {
+			for _, fact := range gap.RequiredFacts {
+				if fact == factSourceColumnDefault {
+					found = true
+				}
+			}
+		}
+		if !found {
+			t.Fatalf("expected source_column.default in gap facts, got %#v", gaps)
+		}
+	})
+	t.Run("complete literal source needs no default gap", func(t *testing.T) {
+		source := intCol(spec.Column{HasDefault: true, DefaultValue: "0"})
+		statement := statementWith(source, &spec.Column{Name: "c", Type: "int"})
+		for _, gap := range reporter.EvidenceGaps(statement) {
+			for _, fact := range gap.RequiredFacts {
+				if fact == factSourceColumnDefault {
+					t.Fatalf("complete literal reported default gap: %#v", gap)
+				}
+			}
+		}
+	})
+}

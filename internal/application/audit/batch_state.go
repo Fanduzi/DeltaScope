@@ -512,6 +512,12 @@ func derivedCreateShape(schema, table string, ddl *spec.DDL) *spec.TableSnapshot
 func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Statement) error {
 	ddl := statement.DDL
 	targets := ddl.TableTargets()
+	// A multi-action ALTER is one statement: its net successor is the bounded
+	// dialect-parametrized model, or one tombstone — never a prefix of
+	// applied actions and never an action-by-action dispatch.
+	if len(ddl.Alter) > 1 && orderedStateDialect(s.dialect) {
+		return s.applyMultiActionAlter(ctx, statement, targets)
+	}
 	// A non-template MODIFY is not a success shape. Route it through the shared
 	// publication so every named table identity, including a RENAME destination
 	// that was never loaded, and every already-loaded dependent of those
@@ -586,7 +592,25 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 			return nil
 		}
 		shape := cloneTableSnapshot(entry.shape)
-		shape.Columns = append(shape.Columns, cloneColumn(*def))
+		next := cloneColumn(*def)
+		switch {
+		case alter.Position == nil:
+			shape.Columns = append(shape.Columns, next)
+		case alter.Position.Kind == "first":
+			shape.Columns = insertColumnAt(shape.Columns, next, 0)
+		case alter.Position.Kind == "after":
+			idx, ok := positionResolveIndex(shape.Columns, alter.Position, def.Name)
+			if !ok || idx < 0 {
+				// AFTER a missing column is a failed premise — never publish
+				// a guessed position.
+				s.invalidateKey(key)
+				return nil
+			}
+			shape.Columns = insertColumnAt(shape.Columns, next, idx+1)
+		default:
+			s.invalidateKey(key)
+			return nil
+		}
 		s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
 	}
 	// present-incomplete stays incomplete: the conditional add proves the

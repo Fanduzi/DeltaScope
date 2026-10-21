@@ -395,6 +395,14 @@ type AlterIndex struct {
 	Definition *Index `json:"definition,omitempty"`
 }
 
+// AlterPosition carries a parsed FIRST|AFTER column-position clause as a
+// normalized fact: Kind is "first" or "after" and After is the normalized
+// relative column name (empty for "first").
+type AlterPosition struct {
+	Kind  string `json:"kind"`
+	After string `json:"after,omitempty"`
+}
+
 // Alter describes a normalized alter action.
 // Name is the canonical subject identifier for downstream matching:
 // existing-object actions use the pre-change name, pure additions use the
@@ -409,10 +417,11 @@ type Alter struct {
 	// constraint type even when no index definition is produced.
 	Constraint *Constraint       `json:"constraint,omitempty"`
 	Options    map[string]string `json:"options,omitempty"`
-	// HasColumnPosition records a parsed FIRST|AFTER column-position clause.
-	// Positional column ordering is parsed but not audited, so the fact exists
-	// to drive incomplete-coverage evidence.
-	HasColumnPosition bool `json:"has_column_position,omitempty"`
+	// HasColumnPosition records a parsed FIRST|AFTER column-position clause;
+	// Position carries the normalized fact (non-nil exactly when
+	// HasColumnPosition is true).
+	HasColumnPosition bool           `json:"has_column_position,omitempty"`
+	Position          *AlterPosition `json:"position,omitempty"`
 	// UnextractedOptions names parsed table-option clauses that were dropped
 	// during extraction; see DDL.UnextractedOptions.
 	UnextractedOptions []string `json:"unextracted_options,omitempty"`

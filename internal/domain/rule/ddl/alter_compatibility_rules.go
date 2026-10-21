@@ -28,6 +28,20 @@ const (
 	factSourceColumnDefinition = "source_column.definition"
 	factSourceColumnType       = "source_column.type"
 	factSourceColumnLength     = "source_column.length"
+	factSourceColumnDefault    = "source_column.default"
+)
+
+// Effective-default classes for the MODIFY/CHANGE transition compare. These
+// are catalog-shape classes, never declaration spelling: a `DEFAULT NULL`
+// target stores a NULL COLUMN_DEFAULT exactly like an omitted clause, so the
+// null class carries no default presence. Diagnostics expose only the class
+// name — never literal text, expression text, or fingerprints.
+const (
+	defaultClassNone             = "none"
+	defaultClassNull             = "null"
+	defaultClassLiteral          = "literal"
+	defaultClassCurrentTimestamp = "current_timestamp"
+	defaultClassExpression       = "expression"
 )
 
 type alterColumnCompatibilityRule struct {
@@ -142,6 +156,9 @@ func (r alterColumnCompatibilityRule) EvidenceGaps(statement spec.Statement) []r
 		if sourceLengthFactRequired(*source, target) && source.Length <= 0 {
 			incomplete[factSourceColumnLength] = struct{}{}
 		}
+		if sourceDefaultFactIncomplete(*source) {
+			incomplete[factSourceColumnDefault] = struct{}{}
+		}
 	}
 
 	gaps := make([]rule.EvidenceGap, 0, 2)
@@ -177,6 +194,67 @@ func sourceLengthFactRequired(source spec.Column, target *spec.Column) bool {
 		return true
 	}
 	return columnTypeFamily(source) == "string"
+}
+
+// effectiveDefaultClass reduces a column's default facts to their
+// catalog-shape class. Both call sites share the field vocabulary: the AST
+// path asserts DefaultIsNull on an explicit `DEFAULT NULL`; the metadata
+// path never sets it, so a source column can only classify to none,
+// current_timestamp, expression, or literal.
+func effectiveDefaultClass(column spec.Column) string {
+	if !column.HasDefault {
+		return defaultClassNone
+	}
+	switch {
+	case column.DefaultIsNull:
+		return defaultClassNull
+	case column.DefaultIsCurrentTimestamp:
+		return defaultClassCurrentTimestamp
+	case column.DefaultExpression != nil:
+		return defaultClassExpression
+	default:
+		return defaultClassLiteral
+	}
+}
+
+// sourceDefaultFactIncomplete reports a loaded source column whose default
+// presence is known but whose value facts are not: an expression default the
+// catalog text could not be decoded into. Literal defaults carry verbatim
+// catalog bytes and a NULL COLUMN_DEFAULT is a complete absence, so those
+// are never incomplete.
+func sourceDefaultFactIncomplete(source spec.Column) bool {
+	return source.HasDefault && source.DefaultExpression != nil && !source.DefaultExpression.Known
+}
+
+// defaultTransitionChanged compares the source column's stored default to
+// the effective default a MODIFY/CHANGE full definition stores — an omitted
+// DEFAULT clause resolves to cleared on every validated MySQL/TiDB anchor,
+// and an explicit `DEFAULT NULL` resolves to no stored default either.
+// Unprovable facts (an expression identity without a fingerprint) count as
+// changed rather than unchanged.
+func defaultTransitionChanged(source spec.Column, target spec.Column) (changed bool) {
+	sourceClass := effectiveDefaultClass(source)
+	targetClass := effectiveDefaultClass(target)
+	sourcePresent := sourceClass != defaultClassNone && sourceClass != defaultClassNull
+	targetPresent := targetClass != defaultClassNone && targetClass != defaultClassNull
+	if sourcePresent != targetPresent {
+		return true
+	}
+	if !sourcePresent {
+		return false
+	}
+	if sourceClass != targetClass {
+		return true
+	}
+	switch sourceClass {
+	case defaultClassLiteral:
+		return source.DefaultValue != target.DefaultValue
+	case defaultClassExpression:
+		return source.DefaultExpression.Fingerprint == "" ||
+			target.DefaultExpression.Fingerprint == "" ||
+			source.DefaultExpression.Fingerprint != target.DefaultExpression.Fingerprint
+	}
+	return false
 }
 
 func (r alterTableOptionCompatibilityRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
@@ -259,6 +337,17 @@ func compatibilityFindings(ruleID string, level rule.Level, tableName string, al
 			fmt.Sprintf("column %q removes auto_increment", alter.Name),
 			"keep auto_increment unchanged or perform a reviewed multi-step migration",
 			map[string]any{"source_auto_increment": source.AutoIncrement, "target_auto_increment": target.AutoIncrement},
+		))
+	}
+
+	if defaultTransitionChanged(source, target) {
+		findings = append(findings, newCompatibilityFinding(ruleID, level, tableName, alter, columnName,
+			fmt.Sprintf("column %q changes its effective default value", alter.Name),
+			"keep the declared default identical to the stored default or review the transition explicitly",
+			map[string]any{
+				"source_default": effectiveDefaultClass(source),
+				"target_default": effectiveDefaultClass(target),
+			},
 		))
 	}
 

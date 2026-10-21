@@ -94,7 +94,7 @@ type alterTargetTypeFamilyRule struct {
 
 type forbiddenExplicitAlterColumnChangeRule struct {
 	ruleID        string
-	action        string
+	actions       []string
 	label         string
 	changeKind    string
 	level         rule.Level
@@ -103,15 +103,15 @@ type forbiddenExplicitAlterColumnChangeRule struct {
 	metadataAware bool
 }
 
-func newForbiddenExplicitAlterColumnChangeRule(ruleID, action, label, changeKind string, fallbackLevel rule.Level, predicate func(spec.Alter) bool, cfg policy.RulePolicy) (rule.StatementRule, error) {
-	return newForbiddenExplicitAlterColumnChangeRuleWithMetadata(ruleID, action, label, changeKind, fallbackLevel, predicate, false, cfg)
+func newForbiddenExplicitAlterColumnChangeRule(ruleID string, actions []string, label, changeKind string, fallbackLevel rule.Level, predicate func(spec.Alter) bool, cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newForbiddenExplicitAlterColumnChangeRuleWithMetadata(ruleID, actions, label, changeKind, fallbackLevel, predicate, false, cfg)
 }
 
-func newMetadataAwareForbiddenExplicitAlterColumnChangeRule(ruleID, action, label, changeKind string, fallbackLevel rule.Level, predicate func(spec.Alter) bool, cfg policy.RulePolicy) (rule.StatementRule, error) {
-	return newForbiddenExplicitAlterColumnChangeRuleWithMetadata(ruleID, action, label, changeKind, fallbackLevel, predicate, true, cfg)
+func newMetadataAwareForbiddenExplicitAlterColumnChangeRule(ruleID string, actions []string, label, changeKind string, fallbackLevel rule.Level, predicate func(spec.Alter) bool, cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newForbiddenExplicitAlterColumnChangeRuleWithMetadata(ruleID, actions, label, changeKind, fallbackLevel, predicate, true, cfg)
 }
 
-func newForbiddenExplicitAlterColumnChangeRuleWithMetadata(ruleID, action, label, changeKind string, fallbackLevel rule.Level, predicate func(spec.Alter) bool, metadataAware bool, cfg policy.RulePolicy) (rule.StatementRule, error) {
+func newForbiddenExplicitAlterColumnChangeRuleWithMetadata(ruleID string, actions []string, label, changeKind string, fallbackLevel rule.Level, predicate func(spec.Alter) bool, metadataAware bool, cfg policy.RulePolicy) (rule.StatementRule, error) {
 	forbid, err := boolParam(ruleID, cfg, "forbid", true)
 	if err != nil {
 		return nil, err
@@ -119,7 +119,7 @@ func newForbiddenExplicitAlterColumnChangeRuleWithMetadata(ruleID, action, label
 
 	return forbiddenExplicitAlterColumnChangeRule{
 		ruleID:        ruleID,
-		action:        action,
+		actions:       append([]string(nil), actions...),
 		label:         label,
 		changeKind:    changeKind,
 		level:         configuredLevel(cfg, fallbackLevel),
@@ -132,7 +132,7 @@ func newForbiddenExplicitAlterColumnChangeRuleWithMetadata(ruleID, action, label
 func (r forbiddenExplicitAlterColumnChangeRule) ID() string { return r.ruleID }
 
 func (r forbiddenExplicitAlterColumnChangeRule) AppliesTo(statement spec.Statement) bool {
-	return r.forbid && appliesToAlterActions(statement, r.action)
+	return r.forbid && appliesToAlterActions(statement, r.actions...)
 }
 
 func (r forbiddenExplicitAlterColumnChangeRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
@@ -141,7 +141,7 @@ func (r forbiddenExplicitAlterColumnChangeRule) Evaluate(ctx context.Context, st
 	}
 
 	findings := make([]rule.Finding, 0)
-	for _, alter := range matchingAlterActions(statement, r.action) {
+	for _, alter := range matchingAlterActions(statement, r.actions...) {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}

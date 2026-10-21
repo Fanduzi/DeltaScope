@@ -16,6 +16,9 @@ expect:
       - ddl.alter.add_index.exists.forbid
       - ddl.alter.drop_index.exists.require
       - ddl.alter.rename_index.exists.require
+      - ddl.alter.set_default.exists.require
+      - ddl.alter.drop_default.exists.require
+      - ddl.alter.column_position.exists.require
       - ddl.alter.drop_primary_key.exists.require
       - ddl.alter.modify_column.compatibility.require
       - ddl.alter.modify_column.explicit_nullability_change.forbid
@@ -99,6 +102,18 @@ metadata:
         - {name: existing, type: int}
       indexes:
         - {name: existing_idx, kind: secondary, columns: [existing]}
+    users_sd:
+      exists: true
+      columns:
+        - {name: existing, type: int}
+    users_dd:
+      exists: true
+      columns:
+        - {name: existing, type: int}
+    users_pos:
+      exists: true
+      columns:
+        - {name: existing, type: int}
     no_pk:
       exists: true
     compat_table:

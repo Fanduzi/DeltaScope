@@ -653,17 +653,12 @@ func TestT05A7VendorAndAspectBoundariesAtZeroQuota(t *testing.T) {
 			if !errors.Is(err, ErrUnsupportedStatement) {
 				t.Fatalf("expected ErrUnsupportedStatement, got %v", err)
 			}
-			if len(result.Unsupported) != 2 {
-				t.Fatalf("unsupported entries = %d, want 2: %+v", len(result.Unsupported), result.Unsupported)
+			// The column_position aspect is audited semantics now, so the
+			// exhausted statement budget is the only unsupported entry.
+			if len(result.Unsupported) != 1 {
+				t.Fatalf("unsupported entries = %d, want 1: %+v", len(result.Unsupported), result.Unsupported)
 			}
-			aspect := result.Unsupported[0]
-			if aspect.Feature != "alter_table.add_columns.column_position" || aspect.Reason != spec.UnsupportedUnauditedReason {
-				t.Fatalf("aspect entry = %+v, want unaudited column_position", aspect)
-			}
-			if aspect.SQL != result.Statements[0].RawSQL {
-				t.Fatalf("aspect SQL = %q, want raw %q", aspect.SQL, result.Statements[0].RawSQL)
-			}
-			t05A7AssertResourceEntry(t, result.Unsupported[1], result.Statements[0], 0, 0)
+			t05A7AssertResourceEntry(t, result.Unsupported[0], result.Statements[0], 0, 0)
 		})
 	}
 }
