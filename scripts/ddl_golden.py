@@ -28,6 +28,7 @@ import sys
 import time
 
 from t07_contract import t07_artifact_failures
+from t08_contract import t08_artifact_failures
 
 ROOT_DIR = pathlib.Path(__file__).resolve().parent.parent
 COMPOSE_FILE = ROOT_DIR / "docker" / "ddl-golden-compose.yaml"
@@ -7134,6 +7135,9 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
     t07_failures = t07_artifact_failures(artifact, manifest)
     if t07_failures:
         return t07_failures
+    t08_failures = t08_artifact_failures(artifact, manifest)
+    if t08_failures:
+        return t08_failures
     if baseline:
         failures.extend(baseline_manifest_failures(manifest, baseline))
     failures.extend(t05_a3_manifest_failures(manifest))
