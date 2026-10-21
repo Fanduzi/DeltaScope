@@ -125,7 +125,7 @@ exercised by `T07R1RequestIsolation` tests and the T08 multi-action/state
 tests inside `make test` (`-count=1`, no cache), but those are ordinary
 runs, not race-detector evidence. Real `go test -race` originals were
 produced in the follow-up oracle-closure round and live under
-`docs/verification/t08/<oracle-closure proof sha>/race/`. SDK/CLI/HTTP/MCP
+`docs/verification/t08/3b35fe302c7afdb1697fbef0c3cb1f5daeb77128/race/`. SDK/CLI/HTTP/MCP
 representative checks are the `make test` package suite plus the CLI path
 exercised by every golden cli/metadata case above; the HTTP/MCP adapters
 do not consume the changed state layer (no diff under
@@ -204,4 +204,4 @@ originals of the c983fc9d reruns. Corrections made:
 - **Race wording.** The earlier paragraph presented ordinary `make test`
   coverage as race-detector coverage. No `-race` run was performed in this
   closeout; genuine race evidence was produced in the follow-up round and
-  is indexed from `docs/verification/t08/<oracle-closure proof sha>/race/`.
+  is indexed from `docs/verification/t08/3b35fe302c7afdb1697fbef0c3cb1f5daeb77128/race/`.

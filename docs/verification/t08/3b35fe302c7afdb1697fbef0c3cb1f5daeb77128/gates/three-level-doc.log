@@ -1,0 +1,5 @@
+cmd: /Users/fan/.agents/skills/check-three-level-doc/scripts/check_three_level_doc.sh
+cwd: /Users/fan/GolangProjects/DeltaScope
+run at: working tree == 3b35fe30 content
+[three-level-doc] OK
+direct_rc=0

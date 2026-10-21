@@ -1,0 +1,6 @@
+cmd: python3 scripts/ddl_golden.py validate --artifact /Users/fan/GolangProjects/DeltaScope/docs/verification/t08/3b35fe302c7afdb1697fbef0c3cb1f5daeb77128/T05-run/T05/artifact.json
+cwd: /tmp/ds-t08-oracle-closure
+start: 2026-10-21T11:32:54Z
+[ddl-golden] artifact valid
+end: 2026-10-21T11:32:54Z
+direct_rc=0

@@ -1,0 +1,9 @@
+docs/decisions/2026-10-28-ddl-column-position-and-multi-action-state.md
+docs/verification/t08/c983fc9d2e8f887981a5f031b1d55b699d711e84/delivery-closeout/README.md
+docs/work-plans/t08-column-governance/EXPECTED-UPGRADES.md
+scripts/README.md
+scripts/ddl_golden.py
+scripts/test_ddl_golden.py
+testdata/ddl-golden/T03.json
+testdata/ddl-golden/T04.json
+testdata/ddl-golden/T05.json

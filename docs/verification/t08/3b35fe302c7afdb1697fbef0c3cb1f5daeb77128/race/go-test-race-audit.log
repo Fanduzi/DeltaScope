@@ -1,0 +1,556 @@
+cmd: go test -race -count=1 ./internal/application/audit -run 'T08|T07R1|BatchStateR1|RequestIsolation' -v
+cwd: /tmp/ds-t08-oracle-closure
+head: 3b35fe302c7afdb1697fbef0c3cb1f5daeb77128
+start: 2026-10-21T11:29:50Z
+=== RUN   TestBatchStateR1QualifiedNamesUseTheirOwnSchema
+=== PAUSE TestBatchStateR1QualifiedNamesUseTheirOwnSchema
+=== RUN   TestBatchStateR1CrossSchemaNoStateLeak
+=== PAUSE TestBatchStateR1CrossSchemaNoStateLeak
+=== RUN   TestBatchStateR1MixedQualifiedAndUnqualified
+=== PAUSE TestBatchStateR1MixedQualifiedAndUnqualified
+=== RUN   TestBatchStateR1CrossSchemaRenameMigrates
+=== PAUSE TestBatchStateR1CrossSchemaRenameMigrates
+=== RUN   TestBatchStateR1ExecuteContaminatesLaterState
+=== PAUSE TestBatchStateR1ExecuteContaminatesLaterState
+=== RUN   TestBatchStateR1DropDatabaseInvalidatesSchemaScope
+=== PAUSE TestBatchStateR1DropDatabaseInvalidatesSchemaScope
+=== RUN   TestBatchStateR1MultiActionAlterInvalidates
+=== PAUSE TestBatchStateR1MultiActionAlterInvalidates
+=== RUN   TestBatchStateR1PartialProviderShapeKeepsKnownPrimaryKey
+=== PAUSE TestBatchStateR1PartialProviderShapeKeepsKnownPrimaryKey
+=== RUN   TestBatchStateR1ConditionalCreateLeavesPrimaryKeyUnknown
+=== PAUSE TestBatchStateR1ConditionalCreateLeavesPrimaryKeyUnknown
+=== RUN   TestBatchStateR1KnownAbsentPrimaryKeyKeepsBlocker
+=== PAUSE TestBatchStateR1KnownAbsentPrimaryKeyKeepsBlocker
+=== RUN   TestBatchStateR1IncompleteColumnsUseFrozenReason
+=== PAUSE TestBatchStateR1IncompleteColumnsUseFrozenReason
+=== RUN   TestT07R1GeneratedReferencePremises
+=== PAUSE TestT07R1GeneratedReferencePremises
+=== RUN   TestT07R1GeneratedPremisePostState
+=== PAUSE TestT07R1GeneratedPremisePostState
+=== RUN   TestT07R1GeneratedPremiseAlter
+=== PAUSE TestT07R1GeneratedPremiseAlter
+=== RUN   TestT07R1TiDBAlterExpressionShapes
+=== PAUSE TestT07R1TiDBAlterExpressionShapes
+=== RUN   TestT07R1ExpressionShapeOppositeControls
+=== PAUSE TestT07R1ExpressionShapeOppositeControls
+=== RUN   TestT07R1TiDBFoldedLiteralPostState
+=== PAUSE TestT07R1TiDBFoldedLiteralPostState
+=== RUN   TestT07R1DefaultParenthesizedExtraction
+=== PAUSE TestT07R1DefaultParenthesizedExtraction
+=== RUN   TestT07R1TiDBCreateShapeGate
+=== PAUSE TestT07R1TiDBCreateShapeGate
+=== RUN   TestT07R1MixedDefaultRegression
+=== PAUSE TestT07R1MixedDefaultRegression
+=== RUN   TestT07R1ToolBoundaryChannels
+=== PAUSE TestT07R1ToolBoundaryChannels
+=== RUN   TestT07R1NoExpressionLeak
+=== PAUSE TestT07R1NoExpressionLeak
+=== RUN   TestT07R1RequestIsolation
+=== PAUSE TestT07R1RequestIsolation
+=== RUN   TestT05A7RequestIsolation
+=== RUN   TestT05A7RequestIsolation/mysql
+=== RUN   TestT05A7RequestIsolation/tidb
+--- PASS: TestT05A7RequestIsolation (0.11s)
+    --- PASS: TestT05A7RequestIsolation/mysql (0.06s)
+    --- PASS: TestT05A7RequestIsolation/tidb (0.06s)
+=== RUN   TestAuditSQLT08PositionedAlterActionsComplete
+=== PAUSE TestAuditSQLT08PositionedAlterActionsComplete
+=== RUN   TestBatchStateT08AddColumnPosition
+=== PAUSE TestBatchStateT08AddColumnPosition
+=== RUN   TestBatchStateT08ModifyChangePosition
+=== PAUSE TestBatchStateT08ModifyChangePosition
+=== RUN   TestBatchStateT08MultiActionSuccessor
+=== PAUSE TestBatchStateT08MultiActionSuccessor
+=== RUN   TestAuditSQLT08ExistenceRules
+=== PAUSE TestAuditSQLT08ExistenceRules
+=== RUN   TestAuditSQLT08EvalGapCoexistsWithBlocker
+=== PAUSE TestAuditSQLT08EvalGapCoexistsWithBlocker
+=== RUN   TestAuditSQLT08PositionFindingMetadata
+=== PAUSE TestAuditSQLT08PositionFindingMetadata
+=== CONT  TestBatchStateR1QualifiedNamesUseTheirOwnSchema
+=== CONT  TestT07R1DefaultParenthesizedExtraction
+=== CONT  TestT07R1GeneratedPremiseAlter
+=== CONT  TestBatchStateR1KnownAbsentPrimaryKeyKeepsBlocker
+=== CONT  TestBatchStateT08AddColumnPosition
+=== CONT  TestBatchStateR1DropDatabaseInvalidatesSchemaScope
+=== CONT  TestBatchStateR1PartialProviderShapeKeepsKnownPrimaryKey
+=== CONT  TestAuditSQLT08PositionedAlterActionsComplete
+=== RUN   TestBatchStateT08AddColumnPosition/add_first_publishes_index_zero
+=== CONT  TestBatchStateR1MultiActionAlterInvalidates
+=== CONT  TestT07R1GeneratedPremisePostState
+=== CONT  TestT07R1TiDBAlterExpressionShapes
+=== CONT  TestT07R1ToolBoundaryChannels
+=== RUN   TestT07R1DefaultParenthesizedExtraction/create_parens_call
+=== PAUSE TestBatchStateT08AddColumnPosition/add_first_publishes_index_zero
+=== RUN   TestT07R1GeneratedPremiseAlter/mysql
+=== RUN   TestT07R1GeneratedPremisePostState/compat_enabled
+=== RUN   TestBatchStateT08AddColumnPosition/add_after_resolves_relative_column
+=== RUN   TestT07R1TiDBAlterExpressionShapes/d_uuid
+=== PAUSE TestT07R1GeneratedPremiseAlter/mysql
+=== RUN   TestT07R1ToolBoundaryChannels/bare_set_default_call_is_a_parse_rejection
+=== RUN   TestT07R1GeneratedPremiseAlter/tidb
+=== PAUSE TestBatchStateT08AddColumnPosition/add_after_resolves_relative_column
+=== RUN   TestBatchStateT08AddColumnPosition/add_after_missing_reference_invalidates
+=== PAUSE TestT07R1GeneratedPremiseAlter/tidb
+=== CONT  TestAuditSQLT08EvalGapCoexistsWithBlocker
+=== PAUSE TestBatchStateT08AddColumnPosition/add_after_missing_reference_invalidates
+=== RUN   TestBatchStateT08AddColumnPosition/tidb_add_after_resolves
+=== PAUSE TestBatchStateT08AddColumnPosition/tidb_add_after_resolves
+=== CONT  TestBatchStateR1IncompleteColumnsUseFrozenReason
+=== RUN   TestT07R1DefaultParenthesizedExtraction/create_bare_call
+=== RUN   TestT07R1DefaultParenthesizedExtraction/create_parens_literal
+=== RUN   TestT07R1DefaultParenthesizedExtraction/set_parens_call
+=== RUN   TestT07R1DefaultParenthesizedExtraction/set_bare_literal
+=== RUN   TestT07R1DefaultParenthesizedExtraction/add_parens_arith
+=== RUN   TestAuditSQLT08PositionedAlterActionsComplete/mysql_add_first
+=== PAUSE TestAuditSQLT08PositionedAlterActionsComplete/mysql_add_first
+=== RUN   TestAuditSQLT08PositionedAlterActionsComplete/tidb_add_after
+=== PAUSE TestAuditSQLT08PositionedAlterActionsComplete/tidb_add_after
+=== RUN   TestAuditSQLT08PositionedAlterActionsComplete/mysql_modify_after
+=== PAUSE TestAuditSQLT08PositionedAlterActionsComplete/mysql_modify_after
+=== RUN   TestAuditSQLT08PositionedAlterActionsComplete/mysql_change_first
+=== PAUSE TestAuditSQLT08PositionedAlterActionsComplete/mysql_change_first
+=== RUN   TestAuditSQLT08PositionedAlterActionsComplete/tidb_modify_first
+=== PAUSE TestAuditSQLT08PositionedAlterActionsComplete/tidb_modify_first
+=== RUN   TestAuditSQLT08PositionedAlterActionsComplete/tidb_change_after
+=== PAUSE TestAuditSQLT08PositionedAlterActionsComplete/tidb_change_after
+=== CONT  TestAuditSQLT08PositionFindingMetadata
+--- PASS: TestT07R1DefaultParenthesizedExtraction (0.01s)
+    --- PASS: TestT07R1DefaultParenthesizedExtraction/create_parens_call (0.00s)
+    --- PASS: TestT07R1DefaultParenthesizedExtraction/create_bare_call (0.00s)
+    --- PASS: TestT07R1DefaultParenthesizedExtraction/create_parens_literal (0.00s)
+    --- PASS: TestT07R1DefaultParenthesizedExtraction/set_parens_call (0.00s)
+    --- PASS: TestT07R1DefaultParenthesizedExtraction/set_bare_literal (0.00s)
+    --- PASS: TestT07R1DefaultParenthesizedExtraction/add_parens_arith (0.00s)
+=== CONT  TestT07R1GeneratedReferencePremises
+=== RUN   TestT07R1GeneratedReferencePremises/mysql
+=== PAUSE TestT07R1GeneratedReferencePremises/mysql
+=== RUN   TestT07R1GeneratedReferencePremises/tidb
+=== PAUSE TestT07R1GeneratedReferencePremises/tidb
+=== CONT  TestBatchStateR1MixedQualifiedAndUnqualified
+--- PASS: TestAuditSQLT08PositionFindingMetadata (0.01s)
+=== CONT  TestBatchStateT08ModifyChangePosition
+=== RUN   TestBatchStateT08ModifyChangePosition/modify_first_moves_column
+=== PAUSE TestBatchStateT08ModifyChangePosition/modify_first_moves_column
+=== RUN   TestBatchStateT08ModifyChangePosition/modify_after_moves_column
+=== PAUSE TestBatchStateT08ModifyChangePosition/modify_after_moves_column
+=== RUN   TestBatchStateT08ModifyChangePosition/modify_after_self_invalidates
+=== PAUSE TestBatchStateT08ModifyChangePosition/modify_after_self_invalidates
+=== RUN   TestBatchStateT08ModifyChangePosition/modify_after_missing_invalidates
+=== PAUSE TestBatchStateT08ModifyChangePosition/modify_after_missing_invalidates
+=== RUN   TestBatchStateT08ModifyChangePosition/change_after_moves_renamed_column
+=== PAUSE TestBatchStateT08ModifyChangePosition/change_after_moves_renamed_column
+=== RUN   TestBatchStateT08ModifyChangePosition/change_after_new-name_self_reference_invalidates
+=== PAUSE TestBatchStateT08ModifyChangePosition/change_after_new-name_self_reference_invalidates
+=== CONT  TestT07R1RequestIsolation
+--- PASS: TestBatchStateR1IncompleteColumnsUseFrozenReason (0.04s)
+=== CONT  TestT07R1MixedDefaultRegression
+--- PASS: TestT07R1MixedDefaultRegression (0.00s)
+=== CONT  TestAuditSQLT08ExistenceRules
+=== RUN   TestAuditSQLT08ExistenceRules/mysql
+=== PAUSE TestAuditSQLT08ExistenceRules/mysql
+=== RUN   TestAuditSQLT08ExistenceRules/tidb
+=== PAUSE TestAuditSQLT08ExistenceRules/tidb
+=== RUN   TestAuditSQLT08ExistenceRules/sibling_add_after
+=== PAUSE TestAuditSQLT08ExistenceRules/sibling_add_after
+=== RUN   TestAuditSQLT08ExistenceRules/mysql_rename_destination_satisfies_sibling_after
+=== PAUSE TestAuditSQLT08ExistenceRules/mysql_rename_destination_satisfies_sibling_after
+=== RUN   TestAuditSQLT08ExistenceRules/mysql_dropped_sibling_fails_after_premise
+=== PAUSE TestAuditSQLT08ExistenceRules/mysql_dropped_sibling_fails_after_premise
+=== RUN   TestAuditSQLT08ExistenceRules/mysql_renamed-away_name_fails_after_premise
+=== PAUSE TestAuditSQLT08ExistenceRules/mysql_renamed-away_name_fails_after_premise
+=== RUN   TestAuditSQLT08ExistenceRules/mysql_setter_target_does_not_produce_sibling_name
+=== PAUSE TestAuditSQLT08ExistenceRules/mysql_setter_target_does_not_produce_sibling_name
+=== RUN   TestAuditSQLT08ExistenceRules/mysql_modify_target_does_not_produce_sibling_name
+=== PAUSE TestAuditSQLT08ExistenceRules/mysql_modify_target_does_not_produce_sibling_name
+=== CONT  TestBatchStateR1ConditionalCreateLeavesPrimaryKeyUnknown
+--- PASS: TestBatchStateR1QualifiedNamesUseTheirOwnSchema (0.05s)
+=== CONT  TestBatchStateR1ExecuteContaminatesLaterState
+=== RUN   TestT07R1GeneratedPremisePostState/compat_disabled
+--- PASS: TestBatchStateR1PartialProviderShapeKeepsKnownPrimaryKey (0.05s)
+=== CONT  TestT07R1NoExpressionLeak
+=== RUN   TestT07R1NoExpressionLeak/missing_column
+--- PASS: TestBatchStateR1MixedQualifiedAndUnqualified (0.05s)
+=== CONT  TestBatchStateT08MultiActionSuccessor
+=== RUN   TestBatchStateT08MultiActionSuccessor/mysql_sibling_reference_accumulates
+=== PAUSE TestBatchStateT08MultiActionSuccessor/mysql_sibling_reference_accumulates
+=== RUN   TestBatchStateT08MultiActionSuccessor/tidb_sibling_reference_tombstones
+=== PAUSE TestBatchStateT08MultiActionSuccessor/tidb_sibling_reference_tombstones
+=== RUN   TestBatchStateT08MultiActionSuccessor/tidb_disjoint_actions_publish
+=== PAUSE TestBatchStateT08MultiActionSuccessor/tidb_disjoint_actions_publish
+=== RUN   TestBatchStateT08MultiActionSuccessor/duplicate_object_touch_tombstones
+=== PAUSE TestBatchStateT08MultiActionSuccessor/duplicate_object_touch_tombstones
+=== RUN   TestBatchStateT08MultiActionSuccessor/add_then_rename_same_column_tombstones
+=== PAUSE TestBatchStateT08MultiActionSuccessor/add_then_rename_same_column_tombstones
+=== RUN   TestBatchStateT08MultiActionSuccessor/atomicity_no_prefix_on_late_failure
+=== PAUSE TestBatchStateT08MultiActionSuccessor/atomicity_no_prefix_on_late_failure
+=== RUN   TestBatchStateT08MultiActionSuccessor/unresolvable_position_premise_tombstones
+=== PAUSE TestBatchStateT08MultiActionSuccessor/unresolvable_position_premise_tombstones
+=== RUN   TestBatchStateT08MultiActionSuccessor/unsupported_member_action_tombstones
+=== PAUSE TestBatchStateT08MultiActionSuccessor/unsupported_member_action_tombstones
+=== RUN   TestBatchStateT08MultiActionSuccessor/setter_pair_on_distinct_columns_publishes
+=== PAUSE TestBatchStateT08MultiActionSuccessor/setter_pair_on_distinct_columns_publishes
+=== RUN   TestBatchStateT08MultiActionSuccessor/canceled_multi-action_apply_publishes_nothing
+=== PAUSE TestBatchStateT08MultiActionSuccessor/canceled_multi-action_apply_publishes_nothing
+=== RUN   TestBatchStateT08MultiActionSuccessor/mysql_multi_modify_after_mid-state_resolves
+=== PAUSE TestBatchStateT08MultiActionSuccessor/mysql_multi_modify_after_mid-state_resolves
+=== RUN   TestBatchStateT08MultiActionSuccessor/tidb_auto_increment_removal_tombstones
+=== PAUSE TestBatchStateT08MultiActionSuccessor/tidb_auto_increment_removal_tombstones
+=== RUN   TestBatchStateT08MultiActionSuccessor/tidb_change_dropping_auto_increment_tombstones
+=== PAUSE TestBatchStateT08MultiActionSuccessor/tidb_change_dropping_auto_increment_tombstones
+=== RUN   TestBatchStateT08MultiActionSuccessor/tidb_multi-action_ai_removal_tombstones_whole_statement
+=== PAUSE TestBatchStateT08MultiActionSuccessor/tidb_multi-action_ai_removal_tombstones_whole_statement
+=== RUN   TestBatchStateT08MultiActionSuccessor/rename_destination_collides_with_sibling_add_tombstones
+=== PAUSE TestBatchStateT08MultiActionSuccessor/rename_destination_collides_with_sibling_add_tombstones
+=== RUN   TestBatchStateT08MultiActionSuccessor/change_destination_collides_with_sibling_add_tombstones
+=== PAUSE TestBatchStateT08MultiActionSuccessor/change_destination_collides_with_sibling_add_tombstones
+=== RUN   TestBatchStateT08MultiActionSuccessor/mysql_modify_dropping_auto_increment_publishes
+=== PAUSE TestBatchStateT08MultiActionSuccessor/mysql_modify_dropping_auto_increment_publishes
+=== CONT  TestBatchStateR1CrossSchemaRenameMigrates
+--- PASS: TestAuditSQLT08EvalGapCoexistsWithBlocker (0.05s)
+=== CONT  TestT07R1TiDBCreateShapeGate
+=== RUN   TestT07R1TiDBCreateShapeGate/tidb_parens_call
+--- PASS: TestBatchStateR1KnownAbsentPrimaryKeyKeepsBlocker (0.06s)
+=== CONT  TestT07R1TiDBFoldedLiteralPostState
+=== RUN   TestT07R1TiDBFoldedLiteralPostState/verbatim_uuid
+--- PASS: TestBatchStateR1MultiActionAlterInvalidates (0.06s)
+=== CONT  TestT07R1ExpressionShapeOppositeControls
+=== RUN   TestT07R1ExpressionShapeOppositeControls/d_uuid
+=== CONT  TestBatchStateR1CrossSchemaNoStateLeak
+--- PASS: TestBatchStateR1DropDatabaseInvalidatesSchemaScope (0.06s)
+=== RUN   TestT07R1TiDBFoldedLiteralPostState/verbatim_uuid_date
+=== RUN   TestT07R1TiDBFoldedLiteralPostState/verbatim_json_int
+=== RUN   TestT07R1TiDBFoldedLiteralPostState/verbatim_cts_ts
+=== RUN   TestT07R1TiDBAlterExpressionShapes/uuid_on_date
+=== RUN   TestT07R1TiDBFoldedLiteralPostState/verbatim_cts_date
+=== RUN   TestT07R1TiDBFoldedLiteralPostState/verbatim_cts_dt
+=== RUN   TestT07R1TiDBFoldedLiteralPostState/unproven_arith
+=== RUN   TestT07R1TiDBFoldedLiteralPostState/unproven_arith_int
+=== RUN   TestT07R1TiDBFoldedLiteralPostState/unproven_case
+=== RUN   TestT07R1TiDBFoldedLiteralPostState/unproven_wrapped_uuid
+=== RUN   TestT07R1TiDBFoldedLiteralPostState/unproven_wrapped_lower
+=== RUN   TestT07R1TiDBFoldedLiteralPostState/unproven_cts_varchar
+=== RUN   TestT07R1TiDBFoldedLiteralPostState/unproven_cts_bigint
+=== RUN   TestT07R1ToolBoundaryChannels/unknown_function_is_unsupported
+--- PASS: TestT07R1RequestIsolation (0.06s)
+=== CONT  TestT07R1GeneratedPremiseAlter/mysql
+=== RUN   TestT07R1GeneratedPremiseAlter/mysql/add_generated_references_prior
+=== RUN   TestT07R1TiDBFoldedLiteralPostState/unproven_cts_time
+=== RUN   TestT07R1TiDBFoldedLiteralPostState/unproven_nested
+--- PASS: TestT07R1TiDBFoldedLiteralPostState (0.02s)
+    --- PASS: TestT07R1TiDBFoldedLiteralPostState/verbatim_uuid (0.01s)
+    --- PASS: TestT07R1TiDBFoldedLiteralPostState/verbatim_uuid_date (0.00s)
+    --- PASS: TestT07R1TiDBFoldedLiteralPostState/verbatim_json_int (0.00s)
+    --- PASS: TestT07R1TiDBFoldedLiteralPostState/verbatim_cts_ts (0.00s)
+    --- PASS: TestT07R1TiDBFoldedLiteralPostState/verbatim_cts_date (0.00s)
+    --- PASS: TestT07R1TiDBFoldedLiteralPostState/verbatim_cts_dt (0.00s)
+    --- PASS: TestT07R1TiDBFoldedLiteralPostState/unproven_arith (0.00s)
+    --- PASS: TestT07R1TiDBFoldedLiteralPostState/unproven_arith_int (0.00s)
+    --- PASS: TestT07R1TiDBFoldedLiteralPostState/unproven_case (0.00s)
+    --- PASS: TestT07R1TiDBFoldedLiteralPostState/unproven_wrapped_uuid (0.00s)
+    --- PASS: TestT07R1TiDBFoldedLiteralPostState/unproven_wrapped_lower (0.00s)
+    --- PASS: TestT07R1TiDBFoldedLiteralPostState/unproven_cts_varchar (0.00s)
+    --- PASS: TestT07R1TiDBFoldedLiteralPostState/unproven_cts_bigint (0.00s)
+    --- PASS: TestT07R1TiDBFoldedLiteralPostState/unproven_cts_time (0.00s)
+    --- PASS: TestT07R1TiDBFoldedLiteralPostState/unproven_nested (0.00s)
+=== CONT  TestT07R1GeneratedPremiseAlter/tidb
+=== RUN   TestT07R1GeneratedPremiseAlter/tidb/add_generated_references_prior
+--- PASS: TestBatchStateR1ExecuteContaminatesLaterState (0.03s)
+=== CONT  TestBatchStateT08AddColumnPosition/add_after_resolves_relative_column
+=== CONT  TestBatchStateT08AddColumnPosition/add_after_missing_reference_invalidates
+--- PASS: TestBatchStateR1ConditionalCreateLeavesPrimaryKeyUnknown (0.04s)
+=== CONT  TestBatchStateT08AddColumnPosition/tidb_add_after_resolves
+=== CONT  TestBatchStateT08AddColumnPosition/add_first_publishes_index_zero
+=== CONT  TestAuditSQLT08PositionedAlterActionsComplete/tidb_change_after
+=== CONT  TestAuditSQLT08PositionedAlterActionsComplete/tidb_modify_first
+--- PASS: TestBatchStateT08AddColumnPosition (0.00s)
+    --- PASS: TestBatchStateT08AddColumnPosition/add_after_resolves_relative_column (0.00s)
+    --- PASS: TestBatchStateT08AddColumnPosition/add_after_missing_reference_invalidates (0.00s)
+    --- PASS: TestBatchStateT08AddColumnPosition/tidb_add_after_resolves (0.00s)
+    --- PASS: TestBatchStateT08AddColumnPosition/add_first_publishes_index_zero (0.00s)
+=== RUN   TestT07R1NoExpressionLeak/self_reference
+--- PASS: TestBatchStateR1CrossSchemaNoStateLeak (0.03s)
+=== CONT  TestAuditSQLT08PositionedAlterActionsComplete/tidb_add_after
+--- PASS: TestT07R1GeneratedPremisePostState (0.09s)
+    --- PASS: TestT07R1GeneratedPremisePostState/compat_enabled (0.05s)
+    --- PASS: TestT07R1GeneratedPremisePostState/compat_disabled (0.04s)
+=== CONT  TestAuditSQLT08PositionedAlterActionsComplete/mysql_add_first
+=== RUN   TestT07R1TiDBCreateShapeGate/tidb_bare_call
+=== RUN   TestT07R1TiDBAlterExpressionShapes/uuid_on_int
+--- PASS: TestBatchStateR1CrossSchemaRenameMigrates (0.05s)
+=== CONT  TestAuditSQLT08PositionedAlterActionsComplete/mysql_modify_after
+=== RUN   TestT07R1ExpressionShapeOppositeControls/d_arith
+=== CONT  TestAuditSQLT08PositionedAlterActionsComplete/mysql_change_first
+=== RUN   TestT07R1GeneratedPremiseAlter/mysql/add_generated_missing
+=== CONT  TestT07R1GeneratedReferencePremises/mysql
+=== RUN   TestT07R1GeneratedReferencePremises/mysql/g_valid
+=== RUN   TestT07R1GeneratedPremiseAlter/tidb/add_generated_missing
+=== CONT  TestT07R1GeneratedReferencePremises/tidb
+=== RUN   TestT07R1GeneratedReferencePremises/tidb/g_valid
+=== RUN   TestT07R1NoExpressionLeak/tidb_arith_default
+=== CONT  TestBatchStateT08ModifyChangePosition/modify_after_missing_invalidates
+=== CONT  TestBatchStateT08ModifyChangePosition/change_after_new-name_self_reference_invalidates
+=== CONT  TestBatchStateT08ModifyChangePosition/change_after_moves_renamed_column
+--- PASS: TestT07R1ToolBoundaryChannels (0.13s)
+    --- PASS: TestT07R1ToolBoundaryChannels/bare_set_default_call_is_a_parse_rejection (0.07s)
+    --- PASS: TestT07R1ToolBoundaryChannels/unknown_function_is_unsupported (0.05s)
+=== CONT  TestBatchStateT08ModifyChangePosition/modify_after_self_invalidates
+=== CONT  TestBatchStateT08ModifyChangePosition/modify_after_moves_column
+=== CONT  TestBatchStateT08ModifyChangePosition/modify_first_moves_column
+=== CONT  TestAuditSQLT08ExistenceRules/mysql
+=== RUN   TestAuditSQLT08ExistenceRules/mysql/set_default_missing_column
+=== CONT  TestAuditSQLT08ExistenceRules/mysql_modify_target_does_not_produce_sibling_name
+--- PASS: TestBatchStateT08ModifyChangePosition (0.00s)
+    --- PASS: TestBatchStateT08ModifyChangePosition/modify_after_missing_invalidates (0.00s)
+    --- PASS: TestBatchStateT08ModifyChangePosition/change_after_new-name_self_reference_invalidates (0.00s)
+    --- PASS: TestBatchStateT08ModifyChangePosition/change_after_moves_renamed_column (0.00s)
+    --- PASS: TestBatchStateT08ModifyChangePosition/modify_after_self_invalidates (0.00s)
+    --- PASS: TestBatchStateT08ModifyChangePosition/modify_first_moves_column (0.00s)
+    --- PASS: TestBatchStateT08ModifyChangePosition/modify_after_moves_column (0.00s)
+=== CONT  TestAuditSQLT08ExistenceRules/mysql_setter_target_does_not_produce_sibling_name
+=== RUN   TestAuditSQLT08ExistenceRules/mysql/drop_default_missing_column
+=== CONT  TestAuditSQLT08ExistenceRules/mysql_renamed-away_name_fails_after_premise
+=== RUN   TestT07R1TiDBCreateShapeGate/tidb_parens_arith
+=== CONT  TestAuditSQLT08ExistenceRules/mysql_rename_destination_satisfies_sibling_after
+=== CONT  TestAuditSQLT08ExistenceRules/sibling_add_after
+=== RUN   TestAuditSQLT08ExistenceRules/mysql/after_reference_missing_column
+=== CONT  TestAuditSQLT08ExistenceRules/tidb
+=== RUN   TestAuditSQLT08ExistenceRules/tidb/set_default_missing_column
+=== RUN   TestT07R1TiDBAlterExpressionShapes/json_object_on_int
+=== RUN   TestAuditSQLT08ExistenceRules/tidb/drop_default_missing_column
+=== RUN   TestAuditSQLT08ExistenceRules/mysql/add_after_missing_column
+=== CONT  TestAuditSQLT08ExistenceRules/mysql_dropped_sibling_fails_after_premise
+=== RUN   TestAuditSQLT08ExistenceRules/mysql/first_has_no_position_premise
+=== RUN   TestAuditSQLT08ExistenceRules/tidb/after_reference_missing_column
+=== CONT  TestBatchStateT08MultiActionSuccessor/duplicate_object_touch_tombstones
+=== RUN   TestT07R1ExpressionShapeOppositeControls/d_case
+--- PASS: TestAuditSQLT08PositionedAlterActionsComplete (0.01s)
+    --- PASS: TestAuditSQLT08PositionedAlterActionsComplete/tidb_change_after (0.03s)
+    --- PASS: TestAuditSQLT08PositionedAlterActionsComplete/tidb_modify_first (0.03s)
+    --- PASS: TestAuditSQLT08PositionedAlterActionsComplete/tidb_add_after (0.03s)
+    --- PASS: TestAuditSQLT08PositionedAlterActionsComplete/mysql_add_first (0.03s)
+    --- PASS: TestAuditSQLT08PositionedAlterActionsComplete/mysql_modify_after (0.03s)
+    --- PASS: TestAuditSQLT08PositionedAlterActionsComplete/mysql_change_first (0.03s)
+=== CONT  TestBatchStateT08MultiActionSuccessor/mysql_modify_dropping_auto_increment_publishes
+=== CONT  TestBatchStateT08MultiActionSuccessor/setter_pair_on_distinct_columns_publishes
+=== CONT  TestBatchStateT08MultiActionSuccessor/rename_destination_collides_with_sibling_add_tombstones
+=== CONT  TestBatchStateT08MultiActionSuccessor/tidb_multi-action_ai_removal_tombstones_whole_statement
+=== RUN   TestAuditSQLT08ExistenceRules/mysql/existing_after_reference_silent
+=== RUN   TestAuditSQLT08ExistenceRules/tidb/add_after_missing_column
+=== CONT  TestBatchStateT08MultiActionSuccessor/change_destination_collides_with_sibling_add_tombstones
+=== RUN   TestT07R1GeneratedReferencePremises/mysql/g_base_forward
+=== CONT  TestBatchStateT08MultiActionSuccessor/tidb_change_dropping_auto_increment_tombstones
+=== RUN   TestAuditSQLT08ExistenceRules/tidb/first_has_no_position_premise
+=== CONT  TestBatchStateT08MultiActionSuccessor/mysql_multi_modify_after_mid-state_resolves
+=== CONT  TestBatchStateT08MultiActionSuccessor/tidb_auto_increment_removal_tombstones
+=== CONT  TestBatchStateT08MultiActionSuccessor/canceled_multi-action_apply_publishes_nothing
+=== CONT  TestBatchStateT08MultiActionSuccessor/unsupported_member_action_tombstones
+=== RUN   TestAuditSQLT08ExistenceRules/mysql/set_default_existing_column_silent
+=== CONT  TestBatchStateT08MultiActionSuccessor/unresolvable_position_premise_tombstones
+=== CONT  TestBatchStateT08MultiActionSuccessor/atomicity_no_prefix_on_late_failure
+=== CONT  TestBatchStateT08MultiActionSuccessor/add_then_rename_same_column_tombstones
+=== CONT  TestBatchStateT08MultiActionSuccessor/tidb_sibling_reference_tombstones
+=== RUN   TestAuditSQLT08ExistenceRules/tidb/existing_after_reference_silent
+=== CONT  TestBatchStateT08MultiActionSuccessor/tidb_disjoint_actions_publish
+=== CONT  TestBatchStateT08MultiActionSuccessor/mysql_sibling_reference_accumulates
+=== RUN   TestAuditSQLT08ExistenceRules/mysql/unknown_table_reports_gap_not_finding
+--- PASS: TestBatchStateT08MultiActionSuccessor (0.00s)
+    --- PASS: TestBatchStateT08MultiActionSuccessor/duplicate_object_touch_tombstones (0.00s)
+    --- PASS: TestBatchStateT08MultiActionSuccessor/mysql_modify_dropping_auto_increment_publishes (0.00s)
+    --- PASS: TestBatchStateT08MultiActionSuccessor/setter_pair_on_distinct_columns_publishes (0.00s)
+    --- PASS: TestBatchStateT08MultiActionSuccessor/tidb_multi-action_ai_removal_tombstones_whole_statement (0.00s)
+    --- PASS: TestBatchStateT08MultiActionSuccessor/change_destination_collides_with_sibling_add_tombstones (0.00s)
+    --- PASS: TestBatchStateT08MultiActionSuccessor/rename_destination_collides_with_sibling_add_tombstones (0.00s)
+    --- PASS: TestBatchStateT08MultiActionSuccessor/tidb_change_dropping_auto_increment_tombstones (0.00s)
+    --- PASS: TestBatchStateT08MultiActionSuccessor/mysql_multi_modify_after_mid-state_resolves (0.00s)
+    --- PASS: TestBatchStateT08MultiActionSuccessor/canceled_multi-action_apply_publishes_nothing (0.00s)
+    --- PASS: TestBatchStateT08MultiActionSuccessor/tidb_auto_increment_removal_tombstones (0.00s)
+    --- PASS: TestBatchStateT08MultiActionSuccessor/unresolvable_position_premise_tombstones (0.00s)
+    --- PASS: TestBatchStateT08MultiActionSuccessor/unsupported_member_action_tombstones (0.00s)
+    --- PASS: TestBatchStateT08MultiActionSuccessor/atomicity_no_prefix_on_late_failure (0.00s)
+    --- PASS: TestBatchStateT08MultiActionSuccessor/tidb_sibling_reference_tombstones (0.00s)
+    --- PASS: TestBatchStateT08MultiActionSuccessor/tidb_disjoint_actions_publish (0.00s)
+    --- PASS: TestBatchStateT08MultiActionSuccessor/mysql_sibling_reference_accumulates (0.00s)
+    --- PASS: TestBatchStateT08MultiActionSuccessor/add_then_rename_same_column_tombstones (0.00s)
+=== RUN   TestAuditSQLT08ExistenceRules/tidb/set_default_existing_column_silent
+=== RUN   TestAuditSQLT08ExistenceRules/tidb/unknown_table_reports_gap_not_finding
+=== RUN   TestT07R1GeneratedPremiseAlter/mysql/modify_to_generated_self
+=== RUN   TestT07R1NoExpressionLeak/tidb_literal_name
+--- PASS: TestAuditSQLT08ExistenceRules (0.00s)
+    --- PASS: TestAuditSQLT08ExistenceRules/mysql_setter_target_does_not_produce_sibling_name (0.00s)
+    --- PASS: TestAuditSQLT08ExistenceRules/mysql_modify_target_does_not_produce_sibling_name (0.00s)
+    --- PASS: TestAuditSQLT08ExistenceRules/mysql_rename_destination_satisfies_sibling_after (0.00s)
+    --- PASS: TestAuditSQLT08ExistenceRules/mysql_renamed-away_name_fails_after_premise (0.01s)
+    --- PASS: TestAuditSQLT08ExistenceRules/sibling_add_after (0.01s)
+    --- PASS: TestAuditSQLT08ExistenceRules/mysql_dropped_sibling_fails_after_premise (0.00s)
+    --- PASS: TestAuditSQLT08ExistenceRules/mysql (0.03s)
+        --- PASS: TestAuditSQLT08ExistenceRules/mysql/set_default_missing_column (0.00s)
+        --- PASS: TestAuditSQLT08ExistenceRules/mysql/drop_default_missing_column (0.00s)
+        --- PASS: TestAuditSQLT08ExistenceRules/mysql/after_reference_missing_column (0.00s)
+        --- PASS: TestAuditSQLT08ExistenceRules/mysql/add_after_missing_column (0.00s)
+        --- PASS: TestAuditSQLT08ExistenceRules/mysql/first_has_no_position_premise (0.00s)
+        --- PASS: TestAuditSQLT08ExistenceRules/mysql/existing_after_reference_silent (0.00s)
+        --- PASS: TestAuditSQLT08ExistenceRules/mysql/set_default_existing_column_silent (0.00s)
+        --- PASS: TestAuditSQLT08ExistenceRules/mysql/unknown_table_reports_gap_not_finding (0.00s)
+    --- PASS: TestAuditSQLT08ExistenceRules/tidb (0.02s)
+        --- PASS: TestAuditSQLT08ExistenceRules/tidb/set_default_missing_column (0.00s)
+        --- PASS: TestAuditSQLT08ExistenceRules/tidb/drop_default_missing_column (0.01s)
+        --- PASS: TestAuditSQLT08ExistenceRules/tidb/after_reference_missing_column (0.00s)
+        --- PASS: TestAuditSQLT08ExistenceRules/tidb/add_after_missing_column (0.00s)
+        --- PASS: TestAuditSQLT08ExistenceRules/tidb/first_has_no_position_premise (0.00s)
+        --- PASS: TestAuditSQLT08ExistenceRules/tidb/existing_after_reference_silent (0.00s)
+        --- PASS: TestAuditSQLT08ExistenceRules/tidb/set_default_existing_column_silent (0.00s)
+        --- PASS: TestAuditSQLT08ExistenceRules/tidb/unknown_table_reports_gap_not_finding (0.00s)
+=== RUN   TestT07R1GeneratedReferencePremises/tidb/g_base_forward
+=== RUN   TestT07R1GeneratedPremiseAlter/tidb/modify_to_generated_self
+=== RUN   TestT07R1TiDBCreateShapeGate/tidb_parens_case
+=== RUN   TestT07R1TiDBAlterExpressionShapes/column_ref
+=== RUN   TestT07R1ExpressionShapeOppositeControls/d_parens
+=== RUN   TestT07R1GeneratedReferencePremises/mysql/g_literal
+=== RUN   TestT07R1NoExpressionLeak/tidb_eval_gap_case
+=== RUN   TestT07R1GeneratedReferencePremises/tidb/g_literal
+=== RUN   TestT07R1GeneratedPremiseAlter/mysql/add_generated_after_later_prior_generated
+=== RUN   TestT07R1GeneratedPremiseAlter/tidb/add_generated_after_later_prior_generated
+=== RUN   TestT07R1TiDBCreateShapeGate/tidb_parens_literal
+=== RUN   TestT07R1ExpressionShapeOppositeControls/d_constant
+=== RUN   TestT07R1TiDBAlterExpressionShapes/disallowed_function
+=== RUN   TestT07R1GeneratedReferencePremises/mysql/g_self
+=== RUN   TestT07R1GeneratedPremiseAlter/mysql/add_generated_references_prior_generated
+=== RUN   TestT07R1NoExpressionLeak/tidb_eval_gap_wrapped
+=== RUN   TestT07R1GeneratedReferencePremises/tidb/g_self
+=== RUN   TestT07R1TiDBCreateShapeGate/tidb_bare_call_disallowed
+=== RUN   TestT07R1GeneratedPremiseAlter/tidb/add_generated_references_prior_generated
+=== RUN   TestT07R1ExpressionShapeOppositeControls/column_ref
+=== RUN   TestT07R1TiDBAlterExpressionShapes/disallowed_now
+=== RUN   TestT07R1GeneratedReferencePremises/mysql/g_missing
+--- PASS: TestT07R1NoExpressionLeak (0.20s)
+    --- PASS: TestT07R1NoExpressionLeak/missing_column (0.04s)
+    --- PASS: TestT07R1NoExpressionLeak/self_reference (0.03s)
+    --- PASS: TestT07R1NoExpressionLeak/tidb_arith_default (0.04s)
+    --- PASS: TestT07R1NoExpressionLeak/tidb_literal_name (0.03s)
+    --- PASS: TestT07R1NoExpressionLeak/tidb_eval_gap_case (0.03s)
+    --- PASS: TestT07R1NoExpressionLeak/tidb_eval_gap_wrapped (0.03s)
+=== RUN   TestT07R1GeneratedPremiseAlter/mysql/add_generated_missing_snapshot
+=== RUN   TestT07R1GeneratedReferencePremises/tidb/g_missing
+=== RUN   TestT07R1TiDBCreateShapeGate/mysql_parens_arith
+=== RUN   TestT07R1GeneratedPremiseAlter/tidb/add_generated_missing_snapshot
+=== RUN   TestT07R1TiDBAlterExpressionShapes/uuid_on_json
+--- PASS: TestT07R1ExpressionShapeOppositeControls (0.21s)
+    --- PASS: TestT07R1ExpressionShapeOppositeControls/d_uuid (0.04s)
+    --- PASS: TestT07R1ExpressionShapeOppositeControls/d_arith (0.04s)
+    --- PASS: TestT07R1ExpressionShapeOppositeControls/d_case (0.03s)
+    --- PASS: TestT07R1ExpressionShapeOppositeControls/d_parens (0.03s)
+    --- PASS: TestT07R1ExpressionShapeOppositeControls/d_constant (0.03s)
+    --- PASS: TestT07R1ExpressionShapeOppositeControls/column_ref (0.03s)
+=== RUN   TestT07R1GeneratedReferencePremises/mysql/g_generated_forward
+=== RUN   TestT07R1GeneratedReferencePremises/tidb/g_generated_forward
+--- PASS: TestT07R1GeneratedPremiseAlter (0.00s)
+    --- PASS: TestT07R1GeneratedPremiseAlter/mysql (0.21s)
+        --- PASS: TestT07R1GeneratedPremiseAlter/mysql/add_generated_references_prior (0.04s)
+        --- PASS: TestT07R1GeneratedPremiseAlter/mysql/add_generated_missing (0.05s)
+        --- PASS: TestT07R1GeneratedPremiseAlter/mysql/modify_to_generated_self (0.03s)
+        --- PASS: TestT07R1GeneratedPremiseAlter/mysql/add_generated_after_later_prior_generated (0.03s)
+        --- PASS: TestT07R1GeneratedPremiseAlter/mysql/add_generated_references_prior_generated (0.03s)
+        --- PASS: TestT07R1GeneratedPremiseAlter/mysql/add_generated_missing_snapshot (0.03s)
+    --- PASS: TestT07R1GeneratedPremiseAlter/tidb (0.21s)
+        --- PASS: TestT07R1GeneratedPremiseAlter/tidb/add_generated_references_prior (0.04s)
+        --- PASS: TestT07R1GeneratedPremiseAlter/tidb/add_generated_missing (0.04s)
+        --- PASS: TestT07R1GeneratedPremiseAlter/tidb/modify_to_generated_self (0.03s)
+        --- PASS: TestT07R1GeneratedPremiseAlter/tidb/add_generated_after_later_prior_generated (0.04s)
+        --- PASS: TestT07R1GeneratedPremiseAlter/tidb/add_generated_references_prior_generated (0.03s)
+        --- PASS: TestT07R1GeneratedPremiseAlter/tidb/add_generated_missing_snapshot (0.03s)
+=== RUN   TestT07R1TiDBCreateShapeGate/mysql_parens_literal
+=== RUN   TestT07R1TiDBAlterExpressionShapes/fts_ts
+=== RUN   TestT07R1GeneratedReferencePremises/mysql/g_cycle
+=== RUN   TestT07R1GeneratedReferencePremises/tidb/g_cycle
+=== RUN   TestT07R1TiDBAlterExpressionShapes/fts_date
+--- PASS: TestT07R1TiDBCreateShapeGate (0.26s)
+    --- PASS: TestT07R1TiDBCreateShapeGate/tidb_parens_call (0.04s)
+    --- PASS: TestT07R1TiDBCreateShapeGate/tidb_bare_call (0.04s)
+    --- PASS: TestT07R1TiDBCreateShapeGate/tidb_parens_arith (0.04s)
+    --- PASS: TestT07R1TiDBCreateShapeGate/tidb_parens_case (0.03s)
+    --- PASS: TestT07R1TiDBCreateShapeGate/tidb_parens_literal (0.03s)
+    --- PASS: TestT07R1TiDBCreateShapeGate/tidb_bare_call_disallowed (0.03s)
+    --- PASS: TestT07R1TiDBCreateShapeGate/mysql_parens_arith (0.03s)
+    --- PASS: TestT07R1TiDBCreateShapeGate/mysql_parens_literal (0.02s)
+=== RUN   TestT07R1GeneratedReferencePremises/mysql/qualified_self_table
+=== RUN   TestT07R1GeneratedReferencePremises/tidb/qualified_self_table
+=== RUN   TestT07R1TiDBAlterExpressionShapes/fts_vc
+=== RUN   TestT07R1GeneratedReferencePremises/mysql/qualified_other_table
+=== RUN   TestT07R1GeneratedReferencePremises/tidb/qualified_other_table
+=== RUN   TestT07R1TiDBAlterExpressionShapes/foldable_ts_on_int
+--- PASS: TestT07R1GeneratedReferencePremises (0.00s)
+    --- PASS: TestT07R1GeneratedReferencePremises/mysql (0.24s)
+        --- PASS: TestT07R1GeneratedReferencePremises/mysql/g_valid (0.04s)
+        --- PASS: TestT07R1GeneratedReferencePremises/mysql/g_base_forward (0.03s)
+        --- PASS: TestT07R1GeneratedReferencePremises/mysql/g_literal (0.03s)
+        --- PASS: TestT07R1GeneratedReferencePremises/mysql/g_self (0.03s)
+        --- PASS: TestT07R1GeneratedReferencePremises/mysql/g_missing (0.03s)
+        --- PASS: TestT07R1GeneratedReferencePremises/mysql/g_generated_forward (0.02s)
+        --- PASS: TestT07R1GeneratedReferencePremises/mysql/g_cycle (0.02s)
+        --- PASS: TestT07R1GeneratedReferencePremises/mysql/qualified_self_table (0.02s)
+        --- PASS: TestT07R1GeneratedReferencePremises/mysql/qualified_other_table (0.02s)
+    --- PASS: TestT07R1GeneratedReferencePremises/tidb (0.25s)
+        --- PASS: TestT07R1GeneratedReferencePremises/tidb/g_valid (0.04s)
+        --- PASS: TestT07R1GeneratedReferencePremises/tidb/g_base_forward (0.03s)
+        --- PASS: TestT07R1GeneratedReferencePremises/tidb/g_literal (0.03s)
+        --- PASS: TestT07R1GeneratedReferencePremises/tidb/g_self (0.03s)
+        --- PASS: TestT07R1GeneratedReferencePremises/tidb/g_missing (0.03s)
+        --- PASS: TestT07R1GeneratedReferencePremises/tidb/g_generated_forward (0.02s)
+        --- PASS: TestT07R1GeneratedReferencePremises/tidb/g_cycle (0.02s)
+        --- PASS: TestT07R1GeneratedReferencePremises/tidb/qualified_self_table (0.02s)
+        --- PASS: TestT07R1GeneratedReferencePremises/tidb/qualified_other_table (0.02s)
+=== RUN   TestT07R1TiDBAlterExpressionShapes/f01_case_no_func
+=== RUN   TestT07R1TiDBAlterExpressionShapes/f02_case_dead_uuid
+=== RUN   TestT07R1TiDBAlterExpressionShapes/f03_case_ret_uuid
+=== RUN   TestT07R1TiDBAlterExpressionShapes/f04_wrapped_lower_1
+=== RUN   TestT07R1TiDBAlterExpressionShapes/f05_wrapped_lower_x
+=== RUN   TestT07R1TiDBAlterExpressionShapes/f06_arith_numeric
+=== RUN   TestT07R1TiDBAlterExpressionShapes/f07_arith_string
+=== RUN   TestT07R1TiDBAlterExpressionShapes/f08_bare_uuid
+=== RUN   TestT07R1TiDBAlterExpressionShapes/wrapped_uuid
+=== RUN   TestT07R1TiDBAlterExpressionShapes/wrapped_uuid_varchar
+=== RUN   TestT07R1TiDBAlterExpressionShapes/wrapped_lower_varchar
+=== RUN   TestT07R1TiDBAlterExpressionShapes/wrapped_json
+=== RUN   TestT07R1TiDBAlterExpressionShapes/wrapped_cts_ts
+=== RUN   TestT07R1TiDBAlterExpressionShapes/nested_same_callee
+=== RUN   TestT07R1TiDBAlterExpressionShapes/nested_mixed_calls
+=== RUN   TestT07R1TiDBAlterExpressionShapes/d_arith
+=== RUN   TestT07R1TiDBAlterExpressionShapes/unknown_callee_bare
+=== RUN   TestT07R1TiDBAlterExpressionShapes/missing_target
+--- PASS: TestT07R1TiDBAlterExpressionShapes (0.75s)
+    --- PASS: TestT07R1TiDBAlterExpressionShapes/d_uuid (0.07s)
+    --- PASS: TestT07R1TiDBAlterExpressionShapes/uuid_on_date (0.03s)
+    --- PASS: TestT07R1TiDBAlterExpressionShapes/uuid_on_int (0.04s)
+    --- PASS: TestT07R1TiDBAlterExpressionShapes/json_object_on_int (0.04s)
+    --- PASS: TestT07R1TiDBAlterExpressionShapes/column_ref (0.03s)
+    --- PASS: TestT07R1TiDBAlterExpressionShapes/disallowed_function (0.03s)
+    --- PASS: TestT07R1TiDBAlterExpressionShapes/disallowed_now (0.03s)
+    --- PASS: TestT07R1TiDBAlterExpressionShapes/uuid_on_json (0.03s)
+    --- PASS: TestT07R1TiDBAlterExpressionShapes/fts_ts (0.02s)
+    --- PASS: TestT07R1TiDBAlterExpressionShapes/fts_date (0.02s)
+    --- PASS: TestT07R1TiDBAlterExpressionShapes/fts_vc (0.02s)
+    --- PASS: TestT07R1TiDBAlterExpressionShapes/foldable_ts_on_int (0.02s)
+    --- PASS: TestT07R1TiDBAlterExpressionShapes/f01_case_no_func (0.02s)
+    --- PASS: TestT07R1TiDBAlterExpressionShapes/f02_case_dead_uuid (0.02s)
+    --- PASS: TestT07R1TiDBAlterExpressionShapes/f03_case_ret_uuid (0.02s)
+    --- PASS: TestT07R1TiDBAlterExpressionShapes/f04_wrapped_lower_1 (0.02s)
+    --- PASS: TestT07R1TiDBAlterExpressionShapes/f05_wrapped_lower_x (0.02s)
+    --- PASS: TestT07R1TiDBAlterExpressionShapes/f06_arith_numeric (0.03s)
+    --- PASS: TestT07R1TiDBAlterExpressionShapes/f07_arith_string (0.02s)
+    --- PASS: TestT07R1TiDBAlterExpressionShapes/f08_bare_uuid (0.02s)
+    --- PASS: TestT07R1TiDBAlterExpressionShapes/wrapped_uuid (0.02s)
+    --- PASS: TestT07R1TiDBAlterExpressionShapes/wrapped_uuid_varchar (0.02s)
+    --- PASS: TestT07R1TiDBAlterExpressionShapes/wrapped_lower_varchar (0.02s)
+    --- PASS: TestT07R1TiDBAlterExpressionShapes/wrapped_json (0.02s)
+    --- PASS: TestT07R1TiDBAlterExpressionShapes/wrapped_cts_ts (0.02s)
+    --- PASS: TestT07R1TiDBAlterExpressionShapes/nested_same_callee (0.02s)
+    --- PASS: TestT07R1TiDBAlterExpressionShapes/nested_mixed_calls (0.02s)
+    --- PASS: TestT07R1TiDBAlterExpressionShapes/d_arith (0.02s)
+    --- PASS: TestT07R1TiDBAlterExpressionShapes/unknown_callee_bare (0.02s)
+    --- PASS: TestT07R1TiDBAlterExpressionShapes/missing_target (0.02s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	2.897s
+end: 2026-10-21T11:29:57Z
+direct_rc=0

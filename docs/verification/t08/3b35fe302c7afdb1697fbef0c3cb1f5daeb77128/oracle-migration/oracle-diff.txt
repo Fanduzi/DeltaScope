@@ -1,0 +1,614 @@
+diff --git a/scripts/README.md b/scripts/README.md
+index 0fcd415f..d2ea66e8 100644
+--- a/scripts/README.md
++++ b/scripts/README.md
+@@ -43,9 +43,9 @@ Operational scripts for local DeltaScope workflows.
+ | verify_release_recover_workflow_provenance.py | Recovery workflow provenance contract checker for release-recover.yml: fail-closed `refs/heads/main` dispatch-ref guard as the first preflight step (with `exit 1` inside the mismatch branch), read-only preflight permissions with no publisher secrets, full-history input-tag checkout, origin/main fetch, same-step RELEASE_MAIN_REF post-tag candidate gate before any external release-state work, tag_target_sha resolved from the input tag's peeled commit and exported after the gate, publisher jobs pinned to exactly the verified SHA, all mutation jobs transitively downstream of preflight, no historical-tag bypass literals, and no inline workflow-input interpolation in run scripts |
+ | test_verify_release_recover_workflow_provenance.py | Adversarial tests for the recovery provenance checker: 30 static tampering cases (guard removal/weakening/reordering/inversion/dead-code exit, checkout drift, env/run split, permissions widening, DAG bypasses, historical-tag allowlist, wrong SHA-resolve target, inline input interpolation) plus a positive control and behavior tests executing the real guard step under branch/tag dispatch refs and malformed version input |
+ | test_release_recovery_contract.sh | Hermetic recovery contract test in temporary git repos: future-valid RC chain admits and reaches the publisher stub; v0.240.0 (no provenance) and v0.460.0 (broken chain) fail closed before publisher work; lightweight and off-main tags fail closed; hygiene wiring proven load-bearing via a mutating test against a contract-violating workflow fixture. No network, GitHub, or npm access |
+-| ddl_golden.py | Milestone DDL golden-path runner: builds the checkout CLI, starts `docker/ddl-golden-compose.yaml` anchors, executes per-statement DDL with live metadata assertions, runs syntax-negative and CLI static-audit cases plus manifest `cli_cases` that assert expected exit codes, recomputed coverage/unsupported evidence, optional `unsupported_entries` (paired statement index/feature/reason tuples plus optional exact bounded-`metadata` maps, matched one-to-one so repeated tuples stay pinnable)/`statement_sql` fidelity keys against real CLI JSON, `evidence_gaps`/`evidence_gap_entries` (per-statement index/rule_id/reason_code plus exact `required_facts`, with a gap-encoded-as-finding rejection), `finding_entries`/`finding_metadata`/`finding_locations`, `fail_on_triggered`, `expect.version` canonical identity assertions (product/version/source/validated_range plus always-present numeric components), per-case `version_evidence` records (target_raw/target_canonical/observed_raw/observed_canonical/resolved re-derived by the validator — observed banners never appear in public result expectations), live `instance_facts` reads for declared `innodb_page_size`/`tidb_max_index_length` (deleted/emptied/tampered values rejected), anchored error-case observed-banner evidence (required, so a mismatch is never laundered into a connection failure), and `unsupported[].index`/`sql` statement-identity consistency, plus `metadata_cases` (live-database CLI audit with test-driven setup/post_verify/teardown proving the product never executes the audited DDL, optional `execute` driver steps that apply the audited statements one by one and `structure` oracle queries pinning the resulting column/index/primary-key facts via `information_schema`, `verify` queries on setup/execute/teardown steps proving pre/post absence — each `execute` step's verify runs synchronously before the next step — with `use_database: true` on any verify/post_verify/structure entry running the query inside the anchor fixture database (session facts like `SELECT DATABASE()`) — every recorded step re-derived from the manifest by the validator — password only via env/file source) and `error_cases` (real pre-audit failures pinned by exit code and bounded stderr markers; error stdout carrying an audit verdict is rejected as error-laundering). A manifest `policy` block generates an isolated policy enabling exactly the declared rules plus `policy.profiles` named extra isolated profiles (case-selectable via `spec.policy`) and a generated `all-rules-disabled` profile, each sha256-recorded into the artifact (a `profiles` key colliding with `policy_profile` or `all-rules-disabled` fails the run rather than silently redefining the default); the validator additionally re-parses each policy YAML against the live `rules list` catalog (rejecting emptied/re-leveled/re-paramed files even when re-hashed) and binds every recorded command to the manifest-derived argv (binary path, `--dialect`/`--sql`/`--config`/`--format`, declared connect target, `--fail-on`, and `--target-version` args verbatim); emits + validates an artifact.json; fails rather than skipping when a required anchor is missing, unreachable, unhealthy, or version-mismatched. Manifests under `testdata/ddl-golden/` are checked against the locked `anchors-baseline.json` (four pinned anchors + both CLI dialects), so shrinking a manifest and artifact together still fails. The frozen T05-A3 contract adds 18 fixed cases on top of the preserved original 167 under a five-rule profile: intermediate absence after DROP is independently pinned by an execute-step verify, so a paired manifest/artifact deletion is rejected, and execute stdout/stderr markers distinguish a policy rejection from native MySQL 1051 (unknown table) and 1072 (key column missing); the validator covers the A3 mutations. The frozen T05-A4 contract adds 19 MODIFY cases under the four-rule `t05-a4-modify-isolated` profile (204 required ids), including the tidb85 primary-key signedness refusal, and rejects paired shrinks of that set. The frozen T05-A6 contract adds 16 dependency-free DROP COLUMN cases under the six-rule `t05-a6-drop-column-isolated` profile (247 required ids) and rejects paired shrinks of that set. The frozen T06-A1 contract adds 22 CREATE TABLE primary-key cases on top of the 10 locked baseline cases (32 required ids): five offline controls per dialect (no-PK reject, inline-PK pass, table-level-PK pass, no-PK with the rule disabled, no-PK with `required:false`) plus three anchored metadata cases per anchor (no-PK/inline-PK/table-level-PK) that pin product verdict, exit code, finding identity, `statement_sql`, rule-summary counts, coverage, post-audit table absence, driver-side native CREATE success or failure, `information_schema` column/primary-key structure, teardown, and GIPK `instance_facts` on MySQL 8.0/8.4 — product policy rejection is never a substitute for native execution, and a server-generated invisible primary key is never input-declared evidence. T06-A1-R1 adds a frozen full-`case_id` → proof-role identity map (kind, local case id, dialect, anchor, policy profile, input SQL) checked before kind-based dispatch, so a record's self-declared fields can never re-pick which manifest spec it satisfies: cross-anchor donor reuse, metadata slots refilled by offline records, `required:false`/`all-rules-disabled` swaps, duplicate executed ids, and duplicate or unfrozen manifest declarations are all rejected — a required ID being present is not proof the right anchor and role ran. The frozen T06-A2 contract adds 24 primary-key nullability cases on top of the preserved 32 (56 required ids): two isolated profiles (`t06-a2-pk-nullability-isolated`, `t06-a2-default-presence-isolated`), 8 offline controls (legal table-single/composite and no-default/default-null per dialect), and 16 anchored cases pinning `IS_NULLABLE`/`DATA_TYPE` structure, ordered composite member ordinals, and ERROR 1171 native negatives with post-failure absence on all four anchors — execute steps may record bounded stderr markers when a native negative is required, and a paired manifest/artifact deletion of any A2 slot is rejected. The frozen T06-A5 contract adds 40 declared CHAR/VARCHAR length cases on top of the preserved 84 (124 required ids): two isolated single-rule profiles (`t06-a5-char-length-isolated`, `t06-a5-varchar-length-isolated` at `limit=8`/`blocker`), a 16-cell offline matrix (char/varchar × mysql/tidb × below/at/above/off) pinning exact `limit`/`actual` finding metadata, and 24 anchored cases whose `utf8mb4`/`utf8mb4_bin` columns make `CHARACTER_MAXIMUM_LENGTH` and `CHARACTER_OCTET_LENGTH` (`4*N`) independently observable — the post-audit absence check proves the product never executes the audited CREATE and the driver replay proves a policy rejection is never a native refusal. The frozen T06-A7 contract adds 64 charset/collation cases on top of the preserved 124 (188 required ids): five isolated profiles (`t06-a7-column-charset-isolated`, `t06-a7-column-collation-isolated`, `t06-a7-column-match-isolated` for the existing column rules, and `t06-a7-table-collation-optional`/`t06-a7-table-collation-required` for the new default-disabled `ddl.table.collation.allowlist` under both `require_explicit` values), a 16-role × 2-dialect offline matrix pinning each column rule in isolation plus the table collate allowed/denied/missing/off controls, and 8-role × 4-anchor metadata cases that separate declared-declaration facts from native resolved metadata (`CHARACTER_SET_NAME`/`COLLATION_NAME`/`TABLE_COLLATION`, latin1 16-octet vs utf8mb4 64-octet splits, a utf8mb4+latin1_bin ERROR 1253 native negative, and table-level inheritance proving an undeclared column resolves through the table option) — the retired `create_table.option.collate` unsupported evidence is gone because capability classification is independent of enabled policy rules. T06-A8 adds a comment-fidelity contract (24-case offline presence/length matrix plus 16 anchored roles preserving raw text, CHAR_LENGTH/OCTET_LENGTH/HEX), and T06-A9 adds the explicit audit-time-column proof (the `t06-a9-audit-columns-isolated` profile, a 12-case offline matrix covering both roles, single-role misses, the two-finding missing-both shape pinned as a complete finding-entry multiset, NOW() spellings, and the all-off control, plus 16 anchored roles pinning per-column CURRENT_TIMESTAMP default spellings, a whole-text EXTRA whitelist — `default_generated`/zero-precision `on update current_timestamp` forms only, validated through a strict SQL `CASE` that compares `CAST(LOWER(x) AS BINARY)` on both sides so a PAD SPACE catalog collation can never equate trailing-space text with a whitelist entry — whose literal control (including four single-U+0020 trailing-space negatives) and a catalog-context control folding the real stored EXTRA with one appended space to the sentinel both run read-only on every anchor — PK membership, and storage engine; actual findings are field-strict: `statement_kind` must be present as `ddl`, location/metadata must be real objects, and a present `statement_index` must agree with its enclosing statement). T06-A10 adds the AUTO_INCREMENT declaration proof (16 offline + 20 anchored roles under `t06-a10-pk-auto-increment-isolated`/`t06-a10-init-value-isolated`, with verbatim EXTRA-member/allocator/SHOW-CREATE observations bound by header-plus-single-record checks). T06-A11 adds the single-member-PK BIGINT/UNSIGNED proof (16 offline + 16 anchored roles under `t06-a11-pk-bigint-isolated`/`t06-a11-pk-unsigned-isolated` — the anchored roles pin `DATA_TYPE`, a finite-whitelist `COLUMN_TYPE` complete form, byte-empty `EXTRA`, and a bound nine-field column observation; composite-PK roles skip the member check, and a policy reject never substitutes for the driver-side CREATE success). T06-A12 adds the ordinary-column NOT NULL proof (16 offline + 20 anchored roles under `t06-a12-not-null-{strict,time-allow,not-required}-isolated` plus the reused all-off control — per-column finding attribution, the loaded/applicable/absent `rule_summary` contract, and the ordered column-set oracle). T06-A12-R1 tightens the summary check: the all-off role must omit the `rule_summary` key entirely, enabled roles must carry a JSON object, and `loaded`/`applicable` must be JSON integers — never bools/floats/strings laundered through `==` coercion, and malformed summaries reject as failures rather than crashing. T06-A13 adds the type-family forbid proof (52 cases under per-family `t06-a13-<family>-{on,false}-isolated` profiles plus the reused all-off control — per-column finding attribution, the loaded/applicable vs absent `rule_summary` distinction, the blob/text exclusion of `c_json` and the timestamp exclusion of `c_datetime`, and the ordered nine-column DATA_TYPE oracle on all four anchors). T06-A14 adds the table-option allowlist proof (60 cases under per-family `t06-a14-<family>-{strict,optional}-isolated` profiles plus the reused all-off control — the complete `require_explicit` contract with loaded=1/applicable=1 on all five enabled roles, complete finding identity including `actual=""` on omission, and the per-product catalog oracle: MySQL engine/row_format storage values, TiDB's InnoDB/Compact compatibility display, and the declared charset through the real TABLE_COLLATION association re-derived from frozen constants). T06-A15 adds the row-size field-level fact-resolution proof (24 offline cases: ten roles under the `t06-a15-row-size-isolated` profile — strict-65535 below/equal/above, column-over-table charset precedence, declared non-InnoDB scope skip, and the four missing-fact shapes — plus the `t06-a15-row-size-not-required-isolated` and all-off controls — pinning field-ordered `missing_instance_fact` required_facts, unverified coverage, and the determined-finding-plus-gap coexistence, all re-derived from frozen constants rather than the manifest spec). Invoked as `make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>` |
+-| test_ddl_golden.py | Offline validator contract tests: proves the artifact validator recomputes from raw evidence against the manifest and rejects zero/missing/unexecuted cases, stale binaries, unreachable required databases, version mismatches, deleted or failed metadata-query records, non-JSON CLI stdout, parsed/stdout disagreement, artifact-internal expected tampering, manifests/artifacts shrunk below the locked baseline, external blockers, and hand-written PASS records — including `cli_cases` coverage/unsupported evidence contracts, downgrade/wrong-feature rejection, and T04 evidence-gap/metadata-case/error-case mutation coverage (missing gap, wrong rule_id/required_facts, gap-as-finding, parsed-vs-stdout drift, post_verify tamper, password-in-command, policy sha/profile/enabled_rules tamper, re-hashed emptied/re-leveled/re-paramed policy files, wrong `--config` profile binding, missing policy sha256, and mismatched metadata host/port commands), plus T04-B version-evidence mutations (tampered target_raw/target_canonical, canonical-vs-stdout drift, TiDB compatibility-prefix resolved as the 8.0.11 MySQL prefix, request/observed conflict recorded as success, out-of-range marked complete, missing version_evidence, removed --target-version argv, provider error laundered as a gap result), and T04-B-R1 evidence-integrity mutations (deleted/emptied/tampered `instance_facts`, tampered live `tidb_max_index_length`, missing anchored error-case observed banner, TiDB canonical product rewritten to `mysql`, product mismatch recorded as success, malformed target laundered as connection failure, missing `minor` on `8.0.46`, missing `patch` on `8.5.0`, numeric/canonical component drift), plus T05 ordered-state mutations (dropped middle statement, negative path recorded as pass, invalidated dependent promoted to complete, finding moved to a wrong statement or rebound to another column, removed audit-before/audit-after/structure/teardown verify evidence, and a failed driver execute step recorded as success), and T05-A2 rename-path mutations (dropped or re-bound rename statement, flipped source/destination structure answers, dropped destination-absence precondition, failed rename execute step, unqualified destination claimed inside the source schema, session-database rewrite, and a removed required rename case), and T05-A3 drop-state mutations plus T05-A4 ordinary MODIFY mutations (intermediate length, post-state, finding identity, native-versus-policy, gap, per-step verify, omitted attributes, primary-key nullability, TiDB primary-key signedness refusal, profile, and loaded-rule count), plus T05-A6 DROP COLUMN mutations (statement identity, immediate verify, column order and length, unrelated indexes, re-add definition, old-column finding, offline CREATE gap, profile, and loaded-rule count), plus T06-A1 CREATE TABLE primary-key mutations (tampered policy path/sha, product-side CREATE claimed rejected, removed post-audit absence check, native CREATE failure recorded as legal, erased/renamed primary-key structure evidence, member query deleted on both sides, no-PK column recorded as NOT NULL, removed teardown, skipped driver create step, connectivity stderr laundered as result, failed cleanup accepted, missing GIPK fact reads, and finding/statement/summary/coverage tampering), plus T06-A1-R1 identity-binding mutations (same-variant cross-anchor donor reuse single and all-twelve, metadata slots refilled by offline cli_audit records single and all-twelve, `required:false`/`all-rules-disabled` record swaps, duplicate executed case_id, and duplicate or unfrozen manifest-declared ids), plus T06-A2 nullability mutations (inline form masking a table-level/composite slot, member recorded nullable or spare recorded non-null, component/key-order forgery, explicit NULL laundered into pass, driver success or permission error masquerading as ERROR 1171, DEFAULT NULL recorded as missing and absent DEFAULT recorded as pass, paired-side case deletion, cross-anchor rebind, offline demotion, and profile swap), and T06-A5 declared-length mutations (at-limit recorded as over-limit and over-limit recorded as safe, swapped or removed limit/actual metadata, char/varchar rule-message-colum-statement mix-ups, off/above slot swaps, weakened profile limit/level/rule bindings, characters recorded as octets, wrong collation or DATA_TYPE, skipped native replay after product reject, disguised driver failure, structure/post_verify/setup/teardown legs deleted on both sides, cross-anchor rebind, offline demotion, profile swap, and paired-side case deletion), and T06-A7 charset/collation mutations (charset↔collation allowlist finding-id swaps, single-declaration reject recorded as pass, native success recorded as failure, unknown-collation/permission stderr substituted for the ERROR 1253 mismatch negative, TABLE_COLLATION↔COLUMN_COLLATION oracle swaps, the inherited-resolution slot refilled by the explicit-declaration record, the table rule reported as the column collation rule or carrying column-shaped metadata, retired `create_table.option.collate` unsupported evidence reappearing, disabled-rule incomplete coverage restored, a schema-boundary statement laundered through a table slot, weakened `require_explicit`/allowlist profile params, same-profile pass and optional↔required slot swaps, cross-anchor rebind, offline demotion, and paired-side case deletion), plus the T06-A8–A11 per-slice attribution/oracle/observation mutation groups, plus T06-A12 NOT NULL mutations (missed/forged blockers, findings re-attributed to exempted columns, message/metadata cross-pairing, same-SQL role/profile swaps, required=false vs disabled laundering, weakened profile params, IS_NULLABLE forgeries, column-set/count corruptions, skipped driver replay, and denominator shrinkage), and T06-A12-R1 strict rule_summary mutations (the all-off key present as null/empty/false, enabled roles missing or carrying non-object summaries, missing counters, bool/float/string/null counts, and wrong per-role integer combos — all rejected through the full validate_artifact entry, never as exceptions), plus T06-A13 type-family forbid mutations (missed/forged findings, absorbed c_json/c_datetime, collapsed/duplicated/cross-paired findings, dropped or added metadata keys, same-SQL family profile/record swaps, switch-state laundering, weakened profiles, ordered-column-set corruptions, skipped or failed driver replay, and denominator shrinkage), plus T06-A14 table-option allowlist mutations (missed/forged findings per role, the omitted-strict `actual` laundered to a server default, swapped option keys, widened allowed lists, dropped metadata keys, duplicated findings, denied-optional pass laundering, omitted-optional 1/0 and all-off fabricated/null/non-integer summaries, strict/optional/off record and profile swaps, cross-family borrowing, weakened profiles, forged MySQL/TiDB catalog identities, missing/multirow charset associations, skipped or failed driver replay, cross-anchor re-keying, offline demotion, duplicates, and denominator shrinkage). plus T06-A15 row-size fact-resolution mutations (the over-limit role recorded as pass, safe boundary roles forged as blockers, a missing fact recorded as complete, wrong/reordered/duplicated required_facts, a declared fact listed as missing, the missing-format-over determined finding dropped beside its gap, column charset laundered into table metadata or the estimate overwritten by the table charset, an unused undeclared table charset forged as required, on/not-required/off record and profile swaps, a fabricated rule_summary under the all-off control, and denominator shrinkage). No Docker required (`make ddl-golden-validator-test`) |
+-| test_ddl_golden.py | Offline validator contract tests: proves the artifact validator recomputes from raw evidence against the manifest and rejects zero/missing/unexecuted cases, stale binaries, unreachable required databases, version mismatches, deleted or failed metadata-query records, non-JSON CLI stdout, parsed/stdout disagreement, artifact-internal expected tampering, manifests/artifacts shrunk below the locked baseline, external blockers, and hand-written PASS records — including `cli_cases` coverage/unsupported evidence contracts, downgrade/wrong-feature rejection, and T04 evidence-gap/metadata-case/error-case mutation coverage (missing gap, wrong rule_id/required_facts, gap-as-finding, parsed-vs-stdout drift, post_verify tamper, password-in-command, policy sha/profile/enabled_rules tamper, re-hashed emptied/re-leveled/re-paramed policy files, wrong `--config` profile binding, missing policy sha256, and mismatched metadata host/port commands), plus T04-B version-evidence mutations (tampered target_raw/target_canonical, canonical-vs-stdout drift, TiDB compatibility-prefix resolved as the 8.0.11 MySQL prefix, request/observed conflict recorded as success, out-of-range marked complete, missing version_evidence, removed --target-version argv, provider error laundered as a gap result), and T04-B-R1 evidence-integrity mutations (deleted/emptied/tampered `instance_facts`, tampered live `tidb_max_index_length`, missing anchored error-case observed banner, TiDB canonical product rewritten to `mysql`, product mismatch recorded as success, malformed target laundered as connection failure, missing `minor` on `8.0.46`, missing `patch` on `8.5.0`, numeric/canonical component drift), plus T05 ordered-state mutations (dropped middle statement, negative path recorded as pass, invalidated dependent promoted to complete, finding moved to a wrong statement or rebound to another column, removed audit-before/audit-after/structure/teardown verify evidence, and a failed driver execute step recorded as success), and T05-A2 rename-path mutations (dropped or re-bound rename statement, flipped source/destination structure answers, dropped destination-absence precondition, failed rename execute step, unqualified destination claimed inside the source schema, session-database rewrite, and a removed required rename case), and T05-A3 drop-state mutations plus T05-A4 ordinary MODIFY mutations (intermediate length, post-state, finding identity, native-versus-policy, gap, per-step verify, omitted attributes, primary-key nullability, TiDB primary-key signedness refusal, profile, and loaded-rule count), plus T05-A6 DROP COLUMN mutations (statement identity, immediate verify, column order and length, unrelated indexes, re-add definition, old-column finding, offline CREATE gap, profile, and loaded-rule count), plus T06-A1 CREATE TABLE primary-key mutations (tampered policy path/sha, product-side CREATE claimed rejected, removed post-audit absence check, native CREATE failure recorded as legal, erased/renamed primary-key structure evidence, member query deleted on both sides, no-PK column recorded as NOT NULL, removed teardown, skipped driver create step, connectivity stderr laundered as result, failed cleanup accepted, missing GIPK fact reads, and finding/statement/summary/coverage tampering), plus T06-A1-R1 identity-binding mutations (same-variant cross-anchor donor reuse single and all-twelve, metadata slots refilled by offline cli_audit records single and all-twelve, `required:false`/`all-rules-disabled` record swaps, duplicate executed case_id, and duplicate or unfrozen manifest-declared ids), plus T06-A2 nullability mutations (inline form masking a table-level/composite slot, member recorded nullable or spare recorded non-null, component/key-order forgery, explicit NULL laundered into pass, driver success or permission error masquerading as ERROR 1171, DEFAULT NULL recorded as missing and absent DEFAULT recorded as pass, paired-side case deletion, cross-anchor rebind, offline demotion, and profile swap), and T06-A5 declared-length mutations (at-limit recorded as over-limit and over-limit recorded as safe, swapped or removed limit/actual metadata, char/varchar rule-message-colum-statement mix-ups, off/above slot swaps, weakened profile limit/level/rule bindings, characters recorded as octets, wrong collation or DATA_TYPE, skipped native replay after product reject, disguised driver failure, structure/post_verify/setup/teardown legs deleted on both sides, cross-anchor rebind, offline demotion, profile swap, and paired-side case deletion), and T06-A7 charset/collation mutations (charset↔collation allowlist finding-id swaps, single-declaration reject recorded as pass, native success recorded as failure, unknown-collation/permission stderr substituted for the ERROR 1253 mismatch negative, TABLE_COLLATION↔COLUMN_COLLATION oracle swaps, the inherited-resolution slot refilled by the explicit-declaration record, the table rule reported as the column collation rule or carrying column-shaped metadata, retired `create_table.option.collate` unsupported evidence reappearing, disabled-rule incomplete coverage restored, a schema-boundary statement laundered through a table slot, weakened `require_explicit`/allowlist profile params, same-profile pass and optional↔required slot swaps, cross-anchor rebind, offline demotion, and paired-side case deletion). plus T06-A8/A9 groups (comment fidelity mutations and the audit-column set: finding collapse/duplication/cross-swap, global-finding smuggling, forged pass/stale finding/profile swaps, stored-column role and fsp tampering, skipped driver replay, both-side query deletions, cross-anchor reuse, offline demotion, and denominator shrink) and the T06-A9-R1 tightening controls (missing/empty/wrong `statement_kind`, malformed field types, nonzero statement attribution, order-swap and explicit-zero positive controls, and the EXTRA whitelist regressions: artifact or manifest+artifact rolled back to the permissive REPLACE query), and the T06-A9-R2 byte-exact-comparison mutations (artifact or manifest+artifact rolled back to the plain LOWER-IN query, the catalog pad-space context control deleted artifact-side or on both sides, the pad-space observation removed on both sides, a trailing-space catalog input forged as created/updated role markers, a legal uppercase literal forged as the sentinel, and a trailing-space literal forged as a role marker), plus the T06-A10 AUTO_INCREMENT groups (declaration/init-value finding identity, profile swaps and re-parametrization, composite member forgery, skipped driver replay after product reject, and observation binding) and the T06-A10-R1 record-set controls (duplicate/conflicting/wrong-target/malformed/header-only/forged-header records on the allocator, raw EXTRA, and SHOW CREATE observations, member order/count forgery, SHOW CREATE bound to the wrong object, and legal `null`/`value:<digits>` allocator variants staying accepted), and the T06-A10-R2 controls (non-string observation stdout rejected as a contract failure — never an exception or a coerced string — plus missing/None/empty stdout, and SHOW CREATE heads qualified/suffixed/truncated away from the complete `t` token), plus the T06-A11 BIGINT/UNSIGNED groups (missed/forged blockers on both rules, rule-identity and same-SQL profile swaps, metadata type/column re-attribution, composite-shape forgery, `required` weakening, native int↔bigint oracle swaps, unsigned dropped/forged/zerofill smuggling inside the finite COLUMN_TYPE whitelist, uniform parser text broadcast over native observations, non-string/empty/header-only/duplicate/wrong-target/bad-hex observation records, missing-field and NULL laundering as byte-empty EXTRA, skipped driver replay after product reject, and cross-anchor/offline-demotion/paired-side deletion; T06-A11-R1 adds the HEX-field shape boundary — `bytes.fromhex` whitespace-skipping rejected via complete two-digit-pair fullmatch, with case variants, odd/empty/0x-prefixed/non-ASCII decodes, encoded trailing-space, and whitelist-form sweeps as positive controls). plus T06-A15 row-size fact-resolution mutations (the over-limit role recorded as pass, safe boundary roles forged as blockers, a missing fact recorded as complete, wrong/reordered/duplicated required_facts, a declared fact listed as missing, the missing-format-over determined finding dropped beside its gap, column charset laundered into table metadata or the estimate overwritten by the table charset, an unused undeclared table charset forged as required, on/not-required/off record and profile swaps, a fabricated rule_summary under the all-off control, and denominator shrinkage). No Docker required (`make ddl-golden-validator-test`) |
++| ddl_golden.py | Milestone DDL golden-path runner: builds the checkout CLI, starts `docker/ddl-golden-compose.yaml` anchors, executes per-statement DDL with live metadata assertions, runs syntax-negative and CLI static-audit cases plus manifest `cli_cases` that assert expected exit codes, recomputed coverage/unsupported evidence, optional `unsupported_entries` (paired statement index/feature/reason tuples plus optional exact bounded-`metadata` maps, matched one-to-one so repeated tuples stay pinnable)/`statement_sql` fidelity keys against real CLI JSON, `evidence_gaps`/`evidence_gap_entries` (per-statement index/rule_id/reason_code plus exact `required_facts`, with a gap-encoded-as-finding rejection), `finding_entries`/`finding_metadata`/`finding_locations`, `fail_on_triggered`, `expect.version` canonical identity assertions (product/version/source/validated_range plus always-present numeric components), per-case `version_evidence` records (target_raw/target_canonical/observed_raw/observed_canonical/resolved re-derived by the validator — observed banners never appear in public result expectations), live `instance_facts` reads for declared `innodb_page_size`/`tidb_max_index_length` (deleted/emptied/tampered values rejected), anchored error-case observed-banner evidence (required, so a mismatch is never laundered into a connection failure), and `unsupported[].index`/`sql` statement-identity consistency, plus `metadata_cases` (live-database CLI audit with test-driven setup/post_verify/teardown proving the product never executes the audited DDL, optional `execute` driver steps that apply the audited statements one by one and `structure` oracle queries pinning the resulting column/index/primary-key facts via `information_schema`, `verify` queries on setup/execute/teardown steps proving pre/post absence — each `execute` step's verify runs synchronously before the next step — with `use_database: true` on any verify/post_verify/structure entry running the query inside the anchor fixture database (session facts like `SELECT DATABASE()`) — every recorded step re-derived from the manifest by the validator — password only via env/file source) and `error_cases` (real pre-audit failures pinned by exit code and bounded stderr markers; error stdout carrying an audit verdict is rejected as error-laundering). A manifest `policy` block generates an isolated policy enabling exactly the declared rules plus `policy.profiles` named extra isolated profiles (case-selectable via `spec.policy`) and a generated `all-rules-disabled` profile, each sha256-recorded into the artifact (a `profiles` key colliding with `policy_profile` or `all-rules-disabled` fails the run rather than silently redefining the default); the validator additionally re-parses each policy YAML against the live `rules list` catalog (rejecting emptied/re-leveled/re-paramed files even when re-hashed) and binds every recorded command to the manifest-derived argv (binary path, `--dialect`/`--sql`/`--config`/`--format`, declared connect target, `--fail-on`, and `--target-version` args verbatim); emits + validates an artifact.json; fails rather than skipping when a required anchor is missing, unreachable, unhealthy, or version-mismatched. Manifests under `testdata/ddl-golden/` are checked against the locked `anchors-baseline.json` (four pinned anchors + both CLI dialects), so shrinking a manifest and artifact together still fails. The frozen T05-A3 contract adds 18 fixed cases on top of the preserved original 167 under a five-rule profile: intermediate absence after DROP is independently pinned by an execute-step verify, so a paired manifest/artifact deletion is rejected, and execute stdout/stderr markers distinguish a policy rejection from native MySQL 1051 (unknown table) and 1072 (key column missing); the validator covers the A3 mutations. The frozen T05-A4 contract adds 19 MODIFY cases under the four-rule `t05-a4-modify-isolated` profile (204 required ids), including the tidb85 primary-key signedness refusal, and rejects paired shrinks of that set. The frozen T05-A6 contract adds 16 dependency-free DROP COLUMN cases under the six-rule `t05-a6-drop-column-isolated` profile (247 required ids) and rejects paired shrinks of that set. The frozen T06-A1 contract adds 22 CREATE TABLE primary-key cases on top of the 10 locked baseline cases (32 required ids): five offline controls per dialect (no-PK reject, inline-PK pass, table-level-PK pass, no-PK with the rule disabled, no-PK with `required:false`) plus three anchored metadata cases per anchor (no-PK/inline-PK/table-level-PK) that pin product verdict, exit code, finding identity, `statement_sql`, rule-summary counts, coverage, post-audit table absence, driver-side native CREATE success or failure, `information_schema` column/primary-key structure, teardown, and GIPK `instance_facts` on MySQL 8.0/8.4 — product policy rejection is never a substitute for native execution, and a server-generated invisible primary key is never input-declared evidence. T06-A1-R1 adds a frozen full-`case_id` → proof-role identity map (kind, local case id, dialect, anchor, policy profile, input SQL) checked before kind-based dispatch, so a record's self-declared fields can never re-pick which manifest spec it satisfies: cross-anchor donor reuse, metadata slots refilled by offline records, `required:false`/`all-rules-disabled` swaps, duplicate executed ids, and duplicate or unfrozen manifest declarations are all rejected — a required ID being present is not proof the right anchor and role ran. The frozen T06-A2 contract adds 24 primary-key nullability cases on top of the preserved 32 (56 required ids): two isolated profiles (`t06-a2-pk-nullability-isolated`, `t06-a2-default-presence-isolated`), 8 offline controls (legal table-single/composite and no-default/default-null per dialect), and 16 anchored cases pinning `IS_NULLABLE`/`DATA_TYPE` structure, ordered composite member ordinals, and ERROR 1171 native negatives with post-failure absence on all four anchors — execute steps may record bounded stderr markers when a native negative is required, and a paired manifest/artifact deletion of any A2 slot is rejected. The frozen T06-A5 contract adds 40 declared CHAR/VARCHAR length cases on top of the preserved 84 (124 required ids): two isolated single-rule profiles (`t06-a5-char-length-isolated`, `t06-a5-varchar-length-isolated` at `limit=8`/`blocker`), a 16-cell offline matrix (char/varchar × mysql/tidb × below/at/above/off) pinning exact `limit`/`actual` finding metadata, and 24 anchored cases whose `utf8mb4`/`utf8mb4_bin` columns make `CHARACTER_MAXIMUM_LENGTH` and `CHARACTER_OCTET_LENGTH` (`4*N`) independently observable — the post-audit absence check proves the product never executes the audited CREATE and the driver replay proves a policy rejection is never a native refusal. The frozen T06-A7 contract adds 64 charset/collation cases on top of the preserved 124 (188 required ids): five isolated profiles (`t06-a7-column-charset-isolated`, `t06-a7-column-collation-isolated`, `t06-a7-column-match-isolated` for the existing column rules, and `t06-a7-table-collation-optional`/`t06-a7-table-collation-required` for the new default-disabled `ddl.table.collation.allowlist` under both `require_explicit` values), a 16-role × 2-dialect offline matrix pinning each column rule in isolation plus the table collate allowed/denied/missing/off controls, and 8-role × 4-anchor metadata cases that separate declared-declaration facts from native resolved metadata (`CHARACTER_SET_NAME`/`COLLATION_NAME`/`TABLE_COLLATION`, latin1 16-octet vs utf8mb4 64-octet splits, a utf8mb4+latin1_bin ERROR 1253 native negative, and table-level inheritance proving an undeclared column resolves through the table option) — the retired `create_table.option.collate` unsupported evidence is gone because capability classification is independent of enabled policy rules. T06-A8 adds a comment-fidelity contract (24-case offline presence/length matrix plus 16 anchored roles preserving raw text, CHAR_LENGTH/OCTET_LENGTH/HEX), and T06-A9 adds the explicit audit-time-column proof (the `t06-a9-audit-columns-isolated` profile, a 12-case offline matrix covering both roles, single-role misses, the two-finding missing-both shape pinned as a complete finding-entry multiset, NOW() spellings, and the all-off control, plus 16 anchored roles pinning per-column CURRENT_TIMESTAMP default spellings, a whole-text EXTRA whitelist — `default_generated`/zero-precision `on update current_timestamp` forms only, validated through a strict SQL `CASE` that compares `CAST(LOWER(x) AS BINARY)` on both sides so a PAD SPACE catalog collation can never equate trailing-space text with a whitelist entry — whose literal control (including four single-U+0020 trailing-space negatives) and a catalog-context control folding the real stored EXTRA with one appended space to the sentinel both run read-only on every anchor — PK membership, and storage engine; actual findings are field-strict: `statement_kind` must be present as `ddl`, location/metadata must be real objects, and a present `statement_index` must agree with its enclosing statement). T06-A10 adds the AUTO_INCREMENT declaration proof (16 offline + 20 anchored roles under `t06-a10-pk-auto-increment-isolated`/`t06-a10-init-value-isolated`, with verbatim EXTRA-member/allocator/SHOW-CREATE observations bound by header-plus-single-record checks). T06-A11 adds the single-member-PK BIGINT/UNSIGNED proof (16 offline + 16 anchored roles under `t06-a11-pk-bigint-isolated`/`t06-a11-pk-unsigned-isolated` — the anchored roles pin `DATA_TYPE`, a finite-whitelist `COLUMN_TYPE` complete form, byte-empty `EXTRA`, and a bound nine-field column observation; composite-PK roles skip the member check, and a policy reject never substitutes for the driver-side CREATE success). T06-A12 adds the ordinary-column NOT NULL proof (16 offline + 20 anchored roles under `t06-a12-not-null-{strict,time-allow,not-required}-isolated` plus the reused all-off control — per-column finding attribution, the loaded/applicable/absent `rule_summary` contract, and the ordered column-set oracle). T06-A12-R1 tightens the summary check: the all-off role must omit the `rule_summary` key entirely, enabled roles must carry a JSON object, and `loaded`/`applicable` must be JSON integers — never bools/floats/strings laundered through `==` coercion, and malformed summaries reject as failures rather than crashing. T06-A13 adds the type-family forbid proof (52 cases under per-family `t06-a13-<family>-{on,false}-isolated` profiles plus the reused all-off control — per-column finding attribution, the loaded/applicable vs absent `rule_summary` distinction, the blob/text exclusion of `c_json` and the timestamp exclusion of `c_datetime`, and the ordered nine-column DATA_TYPE oracle on all four anchors). T06-A14 adds the table-option allowlist proof (60 cases under per-family `t06-a14-<family>-{strict,optional}-isolated` profiles plus the reused all-off control — the complete `require_explicit` contract with loaded=1/applicable=1 on all five enabled roles, complete finding identity including `actual=""` on omission, and the per-product catalog oracle: MySQL engine/row_format storage values, TiDB's InnoDB/Compact compatibility display, and the declared charset through the real TABLE_COLLATION association re-derived from frozen constants). T06-A15 adds the row-size field-level fact-resolution proof (24 offline cases: ten roles under the `t06-a15-row-size-isolated` profile — strict-65535 below/equal/above, column-over-table charset precedence, declared non-InnoDB scope skip, and the four missing-fact shapes — plus the `t06-a15-row-size-not-required-isolated` and all-off controls — pinning field-ordered `missing_instance_fact` required_facts, unverified coverage, and the determined-finding-plus-gap coexistence, all re-derived from frozen constants rather than the manifest spec). Invoked as `make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>`. T08 regression-oracle closure: `t05_a4_contract` now pins the third effective-default (`literal → none`) finding on the omit-integer cells, and `position_migration_cases`/`position_migration_manifest_failures` pin the nine migrated T03/T04/T05 column-position cells (T03 pass/complete; T04/T05 review/unverified with the preserved missing_source_column gap) inside `validate_artifact` |
++| test_ddl_golden.py | Offline validator contract tests: proves the artifact validator recomputes from raw evidence against the manifest and rejects zero/missing/unexecuted cases, stale binaries, unreachable required databases, version mismatches, deleted or failed metadata-query records, non-JSON CLI stdout, parsed/stdout disagreement, artifact-internal expected tampering, manifests/artifacts shrunk below the locked baseline, external blockers, and hand-written PASS records — including `cli_cases` coverage/unsupported evidence contracts, downgrade/wrong-feature rejection, and T04 evidence-gap/metadata-case/error-case mutation coverage (missing gap, wrong rule_id/required_facts, gap-as-finding, parsed-vs-stdout drift, post_verify tamper, password-in-command, policy sha/profile/enabled_rules tamper, re-hashed emptied/re-leveled/re-paramed policy files, wrong `--config` profile binding, missing policy sha256, and mismatched metadata host/port commands), plus T04-B version-evidence mutations (tampered target_raw/target_canonical, canonical-vs-stdout drift, TiDB compatibility-prefix resolved as the 8.0.11 MySQL prefix, request/observed conflict recorded as success, out-of-range marked complete, missing version_evidence, removed --target-version argv, provider error laundered as a gap result), and T04-B-R1 evidence-integrity mutations (deleted/emptied/tampered `instance_facts`, tampered live `tidb_max_index_length`, missing anchored error-case observed banner, TiDB canonical product rewritten to `mysql`, product mismatch recorded as success, malformed target laundered as connection failure, missing `minor` on `8.0.46`, missing `patch` on `8.5.0`, numeric/canonical component drift), plus T05 ordered-state mutations (dropped middle statement, negative path recorded as pass, invalidated dependent promoted to complete, finding moved to a wrong statement or rebound to another column, removed audit-before/audit-after/structure/teardown verify evidence, and a failed driver execute step recorded as success), and T05-A2 rename-path mutations (dropped or re-bound rename statement, flipped source/destination structure answers, dropped destination-absence precondition, failed rename execute step, unqualified destination claimed inside the source schema, session-database rewrite, and a removed required rename case), and T05-A3 drop-state mutations plus T05-A4 ordinary MODIFY mutations (intermediate length, post-state, finding identity, native-versus-policy, gap, per-step verify, omitted attributes, primary-key nullability, TiDB primary-key signedness refusal, profile, and loaded-rule count), plus T05-A6 DROP COLUMN mutations (statement identity, immediate verify, column order and length, unrelated indexes, re-add definition, old-column finding, offline CREATE gap, profile, and loaded-rule count), plus T06-A1 CREATE TABLE primary-key mutations (tampered policy path/sha, product-side CREATE claimed rejected, removed post-audit absence check, native CREATE failure recorded as legal, erased/renamed primary-key structure evidence, member query deleted on both sides, no-PK column recorded as NOT NULL, removed teardown, skipped driver create step, connectivity stderr laundered as result, failed cleanup accepted, missing GIPK fact reads, and finding/statement/summary/coverage tampering), plus T06-A1-R1 identity-binding mutations (same-variant cross-anchor donor reuse single and all-twelve, metadata slots refilled by offline cli_audit records single and all-twelve, `required:false`/`all-rules-disabled` record swaps, duplicate executed case_id, and duplicate or unfrozen manifest-declared ids), plus T06-A2 nullability mutations (inline form masking a table-level/composite slot, member recorded nullable or spare recorded non-null, component/key-order forgery, explicit NULL laundered into pass, driver success or permission error masquerading as ERROR 1171, DEFAULT NULL recorded as missing and absent DEFAULT recorded as pass, paired-side case deletion, cross-anchor rebind, offline demotion, and profile swap), and T06-A5 declared-length mutations (at-limit recorded as over-limit and over-limit recorded as safe, swapped or removed limit/actual metadata, char/varchar rule-message-colum-statement mix-ups, off/above slot swaps, weakened profile limit/level/rule bindings, characters recorded as octets, wrong collation or DATA_TYPE, skipped native replay after product reject, disguised driver failure, structure/post_verify/setup/teardown legs deleted on both sides, cross-anchor rebind, offline demotion, profile swap, and paired-side case deletion), and T06-A7 charset/collation mutations (charset↔collation allowlist finding-id swaps, single-declaration reject recorded as pass, native success recorded as failure, unknown-collation/permission stderr substituted for the ERROR 1253 mismatch negative, TABLE_COLLATION↔COLUMN_COLLATION oracle swaps, the inherited-resolution slot refilled by the explicit-declaration record, the table rule reported as the column collation rule or carrying column-shaped metadata, retired `create_table.option.collate` unsupported evidence reappearing, disabled-rule incomplete coverage restored, a schema-boundary statement laundered through a table slot, weakened `require_explicit`/allowlist profile params, same-profile pass and optional↔required slot swaps, cross-anchor rebind, offline demotion, and paired-side case deletion), plus the T06-A8–A11 per-slice attribution/oracle/observation mutation groups, plus T06-A12 NOT NULL mutations (missed/forged blockers, findings re-attributed to exempted columns, message/metadata cross-pairing, same-SQL role/profile swaps, required=false vs disabled laundering, weakened profile params, IS_NULLABLE forgeries, column-set/count corruptions, skipped driver replay, and denominator shrinkage), and T06-A12-R1 strict rule_summary mutations (the all-off key present as null/empty/false, enabled roles missing or carrying non-object summaries, missing counters, bool/float/string/null counts, and wrong per-role integer combos — all rejected through the full validate_artifact entry, never as exceptions), plus T06-A13 type-family forbid mutations (missed/forged findings, absorbed c_json/c_datetime, collapsed/duplicated/cross-paired findings, dropped or added metadata keys, same-SQL family profile/record swaps, switch-state laundering, weakened profiles, ordered-column-set corruptions, skipped or failed driver replay, and denominator shrinkage), plus T06-A14 table-option allowlist mutations (missed/forged findings per role, the omitted-strict `actual` laundered to a server default, swapped option keys, widened allowed lists, dropped metadata keys, duplicated findings, denied-optional pass laundering, omitted-optional 1/0 and all-off fabricated/null/non-integer summaries, strict/optional/off record and profile swaps, cross-family borrowing, weakened profiles, forged MySQL/TiDB catalog identities, missing/multirow charset associations, skipped or failed driver replay, cross-anchor re-keying, offline demotion, duplicates, and denominator shrinkage). plus T06-A15 row-size fact-resolution mutations (the over-limit role recorded as pass, safe boundary roles forged as blockers, a missing fact recorded as complete, wrong/reordered/duplicated required_facts, a declared fact listed as missing, the missing-format-over determined finding dropped beside its gap, column charset laundered into table metadata or the estimate overwritten by the table charset, an unused undeclared table charset forged as required, on/not-required/off record and profile swaps, a fabricated rule_summary under the all-off control, and denominator shrinkage). T08 oracle-migration mutations run through the full `validate_artifact` entry: pre-T08 unsupported/incomplete revert, preserved-gap deletion, finding deletion/duplication/substitution, wrong statement/column/change-class, policy/case/SQL rebinding, and manifest+artifact shrink or expect weakening — all rejected. No Docker required (`make ddl-golden-validator-test`) |
++| test_ddl_golden.py | Offline validator contract tests: proves the artifact validator recomputes from raw evidence against the manifest and rejects zero/missing/unexecuted cases, stale binaries, unreachable required databases, version mismatches, deleted or failed metadata-query records, non-JSON CLI stdout, parsed/stdout disagreement, artifact-internal expected tampering, manifests/artifacts shrunk below the locked baseline, external blockers, and hand-written PASS records — including `cli_cases` coverage/unsupported evidence contracts, downgrade/wrong-feature rejection, and T04 evidence-gap/metadata-case/error-case mutation coverage (missing gap, wrong rule_id/required_facts, gap-as-finding, parsed-vs-stdout drift, post_verify tamper, password-in-command, policy sha/profile/enabled_rules tamper, re-hashed emptied/re-leveled/re-paramed policy files, wrong `--config` profile binding, missing policy sha256, and mismatched metadata host/port commands), plus T04-B version-evidence mutations (tampered target_raw/target_canonical, canonical-vs-stdout drift, TiDB compatibility-prefix resolved as the 8.0.11 MySQL prefix, request/observed conflict recorded as success, out-of-range marked complete, missing version_evidence, removed --target-version argv, provider error laundered as a gap result), and T04-B-R1 evidence-integrity mutations (deleted/emptied/tampered `instance_facts`, tampered live `tidb_max_index_length`, missing anchored error-case observed banner, TiDB canonical product rewritten to `mysql`, product mismatch recorded as success, malformed target laundered as connection failure, missing `minor` on `8.0.46`, missing `patch` on `8.5.0`, numeric/canonical component drift), plus T05 ordered-state mutations (dropped middle statement, negative path recorded as pass, invalidated dependent promoted to complete, finding moved to a wrong statement or rebound to another column, removed audit-before/audit-after/structure/teardown verify evidence, and a failed driver execute step recorded as success), and T05-A2 rename-path mutations (dropped or re-bound rename statement, flipped source/destination structure answers, dropped destination-absence precondition, failed rename execute step, unqualified destination claimed inside the source schema, session-database rewrite, and a removed required rename case), and T05-A3 drop-state mutations plus T05-A4 ordinary MODIFY mutations (intermediate length, post-state, finding identity, native-versus-policy, gap, per-step verify, omitted attributes, primary-key nullability, TiDB primary-key signedness refusal, profile, and loaded-rule count), plus T05-A6 DROP COLUMN mutations (statement identity, immediate verify, column order and length, unrelated indexes, re-add definition, old-column finding, offline CREATE gap, profile, and loaded-rule count), plus T06-A1 CREATE TABLE primary-key mutations (tampered policy path/sha, product-side CREATE claimed rejected, removed post-audit absence check, native CREATE failure recorded as legal, erased/renamed primary-key structure evidence, member query deleted on both sides, no-PK column recorded as NOT NULL, removed teardown, skipped driver create step, connectivity stderr laundered as result, failed cleanup accepted, missing GIPK fact reads, and finding/statement/summary/coverage tampering), plus T06-A1-R1 identity-binding mutations (same-variant cross-anchor donor reuse single and all-twelve, metadata slots refilled by offline cli_audit records single and all-twelve, `required:false`/`all-rules-disabled` record swaps, duplicate executed case_id, and duplicate or unfrozen manifest-declared ids), plus T06-A2 nullability mutations (inline form masking a table-level/composite slot, member recorded nullable or spare recorded non-null, component/key-order forgery, explicit NULL laundered into pass, driver success or permission error masquerading as ERROR 1171, DEFAULT NULL recorded as missing and absent DEFAULT recorded as pass, paired-side case deletion, cross-anchor rebind, offline demotion, and profile swap), and T06-A5 declared-length mutations (at-limit recorded as over-limit and over-limit recorded as safe, swapped or removed limit/actual metadata, char/varchar rule-message-colum-statement mix-ups, off/above slot swaps, weakened profile limit/level/rule bindings, characters recorded as octets, wrong collation or DATA_TYPE, skipped native replay after product reject, disguised driver failure, structure/post_verify/setup/teardown legs deleted on both sides, cross-anchor rebind, offline demotion, profile swap, and paired-side case deletion), and T06-A7 charset/collation mutations (charset↔collation allowlist finding-id swaps, single-declaration reject recorded as pass, native success recorded as failure, unknown-collation/permission stderr substituted for the ERROR 1253 mismatch negative, TABLE_COLLATION↔COLUMN_COLLATION oracle swaps, the inherited-resolution slot refilled by the explicit-declaration record, the table rule reported as the column collation rule or carrying column-shaped metadata, retired `create_table.option.collate` unsupported evidence reappearing, disabled-rule incomplete coverage restored, a schema-boundary statement laundered through a table slot, weakened `require_explicit`/allowlist profile params, same-profile pass and optional↔required slot swaps, cross-anchor rebind, offline demotion, and paired-side case deletion). plus T06-A8/A9 groups (comment fidelity mutations and the audit-column set: finding collapse/duplication/cross-swap, global-finding smuggling, forged pass/stale finding/profile swaps, stored-column role and fsp tampering, skipped driver replay, both-side query deletions, cross-anchor reuse, offline demotion, and denominator shrink) and the T06-A9-R1 tightening controls (missing/empty/wrong `statement_kind`, malformed field types, nonzero statement attribution, order-swap and explicit-zero positive controls, and the EXTRA whitelist regressions: artifact or manifest+artifact rolled back to the permissive REPLACE query), and the T06-A9-R2 byte-exact-comparison mutations (artifact or manifest+artifact rolled back to the plain LOWER-IN query, the catalog pad-space context control deleted artifact-side or on both sides, the pad-space observation removed on both sides, a trailing-space catalog input forged as created/updated role markers, a legal uppercase literal forged as the sentinel, and a trailing-space literal forged as a role marker), plus the T06-A10 AUTO_INCREMENT groups (declaration/init-value finding identity, profile swaps and re-parametrization, composite member forgery, skipped driver replay after product reject, and observation binding) and the T06-A10-R1 record-set controls (duplicate/conflicting/wrong-target/malformed/header-only/forged-header records on the allocator, raw EXTRA, and SHOW CREATE observations, member order/count forgery, SHOW CREATE bound to the wrong object, and legal `null`/`value:<digits>` allocator variants staying accepted), and the T06-A10-R2 controls (non-string observation stdout rejected as a contract failure — never an exception or a coerced string — plus missing/None/empty stdout, and SHOW CREATE heads qualified/suffixed/truncated away from the complete `t` token), plus the T06-A11 BIGINT/UNSIGNED groups (missed/forged blockers on both rules, rule-identity and same-SQL profile swaps, metadata type/column re-attribution, composite-shape forgery, `required` weakening, native int↔bigint oracle swaps, unsigned dropped/forged/zerofill smuggling inside the finite COLUMN_TYPE whitelist, uniform parser text broadcast over native observations, non-string/empty/header-only/duplicate/wrong-target/bad-hex observation records, missing-field and NULL laundering as byte-empty EXTRA, skipped driver replay after product reject, and cross-anchor/offline-demotion/paired-side deletion; T06-A11-R1 adds the HEX-field shape boundary — `bytes.fromhex` whitespace-skipping rejected via complete two-digit-pair fullmatch, with case variants, odd/empty/0x-prefixed/non-ASCII decodes, encoded trailing-space, and whitelist-form sweeps as positive controls). plus T06-A15 row-size fact-resolution mutations (the over-limit role recorded as pass, safe boundary roles forged as blockers, a missing fact recorded as complete, wrong/reordered/duplicated required_facts, a declared fact listed as missing, the missing-format-over determined finding dropped beside its gap, column charset laundered into table metadata or the estimate overwritten by the table charset, an unused undeclared table charset forged as required, on/not-required/off record and profile swaps, a fabricated rule_summary under the all-off control, and denominator shrinkage). T08 oracle-migration mutations run through the full `validate_artifact` entry: pre-T08 unsupported/incomplete revert, preserved-gap deletion, finding deletion/duplication/substitution, wrong statement/column/change-class, policy/case/SQL rebinding, and manifest+artifact shrink or expect weakening — all rejected. No Docker required (`make ddl-golden-validator-test`) |
+ ## Exports
+
+ - `verify_pg_manylinux_baseline.sh`
+diff --git a/scripts/ddl_golden.py b/scripts/ddl_golden.py
+index 10a44111..5bc92141 100755
+--- a/scripts/ddl_golden.py
++++ b/scripts/ddl_golden.py
+@@ -1649,11 +1649,15 @@ def t05_a4_contract():
+                          "ALTER TABLE t MODIFY COLUMN c INT",
+                          "ALTER TABLE t MODIFY COLUMN c INT NOT NULL"]
+             signed, signed_meta = attribute(1, {"source_unsigned": True, "target_unsigned": False})
++            # T08 §5.4 effective-default transition: MODIFY omitting DEFAULT
++            # clears the stored default (native-verified on all four anchors),
++            # so statement 1 also emits the literal->none default finding.
++            default, default_meta = attribute(1, {"source_default": "literal", "target_default": "none"})
+             nullability, null_meta = attribute(2, {"source_not_null": False, "target_not_null": True})
+             omit_expect, omit_execute = lifecycle(
+                 omit_sqls, None, int_query,
+                 ["int:unsigned:NO:1:old", "int:signed:YES:<nil>:", "int:signed:NO:<nil>:"],
+-                "reject", ([signed, nullability], [signed_meta, null_meta]))
++                "reject", ([signed, default, nullability], [signed_meta, default_meta, null_meta]))
+             metadata_cases.append(metadata_case(
+                 f"t05-a4-{anchor}-omit-integer", anchor, port, dialect, omit_sqls, omit_expect, omit_execute, [
+                     verify("t exists", table_query, "1"),
+@@ -2399,6 +2403,72 @@ def t05_a6_manifest_failures(manifest):
+     return failures
+
+
++# ---------------------------------------------------------------------------
++# T03/T04/T05 column-position oracle migration (issue #87): the nine cli cells
++# whose frozen pre-T08 expects recorded column_position as unsupported are
++# bound here to the authorized post-T08 shape — independent of the manifests —
++# so deleting, weakening, or re-fitting a migrated cell on the manifest side
++# alone still fails validation.
++# ---------------------------------------------------------------------------
++
++POSITION_MIGRATION_COMPAT_RULE = "ddl.alter.modify_column.compatibility.require"
++
++
++def position_migration_cases(task):
++    """Authorized post-T08 expects for the nine position cli cells across
++    T03/T04/T05. Position declarations are audited under T08, so the
++    unsupported entries and diagnostics are gone everywhere. T03's default
++    profile is all-rules-disabled so its MODIFY cell completes outright; the
++    T04/T05 compat-isolated defaults keep MODIFY review/unverified on the
++    preserved missing_source_column gap — offline audits still cannot read
++    the source column, and this migration must not fabricate a provider.
++    Statement SQL, dialect, args and case identity are unchanged."""
++    def audited_expect(sql):
++        return {"exit": 0, "verdict": "pass", "statements": 1, "findings": 0,
++                "diagnostics": 0, "unsupported": 0, "coverage": "complete",
++                "statement_coverage": ["complete"], "statement_sql": [sql]}
++
++    cases = [
++        {"id": "mysql-alter-add-column-position", "dialect": "mysql",
++         "sql": "ALTER TABLE t ADD COLUMN c INT FIRST;", "args": ["--fail-on", "none"],
++         "expect": audited_expect("ALTER TABLE t ADD COLUMN c INT FIRST;")},
++        {"id": "tidb-alter-add-column-position", "dialect": "tidb",
++         "sql": "ALTER TABLE t ADD COLUMN c INT AFTER id;", "args": ["--fail-on", "none"],
++         "expect": audited_expect("ALTER TABLE t ADD COLUMN c INT AFTER id;")},
++    ]
++    modify_sql = "ALTER TABLE t MODIFY COLUMN c INT AFTER id;"
++    if task == "T03":
++        modify_expect = audited_expect(modify_sql)
++    else:
++        modify_expect = {"exit": 0, "verdict": "review", "statements": 1, "findings": 0,
++                         "diagnostics": 0, "unsupported": 0, "coverage": "unverified",
++                         "statement_coverage": ["unverified"], "statement_sql": [modify_sql],
++                         "evidence_gaps": 1,
++                         "evidence_gap_entries": [{
++                             "index": 0, "rule_id": POSITION_MIGRATION_COMPAT_RULE,
++                             "reason_code": "missing_source_column",
++                             "required_facts": ["source_column.definition"]}]}
++    cases.append({"id": "mysql-alter-modify-column-position", "dialect": "mysql",
++                  "sql": modify_sql, "args": ["--fail-on", "none"], "expect": modify_expect})
++    return cases
++
++
++def position_migration_manifest_failures(manifest):
++    task = manifest.get("task_id")
++    if task not in ("T03", "T04", "T05"):
++        return []
++    failures = []
++    required = manifest.get("required_case_ids") or []
++    for wanted in position_migration_cases(task):
++        matches = [s for s in manifest.get("cli_cases", []) if s.get("id") == wanted["id"]]
++        if len(matches) != 1 or matches[0] != wanted:
++            failures.append(f"{task} position migration oracle changed or missing: {wanted['id']}")
++            continue
++        if f"{task}.cli.{wanted['id']}" not in required:
++            failures.append(f"{task} position migration required case missing: {wanted['id']}")
++    return failures
++
++
+ # ---------------------------------------------------------------------------
+ # T06-A1 frozen oracle (issue #85): CREATE TABLE primary-key presence.
+ # The 32 required cases, the isolated policy profiles, and the structure
+@@ -7144,6 +7214,7 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
+     failures.extend(t05_a4_manifest_failures(manifest))
+     failures.extend(t05_a5_manifest_failures(manifest))
+     failures.extend(t05_a6_manifest_failures(manifest))
++    failures.extend(position_migration_manifest_failures(manifest))
+     failures.extend(t06_a1_manifest_failures(manifest))
+     failures.extend(t06_a1_identity_failures(artifact, manifest))
+     failures.extend(t06_a1_artifact_failures(artifact, manifest))
+diff --git a/scripts/test_ddl_golden.py b/scripts/test_ddl_golden.py
+index 3780db8f..340e1364 100755
+--- a/scripts/test_ddl_golden.py
++++ b/scripts/test_ddl_golden.py
+@@ -1,6 +1,6 @@
+ #!/usr/bin/env python3
+ # input: synthetic ddl-golden artifacts and manifests built in a temp directory
+-# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1/A2/A3/A4/A5/A7/A8/A9/A10 mutation coverage (T06-A9 includes the byte-exact EXTRA comparison mutations: plain-LOWER-IN rollback, catalog pad-space control deletion, and forged marker/sentinel outputs; T06-A10 includes the AUTO_INCREMENT declaration/allocator-observation mutations plus the T06-A10-R1 record-set controls: duplicate/hidden/wrong-target/header-only/forged-header records on all three observations, and legal allocator null|value:<digits> variants staying accepted; T06-A10-R2 adds non-string-stdout contract failures and the complete-`t` SHOW CREATE head boundary; T06-A11 adds the BIGINT/UNSIGNED policy mutations and T06-A11-R1 adds the raw HEX-field shape boundary: whitespace-corrupted, empty, odd-length, 0x-prefixed, and non-ASCII COLUMN_TYPE hex rejected while every frozen whitelist form and upper/lower/mixed-case hex stays accepted; T06-A12 adds the NOT NULL attribution and column-set mutations, and T06-A12-R1 adds the strict rule_summary shape controls: present-but-null/empty/false keys on the disabled role, missing or non-object summaries on enabled roles, missing counters, bool/float/string/null counts, and wrong per-role integer combos — all rejected through the full validate_artifact entry; T06-A13 adds the type-family forbid mutations: missed/forged findings, absorbed c_json/c_datetime, collapsed/duplicated/cross-paired findings, dropped or added metadata keys, same-SQL family profile/record swaps, switch-state laundering, weakened profiles, ordered-column-set corruptions, skipped or failed driver replay, and denominator shrinkage; T06-A14 adds the table-option allowlist mutations: missed/forged findings per role, the omitted-strict actual laundered to a server default, swapped option keys, widened allowed lists, dropped actual keys, duplicated findings, denied-optional pass laundering, the omitted-optional 1/0 forgery, fabricated/null/non-integer summaries, strict-optional-off record and profile swaps, cross-family borrowing, weakened profiles, forged MySQL/TiDB catalog identities (MyISAM-as-InnoDB, Dynamic-as-Compact, TiDB declarations recorded as catalog values), missing/multirow charset associations, skipped or failed driver replay, and denominator shrinkage; T06-A15 adds the row-size fact-resolution mutations: the over-limit role recorded as pass, safe boundary roles forged as blockers, a missing fact recorded as complete, wrong/reordered/duplicated required_facts, a declared fact listed as missing, the missing-format-over determined finding dropped beside its gap, the column charset laundered into table metadata or the estimate overwritten by the table charset, an unused undeclared table charset forged as required, on/not-required/off record and profile swaps, a fabricated rule_summary under the all-off control, and denominator shrinkage)
++# output: contract evidence that the artifact validator rejects fabricated or incomplete proof, including T05-A3, T05-A4, T05-A5, T05-A6, and T06-A1/A2/A3/A4/A5/A7/A8/A9/A10 mutation coverage (T06-A9 includes the byte-exact EXTRA comparison mutations: plain-LOWER-IN rollback, catalog pad-space control deletion, and forged marker/sentinel outputs; T06-A10 includes the AUTO_INCREMENT declaration/allocator-observation mutations plus the T06-A10-R1 record-set controls: duplicate/hidden/wrong-target/header-only/forged-header records on all three observations, and legal allocator null|value:<digits> variants staying accepted; T06-A10-R2 adds non-string-stdout contract failures and the complete-`t` SHOW CREATE head boundary; T06-A11 adds the BIGINT/UNSIGNED policy mutations and T06-A11-R1 adds the raw HEX-field shape boundary: whitespace-corrupted, empty, odd-length, 0x-prefixed, and non-ASCII COLUMN_TYPE hex rejected while every frozen whitelist form and upper/lower/mixed-case hex stays accepted; T06-A12 adds the NOT NULL attribution and column-set mutations, and T06-A12-R1 adds the strict rule_summary shape controls: present-but-null/empty/false keys on the disabled role, missing or non-object summaries on enabled roles, missing counters, bool/float/string/null counts, and wrong per-role integer combos — all rejected through the full validate_artifact entry; T06-A13 adds the type-family forbid mutations: missed/forged findings, absorbed c_json/c_datetime, collapsed/duplicated/cross-paired findings, dropped or added metadata keys, same-SQL family profile/record swaps, switch-state laundering, weakened profiles, ordered-column-set corruptions, skipped or failed driver replay, and denominator shrinkage; T06-A14 adds the table-option allowlist mutations: missed/forged findings per role, the omitted-strict actual laundered to a server default, swapped option keys, widened allowed lists, dropped actual keys, duplicated findings, denied-optional pass laundering, the omitted-optional 1/0 forgery, fabricated/null/non-integer summaries, strict-optional-off record and profile swaps, cross-family borrowing, weakened profiles, forged MySQL/TiDB catalog identities (MyISAM-as-InnoDB, Dynamic-as-Compact, TiDB declarations recorded as catalog values), missing/multirow charset associations, skipped or failed driver replay, and denominator shrinkage; T06-A15 adds the row-size fact-resolution mutations: the over-limit role recorded as pass, safe boundary roles forged as blockers, a missing fact recorded as complete, wrong/reordered/duplicated required_facts, a declared fact listed as missing, the missing-format-over determined finding dropped beside its gap, the column charset laundered into table metadata or the estimate overwritten by the table charset, an unused undeclared table charset forged as required, on/not-required/off record and profile swaps, a fabricated rule_summary under the all-off control, and denominator shrinkage; T08 oracle migration adds sensitivity for the eleven migrated cells: the nine column-position cli cells across T03/T04/T05 (legal audited fixture accepted, pre-T08 unsupported/incomplete revert rejected, preserved missing_source_column gap deletion rejected on T04/T05, identity/policy/SQL rebinds rejected, manifest+artifact shrink rejected via the independent position oracle) and the two T05-A4 omit-integer cells (effective-default finding kept as a distinct third finding — deletion, duplication, substitution, wrong statement/column/change-class, rebound policy/case/SQL, and both-sides shrink or undeclaration all rejected))
+ # pos: offline negative tests for scripts/ddl_golden.py validation (no Docker required)
+ # note: if this file changes, update this header and module README.md.
+ """Validator contract tests for scripts/ddl_golden.py.
+@@ -11,6 +11,7 @@ validator rejects it. A fully valid control artifact must pass, so the
+ negatives prove specific checks rather than a validator that always fails.
+ """
+
++import collections
+ import copy
+ import hashlib
+ import json
+@@ -1525,12 +1526,400 @@ def main():
+
+         results.extend(a3_contract_tests(tmp))
+         results.extend(t06_contract_tests(tmp))
++        results.extend(t08_oracle_migration_tests(tmp))
+
+     failures = results.count(False)
+     print(f"contract cases={len(results)} failures={failures}")
+     return 1 if failures else 0
+
+
++def t08_oracle_migration_tests(tmp):
++    """Sensitivity for the eleven T08-migrated oracle cells. The nine
++    column-position cli cells across T03/T04/T05 and the two T05-A4
++    omit-integer metadata cells are validated through the full
++    validate_artifact entry: the migrated legal fixture must pass, while
++    reverting to the pre-T08 unsupported/incomplete shape, deleting a
++    preserved gap or finding, duplicating or cross-pairing findings,
++    rebinding identity/policy/SQL, and shrinking manifest+artifact together
++    must all still fail."""
++    baseline = ddl_golden.load_baseline()
++    results = []
++
++    def run(label, artifact, manifest, needle=""):
++        failures = ddl_golden.validate_artifact(artifact, manifest, baseline=baseline)
++        ok = any(needle in f for f in failures) if needle else not failures
++        print(("PASS " if ok else "FAIL ") + label)
++        if not ok:
++            print(f"  expected={needle!r} actual={failures}")
++        results.append(ok)
++
++    def query_records(queries):
++        return [{"assert": q["assert"], "sql": q["sql"], "rc": 0,
++                 "output": q["expect"], "stderr": ""} for q in queries]
++
++    def step_records(steps):
++        return [{"name": s["name"], "sql": s["sql"], "rc": s.get("expect_rc", 0),
++                 "stdout": " ".join(s.get("stdout_contains", [])),
++                 "stderr": " ".join(s.get("stderr_contains", [])),
++                 "verify": query_records(s.get("verify", []))} for s in steps]
++
++    def parsed_from_expect(expected):
++        statements = []
++        for i, sql in enumerate(expected["statement_sql"]):
++            statements.append({"index": i, "raw_sql": sql,
++                               "coverage": {"status": expected["statement_coverage"][i]},
++                               "findings": [], "evidence_gaps": [], "unsupported": []})
++        finding_metadata = collections.defaultdict(collections.deque)
++        for e in expected.get("finding_metadata", []):
++            finding_metadata[(e["index"], e["rule_id"])].append(e["metadata"])
++        for entry in expected.get("finding_entries", []):
++            key = (entry["index"], entry["rule_id"])
++            metadata = finding_metadata[key].popleft() if finding_metadata[key] else {}
++            statements[entry["index"]]["findings"].append({
++                "statement_index": entry["index"], "rule_id": entry["rule_id"],
++                "level": entry["level"],
++                "metadata": copy.deepcopy(metadata)})
++        for entry in expected.get("evidence_gap_entries", []):
++            statements[entry["index"]]["evidence_gaps"].append(
++                {k: v for k, v in entry.items() if k != "index"})
++        return {"verdict": expected["verdict"],
++                "coverage": {"status": expected["coverage"]},
++                "statements": statements, "global_findings": [],
++                "diagnostics": [], "unsupported": [],
++                "fail_on_triggered": expected.get("fail_on_triggered", False),
++                "rule_summary": {"loaded": expected.get("rule_summary_loaded", 4),
++                                 "applicable": expected.get("rule_summary_loaded", 4),
++                                 "skipped": []}}
++
++    def stub_binary(directory, rule_ids):
++        binary = directory / "deltascope"
++        catalog = json.dumps({"rules": [{"rule_id": rid} for rid in
++                                        sorted(rule_ids or {"ddl.stub.none"})]})
++        binary.write_text("#!/bin/sh\nprintf '%s' '" + catalog + "'\n")
++        binary.chmod(0o755)
++        return binary
++
++    def enabled_rule_ids(manifest):
++        ids = set()
++        policy = manifest.get("policy") or {}
++        ids.update((policy.get("enable") or {}).keys())
++        for spec in (policy.get("profiles") or {}).values():
++            ids.update((spec.get("enable") or {}).keys())
++        return ids
++
++    def db_baseline_cases(task, manifest, templates):
++        cases = []
++        for key, anchor in manifest["anchors"].items():
++            database = {"product": anchor["product"], "image": anchor["image"],
++                        "image_digest": anchor["image"].split(":")[0] + "@sha256:stub",
++                        "container": anchor["container"], "reachable": True,
++                        "version": anchor["version_contains"]}
++            for suffix, template in zip(("ddl", "syntax_negative"), templates):
++                case = copy.deepcopy(template)
++                case.update(case_id=f"{task}.db.{key}.{suffix}", anchor=key)
++                if suffix == "ddl":
++                    case["actual"]["database"] = database
++                cases.append(case)
++        return cases
++
++    def cli_audit_case(task, spec, manifest, binary, policies):
++        expected = spec["expect"]
++        parsed = parsed_from_expect(expected)
++        profile = spec.get("policy") or manifest.get("policy_profile", "all-rules-disabled")
++        command = ddl_golden.expected_cli_argv(str(binary), spec, policies[profile]["path"])
++        if ddl_golden.spec_target_version_raw(spec):
++            target_raw = ddl_golden.spec_target_version_raw(spec)
++            canonical = ddl_golden.canonical_target_version(target_raw)
++            product = "tidb" if spec["dialect"] == "tidb" else "mysql"
++            major, minor, patch = (int(p) for p in canonical.split("."))
++            validated = (product == "mysql" and (major, minor) in {(5, 7), (8, 0), (8, 4)}) or (product == "tidb" and (major, minor) == (8, 5))
++            parsed["version"] = {"product": product, "version": canonical, "major": major, "minor": minor,
++                                 "patch": patch, "source": "target", "validated_range": validated}
++        actual = {"exit": expected["exit"], "stdout": json.dumps(parsed),
++                  "stderr": "", "parsed": parsed}
++        if parsed.get("version"):
++            actual["version_evidence"] = ddl_golden.version_evidence_record(spec, parsed)
++        return {"case_id": f"{task}.cli.{spec['id']}", "kind": "cli_audit",
++                "cli_case": spec["id"], "dialect": spec["dialect"],
++                "input_sql": spec["sql"], "policy_profile": profile,
++                "policy_path": policies[profile]["path"], "command": command,
++                "expected": copy.deepcopy(expected),
++                "actual": actual,
++                "assertions": [{"name": "synthetic control", "ok": True,
++                                "detail": "offline validator fixture"}],
++                "status": "pass"}
++
++    def cli_metadata_case(task, spec, manifest, binary, policies):
++        expected = spec["expect"]
++        parsed = parsed_from_expect(expected)
++        profile = spec.get("policy") or manifest.get("policy_profile", "all-rules-disabled")
++        conn = spec.get("connect") or {}
++        command = ddl_golden.expected_cli_argv(str(binary), spec, policies[profile]["path"],
++                                               connect=conn)
++        anchor = manifest["anchors"][spec["anchor"]]
++        if ddl_golden.spec_target_version_raw(spec):
++            target_raw = ddl_golden.spec_target_version_raw(spec)
++            canonical = ddl_golden.canonical_target_version(target_raw)
++            product = "tidb" if spec["dialect"] == "tidb" else "mysql"
++            major, minor, patch = (int(p) for p in canonical.split("."))
++            validated = (product == "mysql" and (major, minor) in {(5, 7), (8, 0), (8, 4)}) or (product == "tidb" and (major, minor) == (8, 5))
++            parsed["version"] = {"product": product, "version": canonical, "major": major, "minor": minor,
++                                 "patch": patch, "source": "target", "validated_range": validated}
++        actual = {"exit": expected["exit"], "stdout": json.dumps(parsed),
++                  "stderr": "", "parsed": parsed,
++                  "database": {"product": anchor["product"], "image": anchor["image"],
++                               "image_digest": anchor["image"].split(":")[0] + "@sha256:stub",
++                               "container": anchor["container"], "reachable": True,
++                               "version": anchor["version_contains"]},
++                  "setup": step_records(spec.get("setup", [])),
++                  "execute": step_records(spec.get("execute", [])),
++                  "teardown": step_records(spec.get("teardown", [])),
++                  "post_verify": query_records(spec.get("post_verify", [])),
++                  "structure": query_records(spec.get("structure", []))}
++        target_raw = ddl_golden.spec_target_version_raw(spec)
++        if target_raw:
++            actual["version_evidence"] = ddl_golden.version_evidence_record(spec, parsed)
++        return {"case_id": f"{task}.meta.{spec['id']}", "kind": "cli_metadata",
++                "cli_case": spec["id"], "dialect": spec["dialect"], "anchor": spec["anchor"],
++                "input_sql": spec["sql"], "policy_profile": profile,
++                "policy_path": policies[profile]["path"],
++                "connect": {k: v for k, v in conn.items() if k != "password"},
++                "command": command, "expected": copy.deepcopy(expected),
++                "actual": actual,
++                "assertions": [{"name": "synthetic control", "ok": True,
++                                "detail": "offline validator fixture"}],
++                "status": "pass"}
++
++    def position_subset_artifact(task):
++        """Manifest + artifact covering the task's three migrated position cli
++        cells plus the locked baseline anchors/dialects."""
++        source = json.loads((ddl_golden.MANIFEST_DIR / f"{task}.json").read_text())
++        manifest = copy.deepcopy(MANIFEST)
++        manifest.update(task_id=task,
++                        anchors=copy.deepcopy(source["anchors"]),
++                        policy=copy.deepcopy(source.get("policy") or {}),
++                        policy_profile=source["policy_profile"],
++                        cli_cases=[copy.deepcopy(s) for s in source["cli_cases"]
++                                   if s["id"] in {"mysql-alter-add-column-position",
++                                                  "tidb-alter-add-column-position",
++                                                  "mysql-alter-modify-column-position"}])
++        directory = tmp / task.lower()
++        directory.mkdir()
++        artifact = make_artifact(directory)
++        binary = stub_binary(directory, enabled_rule_ids(manifest))
++        artifact["cli"]["sha256"] = ddl_golden.sha256_file(binary)
++        policies = ddl_golden.make_policies(str(binary), directory, manifest)
++        artifact.update(task_id=task, policies=list(policies.values()),
++                        policy_profile=policies[manifest["policy_profile"]])
++        templates = copy.deepcopy(artifact["cases"][:2])
++        artifact["cases"] = db_baseline_cases(task, manifest, templates)
++        artifact["cases"] += [cli_audit_case(task, spec, manifest, binary, policies)
++                              for spec in manifest["cli_cases"]]
++        manifest["required_case_ids"] = [c["case_id"] for c in artifact["cases"]]
++        artifact["required_case_ids"] = list(manifest["required_case_ids"])
++        artifact["executed_count"] = len(artifact["cases"])
++        return artifact, manifest
++
++    def update_stdout(case):
++        case["actual"]["stdout"] = json.dumps(case["actual"]["parsed"])
++
++    # --- T03/T04 position cells ------------------------------------------------
++    for task in ("T03", "T04"):
++        artifact, manifest = position_subset_artifact(task)
++        tag = task.lower()
++        run(f"{tag} migrated position control passes", artifact, manifest)
++
++        def fresh():
++            return copy.deepcopy(artifact)
++
++        # Reverting to the pre-T08 unsupported/incomplete shape must fail.
++        a = fresh()
++        case = next(c for c in a["cases"] if c.get("cli_case") == "mysql-alter-add-column-position")
++        case["actual"]["exit"] = 1
++        case["actual"]["parsed"] = {
++            "verdict": "review", "coverage": {"status": "incomplete"},
++            "statements": [{"index": 0, "raw_sql": "ALTER TABLE t ADD COLUMN c INT FIRST;",
++                            "coverage": {"status": "incomplete"}, "findings": [],
++                            "evidence_gaps": [], "unsupported": []}],
++            "global_findings": [],
++            "diagnostics": [{"level": "notice", "message": "column position unsupported"}],
++            "unsupported": [{"index": 0, "feature": "alter_table.add_columns.column_position",
++                             "reason": "parsed by the shared parser but not covered by audited semantics"}],
++            "fail_on_triggered": False}
++        update_stdout(case)
++        run(f"{tag} reverted pre-T08 unsupported shape rejected", a, manifest, "unsupported")
++
++        # Unverified state must stay unverified: complete coverage on the
++        # compat-gapped MODIFY cell is a fabrication.
++        if task != "T03":
++            a = fresh()
++            case = next(c for c in a["cases"] if c.get("cli_case") == "mysql-alter-modify-column-position")
++            case["actual"]["parsed"]["statements"][0]["evidence_gaps"] = []
++            case["actual"]["parsed"]["statements"][0]["coverage"]["status"] = "complete"
++            case["actual"]["parsed"]["coverage"]["status"] = "complete"
++            case["actual"]["parsed"]["verdict"] = "pass"
++            update_stdout(case)
++            run(f"{tag} deleted preserved gap laundered to complete rejected", a, manifest, "gap")
++
++        # Identity rebinding must fail on every axis.
++        a = fresh()
++        case = next(c for c in a["cases"] if c.get("cli_case") == "mysql-alter-add-column-position")
++        case["actual"]["parsed"]["statements"][0]["raw_sql"] = "ALTER TABLE t ADD COLUMN c INT AFTER id;"
++        update_stdout(case)
++        run(f"{tag} rebound statement SQL rejected", a, manifest, "raw SQL")
++        a = fresh()
++        case = next(c for c in a["cases"] if c.get("cli_case") == "mysql-alter-add-column-position")
++        case["policy_profile"] = "nonexistent-profile"
++        run(f"{tag} rebound policy profile rejected", a, manifest, "policy")
++        a = fresh()
++        case = next(c for c in a["cases"] if c.get("cli_case") == "mysql-alter-add-column-position")
++        case["cli_case"] = "mysql-alter-modify-column-position"
++        run(f"{tag} rebound case identity rejected", a, manifest, "differs")
++
++        # Deleting a migrated cell from manifest and artifact together must
++        # still fail on the independent oracle.
++        a = fresh()
++        m = copy.deepcopy(manifest)
++        victim = f"{task}.cli.mysql-alter-add-column-position"
++        a["cases"] = [c for c in a["cases"] if c["case_id"] != victim]
++        a["executed_count"] = len(a["cases"])
++        a["required_case_ids"].remove(victim)
++        m["cli_cases"] = [s for s in m["cli_cases"]
++                          if s["id"] != "mysql-alter-add-column-position"]
++        m["required_case_ids"].remove(victim)
++        run(f"{tag} migrated cell deleted on both sides rejected", a, m, "position migration")
++
++        # Weakening the authorized expect on the manifest side alone must fail.
++        m = copy.deepcopy(manifest)
++        spec = next(s for s in m["cli_cases"] if s["id"] == "mysql-alter-add-column-position")
++        spec["expect"]["coverage"] = "incomplete"
++        run(f"{tag} weakened manifest expect rejected", artifact, m, "position migration")
++
++    # --- T05: position cells + omit-integer metadata cells ---------------------
++    source = json.loads((ddl_golden.MANIFEST_DIR / "T05.json").read_text())
++    manifest = copy.deepcopy(MANIFEST)
++    manifest.update(task_id="T05", anchors=copy.deepcopy(source["anchors"]),
++                    policy=copy.deepcopy(source["policy"]),
++                    policy_profile=source["policy_profile"],
++                    metadata_cases=[copy.deepcopy(s) for s in source["metadata_cases"]
++                                    if s["id"].startswith(("t05-a3-", "t05-a4-", "t05-a5-", "t05-a6-"))],
++                    cli_cases=[copy.deepcopy(s) for s in source["cli_cases"]
++                               if s["id"].startswith(("t05-a3-", "t05-a4-", "t05-a5-", "t05-a6-"))
++                               or s["id"] in {"mysql-alter-add-column-position",
++                                              "tidb-alter-add-column-position",
++                                              "mysql-alter-modify-column-position"}])
++    directory = tmp / "t05"
++    directory.mkdir()
++    artifact = make_artifact(directory)
++    binary = stub_binary(directory, enabled_rule_ids(manifest))
++    artifact["cli"]["sha256"] = ddl_golden.sha256_file(binary)
++    policies = ddl_golden.make_policies(str(binary), directory, manifest)
++    artifact.update(task_id="T05", policies=list(policies.values()),
++                    policy_profile=policies[manifest["policy_profile"]])
++    templates = copy.deepcopy(artifact["cases"][:2])
++    artifact["cases"] = db_baseline_cases("T05", manifest, templates)
++    artifact["cases"] += [cli_metadata_case("T05", spec, manifest, binary, policies)
++                          for spec in manifest["metadata_cases"]]
++    artifact["cases"] += [cli_audit_case("T05", spec, manifest, binary, policies)
++                          for spec in manifest["cli_cases"]]
++    manifest["required_case_ids"] = [c["case_id"] for c in artifact["cases"]]
++    artifact["required_case_ids"] = list(manifest["required_case_ids"])
++    artifact["executed_count"] = len(artifact["cases"])
++
++    run("t05 migration control passes", artifact, manifest)
++
++    def fresh_omit():
++        candidate = copy.deepcopy(artifact)
++        case = next(c for c in candidate["cases"]
++                    if c.get("cli_case") == "t05-a4-mysql84-omit-integer")
++        return candidate, case
++
++    # The migrated default finding is load-bearing in both directions: deleting
++    # it, or deleting one of the original two, fails the full entry.
++    a, c = fresh_omit()
++    c["actual"]["parsed"]["statements"][1]["findings"].pop(1)
++    update_stdout(c)
++    run("t05 migrated default finding deleted rejected", a, manifest, "finding")
++    a, c = fresh_omit()
++    c["actual"]["parsed"]["statements"][1]["findings"].pop(0)
++    update_stdout(c)
++    run("t05 original unsigned finding deleted rejected", a, manifest, "finding")
++    a, c = fresh_omit()
++    c["actual"]["parsed"]["statements"][2]["findings"].pop()
++    update_stdout(c)
++    run("t05 original nullability finding deleted rejected", a, manifest, "finding")
++
++    # Duplication or substitution cannot launder the three-finding set.
++    a, c = fresh_omit()
++    f = copy.deepcopy(c["actual"]["parsed"]["statements"][1]["findings"][1])
++    c["actual"]["parsed"]["statements"][1]["findings"].append(f)
++    update_stdout(c)
++    run("t05 duplicated default finding rejected", a, manifest, "finding")
++    a, c = fresh_omit()
++    findings = c["actual"]["parsed"]["statements"][1]["findings"]
++    findings[0]["metadata"] = copy.deepcopy(findings[1]["metadata"])
++    update_stdout(c)
++    run("t05 default metadata substituted for unsigned rejected", a, manifest, "finding metadata")
++
++    # Wrong attribution axes on the default finding all fail.
++    a, c = fresh_omit()
++    f = c["actual"]["parsed"]["statements"][1]["findings"].pop(1)
++    f["statement_index"] = 2
++    c["actual"]["parsed"]["statements"][2]["findings"].append(f)
++    update_stdout(c)
++    run("t05 default finding moved to statement 2 rejected", a, manifest, "finding")
++    a, c = fresh_omit()
++    c["actual"]["parsed"]["statements"][1]["findings"][1]["metadata"]["column_name"] = "id"
++    c["actual"]["parsed"]["statements"][1]["findings"][1]["metadata"]["name"] = "id"
++    update_stdout(c)
++    run("t05 default finding wrong column rejected", a, manifest, "finding metadata")
++    a, c = fresh_omit()
++    c["actual"]["parsed"]["statements"][1]["findings"][1]["metadata"]["source_default"] = "null"
++    update_stdout(c)
++    run("t05 default finding wrong transition class rejected", a, manifest, "finding metadata")
++
++    # Policy, case identity, and SQL rebinding all fail.
++    a, c = fresh_omit()
++    c["policy_profile"] = "t05-a6-drop-column-isolated"
++    run("t05 omit-integer rebound policy rejected", a, manifest, "policy")
++    a, c = fresh_omit()
++    c["cli_case"] = "t05-a4-mysql84-pk-not-null"
++    run("t05 omit-integer rebound case rejected", a, manifest, "differs")
++    a, c = fresh_omit()
++    c["actual"]["parsed"]["statements"][1]["raw_sql"] = "ALTER TABLE t MODIFY COLUMN c BIGINT;"
++    update_stdout(c)
++    run("t05 omit-integer rebound statement SQL rejected", a, manifest, "raw SQL")
++
++    # Shrinking or weakening the migrated oracle on both sides still fails on
++    # the independent a4 contract and the position migration contract.
++    a, c = fresh_omit()
++    m = copy.deepcopy(manifest)
++    victim = "T05.meta.t05-a4-mysql84-omit-integer"
++    a["cases"] = [x for x in a["cases"] if x["case_id"] != victim]
++    a["executed_count"] = len(a["cases"])
++    a["required_case_ids"].remove(victim)
++    m["metadata_cases"] = [s for s in m["metadata_cases"] if s["id"] != c["cli_case"]]
++    m["required_case_ids"].remove(victim)
++    run("t05 omit-integer deleted on both sides rejected", a, m, "T05-A4")
++    m = copy.deepcopy(manifest)
++    spec = next(s for s in m["metadata_cases"] if s["id"] == "t05-a4-mysql84-omit-integer")
++    spec["expect"]["finding_metadata"].pop(1)
++    spec["expect"]["finding_entries"].pop(1)
++    spec["expect"]["findings"] = 2
++    run("t05 omit-integer default finding un-declared rejected", artifact, m, "T05-A4")
++    a = copy.deepcopy(artifact)
++    m = copy.deepcopy(manifest)
++    victim = "T05.cli.mysql-alter-add-column-position"
++    a["cases"] = [x for x in a["cases"] if x["case_id"] != victim]
++    a["executed_count"] = len(a["cases"])
++    a["required_case_ids"].remove(victim)
++    m["cli_cases"] = [s for s in m["cli_cases"] if s["id"] != "mysql-alter-add-column-position"]
++    m["required_case_ids"].remove(victim)
++    run("t05 position cell deleted on both sides rejected", a, m, "position migration")
++
++    return results
++
++
+ def a3_contract_tests(tmp):
+     source = json.loads((ddl_golden.MANIFEST_DIR / "T05.json").read_text())
+     profile = "t05-drop-recreate-isolated"
+@@ -1546,7 +1935,11 @@ def a3_contract_tests(tmp):
+                         a6_profile: copy.deepcopy(source["policy"]["profiles"][a6_profile]),
+                     }},
+                     metadata_cases=[copy.deepcopy(s) for s in source["metadata_cases"] if s["id"].startswith(("t05-a3-", "t05-a4-", "t05-a5-", "t05-a6-"))],
+-                    cli_cases=[copy.deepcopy(s) for s in source["cli_cases"] if s["id"].startswith(("t05-a3-", "t05-a4-", "t05-a5-", "t05-a6-"))])
++                    cli_cases=[copy.deepcopy(s) for s in source["cli_cases"]
++                               if s["id"].startswith(("t05-a3-", "t05-a4-", "t05-a5-", "t05-a6-"))
++                               or s["id"] in {"mysql-alter-add-column-position",
++                                              "tidb-alter-add-column-position",
++                                              "mysql-alter-modify-column-position"}])
+     baseline = ddl_golden.load_baseline()
+     directory = tmp / "a3"
+     directory.mkdir()
+@@ -1584,17 +1977,20 @@ def a3_contract_tests(tmp):
+             expected = spec["expect"]
+             statements = [{"index": i, "raw_sql": sql, "coverage": {"status": expected["statement_coverage"][i]},
+                            "findings": [], "evidence_gaps": []} for i, sql in enumerate(expected["statement_sql"])]
+-            finding_metadata = {(entry["index"], entry["rule_id"]): entry["metadata"]
+-                                for entry in expected.get("finding_metadata", [])}
++            finding_metadata = collections.defaultdict(collections.deque)
++            for entry in expected.get("finding_metadata", []):
++                finding_metadata[(entry["index"], entry["rule_id"])].append(entry["metadata"])
+             for entry in expected.get("finding_entries", []):
++                key = (entry["index"], entry["rule_id"])
++                metadata = finding_metadata[key].popleft() if finding_metadata[key] else {}
+                 statements[entry["index"]]["findings"].append({
+                     "statement_index": entry["index"], "rule_id": entry["rule_id"], "level": entry["level"],
+-                    "metadata": copy.deepcopy(finding_metadata.get((entry["index"], entry["rule_id"]), {}))})
++                    "metadata": copy.deepcopy(metadata)})
+             for entry in expected.get("evidence_gap_entries", []):
+                 statements[entry["index"]]["evidence_gaps"].append({k: v for k, v in entry.items() if k != "index"})
+             parsed = {"verdict": expected["verdict"], "coverage": {"status": expected["coverage"]},
+                       "statements": statements, "global_findings": [], "diagnostics": [], "unsupported": [],
+-                      "fail_on_triggered": expected["fail_on_triggered"],
++                      "fail_on_triggered": expected.get("fail_on_triggered", False),
+                       "rule_summary": {"loaded": expected.get("rule_summary_loaded", 5)}}
+             target_raw = ddl_golden.spec_target_version_raw(spec)
+             if target_raw:
+@@ -1604,7 +2000,7 @@ def a3_contract_tests(tmp):
+                 validated = (product == "mysql" and (major, minor) in {(5, 7), (8, 0), (8, 4)}) or (product == "tidb" and (major, minor) == (8, 5))
+                 parsed["version"] = {"product": product, "version": canonical, "major": major, "minor": minor,
+                                      "patch": patch, "source": "target", "validated_range": validated}
+-            case_profile = spec.get("policy") or profile
++            case_profile = spec.get("policy") or manifest.get("policy_profile") or "all-rules-disabled"
+             command = [str(binary), "audit", "--dialect", spec["dialect"], "--sql", spec["sql"],
+                        "--config", policies[case_profile]["path"], "--format", "json"]
+             case = {"case_id": f"T05.{kind}.{spec['id']}", "kind": "cli_metadata" if kind == "meta" else "cli_audit",
+@@ -2205,8 +2601,9 @@ def t06_contract_tests(tmp):
+                 "normalized_sql": sql[:-1] if sql.endswith(";") else sql,
+                 "coverage": {"status": expected["statement_coverage"][i]},
+                 "findings": [], "evidence_gaps": []})
+-        finding_metadata = {(e["index"], e["rule_id"]): e["metadata"]
+-                            for e in expected.get("finding_metadata", [])}
++        finding_metadata = collections.defaultdict(collections.deque)
++        for e in expected.get("finding_metadata", []):
++            finding_metadata[(e["index"], e["rule_id"])].append(e["metadata"])
+         finding_locations = {e["index"]: e for e in expected.get("finding_locations", [])}
+         entries_full = expected.get("finding_entries_full")
+         if entries_full is not None:
+@@ -2225,11 +2622,13 @@ def t06_contract_tests(tmp):
+         else:
+             for entry in expected.get("finding_entries", []):
+                 location = finding_locations.get(entry["index"])
++                key = (entry["index"], entry["rule_id"])
++                metadata = finding_metadata[key].popleft() if finding_metadata[key] else {}
+                 finding = {
+                     "rule_id": entry["rule_id"], "level": entry["level"],
+                     "message": expected.get("finding_message", "primary key is required"),
+                     "statement_kind": "ddl",
+-                    "metadata": copy.deepcopy(finding_metadata.get((entry["index"], entry["rule_id"]), {}))}
++                    "metadata": copy.deepcopy(metadata)}
+                 if location is not None:
+                     finding["location"] = {"line": location["line"], "column": location["column"]}
+                 statements[entry["index"]]["findings"].append(finding)

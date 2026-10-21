@@ -1,0 +1,4 @@
+product-tree proof: git diff c983fc9d..3b35fe30 restricted to code/config paths
+RESULT: no output above = zero product-tree delta
+
+full c983fc9d..3b35fe30 non-doc/scripts/testdata paths:

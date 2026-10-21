@@ -1,0 +1,167 @@
+{
+  "case_id": "T03.db.tidb85.ddl",
+  "kind": "db_ddl",
+  "anchor": "tidb85",
+  "input_sql": [
+    "CREATE TABLE golden_t (id INT PRIMARY KEY)",
+    "ALTER TABLE golden_t ADD COLUMN c INT",
+    "DROP TABLE golden_t"
+  ],
+  "expected": {
+    "steps": [
+      {
+        "name": "create",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "table exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+            "expect": "1"
+          },
+          {
+            "assert": "primary key exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+            "expect": "1"
+          }
+        ]
+      },
+      {
+        "name": "alter",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "column c exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND COLUMN_NAME='c'",
+            "expect": "1"
+          }
+        ]
+      },
+      {
+        "name": "drop",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "table absent",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+            "expect": "0"
+          }
+        ]
+      }
+    ]
+  },
+  "actual": {
+    "steps": [
+      {
+        "name": "create",
+        "sql": "CREATE TABLE golden_t (id INT PRIMARY KEY)",
+        "verify": [
+          {
+            "assert": "table exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          },
+          {
+            "assert": "primary key exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND CONSTRAINT_TYPE='PRIMARY KEY'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "alter",
+        "sql": "ALTER TABLE golden_t ADD COLUMN c INT",
+        "verify": [
+          {
+            "assert": "column c exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t' AND COLUMN_NAME='c'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "drop",
+        "sql": "DROP TABLE golden_t",
+        "verify": [
+          {
+            "assert": "table absent",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "fixture database created",
+      "ok": true,
+      "detail": "CREATE DATABASE rc=0 stderr=''"
+    },
+    {
+      "name": "create return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "create: table exists",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "create: primary key exists",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "alter return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "alter: column c exists",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "drop return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "drop: table absent",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    }
+  ],
+  "status": "pass"
+}

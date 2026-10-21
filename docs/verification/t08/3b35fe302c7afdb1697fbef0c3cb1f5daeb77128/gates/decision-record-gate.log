@@ -1,0 +1,4 @@
+run at: working tree == 3b35fe30 (pre-commit identical content)
+
+./scripts/check_decision_record.sh main...HEAD
+decision-record-gate: trigger paths hit but no trigger keywords in diff, PASS

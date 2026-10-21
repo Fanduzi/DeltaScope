@@ -1,0 +1,817 @@
+[
+  {
+    "task": "T03",
+    "case_id": "T03.cli.mysql-alter-add-column-position",
+    "kind": "cli",
+    "dialect": "mysql",
+    "policy": null,
+    "sql": "ALTER TABLE t ADD COLUMN c INT FIRST;",
+    "args": [
+      "--fail-on",
+      "none"
+    ],
+    "old_expect": {
+      "exit": 1,
+      "verdict": "review",
+      "statements": 1,
+      "findings": 0,
+      "diagnostics": 1,
+      "unsupported": 1,
+      "coverage": "incomplete",
+      "statement_coverage": [
+        "incomplete"
+      ],
+      "unsupported_features": [
+        "alter_table.add_columns.column_position"
+      ],
+      "statement_sql": [
+        "ALTER TABLE t ADD COLUMN c INT FIRST;"
+      ],
+      "unsupported_entries": [
+        {
+          "feature": "alter_table.add_columns.column_position",
+          "reason": "parsed by the shared parser but not covered by audited semantics"
+        }
+      ]
+    },
+    "new_expect": {
+      "exit": 0,
+      "verdict": "pass",
+      "statements": 1,
+      "findings": 0,
+      "diagnostics": 0,
+      "unsupported": 0,
+      "coverage": "complete",
+      "statement_coverage": [
+        "complete"
+      ],
+      "statement_sql": [
+        "ALTER TABLE t ADD COLUMN c INT FIRST;"
+      ]
+    }
+  },
+  {
+    "task": "T03",
+    "case_id": "T03.cli.tidb-alter-add-column-position",
+    "kind": "cli",
+    "dialect": "tidb",
+    "policy": null,
+    "sql": "ALTER TABLE t ADD COLUMN c INT AFTER id;",
+    "args": [
+      "--fail-on",
+      "none"
+    ],
+    "old_expect": {
+      "exit": 1,
+      "verdict": "review",
+      "statements": 1,
+      "findings": 0,
+      "diagnostics": 1,
+      "unsupported": 1,
+      "coverage": "incomplete",
+      "statement_coverage": [
+        "incomplete"
+      ],
+      "unsupported_features": [
+        "alter_table.add_columns.column_position"
+      ],
+      "statement_sql": [
+        "ALTER TABLE t ADD COLUMN c INT AFTER id;"
+      ],
+      "unsupported_entries": [
+        {
+          "feature": "alter_table.add_columns.column_position",
+          "reason": "parsed by the shared parser but not covered by audited semantics"
+        }
+      ]
+    },
+    "new_expect": {
+      "exit": 0,
+      "verdict": "pass",
+      "statements": 1,
+      "findings": 0,
+      "diagnostics": 0,
+      "unsupported": 0,
+      "coverage": "complete",
+      "statement_coverage": [
+        "complete"
+      ],
+      "statement_sql": [
+        "ALTER TABLE t ADD COLUMN c INT AFTER id;"
+      ]
+    }
+  },
+  {
+    "task": "T03",
+    "case_id": "T03.cli.mysql-alter-modify-column-position",
+    "kind": "cli",
+    "dialect": "mysql",
+    "policy": null,
+    "sql": "ALTER TABLE t MODIFY COLUMN c INT AFTER id;",
+    "args": [
+      "--fail-on",
+      "none"
+    ],
+    "old_expect": {
+      "exit": 1,
+      "verdict": "review",
+      "statements": 1,
+      "findings": 0,
+      "diagnostics": 1,
+      "unsupported": 1,
+      "coverage": "incomplete",
+      "statement_coverage": [
+        "incomplete"
+      ],
+      "statement_sql": [
+        "ALTER TABLE t MODIFY COLUMN c INT AFTER id;"
+      ],
+      "unsupported_features": [
+        "alter_table.modify_column.column_position"
+      ],
+      "unsupported_entries": [
+        {
+          "feature": "alter_table.modify_column.column_position",
+          "reason": "parsed by the shared parser but not covered by audited semantics"
+        }
+      ]
+    },
+    "new_expect": {
+      "exit": 0,
+      "verdict": "pass",
+      "statements": 1,
+      "findings": 0,
+      "diagnostics": 0,
+      "unsupported": 0,
+      "coverage": "complete",
+      "statement_coverage": [
+        "complete"
+      ],
+      "statement_sql": [
+        "ALTER TABLE t MODIFY COLUMN c INT AFTER id;"
+      ]
+    }
+  },
+  {
+    "task": "T04",
+    "case_id": "T04.cli.mysql-alter-add-column-position",
+    "kind": "cli",
+    "dialect": "mysql",
+    "policy": null,
+    "sql": "ALTER TABLE t ADD COLUMN c INT FIRST;",
+    "args": [
+      "--fail-on",
+      "none"
+    ],
+    "old_expect": {
+      "exit": 1,
+      "verdict": "review",
+      "statements": 1,
+      "findings": 0,
+      "diagnostics": 1,
+      "unsupported": 1,
+      "coverage": "incomplete",
+      "statement_coverage": [
+        "incomplete"
+      ],
+      "unsupported_features": [
+        "alter_table.add_columns.column_position"
+      ],
+      "statement_sql": [
+        "ALTER TABLE t ADD COLUMN c INT FIRST;"
+      ],
+      "unsupported_entries": [
+        {
+          "feature": "alter_table.add_columns.column_position",
+          "reason": "parsed by the shared parser but not covered by audited semantics"
+        }
+      ]
+    },
+    "new_expect": {
+      "exit": 0,
+      "verdict": "pass",
+      "statements": 1,
+      "findings": 0,
+      "diagnostics": 0,
+      "unsupported": 0,
+      "coverage": "complete",
+      "statement_coverage": [
+        "complete"
+      ],
+      "statement_sql": [
+        "ALTER TABLE t ADD COLUMN c INT FIRST;"
+      ]
+    }
+  },
+  {
+    "task": "T04",
+    "case_id": "T04.cli.tidb-alter-add-column-position",
+    "kind": "cli",
+    "dialect": "tidb",
+    "policy": null,
+    "sql": "ALTER TABLE t ADD COLUMN c INT AFTER id;",
+    "args": [
+      "--fail-on",
+      "none"
+    ],
+    "old_expect": {
+      "exit": 1,
+      "verdict": "review",
+      "statements": 1,
+      "findings": 0,
+      "diagnostics": 1,
+      "unsupported": 1,
+      "coverage": "incomplete",
+      "statement_coverage": [
+        "incomplete"
+      ],
+      "unsupported_features": [
+        "alter_table.add_columns.column_position"
+      ],
+      "statement_sql": [
+        "ALTER TABLE t ADD COLUMN c INT AFTER id;"
+      ],
+      "unsupported_entries": [
+        {
+          "feature": "alter_table.add_columns.column_position",
+          "reason": "parsed by the shared parser but not covered by audited semantics"
+        }
+      ]
+    },
+    "new_expect": {
+      "exit": 0,
+      "verdict": "pass",
+      "statements": 1,
+      "findings": 0,
+      "diagnostics": 0,
+      "unsupported": 0,
+      "coverage": "complete",
+      "statement_coverage": [
+        "complete"
+      ],
+      "statement_sql": [
+        "ALTER TABLE t ADD COLUMN c INT AFTER id;"
+      ]
+    }
+  },
+  {
+    "task": "T04",
+    "case_id": "T04.cli.mysql-alter-modify-column-position",
+    "kind": "cli",
+    "dialect": "mysql",
+    "policy": null,
+    "sql": "ALTER TABLE t MODIFY COLUMN c INT AFTER id;",
+    "args": [
+      "--fail-on",
+      "none"
+    ],
+    "old_expect": {
+      "exit": 1,
+      "verdict": "review",
+      "statements": 1,
+      "findings": 0,
+      "diagnostics": 1,
+      "unsupported": 1,
+      "coverage": "incomplete",
+      "statement_coverage": [
+        "incomplete"
+      ],
+      "statement_sql": [
+        "ALTER TABLE t MODIFY COLUMN c INT AFTER id;"
+      ],
+      "unsupported_features": [
+        "alter_table.modify_column.column_position"
+      ],
+      "unsupported_entries": [
+        {
+          "feature": "alter_table.modify_column.column_position",
+          "reason": "parsed by the shared parser but not covered by audited semantics"
+        }
+      ],
+      "evidence_gaps": 1,
+      "evidence_gap_entries": [
+        {
+          "index": 0,
+          "rule_id": "ddl.alter.modify_column.compatibility.require",
+          "reason_code": "missing_source_column",
+          "required_facts": [
+            "source_column.definition"
+          ]
+        }
+      ]
+    },
+    "new_expect": {
+      "exit": 0,
+      "verdict": "review",
+      "statements": 1,
+      "findings": 0,
+      "diagnostics": 0,
+      "unsupported": 0,
+      "coverage": "unverified",
+      "statement_coverage": [
+        "unverified"
+      ],
+      "statement_sql": [
+        "ALTER TABLE t MODIFY COLUMN c INT AFTER id;"
+      ],
+      "evidence_gaps": 1,
+      "evidence_gap_entries": [
+        {
+          "index": 0,
+          "rule_id": "ddl.alter.modify_column.compatibility.require",
+          "reason_code": "missing_source_column",
+          "required_facts": [
+            "source_column.definition"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "task": "T05",
+    "case_id": "T05.cli.mysql-alter-add-column-position",
+    "kind": "cli",
+    "dialect": "mysql",
+    "policy": null,
+    "sql": "ALTER TABLE t ADD COLUMN c INT FIRST;",
+    "args": [
+      "--fail-on",
+      "none"
+    ],
+    "old_expect": {
+      "exit": 1,
+      "verdict": "review",
+      "statements": 1,
+      "findings": 0,
+      "diagnostics": 1,
+      "unsupported": 1,
+      "coverage": "incomplete",
+      "statement_coverage": [
+        "incomplete"
+      ],
+      "unsupported_features": [
+        "alter_table.add_columns.column_position"
+      ],
+      "statement_sql": [
+        "ALTER TABLE t ADD COLUMN c INT FIRST;"
+      ],
+      "unsupported_entries": [
+        {
+          "feature": "alter_table.add_columns.column_position",
+          "reason": "parsed by the shared parser but not covered by audited semantics"
+        }
+      ]
+    },
+    "new_expect": {
+      "exit": 0,
+      "verdict": "pass",
+      "statements": 1,
+      "findings": 0,
+      "diagnostics": 0,
+      "unsupported": 0,
+      "coverage": "complete",
+      "statement_coverage": [
+        "complete"
+      ],
+      "statement_sql": [
+        "ALTER TABLE t ADD COLUMN c INT FIRST;"
+      ]
+    }
+  },
+  {
+    "task": "T05",
+    "case_id": "T05.cli.tidb-alter-add-column-position",
+    "kind": "cli",
+    "dialect": "tidb",
+    "policy": null,
+    "sql": "ALTER TABLE t ADD COLUMN c INT AFTER id;",
+    "args": [
+      "--fail-on",
+      "none"
+    ],
+    "old_expect": {
+      "exit": 1,
+      "verdict": "review",
+      "statements": 1,
+      "findings": 0,
+      "diagnostics": 1,
+      "unsupported": 1,
+      "coverage": "incomplete",
+      "statement_coverage": [
+        "incomplete"
+      ],
+      "unsupported_features": [
+        "alter_table.add_columns.column_position"
+      ],
+      "statement_sql": [
+        "ALTER TABLE t ADD COLUMN c INT AFTER id;"
+      ],
+      "unsupported_entries": [
+        {
+          "feature": "alter_table.add_columns.column_position",
+          "reason": "parsed by the shared parser but not covered by audited semantics"
+        }
+      ]
+    },
+    "new_expect": {
+      "exit": 0,
+      "verdict": "pass",
+      "statements": 1,
+      "findings": 0,
+      "diagnostics": 0,
+      "unsupported": 0,
+      "coverage": "complete",
+      "statement_coverage": [
+        "complete"
+      ],
+      "statement_sql": [
+        "ALTER TABLE t ADD COLUMN c INT AFTER id;"
+      ]
+    }
+  },
+  {
+    "task": "T05",
+    "case_id": "T05.cli.mysql-alter-modify-column-position",
+    "kind": "cli",
+    "dialect": "mysql",
+    "policy": null,
+    "sql": "ALTER TABLE t MODIFY COLUMN c INT AFTER id;",
+    "args": [
+      "--fail-on",
+      "none"
+    ],
+    "old_expect": {
+      "exit": 1,
+      "verdict": "review",
+      "statements": 1,
+      "findings": 0,
+      "diagnostics": 1,
+      "unsupported": 1,
+      "coverage": "incomplete",
+      "statement_coverage": [
+        "incomplete"
+      ],
+      "statement_sql": [
+        "ALTER TABLE t MODIFY COLUMN c INT AFTER id;"
+      ],
+      "unsupported_features": [
+        "alter_table.modify_column.column_position"
+      ],
+      "unsupported_entries": [
+        {
+          "feature": "alter_table.modify_column.column_position",
+          "reason": "parsed by the shared parser but not covered by audited semantics"
+        }
+      ],
+      "evidence_gaps": 1,
+      "evidence_gap_entries": [
+        {
+          "index": 0,
+          "rule_id": "ddl.alter.modify_column.compatibility.require",
+          "reason_code": "missing_source_column",
+          "required_facts": [
+            "source_column.definition"
+          ]
+        }
+      ]
+    },
+    "new_expect": {
+      "exit": 0,
+      "verdict": "review",
+      "statements": 1,
+      "findings": 0,
+      "diagnostics": 0,
+      "unsupported": 0,
+      "coverage": "unverified",
+      "statement_coverage": [
+        "unverified"
+      ],
+      "statement_sql": [
+        "ALTER TABLE t MODIFY COLUMN c INT AFTER id;"
+      ],
+      "evidence_gaps": 1,
+      "evidence_gap_entries": [
+        {
+          "index": 0,
+          "rule_id": "ddl.alter.modify_column.compatibility.require",
+          "reason_code": "missing_source_column",
+          "required_facts": [
+            "source_column.definition"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "task": "T05",
+    "case_id": "T05.meta.t05-a4-mysql84-omit-integer",
+    "kind": "metadata",
+    "dialect": "mysql",
+    "anchor": "mysql84",
+    "policy": "t05-a4-modify-isolated",
+    "sql": "CREATE TABLE t (id INT PRIMARY KEY, c INT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'old'); ALTER TABLE t MODIFY COLUMN c INT; ALTER TABLE t MODIFY COLUMN c INT NOT NULL;",
+    "old_expect": {
+      "exit": 1,
+      "verdict": "reject",
+      "statements": 3,
+      "findings": 2,
+      "diagnostics": 0,
+      "unsupported": 0,
+      "coverage": "complete",
+      "statement_coverage": [
+        "complete",
+        "complete",
+        "complete"
+      ],
+      "statement_sql": [
+        "CREATE TABLE t (id INT PRIMARY KEY, c INT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'old');",
+        "ALTER TABLE t MODIFY COLUMN c INT;",
+        "ALTER TABLE t MODIFY COLUMN c INT NOT NULL;"
+      ],
+      "evidence_gaps": 0,
+      "fail_on_triggered": true,
+      "rule_summary_loaded": 4,
+      "statement_indices": [
+        0,
+        1,
+        2
+      ],
+      "finding_entries": [
+        {
+          "index": 1,
+          "rule_id": "ddl.alter.modify_column.compatibility.require",
+          "level": "blocker"
+        },
+        {
+          "index": 2,
+          "rule_id": "ddl.alter.modify_column.compatibility.require",
+          "level": "blocker"
+        }
+      ],
+      "finding_metadata": [
+        {
+          "index": 1,
+          "rule_id": "ddl.alter.modify_column.compatibility.require",
+          "metadata": {
+            "action": "modify_column",
+            "table": "t",
+            "name": "c",
+            "column_name": "c",
+            "source_unsigned": true,
+            "target_unsigned": false
+          }
+        },
+        {
+          "index": 2,
+          "rule_id": "ddl.alter.modify_column.compatibility.require",
+          "metadata": {
+            "action": "modify_column",
+            "table": "t",
+            "name": "c",
+            "column_name": "c",
+            "source_not_null": false,
+            "target_not_null": true
+          }
+        }
+      ]
+    },
+    "new_expect": {
+      "exit": 1,
+      "verdict": "reject",
+      "statements": 3,
+      "findings": 3,
+      "diagnostics": 0,
+      "unsupported": 0,
+      "coverage": "complete",
+      "statement_coverage": [
+        "complete",
+        "complete",
+        "complete"
+      ],
+      "statement_sql": [
+        "CREATE TABLE t (id INT PRIMARY KEY, c INT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'old');",
+        "ALTER TABLE t MODIFY COLUMN c INT;",
+        "ALTER TABLE t MODIFY COLUMN c INT NOT NULL;"
+      ],
+      "evidence_gaps": 0,
+      "fail_on_triggered": true,
+      "rule_summary_loaded": 4,
+      "statement_indices": [
+        0,
+        1,
+        2
+      ],
+      "finding_entries": [
+        {
+          "index": 1,
+          "rule_id": "ddl.alter.modify_column.compatibility.require",
+          "level": "blocker"
+        },
+        {
+          "index": 1,
+          "rule_id": "ddl.alter.modify_column.compatibility.require",
+          "level": "blocker"
+        },
+        {
+          "index": 2,
+          "rule_id": "ddl.alter.modify_column.compatibility.require",
+          "level": "blocker"
+        }
+      ],
+      "finding_metadata": [
+        {
+          "index": 1,
+          "rule_id": "ddl.alter.modify_column.compatibility.require",
+          "metadata": {
+            "action": "modify_column",
+            "table": "t",
+            "name": "c",
+            "column_name": "c",
+            "source_unsigned": true,
+            "target_unsigned": false
+          }
+        },
+        {
+          "index": 1,
+          "rule_id": "ddl.alter.modify_column.compatibility.require",
+          "metadata": {
+            "action": "modify_column",
+            "table": "t",
+            "name": "c",
+            "column_name": "c",
+            "source_default": "literal",
+            "target_default": "none"
+          }
+        },
+        {
+          "index": 2,
+          "rule_id": "ddl.alter.modify_column.compatibility.require",
+          "metadata": {
+            "action": "modify_column",
+            "table": "t",
+            "name": "c",
+            "column_name": "c",
+            "source_not_null": false,
+            "target_not_null": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "task": "T05",
+    "case_id": "T05.meta.t05-a4-tidb85-omit-integer",
+    "kind": "metadata",
+    "dialect": "tidb",
+    "anchor": "tidb85",
+    "policy": "t05-a4-modify-isolated",
+    "sql": "CREATE TABLE t (id INT PRIMARY KEY, c INT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'old'); ALTER TABLE t MODIFY COLUMN c INT; ALTER TABLE t MODIFY COLUMN c INT NOT NULL;",
+    "old_expect": {
+      "exit": 1,
+      "verdict": "reject",
+      "statements": 3,
+      "findings": 2,
+      "diagnostics": 0,
+      "unsupported": 0,
+      "coverage": "complete",
+      "statement_coverage": [
+        "complete",
+        "complete",
+        "complete"
+      ],
+      "statement_sql": [
+        "CREATE TABLE t (id INT PRIMARY KEY, c INT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'old');",
+        "ALTER TABLE t MODIFY COLUMN c INT;",
+        "ALTER TABLE t MODIFY COLUMN c INT NOT NULL;"
+      ],
+      "evidence_gaps": 0,
+      "fail_on_triggered": true,
+      "rule_summary_loaded": 4,
+      "statement_indices": [
+        0,
+        1,
+        2
+      ],
+      "finding_entries": [
+        {
+          "index": 1,
+          "rule_id": "ddl.alter.modify_column.compatibility.require",
+          "level": "blocker"
+        },
+        {
+          "index": 2,
+          "rule_id": "ddl.alter.modify_column.compatibility.require",
+          "level": "blocker"
+        }
+      ],
+      "finding_metadata": [
+        {
+          "index": 1,
+          "rule_id": "ddl.alter.modify_column.compatibility.require",
+          "metadata": {
+            "action": "modify_column",
+            "table": "t",
+            "name": "c",
+            "column_name": "c",
+            "source_unsigned": true,
+            "target_unsigned": false
+          }
+        },
+        {
+          "index": 2,
+          "rule_id": "ddl.alter.modify_column.compatibility.require",
+          "metadata": {
+            "action": "modify_column",
+            "table": "t",
+            "name": "c",
+            "column_name": "c",
+            "source_not_null": false,
+            "target_not_null": true
+          }
+        }
+      ]
+    },
+    "new_expect": {
+      "exit": 1,
+      "verdict": "reject",
+      "statements": 3,
+      "findings": 3,
+      "diagnostics": 0,
+      "unsupported": 0,
+      "coverage": "complete",
+      "statement_coverage": [
+        "complete",
+        "complete",
+        "complete"
+      ],
+      "statement_sql": [
+        "CREATE TABLE t (id INT PRIMARY KEY, c INT UNSIGNED NOT NULL DEFAULT 1 COMMENT 'old');",
+        "ALTER TABLE t MODIFY COLUMN c INT;",
+        "ALTER TABLE t MODIFY COLUMN c INT NOT NULL;"
+      ],
+      "evidence_gaps": 0,
+      "fail_on_triggered": true,
+      "rule_summary_loaded": 4,
+      "statement_indices": [
+        0,
+        1,
+        2
+      ],
+      "finding_entries": [
+        {
+          "index": 1,
+          "rule_id": "ddl.alter.modify_column.compatibility.require",
+          "level": "blocker"
+        },
+        {
+          "index": 1,
+          "rule_id": "ddl.alter.modify_column.compatibility.require",
+          "level": "blocker"
+        },
+        {
+          "index": 2,
+          "rule_id": "ddl.alter.modify_column.compatibility.require",
+          "level": "blocker"
+        }
+      ],
+      "finding_metadata": [
+        {
+          "index": 1,
+          "rule_id": "ddl.alter.modify_column.compatibility.require",
+          "metadata": {
+            "action": "modify_column",
+            "table": "t",
+            "name": "c",
+            "column_name": "c",
+            "source_unsigned": true,
+            "target_unsigned": false
+          }
+        },
+        {
+          "index": 1,
+          "rule_id": "ddl.alter.modify_column.compatibility.require",
+          "metadata": {
+            "action": "modify_column",
+            "table": "t",
+            "name": "c",
+            "column_name": "c",
+            "source_default": "literal",
+            "target_default": "none"
+          }
+        },
+        {
+          "index": 2,
+          "rule_id": "ddl.alter.modify_column.compatibility.require",
+          "metadata": {
+            "action": "modify_column",
+            "table": "t",
+            "name": "c",
+            "column_name": "c",
+            "source_not_null": false,
+            "target_not_null": true
+          }
+        }
+      ]
+    }
+  }
+]

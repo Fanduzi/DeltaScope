@@ -1,0 +1,398 @@
+diff --git a/testdata/ddl-golden/T03.json b/testdata/ddl-golden/T03.json
+index 0208f200..fcafa305 100644
+--- a/testdata/ddl-golden/T03.json
++++ b/testdata/ddl-golden/T03.json
+@@ -1057,27 +1057,18 @@
+         "none"
+       ],
+       "expect": {
+-        "exit": 1,
+-        "verdict": "review",
++        "exit": 0,
++        "verdict": "pass",
+         "statements": 1,
+         "findings": 0,
+-        "diagnostics": 1,
+-        "unsupported": 1,
+-        "coverage": "incomplete",
++        "diagnostics": 0,
++        "unsupported": 0,
++        "coverage": "complete",
+         "statement_coverage": [
+-          "incomplete"
+-        ],
+-        "unsupported_features": [
+-          "alter_table.add_columns.column_position"
++          "complete"
+         ],
+         "statement_sql": [
+           "ALTER TABLE t ADD COLUMN c INT FIRST;"
+-        ],
+-        "unsupported_entries": [
+-          {
+-            "feature": "alter_table.add_columns.column_position",
+-            "reason": "parsed by the shared parser but not covered by audited semantics"
+-          }
+         ]
+       }
+     },
+@@ -1090,27 +1081,18 @@
+         "none"
+       ],
+       "expect": {
+-        "exit": 1,
+-        "verdict": "review",
++        "exit": 0,
++        "verdict": "pass",
+         "statements": 1,
+         "findings": 0,
+-        "diagnostics": 1,
+-        "unsupported": 1,
+-        "coverage": "incomplete",
++        "diagnostics": 0,
++        "unsupported": 0,
++        "coverage": "complete",
+         "statement_coverage": [
+-          "incomplete"
+-        ],
+-        "unsupported_features": [
+-          "alter_table.add_columns.column_position"
++          "complete"
+         ],
+         "statement_sql": [
+           "ALTER TABLE t ADD COLUMN c INT AFTER id;"
+-        ],
+-        "unsupported_entries": [
+-          {
+-            "feature": "alter_table.add_columns.column_position",
+-            "reason": "parsed by the shared parser but not covered by audited semantics"
+-          }
+         ]
+       }
+     },
+@@ -1359,27 +1341,18 @@
+         "none"
+       ],
+       "expect": {
+-        "exit": 1,
+-        "verdict": "review",
++        "exit": 0,
++        "verdict": "pass",
+         "statements": 1,
+         "findings": 0,
+-        "diagnostics": 1,
+-        "unsupported": 1,
+-        "coverage": "incomplete",
++        "diagnostics": 0,
++        "unsupported": 0,
++        "coverage": "complete",
+         "statement_coverage": [
+-          "incomplete"
++          "complete"
+         ],
+         "statement_sql": [
+           "ALTER TABLE t MODIFY COLUMN c INT AFTER id;"
+-        ],
+-        "unsupported_features": [
+-          "alter_table.modify_column.column_position"
+-        ],
+-        "unsupported_entries": [
+-          {
+-            "feature": "alter_table.modify_column.column_position",
+-            "reason": "parsed by the shared parser but not covered by audited semantics"
+-          }
+         ]
+       }
+     },
+diff --git a/testdata/ddl-golden/T04.json b/testdata/ddl-golden/T04.json
+index 4d6a157f..d59c4eb2 100644
+--- a/testdata/ddl-golden/T04.json
++++ b/testdata/ddl-golden/T04.json
+@@ -1118,27 +1118,18 @@
+     "none"
+    ],
+    "expect": {
+-    "exit": 1,
+-    "verdict": "review",
++    "exit": 0,
++    "verdict": "pass",
+     "statements": 1,
+     "findings": 0,
+-    "diagnostics": 1,
+-    "unsupported": 1,
+-    "coverage": "incomplete",
++    "diagnostics": 0,
++    "unsupported": 0,
++    "coverage": "complete",
+     "statement_coverage": [
+-     "incomplete"
+-    ],
+-    "unsupported_features": [
+-     "alter_table.add_columns.column_position"
++     "complete"
+     ],
+     "statement_sql": [
+      "ALTER TABLE t ADD COLUMN c INT FIRST;"
+-    ],
+-    "unsupported_entries": [
+-     {
+-      "feature": "alter_table.add_columns.column_position",
+-      "reason": "parsed by the shared parser but not covered by audited semantics"
+-     }
+     ]
+    }
+   },
+@@ -1151,27 +1142,18 @@
+     "none"
+    ],
+    "expect": {
+-    "exit": 1,
+-    "verdict": "review",
++    "exit": 0,
++    "verdict": "pass",
+     "statements": 1,
+     "findings": 0,
+-    "diagnostics": 1,
+-    "unsupported": 1,
+-    "coverage": "incomplete",
++    "diagnostics": 0,
++    "unsupported": 0,
++    "coverage": "complete",
+     "statement_coverage": [
+-     "incomplete"
+-    ],
+-    "unsupported_features": [
+-     "alter_table.add_columns.column_position"
++     "complete"
+     ],
+     "statement_sql": [
+      "ALTER TABLE t ADD COLUMN c INT AFTER id;"
+-    ],
+-    "unsupported_entries": [
+-     {
+-      "feature": "alter_table.add_columns.column_position",
+-      "reason": "parsed by the shared parser but not covered by audited semantics"
+-     }
+     ]
+    }
+   },
+@@ -1420,28 +1402,19 @@
+     "none"
+    ],
+    "expect": {
+-    "exit": 1,
++    "exit": 0,
+     "verdict": "review",
+     "statements": 1,
+     "findings": 0,
+-    "diagnostics": 1,
+-    "unsupported": 1,
+-    "coverage": "incomplete",
++    "diagnostics": 0,
++    "unsupported": 0,
++    "coverage": "unverified",
+     "statement_coverage": [
+-     "incomplete"
++     "unverified"
+     ],
+     "statement_sql": [
+      "ALTER TABLE t MODIFY COLUMN c INT AFTER id;"
+     ],
+-    "unsupported_features": [
+-     "alter_table.modify_column.column_position"
+-    ],
+-    "unsupported_entries": [
+-     {
+-      "feature": "alter_table.modify_column.column_position",
+-      "reason": "parsed by the shared parser but not covered by audited semantics"
+-     }
+-    ],
+     "evidence_gaps": 1,
+     "evidence_gap_entries": [
+      {
+diff --git a/testdata/ddl-golden/T05.json b/testdata/ddl-golden/T05.json
+index a257135f..0a46d286 100644
+--- a/testdata/ddl-golden/T05.json
++++ b/testdata/ddl-golden/T05.json
+@@ -1270,27 +1270,18 @@
+     "none"
+    ],
+    "expect": {
+-    "exit": 1,
+-    "verdict": "review",
++    "exit": 0,
++    "verdict": "pass",
+     "statements": 1,
+     "findings": 0,
+-    "diagnostics": 1,
+-    "unsupported": 1,
+-    "coverage": "incomplete",
++    "diagnostics": 0,
++    "unsupported": 0,
++    "coverage": "complete",
+     "statement_coverage": [
+-     "incomplete"
+-    ],
+-    "unsupported_features": [
+-     "alter_table.add_columns.column_position"
++     "complete"
+     ],
+     "statement_sql": [
+      "ALTER TABLE t ADD COLUMN c INT FIRST;"
+-    ],
+-    "unsupported_entries": [
+-     {
+-      "feature": "alter_table.add_columns.column_position",
+-      "reason": "parsed by the shared parser but not covered by audited semantics"
+-     }
+     ]
+    }
+   },
+@@ -1303,27 +1294,18 @@
+     "none"
+    ],
+    "expect": {
+-    "exit": 1,
+-    "verdict": "review",
++    "exit": 0,
++    "verdict": "pass",
+     "statements": 1,
+     "findings": 0,
+-    "diagnostics": 1,
+-    "unsupported": 1,
+-    "coverage": "incomplete",
++    "diagnostics": 0,
++    "unsupported": 0,
++    "coverage": "complete",
+     "statement_coverage": [
+-     "incomplete"
+-    ],
+-    "unsupported_features": [
+-     "alter_table.add_columns.column_position"
++     "complete"
+     ],
+     "statement_sql": [
+      "ALTER TABLE t ADD COLUMN c INT AFTER id;"
+-    ],
+-    "unsupported_entries": [
+-     {
+-      "feature": "alter_table.add_columns.column_position",
+-      "reason": "parsed by the shared parser but not covered by audited semantics"
+-     }
+     ]
+    }
+   },
+@@ -1572,28 +1554,19 @@
+     "none"
+    ],
+    "expect": {
+-    "exit": 1,
++    "exit": 0,
+     "verdict": "review",
+     "statements": 1,
+     "findings": 0,
+-    "diagnostics": 1,
+-    "unsupported": 1,
+-    "coverage": "incomplete",
++    "diagnostics": 0,
++    "unsupported": 0,
++    "coverage": "unverified",
+     "statement_coverage": [
+-     "incomplete"
++     "unverified"
+     ],
+     "statement_sql": [
+      "ALTER TABLE t MODIFY COLUMN c INT AFTER id;"
+     ],
+-    "unsupported_features": [
+-     "alter_table.modify_column.column_position"
+-    ],
+-    "unsupported_entries": [
+-     {
+-      "feature": "alter_table.modify_column.column_position",
+-      "reason": "parsed by the shared parser but not covered by audited semantics"
+-     }
+-    ],
+     "evidence_gaps": 1,
+     "evidence_gap_entries": [
+      {
+@@ -12281,7 +12254,7 @@
+     "exit": 1,
+     "verdict": "reject",
+     "statements": 3,
+-    "findings": 2,
++    "findings": 3,
+     "diagnostics": 0,
+     "unsupported": 0,
+     "coverage": "complete",
+@@ -12304,6 +12277,11 @@
+      2
+     ],
+     "finding_entries": [
++     {
++      "index": 1,
++      "rule_id": "ddl.alter.modify_column.compatibility.require",
++      "level": "blocker"
++     },
+      {
+       "index": 1,
+       "rule_id": "ddl.alter.modify_column.compatibility.require",
+@@ -12328,6 +12306,18 @@
+        "target_unsigned": false
+       }
+      },
++     {
++      "index": 1,
++      "rule_id": "ddl.alter.modify_column.compatibility.require",
++      "metadata": {
++       "action": "modify_column",
++       "table": "t",
++       "name": "c",
++       "column_name": "c",
++       "source_default": "literal",
++       "target_default": "none"
++      }
++     },
+      {
+       "index": 2,
+       "rule_id": "ddl.alter.modify_column.compatibility.require",
+@@ -13253,7 +13243,7 @@
+     "exit": 1,
+     "verdict": "reject",
+     "statements": 3,
+-    "findings": 2,
++    "findings": 3,
+     "diagnostics": 0,
+     "unsupported": 0,
+     "coverage": "complete",
+@@ -13276,6 +13266,11 @@
+      2
+     ],
+     "finding_entries": [
++     {
++      "index": 1,
++      "rule_id": "ddl.alter.modify_column.compatibility.require",
++      "level": "blocker"
++     },
+      {
+       "index": 1,
+       "rule_id": "ddl.alter.modify_column.compatibility.require",
+@@ -13300,6 +13295,18 @@
+        "target_unsigned": false
+       }
+      },
++     {
++      "index": 1,
++      "rule_id": "ddl.alter.modify_column.compatibility.require",
++      "metadata": {
++       "action": "modify_column",
++       "table": "t",
++       "name": "c",
++       "column_name": "c",
++       "source_default": "literal",
++       "target_default": "none"
++      }
++     },
+      {
+       "index": 2,
+       "rule_id": "ddl.alter.modify_column.compatibility.require",
