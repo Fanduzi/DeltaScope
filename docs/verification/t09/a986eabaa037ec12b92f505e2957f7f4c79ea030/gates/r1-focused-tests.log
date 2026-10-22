@@ -1,0 +1,595 @@
+$ go test -count=1 -v ./internal/application/audit -run T09R1 && go test -count=1 -v ./internal/domain/rule/ddl -run "IndexFacts|Duplicate|LeftPrefix|UniqueOverlap" && go test -count=1 -v ./internal/infrastructure/metadata/mysql -run "T09R1|IndexRow|Statistics"
+=== RUN   TestT09R1PrefixLengthSuppressesDeclaredDuplicate
+=== PAUSE TestT09R1PrefixLengthSuppressesDeclaredDuplicate
+=== RUN   TestT09R1PlainDeclaredDuplicateStillFires
+=== PAUSE TestT09R1PlainDeclaredDuplicateStillFires
+=== RUN   TestT09R1PrefixPartSuppressesLeftPrefix
+=== PAUSE TestT09R1PrefixPartSuppressesLeftPrefix
+=== RUN   TestT09R1PlainLeftPrefixStillFires
+=== PAUSE TestT09R1PlainLeftPrefixStillFires
+=== RUN   TestT09R1PrefixUniqueSuppressesUniqueOverlap
+=== PAUSE TestT09R1PrefixUniqueSuppressesUniqueOverlap
+=== RUN   TestT09R1PlainUniqueOverlapStillFires
+=== PAUSE TestT09R1PlainUniqueOverlapStillFires
+=== RUN   TestT09R1KeyOrderNeverDuplicate
+=== PAUSE TestT09R1KeyOrderNeverDuplicate
+=== RUN   TestT09R1DescPartsSuppressDuplicate
+=== PAUSE TestT09R1DescPartsSuppressDuplicate
+=== RUN   TestT09R1ExpressionKeysSuppressDuplicate
+=== PAUSE TestT09R1ExpressionKeysSuppressDuplicate
+=== RUN   TestT09R1ExistingNonPlainSuppressesCreateIndex
+=== PAUSE TestT09R1ExistingNonPlainSuppressesCreateIndex
+=== RUN   TestT09R1ExistingPlainStillFlagsCreateIndex
+=== PAUSE TestT09R1ExistingPlainStillFlagsCreateIndex
+=== RUN   TestT09R1AlterAddIndexExistingComparability
+=== PAUSE TestT09R1AlterAddIndexExistingComparability
+=== RUN   TestT09R1DeclaredNonPlainSuppressesExistingPlain
+=== PAUSE TestT09R1DeclaredNonPlainSuppressesExistingPlain
+=== RUN   TestT09R1DerivedPlainSuppressesDeclaredNonPlain
+=== PAUSE TestT09R1DerivedPlainSuppressesDeclaredNonPlain
+=== RUN   TestT09R1DerivedPlainStillFlagsDeclaredPlain
+=== PAUSE TestT09R1DerivedPlainStillFlagsDeclaredPlain
+=== RUN   TestT09R1AddPrimaryKeyMissingMemberDoesNotPublish
+=== PAUSE TestT09R1AddPrimaryKeyMissingMemberDoesNotPublish
+=== RUN   TestT09R1AddPrimaryKeyReconcilesMemberNullability
+=== PAUSE TestT09R1AddPrimaryKeyReconcilesMemberNullability
+=== RUN   TestT09R1AddPrimaryKeyWithheldColumnsDoesNotPublish
+=== PAUSE TestT09R1AddPrimaryKeyWithheldColumnsDoesNotPublish
+=== RUN   TestT09R1AddPrimaryKeyControls
+=== PAUSE TestT09R1AddPrimaryKeyControls
+=== RUN   TestT09R1AddThenDropPrimaryKeyChain
+=== PAUSE TestT09R1AddThenDropPrimaryKeyChain
+=== CONT  TestT09R1PrefixLengthSuppressesDeclaredDuplicate
+=== RUN   TestT09R1PrefixLengthSuppressesDeclaredDuplicate/mysql
+=== PAUSE TestT09R1PrefixLengthSuppressesDeclaredDuplicate/mysql
+=== RUN   TestT09R1PrefixLengthSuppressesDeclaredDuplicate/tidb
+=== PAUSE TestT09R1PrefixLengthSuppressesDeclaredDuplicate/tidb
+=== CONT  TestT09R1ExistingPlainStillFlagsCreateIndex
+=== RUN   TestT09R1ExistingPlainStillFlagsCreateIndex/mysql
+=== PAUSE TestT09R1ExistingPlainStillFlagsCreateIndex/mysql
+=== RUN   TestT09R1ExistingPlainStillFlagsCreateIndex/tidb
+=== PAUSE TestT09R1ExistingPlainStillFlagsCreateIndex/tidb
+=== CONT  TestT09R1PrefixLengthSuppressesDeclaredDuplicate/mysql
+=== CONT  TestT09R1AddPrimaryKeyMissingMemberDoesNotPublish
+=== CONT  TestT09R1ExistingNonPlainSuppressesCreateIndex
+=== CONT  TestT09R1ExpressionKeysSuppressDuplicate
+=== CONT  TestT09R1DescPartsSuppressDuplicate
+=== CONT  TestT09R1KeyOrderNeverDuplicate
+=== CONT  TestT09R1PlainUniqueOverlapStillFires
+=== CONT  TestT09R1PrefixUniqueSuppressesUniqueOverlap
+=== CONT  TestT09R1PlainLeftPrefixStillFires
+=== RUN   TestT09R1ExistingNonPlainSuppressesCreateIndex/mysql
+=== RUN   TestT09R1PlainLeftPrefixStillFires/mysql
+=== PAUSE TestT09R1PlainLeftPrefixStillFires/mysql
+=== PAUSE TestT09R1ExistingNonPlainSuppressesCreateIndex/mysql
+=== RUN   TestT09R1ExistingNonPlainSuppressesCreateIndex/tidb
+=== RUN   TestT09R1PlainLeftPrefixStillFires/tidb
+=== PAUSE TestT09R1ExistingNonPlainSuppressesCreateIndex/tidb
+=== RUN   TestT09R1PrefixUniqueSuppressesUniqueOverlap/mysql
+=== RUN   TestT09R1ExpressionKeysSuppressDuplicate/mysql
+=== PAUSE TestT09R1PrefixUniqueSuppressesUniqueOverlap/mysql
+=== CONT  TestT09R1AddThenDropPrimaryKeyChain
+=== PAUSE TestT09R1ExpressionKeysSuppressDuplicate/mysql
+=== RUN   TestT09R1PrefixUniqueSuppressesUniqueOverlap/tidb
+=== RUN   TestT09R1AddThenDropPrimaryKeyChain/mysql
+=== RUN   TestT09R1DescPartsSuppressDuplicate/mysql
+=== RUN   TestT09R1KeyOrderNeverDuplicate/mysql
+=== PAUSE TestT09R1PlainLeftPrefixStillFires/tidb
+=== PAUSE TestT09R1PrefixUniqueSuppressesUniqueOverlap/tidb
+=== PAUSE TestT09R1AddThenDropPrimaryKeyChain/mysql
+=== CONT  TestT09R1PrefixLengthSuppressesDeclaredDuplicate/tidb
+=== RUN   TestT09R1AddPrimaryKeyMissingMemberDoesNotPublish/mysql
+=== CONT  TestT09R1AddPrimaryKeyWithheldColumnsDoesNotPublish
+=== CONT  TestT09R1PrefixPartSuppressesLeftPrefix
+=== CONT  TestT09R1PlainDeclaredDuplicateStillFires
+=== RUN   TestT09R1ExpressionKeysSuppressDuplicate/tidb
+=== PAUSE TestT09R1DescPartsSuppressDuplicate/mysql
+=== RUN   TestT09R1PlainUniqueOverlapStillFires/mysql
+=== PAUSE TestT09R1KeyOrderNeverDuplicate/mysql
+=== CONT  TestT09R1AddPrimaryKeyControls
+=== PAUSE TestT09R1AddPrimaryKeyMissingMemberDoesNotPublish/mysql
+=== PAUSE TestT09R1PlainUniqueOverlapStillFires/mysql
+=== PAUSE TestT09R1ExpressionKeysSuppressDuplicate/tidb
+=== CONT  TestT09R1AddPrimaryKeyReconcilesMemberNullability
+=== RUN   TestT09R1AddThenDropPrimaryKeyChain/tidb
+=== RUN   TestT09R1AddPrimaryKeyWithheldColumnsDoesNotPublish/mysql
+=== RUN   TestT09R1AddPrimaryKeyMissingMemberDoesNotPublish/tidb
+=== PAUSE TestT09R1AddThenDropPrimaryKeyChain/tidb
+=== PAUSE TestT09R1AddPrimaryKeyMissingMemberDoesNotPublish/tidb
+=== PAUSE TestT09R1AddPrimaryKeyWithheldColumnsDoesNotPublish/mysql
+=== RUN   TestT09R1PrefixPartSuppressesLeftPrefix/mysql
+=== RUN   TestT09R1KeyOrderNeverDuplicate/tidb
+=== RUN   TestT09R1PlainUniqueOverlapStillFires/tidb
+=== PAUSE TestT09R1KeyOrderNeverDuplicate/tidb
+=== PAUSE TestT09R1PrefixPartSuppressesLeftPrefix/mysql
+=== RUN   TestT09R1PrefixPartSuppressesLeftPrefix/tidb
+=== PAUSE TestT09R1PrefixPartSuppressesLeftPrefix/tidb
+=== RUN   TestT09R1AddPrimaryKeyReconcilesMemberNullability/mysql
+=== CONT  TestT09R1DerivedPlainSuppressesDeclaredNonPlain
+=== CONT  TestT09R1DeclaredNonPlainSuppressesExistingPlain
+=== RUN   TestT09R1AddPrimaryKeyWithheldColumnsDoesNotPublish/tidb
+=== CONT  TestT09R1DerivedPlainStillFlagsDeclaredPlain
+=== RUN   TestT09R1AddPrimaryKeyControls/mysql
+=== RUN   TestT09R1DeclaredNonPlainSuppressesExistingPlain/mysql
+=== PAUSE TestT09R1AddPrimaryKeyReconcilesMemberNullability/mysql
+=== RUN   TestT09R1DescPartsSuppressDuplicate/tidb
+=== PAUSE TestT09R1DescPartsSuppressDuplicate/tidb
+=== CONT  TestT09R1ExistingPlainStillFlagsCreateIndex/mysql
+=== CONT  TestT09R1AlterAddIndexExistingComparability
+=== RUN   TestT09R1DerivedPlainStillFlagsDeclaredPlain/mysql
+=== RUN   TestT09R1PlainDeclaredDuplicateStillFires/mysql
+=== RUN   TestT09R1AlterAddIndexExistingComparability/mysql/nonplain
+=== PAUSE TestT09R1PlainUniqueOverlapStillFires/tidb
+=== CONT  TestT09R1ExistingPlainStillFlagsCreateIndex/tidb
+=== PAUSE TestT09R1DeclaredNonPlainSuppressesExistingPlain/mysql
+=== PAUSE TestT09R1DerivedPlainStillFlagsDeclaredPlain/mysql
+=== PAUSE TestT09R1AddPrimaryKeyWithheldColumnsDoesNotPublish/tidb
+=== PAUSE TestT09R1AddPrimaryKeyControls/mysql
+=== PAUSE TestT09R1AlterAddIndexExistingComparability/mysql/nonplain
+=== PAUSE TestT09R1PlainDeclaredDuplicateStillFires/mysql
+=== CONT  TestT09R1ExistingNonPlainSuppressesCreateIndex/mysql
+=== RUN   TestT09R1DerivedPlainSuppressesDeclaredNonPlain/mysql
+=== PAUSE TestT09R1DerivedPlainSuppressesDeclaredNonPlain/mysql
+=== RUN   TestT09R1AddPrimaryKeyReconcilesMemberNullability/tidb
+=== PAUSE TestT09R1AddPrimaryKeyReconcilesMemberNullability/tidb
+=== CONT  TestT09R1ExistingNonPlainSuppressesCreateIndex/tidb
+=== RUN   TestT09R1AddPrimaryKeyControls/tidb
+=== PAUSE TestT09R1AddPrimaryKeyControls/tidb
+=== RUN   TestT09R1AlterAddIndexExistingComparability/mysql/plain
+=== RUN   TestT09R1DeclaredNonPlainSuppressesExistingPlain/tidb
+=== PAUSE TestT09R1DeclaredNonPlainSuppressesExistingPlain/tidb
+=== CONT  TestT09R1PlainLeftPrefixStillFires/mysql
+=== RUN   TestT09R1PlainDeclaredDuplicateStillFires/tidb
+=== PAUSE TestT09R1PlainDeclaredDuplicateStillFires/tidb
+=== CONT  TestT09R1PlainLeftPrefixStillFires/tidb
+=== RUN   TestT09R1DerivedPlainSuppressesDeclaredNonPlain/tidb
+=== PAUSE TestT09R1DerivedPlainSuppressesDeclaredNonPlain/tidb
+=== CONT  TestT09R1PrefixUniqueSuppressesUniqueOverlap/mysql
+=== RUN   TestT09R1DerivedPlainStillFlagsDeclaredPlain/tidb
+=== PAUSE TestT09R1DerivedPlainStillFlagsDeclaredPlain/tidb
+=== CONT  TestT09R1PrefixUniqueSuppressesUniqueOverlap/tidb
+=== CONT  TestT09R1ExpressionKeysSuppressDuplicate/mysql
+=== PAUSE TestT09R1AlterAddIndexExistingComparability/mysql/plain
+=== RUN   TestT09R1AlterAddIndexExistingComparability/tidb/nonplain
+=== PAUSE TestT09R1AlterAddIndexExistingComparability/tidb/nonplain
+=== RUN   TestT09R1AlterAddIndexExistingComparability/tidb/plain
+=== PAUSE TestT09R1AlterAddIndexExistingComparability/tidb/plain
+=== CONT  TestT09R1ExpressionKeysSuppressDuplicate/tidb
+=== CONT  TestT09R1AddPrimaryKeyMissingMemberDoesNotPublish/mysql
+--- PASS: TestT09R1PrefixLengthSuppressesDeclaredDuplicate (0.00s)
+    --- PASS: TestT09R1PrefixLengthSuppressesDeclaredDuplicate/mysql (0.01s)
+    --- PASS: TestT09R1PrefixLengthSuppressesDeclaredDuplicate/tidb (0.01s)
+=== CONT  TestT09R1PrefixPartSuppressesLeftPrefix/mysql
+=== CONT  TestT09R1PrefixPartSuppressesLeftPrefix/tidb
+=== CONT  TestT09R1AddPrimaryKeyMissingMemberDoesNotPublish/tidb
+=== CONT  TestT09R1AddThenDropPrimaryKeyChain/mysql
+=== CONT  TestT09R1AddThenDropPrimaryKeyChain/tidb
+=== CONT  TestT09R1KeyOrderNeverDuplicate/tidb
+--- PASS: TestT09R1AddPrimaryKeyMissingMemberDoesNotPublish (0.00s)
+    --- PASS: TestT09R1AddPrimaryKeyMissingMemberDoesNotPublish/mysql (0.00s)
+    --- PASS: TestT09R1AddPrimaryKeyMissingMemberDoesNotPublish/tidb (0.00s)
+=== CONT  TestT09R1KeyOrderNeverDuplicate/mysql
+--- PASS: TestT09R1PlainLeftPrefixStillFires (0.00s)
+    --- PASS: TestT09R1PlainLeftPrefixStillFires/mysql (0.01s)
+    --- PASS: TestT09R1PlainLeftPrefixStillFires/tidb (0.01s)
+=== CONT  TestT09R1DescPartsSuppressDuplicate/mysql
+=== CONT  TestT09R1DescPartsSuppressDuplicate/tidb
+--- PASS: TestT09R1ExistingNonPlainSuppressesCreateIndex (0.00s)
+    --- PASS: TestT09R1ExistingNonPlainSuppressesCreateIndex/tidb (0.01s)
+    --- PASS: TestT09R1ExistingNonPlainSuppressesCreateIndex/mysql (0.01s)
+=== CONT  TestT09R1PlainUniqueOverlapStillFires/mysql
+--- PASS: TestT09R1ExistingPlainStillFlagsCreateIndex (0.00s)
+    --- PASS: TestT09R1ExistingPlainStillFlagsCreateIndex/tidb (0.01s)
+    --- PASS: TestT09R1ExistingPlainStillFlagsCreateIndex/mysql (0.01s)
+=== CONT  TestT09R1PlainUniqueOverlapStillFires/tidb
+--- PASS: TestT09R1PrefixUniqueSuppressesUniqueOverlap (0.00s)
+    --- PASS: TestT09R1PrefixUniqueSuppressesUniqueOverlap/tidb (0.01s)
+    --- PASS: TestT09R1PrefixUniqueSuppressesUniqueOverlap/mysql (0.01s)
+=== CONT  TestT09R1AddPrimaryKeyWithheldColumnsDoesNotPublish/mysql
+=== CONT  TestT09R1AddPrimaryKeyWithheldColumnsDoesNotPublish/tidb
+--- PASS: TestT09R1AddPrimaryKeyWithheldColumnsDoesNotPublish (0.00s)
+    --- PASS: TestT09R1AddPrimaryKeyWithheldColumnsDoesNotPublish/mysql (0.00s)
+    --- PASS: TestT09R1AddPrimaryKeyWithheldColumnsDoesNotPublish/tidb (0.00s)
+=== CONT  TestT09R1AddPrimaryKeyReconcilesMemberNullability/mysql
+=== CONT  TestT09R1AddPrimaryKeyReconcilesMemberNullability/tidb
+--- PASS: TestT09R1AddPrimaryKeyReconcilesMemberNullability (0.00s)
+    --- PASS: TestT09R1AddPrimaryKeyReconcilesMemberNullability/mysql (0.00s)
+    --- PASS: TestT09R1AddPrimaryKeyReconcilesMemberNullability/tidb (0.00s)
+=== CONT  TestT09R1AddPrimaryKeyControls/mysql
+=== CONT  TestT09R1AddPrimaryKeyControls/tidb
+--- PASS: TestT09R1AddPrimaryKeyControls (0.00s)
+    --- PASS: TestT09R1AddPrimaryKeyControls/mysql (0.00s)
+    --- PASS: TestT09R1AddPrimaryKeyControls/tidb (0.00s)
+=== CONT  TestT09R1DeclaredNonPlainSuppressesExistingPlain/mysql
+--- PASS: TestT09R1ExpressionKeysSuppressDuplicate (0.00s)
+    --- PASS: TestT09R1ExpressionKeysSuppressDuplicate/mysql (0.01s)
+    --- PASS: TestT09R1ExpressionKeysSuppressDuplicate/tidb (0.01s)
+=== CONT  TestT09R1PlainDeclaredDuplicateStillFires/mysql
+=== CONT  TestT09R1DeclaredNonPlainSuppressesExistingPlain/tidb
+=== CONT  TestT09R1DerivedPlainSuppressesDeclaredNonPlain/mysql
+=== CONT  TestT09R1PlainDeclaredDuplicateStillFires/tidb
+--- PASS: TestT09R1KeyOrderNeverDuplicate (0.00s)
+    --- PASS: TestT09R1KeyOrderNeverDuplicate/mysql (0.01s)
+    --- PASS: TestT09R1KeyOrderNeverDuplicate/tidb (0.01s)
+=== CONT  TestT09R1DerivedPlainSuppressesDeclaredNonPlain/tidb
+=== CONT  TestT09R1DerivedPlainStillFlagsDeclaredPlain/mysql
+--- PASS: TestT09R1PrefixPartSuppressesLeftPrefix (0.00s)
+    --- PASS: TestT09R1PrefixPartSuppressesLeftPrefix/mysql (0.01s)
+    --- PASS: TestT09R1PrefixPartSuppressesLeftPrefix/tidb (0.01s)
+=== CONT  TestT09R1DerivedPlainStillFlagsDeclaredPlain/tidb
+--- PASS: TestT09R1AddThenDropPrimaryKeyChain (0.00s)
+    --- PASS: TestT09R1AddThenDropPrimaryKeyChain/tidb (0.01s)
+    --- PASS: TestT09R1AddThenDropPrimaryKeyChain/mysql (0.01s)
+=== CONT  TestT09R1AlterAddIndexExistingComparability/mysql/nonplain
+--- PASS: TestT09R1DescPartsSuppressDuplicate (0.00s)
+    --- PASS: TestT09R1DescPartsSuppressDuplicate/mysql (0.01s)
+    --- PASS: TestT09R1DescPartsSuppressDuplicate/tidb (0.01s)
+=== CONT  TestT09R1AlterAddIndexExistingComparability/tidb/nonplain
+=== CONT  TestT09R1AlterAddIndexExistingComparability/tidb/plain
+=== CONT  TestT09R1AlterAddIndexExistingComparability/mysql/plain
+--- PASS: TestT09R1PlainUniqueOverlapStillFires (0.00s)
+    --- PASS: TestT09R1PlainUniqueOverlapStillFires/mysql (0.01s)
+    --- PASS: TestT09R1PlainUniqueOverlapStillFires/tidb (0.01s)
+--- PASS: TestT09R1DerivedPlainSuppressesDeclaredNonPlain (0.00s)
+    --- PASS: TestT09R1DerivedPlainSuppressesDeclaredNonPlain/mysql (0.01s)
+    --- PASS: TestT09R1DerivedPlainSuppressesDeclaredNonPlain/tidb (0.01s)
+--- PASS: TestT09R1PlainDeclaredDuplicateStillFires (0.00s)
+    --- PASS: TestT09R1PlainDeclaredDuplicateStillFires/mysql (0.01s)
+    --- PASS: TestT09R1PlainDeclaredDuplicateStillFires/tidb (0.01s)
+--- PASS: TestT09R1DeclaredNonPlainSuppressesExistingPlain (0.00s)
+    --- PASS: TestT09R1DeclaredNonPlainSuppressesExistingPlain/mysql (0.01s)
+    --- PASS: TestT09R1DeclaredNonPlainSuppressesExistingPlain/tidb (0.01s)
+--- PASS: TestT09R1DerivedPlainStillFlagsDeclaredPlain (0.00s)
+    --- PASS: TestT09R1DerivedPlainStillFlagsDeclaredPlain/mysql (0.01s)
+    --- PASS: TestT09R1DerivedPlainStillFlagsDeclaredPlain/tidb (0.01s)
+--- PASS: TestT09R1AlterAddIndexExistingComparability (0.00s)
+    --- PASS: TestT09R1AlterAddIndexExistingComparability/tidb/nonplain (0.01s)
+    --- PASS: TestT09R1AlterAddIndexExistingComparability/mysql/plain (0.01s)
+    --- PASS: TestT09R1AlterAddIndexExistingComparability/mysql/nonplain (0.01s)
+    --- PASS: TestT09R1AlterAddIndexExistingComparability/tidb/plain (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.698s
+=== RUN   TestAlterAddedDuplicateIndexRuleBlocksDuplicateAlterAddedIndexes
+=== PAUSE TestAlterAddedDuplicateIndexRuleBlocksDuplicateAlterAddedIndexes
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs
+=== RUN   TestT09R1DuplicatePlainControl
+=== PAUSE TestT09R1DuplicatePlainControl
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs
+=== RUN   TestT09R1LeftPrefixPlainControl
+=== PAUSE TestT09R1LeftPrefixPlainControl
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs
+=== RUN   TestT09R1UniqueOverlapPlainControl
+=== PAUSE TestT09R1UniqueOverlapPlainControl
+=== RUN   TestDuplicateIndexRuleFindsExactDuplicateIndexes
+=== PAUSE TestDuplicateIndexRuleFindsExactDuplicateIndexes
+=== RUN   TestRedundantLeftPrefixIndexRuleFindsShorterSecondaryIndex
+=== PAUSE TestRedundantLeftPrefixIndexRuleFindsShorterSecondaryIndex
+=== RUN   TestRedundantUniqueOverlapIndexRuleFindsSecondaryShadowingUnique
+=== PAUSE TestRedundantUniqueOverlapIndexRuleFindsSecondaryShadowingUnique
+=== RUN   TestT09CreateIndexDuplicateAgainstExisting
+=== PAUSE TestT09CreateIndexDuplicateAgainstExisting
+=== RUN   TestT09CreateIndexDuplicateSuppressesPreexistingPair
+=== PAUSE TestT09CreateIndexDuplicateSuppressesPreexistingPair
+=== RUN   TestT09CreateIndexUniqueOverlapAgainstExisting
+=== PAUSE TestT09CreateIndexUniqueOverlapAgainstExisting
+=== RUN   TestT09AlterAddIndexDuplicateAgainstExisting
+=== PAUSE TestT09AlterAddIndexDuplicateAgainstExisting
+=== RUN   TestT09AlterUniqueOverlapWithinStatement
+=== PAUSE TestT09AlterUniqueOverlapWithinStatement
+=== RUN   TestT09AlterUniqueOverlapAgainstExisting
+=== PAUSE TestT09AlterUniqueOverlapAgainstExisting
+=== RUN   TestT09AlterUniqueOverlapSuppressesPreexistingPairs
+=== PAUSE TestT09AlterUniqueOverlapSuppressesPreexistingPairs
+=== CONT  TestAlterAddedDuplicateIndexRuleBlocksDuplicateAlterAddedIndexes
+=== CONT  TestRedundantUniqueOverlapIndexRuleFindsSecondaryShadowingUnique
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs
+=== CONT  TestRedundantLeftPrefixIndexRuleFindsShorterSecondaryIndex
+=== CONT  TestT09CreateIndexDuplicateSuppressesPreexistingPair
+=== CONT  TestT09CreateIndexUniqueOverlapAgainstExisting
+=== CONT  TestT09AlterUniqueOverlapAgainstExisting
+=== CONT  TestT09AlterUniqueOverlapSuppressesPreexistingPairs
+=== CONT  TestT09AlterUniqueOverlapWithinStatement
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs
+=== CONT  TestDuplicateIndexRuleFindsExactDuplicateIndexes
+--- PASS: TestRedundantUniqueOverlapIndexRuleFindsSecondaryShadowingUnique (0.00s)
+--- PASS: TestT09CreateIndexDuplicateSuppressesPreexistingPair (0.00s)
+=== CONT  TestT09R1UniqueOverlapPlainControl
+=== CONT  TestT09CreateIndexDuplicateAgainstExisting
+=== CONT  TestT09R1LeftPrefixPlainControl
+=== CONT  TestT09R1DuplicatePlainControl
+--- PASS: TestT09CreateIndexUniqueOverlapAgainstExisting (0.00s)
+--- PASS: TestRedundantLeftPrefixIndexRuleFindsShorterSecondaryIndex (0.00s)
+--- PASS: TestT09AlterUniqueOverlapAgainstExisting (0.00s)
+--- PASS: TestT09AlterUniqueOverlapWithinStatement (0.00s)
+--- PASS: TestAlterAddedDuplicateIndexRuleBlocksDuplicateAlterAddedIndexes (0.00s)
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs
+--- PASS: TestT09AlterUniqueOverlapSuppressesPreexistingPairs (0.00s)
+--- PASS: TestDuplicateIndexRuleFindsExactDuplicateIndexes (0.00s)
+--- PASS: TestT09CreateIndexDuplicateAgainstExisting (0.00s)
+--- PASS: TestT09R1UniqueOverlapPlainControl (0.00s)
+--- PASS: TestT09R1DuplicatePlainControl (0.00s)
+=== CONT  TestT09AlterAddIndexDuplicateAgainstExisting
+--- PASS: TestT09R1LeftPrefixPlainControl (0.00s)
+--- PASS: TestT09AlterAddIndexDuplicateAgainstExisting (0.00s)
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/prefix_part
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/prefix_part
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/prefix_part
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/prefix_part
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/desc_part
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/desc_part
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/desc_part
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/desc_part
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/desc_part
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/desc_part
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/expression_keys
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/expression_keys
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/expression_keys
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/expression_keys
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/expression_keys
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/expression_keys
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/predicate
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/predicate
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/predicate
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/predicate
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/predicate
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/predicate
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/included_columns
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/included_columns
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/global
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/global
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/unmodeled_option
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/unmodeled_option
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/prefix_part
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/unmodeled_option
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/global
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/included_columns
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/global/unique
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/included_columns
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/included_columns
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/predicate
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/included_columns
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/included_columns
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/global
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/global
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/global/unique
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/predicate/unique
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/unmodeled_option/unique
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/predicate/unique
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/global
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/global
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/unmodeled_option/unique
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/included_columns/unique
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/included_columns/unique
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/unmodeled_option/secondary
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/desc_part
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/prefix_part/unique
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/unmodeled_option/secondary
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/unmodeled_option/unique
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/prefix_part/unique
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/unmodeled_option
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/expression_keys
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/unmodeled_option/secondary
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/global/secondary
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/global/secondary
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/prefix_part/secondary
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/global/unique
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/global/secondary
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/unmodeled_option
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/prefix_part/secondary
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/prefix_part/unique
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/unmodeled_option
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/unmodeled_option
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/prefix_part/secondary
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/unmodeled_option
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/included_columns/secondary
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/prefix_part
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/predicate/secondary
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/expression_keys
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/included_columns
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/predicate/secondary
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/desc_part
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/included_columns/shorter
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/included_columns/shorter
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/predicate
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/global
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/desc_part/unique
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/desc_part/unique
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/expression_keys/unique
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/unmodeled_option/shorter
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/prefix_part
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/unmodeled_option/shorter
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/included_columns/secondary
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/included_columns/longer
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/desc_part/secondary
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/included_columns/longer
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/desc_part/shorter
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/desc_part/secondary
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/predicate/secondary
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/desc_part/shorter
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/desc_part/unique
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/predicate/unique
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/predicate/shorter
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/predicate/shorter
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/expression_keys/shorter
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/prefix_part
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/expression_keys/shorter
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/expression_keys/unique
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/included_columns/shorter
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/included_columns/secondary
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/desc_part
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/expression_keys/secondary
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/global
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/unmodeled_option/longer
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/predicate/longer
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/unmodeled_option/longer
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/prefix_part
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/predicate/longer
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/expression_keys/secondary
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/global/shorter
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/global/shorter
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/unmodeled_option
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/desc_part/secondary
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/predicate
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/expression_keys/longer
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/desc_part/first
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/included_columns/unique
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/desc_part/first
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/global/first
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/desc_part/second
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/global/first
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/prefix_part/shorter
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/global/longer
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/prefix_part/shorter
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/expression_keys/longer
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/included_columns/longer
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/unmodeled_option/shorter
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/predicate/first
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/predicate/first
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/global/longer
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/included_columns
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/expression_keys/secondary
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/included_columns/first
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/included_columns/first
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/predicate/shorter
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/prefix_part/longer
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/included_columns/second
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/prefix_part/longer
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/desc_part/second
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/expression_keys/shorter
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/expression_keys
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/global/shorter
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/expression_keys/first
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/expression_keys/first
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/expression_keys/longer
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/expression_keys/second
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/expression_keys/second
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/prefix_part/shorter
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/prefix_part/longer
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/predicate/longer
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/desc_part/second
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/expression_keys/first
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/desc_part/longer
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/expression_keys/second
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/desc_part/longer
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/prefix_part/first
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/unmodeled_option/first
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/unmodeled_option/first
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/expression_keys/unique
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/unmodeled_option/longer
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/included_columns/second
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/predicate/second
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/included_columns/second
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/predicate/second
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/desc_part/first
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/global/second
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/global/second
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/desc_part/shorter
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/global/first
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/global/second
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/desc_part/longer
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/prefix_part/first
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/unmodeled_option/second
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/unmodeled_option/second
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/prefix_part/second
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/unmodeled_option/second
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/prefix_part/second
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/prefix_part/first
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/global/longer
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/included_columns/first
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/predicate/first
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/unmodeled_option/first
+--- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs (0.00s)
+    --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/unmodeled_option (0.00s)
+        --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/unmodeled_option/secondary (0.00s)
+        --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/unmodeled_option/unique (0.00s)
+    --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/global (0.00s)
+        --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/global/unique (0.00s)
+        --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/global/secondary (0.00s)
+    --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/prefix_part (0.00s)
+        --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/prefix_part/unique (0.00s)
+        --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/prefix_part/secondary (0.00s)
+    --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/predicate (0.00s)
+        --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/predicate/secondary (0.00s)
+        --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/predicate/unique (0.00s)
+    --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/desc_part (0.00s)
+        --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/desc_part/unique (0.00s)
+        --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/desc_part/secondary (0.00s)
+    --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/included_columns (0.00s)
+        --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/included_columns/secondary (0.00s)
+        --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/included_columns/unique (0.00s)
+    --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/expression_keys (0.00s)
+        --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/expression_keys/secondary (0.00s)
+        --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/expression_keys/unique (0.00s)
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/predicate/second
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/prefix_part/second
+--- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs (0.00s)
+    --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/included_columns (0.00s)
+        --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/included_columns/shorter (0.00s)
+        --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/included_columns/longer (0.00s)
+    --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/expression_keys (0.00s)
+        --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/expression_keys/shorter (0.00s)
+        --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/expression_keys/longer (0.00s)
+    --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/prefix_part (0.00s)
+        --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/prefix_part/shorter (0.00s)
+        --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/prefix_part/longer (0.00s)
+    --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/predicate (0.00s)
+        --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/predicate/shorter (0.00s)
+        --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/predicate/longer (0.00s)
+    --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/unmodeled_option (0.00s)
+        --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/unmodeled_option/shorter (0.00s)
+        --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/unmodeled_option/longer (0.00s)
+    --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/desc_part (0.00s)
+        --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/desc_part/longer (0.00s)
+        --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/desc_part/shorter (0.00s)
+    --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/global (0.00s)
+        --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/global/shorter (0.00s)
+        --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/global/longer (0.00s)
+--- PASS: TestT09R1DuplicateSuppressesNonPlainPairs (0.00s)
+    --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/expression_keys (0.00s)
+        --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/expression_keys/first (0.00s)
+        --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/expression_keys/second (0.00s)
+    --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/desc_part (0.00s)
+        --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/desc_part/second (0.00s)
+        --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/desc_part/first (0.00s)
+    --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/global (0.00s)
+        --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/global/first (0.00s)
+        --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/global/second (0.00s)
+    --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/predicate (0.00s)
+        --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/predicate/first (0.00s)
+        --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/predicate/second (0.00s)
+    --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/unmodeled_option (0.00s)
+        --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/unmodeled_option/second (0.00s)
+        --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/unmodeled_option/first (0.00s)
+    --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/included_columns (0.00s)
+        --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/included_columns/second (0.00s)
+        --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/included_columns/first (0.00s)
+    --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/prefix_part (0.00s)
+        --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/prefix_part/first (0.00s)
+        --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/prefix_part/second (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	0.493s
+=== RUN   TestT09R1ProviderMemberRowClassification
+=== RUN   TestT09R1ProviderMemberRowClassification/plain_ascending_whole_column
+=== RUN   TestT09R1ProviderMemberRowClassification/prefix_length_marks_PrefixParts_but_keeps_the_column
+=== RUN   TestT09R1ProviderMemberRowClassification/descending_collation_marks_DescParts
+=== RUN   TestT09R1ProviderMemberRowClassification/NULL_column_name_is_an_expression_key_part
+=== RUN   TestT09R1ProviderMemberRowClassification/NULL_collation_on_a_named_member_is_unclassifiable
+=== RUN   TestT09R1ProviderMemberRowClassification/unrecognized_collation_value_is_unclassifiable
+--- PASS: TestT09R1ProviderMemberRowClassification (0.00s)
+    --- PASS: TestT09R1ProviderMemberRowClassification/plain_ascending_whole_column (0.00s)
+    --- PASS: TestT09R1ProviderMemberRowClassification/prefix_length_marks_PrefixParts_but_keeps_the_column (0.00s)
+    --- PASS: TestT09R1ProviderMemberRowClassification/descending_collation_marks_DescParts (0.00s)
+    --- PASS: TestT09R1ProviderMemberRowClassification/NULL_column_name_is_an_expression_key_part (0.00s)
+    --- PASS: TestT09R1ProviderMemberRowClassification/NULL_collation_on_a_named_member_is_unclassifiable (0.00s)
+    --- PASS: TestT09R1ProviderMemberRowClassification/unrecognized_collation_value_is_unclassifiable (0.00s)
+=== RUN   TestT09R1ProviderLoadIndexesMarksNonPlain
+--- PASS: TestT09R1ProviderLoadIndexesMarksNonPlain (0.00s)
+=== RUN   TestAccumulateIndexRowMultipleIndexes
+--- PASS: TestAccumulateIndexRowMultipleIndexes (0.00s)
+=== RUN   TestLoadTableSnapshotPreservesIndexCardinalityFromStatisticsRows
+--- PASS: TestLoadTableSnapshotPreservesIndexCardinalityFromStatisticsRows (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql	0.541s

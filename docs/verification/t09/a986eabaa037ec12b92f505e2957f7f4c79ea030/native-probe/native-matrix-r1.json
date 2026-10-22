@@ -1,0 +1,302 @@
+{
+  "mysql57": {
+    "cells": {
+      "pk-def5": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "pk-def5-columns": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "column_name\tcolumn_type\tis_nullable\tcolumn_default\textra\nc\tint(11)\tNO\t5\t\nd\tint(11)\tYES\tNULL",
+        "rc": 0
+      },
+      "pk-def5-create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "pk-missing": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1072 (42000) at line 1: Key column 'missing_c' doesn't exist in table",
+        "rc": 1
+      },
+      "pk-missing-columns": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "column_name\tcolumn_type\tis_nullable\tcolumn_default\textra\nc\tint(11)\tYES\tNULL",
+        "rc": 0
+      },
+      "pk-missing-create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "pk-missing-stats": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "",
+        "rc": 0
+      },
+      "pk-null": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "pk-null-columns": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "column_name\tcolumn_type\tis_nullable\tcolumn_default\textra\nc\tint(11)\tNO\tNULL\t\nd\tint(11)\tYES\tNULL",
+        "rc": 0
+      },
+      "pk-null-create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "pk-null-stats": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "index_name\tnon_unique\tseq_in_index\tcolumn_name\tindex_type\tsub_part\tcollation\nPRIMARY\t0\t1\tc\tBTREE\tNULL\tA",
+        "rc": 0
+      },
+      "plain-create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "plain-stats": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "index_name\tnon_unique\tseq_in_index\tcolumn_name\tindex_type\tsub_part\tcollation\ni_first\t1\t1\tc\tBTREE\tNULL\tA\ni_second\t1\t1\tc\tBTREE\tNULL\tA",
+        "rc": 0
+      },
+      "prefix-create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "prefix-stats": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "index_name\tnon_unique\tseq_in_index\tcolumn_name\tindex_type\tsub_part\tcollation\ni_long\t1\t1\tc\tBTREE\t8\tA\ni_short\t1\t1\tc\tBTREE\t3\tA",
+        "rc": 0
+      },
+      "residual": "COUNT(*)\n0"
+    },
+    "collation_col": true,
+    "sub_part_col": true,
+    "version": "5.7.44"
+  },
+  "mysql80": {
+    "cells": {
+      "pk-def5": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "pk-def5-columns": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "COLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_DEFAULT\tEXTRA\nc\tint\tNO\t5\t\nd\tint\tYES\tNULL",
+        "rc": 0
+      },
+      "pk-def5-create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "pk-missing": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1072 (42000) at line 1: Key column 'missing_c' doesn't exist in table",
+        "rc": 1
+      },
+      "pk-missing-columns": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "COLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_DEFAULT\tEXTRA\nc\tint\tYES\tNULL",
+        "rc": 0
+      },
+      "pk-missing-create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "pk-missing-stats": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "",
+        "rc": 0
+      },
+      "pk-null": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "pk-null-columns": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "COLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_DEFAULT\tEXTRA\nc\tint\tNO\tNULL\t\nd\tint\tYES\tNULL",
+        "rc": 0
+      },
+      "pk-null-create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "pk-null-stats": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "INDEX_NAME\tNON_UNIQUE\tSEQ_IN_INDEX\tCOLUMN_NAME\tINDEX_TYPE\tSUB_PART\tCOLLATION\nPRIMARY\t0\t1\tc\tBTREE\tNULL\tA",
+        "rc": 0
+      },
+      "plain-create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "plain-stats": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "INDEX_NAME\tNON_UNIQUE\tSEQ_IN_INDEX\tCOLUMN_NAME\tINDEX_TYPE\tSUB_PART\tCOLLATION\ni_first\t1\t1\tc\tBTREE\tNULL\tA\ni_second\t1\t1\tc\tBTREE\tNULL\tA",
+        "rc": 0
+      },
+      "prefix-create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "prefix-stats": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "INDEX_NAME\tNON_UNIQUE\tSEQ_IN_INDEX\tCOLUMN_NAME\tINDEX_TYPE\tSUB_PART\tCOLLATION\ni_long\t1\t1\tc\tBTREE\t8\tA\ni_short\t1\t1\tc\tBTREE\t3\tA",
+        "rc": 0
+      },
+      "residual": "COUNT(*)\n0"
+    },
+    "collation_col": true,
+    "sub_part_col": true,
+    "version": "8.0.46"
+  },
+  "mysql84": {
+    "cells": {
+      "pk-def5": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "pk-def5-columns": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "COLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_DEFAULT\tEXTRA\nc\tint\tNO\t5\t\nd\tint\tYES\tNULL",
+        "rc": 0
+      },
+      "pk-def5-create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "pk-missing": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1072 (42000) at line 1: Key column 'missing_c' doesn't exist in table",
+        "rc": 1
+      },
+      "pk-missing-columns": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "COLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_DEFAULT\tEXTRA\nc\tint\tYES\tNULL",
+        "rc": 0
+      },
+      "pk-missing-create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "pk-missing-stats": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "",
+        "rc": 0
+      },
+      "pk-null": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "pk-null-columns": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "COLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_DEFAULT\tEXTRA\nc\tint\tNO\tNULL\t\nd\tint\tYES\tNULL",
+        "rc": 0
+      },
+      "pk-null-create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "pk-null-stats": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "INDEX_NAME\tNON_UNIQUE\tSEQ_IN_INDEX\tCOLUMN_NAME\tINDEX_TYPE\tSUB_PART\tCOLLATION\nPRIMARY\t0\t1\tc\tBTREE\tNULL\tA",
+        "rc": 0
+      },
+      "plain-create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "plain-stats": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "INDEX_NAME\tNON_UNIQUE\tSEQ_IN_INDEX\tCOLUMN_NAME\tINDEX_TYPE\tSUB_PART\tCOLLATION\ni_first\t1\t1\tc\tBTREE\tNULL\tA\ni_second\t1\t1\tc\tBTREE\tNULL\tA",
+        "rc": 0
+      },
+      "prefix-create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "prefix-stats": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "INDEX_NAME\tNON_UNIQUE\tSEQ_IN_INDEX\tCOLUMN_NAME\tINDEX_TYPE\tSUB_PART\tCOLLATION\ni_long\t1\t1\tc\tBTREE\t8\tA\ni_short\t1\t1\tc\tBTREE\t3\tA",
+        "rc": 0
+      },
+      "residual": "COUNT(*)\n0"
+    },
+    "collation_col": true,
+    "sub_part_col": true,
+    "version": "8.4.10"
+  },
+  "tidb85": {
+    "cells": {
+      "pk-def5": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "pk-def5-columns": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "column_name\tcolumn_type\tis_nullable\tcolumn_default\textra\nc\tint\tNO\t5\t\nd\tint\tYES\tNULL",
+        "rc": 0
+      },
+      "pk-def5-create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "pk-missing": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1072 (42000) at line 1: column does not exist: missing_c",
+        "rc": 1
+      },
+      "pk-missing-columns": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "column_name\tcolumn_type\tis_nullable\tcolumn_default\textra\nc\tint\tYES\tNULL",
+        "rc": 0
+      },
+      "pk-missing-create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "pk-missing-stats": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "",
+        "rc": 0
+      },
+      "pk-null": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "pk-null-columns": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "column_name\tcolumn_type\tis_nullable\tcolumn_default\textra\nc\tint\tNO\tNULL\t\nd\tint\tYES\tNULL",
+        "rc": 0
+      },
+      "pk-null-create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "pk-null-stats": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "index_name\tnon_unique\tseq_in_index\tcolumn_name\tindex_type\tsub_part\tcollation\nPRIMARY\t0\t1\tc\tBTREE\tNULL\tA",
+        "rc": 0
+      },
+      "plain-create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "plain-stats": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "index_name\tnon_unique\tseq_in_index\tcolumn_name\tindex_type\tsub_part\tcollation\ni_first\t1\t1\tc\tBTREE\tNULL\tA\ni_second\t1\t1\tc\tBTREE\tNULL\tA",
+        "rc": 0
+      },
+      "prefix-create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "prefix-stats": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "index_name\tnon_unique\tseq_in_index\tcolumn_name\tindex_type\tsub_part\tcollation\ni_long\t1\t1\tc\tBTREE\t8\tA\ni_short\t1\t1\tc\tBTREE\t3\tA",
+        "rc": 0
+      },
+      "residual": "COUNT(*)\n0"
+    },
+    "collation_col": true,
+    "sub_part_col": true,
+    "version": "8.0.11-TiDB-v8.5.0"
+  }
+}

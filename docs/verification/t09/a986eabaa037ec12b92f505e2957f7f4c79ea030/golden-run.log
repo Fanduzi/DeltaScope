@@ -1,0 +1,43 @@
+T09-R1 golden regression at the final R1 code SHA
+=================================================
+All runs executed serially at head a986eabaa037ec12b92f505e2957f7f4c79ea030
+on runner-managed containers (docker/ddl-golden-compose.yaml). Credential
+env vars supplied inline as required by each manifest; password value is the
+compose-published root credential and is not reproduced beyond the command
+line recorded below.
+
+$ T09_MYSQL_PASSWORD=root python3 scripts/ddl_golden.py run --task T09 --artifact-dir /tmp/ddl-golden-r1-T09
+[ddl-golden] task=T09 head=a986eabaa037 cases=125 passed=125 assertions=3442 -> PASS
+
+$ T08_MYSQL_PASSWORD=root python3 scripts/ddl_golden.py run --task T08 --artifact-dir /tmp/ddl-golden-r1-T08
+[ddl-golden] task=T08 head=a986eabaa037 cases=172 passed=172 assertions=4240 -> PASS
+
+$ T07_MYSQL_PASSWORD=root python3 scripts/ddl_golden.py run --task T07 --artifact-dir /tmp/ddl-golden-r1-T07
+[ddl-golden] task=T07 head=a986eabaa037 cases=207 passed=207 assertions=6190 -> PASS
+
+$ DS_T06_GOLDEN_PW=root python3 scripts/ddl_golden.py run --task T06 --artifact-dir /tmp/ddl-golden-r1-T06
+[ddl-golden] task=T06 head=a986eabaa037 cases=496 passed=496 assertions=11772 -> PASS
+
+$ DS_T05_GOLDEN_PW=root python3 scripts/ddl_golden.py run --task T05 --artifact-dir /tmp/ddl-golden-r1-T05
+[ddl-golden] task=T05 head=a986eabaa037 cases=247 passed=247 assertions=5109 -> PASS
+
+$ DS_T04_GOLDEN_PW=root python3 scripts/ddl_golden.py run --task T04 --artifact-dir /tmp/ddl-golden-r1-T04
+[ddl-golden] task=T04 head=a986eabaa037 cases=163 passed=163 assertions=1889 -> PASS
+
+Independent re-validation of each artifact:
+$ python3 scripts/ddl_golden.py validate --artifact <artifact.json>
+-> "artifact valid" for all six (see golden/<T>-validate.log)
+
+Denominators match the frozen manifests: T04=163, T05=247, T06=496,
+T07=207, T08=172, T09=125. Assertion totals identical to the prior
+SHA-bound archives, confirming no golden-visible behavior drift.
+
+Run history this rework:
+- goldens first ran at 664a2bfc (the pre-amend fix SHA): all six PASS
+  with identical denominators/assertions.
+- the fix commit was then amended (L3 header-note updates only, no code
+  delta) -> a986eaba; this archive re-ran every gate and every golden at
+  the amended SHA so all evidence is single-bound.
+- earlier in the session a T09 run failed reachability on all MySQL
+  anchors because T09_MYSQL_PASSWORD was unset in the environment;
+  that was an environment failure, not a product regression.

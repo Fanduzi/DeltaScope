@@ -1,0 +1,36 @@
+T09-R1 bounded native confirmation — index key-part facts + ADD PRIMARY KEY premise
+=================================================================================
+Probe: native-probe/t09r1_probe.py (persisted verbatim; uses only owned n_r1_* tables)
+Output: native-matrix-r1.json (raw cells), probe-run.log (stdout)
+Bound code SHA: a986eabaa037ec12b92f505e2957f7f4c79ea030
+Roles per anchor: (1) prefix-membership, (2) plain identical-key control,
+(3) ADD PRIMARY KEY on absent member, (4) ADD PRIMARY KEY on nullable member
+(4a NULL default variant, 4b real DEFAULT 5 variant — same role).
+
+                                  mysql57    mysql80    mysql84    tidb85
+                                  5.7.44     8.0.46     8.4.10     8.5.0
+STATISTICS.SUB_PART available       yes        yes        yes        yes
+STATISTICS.COLLATION available      yes        yes        yes        yes
+i_short c(3) -> sub_part            3          3          3          3
+i_long  c(8) -> sub_part            8          8          8          8
+collation of plain parts            A          A          A          A
+ADD PK (missing_c)                  ERROR 1072 ERROR 1072 ERROR 1072 ERROR 1072
+                                  (Key column 'missing_c' doesn't exist in
+                                   table; TiDB: column does not exist)
+  post-failure structure            unchanged  unchanged  unchanged  unchanged
+ADD PK (c) on c INT NULL DEFAULT NULL
+  -> is_nullable / column_default   NO / NULL  NO / NULL  NO / NULL  NO / NULL
+ADD PK (c) on c INT NULL DEFAULT 5
+  -> is_nullable / column_default   NO / 5     NO / 5     NO / 5     NO / 5
+residual n_r1_* tables after run    0          0          0          0
+
+Facts the R1 fix consumes:
+- SUB_PART is set and distinct per prefix length on all four anchors; a NULL
+  SUB_PART marks a whole-column member. COLLATION='A' marks ascending; 'D'
+  descending. These two columns are sufficient to classify plain vs non-plain
+  provider-loaded members; no version lacks them.
+- A missing PK member is rejected identically on all four anchors with no
+  structural change -> publishing a post-state for it would fabricate.
+- Native ADD PRIMARY KEY converts the member to NOT NULL and clears a NULL
+  default but preserves a real default (DEFAULT 5 kept) -> the published
+  post-state mirrors exactly that.

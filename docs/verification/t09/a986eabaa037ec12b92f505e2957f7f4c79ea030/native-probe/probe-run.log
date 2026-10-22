@@ -1,0 +1,8 @@
+== mysql57 5.7.44 sub_part= True collation= True residual= COUNT(*)
+0
+== mysql80 8.0.46 sub_part= True collation= True residual= COUNT(*)
+0
+== mysql84 8.4.10 sub_part= True collation= True residual= COUNT(*)
+0
+== tidb85 8.0.11-TiDB-v8.5.0 sub_part= True collation= True residual= COUNT(*)
+0
