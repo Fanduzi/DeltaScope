@@ -7,11 +7,13 @@
 // provider-sourced and CREATE-derived pre-state, MODIFY and CHANGE actions,
 // and both MySQL/TiDB dialects. Package audit cannot host the real-provider
 // cells because mysqlmeta already asserts audit.MetadataProvider.
-// input: VARCHAR(16) NULL columns with provider-catalog or derived defaults,
-// exercised through MODIFY/CHANGE under the isolated compatibility policy
+// input: string-family and numeric-family NULL columns with provider-catalog
+// or derived defaults, exercised through MODIFY/CHANGE under the isolated
+// compatibility policy
 // output: zero findings for proven-same literals, one transition finding for
-// proven-different ones inside a comparable domain, and bounded evidence
-// gaps for unproven or cross-encoding identities
+// proven-different ones inside a comparable domain, bounded evidence gaps
+// for unproven or cross-encoding identities, and an independent type-family
+// finding while the identical default identity stays silent
 // pos: application-layer real-provider regression tests for issue #87 T08-R1
 // note: if this file changes, update this header and module README.md.
 package auditmeta
@@ -303,6 +305,14 @@ func TestT08R2NumericComparableDomain(t *testing.T) {
 		{"i1_int_same", "7", "int", "DEFAULT 7", 0, nil},
 		{"i2_int_diff", "7", "int", "DEFAULT 8", 1, nil},
 		{"s1_string_same", "x", "varchar(16)", "DEFAULT 'x'", 0, nil},
+		// d1: a scale-0 decimal column stores the canonical integer text
+		// itself — the encoding, not the type family, is the boundary, so
+		// catalog `1` pairs against AST `1` as proven-same.
+		{"d1_decimal_scale0_same", "1", "decimal(10,0)", "DEFAULT 1", 0, nil},
+		// d2: the same effective value declared as a decimal literal carries
+		// no comparable identity on the declaration side — a bounded
+		// target-side unproven gap, never a determined change or same.
+		{"d2_decimal_scale0_declared_scale", "1", "decimal(10,0)", "DEFAULT 1.0", 0, []string{"target_column.default"}},
 	}
 	for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
 		dialect := dialect
@@ -392,6 +402,58 @@ func TestT08R2DerivedNumericDomain(t *testing.T) {
 				}
 				if !cell.wantGap && len(stmt.EvidenceGaps) != 0 {
 					t.Fatalf("proven derived cell emitted gaps %#v", stmt.EvidenceGaps)
+				}
+			})
+		}
+	}
+}
+
+// TestT08R2TypeChangeKeepsDefaultVerdict separates the default comparison
+// from the independent type finding: identical literal identity (same kind,
+// same canonical text) under different source/target column types stays
+// silent on the default attribute while the type-family transition still
+// fires — the type finding does not launder a default verdict either way.
+func TestT08R2TypeChangeKeepsDefaultVerdict(t *testing.T) {
+	for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
+		dialect := dialect
+		for _, action := range []struct {
+			name   string
+			sql    string
+			ruleID string
+		}{
+			{"modify", "ALTER TABLE r1_defaults MODIFY COLUMN c DECIMAL(10,0) NULL DEFAULT 7;", t08r1ModifyRule},
+			{"change", "ALTER TABLE r1_defaults CHANGE COLUMN c c DECIMAL(10,0) NULL DEFAULT 7;", t08r1ChangeRule},
+		} {
+			action := action
+			t.Run(fmt.Sprintf("%s/%s", dialect, action.name), func(t *testing.T) {
+				fixture := t08r1FixtureFor(dialect, []t08r1Column{
+					{name: "id", colType: "int"},
+					{name: "c", colType: "int", def: "7"},
+				})
+				db := openT08R1DB(t, fixture)
+				provider := &t08r1CountingProvider{inner: mysqlmeta.NewProvider(db)}
+				result := t08r1Audit(t, action.sql, t08r1Policy(t, action.ruleID), dialect, provider, 1)
+				stmt := result.Statements[0]
+				defaultFindings, typeFindings := 0, 0
+				for _, finding := range stmt.Findings {
+					if finding.RuleID != action.ruleID {
+						continue
+					}
+					if strings.Contains(finding.Message, "default value") {
+						defaultFindings++
+					}
+					if strings.Contains(finding.Message, "changes type family") {
+						typeFindings++
+					}
+				}
+				if defaultFindings != 0 {
+					t.Fatalf("default transition findings = %d, want 0 (all: %#v)", defaultFindings, stmt.Findings)
+				}
+				if typeFindings != 1 {
+					t.Fatalf("type-family findings = %d, want 1 (all: %#v)", typeFindings, stmt.Findings)
+				}
+				if len(stmt.EvidenceGaps) != 0 {
+					t.Fatalf("silent default verdict emitted gaps %#v", stmt.EvidenceGaps)
 				}
 			})
 		}

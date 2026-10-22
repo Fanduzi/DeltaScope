@@ -319,7 +319,10 @@ convicted a representation difference as a determined change (R2 defect).
   directly: `string` values are decoded bytes (canonical by definition),
   and `numeric` values compare only when **both** sides carry canonical
   integer text (`0` or `-?[1-9][0-9]*` — no leading zeros, plus signs,
-  scale, or whitespace).
+  scale, or whitespace). Identical recorded bytes short-circuit to same
+  before the domain check — equal representations need no encoding
+  reasoning (`1.00` vs `1.00` stays same, pinned by rule-level cell
+  `numeric identical scale silent`).
 - A numeric pair outside the canonical-integer domain is unproven —
   `unproven_default_identity` over both `*_column.default` facts — even
   though each side's own literal fact is recorded. Known facts whose
