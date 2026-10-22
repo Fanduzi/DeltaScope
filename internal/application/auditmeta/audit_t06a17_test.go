@@ -90,7 +90,7 @@ func (c t06a17Conn) QueryContext(_ context.Context, query string, _ []driver.Nam
 		}, nil
 	case strings.Contains(query, "information_schema.statistics"):
 		return &t06a17Rows{
-			cols: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality"},
+			cols: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality", "sub_part", "collation"},
 		}, nil
 	case strings.Contains(query, "information_schema.tables"):
 		return &t06a17Rows{

@@ -158,7 +158,7 @@ func (c *faultConn) QueryContext(_ context.Context, query string, _ []driver.Nam
 	}
 	if strings.Contains(query, "from information_schema.statistics") {
 		f.providerQueries++
-		return newFaultRows([]string{"index_name", "non_unique", "index_type", "column_name", "cardinality"}, nil, -1), nil
+		return newFaultRows([]string{"index_name", "non_unique", "index_type", "column_name", "cardinality", "sub_part", "collation"}, nil, -1), nil
 	}
 	return nil, fmt.Errorf("unexpected query %q", query)
 }

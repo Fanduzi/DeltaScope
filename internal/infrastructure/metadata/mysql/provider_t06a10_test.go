@@ -30,8 +30,8 @@ func t06A10CatalogRows(allocator driver.Value) map[string]testQueryResult {
 			rows:    [][]driver.Value{{"id", "bigint(20)", nil, nil, "", nil, "NO", "auto_increment", ""}},
 		},
 		"from information_schema.statistics": {
-			columns: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality"},
-			rows:    [][]driver.Value{{"PRIMARY", int64(0), "BTREE", "id", nil}},
+			columns: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality", "sub_part", "collation"},
+			rows:    [][]driver.Value{{"PRIMARY", int64(0), "BTREE", "id", nil, nil, "A"}},
 		},
 	}
 }

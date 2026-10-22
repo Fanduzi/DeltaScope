@@ -4,7 +4,9 @@
 // standalone DROP INDEX operation, applied to request-local batch entries
 // output: one updated batch entry per provable transition — appended index,
 // removed index, renamed index, or cleared primary key — or the shared
-// tombstone when the premise cannot be proven
+// tombstone when the premise cannot be proven; the primary branch proves
+// its member premise (known column set, plain key parts, every member
+// present) before publishing and reconciles member nullability
 // pos: T09 index state chain beside the column transitions; multi-action
 // statements containing index actions keep the bounded tombstone upstream in
 // applyMultiActionAlter and never reach these publications
@@ -146,9 +148,56 @@ func (s *batchState) applyAddIndex(statement spec.Statement, alter *spec.Alter, 
 			s.invalidateKey(key)
 			return
 		}
+		// The member premise is proven before publishing — the same domain
+		// the secondary branch below enforces. A withheld column set can
+		// never prove members exist, and a non-plain key part (prefix, DESC,
+		// expression, or any unmodeled member/option fact) is never a
+		// lawful PK member on the supported dialects.
+		if entry.shape.Columns == nil || len(def.Columns) == 0 ||
+			def.PrefixParts > 0 || def.DescParts > 0 ||
+			def.ExpressionCount > 0 || def.HasExpressionKeys ||
+			def.UnmodeledKeyParts > 0 || def.HasPredicate ||
+			len(def.IncludedColumns) > 0 || def.Global ||
+			len(def.UnmodeledOptions) > 0 {
+			s.invalidateKey(key)
+			return
+		}
+		memberIdx := make([]int, 0, len(def.Columns))
+		for _, column := range def.Columns {
+			idx := -1
+			for i := range entry.shape.Columns {
+				if strings.EqualFold(entry.shape.Columns[i].Name, column) {
+					idx = i
+					break
+				}
+			}
+			if idx < 0 {
+				s.invalidateKey(key)
+				return
+			}
+			memberIdx = append(memberIdx, idx)
+		}
 		shape := cloneTableSnapshot(entry.shape)
 		pk := cloneIndex(*def)
 		shape.PrimaryKey = &pk
+		// Every supported anchor converts PK members to NOT NULL — a
+		// published member still claiming nullable would contradict the
+		// transition itself. The catalog also drops a member's null
+		// default on conversion; a real default survives unchanged.
+		for _, i := range memberIdx {
+			member := &shape.Columns[i]
+			member.NotNull = true
+			if member.DefaultIsNull ||
+				(member.HasDefault &&
+					strings.EqualFold(strings.TrimSpace(member.DefaultValue), "null")) {
+				member.HasDefault = false
+				member.DefaultValue = ""
+				member.DefaultIsNull = false
+				member.DefaultLiteral = nil
+				member.DefaultExpression = nil
+				member.DefaultParenthesized = false
+			}
+		}
 		if shape.Constraints != nil && !shape.ConstraintsUnknown {
 			shape.Constraints = append(shape.Constraints, spec.Constraint{Type: "primary_key", Name: def.Name, Columns: append([]string(nil), def.Columns...)})
 		}

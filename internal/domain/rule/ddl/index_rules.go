@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: create-table Statement specs with typed index metadata and per-rule policy values
-// output: index-governance findings for count, naming, and duplicate-index concerns
+// output: index-governance findings for count, naming, duplicate-index, and redundancy concerns — pair comparisons apply only to sufficiently known plain keys
 // pos: DDL rule implementations for create-table index governance
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -358,7 +358,9 @@ func (r duplicateIndexForbiddenRule) Evaluate(ctx context.Context, statement spe
 	// Candidate set: declared indexes plus the known existing set on the
 	// standalone create_index entry. A finding only stands when the flagged
 	// index is declared by this statement — a pre-existing duplicate pair is
-	// never attributed to it.
+	// never attributed to it. Only plain-comparable members enter the
+	// signature table: a non-plain key part (prefix, DESC, expression,
+	// unmodeled member) means the pair is not provably equal.
 	candidates, _ := lifecycleIndexes(statement)
 	declared := declaredIndexNames(statement)
 	seen := make(map[string]string)
@@ -366,6 +368,9 @@ func (r duplicateIndexForbiddenRule) Evaluate(ctx context.Context, statement spe
 	for _, index := range candidates {
 		if err := ctx.Err(); err != nil {
 			return nil, err
+		}
+		if !indexPlainComparable(index) {
+			continue
 		}
 		signature := duplicateSignature(index)
 		if first, ok := seen[signature]; ok {
@@ -428,7 +433,9 @@ func (r redundantLeftPrefixIndexRule) Evaluate(ctx context.Context, statement sp
 
 	// Lifecycle candidates on the standalone create_index entry; only a
 	// shorter index this statement declares may be flagged — existing
-	// indexes are context, never the subject.
+	// indexes are context, never the subject. Both sides must be
+	// plain-comparable: a prefix/DESC/expression member means the left-prefix
+	// relationship is not provable under ordinary-key semantics.
 	candidates, _ := lifecycleIndexes(statement)
 	declared := declaredIndexNames(statement)
 	findings := make([]rule.Finding, 0)
@@ -438,7 +445,7 @@ func (r redundantLeftPrefixIndexRule) Evaluate(ctx context.Context, statement sp
 		}
 		shorter := candidates[i]
 		if shorter.Kind != spec.IndexKindSecondary || len(shorter.Columns) == 0 ||
-			!declared[strings.ToLower(shorter.Name)] {
+			!declared[strings.ToLower(shorter.Name)] || !indexPlainComparable(shorter) {
 			continue
 		}
 		for j := range candidates {
@@ -446,7 +453,8 @@ func (r redundantLeftPrefixIndexRule) Evaluate(ctx context.Context, statement sp
 				continue
 			}
 			longer := candidates[j]
-			if longer.Kind != spec.IndexKindSecondary || len(longer.Columns) <= len(shorter.Columns) {
+			if longer.Kind != spec.IndexKindSecondary || len(longer.Columns) <= len(shorter.Columns) ||
+				!indexPlainComparable(longer) {
 				continue
 			}
 			if !isLeftPrefix(shorter.Columns, longer.Columns) {
@@ -503,12 +511,15 @@ func (r redundantUniqueOverlapIndexRule) Evaluate(ctx context.Context, statement
 	}
 
 	// Lifecycle candidates on the standalone create_index entry; a secondary
-	// index may only be flagged when this statement declares it.
+	// index may only be flagged when this statement declares it. Only
+	// plain-comparable uniques join the signature table and only
+	// plain-comparable secondaries may be flagged: a non-plain member on
+	// either side means the same-columns overlap is not provable.
 	candidates, _ := lifecycleIndexes(statement)
 	declared := declaredIndexNames(statement)
 	uniqueBySignature := make(map[string]string)
 	for _, index := range candidates {
-		if index.Kind != spec.IndexKindUnique {
+		if index.Kind != spec.IndexKindUnique || !indexPlainComparable(index) {
 			continue
 		}
 		uniqueBySignature[strings.Join(index.Columns, ",")] = index.Name
@@ -519,7 +530,8 @@ func (r redundantUniqueOverlapIndexRule) Evaluate(ctx context.Context, statement
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		if index.Kind != spec.IndexKindSecondary || !declared[strings.ToLower(index.Name)] {
+		if index.Kind != spec.IndexKindSecondary || !declared[strings.ToLower(index.Name)] ||
+			!indexPlainComparable(index) {
 			continue
 		}
 		if uniqueName, ok := uniqueBySignature[strings.Join(index.Columns, ",")]; ok {

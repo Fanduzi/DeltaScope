@@ -135,8 +135,8 @@ func (c t06a4Conn) answer(query string) t06a4Result {
 		}
 	case strings.Contains(query, "information_schema.statistics"):
 		return t06a4Result{
-			cols: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality"},
-			rows: [][]driver.Value{{"PRIMARY", int64(0), "BTREE", "id", nil}},
+			cols: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality", "sub_part", "collation"},
+			rows: [][]driver.Value{{"PRIMARY", int64(0), "BTREE", "id", nil, nil, "A"}},
 		}
 	case strings.Contains(query, "information_schema.tables"):
 		return t06a4Result{

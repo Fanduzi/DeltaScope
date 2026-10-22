@@ -134,8 +134,8 @@ func (c t08r1Conn) QueryContext(_ context.Context, query string, _ []driver.Name
 		}, nil
 	case strings.Contains(query, "information_schema.statistics"):
 		return &t08r1Rows{
-			cols: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality"},
-			rows: [][]driver.Value{{"PRIMARY", int64(0), "BTREE", "id", nil}},
+			cols: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality", "sub_part", "collation"},
+			rows: [][]driver.Value{{"PRIMARY", int64(0), "BTREE", "id", nil, nil, "A"}},
 		}, nil
 	case strings.Contains(query, "information_schema.tables"):
 		return &t08r1Rows{

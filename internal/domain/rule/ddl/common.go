@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: normalized Statement specs emitted by application extraction, including alter-table and standalone rename payloads
-// output: reusable DDL rule predicates and rule identifier constants, including the CHANGE and RENAME destination-name, RENAME COLUMN version, and T07 advanced-column identifiers, plus shared alter-action and rename matching helpers
+// output: reusable DDL rule predicates and rule identifier constants, including the CHANGE and RENAME destination-name, RENAME COLUMN version, and T07 advanced-column identifiers, plus shared alter-action and rename matching helpers and the indexPlainComparable plain-key premise shared by the pair-comparison rules
 // pos: DDL rule common helpers shared across concrete rules and parser-neutral rename semantics
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -549,6 +549,25 @@ func containsFold(items []string, target string) bool {
 		}
 	}
 	return false
+}
+
+// indexPlainComparable reports whether an index carries only plain ascending
+// whole-column key parts. The ordinary-key comparisons (duplicate, left
+// prefix, unique overlap) may pair two indexes only when both sides pass —
+// a member fact of any kind (prefix length, DESC, expression, predicate,
+// included columns, GLOBAL, unmodeled option, or an unclassifiable provider
+// row) means the index is not sufficiently known for a plain-column verdict.
+// Non-plain pairs are suppressed, never silently equated and never convicted.
+func indexPlainComparable(idx spec.Index) bool {
+	return idx.PrefixParts == 0 &&
+		idx.DescParts == 0 &&
+		idx.ExpressionCount == 0 &&
+		!idx.HasExpressionKeys &&
+		idx.UnmodeledKeyParts == 0 &&
+		!idx.HasPredicate &&
+		len(idx.IncludedColumns) == 0 &&
+		!idx.Global &&
+		len(idx.UnmodeledOptions) == 0
 }
 
 func primaryKeyColumnSpecs(statement spec.Statement) []spec.Column {

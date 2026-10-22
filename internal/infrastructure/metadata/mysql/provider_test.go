@@ -428,13 +428,22 @@ func TestClassifyIndex(t *testing.T) {
 	}
 }
 
+// plainPart returns the member-row facts for a plain ascending whole-column
+// key part: a column name, ascending collation, no prefix length.
+func plainPart(name string) indexMemberRow {
+	return indexMemberRow{
+		columnName: sql.NullString{String: name, Valid: true},
+		collation:  sql.NullString{String: "A", Valid: true},
+	}
+}
+
 func TestAccumulateIndexCardinalityPreservesMaximumNonNilValue(t *testing.T) {
 	indexes := make(map[string]*spec.Index)
 	order := make([]string, 0)
 
-	accumulateIndexRow(indexes, &order, "PRIMARY", 0, "BTREE", "id", nil)
-	accumulateIndexRow(indexes, &order, "PRIMARY", 0, "BTREE", "tenant_id", testPtrInt64(12))
-	accumulateIndexRow(indexes, &order, "PRIMARY", 0, "BTREE", "account_id", testPtrInt64(7))
+	accumulateIndexRow(indexes, &order, "PRIMARY", 0, "BTREE", plainPart("id"), nil)
+	accumulateIndexRow(indexes, &order, "PRIMARY", 0, "BTREE", plainPart("tenant_id"), testPtrInt64(12))
+	accumulateIndexRow(indexes, &order, "PRIMARY", 0, "BTREE", plainPart("account_id"), testPtrInt64(7))
 
 	index := indexes["PRIMARY"]
 	if index == nil {
@@ -452,8 +461,8 @@ func TestAccumulateIndexRowMultipleIndexes(t *testing.T) {
 	indexes := make(map[string]*spec.Index)
 	order := make([]string, 0)
 
-	accumulateIndexRow(indexes, &order, "PRIMARY", 0, "BTREE", "id", testPtrInt64(100))
-	accumulateIndexRow(indexes, &order, "idx_email", 1, "BTREE", "email", testPtrInt64(50))
+	accumulateIndexRow(indexes, &order, "PRIMARY", 0, "BTREE", plainPart("id"), testPtrInt64(100))
+	accumulateIndexRow(indexes, &order, "idx_email", 1, "BTREE", plainPart("email"), testPtrInt64(50))
 
 	if len(indexes) != 2 {
 		t.Fatalf("expected 2 indexes, got %d", len(indexes))
@@ -848,11 +857,11 @@ func TestLoadTableSnapshotPreservesIndexCardinalityFromStatisticsRows(t *testing
 			},
 		},
 		"from information_schema.statistics": {
-			columns: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality"},
+			columns: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality", "sub_part", "collation"},
 			rows: [][]driver.Value{
-				{"PRIMARY", int64(0), "BTREE", "id", int64(120)},
-				{"idx_users_email", int64(1), "BTREE", "email", int64(45)},
-				{"idx_users_email", int64(1), "BTREE", "tenant_id", int64(42)},
+				{"PRIMARY", int64(0), "BTREE", "id", int64(120), nil, "A"},
+				{"idx_users_email", int64(1), "BTREE", "email", int64(45), nil, "A"},
+				{"idx_users_email", int64(1), "BTREE", "tenant_id", int64(42), nil, "A"},
 			},
 		},
 	})

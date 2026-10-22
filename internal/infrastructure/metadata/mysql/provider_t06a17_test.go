@@ -63,7 +63,7 @@ func t06a17Results() map[string]testQueryResult {
 			rows:    rows,
 		},
 		"from information_schema.statistics": {
-			columns: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality"},
+			columns: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality", "sub_part", "collation"},
 		},
 	}
 }

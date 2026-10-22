@@ -30,7 +30,7 @@ func t07Results(columnRows [][]driver.Value) map[string]testQueryResult {
 			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0)}},
 		},
 		"from information_schema.columns":    t07ColumnRows(columnRows),
-		"from information_schema.statistics": {columns: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality"}},
+		"from information_schema.statistics": {columns: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality", "sub_part", "collation"}},
 	}
 }
 

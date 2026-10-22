@@ -376,6 +376,12 @@ type Index struct {
 	// parts parsed on the index but not yet modeled for audit semantics.
 	PrefixParts int `json:"prefix_parts,omitempty"`
 	DescParts   int `json:"desc_parts,omitempty"`
+	// UnmodeledKeyParts counts member rows the model cannot classify as a
+	// plain ascending column part (e.g. a NULL or unrecognized COLLATION on
+	// a provider-loaded row). Any nonzero count means the member definition
+	// is not fully known and the index must not enter ordinary-key
+	// comparisons.
+	UnmodeledKeyParts int `json:"unmodeled_key_parts,omitempty"`
 	// Global marks the TiDB-only GLOBAL index modifier parsed on table-level
 	// UNIQUE/PRIMARY KEY constraints and standalone CREATE INDEX statements.
 	// MySQL has no such modifier, so it is a vendor boundary there.

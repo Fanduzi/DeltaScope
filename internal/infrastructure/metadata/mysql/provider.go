@@ -1,6 +1,6 @@
 // Package mysqlmeta implements metadata-aware audit adapters over the MySQL protocol.
 // input: sql.DB access plus connection configs, version/schema/table lookup requests, and MySQL/TiDB metadata queries
-// output: normalized instance facts with explicit known bits (innodb_page_size, 5.7 large-prefix, TiDB max-index-length via all-rows SHOW CONFIG verification — read failures propagate as provider errors, only absent/ambiguous values stay unknown), dialect detection, schema discovery, and table snapshots with preserved index cardinality, verbatim COLUMN_TYPE parameter spans on the five declared-parameter bases (DECIMAL/FLOAT/DOUBLE/ENUM/SET — member literals keep catalog case and attribute words inside quotes never set Unsigned), stored-representation default facts (COLUMN_DEFAULT IS NOT NULL → HasDefault with verbatim DefaultValue bytes; NULL rows and literal "null" text never set DefaultIsNull on this path), the comparable literal-default identity keyed by the column's own base type (temporal markers asserted only on temporal bases), and T07 advanced-column facts read from the same COLUMNS row (EXTRA DEFAULT_GENERATED → parsed DefaultExpression facts, STORED/VIRTUAL GENERATED + GENERATION_EXPRESSION → generated storage + expression facts, INVISIBLE → effective visibility; undecodable expression text stays an explicit unknown fact) for application-level audit enrichment
+// output: normalized instance facts with explicit known bits (innodb_page_size, 5.7 large-prefix, TiDB max-index-length via all-rows SHOW CONFIG verification — read failures propagate as provider errors, only absent/ambiguous values stay unknown), dialect detection, schema discovery, and table snapshots with preserved index cardinality plus per-member plain-key knownness facts (STATISTICS SUB_PART/COLLATION and NULL COLUMN_NAME classified into prefix/desc/expression/unmodeled marks — provider-loaded indexes carry the same comparability vocabulary declarations do), verbatim COLUMN_TYPE parameter spans on the five declared-parameter bases (DECIMAL/FLOAT/DOUBLE/ENUM/SET — member literals keep catalog case and attribute words inside quotes never set Unsigned), stored-representation default facts (COLUMN_DEFAULT IS NOT NULL → HasDefault with verbatim DefaultValue bytes; NULL rows and literal "null" text never set DefaultIsNull on this path), the comparable literal-default identity keyed by the column's own base type (temporal markers asserted only on temporal bases), and T07 advanced-column facts read from the same COLUMNS row (EXTRA DEFAULT_GENERATED → parsed DefaultExpression facts, STORED/VIRTUAL GENERATED + GENERATION_EXPRESSION → generated storage + expression facts, INVISIBLE → effective visibility; undecodable expression text stays an explicit unknown fact) for application-level audit enrichment
 // pos: infrastructure metadata adapter between database/sql and domain metadata specs
 // note: if this file changes, update this header and module README.md.
 package mysqlmeta
@@ -541,8 +541,14 @@ func ptrExpressionFacts(facts spec.ExpressionFacts) *spec.ExpressionFacts {
 }
 
 func (p *Provider) loadIndexes(ctx context.Context, snapshot *spec.TableSnapshot) error {
+	// sub_part/collation are the bounded plain-key knownness facts: a prefix
+	// length, a descending part, or a NULL column_name (expression key part)
+	// means the index must not enter ordinary-key comparisons. Both columns
+	// exist on every supported anchor; a server without them fails the query
+	// and surfaces a load error rather than a guessed shape.
 	rows, err := p.db.QueryContext(ctx, `
-		select index_name, non_unique, index_type, column_name, cardinality
+		select index_name, non_unique, index_type, column_name, cardinality,
+			sub_part, collation
 		from information_schema.statistics
 		where table_schema = ? and table_name = ?
 		order by index_name, seq_in_index
@@ -556,10 +562,12 @@ func (p *Provider) loadIndexes(ctx context.Context, snapshot *spec.TableSnapshot
 	order := make([]string, 0)
 
 	for rows.Next() {
-		var name, indexType, columnName string
+		var name, indexType string
+		var columnName, collation sql.NullString
 		var nonUnique int
-		var cardinality sql.NullInt64
-		if err := rows.Scan(&name, &nonUnique, &indexType, &columnName, &cardinality); err != nil {
+		var cardinality, subPart sql.NullInt64
+		if err := rows.Scan(&name, &nonUnique, &indexType, &columnName,
+			&cardinality, &subPart, &collation); err != nil {
 			return fmt.Errorf("scan table index: %w", err)
 		}
 
@@ -567,7 +575,9 @@ func (p *Provider) loadIndexes(ctx context.Context, snapshot *spec.TableSnapshot
 		if cardinality.Valid {
 			cardinalityValue = ptrInt64(cardinality.Int64)
 		}
-		accumulateIndexRow(indexes, &order, name, nonUnique, indexType, columnName, cardinalityValue)
+		accumulateIndexRow(indexes, &order, name, nonUnique, indexType,
+			indexMemberRow{columnName: columnName, collation: collation, subPart: subPart},
+			cardinalityValue)
 	}
 	if err := rows.Err(); err != nil {
 		return fmt.Errorf("iterate table indexes: %w", err)
@@ -584,7 +594,17 @@ func (p *Provider) loadIndexes(ctx context.Context, snapshot *spec.TableSnapshot
 	return nil
 }
 
-func accumulateIndexRow(indexes map[string]*spec.Index, order *[]string, name string, nonUnique int, indexType string, columnName string, cardinality *int64) {
+// indexMemberRow carries one STATISTICS member row's plain-key knownness
+// facts: which column it names, its sort direction, and its prefix length.
+// A NULL column_name marks an expression key part; a NULL collation on a
+// named member means the row is not classifiable as a plain ascending part.
+type indexMemberRow struct {
+	columnName sql.NullString
+	collation  sql.NullString
+	subPart    sql.NullInt64
+}
+
+func accumulateIndexRow(indexes map[string]*spec.Index, order *[]string, name string, nonUnique int, indexType string, member indexMemberRow, cardinality *int64) {
 	index, ok := indexes[name]
 	if !ok {
 		index = &spec.Index{
@@ -595,7 +615,26 @@ func accumulateIndexRow(indexes map[string]*spec.Index, order *[]string, name st
 		*order = append(*order, name)
 	}
 
-	index.Columns = append(index.Columns, columnName)
+	// NULL column_name is an expression key part — the catalog stores no
+	// column name for it. Mark it rather than fabricating an empty column.
+	if !member.columnName.Valid {
+		index.HasExpressionKeys = true
+		index.ExpressionCount++
+	} else {
+		index.Columns = append(index.Columns, member.columnName.String)
+		if member.subPart.Valid {
+			index.PrefixParts++
+		}
+		if !member.collation.Valid {
+			// A named member with no collation (e.g. spatial rows) cannot be
+			// classified as a plain ascending part.
+			index.UnmodeledKeyParts++
+		} else if strings.EqualFold(member.collation.String, "D") {
+			index.DescParts++
+		} else if !strings.EqualFold(member.collation.String, "A") {
+			index.UnmodeledKeyParts++
+		}
+	}
 	if cardinality == nil {
 		return
 	}
