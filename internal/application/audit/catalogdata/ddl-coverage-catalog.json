@@ -237,7 +237,8 @@
       "form": "CREATE FULLTEXT INDEX",
       "classification": "finding_covered",
       "finding_rule_ids": [
-        "ddl.create_index.notice"
+        "ddl.create_index.notice",
+        "ddl.index.fulltext.prefix.require"
       ],
       "notes": ""
     },
@@ -267,7 +268,8 @@
       "form": "CREATE UNIQUE INDEX",
       "classification": "finding_covered",
       "finding_rule_ids": [
-        "ddl.create_index.notice"
+        "ddl.create_index.notice",
+        "ddl.index.unique.prefix.require"
       ],
       "notes": ""
     },
@@ -3848,7 +3850,8 @@
       "form": "CREATE UNIQUE INDEX",
       "classification": "finding_covered",
       "finding_rule_ids": [
-        "ddl.create_index.notice"
+        "ddl.create_index.notice",
+        "ddl.index.unique.prefix.require"
       ],
       "notes": ""
     },
