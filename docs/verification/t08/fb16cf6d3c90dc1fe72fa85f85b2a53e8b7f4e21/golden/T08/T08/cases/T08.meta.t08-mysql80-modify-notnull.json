@@ -1,0 +1,480 @@
+{
+  "case_id": "T08.meta.t08-mysql80-modify-notnull",
+  "kind": "cli_metadata",
+  "cli_case": "t08-mysql80-modify-notnull",
+  "anchor": "mysql80",
+  "dialect": "mysql",
+  "input_sql": "ALTER TABLE t8 MODIFY COLUMN c INT NOT NULL;",
+  "policy_profile": "t08-all",
+  "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t08/fb16cf6d3c90dc1fe72fa85f85b2a53e8b7f4e21/golden/T08/T08/golden-policy-t08-all.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "T08_MYSQL_PASSWORD"
+  },
+  "expected": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "statement_sql": [
+      "ALTER TABLE t8 MODIFY COLUMN c INT NOT NULL;"
+    ],
+    "statement_indices": [
+      0
+    ],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.alter.modify_column.compatibility.require",
+        "level": "warning"
+      },
+      {
+        "index": 0,
+        "rule_id": "ddl.alter.modify_column.compatibility.require",
+        "level": "warning"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 0,
+        "rule_id": "ddl.alter.modify_column.compatibility.require",
+        "metadata": {
+          "table": "t8",
+          "action": "modify_column",
+          "name": "c",
+          "column_name": "c",
+          "source_not_null": false,
+          "target_not_null": true
+        }
+      },
+      {
+        "index": 0,
+        "rule_id": "ddl.alter.modify_column.compatibility.require",
+        "metadata": {
+          "table": "t8",
+          "action": "modify_column",
+          "name": "c",
+          "column_name": "c",
+          "source_default": "literal",
+          "target_default": "none"
+        }
+      }
+    ],
+    "unsupported_entries": [],
+    "rule_summary_loaded": 11
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:8.0.46",
+      "image_digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+      "container": "deltascope-ddl-golden-mysql80",
+      "reachable": true,
+      "version": "8.0.46"
+    },
+    "setup": [
+      {
+        "name": "prove-prior-absence-t8",
+        "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t8'",
+        "rc": 0,
+        "stdout": "COUNT(*)\n0",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "t8 bound table count",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t8'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "create-fixture-t8",
+        "sql": "CREATE TABLE t8 (pk INT NOT NULL AUTO_INCREMENT, c INT NULL DEFAULT 0, keep_c INT NULL, v VARCHAR(32) NULL, u INT UNSIGNED NOT NULL DEFAULT 0, s VARCHAR(16) NULL, PRIMARY KEY (pk));",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "t8 bound table count",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t8'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          },
+          {
+            "assert": "t8 ordered column set",
+            "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(column_name,':',ordinal_position,':',is_nullable,':',IFNULL(HEX(column_default),'x00'),':',LOWER(extra)) ORDER BY ordinal_position SEPARATOR '|'),'') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t8'",
+            "rc": 0,
+            "output": "pk:1:NO:x00:auto_increment|c:2:YES:30:|keep_c:3:YES:x00:|v:4:YES:x00:|u:5:NO:30:|s:6:YES:x00:",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "t8 ordered column set",
+        "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(column_name,':',ordinal_position,':',is_nullable,':',IFNULL(HEX(column_default),'x00'),':',LOWER(extra)) ORDER BY ordinal_position SEPARATOR '|'),'') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t8'",
+        "rc": 0,
+        "output": "pk:1:NO:x00:auto_increment|c:2:YES:30:|keep_c:3:YES:x00:|v:4:YES:x00:|u:5:NO:30:|s:6:YES:x00:",
+        "stderr": ""
+      },
+      {
+        "assert": "t8 index identity",
+        "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(index_name,':',seq_in_index,':',column_name) ORDER BY CAST(index_name AS BINARY),seq_in_index SEPARATOR ','),'') FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t8'",
+        "rc": 0,
+        "output": "PRIMARY:1:pk",
+        "stderr": ""
+      }
+    ],
+    "execute": [
+      {
+        "name": "apply",
+        "sql": "ALTER TABLE t8 MODIFY COLUMN c INT NOT NULL;",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "structure": [
+      {
+        "assert": "t8 ordered column set",
+        "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(column_name,':',ordinal_position,':',is_nullable,':',IFNULL(HEX(column_default),'x00'),':',LOWER(extra)) ORDER BY ordinal_position SEPARATOR '|'),'') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t8'",
+        "rc": 0,
+        "output": "pk:1:NO:x00:auto_increment|c:2:NO:x00:|keep_c:3:YES:x00:|v:4:YES:x00:|u:5:NO:30:|s:6:YES:x00:",
+        "stderr": ""
+      }
+    ],
+    "teardown": [
+      {
+        "name": "drop-t8",
+        "sql": "DROP TABLE t8;",
+        "rc": 0,
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "t8 bound table count",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t8'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "exit": 0,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":2,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t8 MODIFY COLUMN c INT NOT NULL;\",\"normalized_sql\":\"ALTER TABLE t8 MODIFY COLUMN c INT NOT NULL\",\"findings\":[{\"rule_id\":\"ddl.alter.modify_column.compatibility.require\",\"level\":\"warning\",\"message\":\"column \\\"c\\\" tightens nullability from nullable to not null\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"clean existing NULL values before making the column NOT NULL\",\"metadata\":{\"action\":\"modify_column\",\"column_name\":\"c\",\"name\":\"c\",\"source_not_null\":false,\"table\":\"t8\",\"target_not_null\":true},\"explanation\":{\"summary\":\"Require DDL alter modify column compatibility require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"clean existing NULL values before making the column NOT NULL\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}},{\"rule_id\":\"ddl.alter.modify_column.compatibility.require\",\"level\":\"warning\",\"message\":\"column \\\"c\\\" loses its default value\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"keep the declared default identical to the stored default or review the transition explicitly\",\"metadata\":{\"action\":\"modify_column\",\"column_name\":\"c\",\"name\":\"c\",\"source_default\":\"literal\",\"table\":\"t8\",\"target_default\":\"none\"},\"explanation\":{\"summary\":\"Require DDL alter modify column compatibility require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"keep the declared default identical to the stored default or review the transition explicitly\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.0.46\",\"major\":8,\"minor\":0,\"patch\":46,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":11,\"applicable\":4,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 2,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t8 MODIFY COLUMN c INT NOT NULL;",
+          "normalized_sql": "ALTER TABLE t8 MODIFY COLUMN c INT NOT NULL",
+          "findings": [
+            {
+              "rule_id": "ddl.alter.modify_column.compatibility.require",
+              "level": "warning",
+              "message": "column \"c\" tightens nullability from nullable to not null",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "clean existing NULL values before making the column NOT NULL",
+              "metadata": {
+                "action": "modify_column",
+                "column_name": "c",
+                "name": "c",
+                "source_not_null": false,
+                "table": "t8",
+                "target_not_null": true
+              },
+              "explanation": {
+                "summary": "Require DDL alter modify column compatibility require",
+                "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+                "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                "suggestion": "clean existing NULL values before making the column NOT NULL",
+                "metadata": {
+                  "status": "available",
+                  "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                }
+              }
+            },
+            {
+              "rule_id": "ddl.alter.modify_column.compatibility.require",
+              "level": "warning",
+              "message": "column \"c\" loses its default value",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "keep the declared default identical to the stored default or review the transition explicitly",
+              "metadata": {
+                "action": "modify_column",
+                "column_name": "c",
+                "name": "c",
+                "source_default": "literal",
+                "table": "t8",
+                "target_default": "none"
+              },
+              "explanation": {
+                "summary": "Require DDL alter modify column compatibility require",
+                "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+                "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                "suggestion": "keep the declared default identical to the stored default or review the transition explicitly",
+                "metadata": {
+                  "status": "available",
+                  "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                }
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 11,
+        "applicable": 4,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.46",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "8.0.46"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.46' expected_contains='8.0.46'"
+    },
+    {
+      "name": "setup prove-prior-absence-t8 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup prove-prior-absence-t8: t8 bound table count",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "setup create-fixture-t8 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup create-fixture-t8: t8 bound table count",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "setup create-fixture-t8: t8 ordered column set",
+      "ok": true,
+      "detail": "rc=0 output='pk:1:NO:x00:auto_increment|c:2:YES:30:|keep_c:3:YES:x00:|v:4:YES:x00:|u:5:NO:30:|s:6:YES:x00:' expected='pk:1:NO:x00:auto_increment|c:2:YES:30:|keep_c:3:YES:x00:|v:4:YES:x00:|u:5:NO:30:|s:6:YES:x00:'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=2"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=11"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "unsupported entries",
+      "ok": true,
+      "detail": "entries=[] expected=[]"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['ALTER TABLE t8 MODIFY COLUMN c INT NOT NULL;'] expected=['ALTER TABLE t8 MODIFY COLUMN c INT NOT NULL;']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[] expected=[]"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.alter.modify_column.compatibility.require', 'warning'), (0, 'ddl.alter.modify_column.compatibility.require', 'warning')] expected=[(0, 'ddl.alter.modify_column.compatibility.require', 'warning'), (0, 'ddl.alter.modify_column.compatibility.require', 'warning')]"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.alter.modify_column.compatibility.require')",
+      "ok": true,
+      "detail": "findings=[{'action': 'modify_column', 'column_name': 'c', 'name': 'c', 'source_not_null': False, 'table': 't8', 'target_not_null': True}, {'action': 'modify_column', 'column_name': 'c', 'name': 'c', 'source_default': 'literal', 'table': 't8', 'target_default': 'none'}] expected_subset={'table': 't8', 'action': 'modify_column', 'name': 'c', 'column_name': 'c', 'source_not_null': False, 'target_not_null': True}"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.alter.modify_column.compatibility.require')",
+      "ok": true,
+      "detail": "findings=[{'action': 'modify_column', 'column_name': 'c', 'name': 'c', 'source_not_null': False, 'table': 't8', 'target_not_null': True}, {'action': 'modify_column', 'column_name': 'c', 'name': 'c', 'source_default': 'literal', 'table': 't8', 'target_default': 'none'}] expected_subset={'table': 't8', 'action': 'modify_column', 'name': 'c', 'column_name': 'c', 'source_default': 'literal', 'target_default': 'none'}"
+    },
+    {
+      "name": "post-verify t8 ordered column set",
+      "ok": true,
+      "detail": "rc=0 output='pk:1:NO:x00:auto_increment|c:2:YES:30:|keep_c:3:YES:x00:|v:4:YES:x00:|u:5:NO:30:|s:6:YES:x00:' expected='pk:1:NO:x00:auto_increment|c:2:YES:30:|keep_c:3:YES:x00:|v:4:YES:x00:|u:5:NO:30:|s:6:YES:x00:'"
+    },
+    {
+      "name": "post-verify t8 index identity",
+      "ok": true,
+      "detail": "rc=0 output='PRIMARY:1:pk' expected='PRIMARY:1:pk'"
+    },
+    {
+      "name": "execute apply return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "structure t8 ordered column set",
+      "ok": true,
+      "detail": "rc=0 output='pk:1:NO:x00:auto_increment|c:2:NO:x00:|keep_c:3:YES:x00:|v:4:YES:x00:|u:5:NO:30:|s:6:YES:x00:' expected='pk:1:NO:x00:auto_increment|c:2:NO:x00:|keep_c:3:YES:x00:|v:4:YES:x00:|u:5:NO:30:|s:6:YES:x00:'"
+    },
+    {
+      "name": "teardown drop-t8 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop-t8: t8 bound table count",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t08/fb16cf6d3c90dc1fe72fa85f85b2a53e8b7f4e21/golden/T08/T08/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "ALTER TABLE t8 MODIFY COLUMN c INT NOT NULL;",
+    "--config",
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t08/fb16cf6d3c90dc1fe72fa85f85b2a53e8b7f4e21/golden/T08/T08/golden-policy-t08-all.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23380",
+    "--user",
+    "root",
+    "--password-env",
+    "T08_MYSQL_PASSWORD",
+    "--schema",
+    "golden"
+  ]
+}

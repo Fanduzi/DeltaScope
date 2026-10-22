@@ -1,0 +1,24 @@
+task: T08-R2-COMPARABLE-DOMAIN
+code_sha: fb16cf6d3c90dc1fe72fa85f85b2a53e8b7f4e21
+parent: 23364f097248d80bd18f0870ad742ba75d9cdc72
+branch: milestone/mysql-tidb-ddl-completion
+recorded_at: 2026-10-22T00:25:00Z
+go: go version go1.26.1 darwin/arm64
+
+probe binary: /tmp/t08r2-deltascope
+  build: CGO_ENABLED=0 go build -o /tmp/t08r2-deltascope ./cmd/deltascope
+  sha256: 574a4c5379585719f1ece360c745e786dd100fd8f48bf066c67943225efd0093
+  version: deltascope v0.511.2-0.20261022001853-fb16cf6d3c90+dirty (mysql, tidb)
+/tmp/t08r2-deltascope: go1.26.1
+	path	github.com/Fanduzi/DeltaScope/cmd/deltascope
+	mod	github.com/Fanduzi/DeltaScope	v0.511.2-0.20261022001853-fb16cf6d3c90+dirty	
+	dep	github.com/coreos/go-semver	v0.3.1	h1:yi21YpKnrx1gt5R+la8n5WgS0kCrsPp33dmEyHReZr4=
+	dep	github.com/fsnotify/fsnotify	v1.9.0	h1:2Ml+OJNzbYCTzsxtv8vKSFD9PbJjmhYF14k/jKC7S9k=
+	dep	github.com/go-sql-driver/mysql	v1.7.1	h1:lUIinVbN1DY0xBg0eMOzmmtGoHwWBbvnWubQUrtU8EI=
+
+golden binaries: per-manifest artifact cli.sha256 (CGO_ENABLED=0, removed from tree)
+
+worktree dirty files at record time:
+ M .mcp.json
+
+note: +dirty in version strings is the user-modified .mcp.json (external), not source changes

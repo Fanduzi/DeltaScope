@@ -1,0 +1,49 @@
+{
+  "case_id": "T04.db.tidb85.syntax_negative",
+  "kind": "db_syntax_negative",
+  "anchor": "tidb85",
+  "input_sql": "CREATE TABLE golden_broken (",
+  "expected": {
+    "rc_nonzero": true,
+    "error_class": "1064",
+    "forbidden_markers": [
+      "ERROR 1045",
+      "ERROR 1044",
+      "ERROR 1049",
+      "ERROR 1142",
+      "ERROR 1143",
+      "ERROR 2002",
+      "ERROR 2003",
+      "ERROR 2005",
+      "Access denied",
+      "Unknown database",
+      "Can't connect",
+      "Connection refused",
+      "already exists"
+    ]
+  },
+  "actual": {
+    "rc": 1,
+    "stdout": "",
+    "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 28 near \"\"",
+    "error_class": "1064"
+  },
+  "assertions": [
+    {
+      "name": "nonzero syntax failure",
+      "ok": true,
+      "detail": "rc=1"
+    },
+    {
+      "name": "expected error class",
+      "ok": true,
+      "detail": "error_class='1064' expected='1064'"
+    },
+    {
+      "name": "no permission/connection/object-conflict markers",
+      "ok": true,
+      "detail": "forbidden markers found: []"
+    }
+  ],
+  "status": "pass"
+}

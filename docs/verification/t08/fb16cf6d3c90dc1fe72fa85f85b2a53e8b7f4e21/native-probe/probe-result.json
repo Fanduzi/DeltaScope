@@ -1,0 +1,1465 @@
+{
+ "started": "2026-10-22T08:24:25+0800",
+ "cells": [
+  {
+   "anchor": "mysql57",
+   "cell": "n1",
+   "table": "t08r2_mysql57_n1",
+   "steps": [
+    {
+     "name": "prove-absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r2_mysql57_n1'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    },
+    {
+     "name": "create",
+     "sql": "CREATE TABLE t08r2_mysql57_n1 (id INT PRIMARY KEY, c DECIMAL(10,2) NULL DEFAULT 1);",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "modify",
+     "sql": "ALTER TABLE t08r2_mysql57_n1 MODIFY COLUMN c DECIMAL(10,2) NULL DEFAULT 1;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "drop",
+     "sql": "DROP TABLE t08r2_mysql57_n1;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "final-count",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r2_mysql57_n1'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    }
+   ],
+   "catalog_before": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra), IFNULL(numeric_precision,'-'), IFNULL(numeric_scale,'-') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r2_mysql57_n1' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int(11)",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": "",
+      "numeric_precision": "10",
+      "numeric_scale": "0"
+     },
+     {
+      "name": "c",
+      "type": "decimal(10,2)",
+      "nullable": "YES",
+      "default_hex": "312E3030",
+      "default_text": "1.00",
+      "extra": "",
+      "numeric_precision": "10",
+      "numeric_scale": "2"
+     }
+    ]
+   },
+   "audit": {
+    "argv": [
+     "/tmp/t08r2-deltascope",
+     "audit",
+     "--dialect",
+     "mysql",
+     "--sql",
+     "ALTER TABLE t08r2_mysql57_n1 MODIFY COLUMN c DECIMAL(10,2) NULL DEFAULT 1;",
+     "--config",
+     "docs/verification/t08/fb16cf6d3c90dc1fe72fa85f85b2a53e8b7f4e21/native-probe/r2-compat-policy.yaml",
+     "--format",
+     "json",
+     "--host",
+     "127.0.0.1",
+     "--port",
+     "23357",
+     "--user",
+     "root",
+     "--schema",
+     "golden",
+     "--password-env",
+     "T08R2_MYSQL_PASSWORD"
+    ],
+    "rc": 0,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t08r2_mysql57_n1 MODIFY COLUMN c DECIMAL(10,2) NULL DEFAULT 1;\",\"normalized_sql\":\"ALTER TABLE t08r2_mysql57_n1 MODIFY COLUMN c DECIMAL(10,2) NULL DEFAULT 1\",\"evidence_gaps\":[{\"rule_id\":\"ddl.alter.modify_column.compatibility.require\",\"reason_code\":\"unproven_default_identity\",\"required_facts\":[\"source_column.default\",\"target_column.default\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"5.7.44\",\"major\":5,\"minor\":7,\"patch\":44,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": ""
+   },
+   "audit_findings": 0,
+   "audit_gap_reasons": [
+    "unproven_default_identity"
+   ],
+   "audit_parsed": {
+    "verdict": "review",
+    "coverage": {
+     "status": "unverified"
+    },
+    "summary": {
+     "statements": 1,
+     "blockers": 0,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "ALTER TABLE t08r2_mysql57_n1 MODIFY COLUMN c DECIMAL(10,2) NULL DEFAULT 1;",
+      "normalized_sql": "ALTER TABLE t08r2_mysql57_n1 MODIFY COLUMN c DECIMAL(10,2) NULL DEFAULT 1",
+      "evidence_gaps": [
+       {
+        "rule_id": "ddl.alter.modify_column.compatibility.require",
+        "reason_code": "unproven_default_identity",
+        "required_facts": [
+         "source_column.default",
+         "target_column.default"
+        ]
+       }
+      ],
+      "coverage": {
+       "status": "unverified"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44",
+     "major": 5,
+     "minor": 7,
+     "patch": 44,
+     "source": "observed",
+     "validated_range": true
+    },
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 1,
+     "applicable": 1,
+     "skipped": []
+    },
+    "context": {
+     "mode": "metadata-aware",
+     "dialect": "mysql",
+     "dialect_source": "detected",
+     "schema": "golden",
+     "schema_source": "flag"
+    }
+   },
+   "catalog_after": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra), IFNULL(numeric_precision,'-'), IFNULL(numeric_scale,'-') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r2_mysql57_n1' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int(11)",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": "",
+      "numeric_precision": "10",
+      "numeric_scale": "0"
+     },
+     {
+      "name": "c",
+      "type": "decimal(10,2)",
+      "nullable": "YES",
+      "default_hex": "312E3030",
+      "default_text": "1.00",
+      "extra": "",
+      "numeric_precision": "10",
+      "numeric_scale": "2"
+     }
+    ]
+   },
+   "byte_truth": {
+    "old_hex": "312E3030",
+    "new_hex": "312E3030",
+    "old_text": "1.00",
+    "new_text": "1.00",
+    "bytes_same": true,
+    "audit_findings": 0,
+    "want_findings": 0
+   },
+   "want_gap": "unproven_default_identity",
+   "catalog_text_basis": "1.00",
+   "status": "pass"
+  },
+  {
+   "anchor": "mysql57",
+   "cell": "i1",
+   "table": "t08r2_mysql57_i1",
+   "steps": [
+    {
+     "name": "prove-absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r2_mysql57_i1'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    },
+    {
+     "name": "create",
+     "sql": "CREATE TABLE t08r2_mysql57_i1 (id INT PRIMARY KEY, c INT NULL DEFAULT 7);",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "modify",
+     "sql": "ALTER TABLE t08r2_mysql57_i1 MODIFY COLUMN c INT NULL DEFAULT 7;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "drop",
+     "sql": "DROP TABLE t08r2_mysql57_i1;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "final-count",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r2_mysql57_i1'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    }
+   ],
+   "catalog_before": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra), IFNULL(numeric_precision,'-'), IFNULL(numeric_scale,'-') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r2_mysql57_i1' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int(11)",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": "",
+      "numeric_precision": "10",
+      "numeric_scale": "0"
+     },
+     {
+      "name": "c",
+      "type": "int(11)",
+      "nullable": "YES",
+      "default_hex": "37",
+      "default_text": "7",
+      "extra": "",
+      "numeric_precision": "10",
+      "numeric_scale": "0"
+     }
+    ]
+   },
+   "audit": {
+    "argv": [
+     "/tmp/t08r2-deltascope",
+     "audit",
+     "--dialect",
+     "mysql",
+     "--sql",
+     "ALTER TABLE t08r2_mysql57_i1 MODIFY COLUMN c INT NULL DEFAULT 7;",
+     "--config",
+     "docs/verification/t08/fb16cf6d3c90dc1fe72fa85f85b2a53e8b7f4e21/native-probe/r2-compat-policy.yaml",
+     "--format",
+     "json",
+     "--host",
+     "127.0.0.1",
+     "--port",
+     "23357",
+     "--user",
+     "root",
+     "--schema",
+     "golden",
+     "--password-env",
+     "T08R2_MYSQL_PASSWORD"
+    ],
+    "rc": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t08r2_mysql57_i1 MODIFY COLUMN c INT NULL DEFAULT 7;\",\"normalized_sql\":\"ALTER TABLE t08r2_mysql57_i1 MODIFY COLUMN c INT NULL DEFAULT 7\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"5.7.44\",\"major\":5,\"minor\":7,\"patch\":44,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": ""
+   },
+   "audit_findings": 0,
+   "audit_gap_reasons": [],
+   "audit_parsed": {
+    "verdict": "pass",
+    "coverage": {
+     "status": "complete"
+    },
+    "summary": {
+     "statements": 1,
+     "blockers": 0,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "ALTER TABLE t08r2_mysql57_i1 MODIFY COLUMN c INT NULL DEFAULT 7;",
+      "normalized_sql": "ALTER TABLE t08r2_mysql57_i1 MODIFY COLUMN c INT NULL DEFAULT 7",
+      "coverage": {
+       "status": "complete"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44",
+     "major": 5,
+     "minor": 7,
+     "patch": 44,
+     "source": "observed",
+     "validated_range": true
+    },
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 1,
+     "applicable": 1,
+     "skipped": []
+    },
+    "context": {
+     "mode": "metadata-aware",
+     "dialect": "mysql",
+     "dialect_source": "detected",
+     "schema": "golden",
+     "schema_source": "flag"
+    }
+   },
+   "catalog_after": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra), IFNULL(numeric_precision,'-'), IFNULL(numeric_scale,'-') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r2_mysql57_i1' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int(11)",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": "",
+      "numeric_precision": "10",
+      "numeric_scale": "0"
+     },
+     {
+      "name": "c",
+      "type": "int(11)",
+      "nullable": "YES",
+      "default_hex": "37",
+      "default_text": "7",
+      "extra": "",
+      "numeric_precision": "10",
+      "numeric_scale": "0"
+     }
+    ]
+   },
+   "byte_truth": {
+    "old_hex": "37",
+    "new_hex": "37",
+    "old_text": "7",
+    "new_text": "7",
+    "bytes_same": true,
+    "audit_findings": 0,
+    "want_findings": 0
+   },
+   "want_gap": null,
+   "catalog_text_basis": "7",
+   "status": "pass"
+  },
+  {
+   "anchor": "mysql80",
+   "cell": "n1",
+   "table": "t08r2_mysql80_n1",
+   "steps": [
+    {
+     "name": "prove-absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r2_mysql80_n1'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    },
+    {
+     "name": "create",
+     "sql": "CREATE TABLE t08r2_mysql80_n1 (id INT PRIMARY KEY, c DECIMAL(10,2) NULL DEFAULT 1);",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "modify",
+     "sql": "ALTER TABLE t08r2_mysql80_n1 MODIFY COLUMN c DECIMAL(10,2) NULL DEFAULT 1;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "drop",
+     "sql": "DROP TABLE t08r2_mysql80_n1;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "final-count",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r2_mysql80_n1'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    }
+   ],
+   "catalog_before": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra), IFNULL(numeric_precision,'-'), IFNULL(numeric_scale,'-') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r2_mysql80_n1' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": "",
+      "numeric_precision": "10",
+      "numeric_scale": "0"
+     },
+     {
+      "name": "c",
+      "type": "decimal(10,2)",
+      "nullable": "YES",
+      "default_hex": "312E3030",
+      "default_text": "1.00",
+      "extra": "",
+      "numeric_precision": "10",
+      "numeric_scale": "2"
+     }
+    ]
+   },
+   "audit": {
+    "argv": [
+     "/tmp/t08r2-deltascope",
+     "audit",
+     "--dialect",
+     "mysql",
+     "--sql",
+     "ALTER TABLE t08r2_mysql80_n1 MODIFY COLUMN c DECIMAL(10,2) NULL DEFAULT 1;",
+     "--config",
+     "docs/verification/t08/fb16cf6d3c90dc1fe72fa85f85b2a53e8b7f4e21/native-probe/r2-compat-policy.yaml",
+     "--format",
+     "json",
+     "--host",
+     "127.0.0.1",
+     "--port",
+     "23380",
+     "--user",
+     "root",
+     "--schema",
+     "golden",
+     "--password-env",
+     "T08R2_MYSQL_PASSWORD"
+    ],
+    "rc": 0,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t08r2_mysql80_n1 MODIFY COLUMN c DECIMAL(10,2) NULL DEFAULT 1;\",\"normalized_sql\":\"ALTER TABLE t08r2_mysql80_n1 MODIFY COLUMN c DECIMAL(10,2) NULL DEFAULT 1\",\"evidence_gaps\":[{\"rule_id\":\"ddl.alter.modify_column.compatibility.require\",\"reason_code\":\"unproven_default_identity\",\"required_facts\":[\"source_column.default\",\"target_column.default\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.0.46\",\"major\":8,\"minor\":0,\"patch\":46,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": ""
+   },
+   "audit_findings": 0,
+   "audit_gap_reasons": [
+    "unproven_default_identity"
+   ],
+   "audit_parsed": {
+    "verdict": "review",
+    "coverage": {
+     "status": "unverified"
+    },
+    "summary": {
+     "statements": 1,
+     "blockers": 0,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "ALTER TABLE t08r2_mysql80_n1 MODIFY COLUMN c DECIMAL(10,2) NULL DEFAULT 1;",
+      "normalized_sql": "ALTER TABLE t08r2_mysql80_n1 MODIFY COLUMN c DECIMAL(10,2) NULL DEFAULT 1",
+      "evidence_gaps": [
+       {
+        "rule_id": "ddl.alter.modify_column.compatibility.require",
+        "reason_code": "unproven_default_identity",
+        "required_facts": [
+         "source_column.default",
+         "target_column.default"
+        ]
+       }
+      ],
+      "coverage": {
+       "status": "unverified"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46",
+     "major": 8,
+     "minor": 0,
+     "patch": 46,
+     "source": "observed",
+     "validated_range": true
+    },
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 1,
+     "applicable": 1,
+     "skipped": []
+    },
+    "context": {
+     "mode": "metadata-aware",
+     "dialect": "mysql",
+     "dialect_source": "detected",
+     "schema": "golden",
+     "schema_source": "flag"
+    }
+   },
+   "catalog_after": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra), IFNULL(numeric_precision,'-'), IFNULL(numeric_scale,'-') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r2_mysql80_n1' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": "",
+      "numeric_precision": "10",
+      "numeric_scale": "0"
+     },
+     {
+      "name": "c",
+      "type": "decimal(10,2)",
+      "nullable": "YES",
+      "default_hex": "312E3030",
+      "default_text": "1.00",
+      "extra": "",
+      "numeric_precision": "10",
+      "numeric_scale": "2"
+     }
+    ]
+   },
+   "byte_truth": {
+    "old_hex": "312E3030",
+    "new_hex": "312E3030",
+    "old_text": "1.00",
+    "new_text": "1.00",
+    "bytes_same": true,
+    "audit_findings": 0,
+    "want_findings": 0
+   },
+   "want_gap": "unproven_default_identity",
+   "catalog_text_basis": "1.00",
+   "status": "pass"
+  },
+  {
+   "anchor": "mysql80",
+   "cell": "i1",
+   "table": "t08r2_mysql80_i1",
+   "steps": [
+    {
+     "name": "prove-absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r2_mysql80_i1'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    },
+    {
+     "name": "create",
+     "sql": "CREATE TABLE t08r2_mysql80_i1 (id INT PRIMARY KEY, c INT NULL DEFAULT 7);",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "modify",
+     "sql": "ALTER TABLE t08r2_mysql80_i1 MODIFY COLUMN c INT NULL DEFAULT 7;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "drop",
+     "sql": "DROP TABLE t08r2_mysql80_i1;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "final-count",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r2_mysql80_i1'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    }
+   ],
+   "catalog_before": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra), IFNULL(numeric_precision,'-'), IFNULL(numeric_scale,'-') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r2_mysql80_i1' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": "",
+      "numeric_precision": "10",
+      "numeric_scale": "0"
+     },
+     {
+      "name": "c",
+      "type": "int",
+      "nullable": "YES",
+      "default_hex": "37",
+      "default_text": "7",
+      "extra": "",
+      "numeric_precision": "10",
+      "numeric_scale": "0"
+     }
+    ]
+   },
+   "audit": {
+    "argv": [
+     "/tmp/t08r2-deltascope",
+     "audit",
+     "--dialect",
+     "mysql",
+     "--sql",
+     "ALTER TABLE t08r2_mysql80_i1 MODIFY COLUMN c INT NULL DEFAULT 7;",
+     "--config",
+     "docs/verification/t08/fb16cf6d3c90dc1fe72fa85f85b2a53e8b7f4e21/native-probe/r2-compat-policy.yaml",
+     "--format",
+     "json",
+     "--host",
+     "127.0.0.1",
+     "--port",
+     "23380",
+     "--user",
+     "root",
+     "--schema",
+     "golden",
+     "--password-env",
+     "T08R2_MYSQL_PASSWORD"
+    ],
+    "rc": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t08r2_mysql80_i1 MODIFY COLUMN c INT NULL DEFAULT 7;\",\"normalized_sql\":\"ALTER TABLE t08r2_mysql80_i1 MODIFY COLUMN c INT NULL DEFAULT 7\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.0.46\",\"major\":8,\"minor\":0,\"patch\":46,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": ""
+   },
+   "audit_findings": 0,
+   "audit_gap_reasons": [],
+   "audit_parsed": {
+    "verdict": "pass",
+    "coverage": {
+     "status": "complete"
+    },
+    "summary": {
+     "statements": 1,
+     "blockers": 0,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "ALTER TABLE t08r2_mysql80_i1 MODIFY COLUMN c INT NULL DEFAULT 7;",
+      "normalized_sql": "ALTER TABLE t08r2_mysql80_i1 MODIFY COLUMN c INT NULL DEFAULT 7",
+      "coverage": {
+       "status": "complete"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46",
+     "major": 8,
+     "minor": 0,
+     "patch": 46,
+     "source": "observed",
+     "validated_range": true
+    },
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 1,
+     "applicable": 1,
+     "skipped": []
+    },
+    "context": {
+     "mode": "metadata-aware",
+     "dialect": "mysql",
+     "dialect_source": "detected",
+     "schema": "golden",
+     "schema_source": "flag"
+    }
+   },
+   "catalog_after": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra), IFNULL(numeric_precision,'-'), IFNULL(numeric_scale,'-') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r2_mysql80_i1' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": "",
+      "numeric_precision": "10",
+      "numeric_scale": "0"
+     },
+     {
+      "name": "c",
+      "type": "int",
+      "nullable": "YES",
+      "default_hex": "37",
+      "default_text": "7",
+      "extra": "",
+      "numeric_precision": "10",
+      "numeric_scale": "0"
+     }
+    ]
+   },
+   "byte_truth": {
+    "old_hex": "37",
+    "new_hex": "37",
+    "old_text": "7",
+    "new_text": "7",
+    "bytes_same": true,
+    "audit_findings": 0,
+    "want_findings": 0
+   },
+   "want_gap": null,
+   "catalog_text_basis": "7",
+   "status": "pass"
+  },
+  {
+   "anchor": "mysql84",
+   "cell": "n1",
+   "table": "t08r2_mysql84_n1",
+   "steps": [
+    {
+     "name": "prove-absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r2_mysql84_n1'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    },
+    {
+     "name": "create",
+     "sql": "CREATE TABLE t08r2_mysql84_n1 (id INT PRIMARY KEY, c DECIMAL(10,2) NULL DEFAULT 1);",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "modify",
+     "sql": "ALTER TABLE t08r2_mysql84_n1 MODIFY COLUMN c DECIMAL(10,2) NULL DEFAULT 1;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "drop",
+     "sql": "DROP TABLE t08r2_mysql84_n1;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "final-count",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r2_mysql84_n1'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    }
+   ],
+   "catalog_before": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra), IFNULL(numeric_precision,'-'), IFNULL(numeric_scale,'-') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r2_mysql84_n1' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": "",
+      "numeric_precision": "10",
+      "numeric_scale": "0"
+     },
+     {
+      "name": "c",
+      "type": "decimal(10,2)",
+      "nullable": "YES",
+      "default_hex": "312E3030",
+      "default_text": "1.00",
+      "extra": "",
+      "numeric_precision": "10",
+      "numeric_scale": "2"
+     }
+    ]
+   },
+   "audit": {
+    "argv": [
+     "/tmp/t08r2-deltascope",
+     "audit",
+     "--dialect",
+     "mysql",
+     "--sql",
+     "ALTER TABLE t08r2_mysql84_n1 MODIFY COLUMN c DECIMAL(10,2) NULL DEFAULT 1;",
+     "--config",
+     "docs/verification/t08/fb16cf6d3c90dc1fe72fa85f85b2a53e8b7f4e21/native-probe/r2-compat-policy.yaml",
+     "--format",
+     "json",
+     "--host",
+     "127.0.0.1",
+     "--port",
+     "23384",
+     "--user",
+     "root",
+     "--schema",
+     "golden",
+     "--password-env",
+     "T08R2_MYSQL_PASSWORD"
+    ],
+    "rc": 0,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t08r2_mysql84_n1 MODIFY COLUMN c DECIMAL(10,2) NULL DEFAULT 1;\",\"normalized_sql\":\"ALTER TABLE t08r2_mysql84_n1 MODIFY COLUMN c DECIMAL(10,2) NULL DEFAULT 1\",\"evidence_gaps\":[{\"rule_id\":\"ddl.alter.modify_column.compatibility.require\",\"reason_code\":\"unproven_default_identity\",\"required_facts\":[\"source_column.default\",\"target_column.default\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.4.10\",\"major\":8,\"minor\":4,\"patch\":10,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": ""
+   },
+   "audit_findings": 0,
+   "audit_gap_reasons": [
+    "unproven_default_identity"
+   ],
+   "audit_parsed": {
+    "verdict": "review",
+    "coverage": {
+     "status": "unverified"
+    },
+    "summary": {
+     "statements": 1,
+     "blockers": 0,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "ALTER TABLE t08r2_mysql84_n1 MODIFY COLUMN c DECIMAL(10,2) NULL DEFAULT 1;",
+      "normalized_sql": "ALTER TABLE t08r2_mysql84_n1 MODIFY COLUMN c DECIMAL(10,2) NULL DEFAULT 1",
+      "evidence_gaps": [
+       {
+        "rule_id": "ddl.alter.modify_column.compatibility.require",
+        "reason_code": "unproven_default_identity",
+        "required_facts": [
+         "source_column.default",
+         "target_column.default"
+        ]
+       }
+      ],
+      "coverage": {
+       "status": "unverified"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10",
+     "major": 8,
+     "minor": 4,
+     "patch": 10,
+     "source": "observed",
+     "validated_range": true
+    },
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 1,
+     "applicable": 1,
+     "skipped": []
+    },
+    "context": {
+     "mode": "metadata-aware",
+     "dialect": "mysql",
+     "dialect_source": "detected",
+     "schema": "golden",
+     "schema_source": "flag"
+    }
+   },
+   "catalog_after": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra), IFNULL(numeric_precision,'-'), IFNULL(numeric_scale,'-') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r2_mysql84_n1' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": "",
+      "numeric_precision": "10",
+      "numeric_scale": "0"
+     },
+     {
+      "name": "c",
+      "type": "decimal(10,2)",
+      "nullable": "YES",
+      "default_hex": "312E3030",
+      "default_text": "1.00",
+      "extra": "",
+      "numeric_precision": "10",
+      "numeric_scale": "2"
+     }
+    ]
+   },
+   "byte_truth": {
+    "old_hex": "312E3030",
+    "new_hex": "312E3030",
+    "old_text": "1.00",
+    "new_text": "1.00",
+    "bytes_same": true,
+    "audit_findings": 0,
+    "want_findings": 0
+   },
+   "want_gap": "unproven_default_identity",
+   "catalog_text_basis": "1.00",
+   "status": "pass"
+  },
+  {
+   "anchor": "mysql84",
+   "cell": "i1",
+   "table": "t08r2_mysql84_i1",
+   "steps": [
+    {
+     "name": "prove-absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r2_mysql84_i1'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    },
+    {
+     "name": "create",
+     "sql": "CREATE TABLE t08r2_mysql84_i1 (id INT PRIMARY KEY, c INT NULL DEFAULT 7);",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "modify",
+     "sql": "ALTER TABLE t08r2_mysql84_i1 MODIFY COLUMN c INT NULL DEFAULT 7;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "drop",
+     "sql": "DROP TABLE t08r2_mysql84_i1;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "final-count",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r2_mysql84_i1'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    }
+   ],
+   "catalog_before": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra), IFNULL(numeric_precision,'-'), IFNULL(numeric_scale,'-') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r2_mysql84_i1' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": "",
+      "numeric_precision": "10",
+      "numeric_scale": "0"
+     },
+     {
+      "name": "c",
+      "type": "int",
+      "nullable": "YES",
+      "default_hex": "37",
+      "default_text": "7",
+      "extra": "",
+      "numeric_precision": "10",
+      "numeric_scale": "0"
+     }
+    ]
+   },
+   "audit": {
+    "argv": [
+     "/tmp/t08r2-deltascope",
+     "audit",
+     "--dialect",
+     "mysql",
+     "--sql",
+     "ALTER TABLE t08r2_mysql84_i1 MODIFY COLUMN c INT NULL DEFAULT 7;",
+     "--config",
+     "docs/verification/t08/fb16cf6d3c90dc1fe72fa85f85b2a53e8b7f4e21/native-probe/r2-compat-policy.yaml",
+     "--format",
+     "json",
+     "--host",
+     "127.0.0.1",
+     "--port",
+     "23384",
+     "--user",
+     "root",
+     "--schema",
+     "golden",
+     "--password-env",
+     "T08R2_MYSQL_PASSWORD"
+    ],
+    "rc": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t08r2_mysql84_i1 MODIFY COLUMN c INT NULL DEFAULT 7;\",\"normalized_sql\":\"ALTER TABLE t08r2_mysql84_i1 MODIFY COLUMN c INT NULL DEFAULT 7\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.4.10\",\"major\":8,\"minor\":4,\"patch\":10,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": ""
+   },
+   "audit_findings": 0,
+   "audit_gap_reasons": [],
+   "audit_parsed": {
+    "verdict": "pass",
+    "coverage": {
+     "status": "complete"
+    },
+    "summary": {
+     "statements": 1,
+     "blockers": 0,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "ALTER TABLE t08r2_mysql84_i1 MODIFY COLUMN c INT NULL DEFAULT 7;",
+      "normalized_sql": "ALTER TABLE t08r2_mysql84_i1 MODIFY COLUMN c INT NULL DEFAULT 7",
+      "coverage": {
+       "status": "complete"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10",
+     "major": 8,
+     "minor": 4,
+     "patch": 10,
+     "source": "observed",
+     "validated_range": true
+    },
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 1,
+     "applicable": 1,
+     "skipped": []
+    },
+    "context": {
+     "mode": "metadata-aware",
+     "dialect": "mysql",
+     "dialect_source": "detected",
+     "schema": "golden",
+     "schema_source": "flag"
+    }
+   },
+   "catalog_after": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra), IFNULL(numeric_precision,'-'), IFNULL(numeric_scale,'-') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r2_mysql84_i1' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": "",
+      "numeric_precision": "10",
+      "numeric_scale": "0"
+     },
+     {
+      "name": "c",
+      "type": "int",
+      "nullable": "YES",
+      "default_hex": "37",
+      "default_text": "7",
+      "extra": "",
+      "numeric_precision": "10",
+      "numeric_scale": "0"
+     }
+    ]
+   },
+   "byte_truth": {
+    "old_hex": "37",
+    "new_hex": "37",
+    "old_text": "7",
+    "new_text": "7",
+    "bytes_same": true,
+    "audit_findings": 0,
+    "want_findings": 0
+   },
+   "want_gap": null,
+   "catalog_text_basis": "7",
+   "status": "pass"
+  },
+  {
+   "anchor": "tidb85",
+   "cell": "n1",
+   "table": "t08r2_tidb85_n1",
+   "steps": [
+    {
+     "name": "prove-absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r2_tidb85_n1'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    },
+    {
+     "name": "create",
+     "sql": "CREATE TABLE t08r2_tidb85_n1 (id INT PRIMARY KEY, c DECIMAL(10,2) NULL DEFAULT 1);",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "modify",
+     "sql": "ALTER TABLE t08r2_tidb85_n1 MODIFY COLUMN c DECIMAL(10,2) NULL DEFAULT 1;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "drop",
+     "sql": "DROP TABLE t08r2_tidb85_n1;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "final-count",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r2_tidb85_n1'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    }
+   ],
+   "catalog_before": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra), IFNULL(numeric_precision,'-'), IFNULL(numeric_scale,'-') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r2_tidb85_n1' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": "",
+      "numeric_precision": "11",
+      "numeric_scale": "0"
+     },
+     {
+      "name": "c",
+      "type": "decimal(10,2)",
+      "nullable": "YES",
+      "default_hex": "31",
+      "default_text": "1",
+      "extra": "",
+      "numeric_precision": "10",
+      "numeric_scale": "2"
+     }
+    ]
+   },
+   "audit": {
+    "argv": [
+     "/tmp/t08r2-deltascope",
+     "audit",
+     "--dialect",
+     "tidb",
+     "--sql",
+     "ALTER TABLE t08r2_tidb85_n1 MODIFY COLUMN c DECIMAL(10,2) NULL DEFAULT 1;",
+     "--config",
+     "docs/verification/t08/fb16cf6d3c90dc1fe72fa85f85b2a53e8b7f4e21/native-probe/r2-compat-policy.yaml",
+     "--format",
+     "json",
+     "--host",
+     "127.0.0.1",
+     "--port",
+     "24000",
+     "--user",
+     "root",
+     "--schema",
+     "golden"
+    ],
+    "rc": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t08r2_tidb85_n1 MODIFY COLUMN c DECIMAL(10,2) NULL DEFAULT 1;\",\"normalized_sql\":\"ALTER TABLE t08r2_tidb85_n1 MODIFY COLUMN c DECIMAL(10,2) NULL DEFAULT 1\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": ""
+   },
+   "audit_findings": 0,
+   "audit_gap_reasons": [],
+   "audit_parsed": {
+    "verdict": "pass",
+    "coverage": {
+     "status": "complete"
+    },
+    "summary": {
+     "statements": 1,
+     "blockers": 0,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "ALTER TABLE t08r2_tidb85_n1 MODIFY COLUMN c DECIMAL(10,2) NULL DEFAULT 1;",
+      "normalized_sql": "ALTER TABLE t08r2_tidb85_n1 MODIFY COLUMN c DECIMAL(10,2) NULL DEFAULT 1",
+      "coverage": {
+       "status": "complete"
+      }
+     }
+    ],
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0",
+     "major": 8,
+     "minor": 5,
+     "patch": 0,
+     "source": "observed",
+     "validated_range": true
+    },
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 1,
+     "applicable": 1,
+     "skipped": []
+    },
+    "context": {
+     "mode": "metadata-aware",
+     "dialect": "tidb",
+     "dialect_source": "detected",
+     "schema": "golden",
+     "schema_source": "flag"
+    }
+   },
+   "catalog_after": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra), IFNULL(numeric_precision,'-'), IFNULL(numeric_scale,'-') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r2_tidb85_n1' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": "",
+      "numeric_precision": "11",
+      "numeric_scale": "0"
+     },
+     {
+      "name": "c",
+      "type": "decimal(10,2)",
+      "nullable": "YES",
+      "default_hex": "31",
+      "default_text": "1",
+      "extra": "",
+      "numeric_precision": "10",
+      "numeric_scale": "2"
+     }
+    ]
+   },
+   "byte_truth": {
+    "old_hex": "31",
+    "new_hex": "31",
+    "old_text": "1",
+    "new_text": "1",
+    "bytes_same": true,
+    "audit_findings": 0,
+    "want_findings": 0
+   },
+   "want_gap": null,
+   "catalog_text_basis": "1",
+   "status": "pass"
+  },
+  {
+   "anchor": "tidb85",
+   "cell": "i1",
+   "table": "t08r2_tidb85_i1",
+   "steps": [
+    {
+     "name": "prove-absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r2_tidb85_i1'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    },
+    {
+     "name": "create",
+     "sql": "CREATE TABLE t08r2_tidb85_i1 (id INT PRIMARY KEY, c INT NULL DEFAULT 7);",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "modify",
+     "sql": "ALTER TABLE t08r2_tidb85_i1 MODIFY COLUMN c INT NULL DEFAULT 7;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "drop",
+     "sql": "DROP TABLE t08r2_tidb85_i1;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "final-count",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08r2_tidb85_i1'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    }
+   ],
+   "catalog_before": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra), IFNULL(numeric_precision,'-'), IFNULL(numeric_scale,'-') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r2_tidb85_i1' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": "",
+      "numeric_precision": "11",
+      "numeric_scale": "0"
+     },
+     {
+      "name": "c",
+      "type": "int",
+      "nullable": "YES",
+      "default_hex": "37",
+      "default_text": "7",
+      "extra": "",
+      "numeric_precision": "11",
+      "numeric_scale": "0"
+     }
+    ]
+   },
+   "audit": {
+    "argv": [
+     "/tmp/t08r2-deltascope",
+     "audit",
+     "--dialect",
+     "tidb",
+     "--sql",
+     "ALTER TABLE t08r2_tidb85_i1 MODIFY COLUMN c INT NULL DEFAULT 7;",
+     "--config",
+     "docs/verification/t08/fb16cf6d3c90dc1fe72fa85f85b2a53e8b7f4e21/native-probe/r2-compat-policy.yaml",
+     "--format",
+     "json",
+     "--host",
+     "127.0.0.1",
+     "--port",
+     "24000",
+     "--user",
+     "root",
+     "--schema",
+     "golden"
+    ],
+    "rc": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t08r2_tidb85_i1 MODIFY COLUMN c INT NULL DEFAULT 7;\",\"normalized_sql\":\"ALTER TABLE t08r2_tidb85_i1 MODIFY COLUMN c INT NULL DEFAULT 7\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": ""
+   },
+   "audit_findings": 0,
+   "audit_gap_reasons": [],
+   "audit_parsed": {
+    "verdict": "pass",
+    "coverage": {
+     "status": "complete"
+    },
+    "summary": {
+     "statements": 1,
+     "blockers": 0,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "ALTER TABLE t08r2_tidb85_i1 MODIFY COLUMN c INT NULL DEFAULT 7;",
+      "normalized_sql": "ALTER TABLE t08r2_tidb85_i1 MODIFY COLUMN c INT NULL DEFAULT 7",
+      "coverage": {
+       "status": "complete"
+      }
+     }
+    ],
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0",
+     "major": 8,
+     "minor": 5,
+     "patch": 0,
+     "source": "observed",
+     "validated_range": true
+    },
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 1,
+     "applicable": 1,
+     "skipped": []
+    },
+    "context": {
+     "mode": "metadata-aware",
+     "dialect": "tidb",
+     "dialect_source": "detected",
+     "schema": "golden",
+     "schema_source": "flag"
+    }
+   },
+   "catalog_after": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra), IFNULL(numeric_precision,'-'), IFNULL(numeric_scale,'-') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08r2_tidb85_i1' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "id",
+      "type": "int",
+      "nullable": "NO",
+      "default_hex": "x00",
+      "default_text": "<sql-null>",
+      "extra": "",
+      "numeric_precision": "11",
+      "numeric_scale": "0"
+     },
+     {
+      "name": "c",
+      "type": "int",
+      "nullable": "YES",
+      "default_hex": "37",
+      "default_text": "7",
+      "extra": "",
+      "numeric_precision": "11",
+      "numeric_scale": "0"
+     }
+    ]
+   },
+   "byte_truth": {
+    "old_hex": "37",
+    "new_hex": "37",
+    "old_text": "7",
+    "new_text": "7",
+    "bytes_same": true,
+    "audit_findings": 0,
+    "want_findings": 0
+   },
+   "want_gap": null,
+   "catalog_text_basis": "7",
+   "status": "pass"
+  }
+ ],
+ "failures": [],
+ "catalog_rules": 386,
+ "policy_path": "docs/verification/t08/fb16cf6d3c90dc1fe72fa85f85b2a53e8b7f4e21/native-probe/r2-compat-policy.yaml",
+ "cli": "/tmp/t08r2-deltascope"
+}

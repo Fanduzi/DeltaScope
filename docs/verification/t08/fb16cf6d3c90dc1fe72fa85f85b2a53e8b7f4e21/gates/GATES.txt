@@ -1,0 +1,29 @@
+T08-R2 gates at fb16cf6d3c90dc1fe72fa85f85b2a53e8b7f4e21
+
+go test (focused): go-test-focused.log — 7/7 packages ok, rc=0
+go test -race (affected): go-test-race.log — 5/5 packages ok, rc=0
+
+GOFLAGS=-count=1 make test — full repo PASS
+make sql-corpus-gates — PASS
+make ddl-inventory-gate — PASS
+make ddl-coverage-catalog-test — PASS
+make ddl-golden-validator-test — PASS (871 PASS lines, 0 failures: 758 + 86 T07 + 25 T08 constructed checks)
+make pg-unit-test-gates — PASS (7 packages)
+make docs-example-gates — PASS
+decision-record-gate — PASS
+three-level-doc check — OK (L3 headers + L2 README sync; L1 reminder noted)
+gofmt -l on touched files — clean
+
+golden manifests at frozen SHA (ddl_golden.py, owned anchors, binary check on):
+  T04: 163/163 cases, 1889 assertions
+  T05: 247/247 cases, 5109 assertions
+  T08: 172/172 cases, 4240 assertions
+
+REUSE (dependency-accurate, not rerun this round):
+  T06 496/496, T07 207/207 — reused from R1 SHA 1d2c2fa4 evidence
+  (docs/verification/t08/1d2c2fa4.../golden). Justification: R2 changes
+  only the shared literal comparison inside alter_compatibility_rules.go
+  plus comments/tests/docs — parser and provider fact production are
+  byte-identical, so T06/T07 consumption paths are unreachable by R2.
+  T02/T03 unchanged on the same basis; the R1 16-cell string probe
+  covers the string domain which R2 did not touch.

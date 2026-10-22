@@ -1,0 +1,16 @@
+command: T08R2_OUT=docs/verification/t08/fb16cf6d3c90dc1fe72fa85f85b2a53e8b7f4e21/native-probe DELTASCOPE_BIN=/tmp/t08r2-deltascope python3 /tmp/t08r2_native_probe.py
+cwd: /Users/fan/GolangProjects/DeltaScope
+HEAD: fb16cf6d3c90dc1fe72fa85f85b2a53e8b7f4e21
+binary: /tmp/t08r2-deltascope sha256=574a4c5379585719f1ece360c745e786dd100fd8f48bf066c67943225efd0093 (CGO_ENABLED=0, go1.26.1)
+anchors: mysql57@23357(5.7.44) mysql80@23380(8.0.46) mysql84@23384(8.4.10) tidb85@24000(v8.5.0) — docker/ddl-golden-compose.yaml
+auth: MYSQL_PWD env on mysql anchors; tidb85 passwordless
+matrix: 4 anchors x {n1: DECIMAL(10,2) DEFAULT 1 -> MODIFY DEFAULT 1, i1: INT DEFAULT 7 -> MODIFY DEFAULT 7} = 8 cells
+policy: isolated ddl.alter.modify_column.compatibility.require (all other catalog rules disabled)
+
+result: 8/8 pass, audit rc=0 per cell, byte truth == verdict per cell
+
+per-anchor encoding evidence (verbatim catalog text, no normalization):
+  mysql57/80/84 n1: column_default='1.00' (HEX 312E3030) -> unproven_default_identity gap, 0 findings
+  tidb85 n1:        column_default='1'    (HEX 31)       -> proven same, 0 findings, no gap
+  all i1:           column_default='7'    (HEX 37)       -> proven same, 0 findings, no gap
+  reasserting the same definition never changed stored bytes on any anchor
