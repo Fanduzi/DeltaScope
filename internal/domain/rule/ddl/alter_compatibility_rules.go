@@ -297,7 +297,7 @@ func defaultComparison(source spec.Column, target spec.Column) (transition strin
 	}
 	switch sourceClass {
 	case defaultClassLiteral:
-		return literalDefaultComparison(source.DefaultLiteral, target.DefaultLiteral)
+		return literalDefaultComparison(source, target)
 	case defaultClassExpression:
 		return expressionDefaultComparison(source.DefaultExpression, target.DefaultExpression)
 	}
@@ -309,28 +309,43 @@ func defaultComparison(source spec.Column, target spec.Column) (transition strin
 // different only inside a proven comparable domain; a missing identity is
 // that side's fact deficit; a cross-domain pair is a comparison deficit —
 // kinds never coerce.
-func literalDefaultComparison(source, target *spec.LiteralDefaultFacts) (string, []string, []string) {
+func literalDefaultComparison(source, target spec.Column) (string, []string, []string) {
+	sourceFacts, targetFacts := source.DefaultLiteral, target.DefaultLiteral
 	switch {
-	case source == nil && target == nil:
+	case sourceFacts == nil && targetFacts == nil:
 		return "", []string{factSourceColumnDefault}, []string{factTargetColumnDefault}
-	case source == nil:
+	case sourceFacts == nil:
 		return "", []string{factSourceColumnDefault}, nil
-	case target == nil:
+	case targetFacts == nil:
 		return "", nil, []string{factTargetColumnDefault}
-	case source.Kind != target.Kind:
+	case sourceFacts.Kind != targetFacts.Kind:
 		return "", nil, []string{factSourceColumnDefault, factTargetColumnDefault}
-	case source.Value == target.Value:
+	case sourceFacts.Value == targetFacts.Value:
 		return "", nil, nil
-	case source.Kind == spec.LiteralDefaultNumeric &&
-		(!isCanonicalIntegerText(source.Value) || !isCanonicalIntegerText(target.Value)):
+	case sourceFacts.Kind == spec.LiteralDefaultNumeric &&
+		(!isCanonicalIntegerText(sourceFacts.Value) || !isCanonicalIntegerText(targetFacts.Value) ||
+			columnLiteralNormalized(source) || columnLiteralNormalized(target)):
 		// The numeric kind marks the value domain, not a shared encoding:
 		// catalog scale-normalized text (1.00) and AST integer text (1)
 		// encode possibly-equal values differently, so only canonical
-		// integer text on both sides is a proven cross-source encoding.
-		// String kinds are decoded bytes — always canonical.
+		// integer text on both sides is a proven cross-source encoding —
+		// and only when neither column's type normalizes the literal on
+		// storage (a year column's integer text is a raw input, not the
+		// final stored encoding). String kinds are decoded bytes — always
+		// canonical.
 		return "", nil, []string{factSourceColumnDefault, factTargetColumnDefault}
 	}
 	return "changes its default value", nil, nil
+}
+
+// columnLiteralNormalized reports whether the column's base type rewrites
+// a numeric literal on storage, so the recorded text is not provably the
+// final encoding across sources. MySQL maps a short YEAR input to the full
+// year (declared 1 stores 2001), so either side carrying a year column
+// makes a different-text numeric pair incomparable without a year
+// conversion the comparison deliberately does not implement.
+func columnLiteralNormalized(column spec.Column) bool {
+	return baseType(column) == "year"
 }
 
 // isCanonicalIntegerText reports whether s is the canonical decimal text

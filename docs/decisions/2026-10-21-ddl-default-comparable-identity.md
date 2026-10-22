@@ -151,11 +151,40 @@ Both fact sources inherit the same boundary — a derived `DEFAULT 1.00`
 yields no comparable identity just as a catalog `1.00` cannot pair
 against `1`.
 
-Deferred unchanged: DECIMAL/FLOAT/YEAR-adjacent normalization across
-encodings (scale, scientific notation, `sql_mode` effects) — no numeric
-normalizer or evaluator was added. R1's string and integer positives,
-presence flips, class switches, expression fingerprints, and the
-explicit-op/effective-change separation are unchanged.
+Deferred unchanged: DECIMAL/FLOAT and remaining YEAR-adjacent
+normalization across encodings (scale, scientific notation, year
+arithmetic, `sql_mode` effects) — no numeric normalizer or evaluator was
+added. R1's string and integer positives, presence flips, class
+switches, expression fingerprints, and the explicit-op/effective-change
+separation are unchanged.
+
+## Amendment — T08-R3 type-normalized literals leave the comparable domain
+
+R2 still overclaimed: it treated canonical-integer text as a proven
+encoding on *every* column type. MySQL applies a value normalization for
+`YEAR` — a declared `DEFAULT 1` stores `2001` in `COLUMN_DEFAULT` — so
+the catalog's canonical `2001` and the declaration's canonical `1` are
+the *same* effective default, and comparing them convicted an identical
+stored default as changed. Natively confirmed on the pinned MySQL 8.4.10
+anchor (stored bytes `2001`→`2001` across the same-definition MODIFY;
+the audit emitted `changes its default value`). TiDB 8.5.0 stores the
+declared integer verbatim (`1`), so the defect is MySQL-family-specific.
+
+The corrected boundary: canonical-integer text is a shared encoding only
+where neither column's type rewrites the literal on storage. A
+different-text `numeric` pair touching a `year` base type on either
+column is `unproven_default_identity` over both facts — the comparator
+now reads the `spec.Column` types it already receives, never statement
+text. Equal recorded bytes still short-circuit to same unconditionally
+(`2001` vs `2001` on year stays same — proven identical on the anchor).
+No year conversion is implemented: pairs that need one are honest gaps,
+not verdicts. Both fact sources judge identically — a CREATE-derived
+year column carries the same gate.
+
+Known boundary retained: a different-text numeric pair between a
+year column and a non-year column is also unproven — the comparator
+cannot distinguish a provider-final `2001` from a declaration-raw `1`
+without a year conversion, so the safe direction is the bounded gap.
 
 ## Verification Evidence
 
@@ -180,6 +209,16 @@ explicit-op/effective-change separation are unchanged.
   CREATE-derived pre-states across MODIFY+CHANGE and both dialects;
   canonical-integer controls (`7→7`, `7→8`) and the string matrix keep
   their R1 verdicts.
+- R3 additions: native probe on the pinned MySQL 8.4.10 anchor —
+  `YEAR DEFAULT 1` stores `2001`, the same-definition MODIFY leaves the
+  stored bytes `2001`→`2001`, and the post-fix audit emits the bounded
+  `unproven_default_identity` gap instead of the convicted finding;
+  `DEFAULT 2001` and `INT DEFAULT 1` controls stay silent. TiDB 8.5.0
+  stores `1` verbatim and stays silent. Real-entry cells
+  `y1_year_normalized`/`y2_year_full_same`/`y3_year_diff_unproven`
+  (MODIFY+CHANGE, both dialects), derived-parity cells
+  (`derived_year_same`/`derived_year_normalized_unproven`/
+  `derived_year_full_same`), and rule-level year cells pin the boundary.
 
 ## Consequences
 

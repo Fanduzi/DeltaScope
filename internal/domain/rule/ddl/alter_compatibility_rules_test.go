@@ -381,6 +381,11 @@ func TestAlterColumnCompatibilityDefaultTransitions(t *testing.T) {
 		defaults.Type = "int"
 		return defaults
 	}
+	yearCol := func(defaults spec.Column) spec.Column {
+		defaults.Name = "c"
+		defaults.Type = "year"
+		return defaults
+	}
 
 	numberDefault := func(value string) *spec.LiteralDefaultFacts {
 		return &spec.LiteralDefaultFacts{Kind: spec.LiteralDefaultNumeric, Value: value}
@@ -412,6 +417,16 @@ func TestAlterColumnCompatibilityDefaultTransitions(t *testing.T) {
 		{name: "numeric leading-zero unproven", source: intCol(spec.Column{HasDefault: true, DefaultValue: "007", DefaultLiteral: numberDefault("007")}), target: intCol(spec.Column{HasDefault: true, DefaultValue: "7", DefaultLiteral: numberDefault("7")}), wantGapFacts: []string{factSourceColumnDefault, factTargetColumnDefault}},
 		{name: "numeric negative canonical same", source: intCol(spec.Column{HasDefault: true, DefaultValue: "-1", DefaultLiteral: numberDefault("-1")}), target: intCol(spec.Column{HasDefault: true, DefaultValue: "-1", DefaultLiteral: numberDefault("-1")})},
 		{name: "numeric identical scale silent", source: intCol(spec.Column{HasDefault: true, DefaultValue: "1.00", DefaultLiteral: numberDefault("1.00")}), target: intCol(spec.Column{HasDefault: true, DefaultValue: "1.00", DefaultLiteral: numberDefault("1.00")})},
+		// YEAR-normalization boundary (T08-R3): a year column's integer text
+		// is not proven to be the final stored encoding — MySQL maps short
+		// input to the full year (DEFAULT 1 stores 2001) — so a different-
+		// text numeric pair touching a year column is unproven, while equal
+		// recorded bytes keep the unconditional same.
+		{name: "numeric year normalized pair unproven", source: yearCol(spec.Column{HasDefault: true, DefaultValue: "2001", DefaultLiteral: numberDefault("2001")}), target: yearCol(spec.Column{HasDefault: true, DefaultValue: "1", DefaultLiteral: numberDefault("1")}), wantGapFacts: []string{factSourceColumnDefault, factTargetColumnDefault}},
+		{name: "numeric year cross-type unproven", source: yearCol(spec.Column{HasDefault: true, DefaultValue: "2001", DefaultLiteral: numberDefault("2001")}), target: intCol(spec.Column{HasDefault: true, DefaultValue: "1", DefaultLiteral: numberDefault("1")}), wantGapFacts: []string{factSourceColumnDefault, factTargetColumnDefault}},
+		{name: "numeric year diff unproven", source: yearCol(spec.Column{HasDefault: true, DefaultValue: "2001", DefaultLiteral: numberDefault("2001")}), target: yearCol(spec.Column{HasDefault: true, DefaultValue: "2002", DefaultLiteral: numberDefault("2002")}), wantGapFacts: []string{factSourceColumnDefault, factTargetColumnDefault}},
+		{name: "numeric year same-text silent", source: yearCol(spec.Column{HasDefault: true, DefaultValue: "2001", DefaultLiteral: numberDefault("2001")}), target: yearCol(spec.Column{HasDefault: true, DefaultValue: "2001", DefaultLiteral: numberDefault("2001")})},
+		{name: "numeric year int same-text silent", source: yearCol(spec.Column{HasDefault: true, DefaultValue: "2001", DefaultLiteral: numberDefault("2001")}), target: intCol(spec.Column{HasDefault: true, DefaultValue: "2001", DefaultLiteral: numberDefault("2001")})},
 		{name: "literal target identity missing unproven", source: intCol(spec.Column{HasDefault: true, DefaultValue: "0", DefaultLiteral: numberDefault("0")}), target: intCol(spec.Column{HasDefault: true, DefaultValue: "b'1'"}), wantGapFacts: []string{factTargetColumnDefault}},
 	}
 	reporter := ruleUnderTest.(rule.EvidenceReporter)

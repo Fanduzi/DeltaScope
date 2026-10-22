@@ -283,3 +283,44 @@ the same domain boundary on both fact sources).
 longer call recorded bytes a directly-comparable identity: a fact is
 recorded verbatim, and cross-source comparability is the comparison's
 domain check.
+
+## T08-R3 type-normalized literal boundary (YEAR)
+
+Amendment in `docs/decisions/2026-10-21-ddl-default-comparable-identity.md`
+(`Amendment — T08-R3`): canonical-integer text is a shared encoding only
+where neither column's type rewrites the literal on storage. MySQL maps a
+short `YEAR` input to the full year (`DEFAULT 1` stores `2001`), so a
+different-text `numeric` pair touching a `year` base type is
+`unproven_default_identity` over both facts instead of a determined
+change. Natively confirmed on the pinned MySQL 8.4.10 anchor before the
+fix (convicted an identical stored default) and after (bounded gap);
+TiDB 8.5.0 stores `1` verbatim — the defect is MySQL-family-specific.
+
+### Golden manifest cells: zero moved
+
+No `year`/`YEAR` type or default appears anywhere in
+`testdata/ddl-golden/T02..T08.json`; every numeric `literal→literal`
+expectation pairs INT columns whose texts are canonical integers. No
+`expect`, `finding_entries`, `finding_metadata`, coverage, gap, verdict,
+or denominator entry changed.
+
+### Unit-test expectation upgrades: one class moved
+
+Different-text `numeric` pairs touching a `year` column move from
+determined-changed to `unproven_default_identity` — new cells only, no
+existing expectation flipped:
+
+- rule-level `numeric year normalized pair unproven`,
+  `numeric year cross-type unproven`, `numeric year diff unproven`
+  (bounded), plus controls `numeric year same-text silent`,
+  `numeric year int same-text silent`;
+- real-entry `y1_year_normalized`/`y3_year_diff_unproven` (unproven) and
+  `y2_year_full_same` (same) on `TestT08R2NumericComparableDomain`,
+  MODIFY+CHANGE, both dialects;
+- derived-parity `derived_year_same` (same), `derived_year_normalized_
+  unproven` (unproven), `derived_year_full_same` (same) — the
+  CREATE-derived pre-state carries the same gate, so the two fact
+  sources cannot diverge.
+
+All non-year expectations keep their verdicts; INT/string controls and
+every R1/R2 cell are unchanged.

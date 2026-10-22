@@ -328,10 +328,20 @@ convicted a representation difference as a determined change (R2 defect).
   though each side's own literal fact is recorded. Known facts whose
   pairing cannot be proven comparable are a comparison gap, never a
   fabricated missing-fact or a determined change.
-- Deferred: DECIMAL/FLOAT/YEAR-adjacent normalization across encodings
-  (scale, scientific notation, sql_mode effects). R1's string and integer
-  positives are unchanged; presence flips, class switches, and
-  expression-fingerprint semantics are unchanged.
+- (R3) The canonical-integer encoding is proven only where neither
+  column's type normalizes the literal on storage. MySQL maps a short
+  `YEAR` input to the full year — a declared `DEFAULT 1` stores `2001` —
+  so a year column's recorded integer text is not provably the final
+  stored encoding and a different-text numeric pair touching a `year`
+  base type on either column is unproven, not convicted. Equal recorded
+  bytes still short-circuit to same unconditionally. The type gate reads
+  `spec.Column` facts only (never statement text), and applies to
+  provider-sourced and declaration-derived pre-states identically.
+- Deferred: DECIMAL/FLOAT and remaining YEAR-adjacent normalization
+  across encodings (scale, scientific notation, year arithmetic,
+  sql_mode effects). R1's string and integer positives are unchanged;
+  presence flips, class switches, and expression-fingerprint semantics
+  are unchanged.
 
 ### 5.5 Explicit-operation vs effective-change, separated
 

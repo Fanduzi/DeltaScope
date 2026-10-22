@@ -9,11 +9,14 @@
 // cells because mysqlmeta already asserts audit.MetadataProvider.
 // input: string-family and numeric-family NULL columns with provider-catalog
 // or derived defaults, exercised through MODIFY/CHANGE under the isolated
-// compatibility policy
+// compatibility policy, including YEAR cells whose MySQL catalog normalizes
+// the declared short-year integer to the full year
 // output: zero findings for proven-same literals, one transition finding for
 // proven-different ones inside a comparable domain, bounded evidence gaps
-// for unproven or cross-encoding identities, and an independent type-family
-// finding while the identical default identity stays silent
+// for unproven or cross-encoding identities (including year-type literal
+// pairs whose recorded text is not a proven final encoding, T08-R3), and an
+// independent type-family finding while the identical default identity stays
+// silent
 // pos: application-layer real-provider regression tests for issue #87 T08-R1
 // note: if this file changes, update this header and module README.md.
 package auditmeta
@@ -313,6 +316,14 @@ func TestT08R2NumericComparableDomain(t *testing.T) {
 		// no comparable identity on the declaration side — a bounded
 		// target-side unproven gap, never a determined change or same.
 		{"d2_decimal_scale0_declared_scale", "1", "decimal(10,0)", "DEFAULT 1.0", 0, []string{"target_column.default"}},
+		// y1/y3 (T08-R3, natively confirmed on mysql84 8.4.10): the MySQL
+		// catalog normalizes a short YEAR input — declared 1 stores as
+		// 2001 — so a year column's integer text is not a proven final
+		// encoding; a different-text numeric pair touching a year column
+		// stays unproven instead of convicting an identical stored default.
+		{"y1_year_normalized", "2001", "year", "DEFAULT 1", 0, unprovenPair},
+		{"y2_year_full_same", "2001", "year", "DEFAULT 2001", 0, nil},
+		{"y3_year_diff_unproven", "2001", "year", "DEFAULT 2002", 0, unprovenPair},
 	}
 	for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
 		dialect := dialect
@@ -380,20 +391,28 @@ func TestT08R2DerivedNumericDomain(t *testing.T) {
 		dialect := dialect
 		for _, cell := range []struct {
 			name         string
+			colType      string
 			createClause string
 			alterClause  string
 			wantFindings int
 			wantGap      bool
 		}{
-			{"derived_int_same", "DEFAULT 1", "DEFAULT 1", 0, false},
-			{"derived_int_diff", "DEFAULT 1", "DEFAULT 2", 1, false},
-			{"derived_decimal_unproven", "DEFAULT 1.00", "DEFAULT 1", 0, true},
-			{"derived_decimal_diff_unproven", "DEFAULT 1.00", "DEFAULT 2.00", 0, true},
+			{"derived_int_same", "DECIMAL(10,2)", "DEFAULT 1", "DEFAULT 1", 0, false},
+			{"derived_int_diff", "DECIMAL(10,2)", "DEFAULT 1", "DEFAULT 2", 1, false},
+			{"derived_decimal_unproven", "DECIMAL(10,2)", "DEFAULT 1.00", "DEFAULT 1", 0, true},
+			{"derived_decimal_diff_unproven", "DECIMAL(10,2)", "DEFAULT 1.00", "DEFAULT 2.00", 0, true},
+			// YEAR normalization (T08-R3): the derived source carries the
+			// declared integer just like the catalog carries its bytes —
+			// the provider/declaration split may not diverge, so the same
+			// year gate applies on the CREATE-derived path.
+			{"derived_year_same", "YEAR", "DEFAULT 1", "DEFAULT 1", 0, false},
+			{"derived_year_normalized_unproven", "YEAR", "DEFAULT 1", "DEFAULT 2001", 0, true},
+			{"derived_year_full_same", "YEAR", "DEFAULT 2001", "DEFAULT 2001", 0, false},
 		} {
 			cell := cell
 			t.Run(fmt.Sprintf("%s/%s", dialect, cell.name), func(t *testing.T) {
-				sqlText := fmt.Sprintf("CREATE TABLE r1_defaults (id INT PRIMARY KEY, c DECIMAL(10,2) NULL %s);\n", cell.createClause) +
-					fmt.Sprintf("ALTER TABLE r1_defaults MODIFY COLUMN c DECIMAL(10,2) NULL %s;", cell.alterClause)
+				sqlText := fmt.Sprintf("CREATE TABLE r1_defaults (id INT PRIMARY KEY, c %s NULL %s);\n", cell.colType, cell.createClause) +
+					fmt.Sprintf("ALTER TABLE r1_defaults MODIFY COLUMN c %s NULL %s;", cell.colType, cell.alterClause)
 				result := t08r1Audit(t, sqlText, t08r1Policy(t, t08r1ModifyRule), dialect, t06a4AbsentProvider{}, 2)
 				stmt := result.Statements[1]
 				t08r1WantDefaultFindings(t, stmt, t08r1ModifyRule, cell.wantFindings)
