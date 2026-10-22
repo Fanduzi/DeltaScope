@@ -144,10 +144,51 @@ three MySQL versions and accepted on TiDB 8.5.0 — and TiDB rejects
 - `testdata/ddl-golden/T09.json` is frozen: expectation changes require
   amending `roles.json` and the contract, never deriving from actuals.
 
+## Amendment R1 (index fact sufficiency + ADD PRIMARY KEY premise)
+
+Authorized rework under the same task. Two defects surfaced after the
+original delivery and are repaired without weakening any frozen clause:
+
+1. **Comparability is a knownness condition, not a source property.** The
+   original text assumed provider-loaded indexes "always compare plainly"
+   because the provider did not query prefix/direction/expression columns —
+   but not asking is not evidence of absence. The three ordinary-key
+   comparisons (`duplicate.forbid`, `redundant_left_prefix.forbid`,
+   `redundant_unique_overlap.forbid`) now share one predicate,
+   `indexPlainComparable`: a pair is compared only when both sides carry no
+   non-plain fact (`PrefixParts`, `DescParts`, `ExpressionCount`/
+   `HasExpressionKeys`, `UnmodeledKeyParts`, `HasPredicate`,
+   `IncludedColumns`, `Global`, `UnmodeledOptions`). Non-plain candidates
+   are suppressed, never silently equated and never convicted; known plain
+   pairs keep every original finding. The provider now also selects
+   `SUB_PART`/`COLLATION` and classifies each member row (prefix part →
+   `PrefixParts`, `D` collation → `DescParts`, NULL `COLUMN_NAME` →
+   expression mark, otherwise-unclassifiable → the new residual
+   `UnmodeledKeyParts` field), so loaded and declared indexes meet the same
+   premise. Capability (`SUB_PART`/`COLLATION` present) was verified on all
+   four anchors; a server without them surfaces a provider error, never a
+   guessed default.
+2. **`applyAddIndex`'s primary branch published before proving its
+   premise.** `ADD PRIMARY KEY` now enforces, in order: a non-withheld
+   column set, non-plain-part rejection (prefix/DESC/expression members are
+   never lawful PK parts), member-column existence (native ERROR 1072 on
+   all four anchors), then publish — with every member reconciled
+   `NotNull=true` and a member's *null* default cleared (all four anchors
+   convert `INT NULL`/`DEFAULT NULL` members to `NO`/no default; a real
+   `DEFAULT 5` survives as `NOT NULL DEFAULT 5`, verified). Missing
+   premise → tombstone, matching the secondary-add precedent; no policy or
+   `if_not_exists` rescues a false success shape.
+
+Contract §12 records the amendment; the `dc54ecac` delivery-identity note
+there also corrects that commit's scope (it carried Makefile gate wiring,
+this record, and the docs catalog sync — not evidence only). Frozen
+125-case expectations, roles, and deferred semantics are unchanged.
+
 ## Links
 
-- Commits: `016ed8d8`, `f2ea7b43`, `a11b448b`
+- Commits: `016ed8d8`, `f2ea7b43`, `a11b448b`, `51c8eec3`, R1 rework commit
 - Tests: `index_standalone_t09_test.go`, `batch_state_t09_index_test.go`,
+  `index_facts_t09r1_test.go`, `batch_state_t09r1_test.go`,
   `test_t09_contract.py`, `corpus_coverage_test.go`
 - Docs: `docs/work-plans/t09-index-governance/CONTRACT.md`,
   `roles.json`, `EXPECTED-UPGRADES.md`, `testdata/ddl-golden/T09.json`,

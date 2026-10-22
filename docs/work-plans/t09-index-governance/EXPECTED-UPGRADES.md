@@ -93,3 +93,44 @@ The frozen `roles.json` denominator is 125 after materialization:
 `t09-err-cancel` and `t09-err-driver-exec` stay named unit-test roles — they
 exercise in-process cancellation and driver failure propagation, not golden
 runner cells.
+
+## Amendment R1 expected changes
+
+Rework under the same contract (see `CONTRACT.md` §12). These are the bounded
+behavioral changes R1 makes; the frozen 125-case denominator, roles, SQL,
+profiles and ids are unchanged.
+
+- **R1-A comparability premise** (`index_rules.go` + `common.go`): the three
+  ordinary-key comparisons now share `indexPlainComparable`. A candidate pair
+  involving a non-plain member — prefix parts, DESC parts, expression keys,
+  unmodeled member rows, predicate, included columns, GLOBAL, unmodeled
+  options — is suppressed instead of compared on `(kind, Columns)` alone.
+  The suppression is not a new finding family and not a "proved no
+  redundancy" verdict: the pair simply never enters the plain signature
+  path, and the statement's coverage aspects keep marking the non-plain
+  parts unaudited. Plain pairs keep every prior finding verbatim.
+- **R1-A provider member facts** (`provider.go` `loadIndexes`): the
+  `information_schema.STATISTICS` select gains `sub_part, collation`, and
+  `column_name` scans as nullable so expression key parts (NULL
+  `COLUMN_NAME`) mark `HasExpressionKeys`/`ExpressionCount` instead of
+  joining `Columns` as an empty string. `SUB_PART` rows increment
+  `PrefixParts`, `COLLATION='D'` rows increment `DescParts`, and a
+  non-`A`/`D`/NULL collation increments the new residual
+  `spec.Index.UnmodeledKeyParts`. The zero-value-is-plain bug closes:
+  loaded member definitions now carry the same knownness marks declarations
+  do. `SUB_PART`/`COLLATION` presence is confirmed on all four anchors; the
+  capability record lives in the R1 native matrix.
+- **R1-B primary-key premise** (`applyAddIndex`): the primary branch now
+  shares the member-column premise with the secondary branch and enforces
+  it before publishing — withheld column set, non-plain key parts, or an
+  absent named member all tombstone rather than publish a `PrimaryKey`
+  the statement cannot produce (native ERROR 1072). On publish, member
+  columns reconcile `NotNull=true` and a member's null-default fact clears
+  (native catalog shows the converted member has no default); a real
+  non-null default is preserved. `if_not_exists` and policy state never
+  bypass the premise.
+- **Correction, not renegotiation**: `CONTRACT.md` §12.1 records the two
+  knowledge corrections (provider-loaded ≠ automatically plain; member-set
+  vs member-definition completeness) and §12.6 records that `dc54ecac`
+  carried Makefile gate wiring, the ADR, and the docs catalog sync — gate
+  claims bind the SHA whose Makefile ran, which the R1 evidence records.

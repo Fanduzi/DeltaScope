@@ -399,3 +399,132 @@ See `roles.json`. Frozen summary:
   post-state or catalog oracle.
 - Case expectations are authored against §5–§7 semantics and §8.2 native
   records — never derived from implementation output.
+
+## 12. Amendment R1 — index fact sufficiency and the ADD PRIMARY KEY premise
+
+Authorized rework (same branch, same task owner): the §3/§5.4 comparability
+premise and the §7 `applyAddIndex` member premise are repaired as written,
+not renegotiated. Frozen history above is preserved verbatim; this section
+records only what R1 changes.
+
+### 12.1 Corrected knowledge claims
+
+- §5.4's "provider-loaded indexes carry plain-column facts only, so
+  existing-side indexes always compare plainly" is corrected: the provider
+  not *querying* a key-part detail is not evidence the live index lacks it.
+  Comparability is a knownness condition — an index is plain-comparable only
+  when every recorded key-part fact on it proves plain (§12.2). A
+  provider-loaded index whose rows expose a `SUB_PART`, a non-ascending
+  `COLLATION`, or a NULL `COLUMN_NAME` member carries the same non-plain
+  marks a declared index does.
+- Member-set completeness and member-definition completeness are separate:
+  a vouched `Indexes` list proves *which* indexes exist, not that each
+  index's key parts are modeled. `IndexesUnknown`/missing shape keeps its
+  §3 meaning — a *known-empty* set may present as a nil/empty slice; only
+  the explicit flag or the absent shape withholds the member set. R1 does
+  not reintroduce "nil means unknown".
+- §6's "SUB_PART/expression facts are not loaded" boundary shrinks to what
+  §12.3 keeps unqueried: expression text, include-lists and visibility stay
+  unloaded; `SUB_PART`/`COLLATION` are now loaded as plain-key knownness
+  facts.
+
+### 12.2 Shared comparability premise
+
+`indexPlainComparable` is the single pair-comparability predicate consumed
+by `duplicate.forbid`, `redundant_left_prefix.forbid` and
+`redundant_unique_overlap.forbid` on every entry surface (create-table,
+standalone create_index, ALTER add_index/add_constraint projections). An
+index is plain-comparable iff all of its recorded key-part facts are empty:
+
+- `PrefixParts == 0` and `DescParts == 0`
+- `!HasExpressionKeys` and `ExpressionCount == 0`
+- `UnmodeledKeyParts == 0` (new residual member-fact field, §12.3)
+- `!HasPredicate` and `len(IncludedColumns) == 0`
+- `!Global` and `len(UnmodeledOptions) == 0`
+
+A candidate pair involving a non-plain member is skipped — never silently
+compared equal and never convicted. A known plain pair keeps every §5.4
+finding (kind:ordered-columns signature, strict left prefix, exact
+secondary↔unique column equality, added-only attribution, `(a,b)`≠`(b,a)`).
+Deferred semantics stay recorded, not laundered: suppressing the pair does
+not claim redundancy was disproved — it claims the plain comparison does not
+apply, and the statement's coverage aspects already mark the non-plain
+parts unaudited.
+
+The predicate reaches all three candidate sources identically:
+within-statement declarations, ordered-state derived members (which keep
+the declared definition verbatim), and provider-loaded members (§12.3). A
+non-plain statement still tombstones its own post-state via the coverage
+model — suppression is about the *comparison*, not about trusting the
+derived shape.
+
+### 12.3 Provider member facts (bounded)
+
+`information_schema.STATISTICS` select gains `sub_part, collation`. Each
+member row classifies as:
+
+| COLUMN_NAME | SUB_PART | COLLATION | member fact |
+|---|---|---|---|
+| NULL | — | — | expression key part: `HasExpressionKeys=true`, `ExpressionCount++`, no `Columns` entry |
+| name | non-NULL | — | `PrefixParts++` (column name still joins `Columns`) |
+| name | NULL | `D` | `DescParts++` |
+| name | NULL | NULL or other | `UnmodeledKeyParts++` (new residual field on `spec.Index`: member rows the model cannot classify as plain ascending) |
+| name | NULL | `A` | plain member |
+
+Capability is confirmed present on all four pinned anchors (MySQL 5.7.44 /
+8.0.46 / 8.4.10 / TiDB 8.5.0 report `SUB_PART` and `COLLATION` in
+`information_schema.COLUMNS`); a server without the fields fails the query
+and propagates a provider error through the existing load-failure channel —
+never a guessed default and never another anchor's knownness. Expression
+member *text* (`EXPRESSION`) is not selected; NULL `COLUMN_NAME` is the
+bounded non-plain marker, so no expression literal is loaded.
+
+### 12.4 ADD PRIMARY KEY premise and post-state consistency
+
+`applyAddIndex`'s primary branch must satisfy the member premise *before*
+publishing — the same domain the secondary branch already enforces:
+
+- `Columns` withheld (nil) → tombstone; a vouched index set cannot
+  substitute for a withheld column set.
+- Any named member absent from a known column set → tombstone
+  (native-confirmed ERROR 1072 on all four anchors; structure unchanged).
+- Non-plain key parts on the primary definition (prefix/DESC/expression —
+  never lawful PK members) → tombstone.
+- `HasPrimaryKey()` or `PrimaryKeyUnknown` → tombstone (unchanged).
+- On publish: `PrimaryKey` carries the declared definition; every member
+  column is reconciled `NotNull=true` — the four anchors all convert the
+  member (`INT NULL`/`INT NULL DEFAULT NULL` → `NO`), so a published
+  `NotNull=false` member would contradict the transition itself. A member's
+  null-default fact (`DefaultIsNull` or a `DEFAULT NULL` declaration) is
+  cleared with the conversion — the catalog keeps no default on the
+  converted member — while a real default (`DEFAULT 5` → `NOT NULL DEFAULT
+  5`, verified) is preserved. Companion facts not reliably derivable stay
+  withheld; no guessed value is written to complete a shape.
+- `add_constraint` primary uses the same path; `if_not_exists` does not
+  rescue a broken premise; policy never re-enables a false success shape.
+- The tombstone direction follows the existing secondary-add precedent
+  (missing member → invalidate), not a new vocabulary.
+
+### 12.5 Sensitivity and regression anchors
+
+- Reverting to Columns-only comparison fails the new non-plain matrix
+  (rule-level per-mark cells + audit-level real-parser cells).
+- Reading an unqueried provider attribute as known-plain fails the provider
+  row-mapping cells (`SUB_PART=3` → `PrefixParts=1`, `COLLATION=D` →
+  `DescParts=1`, NULL `COLUMN_NAME` → expression mark, NULL `COLLATION` →
+  `UnmodeledKeyParts`).
+- Returning the primary branch to publish-before-members fails the
+  missing-member and withheld-column cells.
+- Dropping the member `NotNull` reconciliation or the unknown-flag gates
+  fails the next-statement pre-state cells.
+- The frozen 125-case manifest, SQL, profiles and ids are unchanged; the
+  deferred denominator is unchanged; no T08/R2/R3 numeric-domain cell moves.
+
+### 12.6 Delivery-identity correction
+
+`dc54ecac` was described as the closeout/evidence commit, but it is not
+evidence-only: it also wired `test_t09_contract.py` into the
+`ddl-golden-validator-test` Makefile target, added the decision record, and
+synced the docs-side coverage-catalog copy. That does not prove earlier
+runs invalid — but gate claims must bind the SHA whose Makefile actually
+ran, which the R1 evidence records verbatim.
