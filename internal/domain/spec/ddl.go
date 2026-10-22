@@ -310,22 +310,27 @@ type Column struct {
 	DefaultLiteral *LiteralDefaultFacts `json:"-"`
 }
 
-// LiteralDefaultFacts is the comparable identity of a literal-class column
-// default. It carries no SQL text, quoting, or expression content — only
-// the decoded value bytes and the literal kind needed to keep the
-// comparison domains honest.
+// LiteralDefaultFacts is the recorded literal identity of a literal-class
+// column default. It carries no SQL text, quoting, or expression content —
+// only the decoded value bytes and the literal kind. A recorded fact is not
+// automatically a *comparable* pair: kind marks the value domain, and the
+// comparison additionally requires a proven shared encoding (T08-R2).
 type LiteralDefaultFacts struct {
 	// Kind names the literal's value domain: "string" or "numeric".
 	// Kinds never coerce — a string literal and a numeric literal never
 	// prove equality, they prove unproven.
 	Kind string
-	// Value is the decoded literal value bytes exactly as the catalog
-	// stores them: 'x' → x, '''x''' → 'x', 'O''Reilly' → O'Reilly.
+	// Value is the decoded literal value bytes exactly as the source
+	// stores them: 'x' → x, '''x''' → 'x', 'O''Reilly' → O'Reilly on both
+	// sides; a DECIMAL catalog may carry scale-normalized text (1.00)
+	// while the AST integer carries canonical digits — same kind does not
+	// prove a shared encoding.
 	Value string
 }
 
-// Literal kinds. Only kinds whose cross-source text identity is provable
-// without type coercion are named.
+// Literal kinds. Only kinds whose cross-source value domain is provable
+// without type coercion are named; encoding comparability is the
+// comparison's domain check, not implied here (T08-R2).
 const (
 	LiteralDefaultString  = "string"
 	LiteralDefaultNumeric = "numeric"

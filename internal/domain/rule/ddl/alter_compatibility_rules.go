@@ -1,7 +1,8 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: metadata-enriched alter-table Statement specs with current and target column shapes
 // output: source-aware alter compatibility findings and bounded evidence gaps for change/modify column operations,
-// with the shared three-state default comparison (proven-same / proven-different / unproven) driving both
+// with the shared three-state default comparison (proven-same / proven-different inside a comparable domain /
+// unproven) driving both
 // pos: DDL compatibility rules layered above metadata-backed existence checks
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -304,9 +305,10 @@ func defaultComparison(source spec.Column, target spec.Column) (transition strin
 }
 
 // literalDefaultComparison compares two literal-class identities. Equal
-// kind+value proves same, equal kind with different value proves
-// different, a missing identity is that side's fact deficit, and a
-// cross-domain pair is a comparison deficit — kinds never coerce.
+// kind+value proves same; equal kind with different value proves
+// different only inside a proven comparable domain; a missing identity is
+// that side's fact deficit; a cross-domain pair is a comparison deficit —
+// kinds never coerce.
 func literalDefaultComparison(source, target *spec.LiteralDefaultFacts) (string, []string, []string) {
 	switch {
 	case source == nil && target == nil:
@@ -317,10 +319,45 @@ func literalDefaultComparison(source, target *spec.LiteralDefaultFacts) (string,
 		return "", nil, []string{factTargetColumnDefault}
 	case source.Kind != target.Kind:
 		return "", nil, []string{factSourceColumnDefault, factTargetColumnDefault}
-	case source.Value != target.Value:
-		return "changes its default value", nil, nil
+	case source.Value == target.Value:
+		return "", nil, nil
+	case source.Kind == spec.LiteralDefaultNumeric &&
+		(!isCanonicalIntegerText(source.Value) || !isCanonicalIntegerText(target.Value)):
+		// The numeric kind marks the value domain, not a shared encoding:
+		// catalog scale-normalized text (1.00) and AST integer text (1)
+		// encode possibly-equal values differently, so only canonical
+		// integer text on both sides is a proven cross-source encoding.
+		// String kinds are decoded bytes — always canonical.
+		return "", nil, []string{factSourceColumnDefault, factTargetColumnDefault}
 	}
-	return "", nil, nil
+	return "changes its default value", nil, nil
+}
+
+// isCanonicalIntegerText reports whether s is the canonical decimal text
+// an integer literal carries across both sources: `0` or an optional
+// leading `-` followed by non-zero-leading digits. Leading zeros, plus
+// signs, scale (`1.00`), whitespace, and empty strings are not canonical —
+// they are representations whose value identity is not proven here.
+func isCanonicalIntegerText(s string) bool {
+	if s == "" || s == "-" {
+		return false
+	}
+	if s == "0" {
+		return true
+	}
+	digits := s
+	if digits[0] == '-' {
+		digits = digits[1:]
+	}
+	if len(digits) == 0 || digits[0] == '0' {
+		return false
+	}
+	for i := 0; i < len(digits); i++ {
+		if digits[i] < '0' || digits[i] > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 // expressionDefaultComparison compares two expression-class identities by

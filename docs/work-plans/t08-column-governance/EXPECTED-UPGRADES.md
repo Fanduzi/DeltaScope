@@ -243,3 +243,43 @@ column, and all T06-A9 temporal cells are `DATETIME` — verified unchanged.
   base-type literal domain + temporal gate + expression routing.
 - `internal/infrastructure/parser/tidb/extractor_t08r1_test.go` —
   AST-decoded identities + unprovable-shape nils.
+
+## T08-R2 comparable-domain tightening (numeric literals)
+
+Amendment in `docs/decisions/2026-10-21-ddl-default-comparable-identity.md`
+(`Amendment — T08-R2`): `Kind="numeric"` marks the value domain, not a
+proven shared encoding. Catalog scale-normalized text (`decimal(10,2)` →
+`1.00`) and AST integer text (`DEFAULT 1` → `1`) differ only in encoding;
+R1 compared the bytes directly and convicted a representation difference
+as a determined change. The comparison now additionally requires
+canonical-integer text on both sides (`0` or `-?[1-9][0-9]*`); other
+numeric pairings are `unproven_default_identity` over both facts.
+
+### Golden manifest cells: zero moved
+
+No `decimal`/`DECIMAL` default appears anywhere in
+`testdata/ddl-golden/T02..T08.json`; every `literal→literal` finding
+expectation pairs INT columns whose catalog and declaration texts are both
+canonical integers (`DEFAULT 0`→`DEFAULT 7`, `DEFAULT 9`, `DEFAULT 5`) —
+the domain check preserves all of them. T05 omit-integer `literal→none`
+cells and the nine position cells never consulted literal identity. No
+`expect`, `finding_entries`, `finding_metadata`, coverage, gap, verdict,
+or denominator entry changed.
+
+### Unit-test expectation upgrades: zero
+
+All prior expectations hold under the tightened domain (canonical-integer
+pairs `0→1`, `-1→-1`, string pairs unchanged). R2 adds only new cells:
+rule-level `numeric scale-text unproven`, `numeric leading-zero unproven`,
+`numeric negative canonical same`, `numeric identical scale silent`; and
+the real-entry `TestT08R2NumericComparableDomain` (N1–N3 catalog-scale
+cells on MODIFY+CHANGE, both dialects) and `TestT08R2DerivedNumericDomain`
+(derived canonical-integer control + derived decimal-literal unproven —
+the same domain boundary on both fact sources).
+
+### Documentation corrections (no expectation moved)
+
+`LiteralDefaultFacts` doc comments and the spec/provider/module READMEs no
+longer call recorded bytes a directly-comparable identity: a fact is
+recorded verbatim, and cross-source comparability is the comparison's
+domain check.

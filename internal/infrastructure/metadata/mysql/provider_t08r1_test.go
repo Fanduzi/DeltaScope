@@ -47,10 +47,12 @@ func t08r1Results(columns [][3]string) map[string]testQueryResult {
 	}
 }
 
-// TestT08R1ProviderLiteralIdentity pins the identity domain: the stored
-// bytes are the comparable value verbatim and the base type — parameters
-// and attribute text stripped — names the kind. No quoting, unescaping, or
-// content guessing applies.
+// TestT08R1ProviderLiteralIdentity pins the identity-fact domain: the
+// stored bytes are the literal identity verbatim and the base type —
+// parameters and attribute text stripped — names the kind. No quoting,
+// unescaping, or content guessing applies. A recorded numeric fact like
+// 1.50 is the catalog's own encoding; whether a pair shares a proven
+// encoding is the comparison's domain check (T08-R2), not this seam.
 func TestT08R1ProviderLiteralIdentity(t *testing.T) {
 	cases := []struct {
 		name     string

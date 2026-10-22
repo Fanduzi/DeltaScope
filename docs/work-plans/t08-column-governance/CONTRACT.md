@@ -288,8 +288,9 @@ fact, never a determined change (both pre-R1 defects).
   a non-temporal column stays literal — `DefaultIsCurrentTimestamp` is
   asserted only for temporal column families.
 - Same literal class on both sides: kind equal + value equal → same; kind
-  equal + value different → different; kind different → unproven (cross-
-  domain coercion is not modeled). Expression class compares
+  equal + value different → different **only inside a proven comparable
+  domain** (§5.4-R2); kind different → unproven (cross-domain coercion is
+  not modeled). Expression class compares
   `DefaultExpression.Fingerprint` only when both sides are `Known` with a
   non-empty fingerprint — equal → same, unequal → different, anything
   else → unproven.
@@ -305,6 +306,29 @@ fact, never a determined change (both pre-R1 defects).
   the full new definition's identity, and `cloneColumn` deep-copies the
   pointer — so a provider-sourced and a declaration-derived pre-state
   judge identically.
+
+#### 5.4-R2 Comparable domain for numeric literals (amended)
+
+`Kind="numeric"` marks the literal's *value domain*, not a proven shared
+encoding. Catalog scale/type normalization (`decimal(10,2)` stores `1.00`)
+and declaration AST text (`DEFAULT 1` decodes `1`) are different encodings
+of possibly-equal values; comparing those bytes directly as identity
+convicted a representation difference as a determined change (R2 defect).
+
+- Only domains with an established cross-source canonical encoding compare
+  directly: `string` values are decoded bytes (canonical by definition),
+  and `numeric` values compare only when **both** sides carry canonical
+  integer text (`0` or `-?[1-9][0-9]*` — no leading zeros, plus signs,
+  scale, or whitespace).
+- A numeric pair outside the canonical-integer domain is unproven —
+  `unproven_default_identity` over both `*_column.default` facts — even
+  though each side's own literal fact is recorded. Known facts whose
+  pairing cannot be proven comparable are a comparison gap, never a
+  fabricated missing-fact or a determined change.
+- Deferred: DECIMAL/FLOAT/YEAR-adjacent normalization across encodings
+  (scale, scientific notation, sql_mode effects). R1's string and integer
+  positives are unchanged; presence flips, class switches, and
+  expression-fingerprint semantics are unchanged.
 
 ### 5.5 Explicit-operation vs effective-change, separated
 

@@ -453,9 +453,12 @@ func (p *Provider) loadColumns(ctx context.Context, snapshot *spec.TableSnapshot
 			}
 		}
 		// A stored literal carries its decoded value bytes verbatim on all
-		// anchors — the bytes are the comparable identity, so no quoting or
-		// unescaping applies. The kind comes from the column's own type
-		// family, never from guessing at the byte content.
+		// anchors — no quoting or unescaping applies. The kind comes from
+		// the column's own type family, never from guessing at the byte
+		// content. The recorded bytes are the literal *identity fact*;
+		// whether a pair shares a proven encoding is the comparison's
+		// domain check (T08-R2) — scale-normalized catalog text like 1.00
+		// is recorded, not normalized to the AST integer's 1.
 		if defaultValue.Valid && !column.DefaultIsCurrentTimestamp && column.DefaultExpression == nil {
 			column.DefaultLiteral = &spec.LiteralDefaultFacts{
 				Kind:  catalogLiteralKind(typeText),

@@ -10,7 +10,8 @@
 // input: VARCHAR(16) NULL columns with provider-catalog or derived defaults,
 // exercised through MODIFY/CHANGE under the isolated compatibility policy
 // output: zero findings for proven-same literals, one transition finding for
-// proven-different ones, and bounded evidence gaps for unproven identities
+// proven-different ones inside a comparable domain, and bounded evidence
+// gaps for unproven or cross-encoding identities
 // pos: application-layer real-provider regression tests for issue #87 T08-R1
 // note: if this file changes, update this header and module README.md.
 package auditmeta
@@ -276,6 +277,123 @@ func TestT08R1ProviderLiteralMatrix(t *testing.T) {
 					}
 				})
 			}
+		}
+	}
+}
+
+// TestT08R2NumericComparableDomain pins the tightened numeric contract:
+// kind=numeric marks the value domain, not a proven encoding — catalog
+// scale-normalized text (1.00, -1.00) is not the AST integer's canonical
+// text, so a representation-only difference is unproven (a bounded
+// unproven_default_identity gap over both facts), never a determined
+// change. Canonical integers keep comparing directly.
+func TestT08R2NumericComparableDomain(t *testing.T) {
+	unprovenPair := []string{"source_column.default", "target_column.default"}
+	cells := []struct {
+		name         string
+		catalog      driver.Value
+		colType      string
+		targetClause string
+		wantFindings int
+		wantGap      []string // facts required under unproven_default_identity; nil = no gaps
+	}{
+		{"n1_decimal_scale", "1.00", "decimal(10,2)", "DEFAULT 1", 0, unprovenPair},
+		{"n2_decimal_zero", "0.00", "decimal(10,2)", "DEFAULT 0", 0, unprovenPair},
+		{"n3_decimal_negative", "-1.00", "decimal(10,2)", "DEFAULT -1", 0, unprovenPair},
+		{"i1_int_same", "7", "int", "DEFAULT 7", 0, nil},
+		{"i2_int_diff", "7", "int", "DEFAULT 8", 1, nil},
+		{"s1_string_same", "x", "varchar(16)", "DEFAULT 'x'", 0, nil},
+	}
+	for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
+		dialect := dialect
+		for _, action := range []struct {
+			name   string
+			sql    func(col, clause string) string
+			ruleID string
+		}{
+			{"modify", func(col, clause string) string {
+				return fmt.Sprintf("ALTER TABLE r1_defaults MODIFY COLUMN c %s NULL %s;", col, clause)
+			}, t08r1ModifyRule},
+			{"change", func(col, clause string) string {
+				return fmt.Sprintf("ALTER TABLE r1_defaults CHANGE COLUMN c c %s NULL %s;", col, clause)
+			}, t08r1ChangeRule},
+		} {
+			action := action
+			for _, cell := range cells {
+				cell := cell
+				t.Run(fmt.Sprintf("%s/%s/%s", dialect, action.name, cell.name), func(t *testing.T) {
+					fixture := t08r1FixtureFor(dialect, []t08r1Column{
+						{name: "id", colType: "int"},
+						{name: "c", colType: cell.colType, def: cell.catalog},
+					})
+					db := openT08R1DB(t, fixture)
+					provider := &t08r1CountingProvider{inner: mysqlmeta.NewProvider(db)}
+					result := t08r1Audit(t, action.sql(cell.colType, cell.targetClause), t08r1Policy(t, action.ruleID), dialect, provider, 1)
+					stmt := result.Statements[0]
+					t08r1WantDefaultFindings(t, stmt, action.ruleID, cell.wantFindings)
+					if len(provider.calls) != 1 || provider.calls[0] != t08r1Table {
+						t.Fatalf("provider calls = %#v, want exactly one %s load", provider.calls, t08r1Table)
+					}
+					if cell.wantGap == nil {
+						if len(stmt.EvidenceGaps) != 0 {
+							t.Fatalf("proven cell emitted gaps %#v", stmt.EvidenceGaps)
+						}
+						return
+					}
+					unprovenFacts := map[string]bool{}
+					for _, gap := range stmt.EvidenceGaps {
+						if gap.ReasonCode != "unproven_default_identity" {
+							t.Fatalf("unexpected gap reason %q, want only unproven_default_identity", gap.ReasonCode)
+						}
+						for _, fact := range gap.RequiredFacts {
+							unprovenFacts[fact] = true
+						}
+					}
+					for _, fact := range cell.wantGap {
+						if !unprovenFacts[fact] {
+							t.Fatalf("unproven pair missing %q under unproven_default_identity, got %#v", fact, stmt.EvidenceGaps)
+						}
+					}
+				})
+			}
+		}
+	}
+}
+
+// TestT08R2DerivedNumericDomain proves the same comparable-domain boundary
+// on the CREATE-derived path: a declared integer is canonical-integer text
+// (provable across sources), while a declared decimal literal yields no
+// comparable identity on the derived side either — the domain check cannot
+// be bypassed by switching which source produced the pre-state.
+func TestT08R2DerivedNumericDomain(t *testing.T) {
+	for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
+		dialect := dialect
+		for _, cell := range []struct {
+			name         string
+			createClause string
+			alterClause  string
+			wantFindings int
+			wantGap      bool
+		}{
+			{"derived_int_same", "DEFAULT 1", "DEFAULT 1", 0, false},
+			{"derived_int_diff", "DEFAULT 1", "DEFAULT 2", 1, false},
+			{"derived_decimal_unproven", "DEFAULT 1.00", "DEFAULT 1", 0, true},
+			{"derived_decimal_diff_unproven", "DEFAULT 1.00", "DEFAULT 2.00", 0, true},
+		} {
+			cell := cell
+			t.Run(fmt.Sprintf("%s/%s", dialect, cell.name), func(t *testing.T) {
+				sqlText := fmt.Sprintf("CREATE TABLE r1_defaults (id INT PRIMARY KEY, c DECIMAL(10,2) NULL %s);\n", cell.createClause) +
+					fmt.Sprintf("ALTER TABLE r1_defaults MODIFY COLUMN c DECIMAL(10,2) NULL %s;", cell.alterClause)
+				result := t08r1Audit(t, sqlText, t08r1Policy(t, t08r1ModifyRule), dialect, t06a4AbsentProvider{}, 2)
+				stmt := result.Statements[1]
+				t08r1WantDefaultFindings(t, stmt, t08r1ModifyRule, cell.wantFindings)
+				if cell.wantGap && len(stmt.EvidenceGaps) == 0 {
+					t.Fatalf("unproven derived cell emitted no gaps, want bounded unproven")
+				}
+				if !cell.wantGap && len(stmt.EvidenceGaps) != 0 {
+					t.Fatalf("proven derived cell emitted gaps %#v", stmt.EvidenceGaps)
+				}
+			})
 		}
 	}
 }

@@ -130,7 +130,71 @@ silent pass would have stood before.
   publication path must deep-copy `DefaultLiteral` alongside
   `DefaultExpression`.
 
+## Amendment — T08-R2 comparable domain for numeric literals
+
+R1's shared comparison overclaimed one step further than its fact model
+justified: `Kind="numeric"` marked the *value domain* and `Value` equality
+decided same/different for every numeric pair. Catalog scale/type
+normalization (`decimal(10,2)` stores `1.00`) and AST integer text
+(`DEFAULT 1` decodes `1`) are different encodings of possibly-equal
+values, so a representation-only difference was convicted as a determined
+change.
+
+The corrected boundary: a recorded literal identity is not automatically
+a comparable pair. `string` values are decoded bytes — canonical by
+definition — and `numeric` values compare directly only when **both**
+sides carry canonical-integer text (`0` or `-?[1-9][0-9]*`). Any other
+numeric pairing is unproven and lands as `unproven_default_identity` over
+both `*_column.default` facts: known-but-incomparable pairs are a
+comparison gap, never a fabricated fact deficit or a determined finding.
+Both fact sources inherit the same boundary — a derived `DEFAULT 1.00`
+yields no comparable identity just as a catalog `1.00` cannot pair
+against `1`.
+
+Deferred unchanged: DECIMAL/FLOAT/YEAR-adjacent normalization across
+encodings (scale, scientific notation, `sql_mode` effects) — no numeric
+normalizer or evaluator was added. R1's string and integer positives,
+presence flips, class switches, expression fingerprints, and the
+explicit-op/effective-change separation are unchanged.
+
+## Verification Evidence
+
+- Real-entry red then green: `audit_t08r1_default_comparison_test.go`
+  drives the real parser, real `mysqlmeta.Provider`, and `AuditSQL`
+  through provider-sourced and CREATE-derived pre-states, both dialects,
+  both MODIFY and CHANGE — same-value cells emit zero findings, different
+  and unproven cells keep their determined and bounded outcomes.
+- Provider unit proof: `provider_t08r1_test.go` pins decoded-byte
+  identity per base-type family including parameterized faithful types
+  and the temporal gate.
+- Parser unit proof: `extractor_t08r1_test.go` pins AST-decoded values
+  and nil for unprovable shapes.
+- Rule unit proof: `alter_compatibility_rules_test.go` pins the
+  three-state transition, the cross-domain pair gap, and the
+  empty-fingerprint unproven cell (the pre-R1 wrong expectation,
+  upgraded with its reason recorded).
+- State chains: SET→MODIFY, DROP→MODIFY, CHANGE-rename→MODIFY prove the
+  published/cleared/carried identity end to end.
+- R2 additions: N1–N3 decimal-scale cells (`1.00`/`0.00`/`-1.00` vs
+  declared `1`/`0`/`-1`) prove unproven outcomes on provider-sourced and
+  CREATE-derived pre-states across MODIFY+CHANGE and both dialects;
+  canonical-integer controls (`7→7`, `7→8`) and the string matrix keep
+  their R1 verdicts.
+
+## Consequences
+
+- Any future default-comparison surface must compare `DefaultLiteral`
+  (and `DefaultExpression` fingerprints), never `DefaultValue`.
+- A new literal form earns `DefaultLiteral` only when a cross-source
+  identity is provable; otherwise it keeps the nil/unproven contract.
+- A numeric pair earns a determined verdict only inside the
+  canonical-integer domain; widening the domain requires a proven
+  cross-source encoding, not byte equality on the numeric kind alone.
+- `pkg/deltascope` cloning, `batch_state` cloning, and any new
+  publication path must deep-copy `DefaultLiteral` alongside
+  `DefaultExpression`.
+
 ## Links
 
-- Contract: `docs/work-plans/t08-column-governance/CONTRACT.md` §5.4-R1
-- Issue: #87 (T08-R1) under #79
+- Contract: `docs/work-plans/t08-column-governance/CONTRACT.md` §5.4-R1/R2
+- Issue: #87 (T08-R1/R2) under #79
