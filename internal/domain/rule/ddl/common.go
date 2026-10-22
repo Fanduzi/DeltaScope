@@ -441,7 +441,7 @@ func appliesToCreateTableIndexes(statement spec.Statement) bool {
 }
 
 func appliesToDDLWithIndexes(statement spec.Statement) bool {
-	if statement.Kind != spec.KindDDL || statement.DDL == nil || statement.DDL.Table == nil || len(statement.DDL.Indexes) == 0 {
+	if statement.Kind != spec.KindDDL || statement.DDL == nil || statement.DDL.Table == nil || len(declaredIndexes(statement)) == 0 {
 		return false
 	}
 	switch statement.DDL.Operation {
@@ -639,11 +639,20 @@ func matchingAlterActions(statement spec.Statement, actions ...string) []spec.Al
 	return matched
 }
 
+// matchingStandaloneDDLActions matches actions carried under the standalone
+// DDL operations. The extractor sets DDL.Table to the target table on every
+// one of them, so applicability keys off the operation and action name only.
+// Callers chain it after matchingAlterActions, so the alter-table rename
+// fallback never double-counts.
 func matchingStandaloneDDLActions(statement spec.Statement, actions ...string) []spec.Alter {
-	if statement.Kind != spec.KindDDL || statement.DDL == nil || statement.DDL.Table != nil || len(statement.DDL.Alter) == 0 || len(actions) == 0 {
+	if statement.Kind != spec.KindDDL || statement.DDL == nil || len(statement.DDL.Alter) == 0 || len(actions) == 0 {
 		return nil
 	}
 	switch statement.DDL.Operation {
+	case spec.DDLOperationCreateIndex:
+		if !containsFold(actions, "create_index") {
+			return nil
+		}
 	case spec.DDLOperationDropIndex:
 		if !containsFold(actions, "drop_index") {
 			return nil
@@ -684,6 +693,104 @@ func alterIndexDefinition(alter spec.Alter) (*spec.Index, bool) {
 		return nil, false
 	}
 	return alter.Index.Definition, true
+}
+
+// alterIndexSubjectName resolves the index identity an add/create action
+// declares: alter.Name on ALTER index actions, Index.Definition.Name on
+// standalone create_index actions whose alter.Name the extractor leaves empty.
+func alterIndexSubjectName(alter spec.Alter) string {
+	if name := strings.TrimSpace(alter.Name); name != "" {
+		return name
+	}
+	if definition, ok := alterIndexDefinition(alter); ok {
+		return strings.TrimSpace(definition.Name)
+	}
+	return ""
+}
+
+// alterIndexTargetName resolves the existing index a drop/rename action names:
+// alter.Name on ALTER actions, Index.OldName on standalone drop_index actions.
+func alterIndexTargetName(alter spec.Alter) string {
+	if name := strings.TrimSpace(alter.Name); name != "" {
+		return name
+	}
+	if alter.Index != nil {
+		return strings.TrimSpace(alter.Index.OldName)
+	}
+	return ""
+}
+
+// declaredIndexes returns the indexes the statement itself declares: a create
+// table's embedded index list plus standalone CREATE INDEX definitions carried
+// under the create_index alter action. The two sources never overlap — a
+// create-table statement has no create_index alter actions and a standalone
+// CREATE INDEX leaves DDL.Indexes empty.
+func declaredIndexes(statement spec.Statement) []spec.Index {
+	if statement.DDL == nil {
+		return nil
+	}
+	indexes := make([]spec.Index, 0, len(statement.DDL.Indexes)+1)
+	indexes = append(indexes, statement.DDL.Indexes...)
+	if statement.DDL.Operation != spec.DDLOperationCreateIndex {
+		return indexes
+	}
+	for _, alter := range statement.DDL.Alter {
+		if !strings.EqualFold(alter.Action, "create_index") {
+			continue
+		}
+		if definition, ok := alterIndexDefinition(alter); ok {
+			indexes = append(indexes, *definition)
+		}
+	}
+	return indexes
+}
+
+// declaredIndexNames returns the lowercased name set of declaredIndexes.
+func declaredIndexNames(statement spec.Statement) map[string]bool {
+	names := make(map[string]bool)
+	for _, index := range declaredIndexes(statement) {
+		if name := strings.ToLower(strings.TrimSpace(index.Name)); name != "" {
+			names[name] = true
+		}
+	}
+	return names
+}
+
+// existingIndexSet returns the target table's known existing index set. The
+// second return value is false when the set is unknowable — no snapshot, an
+// absent-table projection is knowable-empty instead, or the projection marks
+// IndexesUnknown. Rules must never read an unknowable set as empty.
+func existingIndexSet(statement spec.Statement) ([]spec.Index, bool) {
+	snapshot, ok := targetTableSnapshot(statement)
+	if !ok || snapshot == nil {
+		return nil, false
+	}
+	if !snapshot.Exists {
+		return nil, true
+	}
+	if snapshot.IndexesUnknown {
+		return nil, false
+	}
+	return snapshot.Indexes, true
+}
+
+// lifecycleIndexes returns the union of the statement's declared indexes and
+// the target's known existing set — the candidate set for duplicate and
+// redundancy checks. Only the standalone create_index entry adds the snapshot;
+// ALTER paths reach the same union through their own projection wrappers.
+func lifecycleIndexes(statement spec.Statement) ([]spec.Index, bool) {
+	declared := declaredIndexes(statement)
+	if statement.DDL == nil || statement.DDL.Operation != spec.DDLOperationCreateIndex {
+		return declared, true
+	}
+	existing, known := existingIndexSet(statement)
+	if !known {
+		return declared, false
+	}
+	merged := make([]spec.Index, 0, len(existing)+len(declared))
+	merged = append(merged, existing...)
+	merged = append(merged, declared...)
+	return merged, true
 }
 
 func matchingRenameActions(statement spec.Statement, action string) []spec.Alter {
@@ -825,6 +932,52 @@ func alterAddedIndexesByKind(statement spec.Statement, kind spec.IndexKind) []sp
 		indexes = append(indexes, index)
 	}
 	return indexes
+}
+
+// alterAddedIndexSyntaxByKind returns added indexes declared with index
+// syntax — the add_index action covers ADD [UNIQUE|FULLTEXT] INDEX|KEY in
+// both single and list form. Explicit CONSTRAINT syntax (add_constraint)
+// names a constraint and is governed by the ddl.constraint.* naming family;
+// its produced index still participates in the physical checks through
+// allAlterAddedIndexes and the lifecycle candidate set. PostgreSQL keeps its
+// pinned contract: ALTER TABLE has no index-add syntax there, so
+// add_constraint names stay with the add_index naming family on that dialect.
+func alterAddedIndexSyntaxByKind(statement spec.Statement, kind spec.IndexKind) []spec.Index {
+	actions := []string{"add_index"}
+	if statement.Dialect == spec.DialectPostgreSQL {
+		actions = append(actions, "add_constraint")
+	}
+	if !appliesToAlterActions(statement, actions...) {
+		return nil
+	}
+
+	indexes := make([]spec.Index, 0)
+	for _, alter := range matchingAlterActions(statement, actions...) {
+		index, ok := alterConstraintIndex(alter)
+		if !ok || index.Kind != kind {
+			continue
+		}
+		indexes = append(indexes, index)
+	}
+	return indexes
+}
+
+// alterConstraintSubjectName resolves the constraint name an add_constraint
+// action declares when the constraint produces an index of the given kind.
+// Constraint.Name is authoritative; alter.Name and the produced index name
+// are the extractor's fallbacks for the same identity.
+func alterConstraintSubjectName(alter spec.Alter, kind spec.IndexKind) string {
+	index, ok := alterConstraintIndex(alter)
+	if !ok || index.Kind != kind {
+		return ""
+	}
+	if alter.Constraint != nil && strings.TrimSpace(alter.Constraint.Name) != "" {
+		return strings.TrimSpace(alter.Constraint.Name)
+	}
+	if name := strings.TrimSpace(alter.Name); name != "" {
+		return name
+	}
+	return strings.TrimSpace(index.Name)
 }
 
 func splitAlterConstraintColumns(value string) []string {

@@ -965,14 +965,20 @@ func extractCreateIndex(stmt *ast.CreateIndexStmt) *spec.DDL {
 		// not carry; record bounded presence rather than the clause values.
 		unextracted = append(unextracted, "lock_algorithm")
 	}
+	alter := spec.Alter{
+		Action: "create_index",
+		Index:  &spec.AlterIndex{Definition: &spec.Index{Name: indexName, Kind: kind, Columns: columns, HasExpressionKeys: expr > 0, ExpressionCount: expr, PrefixParts: prefix, DescParts: desc, Global: indexGlobal, HasPredicate: hasPredicate, UnmodeledOptions: unmodeled}},
+	}
+	if stmt.IfNotExists {
+		// Parsed conditional marker — the audit model records the flag and
+		// gates conditional post-state on it regardless of server support.
+		alter.Options = map[string]string{"if_not_exists": "true"}
+	}
 	return &spec.DDL{
 		Operation:          spec.DDLOperationCreateIndex,
 		Table:              &spec.Table{Name: stmt.Table.Name.L, Schema: stmt.Table.Schema.L},
 		UnextractedOptions: unextracted,
-		Alter: []spec.Alter{{
-			Action: "create_index",
-			Index:  &spec.AlterIndex{Definition: &spec.Index{Name: indexName, Kind: kind, Columns: columns, HasExpressionKeys: expr > 0, ExpressionCount: expr, PrefixParts: prefix, DescParts: desc, Global: indexGlobal, HasPredicate: hasPredicate, UnmodeledOptions: unmodeled}},
-		}},
+		Alter:              []spec.Alter{alter},
 	}
 }
 
@@ -986,14 +992,18 @@ func extractDropIndex(stmt *ast.DropIndexStmt) *spec.DDL {
 		// ordinary DROP INDEX.
 		unextracted = append(unextracted, "hypo_index")
 	}
+	alter := spec.Alter{
+		Action: "drop_index",
+		Index:  &spec.AlterIndex{OldName: stmt.IndexName},
+	}
+	if stmt.IfExists {
+		alter.Options = map[string]string{"if_exists": "true"}
+	}
 	return &spec.DDL{
 		Operation:          spec.DDLOperationDropIndex,
 		Table:              &spec.Table{Name: stmt.Table.Name.L, Schema: stmt.Table.Schema.L},
 		UnextractedOptions: unextracted,
-		Alter: []spec.Alter{{
-			Action: "drop_index",
-			Index:  &spec.AlterIndex{OldName: stmt.IndexName},
-		}},
+		Alter:              []spec.Alter{alter},
 	}
 }
 

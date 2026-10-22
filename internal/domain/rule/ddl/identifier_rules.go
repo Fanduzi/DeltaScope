@@ -41,14 +41,15 @@ type namingRule struct {
 }
 
 type identifierPatternRule struct {
-	ruleID  string
-	subject string
-	level   rule.Level
-	pattern *regexp.Regexp
-	selects func(spec.Statement) []identifierSubject
+	ruleID      string
+	subject     string
+	level       rule.Level
+	pattern     *regexp.Regexp
+	selects     func(spec.Statement) []identifierSubject
+	appliesToFn func(spec.Statement) bool
 }
 
-func newIdentifierPatternRule(ruleID, subject string, fallbackLevel rule.Level, cfg policy.RulePolicy, selects func(spec.Statement) []identifierSubject) (rule.StatementRule, error) {
+func newIdentifierPatternRule(ruleID, subject string, fallbackLevel rule.Level, cfg policy.RulePolicy, selects func(spec.Statement) []identifierSubject, appliesToOverride ...func(spec.Statement) bool) (rule.StatementRule, error) {
 	required, err := boolParam(ruleID, cfg, "required", true)
 	if err != nil {
 		return nil, err
@@ -65,11 +66,12 @@ func newIdentifierPatternRule(ruleID, subject string, fallbackLevel rule.Level, 
 		return nil, fmt.Errorf("rule %s param %q must be a valid regexp: %w", ruleID, "pattern", err)
 	}
 	return identifierPatternRule{
-		ruleID:  ruleID,
-		subject: subject,
-		level:   configuredLevel(cfg, fallbackLevel),
-		pattern: pattern,
-		selects: selects,
+		ruleID:      ruleID,
+		subject:     subject,
+		level:       configuredLevel(cfg, fallbackLevel),
+		pattern:     pattern,
+		selects:     selects,
+		appliesToFn: firstAppliesTo(appliesToOverride),
 	}, nil
 }
 
@@ -145,7 +147,11 @@ func firstAppliesTo(overrides []func(spec.Statement) bool) func(spec.Statement) 
 func (r namingRule) ID() string { return r.ruleID }
 
 func (r identifierPatternRule) AppliesTo(statement spec.Statement) bool {
-	return r.pattern != nil && appliesToCreateTable(statement)
+	fn := r.appliesToFn
+	if fn == nil {
+		fn = appliesToCreateTable
+	}
+	return r.pattern != nil && fn(statement)
 }
 
 func (r namingRule) AppliesTo(statement spec.Statement) bool {
@@ -221,31 +227,37 @@ func (r namingRule) Evaluate(ctx context.Context, statement spec.Statement) ([]r
 }
 
 type identifierKeywordRule struct {
-	ruleID  string
-	subject string
-	level   rule.Level
-	forbid  bool
-	selects func(spec.Statement) []identifierSubject
+	ruleID      string
+	subject     string
+	level       rule.Level
+	forbid      bool
+	selects     func(spec.Statement) []identifierSubject
+	appliesToFn func(spec.Statement) bool
 }
 
-func newIdentifierKeywordRule(ruleID, subject string, fallbackLevel rule.Level, cfg policy.RulePolicy, selects func(spec.Statement) []identifierSubject) (rule.StatementRule, error) {
+func newIdentifierKeywordRule(ruleID, subject string, fallbackLevel rule.Level, cfg policy.RulePolicy, selects func(spec.Statement) []identifierSubject, appliesToOverride ...func(spec.Statement) bool) (rule.StatementRule, error) {
 	forbid, err := boolParam(ruleID, cfg, "forbid", true)
 	if err != nil {
 		return nil, err
 	}
 	return identifierKeywordRule{
-		ruleID:  ruleID,
-		subject: subject,
-		level:   configuredLevel(cfg, fallbackLevel),
-		forbid:  forbid,
-		selects: selects,
+		ruleID:      ruleID,
+		subject:     subject,
+		level:       configuredLevel(cfg, fallbackLevel),
+		forbid:      forbid,
+		selects:     selects,
+		appliesToFn: firstAppliesTo(appliesToOverride),
 	}, nil
 }
 
 func (r identifierKeywordRule) ID() string { return r.ruleID }
 
 func (r identifierKeywordRule) AppliesTo(statement spec.Statement) bool {
-	return r.forbid && appliesToCreateTable(statement)
+	fn := r.appliesToFn
+	if fn == nil {
+		fn = appliesToCreateTable
+	}
+	return r.forbid && fn(statement)
 }
 
 func (r identifierKeywordRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
@@ -294,28 +306,68 @@ func selectColumnNames(statement spec.Statement) []identifierSubject {
 }
 
 func selectIndexNames(statement spec.Statement) []identifierSubject {
-	if statement.DDL == nil || len(statement.DDL.Indexes) == 0 {
+	indexes := declaredIndexes(statement)
+	if len(indexes) == 0 {
 		return nil
 	}
-	subjects := make([]identifierSubject, 0, len(statement.DDL.Indexes))
-	for _, index := range statement.DDL.Indexes {
+	subjects := make([]identifierSubject, 0, len(indexes))
+	for _, index := range indexes {
 		subjects = append(subjects, identifierSubject{kind: "index", name: index.Name})
 	}
 	return subjects
 }
 
+// appliesToCreateTableOrAlterConstraintNames lets the unique/primary-key
+// constraint naming families see ALTER TABLE … ADD CONSTRAINT names in
+// addition to their create-table subjects. Index-syntax adds (add_index)
+// stay with the ddl.index naming family. PostgreSQL is excluded: its only
+// ALTER-side index path is add_constraint and those names keep their pinned
+// ddl.alter.add_index.* naming-family ownership there.
+func appliesToCreateTableOrAlterConstraintNames(statement spec.Statement) bool {
+	if appliesToCreateTable(statement) {
+		return true
+	}
+	if statement.Dialect == spec.DialectPostgreSQL {
+		return false
+	}
+	return len(matchingAlterActions(statement, "add_constraint")) > 0
+}
+
 func selectPrimaryKeyConstraintNames(statement spec.Statement) []identifierSubject {
-	if statement.DDL == nil || statement.DDL.PrimaryKey == nil {
+	if statement.DDL == nil {
 		return nil
 	}
-	if strings.TrimSpace(statement.DDL.PrimaryKey.Name) == "" || strings.EqualFold(strings.TrimSpace(statement.DDL.PrimaryKey.Name), "primary") {
+	subjects := make([]identifierSubject, 0, 1)
+	if statement.DDL.PrimaryKey != nil {
+		name := strings.TrimSpace(statement.DDL.PrimaryKey.Name)
+		if name != "" && !strings.EqualFold(name, "primary") {
+			subjects = append(subjects, identifierSubject{kind: "constraint.primary_key", name: name})
+		}
+	}
+	return append(subjects, alterConstraintNamingSubjects(statement, spec.IndexKindPrimary, "constraint.primary_key")...)
+}
+
+// alterConstraintNamingSubjects collects ALTER-side add_constraint names of
+// the produced index kind on the MySQL-family dialects. On PostgreSQL the
+// add_constraint path stays with the add_index naming family, so the
+// constraint selectors must not double-judge those names there.
+func alterConstraintNamingSubjects(statement spec.Statement, kind spec.IndexKind, subjectKind string) []identifierSubject {
+	if statement.Dialect == spec.DialectPostgreSQL {
 		return nil
 	}
-	return []identifierSubject{{kind: "constraint.primary_key", name: statement.DDL.PrimaryKey.Name}}
+	subjects := make([]identifierSubject, 0)
+	for _, alter := range matchingAlterActions(statement, "add_constraint") {
+		name := alterConstraintSubjectName(alter, kind)
+		if name == "" || (kind == spec.IndexKindPrimary && strings.EqualFold(name, "primary")) {
+			continue
+		}
+		subjects = append(subjects, identifierSubject{kind: subjectKind, name: name})
+	}
+	return subjects
 }
 
 func selectUniqueConstraintNames(statement spec.Statement) []identifierSubject {
-	if statement.DDL == nil || len(statement.DDL.Indexes) == 0 {
+	if statement.DDL == nil {
 		return nil
 	}
 	subjects := make([]identifierSubject, 0, len(statement.DDL.Indexes))
@@ -325,7 +377,9 @@ func selectUniqueConstraintNames(statement spec.Statement) []identifierSubject {
 		}
 		subjects = append(subjects, identifierSubject{kind: "constraint.unique_key", name: index.Name})
 	}
-	return subjects
+	// ALTER TABLE … ADD CONSTRAINT <name> UNIQUE names join the constraint
+	// naming family; the same name is never an index-naming subject.
+	return append(subjects, alterConstraintNamingSubjects(statement, spec.IndexKindUnique, "constraint.unique_key")...)
 }
 
 func selectForeignKeyConstraintNames(statement spec.Statement) []identifierSubject {

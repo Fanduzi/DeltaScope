@@ -13,6 +13,7 @@ expect:
       - ddl.alter.add_index.fulltext.prefix.require
       - ddl.alter.add_index.fulltext.suffix.require
       - ddl.alter.add_index.redundant_left_prefix.forbid
+      - ddl.alter.add_index.redundant_unique_overlap.forbid
       - ddl.alter.add_index.secondary.contains.require
       - ddl.alter.add_index.secondary.prefix.require
       - ddl.alter.add_index.secondary.suffix.require

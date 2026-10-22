@@ -245,26 +245,29 @@ func TestAlterColumnTransitionRuleAllowsUntouchedChanges(t *testing.T) {
 
 func TestAlterAddedRedundantIndexRulesReuseLifecycleSnapshot(t *testing.T) {
 	t.Parallel()
+	// The statement adds two indexes that are each redundant against the
+	// known existing set — the added index is the flagged subject, and the
+	// pre-existing covering indexes are context only.
 	statement := alterStatement(
 		spec.Alter{
 			Action: "add_index",
-			Name:   "idx_email_created",
+			Name:   "idx_email",
 			Index: &spec.AlterIndex{
 				Definition: &spec.Index{
-					Name:    "idx_email_created",
+					Name:    "idx_email",
 					Kind:    spec.IndexKindSecondary,
-					Columns: []string{"email", "created_at"},
+					Columns: []string{"email"},
 				},
 			},
 		},
 		spec.Alter{
 			Action: "add_constraint",
-			Name:   "uniq_email_status",
+			Name:   "idx_status",
 			Index: &spec.AlterIndex{
 				Definition: &spec.Index{
-					Name:    "uniq_email_status",
-					Kind:    spec.IndexKindUnique,
-					Columns: []string{"email", "status"},
+					Name:    "idx_status",
+					Kind:    spec.IndexKindSecondary,
+					Columns: []string{"status"},
 				},
 			},
 		},
@@ -274,8 +277,8 @@ func TestAlterAddedRedundantIndexRulesReuseLifecycleSnapshot(t *testing.T) {
 			Exists: true,
 			Table:  &spec.Table{Name: "users"},
 			Indexes: []spec.Index{
-				{Name: "idx_email", Kind: spec.IndexKindSecondary, Columns: []string{"email"}},
-				{Name: "uniq_email", Kind: spec.IndexKindUnique, Columns: []string{"email"}},
+				{Name: "idx_email_created", Kind: spec.IndexKindSecondary, Columns: []string{"email", "created_at"}},
+				{Name: "uniq_status", Kind: spec.IndexKindUnique, Columns: []string{"status"}},
 			},
 		},
 	}
@@ -301,16 +304,18 @@ func TestAlterAddedRedundantIndexRulesReuseLifecycleSnapshot(t *testing.T) {
 	if err != nil {
 		t.Fatalf("evaluate left-prefix rule: %v", err)
 	}
-	if len(leftFindings) != 1 || leftFindings[0].RuleID != ruleIDAlterAddIndexRedundantLeftPrefixForbid {
-		t.Fatalf("expected left-prefix lifecycle finding, got %+v", leftFindings)
+	if len(leftFindings) != 1 || leftFindings[0].RuleID != ruleIDAlterAddIndexRedundantLeftPrefixForbid ||
+		leftFindings[0].Metadata["index"] != "idx_email" {
+		t.Fatalf("expected left-prefix lifecycle finding naming the added idx_email, got %+v", leftFindings)
 	}
 
 	uniqueFindings, err := uniqueOverlapRule.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate unique-overlap rule: %v", err)
 	}
-	if len(uniqueFindings) != 1 || uniqueFindings[0].RuleID != ruleIDAlterAddIndexRedundantUniqueOverlapForbid {
-		t.Fatalf("expected unique-overlap lifecycle finding, got %+v", uniqueFindings)
+	if len(uniqueFindings) != 1 || uniqueFindings[0].RuleID != ruleIDAlterAddIndexRedundantUniqueOverlapForbid ||
+		uniqueFindings[0].Metadata["index"] != "idx_status" {
+		t.Fatalf("expected unique-overlap lifecycle finding naming the added idx_status, got %+v", uniqueFindings)
 	}
 }
 
@@ -467,7 +472,7 @@ func TestAlterAddedIndexPrefixRuleFindsBadPrefixes(t *testing.T) {
 
 			findings, err := statementRule.Evaluate(context.Background(), alterStatement(
 				spec.Alter{
-					Action: "add_constraint",
+					Action: "add_index",
 					Name:   tt.indexName,
 					Index: &spec.AlterIndex{
 						Definition: &spec.Index{
@@ -582,7 +587,7 @@ func TestAlterAddedIndexSuffixRuleFindsBadNames(t *testing.T) {
 
 			findings, err := statementRule.Evaluate(context.Background(), alterStatement(
 				spec.Alter{
-					Action: "add_constraint",
+					Action: "add_index",
 					Name:   tt.indexName,
 					Index: &spec.AlterIndex{
 						Definition: &spec.Index{
@@ -656,7 +661,7 @@ func TestAlterAddedIndexContainsRuleUsesORSemantics(t *testing.T) {
 
 			findings, err := statementRule.Evaluate(context.Background(), alterStatement(
 				spec.Alter{
-					Action: "add_constraint",
+					Action: "add_index",
 					Name:   tt.indexName,
 					Index: &spec.AlterIndex{
 						Definition: &spec.Index{
@@ -893,7 +898,7 @@ func TestAlterRegisterAddsAlterAddedIndexPrefixRulesFromDefaultPolicy(t *testing
 
 	findings, err := registry.EvaluateStatement(context.Background(), alterStatement(
 		spec.Alter{
-			Action: "add_constraint",
+			Action: "add_index",
 			Name:   "user_email",
 			Index: &spec.AlterIndex{
 				Definition: &spec.Index{
@@ -904,7 +909,7 @@ func TestAlterRegisterAddsAlterAddedIndexPrefixRulesFromDefaultPolicy(t *testing
 			},
 		},
 		spec.Alter{
-			Action: "add_constraint",
+			Action: "add_index",
 			Name:   "name_lookup",
 			Index: &spec.AlterIndex{
 				Definition: &spec.Index{
@@ -915,7 +920,7 @@ func TestAlterRegisterAddsAlterAddedIndexPrefixRulesFromDefaultPolicy(t *testing
 			},
 		},
 		spec.Alter{
-			Action: "add_constraint",
+			Action: "add_index",
 			Name:   "search_body",
 			Index: &spec.AlterIndex{
 				Definition: &spec.Index{

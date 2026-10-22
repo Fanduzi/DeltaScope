@@ -52,6 +52,8 @@ ALTER TABLE no_pk ADD UNIQUE KEY badadduniq (id);
 ALTER TABLE no_pk ADD UNIQUE KEY badadduq2 (id);
 ALTER TABLE no_pk ADD UNIQUE KEY uniq_overlap_a (id), ADD UNIQUE KEY uniq_overlap_b (id);
 ALTER TABLE no_pk ADD UNIQUE KEY uniq_wide (id, id2), ADD UNIQUE KEY uniq_narrow (id);
+CREATE TABLE uniq_cov (id INT, k2 INT, UNIQUE KEY uq_cov (k2));
+ALTER TABLE uniq_cov ADD INDEX sec_cov (k2);
 ALTER TABLE no_pk ADD FULLTEXT KEY badaddfull (id2);
 ALTER TABLE no_pk CHANGE COLUMN id id2 JSON NOT NULL AUTO_INCREMENT DEFAULT 1;
 ALTER TABLE no_pk MODIFY COLUMN id JSON NOT NULL AUTO_INCREMENT DEFAULT 1;

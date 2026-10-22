@@ -8,6 +8,7 @@ package ddl
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
@@ -357,6 +358,14 @@ type alterAddedIndexRule struct {
 	ruleID  string
 	inner   rule.StatementRule
 	indexes func(spec.Statement) []spec.Index
+	// addedOnlyAttribution drops projected findings that name an index the
+	// statement did not add — the lifecycle candidate set includes existing
+	// indexes, but only added indexes are this statement's subjects.
+	addedOnlyAttribution bool
+	// lifecycle marks wrappers whose candidate set consumes the target's
+	// existing index set — when that set is unknowable the rule reports a
+	// target_table.indexes gap instead of auditing silence.
+	lifecycle bool
 }
 
 func newAlterAddedIndexPrefixRule(ruleID string, kind spec.IndexKind, fallbackPrefix string, fallbackLevel rule.Level, cfg policy.RulePolicy) (rule.StatementRule, error) {
@@ -373,7 +382,7 @@ func newAlterAddedIndexPrefixRule(ruleID string, kind spec.IndexKind, fallbackPr
 func (r alterAddedIndexPrefixRule) ID() string { return r.inner.ID() }
 
 func (r alterAddedIndexPrefixRule) AppliesTo(statement spec.Statement) bool {
-	return len(alterAddedIndexesByKind(statement, r.kind)) > 0
+	return len(alterAddedIndexSyntaxByKind(statement, r.kind)) > 0
 }
 
 func (r alterAddedIndexPrefixRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
@@ -385,7 +394,7 @@ func (r alterAddedIndexPrefixRule) Evaluate(ctx context.Context, statement spec.
 		ctx,
 		r.inner,
 		r.ID(),
-		projectedAlterIndexesStatement(statement, alterAddedIndexesByKind(statement, r.kind)),
+		projectedAlterIndexesStatement(statement, alterAddedIndexSyntaxByKind(statement, r.kind)),
 	)
 	if err != nil {
 		return nil, err
@@ -407,7 +416,7 @@ func newAlterAddedIndexSuffixRule(ruleID string, kind spec.IndexKind, fallbackLe
 func (r alterAddedIndexSuffixRule) ID() string { return r.inner.ID() }
 
 func (r alterAddedIndexSuffixRule) AppliesTo(statement spec.Statement) bool {
-	return len(alterAddedIndexesByKind(statement, r.kind)) > 0
+	return len(alterAddedIndexSyntaxByKind(statement, r.kind)) > 0
 }
 
 func (r alterAddedIndexSuffixRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
@@ -419,7 +428,7 @@ func (r alterAddedIndexSuffixRule) Evaluate(ctx context.Context, statement spec.
 		ctx,
 		r.inner,
 		r.ID(),
-		projectedAlterIndexesStatement(statement, alterAddedIndexesByKind(statement, r.kind)),
+		projectedAlterIndexesStatement(statement, alterAddedIndexSyntaxByKind(statement, r.kind)),
 	)
 	if err != nil {
 		return nil, err
@@ -441,7 +450,7 @@ func newAlterAddedIndexContainsRule(ruleID string, kind spec.IndexKind, fallback
 func (r alterAddedIndexContainsRule) ID() string { return r.inner.ID() }
 
 func (r alterAddedIndexContainsRule) AppliesTo(statement spec.Statement) bool {
-	return len(alterAddedIndexesByKind(statement, r.kind)) > 0
+	return len(alterAddedIndexSyntaxByKind(statement, r.kind)) > 0
 }
 
 func (r alterAddedIndexContainsRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
@@ -453,7 +462,7 @@ func (r alterAddedIndexContainsRule) Evaluate(ctx context.Context, statement spe
 		ctx,
 		r.inner,
 		r.ID(),
-		projectedAlterIndexesStatement(statement, alterAddedIndexesByKind(statement, r.kind)),
+		projectedAlterIndexesStatement(statement, alterAddedIndexSyntaxByKind(statement, r.kind)),
 	)
 	if err != nil {
 		return nil, err
@@ -487,9 +496,11 @@ func newAlterAddedDuplicateIndexForbiddenRule(fallbackLevel rule.Level, cfg poli
 		return nil, err
 	}
 	return alterAddedIndexRule{
-		ruleID:  ruleIDAlterAddIndexDuplicateForbid,
-		inner:   inner,
-		indexes: allAlterAddedIndexes,
+		ruleID:               ruleIDAlterAddIndexDuplicateForbid,
+		inner:                inner,
+		indexes:              alterLifecycleIndexes,
+		addedOnlyAttribution: true,
+		lifecycle:            true,
 	}, nil
 }
 
@@ -503,9 +514,11 @@ func newAlterAddedRedundantLeftPrefixRule(fallbackLevel rule.Level, cfg policy.R
 		return nil, err
 	}
 	return alterAddedIndexRule{
-		ruleID:  ruleIDAlterAddIndexRedundantLeftPrefixForbid,
-		inner:   inner,
-		indexes: alterLifecycleIndexes,
+		ruleID:               ruleIDAlterAddIndexRedundantLeftPrefixForbid,
+		inner:                inner,
+		indexes:              alterLifecycleIndexes,
+		addedOnlyAttribution: true,
+		lifecycle:            true,
 	}, nil
 }
 
@@ -519,15 +532,23 @@ func newAlterAddedRedundantUniqueOverlapRule(fallbackLevel rule.Level, cfg polic
 		return nil, err
 	}
 	return alterAddedIndexRule{
-		ruleID:  ruleIDAlterAddIndexRedundantUniqueOverlapForbid,
-		inner:   inner,
-		indexes: alterLifecycleIndexes,
+		ruleID:               ruleIDAlterAddIndexRedundantUniqueOverlapForbid,
+		inner:                inner,
+		indexes:              alterLifecycleIndexes,
+		addedOnlyAttribution: true,
+		lifecycle:            true,
 	}, nil
 }
 
 func (r alterAddedIndexRule) ID() string { return r.ruleID }
 
 func (r alterAddedIndexRule) AppliesTo(statement spec.Statement) bool {
+	// The rule only applies when the statement actually adds an index; the
+	// lifecycle candidate set alone (existing indexes on the target) is
+	// context, never applicability.
+	if len(allAlterAddedIndexes(statement)) == 0 {
+		return false
+	}
 	return len(r.indexes(statement)) > 0
 }
 
@@ -544,7 +565,43 @@ func (r alterAddedIndexRule) Evaluate(ctx context.Context, statement spec.Statem
 	if err != nil {
 		return nil, err
 	}
-	return findings, nil
+	if !r.addedOnlyAttribution {
+		return findings, nil
+	}
+	added := addedIndexNameSet(statement)
+	kept := findings[:0]
+	for _, finding := range findings {
+		name, _ := finding.Metadata["index"].(string)
+		if added[strings.ToLower(name)] {
+			kept = append(kept, finding)
+		}
+	}
+	return kept, nil
+}
+
+// EvidenceGaps reports the missing existing-index-set fact for lifecycle
+// wrappers: the statement adds indexes, so the only fact the rule can lack is
+// the target's current index set. A confirmed-absent target is a settled
+// parent failure and emits no member gap.
+func (r alterAddedIndexRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
+	if !r.lifecycle || !orderedGapDialect(statement.Dialect) || !r.AppliesTo(statement) {
+		return nil
+	}
+	if _, known := existingIndexSet(statement); known {
+		return nil
+	}
+	snapshot, ok := targetTableSnapshot(statement)
+	return memberExistenceGaps(snapshot, ok, "index")
+}
+
+func addedIndexNameSet(statement spec.Statement) map[string]bool {
+	names := make(map[string]bool)
+	for _, index := range allAlterAddedIndexes(statement) {
+		if name := strings.ToLower(strings.TrimSpace(index.Name)); name != "" {
+			names[name] = true
+		}
+	}
+	return names
 }
 
 func evaluateProjectedAlterIndexRule(ctx context.Context, inner rule.StatementRule, ruleID string, projected spec.Statement) ([]rule.Finding, error) {
@@ -574,10 +631,15 @@ func allAlterAddedIndexes(statement spec.Statement) []spec.Index {
 	return indexes
 }
 
+// alterLifecycleIndexes merges the target's existing index set with the
+// statement's declared additions so lifecycle rules judge the resulting set.
+// An unknowable existing set (IndexesUnknown or no proven snapshot)
+// contributes no facts — the wrapper's EvidenceGaps reports the gap instead
+// of auditing against an assumed-empty set.
 func alterLifecycleIndexes(statement spec.Statement) []spec.Index {
 	indexes := make([]spec.Index, 0)
-	if snapshot, ok := targetTableSnapshot(statement); ok && snapshot.Exists {
-		indexes = append(indexes, snapshot.Indexes...)
+	if existing, known := existingIndexSet(statement); known {
+		indexes = append(indexes, existing...)
 	}
 	indexes = append(indexes, allAlterAddedIndexes(statement)...)
 	return indexes

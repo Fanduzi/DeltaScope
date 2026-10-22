@@ -194,6 +194,7 @@ func isMySQLFamilyOnlyRule(ruleID string) bool {
 		"ddl.alter.add_index.columns.max_count",
 		"ddl.alter.add_index.duplicate.forbid",
 		"ddl.alter.add_index.redundant_left_prefix.forbid",
+		"ddl.alter.add_index.redundant_unique_overlap.forbid",
 		"ddl.alter.add_index.unique.suffix.require",
 		"ddl.alter.add_index.unique.contains.require",
 		"dml.limit.forbid",
@@ -239,7 +240,6 @@ func isMySQLFamilyOnlyRule(ruleID string) bool {
 func isDeferredCorpusCoverageRule(ruleID string) bool {
 	switch ruleID {
 	case
-		"ddl.alter.add_index.redundant_unique_overlap.forbid",
 		"ddl.pg.alter.add_column.non_null_default.rewrite.warn":
 		return true
 	default:

@@ -305,6 +305,8 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 		return s.applyAlterTable(ctx, statement)
 	case spec.DDLOperationCreateIndex:
 		s.applyCreateIndex(statement)
+	case spec.DDLOperationDropIndex:
+		s.applyStandaloneDropIndex(statement)
 	case spec.DDLOperationTruncateTable:
 		s.applyTruncateTable(statement)
 	case spec.DDLOperationRenameTable:
@@ -567,6 +569,22 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 	}
 	if alter.Action == "set_column_visibility" {
 		return s.applyColumnVisibility(ctx, statement, alter, targets)
+	}
+	if (alter.Action == "add_index" || alter.Action == "add_constraint") && alter.Index != nil && alter.Index.Definition != nil {
+		s.applyAddIndex(statement, alter, targets)
+		return nil
+	}
+	if alter.Action == "drop_index" {
+		s.applyDropIndex(statement, alter, targets)
+		return nil
+	}
+	if alter.Action == "rename_index" {
+		s.applyRenameIndex(statement, alter, targets)
+		return nil
+	}
+	if alter.Action == "drop_primary_key" {
+		s.applyDropPrimaryKey(statement, targets)
+		return nil
 	}
 	if alter.Action != "add_columns" || alter.Column == nil || alter.Column.Definition == nil {
 		s.invalidateAll(targets)

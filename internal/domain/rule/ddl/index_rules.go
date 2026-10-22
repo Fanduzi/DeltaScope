@@ -41,7 +41,18 @@ func (r indexTotalMaxCountRule) Evaluate(ctx context.Context, statement spec.Sta
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
-	actual := len(statement.DDL.Indexes)
+	// Lifecycle count: on standalone CREATE INDEX the resulting total is the
+	// known existing set plus what this statement adds; on create-table the
+	// declared set is the whole set. An unknowable existing set can never
+	// prove the total stays under the limit — the gap reports instead.
+	indexes, existingKnown := lifecycleIndexes(statement)
+	actual := len(indexes)
+	declared := len(declaredIndexes(statement))
+	if declared > r.limit {
+		actual = declared
+	} else if !existingKnown {
+		return nil, nil
+	}
 	if actual <= r.limit {
 		return nil, nil
 	}
@@ -55,6 +66,21 @@ func (r indexTotalMaxCountRule) Evaluate(ctx context.Context, statement spec.Sta
 			"actual": actual,
 		},
 	}}, nil
+}
+
+// EvidenceGaps reports the missing existing-index fact when a standalone
+// CREATE INDEX cannot establish the resulting table count. Create-table
+// statements declare the whole set and never need the fact.
+func (r indexTotalMaxCountRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
+	if !orderedGapDialect(statement.Dialect) || !r.AppliesTo(statement) || statement.DDL == nil ||
+		statement.DDL.Operation != spec.DDLOperationCreateIndex {
+		return nil
+	}
+	if _, known := existingIndexSet(statement); known {
+		return nil
+	}
+	snapshot, ok := targetTableSnapshot(statement)
+	return memberExistenceGaps(snapshot, ok, "index")
 }
 
 type indexColumnsMaxCountRule struct {
@@ -85,7 +111,7 @@ func (r indexColumnsMaxCountRule) Evaluate(ctx context.Context, statement spec.S
 	}
 
 	findings := make([]rule.Finding, 0)
-	for _, index := range statement.DDL.Indexes {
+	for _, index := range declaredIndexes(statement) {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
@@ -165,7 +191,7 @@ func (r indexPrefixRequiredRule) Evaluate(ctx context.Context, statement spec.St
 	}
 
 	findings := make([]rule.Finding, 0)
-	for _, index := range statement.DDL.Indexes {
+	for _, index := range declaredIndexes(statement) {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
@@ -218,7 +244,7 @@ func (r indexSuffixRequiredRule) Evaluate(ctx context.Context, statement spec.St
 	}
 
 	findings := make([]rule.Finding, 0)
-	for _, index := range statement.DDL.Indexes {
+	for _, index := range declaredIndexes(statement) {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
@@ -272,7 +298,7 @@ func (r indexContainsRequiredRule) Evaluate(ctx context.Context, statement spec.
 	}
 
 	findings := make([]rule.Finding, 0)
-	for _, index := range statement.DDL.Indexes {
+	for _, index := range declaredIndexes(statement) {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
@@ -329,14 +355,23 @@ func (r duplicateIndexForbiddenRule) Evaluate(ctx context.Context, statement spe
 		return nil, nil
 	}
 
+	// Candidate set: declared indexes plus the known existing set on the
+	// standalone create_index entry. A finding only stands when the flagged
+	// index is declared by this statement — a pre-existing duplicate pair is
+	// never attributed to it.
+	candidates, _ := lifecycleIndexes(statement)
+	declared := declaredIndexNames(statement)
 	seen := make(map[string]string)
 	findings := make([]rule.Finding, 0)
-	for _, index := range statement.DDL.Indexes {
+	for _, index := range candidates {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
 		signature := duplicateSignature(index)
 		if first, ok := seen[signature]; ok {
+			if !declared[strings.ToLower(index.Name)] {
+				continue
+			}
 			findings = append(findings, rule.Finding{
 				Level:      r.level,
 				Message:    fmt.Sprintf("%s index %q duplicates index %q", indexKindLabel(index.Kind), index.Name, first),
@@ -355,6 +390,12 @@ func (r duplicateIndexForbiddenRule) Evaluate(ctx context.Context, statement spe
 		seen[signature] = index.Name
 	}
 	return findings, nil
+}
+
+// EvidenceGaps reports the missing existing-index fact when a standalone
+// CREATE INDEX cannot know whether it duplicates an existing index.
+func (r duplicateIndexForbiddenRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
+	return lifecycleIndexGap(statement, r.AppliesTo(statement))
 }
 
 func duplicateSignature(index spec.Index) string {
@@ -385,20 +426,26 @@ func (r redundantLeftPrefixIndexRule) Evaluate(ctx context.Context, statement sp
 		return nil, nil
 	}
 
+	// Lifecycle candidates on the standalone create_index entry; only a
+	// shorter index this statement declares may be flagged — existing
+	// indexes are context, never the subject.
+	candidates, _ := lifecycleIndexes(statement)
+	declared := declaredIndexNames(statement)
 	findings := make([]rule.Finding, 0)
-	for i := range statement.DDL.Indexes {
+	for i := range candidates {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		shorter := statement.DDL.Indexes[i]
-		if shorter.Kind != spec.IndexKindSecondary || len(shorter.Columns) == 0 {
+		shorter := candidates[i]
+		if shorter.Kind != spec.IndexKindSecondary || len(shorter.Columns) == 0 ||
+			!declared[strings.ToLower(shorter.Name)] {
 			continue
 		}
-		for j := range statement.DDL.Indexes {
+		for j := range candidates {
 			if i == j {
 				continue
 			}
-			longer := statement.DDL.Indexes[j]
+			longer := candidates[j]
 			if longer.Kind != spec.IndexKindSecondary || len(longer.Columns) <= len(shorter.Columns) {
 				continue
 			}
@@ -425,6 +472,12 @@ func (r redundantLeftPrefixIndexRule) Evaluate(ctx context.Context, statement sp
 	return findings, nil
 }
 
+// EvidenceGaps reports the missing existing-index fact when a standalone
+// CREATE INDEX cannot know whether the existing set already covers it.
+func (r redundantLeftPrefixIndexRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
+	return lifecycleIndexGap(statement, r.AppliesTo(statement))
+}
+
 type redundantUniqueOverlapIndexRule struct {
 	forbid bool
 	level  rule.Level
@@ -449,8 +502,12 @@ func (r redundantUniqueOverlapIndexRule) Evaluate(ctx context.Context, statement
 		return nil, nil
 	}
 
+	// Lifecycle candidates on the standalone create_index entry; a secondary
+	// index may only be flagged when this statement declares it.
+	candidates, _ := lifecycleIndexes(statement)
+	declared := declaredIndexNames(statement)
 	uniqueBySignature := make(map[string]string)
-	for _, index := range statement.DDL.Indexes {
+	for _, index := range candidates {
 		if index.Kind != spec.IndexKindUnique {
 			continue
 		}
@@ -458,11 +515,11 @@ func (r redundantUniqueOverlapIndexRule) Evaluate(ctx context.Context, statement
 	}
 
 	findings := make([]rule.Finding, 0)
-	for _, index := range statement.DDL.Indexes {
+	for _, index := range candidates {
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		if index.Kind != spec.IndexKindSecondary {
+		if index.Kind != spec.IndexKindSecondary || !declared[strings.ToLower(index.Name)] {
 			continue
 		}
 		if uniqueName, ok := uniqueBySignature[strings.Join(index.Columns, ",")]; ok {
@@ -482,6 +539,29 @@ func (r redundantUniqueOverlapIndexRule) Evaluate(ctx context.Context, statement
 		}
 	}
 	return findings, nil
+}
+
+// EvidenceGaps reports the missing existing-index fact when a standalone
+// CREATE INDEX cannot know whether an existing unique index already covers it.
+func (r redundantUniqueOverlapIndexRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
+	return lifecycleIndexGap(statement, r.AppliesTo(statement))
+}
+
+// lifecycleIndexGap reports the missing existing-index-set fact for the
+// standalone create_index entry: the statement declares new indexes, so the
+// only fact a lifecycle rule can lack is the target's current index set.
+// Create-table entries declare the whole set and never emit this gap; a
+// confirmed-absent target is a settled parent failure.
+func lifecycleIndexGap(statement spec.Statement, applies bool) []rule.EvidenceGap {
+	if !applies || !orderedGapDialect(statement.Dialect) || statement.DDL == nil ||
+		statement.DDL.Operation != spec.DDLOperationCreateIndex {
+		return nil
+	}
+	if _, known := existingIndexSet(statement); known {
+		return nil
+	}
+	snapshot, ok := targetTableSnapshot(statement)
+	return memberExistenceGaps(snapshot, ok, "index")
 }
 
 func isLeftPrefix(shorter, longer []string) bool {

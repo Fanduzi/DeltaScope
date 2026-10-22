@@ -68,7 +68,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 			return newIdentifierPatternRule(ruleIDColumnNamePatternRequire, "column", rule.LevelBlocker, cfg, selectColumnNames)
 		}},
 		{ruleID: ruleIDIndexNamePatternRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
-			return newIdentifierPatternRule(ruleIDIndexNamePatternRequire, "index", rule.LevelBlocker, cfg, selectIndexNames)
+			return newIdentifierPatternRule(ruleIDIndexNamePatternRequire, "index", rule.LevelBlocker, cfg, selectIndexNames, appliesToDDLWithIndexes)
 		}},
 		{ruleID: ruleIDTableNameKeywordForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newIdentifierKeywordRule(ruleIDTableNameKeywordForbid, "table", rule.LevelBlocker, cfg, selectTableName)
@@ -77,25 +77,25 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 			return newIdentifierKeywordRule(ruleIDColumnNameKeywordForbid, "column", rule.LevelBlocker, cfg, selectColumnNames)
 		}},
 		{ruleID: ruleIDIndexNameKeywordForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
-			return newIdentifierKeywordRule(ruleIDIndexNameKeywordForbid, "index", rule.LevelBlocker, cfg, selectIndexNames)
+			return newIdentifierKeywordRule(ruleIDIndexNameKeywordForbid, "index", rule.LevelBlocker, cfg, selectIndexNames, appliesToDDLWithIndexes)
 		}},
 		{ruleID: ruleIDConstraintPrimaryKeyNamePrefixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
-			return newNamingPrefixRule(ruleIDConstraintPrimaryKeyNamePrefixRequire, "primary key constraint", rule.LevelWarning, cfg, selectPrimaryKeyConstraintNames)
+			return newNamingPrefixRule(ruleIDConstraintPrimaryKeyNamePrefixRequire, "primary key constraint", rule.LevelWarning, cfg, selectPrimaryKeyConstraintNames, appliesToCreateTableOrAlterConstraintNames)
 		}},
 		{ruleID: ruleIDConstraintPrimaryKeyNameSuffixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
-			return newNamingSuffixRule(ruleIDConstraintPrimaryKeyNameSuffixRequire, "primary key constraint", rule.LevelWarning, cfg, selectPrimaryKeyConstraintNames)
+			return newNamingSuffixRule(ruleIDConstraintPrimaryKeyNameSuffixRequire, "primary key constraint", rule.LevelWarning, cfg, selectPrimaryKeyConstraintNames, appliesToCreateTableOrAlterConstraintNames)
 		}},
 		{ruleID: ruleIDConstraintPrimaryKeyNameContainsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
-			return newNamingContainsRule(ruleIDConstraintPrimaryKeyNameContainsRequire, "primary key constraint", rule.LevelWarning, cfg, selectPrimaryKeyConstraintNames)
+			return newNamingContainsRule(ruleIDConstraintPrimaryKeyNameContainsRequire, "primary key constraint", rule.LevelWarning, cfg, selectPrimaryKeyConstraintNames, appliesToCreateTableOrAlterConstraintNames)
 		}},
 		{ruleID: ruleIDConstraintUniqueKeyNamePrefixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
-			return newNamingPrefixRule(ruleIDConstraintUniqueKeyNamePrefixRequire, "unique key constraint", rule.LevelWarning, cfg, selectUniqueConstraintNames)
+			return newNamingPrefixRule(ruleIDConstraintUniqueKeyNamePrefixRequire, "unique key constraint", rule.LevelWarning, cfg, selectUniqueConstraintNames, appliesToCreateTableOrAlterConstraintNames)
 		}},
 		{ruleID: ruleIDConstraintUniqueKeyNameSuffixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
-			return newNamingSuffixRule(ruleIDConstraintUniqueKeyNameSuffixRequire, "unique key constraint", rule.LevelWarning, cfg, selectUniqueConstraintNames)
+			return newNamingSuffixRule(ruleIDConstraintUniqueKeyNameSuffixRequire, "unique key constraint", rule.LevelWarning, cfg, selectUniqueConstraintNames, appliesToCreateTableOrAlterConstraintNames)
 		}},
 		{ruleID: ruleIDConstraintUniqueKeyNameContainsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
-			return newNamingContainsRule(ruleIDConstraintUniqueKeyNameContainsRequire, "unique key constraint", rule.LevelWarning, cfg, selectUniqueConstraintNames)
+			return newNamingContainsRule(ruleIDConstraintUniqueKeyNameContainsRequire, "unique key constraint", rule.LevelWarning, cfg, selectUniqueConstraintNames, appliesToCreateTableOrAlterConstraintNames)
 		}},
 		{ruleID: ruleIDConstraintForeignKeyNamePrefixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newNamingPrefixRule(ruleIDConstraintForeignKeyNamePrefixRequire, "foreign key constraint", rule.LevelWarning, cfg, selectForeignKeyConstraintNames)
@@ -412,13 +412,13 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		}},
 		{ruleID: ruleIDAlterColumnPositionExistsRequire, construct: newAlterColumnPositionExistsRule},
 		{ruleID: ruleIDAlterAddIndexExistsForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
-			return newAlterObjectExistenceRule(ruleIDAlterAddIndexExistsForbid, []string{"add_constraint", "add_index"}, "index", true, rule.LevelBlocker, cfg, alterObjectName, snapshotHasIndex)
+			return newAlterObjectExistenceRule(ruleIDAlterAddIndexExistsForbid, []string{"add_constraint", "add_index", "create_index"}, "index", true, rule.LevelBlocker, cfg, alterIndexSubjectName, snapshotHasIndex)
 		}},
 		{ruleID: ruleIDAlterDropIndexExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
-			return newAlterObjectExistenceRule(ruleIDAlterDropIndexExistsRequire, []string{"drop_index"}, "index", false, rule.LevelBlocker, cfg, alterObjectName, snapshotHasIndex)
+			return newAlterObjectExistenceRule(ruleIDAlterDropIndexExistsRequire, []string{"drop_index"}, "index", false, rule.LevelBlocker, cfg, alterIndexTargetName, snapshotHasIndex)
 		}},
 		{ruleID: ruleIDAlterRenameIndexExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
-			return newAlterObjectExistenceRule(ruleIDAlterRenameIndexExistsRequire, []string{"rename_index"}, "index", false, rule.LevelBlocker, cfg, alterObjectName, snapshotHasIndex)
+			return newAlterObjectExistenceRule(ruleIDAlterRenameIndexExistsRequire, []string{"rename_index"}, "index", false, rule.LevelBlocker, cfg, alterIndexTargetName, snapshotHasIndex)
 		}},
 		{ruleID: ruleIDAlterDropPrimaryKeyExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAlterPrimaryKeyExistenceRule(ruleIDAlterDropPrimaryKeyExistsRequire, rule.LevelBlocker, cfg)

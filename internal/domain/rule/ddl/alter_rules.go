@@ -72,8 +72,12 @@ func (r forbiddenAlterActionRule) Evaluate(ctx context.Context, statement spec.S
 	}
 
 	findings := make([]rule.Finding, 0)
+	// Standalone index operations carry the target table too — standalone is
+	// an operation property, not the absence of DDL.Table. The standalone
+	// branch resolves names from Index.Definition/OldName when alter.Name is
+	// empty.
+	standalone := !appliesToAlterTable(statement)
 	alters := matchingForbiddenAlterActions(statement, r.action)
-	standalone := statement.DDL.Table == nil
 	if standalone {
 		alters = matchingStandaloneDDLActions(statement, r.action)
 	}
@@ -84,21 +88,28 @@ func (r forbiddenAlterActionRule) Evaluate(ctx context.Context, statement spec.S
 		if alter.Action != r.action {
 			continue
 		}
+		name := alterIndexSubjectName(alter)
+		if name == "" {
+			name = alterIndexTargetName(alter)
+		}
 		message := fmt.Sprintf("ALTER TABLE %s is forbidden", r.label)
 		suggestion := fmt.Sprintf("avoid %s in this change or relax the policy intentionally", r.label)
-		if alter.Name != "" {
-			message = fmt.Sprintf("ALTER TABLE %s is forbidden for %q", r.label, alter.Name)
+		if !standalone && name != "" {
+			message = fmt.Sprintf("ALTER TABLE %s is forbidden for %q", r.label, name)
 		}
 		metadata := map[string]any{
 			"action": alter.Action,
-			"name":   alter.Name,
+			"name":   name,
 		}
-		if !standalone {
+		if statement.DDL.Table != nil && statement.DDL.Table.Name != "" {
 			metadata["table"] = statement.DDL.Table.Name
-		} else if alter.Name != "" {
-			message = fmt.Sprintf("DDL %s is forbidden for %q", r.label, alter.Name)
-		} else {
-			message = fmt.Sprintf("DDL %s is forbidden", r.label)
+		}
+		if standalone {
+			if name != "" {
+				message = fmt.Sprintf("DDL %s is forbidden for %q", r.label, name)
+			} else {
+				message = fmt.Sprintf("DDL %s is forbidden", r.label)
+			}
 		}
 		findings = append(findings, rule.Finding{
 			Level:      r.level,
