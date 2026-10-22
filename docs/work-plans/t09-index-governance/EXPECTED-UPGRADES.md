@@ -1,0 +1,88 @@
+# T09 expected upgrades
+
+Authored before applying the corresponding old-oracle edits. These are bounded
+promotions from the frozen #88 contract, not expectations copied from product
+actuals. Existing SQL, role identities, profiles and unrelated negatives stay.
+T06 remains 496, T07 remains 207, T08 remains 172 — no change to their frozen
+expectations beyond the corpus deferral accounting noted below.
+
+## Bound upgrade rows
+
+- **U-standalone-create** (`internal/domain/rule/ddl` index family): a
+  standalone `CREATE [UNIQUE] INDEX` previously produced no `ddl.index.*`
+  finding because the extractor stores the index under the `create_index`
+  alter action while every rule read only `DDL.Indexes`. T09's unified
+  `declaredIndexes` accessor joins both sites, so column-count, naming,
+  duplicate, left-prefix and unique-overlap rules now fire on the standalone
+  form exactly as on a create-table or ALTER `ADD INDEX` declaration.
+
+- **U-standalone-drop** (`forbiddenAlterActionRule`, alter_rules.go):
+  standalone `DROP INDEX` was unreachable for `ddl.alter.drop_index.forbid`
+  because standalone detection keyed on `DDL.Table == nil` while the extractor
+  always populates `Table`. Detection is now operation-driven and the index
+  name resolves through `Definition`/`OldName` fallback, so the forbid blocker
+  fires with `action`/`name`/`table` metadata.
+
+- **U-naming-split** (`alterAddedIndexSyntaxByKind`, common.go): under
+  MySQL-family dialects, `ALTER TABLE ... ADD CONSTRAINT name UNIQUE(...)` is
+  constraint syntax and is judged by `ddl.constraint.unique_key.name.prefix.require`;
+  only `ADD INDEX`/`ADD KEY`/`ADD UNIQUE KEY` index syntax lands in the
+  `ddl.alter.add_index.*` naming rules. PostgreSQL keeps constraint-path
+  attribution — it has no ALTER-embedded index syntax, so `add_constraint`
+  remains its only index-producing action. Old tests asserting the index-rule
+  id on MySQL constraint syntax were re-pinned to the constraint rule.
+
+- **U-lifecycle-attribution** (`alterLifecycleIndexes` consumers): duplicate,
+  left-prefix and unique-overlap findings on ALTER statements now attribute
+  the **statement-added** index (the narrower member), never the pre-existing
+  catalog member. Lifecycle tests that flagged the existing index were
+  rewritten to flag the added one; an existing-only redundant pair with no
+  matching added member stays silent as the recorded control.
+
+- **U-state** (`batch_state_index.go`): single-action `add_index`,
+  index-producing `add_constraint`, `drop_index`, `rename_index`,
+  `drop_primary_key` and standalone `DROP INDEX` now publish ordered
+  post-state — previously every ALTER carrying an index action tombstoned the
+  table to present-incomplete and standalone `drop_index` published nothing.
+  Known-absent drops without `IF EXISTS` invalidate; `IF EXISTS` on a known
+  absence no-ops; unknown presence withholds rather than fabricating success.
+  Index transitions never invalidate loaded foreign-key dependents.
+
+- **U-extractor** (`extractCreateIndex`/`extractDropIndex`): standalone
+  `CREATE INDEX ... IF NOT EXISTS` and `DROP INDEX ... IF EXISTS` now record
+  the `if_not_exists`/`if_exists` option markers on their alter actions, the
+  same conditional-existence surface CREATE TABLE and ALTER specs already
+  carried. Server-side grammar support is a separate native fact (MySQL
+  rejects both spellings with ERROR 1064; TiDB accepts them).
+
+- **U-deferred** (`corpus_coverage_test.go` + corpus fixtures):
+  `ddl.alter.add_index.redundant_unique_overlap.forbid` leaves the deferred
+  list and joins the MySQL-family-only coverage set. Both dialect corpuses
+  gained one fixture (`golden.t9o`-style pair: `ADD CONSTRAINT ... UNIQUE`
+  plus `ADD INDEX` on the same ordered columns) asserting the rule in
+  `include`. The deferred count drops to 1 (the PostgreSQL rewrite carry).
+
+- **U-policy-param** (frozen `t09-forbid` profile):
+  `ddl.alter.drop_index.forbid` and `ddl.alter.rename_index.forbid` ship with
+  `forbid: false` by default; the profile pins `forbid: true` so the loaded
+  rule actually blocks. `ddl.index.name.keyword.forbid` likewise requires
+  `forbid: true`.
+
+## Admission reconciliation (Stage 6)
+
+The frozen `roles.json` denominator is 125 after materialization:
+
+- `T09.db.<anchor>.{ddl,syntax_negative}` — 8 baseline anchor rows reused from
+  the shared fixture contract
+- `T09.cli.<role>` — 31 cli cases, dialect-expanded
+  (`firstpath-{mysql,tidb}`, naming/duplicate/overlap per-dialect rows, and
+  `err-syntax` — parse failures emit a result JSON to stdout, so the role is
+  a cli case, not a pre-result clierr case)
+- `T09.clierr.{policy-invalid,provider-failure}` — 2 pre-result exits
+- `T09.meta.t09-<anchor>-<role>` — 84 metadata cases (21 roles × 4 anchors),
+  each with owned-table setup/absence proof, STATISTICS oracle, driver
+  execution ledger, per-anchor native error pins and cleanup verification
+
+`t09-err-cancel` and `t09-err-driver-exec` stay named unit-test roles — they
+exercise in-process cancellation and driver failure propagation, not golden
+runner cells.
