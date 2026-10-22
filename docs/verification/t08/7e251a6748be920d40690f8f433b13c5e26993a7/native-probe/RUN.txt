@@ -1,0 +1,22 @@
+command: T08Y_OUT=<out> DELTASCOPE_BIN=<bin> python3 t08_year_probe.py
+cwd: /Users/fan/GolangProjects/DeltaScope
+matrix: mysql84 only x {y1: YEAR NULL DEFAULT 1 -> MODIFY same,
+        y2: YEAR NULL DEFAULT 2001 -> MODIFY same,
+        i1: INT NULL DEFAULT 1 -> MODIFY same}
+policy: isolated ddl.alter.modify_column.compatibility.require
+        (required=true, level=blocker; all other catalog rules disabled)
+
+PRE-FIX (code SHA 27a4355b, bin sha256=1dc064e2...af567):
+  mysql84 y1: CREATE stores COLUMN_DEFAULT=2001 (HEX 32303031);
+    audit of same-definition MODIFY -> rc=1, one blocker finding
+    "column \"c\" changes its default value" (y1m-audit.json);
+    independent driver reassert leaves bytes 2001->2001.
+    => REAL FALSE POSITIVE (identical effective default convicted).
+  tidb85 y1 (boundary): catalog stores 1 verbatim; audit rc=0,
+    0 findings/0 gaps (tidb-y1-audit.json). Defect is MySQL-specific.
+
+POST-FIX (code SHA 7e251a67, bin sha256=3f258232...41e003):
+  mysql84 y1: 2001->2001, 0 findings + unproven_default_identity gap
+  mysql84 y2: 2001->2001, 0 findings, no gap (same — unchanged)
+  mysql84 i1: 1->1, 0 findings, no gap (INT control — unchanged)
+  probe-result.json + post-fix/probe-result.json carry full rows.

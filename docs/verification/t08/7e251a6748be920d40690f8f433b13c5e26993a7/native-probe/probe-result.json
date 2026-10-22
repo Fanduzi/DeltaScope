@@ -1,0 +1,332 @@
+{
+ "started": "2026-10-22T21:51:14+0800",
+ "cells": [
+  {
+   "cell": "y1",
+   "status": "fail",
+   "error": "t08y_y1: audit rc=1 err=''"
+  },
+  {
+   "cell": "y2",
+   "table": "t08y_y2",
+   "declared": "YEAR NULL DEFAULT 2001",
+   "steps": [
+    {
+     "name": "prove-absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08y_y2'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    },
+    {
+     "name": "create",
+     "sql": "CREATE TABLE t08y_y2 (c YEAR NULL DEFAULT 2001);",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "modify",
+     "sql": "ALTER TABLE t08y_y2 MODIFY COLUMN c YEAR NULL DEFAULT 2001;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "drop",
+     "sql": "DROP TABLE t08y_y2;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "final-count",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08y_y2'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    }
+   ],
+   "catalog_before": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08y_y2' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "c",
+      "type": "year",
+      "nullable": "YES",
+      "default_hex": "32303031",
+      "default_text": "2001",
+      "extra": ""
+     }
+    ]
+   },
+   "audit": {
+    "argv": [
+     "/tmp/t08year-deltascope",
+     "audit",
+     "--dialect",
+     "mysql",
+     "--sql",
+     "ALTER TABLE t08y_y2 MODIFY COLUMN c YEAR NULL DEFAULT 2001;",
+     "--config",
+     "/tmp/ds-t08-year-check-20261022-215051/year-check-policy.yaml",
+     "--format",
+     "json",
+     "--host",
+     "127.0.0.1",
+     "--port",
+     "23384",
+     "--user",
+     "root",
+     "--schema",
+     "golden",
+     "--password-env",
+     "T08Y_MYSQL_PASSWORD"
+    ],
+    "rc": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t08y_y2 MODIFY COLUMN c YEAR NULL DEFAULT 2001;\",\"normalized_sql\":\"ALTER TABLE t08y_y2 MODIFY COLUMN c YEAR NULL DEFAULT 2001\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.4.10\",\"major\":8,\"minor\":4,\"patch\":10,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": ""
+   },
+   "audit_findings": [],
+   "audit_gaps": [],
+   "audit_verdicts": [
+    null
+   ],
+   "audit_parsed": {
+    "verdict": "pass",
+    "coverage": {
+     "status": "complete"
+    },
+    "summary": {
+     "statements": 1,
+     "blockers": 0,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "ALTER TABLE t08y_y2 MODIFY COLUMN c YEAR NULL DEFAULT 2001;",
+      "normalized_sql": "ALTER TABLE t08y_y2 MODIFY COLUMN c YEAR NULL DEFAULT 2001",
+      "coverage": {
+       "status": "complete"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10",
+     "major": 8,
+     "minor": 4,
+     "patch": 10,
+     "source": "observed",
+     "validated_range": true
+    },
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 1,
+     "applicable": 1,
+     "skipped": []
+    },
+    "context": {
+     "mode": "metadata-aware",
+     "dialect": "mysql",
+     "dialect_source": "detected",
+     "schema": "golden",
+     "schema_source": "flag"
+    }
+   },
+   "catalog_after": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08y_y2' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "c",
+      "type": "year",
+      "nullable": "YES",
+      "default_hex": "32303031",
+      "default_text": "2001",
+      "extra": ""
+     }
+    ]
+   },
+   "byte_truth": {
+    "old_hex": "32303031",
+    "new_hex": "32303031",
+    "old_text": "2001",
+    "new_text": "2001",
+    "old_type": "year",
+    "new_type": "year",
+    "bytes_same": true
+   },
+   "status": "pass"
+  },
+  {
+   "cell": "i1",
+   "table": "t08y_i1",
+   "declared": "INT NULL DEFAULT 1",
+   "steps": [
+    {
+     "name": "prove-absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08y_i1'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    },
+    {
+     "name": "create",
+     "sql": "CREATE TABLE t08y_i1 (c INT NULL DEFAULT 1);",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "modify",
+     "sql": "ALTER TABLE t08y_i1 MODIFY COLUMN c INT NULL DEFAULT 1;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "drop",
+     "sql": "DROP TABLE t08y_i1;",
+     "rc": 0,
+     "stdout": "",
+     "stderr": ""
+    },
+    {
+     "name": "final-count",
+     "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t08y_i1'",
+     "rc": 0,
+     "stdout": "0\n",
+     "stderr": ""
+    }
+   ],
+   "catalog_before": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08y_i1' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "c",
+      "type": "int",
+      "nullable": "YES",
+      "default_hex": "31",
+      "default_text": "1",
+      "extra": ""
+     }
+    ]
+   },
+   "audit": {
+    "argv": [
+     "/tmp/t08year-deltascope",
+     "audit",
+     "--dialect",
+     "mysql",
+     "--sql",
+     "ALTER TABLE t08y_i1 MODIFY COLUMN c INT NULL DEFAULT 1;",
+     "--config",
+     "/tmp/ds-t08-year-check-20261022-215051/year-check-policy.yaml",
+     "--format",
+     "json",
+     "--host",
+     "127.0.0.1",
+     "--port",
+     "23384",
+     "--user",
+     "root",
+     "--schema",
+     "golden",
+     "--password-env",
+     "T08Y_MYSQL_PASSWORD"
+    ],
+    "rc": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t08y_i1 MODIFY COLUMN c INT NULL DEFAULT 1;\",\"normalized_sql\":\"ALTER TABLE t08y_i1 MODIFY COLUMN c INT NULL DEFAULT 1\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.4.10\",\"major\":8,\"minor\":4,\"patch\":10,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": ""
+   },
+   "audit_findings": [],
+   "audit_gaps": [],
+   "audit_verdicts": [
+    null
+   ],
+   "audit_parsed": {
+    "verdict": "pass",
+    "coverage": {
+     "status": "complete"
+    },
+    "summary": {
+     "statements": 1,
+     "blockers": 0,
+     "warnings": 0,
+     "notices": 0
+    },
+    "statements": [
+     {
+      "index": 0,
+      "kind": "ddl",
+      "raw_sql": "ALTER TABLE t08y_i1 MODIFY COLUMN c INT NULL DEFAULT 1;",
+      "normalized_sql": "ALTER TABLE t08y_i1 MODIFY COLUMN c INT NULL DEFAULT 1",
+      "coverage": {
+       "status": "complete"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10",
+     "major": 8,
+     "minor": 4,
+     "patch": 10,
+     "source": "observed",
+     "validated_range": true
+    },
+    "fail_on_triggered": false,
+    "rule_summary": {
+     "loaded": 1,
+     "applicable": 1,
+     "skipped": []
+    },
+    "context": {
+     "mode": "metadata-aware",
+     "dialect": "mysql",
+     "dialect_source": "detected",
+     "schema": "golden",
+     "schema_source": "flag"
+    }
+   },
+   "catalog_after": {
+    "query": "SELECT column_name, column_type, is_nullable, IFNULL(HEX(column_default),'x00'), IFNULL(column_default,'<sql-null>'), LOWER(extra) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t08y_i1' ORDER BY ordinal_position",
+    "rows": [
+     {
+      "name": "c",
+      "type": "int",
+      "nullable": "YES",
+      "default_hex": "31",
+      "default_text": "1",
+      "extra": ""
+     }
+    ]
+   },
+   "byte_truth": {
+    "old_hex": "31",
+    "new_hex": "31",
+    "old_text": "1",
+    "new_text": "1",
+    "old_type": "int",
+    "new_type": "int",
+    "bytes_same": true
+   },
+   "status": "pass"
+  }
+ ],
+ "failures": [
+  "mysql84/y1: t08y_y1: audit rc=1 err=''"
+ ],
+ "catalog_rules": 386,
+ "cli": "/tmp/t08year-deltascope",
+ "version": "8.4.10",
+ "version_probe": {
+  "sql": "SELECT VERSION()",
+  "rc": 0,
+  "stdout": "8.4.10\n",
+  "stderr": ""
+ }
+}

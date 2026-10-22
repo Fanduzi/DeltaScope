@@ -1,0 +1,8 @@
+argv: git push https://github.com/Fanduzi/DeltaScope.git 27a4355b...:refs/heads/workfree
+time: 2026-10-22T17:56:19+08:00
+result: ff2364ec..27a4355b fast-forward
+post-verify ls-remote: 27a4355b906f4633d768b10696f6672094b90027	refs/heads/workfree
+go: go version go1.26.1 darwin/arm64
+final-HEAD: 27a4355b906f4633d768b10696f6672094b90027
+final-status:
+ M .mcp.json

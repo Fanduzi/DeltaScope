@@ -1,0 +1,9 @@
+argv: go test ./internal/application/auditmeta/ ./internal/domain/rule/ddl/ ./internal/infrastructure/metadata/mysql/ ./internal/infrastructure/parser/tidb/ -count=1
+cwd: /Users/fan/GolangProjects/DeltaScope
+start: 2026-10-22T17:55:10+08:00
+ok  	github.com/Fanduzi/DeltaScope/internal/application/auditmeta	0.683s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	0.773s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql	1.719s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	1.268s
+rc: 0
+end: 2026-10-22T17:55:12+08:00

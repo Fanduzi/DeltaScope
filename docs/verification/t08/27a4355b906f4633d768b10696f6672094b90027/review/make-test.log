@@ -1,0 +1,50 @@
+argv: make test
+cwd: /Users/fan/GolangProjects/DeltaScope
+start: 2026-10-22T17:55:20+08:00
+go test ./...
+?   	github.com/Fanduzi/DeltaScope/cmd/deltascope	[no test files]
+ok  	github.com/Fanduzi/DeltaScope/cmd/deltascope-mcp	0.588s
+ok  	github.com/Fanduzi/DeltaScope/cmd/deltascope-server	0.543s
+?   	github.com/Fanduzi/DeltaScope/internal/application	[no test files]
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	3.174s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/auditmeta	3.055s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/configlint	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/application/configstatus	1.471s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/connresolve	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/application/online	1.889s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/policy	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/application/queryaccess	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/application/rulepresence	2.291s
+?   	github.com/Fanduzi/DeltaScope/internal/domain	[no test files]
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/policy	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/queryaccess	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/report	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule	2.953s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/catalog	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	3.170s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/dml	3.959s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/spec	3.555s
+?   	github.com/Fanduzi/DeltaScope/internal/infrastructure	[no test files]
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/config/viper	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/logger	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql	4.209s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/postgresql	4.531s
+?   	github.com/Fanduzi/DeltaScope/internal/infrastructure/output	[no test files]
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/githubactions	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/githubsummary	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/gitlabcodequality	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/json	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/markdown	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/sarif	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/postgresql	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	4.401s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/cli	4.339s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/http	4.500s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/mcp	4.417s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/metadata	4.032s
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	4.692s
+ok  	github.com/Fanduzi/DeltaScope/scripts/t06a17proof	4.830s
+ok  	github.com/Fanduzi/DeltaScope/scripts/t07proof	5.168s
+rc: 0
+end: 2026-10-22T17:55:31+08:00

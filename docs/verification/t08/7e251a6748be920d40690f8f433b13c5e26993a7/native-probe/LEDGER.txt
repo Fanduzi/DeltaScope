@@ -1,0 +1,14 @@
+== T08 YEAR limited check + minimal fix (T08-R3) run ledger ==
+date: 2026-10-22 21:58:00 +0800
+repo: /Users/fan/GolangProjects/DeltaScope branch=milestone/mysql-tidb-ddl-completion
+base HEAD: 27a4355b906f4633d768b10696f6672094b90027
+prefix binary: /tmp/t08year-deltascope sha256=1dc064e2da1b7dfdeb0662205a4da5b21b4fd259fcf7d4ddc4bef3096f0af567 (go1.26.1, CGO_ENABLED=0, 27a4355b+dirty[.mcp.json])
+postfix binary: /tmp/t08year-fixed-deltascope sha256=3f258232b5b5b441263b97c57363c5386e6970975727e11293a38b3faa41e003
+anchor: mysql:8.4.10 container=deltascope-ddl-golden-mysql84 port=23384; pingcap/tidb:v8.5.0 port=24000
+
+PRE-FIX native (mysql84): CREATE c YEAR DEFAULT 1 -> catalog 2001; audit same-def MODIFY -> 1 blocker finding 'changes its default value'; driver reassert keeps bytes 2001->2001 => CONFIRMED false positive
+PRE-FIX native (tidb85): catalog stores 1 verbatim; audit 0 findings => MySQL-family-specific defect
+UNIT RED (pre-fix): TestT08R2NumericComparableDomain y1/y3 x mysql|tidb x modify|change FAIL; TestT08R2DerivedNumericDomain derived_year_normalized_unproven FAIL; TestAlterColumnCompatibilityDefaultTransitions numeric year *unproven cells FAIL
+FIX: literalDefaultComparison takes spec.Column; different-text numeric pair with year base type on either column -> unproven pair gap
+UNIT GREEN (post-fix): rule/ddl + auditmeta + adjacent packages all ok; GOFLAGS=-count=1 make test all ok
+POST-FIX native (mysql84): y1 2001->2001 0 findings + unproven_default_identity gap; y2 2001->2001 silent; i1 1->1 silent. 3/3 clean.

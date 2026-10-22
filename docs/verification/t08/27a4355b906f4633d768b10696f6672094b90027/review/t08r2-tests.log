@@ -1,0 +1,103 @@
+argv: go test ./internal/application/auditmeta/ -run 'TestT08R2' -v -count=1
+cwd: /Users/fan/GolangProjects/DeltaScope
+start: 2026-10-22T17:55:02+08:00
+HEAD: ff2364ec60e060be7e3d84a809c7f43ca1cf5b63
+dirty: 15
+=== RUN   TestT08R2NumericComparableDomain
+=== RUN   TestT08R2NumericComparableDomain/mysql/modify/n1_decimal_scale
+=== RUN   TestT08R2NumericComparableDomain/mysql/modify/n2_decimal_zero
+=== RUN   TestT08R2NumericComparableDomain/mysql/modify/n3_decimal_negative
+=== RUN   TestT08R2NumericComparableDomain/mysql/modify/i1_int_same
+=== RUN   TestT08R2NumericComparableDomain/mysql/modify/i2_int_diff
+=== RUN   TestT08R2NumericComparableDomain/mysql/modify/s1_string_same
+=== RUN   TestT08R2NumericComparableDomain/mysql/modify/d1_decimal_scale0_same
+=== RUN   TestT08R2NumericComparableDomain/mysql/modify/d2_decimal_scale0_declared_scale
+=== RUN   TestT08R2NumericComparableDomain/mysql/change/n1_decimal_scale
+=== RUN   TestT08R2NumericComparableDomain/mysql/change/n2_decimal_zero
+=== RUN   TestT08R2NumericComparableDomain/mysql/change/n3_decimal_negative
+=== RUN   TestT08R2NumericComparableDomain/mysql/change/i1_int_same
+=== RUN   TestT08R2NumericComparableDomain/mysql/change/i2_int_diff
+=== RUN   TestT08R2NumericComparableDomain/mysql/change/s1_string_same
+=== RUN   TestT08R2NumericComparableDomain/mysql/change/d1_decimal_scale0_same
+=== RUN   TestT08R2NumericComparableDomain/mysql/change/d2_decimal_scale0_declared_scale
+=== RUN   TestT08R2NumericComparableDomain/tidb/modify/n1_decimal_scale
+=== RUN   TestT08R2NumericComparableDomain/tidb/modify/n2_decimal_zero
+=== RUN   TestT08R2NumericComparableDomain/tidb/modify/n3_decimal_negative
+=== RUN   TestT08R2NumericComparableDomain/tidb/modify/i1_int_same
+=== RUN   TestT08R2NumericComparableDomain/tidb/modify/i2_int_diff
+=== RUN   TestT08R2NumericComparableDomain/tidb/modify/s1_string_same
+=== RUN   TestT08R2NumericComparableDomain/tidb/modify/d1_decimal_scale0_same
+=== RUN   TestT08R2NumericComparableDomain/tidb/modify/d2_decimal_scale0_declared_scale
+=== RUN   TestT08R2NumericComparableDomain/tidb/change/n1_decimal_scale
+=== RUN   TestT08R2NumericComparableDomain/tidb/change/n2_decimal_zero
+=== RUN   TestT08R2NumericComparableDomain/tidb/change/n3_decimal_negative
+=== RUN   TestT08R2NumericComparableDomain/tidb/change/i1_int_same
+=== RUN   TestT08R2NumericComparableDomain/tidb/change/i2_int_diff
+=== RUN   TestT08R2NumericComparableDomain/tidb/change/s1_string_same
+=== RUN   TestT08R2NumericComparableDomain/tidb/change/d1_decimal_scale0_same
+=== RUN   TestT08R2NumericComparableDomain/tidb/change/d2_decimal_scale0_declared_scale
+--- PASS: TestT08R2NumericComparableDomain (0.09s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/modify/n1_decimal_scale (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/modify/n2_decimal_zero (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/modify/n3_decimal_negative (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/modify/i1_int_same (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/modify/i2_int_diff (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/modify/s1_string_same (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/modify/d1_decimal_scale0_same (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/modify/d2_decimal_scale0_declared_scale (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/change/n1_decimal_scale (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/change/n2_decimal_zero (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/change/n3_decimal_negative (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/change/i1_int_same (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/change/i2_int_diff (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/change/s1_string_same (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/change/d1_decimal_scale0_same (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/change/d2_decimal_scale0_declared_scale (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/modify/n1_decimal_scale (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/modify/n2_decimal_zero (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/modify/n3_decimal_negative (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/modify/i1_int_same (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/modify/i2_int_diff (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/modify/s1_string_same (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/modify/d1_decimal_scale0_same (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/modify/d2_decimal_scale0_declared_scale (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/change/n1_decimal_scale (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/change/n2_decimal_zero (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/change/n3_decimal_negative (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/change/i1_int_same (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/change/i2_int_diff (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/change/s1_string_same (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/change/d1_decimal_scale0_same (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/change/d2_decimal_scale0_declared_scale (0.00s)
+=== RUN   TestT08R2DerivedNumericDomain
+=== RUN   TestT08R2DerivedNumericDomain/mysql/derived_int_same
+=== RUN   TestT08R2DerivedNumericDomain/mysql/derived_int_diff
+=== RUN   TestT08R2DerivedNumericDomain/mysql/derived_decimal_unproven
+=== RUN   TestT08R2DerivedNumericDomain/mysql/derived_decimal_diff_unproven
+=== RUN   TestT08R2DerivedNumericDomain/tidb/derived_int_same
+=== RUN   TestT08R2DerivedNumericDomain/tidb/derived_int_diff
+=== RUN   TestT08R2DerivedNumericDomain/tidb/derived_decimal_unproven
+=== RUN   TestT08R2DerivedNumericDomain/tidb/derived_decimal_diff_unproven
+--- PASS: TestT08R2DerivedNumericDomain (0.02s)
+    --- PASS: TestT08R2DerivedNumericDomain/mysql/derived_int_same (0.00s)
+    --- PASS: TestT08R2DerivedNumericDomain/mysql/derived_int_diff (0.00s)
+    --- PASS: TestT08R2DerivedNumericDomain/mysql/derived_decimal_unproven (0.00s)
+    --- PASS: TestT08R2DerivedNumericDomain/mysql/derived_decimal_diff_unproven (0.00s)
+    --- PASS: TestT08R2DerivedNumericDomain/tidb/derived_int_same (0.00s)
+    --- PASS: TestT08R2DerivedNumericDomain/tidb/derived_int_diff (0.00s)
+    --- PASS: TestT08R2DerivedNumericDomain/tidb/derived_decimal_unproven (0.00s)
+    --- PASS: TestT08R2DerivedNumericDomain/tidb/derived_decimal_diff_unproven (0.00s)
+=== RUN   TestT08R2TypeChangeKeepsDefaultVerdict
+=== RUN   TestT08R2TypeChangeKeepsDefaultVerdict/mysql/modify
+=== RUN   TestT08R2TypeChangeKeepsDefaultVerdict/mysql/change
+=== RUN   TestT08R2TypeChangeKeepsDefaultVerdict/tidb/modify
+=== RUN   TestT08R2TypeChangeKeepsDefaultVerdict/tidb/change
+--- PASS: TestT08R2TypeChangeKeepsDefaultVerdict (0.01s)
+    --- PASS: TestT08R2TypeChangeKeepsDefaultVerdict/mysql/modify (0.00s)
+    --- PASS: TestT08R2TypeChangeKeepsDefaultVerdict/mysql/change (0.00s)
+    --- PASS: TestT08R2TypeChangeKeepsDefaultVerdict/tidb/modify (0.00s)
+    --- PASS: TestT08R2TypeChangeKeepsDefaultVerdict/tidb/change (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/auditmeta	0.683s
+rc: 0
+end: 2026-10-22T17:55:04+08:00
