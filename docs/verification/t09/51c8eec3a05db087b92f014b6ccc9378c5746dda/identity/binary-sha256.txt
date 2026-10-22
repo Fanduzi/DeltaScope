@@ -1,0 +1,1 @@
+bfd3212af6755a119a73fcf2a823c0b000d63fd9b46b4a53de8452c54a1c043a  /private/tmp/ddl-golden-t09/T09/bin/deltascope (runner-built, CGO_ENABLED=0, head 51c8eec3)

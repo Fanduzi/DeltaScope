@@ -1,0 +1,17 @@
+# T09 native matrix — real per-anchor index semantics (probe.py output)
+# anchors: mysql:5.7.44, mysql:8.0.46, mysql:8.4.10, pingcap/tidb:v8.5.0
+
+cell             mysql57        mysql80        mysql84        tidb85                
+------------------------------------------------------------------------------------
+rename-accept    rc=0 OK        rc=0 OK        rc=0 OK        rc=0 OK               
+dup-name         rc=1 E1061     rc=1 E1061     rc=1 E1061     rc=1 E1061            
+bad-column       rc=1 E1072     rc=1 E1072     rc=1 E1072     rc=1 E1072            
+drop-missing     rc=1 E1091     rc=1 E1091     rc=1 E1091     rc=1 E1091            
+rename-missing   rc=1 E1176     rc=1 E1176     rc=1 E1176     rc=1 E1176            
+add-ine          rc=1 E1064     rc=1 E1064     rc=1 E1064     rc=0 OK               
+drop-ie          rc=1 E1064     rc=1 E1064     rc=1 E1064     rc=0 OK               
+drop-primary     rc=0 OK        rc=0 OK        rc=0 OK        rc=1 E8200            
+
+STATISTICS.IS_VISIBLE column: mysql57=absent, mysql80=present, mysql84=present, tidb85=present
+Ordered membership (all anchors): i_ab:1:1:a,i_ab:1:2:b | i_abc:1:1:a..3:c | uq_cd:0:1:c,0:2:d
+TiDB add-ine landed i1=True; residual owned tables after cleanup = 0 on every anchor

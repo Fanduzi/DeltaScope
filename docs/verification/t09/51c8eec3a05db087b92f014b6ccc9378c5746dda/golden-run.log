@@ -1,0 +1,21 @@
+$ T09_MYSQL_PASSWORD=root python3 scripts/ddl_golden.py run --task T09 --artifact-dir /tmp/ddl-golden-t09
+[ddl-golden] task=T09 head=51c8eec3a05d cases=125 passed=125 assertions=3442
+[ddl-golden] artifact=/private/tmp/ddl-golden-t09/T09/artifact.json
+[ddl-golden] PASS
+
+Independent re-validation of the same artifact:
+$ python3 scripts/ddl_golden.py validate --artifact /tmp/ddl-golden-t09/T09/artifact.json
+[ddl-golden] artifact valid
+
+Run history this task:
+- run 1 (head a11b448b868c): 121/125 — four mysql84 metadata cases failed
+  fixture absence proof because manual probe tables (t9/t9i/t9p/t9o)
+  created during expectation pinning were never dropped from that
+  container incarnation. Evidence of the absence-proof contract working.
+- run 2 (head a11b448b868c): 125/125, 3442 assertions, PASS on fresh
+  runner-managed containers.
+- run 3 (head 51c8eec3a05d): 125/125, 3442 assertions, PASS — bound to
+  this archive. The only delta vs a11b448b is the regenerated
+  coverage-catalog fixture (51c8eec3), which is embedded for the
+  ddl-coverage CLI surface and does not alter audit semantics; identical
+  assertion count confirms.

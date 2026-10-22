@@ -68,6 +68,13 @@ expectations beyond the corpus deferral accounting noted below.
   rule actually blocks. `ddl.index.name.keyword.forbid` likewise requires
   `forbid: true`.
 
+- **U-catalog** (`internal/application/audit/catalogdata/ddl-coverage-catalog.json`):
+  the embedded `ddl-coverage` CLI catalog regenerates with three rows —
+  standalone `CREATE FULLTEXT INDEX` and `CREATE UNIQUE INDEX` (both
+  dialects) are now finding-covered under `ddl.index.fulltext.prefix.require`
+  / `ddl.index.unique.prefix.require` because the unified accessor reaches
+  them. Landed in `51c8eec3` after the catalog gate flagged the staleness.
+
 ## Admission reconciliation (Stage 6)
 
 The frozen `roles.json` denominator is 125 after materialization:

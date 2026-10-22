@@ -1,0 +1,40 @@
+T09 native probe run — bound to code SHA 51c8eec3a05db087b92f014b6ccc9378c5746dda
+(probe executed on this working tree between a11b448b and 51c8eec3; the only
+delta was the regenerated coverage-catalog fixture, which cannot alter
+native server behavior)
+
+Anchors (docker/ddl-golden-compose.yaml, project deltascope-ddl-golden):
+  deltascope-ddl-golden-mysql57   mysql:5.7.44     host 127.0.0.1:23357
+  deltascope-ddl-golden-mysql80   mysql:8.0.46     host 127.0.0.1:23380
+  deltascope-ddl-golden-mysql84   mysql:8.4.10     host 127.0.0.1:23384
+  deltascope-ddl-golden-tidb85    pingcap/tidb:v8.5.0  host 127.0.0.1:24000
+
+Brought up with:
+  docker compose -f docker/ddl-golden-compose.yaml -p deltascope-ddl-golden \
+    up -d mysql57 mysql80 mysql84 tidb85 tidb85-client
+
+Command:
+  cd docs/verification/t09/<sha>/native-probe
+  python3 probe.py native-matrix.json
+
+Client: host mysql client at /opt/homebrew/opt/mysql@8.0/bin/mysql
+(--batch --raw; root/root on MySQL anchors, --skip-password on TiDB).
+
+Outputs:
+  native-matrix.json — full per-cell rc/stdout/stderr plus fixture,
+    membership, capability and cleanup rows.
+  native-matrix.txt — human-readable summary table.
+
+Facts recorded (independent of product audit):
+  * RENAME INDEX accepted on ALL four anchors incl. MySQL 5.7.44
+    (corrects the earlier contract-design assumption that 5.7 rejects).
+  * ADD INDEX IF NOT EXISTS / DROP INDEX IF EXISTS: ERROR 1064 on all
+    three MySQL anchors; accepted on TiDB 8.5.0 (conditional add lands).
+  * Duplicate index name ERROR 1061; missing key column ERROR 1072;
+    missing index ERROR 1091 (DROP) / ERROR 1176 (RENAME) on all anchors.
+  * DROP PRIMARY KEY accepted on all three MySQL anchors; TiDB 8.5.0
+    rejects with ERROR 8200 (clustered-index table).
+  * information_schema.STATISTICS.IS_VISIBLE absent on MySQL 5.7.44,
+    present on MySQL 8.0.46 / 8.4.10 / TiDB 8.5.0 — drives the
+    per-anchor oracle query selection in t09_contract.py.
+  * Residual owned tables after cleanup: 0 on every anchor.

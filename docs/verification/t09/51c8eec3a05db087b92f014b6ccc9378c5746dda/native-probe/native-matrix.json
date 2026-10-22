@@ -1,0 +1,251 @@
+{
+  "mysql57": {
+    "cells": {
+      "add-ine": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'IF NOT EXISTS i1(a)' at line 1",
+        "rc": 1
+      },
+      "bad-column": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1072 (42000) at line 1: Key column 'no_col' doesn't exist in table",
+        "rc": 1
+      },
+      "drop-ie": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'IF EXISTS gone' at line 1",
+        "rc": 1
+      },
+      "drop-missing": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1091 (42000) at line 1: Can't DROP 'gone'; check that column/key exists",
+        "rc": 1
+      },
+      "drop-primary": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "dup-name": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1061 (42000) at line 1: Duplicate key name 'uq_cd'",
+        "rc": 1
+      },
+      "fixture-create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "pk-fixture-create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "rename-accept": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "rename-missing": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1176 (42000) at line 1: Key 'gone' doesn't exist in table 'n_t09_i'",
+        "rc": 1
+      },
+      "residual-n-t09": "COUNT(*)\n0",
+      "stats-after-drop-pk": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "",
+        "rc": 0
+      },
+      "stats-after-rename": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "index_name\tnon_unique\tseq_in_index\tcolumn_name\tindex_type\ni_ab2\t1\t1\ta\tBTREE\ni_ab2\t1\t2\tb\tBTREE\ni_abc\t1\t1\ta\tBTREE\ni_abc\t1\t2\tb\tBTREE\ni_abc\t1\t3\tc\tBTREE\nuq_cd\t0\t1\tc\tBTREE\nuq_cd\t0\t2\td\tBTREE",
+        "rc": 0
+      },
+      "stats-membership": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "index_name\tnon_unique\tseq_in_index\tcolumn_name\tindex_type\ni_ab\t1\t1\ta\tBTREE\ni_ab\t1\t2\tb\tBTREE\ni_abc\t1\t1\ta\tBTREE\ni_abc\t1\t2\tb\tBTREE\ni_abc\t1\t3\tc\tBTREE\nuq_cd\t0\t1\tc\tBTREE\nuq_cd\t0\t2\td\tBTREE",
+        "rc": 0
+      }
+    },
+    "is_visible_column": false,
+    "version": "VERSION()\n5.7.44"
+  },
+  "mysql80": {
+    "cells": {
+      "add-ine": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'IF NOT EXISTS i1(a)' at line 1",
+        "rc": 1
+      },
+      "bad-column": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1072 (42000) at line 1: Key column 'no_col' doesn't exist in table",
+        "rc": 1
+      },
+      "drop-ie": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'IF EXISTS gone' at line 1",
+        "rc": 1
+      },
+      "drop-missing": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1091 (42000) at line 1: Can't DROP 'gone'; check that column/key exists",
+        "rc": 1
+      },
+      "drop-primary": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "dup-name": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1061 (42000) at line 1: Duplicate key name 'uq_cd'",
+        "rc": 1
+      },
+      "fixture-create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "pk-fixture-create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "rename-accept": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "rename-missing": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1176 (42000) at line 1: Key 'gone' doesn't exist in table 'n_t09_i'",
+        "rc": 1
+      },
+      "residual-n-t09": "COUNT(*)\n0",
+      "stats-after-drop-pk": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "",
+        "rc": 0
+      },
+      "stats-after-rename": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "INDEX_NAME\tNON_UNIQUE\tSEQ_IN_INDEX\tCOLUMN_NAME\tINDEX_TYPE\tIS_VISIBLE\ni_ab2\t1\t1\ta\tBTREE\tYES\ni_ab2\t1\t2\tb\tBTREE\tYES\ni_abc\t1\t1\ta\tBTREE\tYES\ni_abc\t1\t2\tb\tBTREE\tYES\ni_abc\t1\t3\tc\tBTREE\tYES\nuq_cd\t0\t1\tc\tBTREE\tYES\nuq_cd\t0\t2\td\tBTREE\tYES",
+        "rc": 0
+      },
+      "stats-membership": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "INDEX_NAME\tNON_UNIQUE\tSEQ_IN_INDEX\tCOLUMN_NAME\tINDEX_TYPE\tIS_VISIBLE\ni_ab\t1\t1\ta\tBTREE\tYES\ni_ab\t1\t2\tb\tBTREE\tYES\ni_abc\t1\t1\ta\tBTREE\tYES\ni_abc\t1\t2\tb\tBTREE\tYES\ni_abc\t1\t3\tc\tBTREE\tYES\nuq_cd\t0\t1\tc\tBTREE\tYES\nuq_cd\t0\t2\td\tBTREE\tYES",
+        "rc": 0
+      }
+    },
+    "is_visible_column": true,
+    "version": "VERSION()\n8.0.46"
+  },
+  "mysql84": {
+    "cells": {
+      "add-ine": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'IF NOT EXISTS i1(a)' at line 1",
+        "rc": 1
+      },
+      "bad-column": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1072 (42000) at line 1: Key column 'no_col' doesn't exist in table",
+        "rc": 1
+      },
+      "drop-ie": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'IF EXISTS gone' at line 1",
+        "rc": 1
+      },
+      "drop-missing": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1091 (42000) at line 1: Can't DROP 'gone'; check that column/key exists",
+        "rc": 1
+      },
+      "drop-primary": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "dup-name": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1061 (42000) at line 1: Duplicate key name 'uq_cd'",
+        "rc": 1
+      },
+      "fixture-create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "pk-fixture-create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "rename-accept": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "rename-missing": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1176 (42000) at line 1: Key 'gone' doesn't exist in table 'n_t09_i'",
+        "rc": 1
+      },
+      "residual-n-t09": "COUNT(*)\n0",
+      "stats-after-drop-pk": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "",
+        "rc": 0
+      },
+      "stats-after-rename": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "INDEX_NAME\tNON_UNIQUE\tSEQ_IN_INDEX\tCOLUMN_NAME\tINDEX_TYPE\tIS_VISIBLE\ni_ab2\t1\t1\ta\tBTREE\tYES\ni_ab2\t1\t2\tb\tBTREE\tYES\ni_abc\t1\t1\ta\tBTREE\tYES\ni_abc\t1\t2\tb\tBTREE\tYES\ni_abc\t1\t3\tc\tBTREE\tYES\nuq_cd\t0\t1\tc\tBTREE\tYES\nuq_cd\t0\t2\td\tBTREE\tYES",
+        "rc": 0
+      },
+      "stats-membership": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "INDEX_NAME\tNON_UNIQUE\tSEQ_IN_INDEX\tCOLUMN_NAME\tINDEX_TYPE\tIS_VISIBLE\ni_ab\t1\t1\ta\tBTREE\tYES\ni_ab\t1\t2\tb\tBTREE\tYES\ni_abc\t1\t1\ta\tBTREE\tYES\ni_abc\t1\t2\tb\tBTREE\tYES\ni_abc\t1\t3\tc\tBTREE\tYES\nuq_cd\t0\t1\tc\tBTREE\tYES\nuq_cd\t0\t2\td\tBTREE\tYES",
+        "rc": 0
+      }
+    },
+    "is_visible_column": true,
+    "version": "VERSION()\n8.4.10"
+  },
+  "tidb85": {
+    "cells": {
+      "add-ine": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "landed_i1": true,
+        "rc": 0
+      },
+      "bad-column": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1072 (42000) at line 1: column does not exist: no_col",
+        "rc": 1
+      },
+      "drop-ie": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "drop-missing": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1091 (42000) at line 1: index gone doesn't exist",
+        "rc": 1
+      },
+      "drop-primary": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 8200 (HY000) at line 1: Unsupported drop primary key when the table is using clustered index",
+        "rc": 1
+      },
+      "dup-name": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1061 (42000) at line 1: Duplicate key name 'uq_cd'",
+        "rc": 1
+      },
+      "fixture-create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "pk-fixture-create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "rename-accept": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "rename-missing": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.\nERROR 1176 (42000) at line 1: Key 'gone' doesn't exist in table 'n_t09_i'",
+        "rc": 1
+      },
+      "residual-n-t09": "COUNT(*)\n0",
+      "stats-after-drop-pk": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "index_name\tnon_unique\tseq_in_index\tcolumn_name\tindex_type\tis_visible\nPRIMARY\t0\t1\ta\tBTREE\tYES",
+        "rc": 0
+      },
+      "stats-after-rename": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "index_name\tnon_unique\tseq_in_index\tcolumn_name\tindex_type\tis_visible\ni_ab2\t1\t1\ta\tBTREE\tYES\ni_ab2\t1\t2\tb\tBTREE\tYES\ni_abc\t1\t1\ta\tBTREE\tYES\ni_abc\t1\t2\tb\tBTREE\tYES\ni_abc\t1\t3\tc\tBTREE\tYES\nuq_cd\t0\t1\tc\tBTREE\tYES\nuq_cd\t0\t2\td\tBTREE\tYES",
+        "rc": 0
+      },
+      "stats-membership": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "index_name\tnon_unique\tseq_in_index\tcolumn_name\tindex_type\tis_visible\ni_ab\t1\t1\ta\tBTREE\tYES\ni_ab\t1\t2\tb\tBTREE\tYES\ni_abc\t1\t1\ta\tBTREE\tYES\ni_abc\t1\t2\tb\tBTREE\tYES\ni_abc\t1\t3\tc\tBTREE\tYES\nuq_cd\t0\t1\tc\tBTREE\tYES\nuq_cd\t0\t2\td\tBTREE\tYES",
+        "rc": 0
+      }
+    },
+    "is_visible_column": true,
+    "version": "VERSION()\n8.0.11-TiDB-v8.5.0"
+  }
+}

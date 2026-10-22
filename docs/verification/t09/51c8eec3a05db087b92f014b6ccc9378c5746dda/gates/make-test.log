@@ -1,0 +1,45 @@
+go test ./...
+?   	github.com/Fanduzi/DeltaScope/cmd/deltascope	[no test files]
+ok  	github.com/Fanduzi/DeltaScope/cmd/deltascope-mcp	0.717s
+ok  	github.com/Fanduzi/DeltaScope/cmd/deltascope-server	0.556s
+?   	github.com/Fanduzi/DeltaScope/internal/application	[no test files]
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	4.391s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/auditmeta	0.934s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/configlint	1.151s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/configstatus	1.379s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/connresolve	1.506s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/online	0.985s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/policy	1.685s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/queryaccess	1.973s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/rulepresence	2.910s
+?   	github.com/Fanduzi/DeltaScope/internal/domain	[no test files]
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/policy	3.209s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/queryaccess	3.058s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/report	3.364s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule	2.855s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/catalog	2.974s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	3.033s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/dml	2.937s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/spec	2.962s
+?   	github.com/Fanduzi/DeltaScope/internal/infrastructure	[no test files]
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/config/viper	2.975s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/logger	2.845s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql	2.380s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/postgresql	2.695s
+?   	github.com/Fanduzi/DeltaScope/internal/infrastructure/output	[no test files]
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/githubactions	2.682s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/githubsummary	2.710s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/gitlabcodequality	2.700s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/json	2.687s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/markdown	2.618s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/sarif	2.649s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/postgresql	2.713s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	2.929s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig	2.860s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/cli	3.611s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/http	3.723s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/mcp	3.603s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/metadata	3.781s
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	4.064s
+ok  	github.com/Fanduzi/DeltaScope/scripts/t06a17proof	4.209s
+ok  	github.com/Fanduzi/DeltaScope/scripts/t07proof	4.463s
