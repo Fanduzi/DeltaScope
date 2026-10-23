@@ -1,0 +1,124 @@
+testing: warning: no tests to run
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/spec	0.398s [no tests to run]
+=== RUN   TestAlterIndexAndPrimaryKeyExistenceRules
+=== PAUSE TestAlterIndexAndPrimaryKeyExistenceRules
+=== RUN   TestAlterIndexExistenceRuleSupportsStandaloneIndexDDL
+=== PAUSE TestAlterIndexExistenceRuleSupportsStandaloneIndexDDL
+=== CONT  TestAlterIndexAndPrimaryKeyExistenceRules
+=== CONT  TestAlterIndexExistenceRuleSupportsStandaloneIndexDDL
+--- PASS: TestAlterIndexExistenceRuleSupportsStandaloneIndexDDL (0.00s)
+--- PASS: TestAlterIndexAndPrimaryKeyExistenceRules (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	0.701s
+=== RUN   TestClassifyIndex
+--- PASS: TestClassifyIndex (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql	1.158s
+=== RUN   TestExtractorT10AlterIndexVisibility
+=== PAUSE TestExtractorT10AlterIndexVisibility
+=== RUN   TestExtractorT10DeclaredIndexVisibility
+=== PAUSE TestExtractorT10DeclaredIndexVisibility
+=== RUN   TestExtractorT10NoVisibilityAttribute
+=== PAUSE TestExtractorT10NoVisibilityAttribute
+=== RUN   TestExtractorT10MultiValuedKeyParts
+=== PAUSE TestExtractorT10MultiValuedKeyParts
+=== CONT  TestExtractorT10AlterIndexVisibility
+=== CONT  TestExtractorT10NoVisibilityAttribute
+=== RUN   TestExtractorT10AlterIndexVisibility/mysql/invisible
+=== PAUSE TestExtractorT10AlterIndexVisibility/mysql/invisible
+=== CONT  TestExtractorT10DeclaredIndexVisibility
+=== RUN   TestExtractorT10DeclaredIndexVisibility/mysql/create_index_invisible
+=== RUN   TestExtractorT10AlterIndexVisibility/mysql/visible
+=== PAUSE TestExtractorT10AlterIndexVisibility/mysql/visible
+=== RUN   TestExtractorT10AlterIndexVisibility/mysql/backticked_primary
+=== PAUSE TestExtractorT10DeclaredIndexVisibility/mysql/create_index_invisible
+=== CONT  TestExtractorT10MultiValuedKeyParts
+=== RUN   TestExtractorT10DeclaredIndexVisibility/mysql/create_index_visible
+=== PAUSE TestExtractorT10AlterIndexVisibility/mysql/backticked_primary
+=== RUN   TestExtractorT10MultiValuedKeyParts/array_cast
+=== PAUSE TestExtractorT10DeclaredIndexVisibility/mysql/create_index_visible
+=== RUN   TestExtractorT10AlterIndexVisibility/tidb/invisible
+=== RUN   TestExtractorT10DeclaredIndexVisibility/mysql/create_table_key_invisible
+=== PAUSE TestExtractorT10DeclaredIndexVisibility/mysql/create_table_key_invisible
+=== PAUSE TestExtractorT10AlterIndexVisibility/tidb/invisible
+=== PAUSE TestExtractorT10MultiValuedKeyParts/array_cast
+=== RUN   TestExtractorT10DeclaredIndexVisibility/mysql/create_table_primary_invisible
+=== PAUSE TestExtractorT10DeclaredIndexVisibility/mysql/create_table_primary_invisible
+=== RUN   TestExtractorT10MultiValuedKeyParts/json_array_cast
+=== RUN   TestExtractorT10DeclaredIndexVisibility/mysql/alter_add_index_invisible
+=== PAUSE TestExtractorT10MultiValuedKeyParts/json_array_cast
+=== RUN   TestExtractorT10MultiValuedKeyParts/scalar_cast_is_not_multi-valued
+=== PAUSE TestExtractorT10MultiValuedKeyParts/scalar_cast_is_not_multi-valued
+=== RUN   TestExtractorT10MultiValuedKeyParts/plain_expression
+=== PAUSE TestExtractorT10DeclaredIndexVisibility/mysql/alter_add_index_invisible
+=== RUN   TestExtractorT10DeclaredIndexVisibility/mysql/alter_add_unique_visible
+=== RUN   TestExtractorT10AlterIndexVisibility/tidb/visible
+=== PAUSE TestExtractorT10DeclaredIndexVisibility/mysql/alter_add_unique_visible
+=== RUN   TestExtractorT10DeclaredIndexVisibility/tidb/create_index_invisible
+=== PAUSE TestExtractorT10AlterIndexVisibility/tidb/visible
+=== RUN   TestExtractorT10AlterIndexVisibility/tidb/backticked_primary
+=== PAUSE TestExtractorT10AlterIndexVisibility/tidb/backticked_primary
+=== PAUSE TestExtractorT10MultiValuedKeyParts/plain_expression
+=== CONT  TestExtractorT10MultiValuedKeyParts/array_cast
+=== PAUSE TestExtractorT10DeclaredIndexVisibility/tidb/create_index_invisible
+=== RUN   TestExtractorT10DeclaredIndexVisibility/tidb/create_index_visible
+=== CONT  TestExtractorT10MultiValuedKeyParts/scalar_cast_is_not_multi-valued
+=== PAUSE TestExtractorT10DeclaredIndexVisibility/tidb/create_index_visible
+=== RUN   TestExtractorT10DeclaredIndexVisibility/tidb/create_table_key_invisible
+=== PAUSE TestExtractorT10DeclaredIndexVisibility/tidb/create_table_key_invisible
+=== CONT  TestExtractorT10MultiValuedKeyParts/json_array_cast
+=== RUN   TestExtractorT10DeclaredIndexVisibility/tidb/create_table_primary_invisible
+=== PAUSE TestExtractorT10DeclaredIndexVisibility/tidb/create_table_primary_invisible
+=== RUN   TestExtractorT10DeclaredIndexVisibility/tidb/alter_add_index_invisible
+=== PAUSE TestExtractorT10DeclaredIndexVisibility/tidb/alter_add_index_invisible
+=== RUN   TestExtractorT10DeclaredIndexVisibility/tidb/alter_add_unique_visible
+=== PAUSE TestExtractorT10DeclaredIndexVisibility/tidb/alter_add_unique_visible
+=== CONT  TestExtractorT10DeclaredIndexVisibility/mysql/create_index_invisible
+=== CONT  TestExtractorT10MultiValuedKeyParts/plain_expression
+=== CONT  TestExtractorT10AlterIndexVisibility/tidb/backticked_primary
+=== CONT  TestExtractorT10AlterIndexVisibility/tidb/visible
+=== CONT  TestExtractorT10AlterIndexVisibility/tidb/invisible
+=== CONT  TestExtractorT10DeclaredIndexVisibility/tidb/alter_add_index_invisible
+=== CONT  TestExtractorT10DeclaredIndexVisibility/tidb/create_table_primary_invisible
+=== CONT  TestExtractorT10DeclaredIndexVisibility/tidb/create_index_invisible
+=== CONT  TestExtractorT10DeclaredIndexVisibility/mysql/alter_add_index_invisible
+=== CONT  TestExtractorT10DeclaredIndexVisibility/mysql/alter_add_unique_visible
+=== CONT  TestExtractorT10DeclaredIndexVisibility/tidb/create_table_key_invisible
+=== CONT  TestExtractorT10DeclaredIndexVisibility/mysql/create_table_key_invisible
+=== CONT  TestExtractorT10DeclaredIndexVisibility/tidb/create_index_visible
+=== CONT  TestExtractorT10DeclaredIndexVisibility/tidb/alter_add_unique_visible
+=== CONT  TestExtractorT10DeclaredIndexVisibility/mysql/create_index_visible
+=== CONT  TestExtractorT10DeclaredIndexVisibility/mysql/create_table_primary_invisible
+=== CONT  TestExtractorT10AlterIndexVisibility/mysql/visible
+--- PASS: TestExtractorT10MultiValuedKeyParts (0.00s)
+    --- PASS: TestExtractorT10MultiValuedKeyParts/scalar_cast_is_not_multi-valued (0.00s)
+    --- PASS: TestExtractorT10MultiValuedKeyParts/array_cast (0.00s)
+    --- PASS: TestExtractorT10MultiValuedKeyParts/json_array_cast (0.00s)
+    --- PASS: TestExtractorT10MultiValuedKeyParts/plain_expression (0.00s)
+=== CONT  TestExtractorT10AlterIndexVisibility/mysql/backticked_primary
+--- PASS: TestExtractorT10DeclaredIndexVisibility (0.00s)
+    --- PASS: TestExtractorT10DeclaredIndexVisibility/mysql/create_index_invisible (0.00s)
+    --- PASS: TestExtractorT10DeclaredIndexVisibility/tidb/alter_add_index_invisible (0.00s)
+    --- PASS: TestExtractorT10DeclaredIndexVisibility/tidb/create_index_invisible (0.00s)
+    --- PASS: TestExtractorT10DeclaredIndexVisibility/tidb/create_table_primary_invisible (0.00s)
+    --- PASS: TestExtractorT10DeclaredIndexVisibility/mysql/alter_add_unique_visible (0.00s)
+    --- PASS: TestExtractorT10DeclaredIndexVisibility/mysql/create_index_visible (0.00s)
+    --- PASS: TestExtractorT10DeclaredIndexVisibility/tidb/create_index_visible (0.00s)
+    --- PASS: TestExtractorT10DeclaredIndexVisibility/tidb/alter_add_unique_visible (0.00s)
+    --- PASS: TestExtractorT10DeclaredIndexVisibility/mysql/create_table_key_invisible (0.00s)
+    --- PASS: TestExtractorT10DeclaredIndexVisibility/mysql/create_table_primary_invisible (0.00s)
+    --- PASS: TestExtractorT10DeclaredIndexVisibility/tidb/create_table_key_invisible (0.00s)
+    --- PASS: TestExtractorT10DeclaredIndexVisibility/mysql/alter_add_index_invisible (0.00s)
+=== CONT  TestExtractorT10AlterIndexVisibility/mysql/invisible
+--- PASS: TestExtractorT10NoVisibilityAttribute (0.00s)
+--- PASS: TestExtractorT10AlterIndexVisibility (0.00s)
+    --- PASS: TestExtractorT10AlterIndexVisibility/tidb/invisible (0.00s)
+    --- PASS: TestExtractorT10AlterIndexVisibility/tidb/visible (0.00s)
+    --- PASS: TestExtractorT10AlterIndexVisibility/tidb/backticked_primary (0.00s)
+    --- PASS: TestExtractorT10AlterIndexVisibility/mysql/visible (0.00s)
+    --- PASS: TestExtractorT10AlterIndexVisibility/mysql/backticked_primary (0.00s)
+    --- PASS: TestExtractorT10AlterIndexVisibility/mysql/invisible (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	1.680s
+rc=0

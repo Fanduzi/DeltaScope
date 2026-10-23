@@ -1,0 +1,171 @@
+=== RUN   TestT10AlterIndexInvisibleFirstPath
+=== PAUSE TestT10AlterIndexInvisibleFirstPath
+=== RUN   TestT10AlterIndexVisibleDirectionSilent
+=== PAUSE TestT10AlterIndexVisibleDirectionSilent
+=== RUN   TestT10AlterIndexMissingIndex
+=== PAUSE TestT10AlterIndexMissingIndex
+=== RUN   TestT10AlterIndexUnknownSet
+=== PAUSE TestT10AlterIndexUnknownSet
+=== RUN   TestT10AlterIndexBatchChain
+=== PAUSE TestT10AlterIndexBatchChain
+=== RUN   TestT10AlterIndexMultiActionTombstones
+=== PAUSE TestT10AlterIndexMultiActionTombstones
+=== RUN   TestT10ProviderInvisibleMemberNotIntent
+=== PAUSE TestT10ProviderInvisibleMemberNotIntent
+=== RUN   TestT10AlterIndexPostStateMemberVisible
+=== PAUSE TestT10AlterIndexPostStateMemberVisible
+=== RUN   TestT10DeclaredInvisiblePaths
+=== PAUSE TestT10DeclaredInvisiblePaths
+=== RUN   TestT10DeclaredPrimaryKeyInvisible
+=== PAUSE TestT10DeclaredPrimaryKeyInvisible
+=== RUN   TestT10AlterIndexPrimaryMySQL
+=== PAUSE TestT10AlterIndexPrimaryMySQL
+=== RUN   TestT10AlterIndexPrimaryTiDB
+=== PAUSE TestT10AlterIndexPrimaryTiDB
+=== RUN   TestT10AlterIndexVersionGate57
+=== PAUSE TestT10AlterIndexVersionGate57
+=== RUN   TestT10AlterIndexVersionMissing
+=== PAUSE TestT10AlterIndexVersionMissing
+=== RUN   TestT10CompatFormGatesMySQL57
+=== PAUSE TestT10CompatFormGatesMySQL57
+=== RUN   TestT10CompatFormGatesMySQL80Silent
+=== PAUSE TestT10CompatFormGatesMySQL80Silent
+=== RUN   TestT10CompatDescTiDB
+=== PAUSE TestT10CompatDescTiDB
+=== RUN   TestT10CompatFeatureIsolation
+=== PAUSE TestT10CompatFeatureIsolation
+=== RUN   TestT10AlterIndexRulesOffAudited
+=== PAUSE TestT10AlterIndexRulesOffAudited
+=== CONT  TestT10AlterIndexInvisibleFirstPath
+=== RUN   TestT10AlterIndexInvisibleFirstPath/mysql
+=== PAUSE TestT10AlterIndexInvisibleFirstPath/mysql
+=== RUN   TestT10AlterIndexInvisibleFirstPath/tidb
+=== PAUSE TestT10AlterIndexInvisibleFirstPath/tidb
+=== CONT  TestT10AlterIndexInvisibleFirstPath/mysql
+=== CONT  TestT10AlterIndexPrimaryMySQL
+=== CONT  TestT10AlterIndexBatchChain
+=== RUN   TestT10AlterIndexBatchChain/mysql
+=== PAUSE TestT10AlterIndexBatchChain/mysql
+=== CONT  TestT10AlterIndexVisibleDirectionSilent
+=== RUN   TestT10AlterIndexBatchChain/tidb
+=== PAUSE TestT10AlterIndexBatchChain/tidb
+=== CONT  TestT10AlterIndexBatchChain/mysql
+=== CONT  TestT10AlterIndexInvisibleFirstPath/tidb
+=== RUN   TestT10AlterIndexVisibleDirectionSilent/mysql
+=== CONT  TestT10AlterIndexUnknownSet
+=== CONT  TestT10DeclaredPrimaryKeyInvisible
+=== CONT  TestT10DeclaredInvisiblePaths
+=== CONT  TestT10AlterIndexMissingIndex
+=== CONT  TestT10AlterIndexMultiActionTombstones
+=== CONT  TestT10AlterIndexBatchChain/tidb
+=== CONT  TestT10AlterIndexPostStateMemberVisible
+=== PAUSE TestT10AlterIndexVisibleDirectionSilent/mysql
+=== RUN   TestT10AlterIndexUnknownSet/mysql
+=== PAUSE TestT10AlterIndexUnknownSet/mysql
+=== RUN   TestT10AlterIndexUnknownSet/tidb
+=== PAUSE TestT10AlterIndexUnknownSet/tidb
+=== RUN   TestT10DeclaredInvisiblePaths/create_table_key
+=== PAUSE TestT10DeclaredInvisiblePaths/create_table_key
+=== RUN   TestT10DeclaredInvisiblePaths/alter_add_index
+=== PAUSE TestT10DeclaredInvisiblePaths/alter_add_index
+=== RUN   TestT10DeclaredInvisiblePaths/standalone_create_index
+=== PAUSE TestT10DeclaredInvisiblePaths/standalone_create_index
+=== RUN   TestT10AlterIndexMissingIndex/mysql
+=== PAUSE TestT10AlterIndexMissingIndex/mysql
+=== RUN   TestT10AlterIndexMissingIndex/tidb
+=== PAUSE TestT10AlterIndexMissingIndex/tidb
+=== CONT  TestT10AlterIndexRulesOffAudited
+=== RUN   TestT10AlterIndexRulesOffAudited/mysql
+=== PAUSE TestT10AlterIndexRulesOffAudited/mysql
+=== RUN   TestT10AlterIndexRulesOffAudited/tidb
+=== CONT  TestT10CompatFormGatesMySQL57
+=== RUN   TestT10CompatFormGatesMySQL57/declared_invisible_attr
+=== PAUSE TestT10AlterIndexRulesOffAudited/tidb
+=== CONT  TestT10CompatDescTiDB
+=== CONT  TestT10CompatFormGatesMySQL80Silent
+=== RUN   TestT10CompatFormGatesMySQL80Silent/invisible_attr
+=== PAUSE TestT10CompatFormGatesMySQL80Silent/invisible_attr
+=== RUN   TestT10CompatFormGatesMySQL80Silent/expression_part
+=== PAUSE TestT10CompatFormGatesMySQL80Silent/expression_part
+=== RUN   TestT10AlterIndexVisibleDirectionSilent/tidb
+=== PAUSE TestT10AlterIndexVisibleDirectionSilent/tidb
+=== PAUSE TestT10CompatFormGatesMySQL57/declared_invisible_attr
+=== RUN   TestT10CompatFormGatesMySQL80Silent/multi-valued
+=== RUN   TestT10CompatFormGatesMySQL57/expression_key_part
+=== PAUSE TestT10CompatFormGatesMySQL57/expression_key_part
+=== CONT  TestT10AlterIndexVersionGate57
+=== RUN   TestT10CompatFormGatesMySQL57/multi-valued_member
+=== PAUSE TestT10CompatFormGatesMySQL57/multi-valued_member
+=== RUN   TestT10CompatFormGatesMySQL57/descending_member
+=== PAUSE TestT10CompatFormGatesMySQL57/descending_member
+=== CONT  TestT10AlterIndexVersionMissing
+=== PAUSE TestT10CompatFormGatesMySQL80Silent/multi-valued
+=== RUN   TestT10CompatFormGatesMySQL80Silent/descending
+=== PAUSE TestT10CompatFormGatesMySQL80Silent/descending
+=== CONT  TestT10AlterIndexPrimaryTiDB
+--- PASS: TestT10AlterIndexVersionMissing (0.01s)
+=== CONT  TestT10CompatFeatureIsolation
+--- PASS: TestT10AlterIndexBatchChain (0.00s)
+    --- PASS: TestT10AlterIndexBatchChain/tidb (0.01s)
+    --- PASS: TestT10AlterIndexBatchChain/mysql (0.01s)
+=== CONT  TestT10AlterIndexUnknownSet/mysql
+--- PASS: TestT10AlterIndexPrimaryMySQL (0.01s)
+=== CONT  TestT10DeclaredInvisiblePaths/create_table_key
+--- PASS: TestT10AlterIndexMultiActionTombstones (0.01s)
+=== CONT  TestT10AlterIndexMissingIndex/mysql
+--- PASS: TestT10AlterIndexPrimaryTiDB (0.01s)
+=== CONT  TestT10DeclaredInvisiblePaths/standalone_create_index
+--- PASS: TestT10DeclaredPrimaryKeyInvisible (0.01s)
+=== CONT  TestT10DeclaredInvisiblePaths/alter_add_index
+--- PASS: TestT10CompatDescTiDB (0.01s)
+=== CONT  TestT10AlterIndexMissingIndex/tidb
+=== CONT  TestT10AlterIndexUnknownSet/tidb
+=== CONT  TestT10ProviderInvisibleMemberNotIntent
+--- PASS: TestT10AlterIndexPostStateMemberVisible (0.01s)
+=== CONT  TestT10AlterIndexRulesOffAudited/mysql
+--- PASS: TestT10AlterIndexVersionGate57 (0.01s)
+=== CONT  TestT10AlterIndexVisibleDirectionSilent/mysql
+--- PASS: TestT10AlterIndexInvisibleFirstPath (0.00s)
+    --- PASS: TestT10AlterIndexInvisibleFirstPath/tidb (0.01s)
+    --- PASS: TestT10AlterIndexInvisibleFirstPath/mysql (0.01s)
+=== CONT  TestT10AlterIndexRulesOffAudited/tidb
+=== CONT  TestT10AlterIndexVisibleDirectionSilent/tidb
+--- PASS: TestT10ProviderInvisibleMemberNotIntent (0.01s)
+=== CONT  TestT10CompatFormGatesMySQL57/declared_invisible_attr
+=== CONT  TestT10CompatFormGatesMySQL57/multi-valued_member
+=== CONT  TestT10CompatFormGatesMySQL57/descending_member
+--- PASS: TestT10AlterIndexRulesOffAudited (0.00s)
+    --- PASS: TestT10AlterIndexRulesOffAudited/mysql (0.01s)
+    --- PASS: TestT10AlterIndexRulesOffAudited/tidb (0.01s)
+=== CONT  TestT10CompatFormGatesMySQL57/expression_key_part
+--- PASS: TestT10CompatFeatureIsolation (0.01s)
+=== CONT  TestT10CompatFormGatesMySQL80Silent/invisible_attr
+--- PASS: TestT10AlterIndexMissingIndex (0.00s)
+    --- PASS: TestT10AlterIndexMissingIndex/mysql (0.01s)
+    --- PASS: TestT10AlterIndexMissingIndex/tidb (0.01s)
+=== CONT  TestT10CompatFormGatesMySQL80Silent/multi-valued
+=== CONT  TestT10CompatFormGatesMySQL80Silent/descending
+=== CONT  TestT10CompatFormGatesMySQL80Silent/expression_part
+--- PASS: TestT10DeclaredInvisiblePaths (0.00s)
+    --- PASS: TestT10DeclaredInvisiblePaths/alter_add_index (0.01s)
+    --- PASS: TestT10DeclaredInvisiblePaths/standalone_create_index (0.01s)
+    --- PASS: TestT10DeclaredInvisiblePaths/create_table_key (0.01s)
+--- PASS: TestT10AlterIndexUnknownSet (0.00s)
+    --- PASS: TestT10AlterIndexUnknownSet/tidb (0.01s)
+    --- PASS: TestT10AlterIndexUnknownSet/mysql (0.01s)
+--- PASS: TestT10AlterIndexVisibleDirectionSilent (0.00s)
+    --- PASS: TestT10AlterIndexVisibleDirectionSilent/mysql (0.01s)
+    --- PASS: TestT10AlterIndexVisibleDirectionSilent/tidb (0.01s)
+--- PASS: TestT10CompatFormGatesMySQL80Silent (0.00s)
+    --- PASS: TestT10CompatFormGatesMySQL80Silent/descending (0.01s)
+    --- PASS: TestT10CompatFormGatesMySQL80Silent/multi-valued (0.01s)
+    --- PASS: TestT10CompatFormGatesMySQL80Silent/invisible_attr (0.01s)
+    --- PASS: TestT10CompatFormGatesMySQL80Silent/expression_part (0.01s)
+--- PASS: TestT10CompatFormGatesMySQL57 (0.00s)
+    --- PASS: TestT10CompatFormGatesMySQL57/declared_invisible_attr (0.01s)
+    --- PASS: TestT10CompatFormGatesMySQL57/multi-valued_member (0.01s)
+    --- PASS: TestT10CompatFormGatesMySQL57/expression_key_part (0.01s)
+    --- PASS: TestT10CompatFormGatesMySQL57/descending_member (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.564s
+rc=0

@@ -1,0 +1,4 @@
+[ddl-golden] task=T06 head=5445a4815c36 cases=496 passed=496 assertions=11772
+[ddl-golden] task=T07 head=5445a4815c36 cases=207 passed=207 assertions=6190
+[ddl-golden] task=T08 head=5445a4815c36 cases=172 passed=172 assertions=4240
+[ddl-golden] task=T09 head=5445a4815c36 cases=125 passed=125 assertions=3442

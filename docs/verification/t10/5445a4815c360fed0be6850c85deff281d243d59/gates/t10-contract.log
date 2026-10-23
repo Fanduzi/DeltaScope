@@ -1,0 +1,35 @@
+PASS T10 complete constructed control
+PASS T10 strict denominator drift
+PASS T10 double-side deletion
+PASS T10 duplicate case ID
+PASS T10 missing executed case
+PASS T10 frozen expectation drift
+PASS T10 fabricated status
+PASS T10 failed assertion
+PASS T10 wrong index-name metadata
+PASS T10 visibility direction flipped
+PASS T10 version blocker laundered to gap reason
+PASS T10 5.7 silent complete
+PASS T10 missing index laundered to gap
+PASS T10 finding borrowed across statements
+PASS T10 only first statement audited
+PASS T10 native missing-index accepted
+PASS T10 mysql primary invisibility accepted
+PASS T10 tidb primary mapped to mysql error
+PASS T10 tidb fulltext natively accepted
+PASS T10 tidb desc stored descending
+PASS T10 5.7 desc marker claimed
+PASS T10 observed state recorded as declaration
+PASS T10 determined version finding softened to gap
+PASS T10 prefix fabricated as gated feature
+PASS T10 parser-negative fabricated statement
+PASS T10 applicable counter laundered
+PASS T10 skipped setup
+PASS T10 skipped execute
+PASS T10 skipped structure
+PASS T10 skipped post_verify
+PASS T10 skipped teardown
+PASS T10 anchor rebind
+PASS T10 manifest drift
+33/33 constructed-control checks passed
+t10-contract=0

@@ -1,0 +1,48 @@
+===== mysql57 =====
+mysql57|is_visible_col|mysql:[Warning]Usingapasswordonthecommandlineinterfacecanbeinsecure.0
+mysql57|alter_index_invisible|rc:1
+mysql57|idx_b_visible_after|mysql:[Warning]Usingapasswordonthecommandlineinterfacecanbeinsecure.ERROR1054(42S22)atline1:Unknowncolumn'is_visible'in'fieldlist'
+mysql57|alter_index_primary|ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'INDEX `PRIMARY` INVISIBLE' at line 1
+mysql57|pk_invisible_decl|ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'INVISIBLE)' at line 1
+mysql57|pk_visible_decl|rc:1
+mysql57|expr_index_lower|ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '(LOWER(b)))' at line 1
+mysql57|mv_index|ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '(CAST(j->'$.a' AS UNSIGNED ARRAY)))' at line 1
+mysql57|fulltext|mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql57|spatial|ERROR 1252 (42000) at line 1: All parts of a SPATIAL index must be NOT NULL
+mysql57|desc_collation|NULL
+===== mysql80 =====
+mysql80|is_visible_col|mysql:[Warning]Usingapasswordonthecommandlineinterfacecanbeinsecure.1
+mysql80|alter_index_invisible|rc:0
+mysql80|idx_b_visible_after|mysql:[Warning]Usingapasswordonthecommandlineinterfacecanbeinsecure.NO
+mysql80|alter_index_primary|ERROR 1176 (42000) at line 1: Key 'PRIMARY' doesn't exist in table 't'
+mysql80|pk_invisible_decl|ERROR 4028 (HY000) at line 1: A table must have at least one visible column.
+mysql80|pk_visible_decl|rc:0
+mysql80|expr_index_lower|mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql80|mv_index|mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql80|fulltext|mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql80|spatial|ERROR 1252 (42000) at line 1: All parts of a SPATIAL index must be NOT NULL
+mysql80|desc_collation|D
+===== mysql84 =====
+mysql84|is_visible_col|mysql:[Warning]Usingapasswordonthecommandlineinterfacecanbeinsecure.1
+mysql84|alter_index_invisible|rc:0
+mysql84|idx_b_visible_after|mysql:[Warning]Usingapasswordonthecommandlineinterfacecanbeinsecure.NO
+mysql84|alter_index_primary|ERROR 1176 (42000) at line 1: Key 'PRIMARY' doesn't exist in table 't'
+mysql84|pk_invisible_decl|ERROR 4028 (HY000) at line 1: A table must have at least one visible column.
+mysql84|pk_visible_decl|rc:0
+mysql84|expr_index_lower|mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql84|mv_index|mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql84|fulltext|mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql84|spatial|ERROR 1252 (42000) at line 1: All parts of a SPATIAL index must be NOT NULL
+mysql84|desc_collation|D
+===== tidb85 =====
+tidb85|is_visible_col|ERROR2003(HY000):Can'tconnecttoMySQLserveron'127.0.0.1:4000'(111)
+tidb85|alter_index_invisible|rc:1
+tidb85|idx_b_visible_after|ERROR2003(HY000):Can'tconnecttoMySQLserveron'127.0.0.1:4000'(111)
+tidb85|alter_index_primary|ERROR 2003 (HY000): Can't connect to MySQL server on '127.0.0.1:4000' (111)
+tidb85|pk_invisible_decl|ERROR 2003 (HY000): Can't connect to MySQL server on '127.0.0.1:4000' (111)
+tidb85|pk_visible_decl|rc:1
+tidb85|expr_index_lower|ERROR 2003 (HY000): Can't connect to MySQL server on '127.0.0.1:4000' (111)
+tidb85|mv_index|ERROR 2003 (HY000): Can't connect to MySQL server on '127.0.0.1:4000' (111)
+tidb85|fulltext|ERROR 2003 (HY000): Can't connect to MySQL server on '127.0.0.1:4000' (111)
+tidb85|spatial|ERROR 2003 (HY000): Can't connect to MySQL server on '127.0.0.1:4000' (111)
+tidb85|desc_collation|ERROR2003(HY000):Can'tconnecttoMySQLserveron'127.0.0.1:4000'(111)

@@ -1,0 +1,61 @@
+go test ./internal/application/audit -count=1 -run TestDDLParserErrorFeasibilityCensus -v
+=== RUN   TestDDLParserErrorFeasibilityCensus
+=== PAUSE TestDDLParserErrorFeasibilityCensus
+=== CONT  TestDDLParserErrorFeasibilityCensus
+    ddl_parser_error_feasibility_census_test.go:204: mysql view/ALTER VIEW: parser_error confirmed: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 10 near "VIEW v_users AS SELECT id, name FROM users" 
+    ddl_parser_error_feasibility_census_test.go:204: mysql routine/ALTER PROCEDURE: parser_error confirmed: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 15 near "PROCEDURE p_cleanup SQL SECURITY INVOKER" 
+    ddl_parser_error_feasibility_census_test.go:204: mysql routine/CREATE FUNCTION: parser_error confirmed: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 15 near "FUNCTION hello() RETURNS VARCHAR(20) RETURN 'hello'" 
+    ddl_parser_error_feasibility_census_test.go:204: mysql routine/ALTER FUNCTION: parser_error confirmed: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 14 near "FUNCTION hello SQL SECURITY INVOKER" 
+    ddl_parser_error_feasibility_census_test.go:204: mysql routine/DROP FUNCTION: parser_error confirmed: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 13 near "FUNCTION hello" 
+    ddl_parser_error_feasibility_census_test.go:204: mysql trigger/CREATE TRIGGER: parser_error confirmed: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 14 near "TRIGGER trg_users_bi BEFORE INSERT ON users FOR EACH ROW SET NEW.created_at = NOW()" 
+    ddl_parser_error_feasibility_census_test.go:204: mysql trigger/DROP TRIGGER: parser_error confirmed: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 12 near "TRIGGER trg_users_bi" 
+    ddl_parser_error_feasibility_census_test.go:204: mysql event/CREATE EVENT: parser_error confirmed: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 12 near "EVENT e_cleanup ON SCHEDULE EVERY 1 DAY DO CALL p_cleanup()" 
+    ddl_parser_error_feasibility_census_test.go:204: mysql event/ALTER EVENT: parser_error confirmed: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 11 near "EVENT e_cleanup ON SCHEDULE EVERY 2 DAY" 
+    ddl_parser_error_feasibility_census_test.go:204: mysql event/DROP EVENT: parser_error confirmed: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 10 near "EVENT e_cleanup" 
+    ddl_parser_error_feasibility_census_test.go:204: mysql tablespace/CREATE TABLESPACE: parser_error confirmed: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 17 near "TABLESPACE ts1 ADD DATAFILE 'ts1.ibd'" 
+    ddl_parser_error_feasibility_census_test.go:204: mysql tablespace/ALTER TABLESPACE: parser_error confirmed: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 16 near "TABLESPACE ts1 ADD DATAFILE 'ts2.ibd'" 
+    ddl_parser_error_feasibility_census_test.go:204: mysql tablespace/DROP TABLESPACE: parser_error confirmed: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 15 near "TABLESPACE ts1" 
+    ddl_parser_error_feasibility_census_test.go:204: mysql resource_group/CREATE RESOURCE GROUP: parser_error confirmed: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 30 near "TYPE = USER VCPU = 0-3" 
+    ddl_parser_error_feasibility_census_test.go:204: mysql resource_group/ALTER RESOURCE GROUP: parser_error confirmed: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 29 near "VCPU = 0-7" 
+    ddl_parser_error_feasibility_census_test.go:204: tidb view/ALTER VIEW: parser_error confirmed: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 10 near "VIEW v_users AS SELECT id, name FROM users" 
+    ddl_parser_error_feasibility_census_test.go:204: tidb table_option/ALTER TABLE TTL: parser_error confirmed: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 54 near "'created_at + INTERVAL 30 DAY'" 
+    ddl_parser_error_feasibility_census_test.go:204: tidb table_option/ALTER TABLE LOCALITY: parser_error confirmed: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 26 near "LOCALITY = 'us-east-1'" 
+    ddl_parser_error_feasibility_census_test.go:204: tidb trigger/CREATE TRIGGER: parser_error confirmed: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 14 near "TRIGGER trg_users_bi BEFORE INSERT ON users FOR EACH ROW SET NEW.created_at = NOW()" 
+    ddl_parser_error_feasibility_census_test.go:204: tidb trigger/DROP TRIGGER: parser_error confirmed: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 12 near "TRIGGER trg_users_bi" 
+    ddl_parser_error_feasibility_census_test.go:204: tidb routine/CREATE FUNCTION: parser_error confirmed: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 15 near "FUNCTION hello() RETURNS VARCHAR(20) RETURN 'hello'" 
+    ddl_parser_error_feasibility_census_test.go:204: tidb routine/DROP FUNCTION: parser_error confirmed: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 13 near "FUNCTION hello" 
+    ddl_parser_error_feasibility_census_test.go:204: tidb event/CREATE EVENT: parser_error confirmed: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 12 near "EVENT e_cleanup ON SCHEDULE EVERY 1 DAY DO CALL p_cleanup()" 
+    ddl_parser_error_feasibility_census_test.go:204: tidb event/DROP EVENT: parser_error confirmed: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 10 near "EVENT e_cleanup" 
+    ddl_parser_error_feasibility_census_test.go:207: 
+    ddl_parser_error_feasibility_census_test.go:208: === MySQL/TiDB DDL Parser-Error Feasibility Census Summary ===
+    ddl_parser_error_feasibility_census_test.go:232:   parser_upgrade_candidate                 mysql: 5
+    ddl_parser_error_feasibility_census_test.go:232:   bounded_fallback_candidate               mysql: 1
+    ddl_parser_error_feasibility_census_test.go:232:   unsafe_fallback_defer                    mysql: 9
+    ddl_parser_error_feasibility_census_test.go:235:                                            mysql total: 15
+    ddl_parser_error_feasibility_census_test.go:236: 
+    ddl_parser_error_feasibility_census_test.go:232:   bounded_fallback_candidate               tidb: 3
+    ddl_parser_error_feasibility_census_test.go:232:   product_unsupported_or_inapplicable      tidb: 6
+    ddl_parser_error_feasibility_census_test.go:235:                                            tidb total: 9
+    ddl_parser_error_feasibility_census_test.go:236: 
+    ddl_parser_error_feasibility_census_test.go:254: MySQL parser-error cases: 15
+    ddl_parser_error_feasibility_census_test.go:255: TiDB parser-error cases:  9
+--- PASS: TestDDLParserErrorFeasibilityCensus (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.363s
+go test ./internal/application/audit -count=1 -tags postgresql -run TestDDLParserErrorFeasibilityPostgreSQLCensus -v
+=== RUN   TestDDLParserErrorFeasibilityPostgreSQLCensus
+=== PAUSE TestDDLParserErrorFeasibilityPostgreSQLCensus
+=== CONT  TestDDLParserErrorFeasibilityPostgreSQLCensus
+    ddl_parser_error_feasibility_census_postgresql_tag_test.go:45: postgresql subscription/DROP SUBSCRIPTION WITH drop_slot: parser_error confirmed: parse sql: 1 statement(s) could not be parsed: parse sql: parse postgresql sql: syntax error at or near "WITH"
+    ddl_parser_error_feasibility_census_postgresql_tag_test.go:45: postgresql constraints/NOT NULL NOT VALID: parser_error confirmed: parse sql: 1 statement(s) could not be parsed: parse sql: parse postgresql sql: syntax error at or near "NOT"
+    ddl_parser_error_feasibility_census_postgresql_tag_test.go:45: postgresql constraints/ALTER CONSTRAINT NOT ENFORCED: parser_error confirmed: parse sql: 1 statement(s) could not be parsed: parse sql: parse postgresql sql: syntax error at or near "ENFORCED"
+    ddl_parser_error_feasibility_census_postgresql_tag_test.go:45: postgresql constraints/ALTER CONSTRAINT INHERIT: parser_error confirmed: parse sql: 1 statement(s) could not be parsed: parse sql: parse postgresql sql: syntax error at or near "INHERIT"
+    ddl_parser_error_feasibility_census_postgresql_tag_test.go:45: postgresql constraints/ALTER CONSTRAINT NO INHERIT: parser_error confirmed: parse sql: 1 statement(s) could not be parsed: parse sql: parse postgresql sql: FOREIGN KEY constraints cannot be marked NO INHERIT
+    ddl_parser_error_feasibility_census_postgresql_tag_test.go:48: 
+    ddl_parser_error_feasibility_census_postgresql_tag_test.go:49: === PostgreSQL DDL Parser-Error Feasibility Census Summary ===
+    ddl_parser_error_feasibility_census_postgresql_tag_test.go:60:   parser_upgrade_candidate                 5
+    ddl_parser_error_feasibility_census_postgresql_tag_test.go:63:   total                                    5
+    ddl_parser_error_feasibility_census_postgresql_tag_test.go:68: PostgreSQL parser-error cases: 5
+--- PASS: TestDDLParserErrorFeasibilityPostgreSQLCensus (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.417s

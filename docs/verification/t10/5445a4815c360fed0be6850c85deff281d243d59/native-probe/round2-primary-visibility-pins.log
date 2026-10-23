@@ -1,0 +1,28 @@
+===== mysql57 =====
+mysql57|alter_index_primary_invisible|ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'INDEX `PRIMARY` INVISIBLE' at line 1
+mysql57|pk_invisible_decl|ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'INVISIBLE)' at line 1
+mysql57|pk_visible_decl|rc:1
+mysql57|spatial_notnull|mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql57|mv_collation_and_kind|ERROR1064(42000)atline1:YouhaveanerrorinyourSQLsyntax;checkthemanualthatcorrespondstoyourMySQLserverversionfortherightsyntaxtousenear'(CAST(j->'$.a'ASUNSIGNEDARRAY)))'atline1
+mysql57|expr_index_concat|ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '(CONCAT(b,'x')))' at line 1
+===== mysql80 =====
+mysql80|alter_index_primary_invisible|ERROR 3522 (HY000) at line 1: A primary key index cannot be invisible
+mysql80|pk_invisible_decl|ERROR 3522 (HY000) at line 1: A primary key index cannot be invisible
+mysql80|pk_visible_decl|rc:0
+mysql80|spatial_notnull|mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql80|mv_collation_and_kind|BTREE
+mysql80|expr_index_concat|mysql: [Warning] Using a password on the command line interface can be insecure.
+===== mysql84 =====
+mysql84|alter_index_primary_invisible|ERROR 3522 (HY000) at line 1: A primary key index cannot be invisible
+mysql84|pk_invisible_decl|ERROR 3522 (HY000) at line 1: A primary key index cannot be invisible
+mysql84|pk_visible_decl|rc:0
+mysql84|spatial_notnull|mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql84|mv_collation_and_kind|BTREE
+mysql84|expr_index_concat|mysql: [Warning] Using a password on the command line interface can be insecure.
+===== tidb85 =====
+tidb85|alter_index_primary_invisible|ERROR 1176 (42000) at line 1: Key 'PRIMARY' doesn't exist in table 't'
+tidb85|pk_invisible_decl|ERROR 3522 (HY000) at line 1: A primary key index cannot be invisible
+tidb85|pk_visible_decl|rc:0
+tidb85|spatial_notnull|ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 44 near "GEOMETRY NOT NULL" 
+tidb85|mv_collation_and_kind|BTREE
+tidb85|expr_index_concat|ERROR 8200 (HY000) at line 1: Unsupported creating expression index containing unsafe functions without allow-expression-index in config
