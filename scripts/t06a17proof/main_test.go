@@ -156,6 +156,13 @@ func (c *faultConn) QueryContext(_ context.Context, query string, _ []driver.Nam
 		f.providerQueries++
 		return newFaultRows([]string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"}, f.provider, -1), nil
 	}
+	if strings.Contains(query, "from information_schema.`columns`") {
+		f.providerQueries++
+		// IS_VISIBLE capability probe: this fixture models a catalog without
+		// the column (MySQL 5.7 shape) — a zero count keeps the index query
+		// on the legacy seven-column form.
+		return newFaultRows([]string{"count(*)"}, [][]driver.Value{{int64(0)}}, -1), nil
+	}
 	if strings.Contains(query, "from information_schema.statistics") {
 		f.providerQueries++
 		return newFaultRows([]string{"index_name", "non_unique", "index_type", "column_name", "cardinality", "sub_part", "collation"}, nil, -1), nil
@@ -218,7 +225,9 @@ func TestT06A17R1CollectorComplete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if fixture.creates != 1 || fixture.drops != 1 || fixture.created || fixture.counts != 2 || fixture.providerQueries != 3 {
+	// providerQueries: tables row + columns + the IS_VISIBLE capability probe
+	// + statistics member rows = 4 catalog round-trips since T10.
+	if fixture.creates != 1 || fixture.drops != 1 || fixture.created || fixture.counts != 2 || fixture.providerQueries != 4 {
 		t.Fatalf("incomplete lifecycle/provider calls: %+v", fixture)
 	}
 	var pairs []pair

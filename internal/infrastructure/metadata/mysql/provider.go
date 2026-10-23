@@ -1,6 +1,6 @@
 // Package mysqlmeta implements metadata-aware audit adapters over the MySQL protocol.
 // input: sql.DB access plus connection configs, version/schema/table lookup requests, and MySQL/TiDB metadata queries
-// output: normalized instance facts with explicit known bits (innodb_page_size, 5.7 large-prefix, TiDB max-index-length via all-rows SHOW CONFIG verification — read failures propagate as provider errors, only absent/ambiguous values stay unknown), dialect detection, schema discovery, and table snapshots with preserved index cardinality plus per-member plain-key knownness facts (STATISTICS SUB_PART/COLLATION and NULL COLUMN_NAME classified into prefix/desc/expression/unmodeled marks — provider-loaded indexes carry the same comparability vocabulary declarations do), verbatim COLUMN_TYPE parameter spans on the five declared-parameter bases (DECIMAL/FLOAT/DOUBLE/ENUM/SET — member literals keep catalog case and attribute words inside quotes never set Unsigned), stored-representation default facts (COLUMN_DEFAULT IS NOT NULL → HasDefault with verbatim DefaultValue bytes; NULL rows and literal "null" text never set DefaultIsNull on this path), the comparable literal-default identity keyed by the column's own base type (temporal markers asserted only on temporal bases), and T07 advanced-column facts read from the same COLUMNS row (EXTRA DEFAULT_GENERATED → parsed DefaultExpression facts, STORED/VIRTUAL GENERATED + GENERATION_EXPRESSION → generated storage + expression facts, INVISIBLE → effective visibility; undecodable expression text stays an explicit unknown fact) for application-level audit enrichment
+// output: normalized instance facts with explicit known bits (innodb_page_size, 5.7 large-prefix, TiDB max-index-length via all-rows SHOW CONFIG verification — read failures propagate as provider errors, only absent/ambiguous values stay unknown), dialect detection, schema discovery, and table snapshots with preserved index cardinality plus per-member plain-key knownness facts (STATISTICS SUB_PART/COLLATION and NULL COLUMN_NAME classified into prefix/desc/expression/unmodeled marks — provider-loaded indexes carry the same comparability vocabulary declarations do), verbatim COLUMN_TYPE parameter spans on the five declared-parameter bases (DECIMAL/FLOAT/DOUBLE/ENUM/SET — member literals keep catalog case and attribute words inside quotes never set Unsigned), stored-representation default facts (COLUMN_DEFAULT IS NOT NULL → HasDefault with verbatim DefaultValue bytes; NULL rows and literal "null" text never set DefaultIsNull on this path), the comparable literal-default identity keyed by the column's own base type (temporal markers asserted only on temporal bases), and T07 advanced-column facts read from the same COLUMNS row (EXTRA DEFAULT_GENERATED → parsed DefaultExpression facts, STORED/VIRTUAL GENERATED + GENERATION_EXPRESSION → generated storage + expression facts, INVISIBLE → effective visibility; undecodable expression text stays an explicit unknown fact), per-index effective visibility via the STATISTICS.IS_VISIBLE capability probe (a catalog-count query — capable catalogs select the column, MySQL 5.7/zero-count leaves member Visibility empty rather than guessed, real probe failures propagate as load errors) plus SPATIAL/FULLTEXT INDEX_TYPE classification into spec.Index.Kind for application-level audit enrichment
 // pos: infrastructure metadata adapter between database/sql and domain metadata specs
 // note: if this file changes, update this header and module README.md.
 package mysqlmeta
@@ -546,9 +546,22 @@ func (p *Provider) loadIndexes(ctx context.Context, snapshot *spec.TableSnapshot
 	// means the index must not enter ordinary-key comparisons. Both columns
 	// exist on every supported anchor; a server without them fails the query
 	// and surfaces a load error rather than a guessed shape.
+	//
+	// IS_VISIBLE is version-gated: MySQL 5.7 has no such column (index
+	// visibility landed in 8.0) while 8.0/8.4 and TiDB expose it. The
+	// capability probe keeps 5.7 loading honestly — members there carry an
+	// unknown Visibility instead of a guessed "visible" or a failed query.
+	hasVisible, err := p.statisticsHasIsVisible(ctx)
+	if err != nil {
+		return err
+	}
+	visibleSelect := ""
+	if hasVisible {
+		visibleSelect = ", is_visible"
+	}
 	rows, err := p.db.QueryContext(ctx, `
 		select index_name, non_unique, index_type, column_name, cardinality,
-			sub_part, collation
+			sub_part, collation`+visibleSelect+`
 		from information_schema.statistics
 		where table_schema = ? and table_name = ?
 		order by index_name, seq_in_index
@@ -563,11 +576,14 @@ func (p *Provider) loadIndexes(ctx context.Context, snapshot *spec.TableSnapshot
 
 	for rows.Next() {
 		var name, indexType string
-		var columnName, collation sql.NullString
+		var columnName, collation, visible sql.NullString
 		var nonUnique int
 		var cardinality, subPart sql.NullInt64
-		if err := rows.Scan(&name, &nonUnique, &indexType, &columnName,
-			&cardinality, &subPart, &collation); err != nil {
+		dest := []any{&name, &nonUnique, &indexType, &columnName, &cardinality, &subPart, &collation}
+		if hasVisible {
+			dest = append(dest, &visible)
+		}
+		if err := rows.Scan(dest...); err != nil {
 			return fmt.Errorf("scan table index: %w", err)
 		}
 
@@ -576,7 +592,7 @@ func (p *Provider) loadIndexes(ctx context.Context, snapshot *spec.TableSnapshot
 			cardinalityValue = ptrInt64(cardinality.Int64)
 		}
 		accumulateIndexRow(indexes, &order, name, nonUnique, indexType,
-			indexMemberRow{columnName: columnName, collation: collation, subPart: subPart},
+			indexMemberRow{columnName: columnName, collation: collation, subPart: subPart, visible: visible},
 			cardinalityValue)
 	}
 	if err := rows.Err(); err != nil {
@@ -594,14 +610,40 @@ func (p *Provider) loadIndexes(ctx context.Context, snapshot *spec.TableSnapshot
 	return nil
 }
 
+// statisticsHasIsVisible reports whether this server's
+// information_schema.STATISTICS exposes the IS_VISIBLE column (MySQL 8.0+,
+// TiDB; absent on MySQL 5.7). The probe queries the catalog itself so the
+// answer reflects the connected server, not a version guess.
+func (p *Provider) statisticsHasIsVisible(ctx context.Context) (bool, error) {
+	var n int
+	// The backtick-quoted catalog table keeps this probe distinct from the
+	// member-row SELECT against the same schema.
+	err := p.db.QueryRowContext(ctx, `
+		select count(*) from information_schema.`+"`columns`"+`
+		where table_schema = 'information_schema'
+			and table_name = 'STATISTICS'
+			and column_name = 'IS_VISIBLE'
+	`).Scan(&n)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, fmt.Errorf("probe statistics is_visible: %w", err)
+	}
+	return n > 0, nil
+}
+
 // indexMemberRow carries one STATISTICS member row's plain-key knownness
 // facts: which column it names, its sort direction, and its prefix length.
 // A NULL column_name marks an expression key part; a NULL collation on a
 // named member means the row is not classifiable as a plain ascending part.
+// visible carries the index-level IS_VISIBLE fact (constant across the
+// index's rows); a NULL/unsupported value leaves Visibility unknown.
 type indexMemberRow struct {
 	columnName sql.NullString
 	collation  sql.NullString
 	subPart    sql.NullInt64
+	visible    sql.NullString
 }
 
 func accumulateIndexRow(indexes map[string]*spec.Index, order *[]string, name string, nonUnique int, indexType string, member indexMemberRow, cardinality *int64) {
@@ -613,6 +655,14 @@ func accumulateIndexRow(indexes map[string]*spec.Index, order *[]string, name st
 		}
 		indexes[name] = index
 		*order = append(*order, name)
+	}
+	if index.Visibility == "" {
+		switch {
+		case strings.EqualFold(member.visible.String, "yes"):
+			index.Visibility = spec.ColumnVisibilityVisible
+		case member.visible.Valid && strings.EqualFold(member.visible.String, "no"):
+			index.Visibility = spec.ColumnVisibilityInvisible
+		}
 	}
 
 	// NULL column_name is an expression key part — the catalog stores no
@@ -768,6 +818,9 @@ func classifyIndex(name string, nonUnique int, indexType string) spec.IndexKind 
 	}
 	if strings.EqualFold(indexType, "fulltext") {
 		return spec.IndexKindFulltext
+	}
+	if strings.EqualFold(indexType, "spatial") {
+		return spec.IndexKindSpatial
 	}
 	if nonUnique == 0 {
 		return spec.IndexKindUnique

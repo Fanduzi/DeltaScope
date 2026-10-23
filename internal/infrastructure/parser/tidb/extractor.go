@@ -1,6 +1,6 @@
 // Package tidbparser extracts parser-neutral statements from TiDB AST nodes.
 // input: TiDB parser statement nodes and parser-neutral dialect metadata
-// output: extractor-backed parsed statements for the application layer, including MutationTargets and mutation-target-only DML tables, normalized ALTER index/constraint actions, multi-target DDL Targets for DROP/RENAME/ALTER-rename, temporary-table scope facts, typed and unextracted column-option facts, primary-key metadata, inline PRIMARY KEY presence on column-change facts, parser-decoded COMMENT string content (no SQL quote wrapping), sentinel-faithful declared type parameters (DECIMAL/FLOAT/DOUBLE scale, byte-exact ENUM/SET members) on the five declared-parameter types, structured generated-column and expression-default facts via the shared expression-facts visitor, the comparable literal-default identity decoded from typed AST values, and if_exists/if_not_exists option markers for conditional-existence derivation
+// output: extractor-backed parsed statements for the application layer, including MutationTargets and mutation-target-only DML tables, normalized ALTER index/constraint actions, multi-target DDL Targets for DROP/RENAME/ALTER-rename, temporary-table scope facts, typed and unextracted column-option facts, primary-key metadata, inline PRIMARY KEY presence on column-change facts, parser-decoded COMMENT string content (no SQL quote wrapping), sentinel-faithful declared type parameters (DECIMAL/FLOAT/DOUBLE scale, byte-exact ENUM/SET members) on the five declared-parameter types, structured generated-column and expression-default facts via the shared expression-facts visitor, the comparable literal-default identity decoded from typed AST values, if_exists/if_not_exists option markers for conditional-existence derivation, and the T10 index facts — the alter_index action carrying the VISIBLE|INVISIBLE target on OldName, authored Visibility/VisibilityExplicit across index sites, and MultiValuedParts CAST-array member counts
 // pos: infrastructure extraction adapter between TiDB AST and domain spec
 // note: if this file changes, update this header and module README.md.
 package tidbparser
@@ -296,13 +296,13 @@ func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
 	for _, c := range stmt.Constraints {
 		switch c.Tp {
 		case ast.ConstraintPrimaryKey:
-			expr, prefix, desc := countIndexPartKinds(c.Keys)
-			global, hasPredicate, unmodeled := indexOptionFacts(c.Option)
-			ddl.PrimaryKey = &spec.Index{Name: normalizeConstraintName(c), Kind: spec.IndexKindPrimary, Columns: extractIndexColumns(c.Keys), HasExpressionKeys: expr > 0, ExpressionCount: expr, PrefixParts: prefix, DescParts: desc, Global: global, HasPredicate: hasPredicate, UnmodeledOptions: unmodeled}
+			expr, prefix, desc, multiValued := countIndexPartKinds(c.Keys)
+			global, hasPredicate, visibility, unmodeled := indexOptionFacts(c.Option)
+			ddl.PrimaryKey = &spec.Index{Name: normalizeConstraintName(c), Kind: spec.IndexKindPrimary, Columns: extractIndexColumns(c.Keys), HasExpressionKeys: expr > 0, ExpressionCount: expr, PrefixParts: prefix, DescParts: desc, MultiValuedParts: multiValued, Visibility: visibility, VisibilityExplicit: visibility != "", Global: global, HasPredicate: hasPredicate, UnmodeledOptions: unmodeled}
 		case ast.ConstraintKey, ast.ConstraintIndex, ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex, ast.ConstraintFulltext:
-			expr, prefix, desc := countIndexPartKinds(c.Keys)
-			global, hasPredicate, unmodeled := indexOptionFacts(c.Option)
-			ddl.Indexes = append(ddl.Indexes, spec.Index{Name: normalizeConstraintName(c), Kind: indexKindForConstraint(c.Tp), Columns: extractIndexColumns(c.Keys), HasExpressionKeys: expr > 0, ExpressionCount: expr, PrefixParts: prefix, DescParts: desc, Global: global, HasPredicate: hasPredicate, UnmodeledOptions: unmodeled})
+			expr, prefix, desc, multiValued := countIndexPartKinds(c.Keys)
+			global, hasPredicate, visibility, unmodeled := indexOptionFacts(c.Option)
+			ddl.Indexes = append(ddl.Indexes, spec.Index{Name: normalizeConstraintName(c), Kind: indexKindForConstraint(c.Tp), Columns: extractIndexColumns(c.Keys), HasExpressionKeys: expr > 0, ExpressionCount: expr, PrefixParts: prefix, DescParts: desc, MultiValuedParts: multiValued, Visibility: visibility, VisibilityExplicit: visibility != "", Global: global, HasPredicate: hasPredicate, UnmodeledOptions: unmodeled})
 		default:
 			ddl.Constraints = append(ddl.Constraints, extractConstraint(c))
 		}
@@ -957,8 +957,8 @@ func extractCreateIndex(stmt *ast.CreateIndexStmt) *spec.DDL {
 	}
 	indexName := stmt.IndexName
 	columns := extractIndexColumns(stmt.IndexPartSpecifications)
-	expr, prefix, desc := countIndexPartKinds(stmt.IndexPartSpecifications)
-	indexGlobal, hasPredicate, unmodeled := indexOptionFacts(stmt.IndexOption)
+	expr, prefix, desc, multiValued := countIndexPartKinds(stmt.IndexPartSpecifications)
+	indexGlobal, hasPredicate, visibility, unmodeled := indexOptionFacts(stmt.IndexOption)
 	var unextracted []string
 	if stmt.LockAlg != nil {
 		// CREATE INDEX ... ALGORITHM=/LOCK= is real MySQL syntax the model does
@@ -967,7 +967,7 @@ func extractCreateIndex(stmt *ast.CreateIndexStmt) *spec.DDL {
 	}
 	alter := spec.Alter{
 		Action: "create_index",
-		Index:  &spec.AlterIndex{Definition: &spec.Index{Name: indexName, Kind: kind, Columns: columns, HasExpressionKeys: expr > 0, ExpressionCount: expr, PrefixParts: prefix, DescParts: desc, Global: indexGlobal, HasPredicate: hasPredicate, UnmodeledOptions: unmodeled}},
+		Index:  &spec.AlterIndex{Definition: &spec.Index{Name: indexName, Kind: kind, Columns: columns, HasExpressionKeys: expr > 0, ExpressionCount: expr, PrefixParts: prefix, DescParts: desc, MultiValuedParts: multiValued, Visibility: visibility, VisibilityExplicit: visibility != "", Global: indexGlobal, HasPredicate: hasPredicate, UnmodeledOptions: unmodeled}},
 	}
 	if stmt.IfNotExists {
 		// Parsed conditional marker — the audit model records the flag and
@@ -1490,9 +1490,24 @@ func extractAlterIndex(specification *ast.AlterTableSpec) *spec.AlterIndex {
 		if specification.Constraint == nil || !constraintProducesIndex(specification.Constraint.Tp) {
 			return nil
 		}
-		expr, prefix, desc := countIndexPartKinds(specification.Constraint.Keys)
-		global, hasPredicate, unmodeled := indexOptionFacts(specification.Constraint.Option)
-		return &spec.AlterIndex{Definition: &spec.Index{Kind: indexKindForConstraint(specification.Constraint.Tp), Name: normalizeConstraintName(specification.Constraint), Columns: extractIndexColumns(specification.Constraint.Keys), HasExpressionKeys: expr > 0, ExpressionCount: expr, PrefixParts: prefix, DescParts: desc, Global: global, HasPredicate: hasPredicate, UnmodeledOptions: unmodeled}}
+		expr, prefix, desc, multiValued := countIndexPartKinds(specification.Constraint.Keys)
+		global, hasPredicate, visibility, unmodeled := indexOptionFacts(specification.Constraint.Option)
+		return &spec.AlterIndex{Definition: &spec.Index{Kind: indexKindForConstraint(specification.Constraint.Tp), Name: normalizeConstraintName(specification.Constraint), Columns: extractIndexColumns(specification.Constraint.Keys), HasExpressionKeys: expr > 0, ExpressionCount: expr, PrefixParts: prefix, DescParts: desc, MultiValuedParts: multiValued, Visibility: visibility, VisibilityExplicit: visibility != "", Global: global, HasPredicate: hasPredicate, UnmodeledOptions: unmodeled}}
+	case ast.AlterTableIndexInvisible:
+		// ALTER INDEX name VISIBLE|INVISIBLE — the target rides OldName and
+		// the requested visibility becomes a declared member fact.
+		name := extractAlterName(specification)
+		var target string
+		switch specification.Visibility {
+		case ast.IndexVisibilityVisible:
+			target = spec.ColumnVisibilityVisible
+		case ast.IndexVisibilityInvisible:
+			target = spec.ColumnVisibilityInvisible
+		}
+		if name == "" || target == "" {
+			return nil
+		}
+		return &spec.AlterIndex{OldName: name, Definition: &spec.Index{Visibility: target, VisibilityExplicit: true}}
 	case ast.AlterTableDropIndex:
 		name := extractAlterName(specification)
 		if name == "" {
@@ -1827,14 +1842,20 @@ func extractIndexColumns(parts []*ast.IndexPartSpecification) []string {
 }
 
 // countIndexPartKinds counts key-part facts extractIndexColumns cannot keep:
-// expression (non-column) parts, column-prefix lengths, and descending parts.
-func countIndexPartKinds(parts []*ast.IndexPartSpecification) (expr, prefix, desc int) {
+// expression (non-column) parts, column-prefix lengths, descending parts,
+// and multi-valued CAST(… AS … ARRAY) members. Multi-valued parts stay
+// inside the expression count — the mark exists so coverage and version
+// applicability can name the form without inspecting expression contents.
+func countIndexPartKinds(parts []*ast.IndexPartSpecification) (expr, prefix, desc, multiValued int) {
 	for _, part := range parts {
 		if part == nil {
 			continue
 		}
 		if part.Expr != nil || part.Column == nil {
 			expr++
+			if cast, ok := part.Expr.(*ast.FuncCastExpr); ok && cast.Tp != nil && cast.Tp.IsArray() {
+				multiValued++
+			}
 		}
 		// OptFieldLen stores UnspecifiedLength (-1) when no prefix is given, so
 		// any other value on a column part is an explicitly written length —
@@ -1847,7 +1868,7 @@ func countIndexPartKinds(parts []*ast.IndexPartSpecification) (expr, prefix, des
 			desc++
 		}
 	}
-	return expr, prefix, desc
+	return expr, prefix, desc, multiValued
 }
 
 // partitionOptionNames returns bounded option names found on CREATE TABLE
@@ -1938,12 +1959,13 @@ func countUnmodeledIndexParts(parts []*ast.IndexPartSpecification) int {
 }
 
 // indexOptionFacts splits a parsed IndexOption into the members the normalized
-// model keeps (GLOBAL, partial-index WHERE predicate) and bounded names for
-// the members it does not. Only names travel downstream — option values,
-// comments, and predicate expressions stay out of the audit model.
-func indexOptionFacts(option *ast.IndexOption) (global, hasPredicate bool, unmodeled []string) {
+// model keeps (GLOBAL, partial-index WHERE predicate, the VISIBLE|INVISIBLE
+// attribute) and bounded names for the members it does not. Only names
+// travel downstream — option values, comments, and predicate expressions
+// stay out of the audit model.
+func indexOptionFacts(option *ast.IndexOption) (global, hasPredicate bool, visibility string, unmodeled []string) {
 	if option == nil {
-		return false, false, nil
+		return false, false, "", nil
 	}
 	global = option.Global
 	hasPredicate = option.Condition != nil
@@ -1961,9 +1983,9 @@ func indexOptionFacts(option *ast.IndexOption) (global, hasPredicate bool, unmod
 	}
 	switch option.Visibility {
 	case ast.IndexVisibilityVisible:
-		unmodeled = append(unmodeled, "visible")
+		visibility = spec.ColumnVisibilityVisible
 	case ast.IndexVisibilityInvisible:
-		unmodeled = append(unmodeled, "invisible")
+		visibility = spec.ColumnVisibilityInvisible
 	}
 	if option.PrimaryKeyTp != ast.PrimaryKeyTypeDefault {
 		unmodeled = append(unmodeled, "primary_key_type")
@@ -1977,7 +1999,7 @@ func indexOptionFacts(option *ast.IndexOption) (global, hasPredicate bool, unmod
 	if option.AddColumnarReplicaOnDemand != 0 {
 		unmodeled = append(unmodeled, "columnar_replica")
 	}
-	return global, hasPredicate, unmodeled
+	return global, hasPredicate, visibility, unmodeled
 }
 
 func indexKindForConstraint(tp ast.ConstraintType) spec.IndexKind {

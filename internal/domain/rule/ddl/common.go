@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: normalized Statement specs emitted by application extraction, including alter-table and standalone rename payloads
-// output: reusable DDL rule predicates and rule identifier constants, including the CHANGE and RENAME destination-name, RENAME COLUMN version, and T07 advanced-column identifiers, plus shared alter-action and rename matching helpers, the indexPlainComparable plain-key premise shared by the pair-comparison rules, and the memberComparisonGap attribution for vouched sets whose non-plain members leave an applicable pair comparison unverifiable — left-prefix pairing treats an expression-bearing member's Columns as a truncated projection, so a declared prefix of the named columns is pairable even at equal length
+// output: reusable DDL rule predicates and rule identifier constants, including the CHANGE and RENAME destination-name, RENAME COLUMN version, and T07 advanced-column identifiers, plus shared alter-action and rename matching helpers, the indexPlainComparable plain-key premise shared by the pair-comparison rules, and the memberComparisonGap attribution for vouched sets whose non-plain members leave an applicable pair comparison unverifiable, and the T10 alter_index/invisibility/advanced-index-compatibility rule identifiers — left-prefix pairing treats an expression-bearing member's Columns as a truncated projection, so a declared prefix of the named columns is pairable even at equal length
 // pos: DDL rule common helpers shared across concrete rules and parser-neutral rename semantics
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -148,6 +148,9 @@ const (
 	ruleIDAlterAddIndexExistsForbid                          = "ddl.alter.add_index.exists.forbid"
 	ruleIDAlterDropIndexExistsRequire                        = "ddl.alter.drop_index.exists.require"
 	ruleIDAlterRenameIndexExistsRequire                      = "ddl.alter.rename_index.exists.require"
+	ruleIDAlterIndexExistsRequire                            = "ddl.alter.alter_index.exists.require"
+	ruleIDIndexInvisibleForbid                               = "ddl.index.invisible.forbid"
+	ruleIDIndexAdvancedCompatibilityRequire                  = "ddl.index.advanced.compatibility.require"
 	ruleIDAlterDropPrimaryKeyExistsRequire                   = "ddl.alter.drop_primary_key.exists.require"
 	ruleIDAlterModifyColumnCompatibilityRequire              = "ddl.alter.modify_column.compatibility.require"
 	ruleIDAlterChangeColumnCompatibilityRequire              = "ddl.alter.change_column.compatibility.require"

@@ -18,8 +18,10 @@ import (
 // Every other recognized action is an unaudited aspect that keeps the statement
 // but marks coverage incomplete. The set mirrors the generic-notice and
 // semantically-checked rows of the official DDL inventory: column, index,
-// key/constraint, rename, and table-option clauses. ALGORITHM/LOCK and ALTER
-// INDEX INVISIBLE parse but have no rule consumer, so they stay unaudited.
+// key/constraint, rename, and table-option clauses. T10 promoted ALTER
+// INDEX VISIBLE|INVISIBLE to the audited set — the invisibility rule,
+// index existence, and version applicability consume it on both dialects.
+// ALGORITHM/LOCK still parses without a rule consumer and stays unaudited.
 var auditedAlterActionsMySQL = map[string]struct{}{
 	"add_columns":      {},
 	"drop_column":      {},
@@ -32,6 +34,7 @@ var auditedAlterActionsMySQL = map[string]struct{}{
 	"add_constraint":   {},
 	"add_index":        {},
 	"rename_index":     {},
+	"alter_index":      {},
 	"drop_foreign_key": {},
 	"table_option":     {},
 	// T07: the canonical MySQL/TiDB SET/DROP DEFAULT actions are audited by
@@ -382,6 +385,14 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 			gaps = append(gaps, aspectGap(
 				fmt.Sprintf("%s.desc", prefix), false,
 				map[string]any{"aspect": "index", "index_kind": string(index.Kind), "desc_parts": index.DescParts},
+			))
+		}
+		if index.MultiValuedParts > 0 {
+			// Multi-valued members are a bounded form mark: version
+			// applicability is audited, member/query semantics are not.
+			gaps = append(gaps, aspectGap(
+				fmt.Sprintf("%s.multi_valued", prefix), false,
+				map[string]any{"aspect": "index", "index_kind": string(index.Kind), "multi_valued_parts": index.MultiValuedParts},
 			))
 		}
 	}

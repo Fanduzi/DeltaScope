@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: domain policy values and a shared rule registry
-// output: deterministic registration of shipped create-table and alter-table DDL rule batches, including the column-identity destination, RENAME version, and T07 advanced-column rules
+// output: deterministic registration of shipped create-table and alter-table DDL rule batches, including the column-identity destination, RENAME version, T07 advanced-column, and T10 advanced-index rules (alter-index existence, invisibility, per-feature compatibility)
 // pos: DDL rule assembly entrypoint for application wiring
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -420,6 +420,9 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDAlterRenameIndexExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAlterObjectExistenceRule(ruleIDAlterRenameIndexExistsRequire, []string{"rename_index"}, "index", false, rule.LevelBlocker, cfg, alterIndexTargetName, snapshotHasIndex)
 		}},
+		{ruleID: ruleIDAlterIndexExistsRequire, construct: newAlterIndexExistsRule},
+		{ruleID: ruleIDIndexInvisibleForbid, construct: newIndexInvisibleForbidRule},
+		{ruleID: ruleIDIndexAdvancedCompatibilityRequire, construct: newIndexAdvancedCompatibilityRule},
 		{ruleID: ruleIDAlterDropPrimaryKeyExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAlterPrimaryKeyExistenceRule(ruleIDAlterDropPrimaryKeyExistsRequire, rule.LevelBlocker, cfg)
 		}},

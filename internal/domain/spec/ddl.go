@@ -376,6 +376,22 @@ type Index struct {
 	// parts parsed on the index but not yet modeled for audit semantics.
 	PrefixParts int `json:"prefix_parts,omitempty"`
 	DescParts   int `json:"desc_parts,omitempty"`
+	// MultiValuedParts counts CAST(… AS … ARRAY) key parts — the MySQL
+	// multi-valued index member form. Those parts are also expression key
+	// parts (ExpressionCount/HasExpressionKeys still count them); the
+	// mark exists so coverage and version applicability can name the
+	// multi-valued aspect without inspecting expression contents.
+	MultiValuedParts int `json:"multi_valued_parts,omitempty"`
+	// Visibility is the effective index visibility fact: "visible",
+	// "invisible", or "" when no fact was established. Provider-loaded
+	// members carry the catalog answer; declared members carry the authored
+	// attribute or "" when none was written.
+	Visibility string `json:"visibility,omitempty"`
+	// VisibilityExplicit records that a VISIBLE|INVISIBLE attribute was
+	// authored on a declared index path. Provider and post-state members
+	// keep this false — state claims the effective fact, not the authored
+	// form.
+	VisibilityExplicit bool `json:"visibility_explicit,omitempty"`
 	// UnmodeledKeyParts counts member rows the model cannot classify as a
 	// plain ascending column part (e.g. a NULL or unrecognized COLLATION on
 	// a provider-loaded row). Any nonzero count means the member definition
@@ -388,9 +404,10 @@ type Index struct {
 	Global bool `json:"global,omitempty"`
 	// UnmodeledOptions lists bounded names of parsed IndexOption members the
 	// normalized model does not keep (comment, key_block_size, index_type,
-	// with_parser, visibility, primary_key_type, split_opt,
-	// secondary_engine_attr, columnar_replica). Any name present means that
-	// parsed aspect is unaudited.
+	// with_parser, primary_key_type, split_opt, secondary_engine_attr,
+	// columnar_replica). Visibility graduated to Visibility/
+	// VisibilityExplicit. Any name present means that parsed aspect is
+	// unaudited.
 	UnmodeledOptions []string `json:"unmodeled_options,omitempty"`
 }
 

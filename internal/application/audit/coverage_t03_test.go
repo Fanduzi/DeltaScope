@@ -332,7 +332,8 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 		wantKind     string
 		wantMetadata map[string]any
 	}{
-		{name: "mysql alter index invisible", sql: "ALTER TABLE t ALTER INDEX idx INVISIBLE;", dialect: spec.DialectMySQL, wantFeature: "alter_table.alter_index", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		// alter_index VISIBLE|INVISIBLE is audited since T10 — see
+		// TestT10AlterIndex* — so the action no longer lands here.
 		{name: "mysql alter algorithm", sql: "ALTER TABLE t ALGORITHM=INPLACE;", dialect: spec.DialectMySQL, wantFeature: "alter_table.algorithm", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql alter lock", sql: "ALTER TABLE t LOCK=NONE;", dialect: spec.DialectMySQL, wantFeature: "alter_table.lock", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "tidb drop check", sql: "ALTER TABLE t DROP CHECK chk;", dialect: spec.DialectTiDB, wantFeature: "alter_table.drop_check", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
@@ -417,7 +418,8 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 		{name: "tidb create user resource group", sql: "CREATE USER u RESOURCE GROUP rg;", dialect: spec.DialectTiDB, wantFeature: "create_user.option.resource_group_name", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql create index predicate", sql: "CREATE INDEX ix ON t (c) WHERE c > 0;", dialect: spec.DialectMySQL, wantFeature: "create_index.create_index.index.predicate", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
 		{name: "tidb create index predicate", sql: "CREATE INDEX ix ON t (c) WHERE c > 0;", dialect: spec.DialectTiDB, wantFeature: "create_index.create_index.index.predicate", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
-		{name: "mysql create index invisible", sql: "CREATE INDEX ix ON t (c) INVISIBLE;", dialect: spec.DialectMySQL, wantFeature: "create_index.create_index.index.option.invisible", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		// The declared VISIBLE|INVISIBLE index attribute is a normalized
+		// fact since T10 — no longer an unmodeled option aspect.
 		{name: "mysql create index comment keyblock", sql: "CREATE INDEX ix ON t (c) COMMENT 'x' KEY_BLOCK_SIZE=4;", dialect: spec.DialectMySQL, wantFeature: "create_index.create_index.index.option.comment", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql create table split index", sql: "CREATE TABLE t (id INT PRIMARY KEY) SPLIT PRIMARY KEY BETWEEN (0) AND (100) REGIONS 4;", dialect: spec.DialectMySQL, wantFeature: "create_table.option.split_index", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
 		{name: "tidb create table split index", sql: "CREATE TABLE t (id INT PRIMARY KEY) SPLIT PRIMARY KEY BETWEEN (0) AND (100) REGIONS 4;", dialect: spec.DialectTiDB, wantFeature: "create_table.option.split_index", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},

@@ -117,11 +117,11 @@ type alterObjectExistenceRule struct {
 	objectLabel    string
 	forbidIfExists bool
 	selectName     func(spec.Alter) string
-	checkExists    func(*spec.TableSnapshot, string) bool
+	checkExists    func(spec.Statement, *spec.TableSnapshot, string) bool
 	level          rule.Level
 }
 
-func newAlterObjectExistenceRule(ruleID string, actions []string, objectLabel string, forbidIfExists bool, fallbackLevel rule.Level, cfg policy.RulePolicy, selectName func(spec.Alter) string, checkExists func(*spec.TableSnapshot, string) bool) (rule.StatementRule, error) {
+func newAlterObjectExistenceRule(ruleID string, actions []string, objectLabel string, forbidIfExists bool, fallbackLevel rule.Level, cfg policy.RulePolicy, selectName func(spec.Alter) string, checkExists func(spec.Statement, *spec.TableSnapshot, string) bool) (rule.StatementRule, error) {
 	return alterObjectExistenceRule{
 		ruleID:         ruleID,
 		actions:        actions,
@@ -166,7 +166,7 @@ func (r alterObjectExistenceRule) Evaluate(ctx context.Context, statement spec.S
 		if name == "" {
 			continue
 		}
-		exists := r.checkExists(snapshot, name)
+		exists := r.checkExists(statement, snapshot, name)
 		if r.forbidIfExists && exists {
 			findings = append(findings, rule.Finding{
 				Level:      r.level,
@@ -402,7 +402,7 @@ func (r alterColumnPositionExistsRule) evaluateAccumulated(ctx context.Context, 
 			return nil, err
 		}
 		if name := alterPositionAfterName(alter); positioned[alter.Action] && name != "" &&
-			!producedName(produced, name) && !(snapshotHasColumn(snapshot, name) && !removedName(removed, name)) {
+			!producedName(produced, name) && !(snapshotHasColumn(statement, snapshot, name) && !removedName(removed, name)) {
 			findings = append(findings, rule.Finding{
 				Level:      r.inner.level,
 				Message:    fmt.Sprintf("column %q does not exist on table %q", name, tableName),
@@ -506,11 +506,11 @@ func alterObjectName(alter spec.Alter) string {
 	return alter.Name
 }
 
-func snapshotHasColumn(snapshot *spec.TableSnapshot, name string) bool {
+func snapshotHasColumn(_ spec.Statement, snapshot *spec.TableSnapshot, name string) bool {
 	return snapshot.HasColumn(name)
 }
 
-func snapshotHasIndex(snapshot *spec.TableSnapshot, name string) bool {
+func snapshotHasIndex(_ spec.Statement, snapshot *spec.TableSnapshot, name string) bool {
 	return snapshot.HasIndex(name)
 }
 

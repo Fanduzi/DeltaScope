@@ -1,7 +1,7 @@
 // Package audit orchestrates audit use cases at the application layer.
 // input: request context, ordered statements, optional metadata provider, the request's already-resolved version identity, and parse-failure positions for one audit request
 // output: request-local ordered table facts (unknown / known-absent / known-present, per-collection member knowledge, including the declared table comment on complete CREATE-derived shapes) feeding per-statement pre-state snapshots
-// pos: prospective schema-state ownership for the first migration path — the effective (dialect, schema, table) identity drives provider reads, keys, writes, and invalidation; unsupported or executable-but-unmodeled effects settle before kind dispatch; deterministic conditional transitions update derived facts, including the bounded single-pair RENAME identity migration onto a known-absent destination, a bounded single-target DROP identity retirement, an ordinary single-column MODIFY definition replacement, a precise single CHANGE COLUMN or RENAME COLUMN identity migration, and an ordinary dependency-free single-column DROP COLUMN that removes only that column, keeps unrelated members, and clears the accepted MODIFY statistic set, FIRST|AFTER column-position moves inside admitted ADD/MODIFY/CHANGE templates, and the bounded dialect-parametrized multi-action successor (MySQL accumulated working state vs TiDB pre-statement premises, whole-statement tombstone on unprovable net effect); each tombstones loaded dependents that the transition cannot keep; a non-precise MODIFY, CHANGE, RENAME, or DROP COLUMN tombstones every named table identity and the loaded dependents of those identities, a precise replacement is withheld when a loaded foreign key cannot be recomputed, an unsupported RENAME version withholds publication, and cancellation is checked before publishing effects; unaudited, unbound, or contaminated operations invalidate them; recognized CREATE/DROP PROCEDURE statements preserve outer table facts while keeping their own audit evidence; the shared T07 advanced-column assessment blocks publication of provably refused or unresolved transitions
+// pos: prospective schema-state ownership for the first migration path — the effective (dialect, schema, table) identity drives provider reads, keys, writes, and invalidation; unsupported or executable-but-unmodeled effects settle before kind dispatch; deterministic conditional transitions update derived facts, including the bounded single-pair RENAME identity migration onto a known-absent destination, a bounded single-target DROP identity retirement, an ordinary single-column MODIFY definition replacement, a precise single CHANGE COLUMN or RENAME COLUMN identity migration, and an ordinary dependency-free single-column DROP COLUMN that removes only that column, keeps unrelated members, and clears the accepted MODIFY statistic set, FIRST|AFTER column-position moves inside admitted ADD/MODIFY/CHANGE templates, and the bounded dialect-parametrized multi-action successor (MySQL accumulated working state vs TiDB pre-statement premises, whole-statement tombstone on unprovable net effect); each tombstones loaded dependents that the transition cannot keep; a non-precise MODIFY, CHANGE, RENAME, or DROP COLUMN tombstones every named table identity and the loaded dependents of those identities, a precise replacement is withheld when a loaded foreign key cannot be recomputed, an unsupported RENAME version withholds publication, and cancellation is checked before publishing effects; unaudited, unbound, or contaminated operations invalidate them; recognized CREATE/DROP PROCEDURE statements preserve outer table facts while keeping their own audit evidence; the shared T07 advanced-column and T10 advanced-index assessments block publication of provably refused or unresolved transitions
 // note: if this file changes, update this header and module README.md.
 package audit
 
@@ -285,7 +285,8 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 		return err
 	}
 	assessment := spec.AssessAdvancedColumns(statement)
-	if assessment.InvalidTransition || (assessment.UnresolvedTransition && len(assessment.Features) > 0) {
+	indexAssessment := spec.AssessAdvancedIndexes(statement)
+	if assessment.InvalidTransition || indexAssessment.InvalidTransition || (assessment.UnresolvedTransition && len(assessment.Features) > 0) {
 		targetKeys := s.modifyTargetKeys(ddl.TableTargets())
 		publication := modifyPublication{
 			invalidate: append(s.modifyIdentityDependentKeys(targetKeys), targetKeys...),
@@ -580,6 +581,10 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 	}
 	if alter.Action == "rename_index" {
 		s.applyRenameIndex(statement, alter, targets)
+		return nil
+	}
+	if alter.Action == "alter_index" {
+		s.applyAlterIndexVisibility(statement, alter, targets)
 		return nil
 	}
 	if alter.Action == "drop_primary_key" {
@@ -1009,6 +1014,10 @@ func cloneColumn(in spec.Column) spec.Column {
 
 func cloneIndex(in spec.Index) spec.Index {
 	out := in
+	// Post-state members claim the effective visibility fact, never the
+	// authored VISIBLE|INVISIBLE attribute — the declaration form belongs
+	// to the statement, not the published shape.
+	out.VisibilityExplicit = false
 	out.Columns = append([]string(nil), in.Columns...)
 	out.IncludedColumns = append([]string(nil), in.IncludedColumns...)
 	out.UnmodeledOptions = append([]string(nil), in.UnmodeledOptions...)

@@ -7,7 +7,7 @@ Policy model for rule configuration and future audit settings.
 | File | Responsibility |
 |------|---------------|
 | policy.go | Defines policy and per-rule configuration |
-| defaults.go | Defines the built-in rule policy, including create-table identifier governance, expanded column/type-family breadth rules, primary-key semantics, indexes, alter restrictions, shipped semantic alter rules including the MODIFY unknown-prior-state nullability advisory, metadata-backed existence rules, object-lifecycle rules for view/drop/truncate, table options/object shape, database lifecycle rules for MySQL/TiDB, and the Tier-1 DML rule set |
+| defaults.go | Defines the built-in rule policy, including create-table identifier governance, expanded column/type-family breadth rules, primary-key semantics, indexes, alter restrictions, shipped semantic alter rules including the MODIFY unknown-prior-state nullability advisory, metadata-backed existence rules, object-lifecycle rules for view/drop/truncate, table options/object shape, database lifecycle rules for MySQL/TiDB, the T10 advanced-index trio (`ddl.alter.alter_index.exists.require` and `ddl.index.advanced.compatibility.require` at blocker, `ddl.index.invisible.forbid` at warning — all enabled; the compat rule's `features` default covering visibility/expression_keys/descending_keys/multi_valued), and the Tier-1 DML rule set |
 | suppression.go | Names FK-forbid suppression (`fk_forbid`) of Default Policy foreign-key naming rules that stay enabled but are not Loaded |
 | policy_test.go | Verifies flexible per-rule parameter modeling |
 | suppression_test.go | Verifies Default Policy keeps FK naming enabled and suppressed, not missing |

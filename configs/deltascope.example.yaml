@@ -315,6 +315,23 @@ rules:
     level: blocker
     params:
 
+  ddl.alter.alter_index.exists.require:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.index.invisible.forbid:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.index.advanced.compatibility.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
+      features: [visibility, expression_keys, descending_keys, multi_valued]
+
   ddl.alter.rename_index.forbid:
     enabled: true
     level: blocker

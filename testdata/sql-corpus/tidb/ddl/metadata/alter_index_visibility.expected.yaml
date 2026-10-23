@@ -1,0 +1,25 @@
+name: alter_index_visibility
+dialect: tidb
+category: ddl
+expect:
+  parse_ok: true
+  unsupported:
+    count: 1
+    include:
+      - create_index.create_index.index.desc
+  findings:
+    include:
+      - ddl.index.invisible.forbid
+      - ddl.alter.alter_index.exists.require
+      - ddl.index.advanced.compatibility.require
+metadata:
+  schema: app
+  instance:
+    version: 8.0.11-TiDB-v8.5.0
+  tables:
+    users:
+      exists: true
+      columns:
+        - {name: id, type: int}
+      indexes:
+        - {name: existing_idx, kind: secondary, columns: [id]}

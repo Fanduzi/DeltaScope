@@ -1,0 +1,25 @@
+name: alter_index_visibility
+dialect: mysql
+category: ddl
+expect:
+  parse_ok: true
+  unsupported:
+    count: 1
+    include:
+      - create_index.create_index.index.desc
+  findings:
+    include:
+      - ddl.index.invisible.forbid
+      - ddl.alter.alter_index.exists.require
+      - ddl.index.advanced.compatibility.require
+metadata:
+  schema: app
+  instance:
+    version: "5.7.44"
+  tables:
+    users:
+      exists: true
+      columns:
+        - {name: id, type: int}
+      indexes:
+        - {name: existing_idx, kind: secondary, columns: [id]}

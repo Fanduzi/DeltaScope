@@ -1,0 +1,3 @@
+ALTER TABLE users ALTER INDEX missing_idx VISIBLE;
+ALTER TABLE users ALTER INDEX existing_idx INVISIBLE;
+CREATE INDEX i_desc ON users (id DESC);

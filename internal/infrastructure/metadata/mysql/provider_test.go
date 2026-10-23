@@ -423,6 +423,9 @@ func TestClassifyIndex(t *testing.T) {
 	if kind := classifyIndex("full_body", 1, "FULLTEXT"); kind != spec.IndexKindFulltext {
 		t.Fatalf("expected fulltext index kind, got %q", kind)
 	}
+	if kind := classifyIndex("sp_geom", 1, "SPATIAL"); kind != spec.IndexKindSpatial {
+		t.Fatalf("expected spatial index kind, got %q", kind)
+	}
 	if kind := classifyIndex("idx_email", 1, "BTREE"); kind != spec.IndexKindSecondary {
 		t.Fatalf("expected secondary index kind, got %q", kind)
 	}

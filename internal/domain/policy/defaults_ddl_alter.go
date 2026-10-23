@@ -1,6 +1,6 @@
 // Package policy defines audit policy configuration in domain terms.
 // input: built-in rule identifiers and default severity/parameter choices
-// output: baseline policy values used when no external config is supplied, including the CHANGE and RENAME destination blockers and the RENAME COLUMN version blocker
+// output: baseline policy values used when no external config is supplied, including the CHANGE and RENAME destination blockers, the RENAME COLUMN version blocker, and the T10 advanced-index blockers (alter-index existence, invisibility, per-feature compatibility with a frozen features default)
 // pos: domain default policy factory for v1 audit behavior
 // note: if this file changes, update this header and module README.md.
 package policy
@@ -433,6 +433,29 @@ func ddlAlterRules() map[string]RulePolicy {
 			Enabled: true,
 			Level:   rule.LevelBlocker,
 			Params:  map[string]any{},
+		},
+		"ddl.alter.alter_index.exists.require": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
+		"ddl.index.invisible.forbid": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+			Params:  map[string]any{},
+		},
+		"ddl.index.advanced.compatibility.require": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params: map[string]any{
+				"required": true,
+				"features": []string{
+					"visibility",
+					"expression_keys",
+					"descending_keys",
+					"multi_valued",
+				},
+			},
 		},
 		"ddl.alter.drop_primary_key.exists.require": {
 			Enabled: true,

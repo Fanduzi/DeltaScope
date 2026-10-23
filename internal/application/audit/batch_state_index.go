@@ -1,16 +1,20 @@
 // Package audit derives the bounded index-lifecycle post-state.
 // input: single-action ALTER index transitions (add_index, index-producing
-// add_constraint, drop_index, rename_index, drop_primary_key) and the
-// standalone DROP INDEX operation, applied to request-local batch entries
+// add_constraint, drop_index, rename_index, drop_primary_key, alter_index)
+// and the standalone DROP INDEX operation, applied to request-local batch
+// entries
 // output: one updated batch entry per provable transition — appended index,
-// removed index, renamed index, or cleared primary key — or the shared
-// tombstone when the premise cannot be proven; the primary branch proves
-// its member premise (known column set, plain key parts, every member
-// present) before publishing and reconciles member nullability — clearing
-// only a proven SQL-NULL default (DefaultIsNull), never display text
-// pos: T09 index state chain beside the column transitions; multi-action
-// statements containing index actions keep the bounded tombstone upstream in
-// applyMultiActionAlter and never reach these publications
+// removed index, renamed index, cleared primary key, or visibility-flipped
+// member — or the shared tombstone when the premise cannot be proven; the
+// primary branch proves its member premise (known column set, plain key
+// parts, every member present) before publishing and reconciles member
+// nullability — clearing only a proven SQL-NULL default (DefaultIsNull),
+// never display text; the alter_index branch flips only the effective
+// Visibility of a provably-present member (PRIMARY always invalidates)
+// pos: T09 index state chain plus the T10 visibility transition beside the
+// column transitions; multi-action statements containing index actions keep
+// the bounded tombstone upstream in applyMultiActionAlter and never reach
+// these publications
 // note: if this file changes, update this header and module README.md.
 package audit
 
@@ -274,6 +278,58 @@ func (s *batchState) applyDropIndex(statement spec.Statement, alter *spec.Alter,
 		remaining = append(remaining, member)
 	}
 	shape.Indexes = remaining
+	s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
+}
+
+// applyAlterIndexVisibility publishes a bounded visibility transition: the
+// named index must exist on a vouched index set — the member keeps every
+// other fact and only its effective Visibility changes. A successful
+// transition proves the table exists; a missing member or a PRIMARY target
+// (MySQL 3522 / TiDB 1176 — the statement fails) invalidates rather than
+// pretending success. PRIMARY is resolved by name because the key never
+// appears in the Indexes member list.
+func (s *batchState) applyAlterIndexVisibility(statement spec.Statement, alter *spec.Alter, targets []spec.Table) {
+	name := indexDropTargetName(alter)
+	target := ""
+	if alter.Index != nil && alter.Index.Definition != nil {
+		target = alter.Index.Definition.Visibility
+	}
+	if len(targets) != 1 || name == "" || (target != spec.ColumnVisibilityVisible && target != spec.ColumnVisibilityInvisible) {
+		s.invalidateAll(targets)
+		return
+	}
+	key := s.keyFor(s.schema, targets[0])
+	entry := s.entries[key]
+	if strings.EqualFold(name, "primary") {
+		// PRIMARY never resolves on TiDB and can never take a visibility
+		// attribute on MySQL — the statement always fails, so nothing is
+		// proven regardless of what the batch knew about the table.
+		s.invalidateKey(key)
+		return
+	}
+	switch {
+	case entry == nil || entry.state == tableUnknown:
+		s.entries[key] = presentIncompleteEntry(s.effectiveSchema(s.schema, targets[0]), targets[0].Name)
+		return
+	case entry.state == tableAbsent:
+		s.invalidateKey(key)
+		return
+	}
+	if !indexSetVouched(entry) {
+		return
+	}
+	index := entry.shape.FindIndex(name)
+	if index == nil {
+		s.invalidateKey(key)
+		return
+	}
+	shape := cloneTableSnapshot(entry.shape)
+	for i := range shape.Indexes {
+		if strings.EqualFold(shape.Indexes[i].Name, index.Name) {
+			shape.Indexes[i].Visibility = target
+			break
+		}
+	}
 	s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
 }
 
