@@ -1,13 +1,15 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: normalized Statement specs emitted by application extraction, including alter-table and standalone rename payloads
-// output: reusable DDL rule predicates and rule identifier constants, including the CHANGE and RENAME destination-name, RENAME COLUMN version, and T07 advanced-column identifiers, plus shared alter-action and rename matching helpers and the indexPlainComparable plain-key premise shared by the pair-comparison rules
+// output: reusable DDL rule predicates and rule identifier constants, including the CHANGE and RENAME destination-name, RENAME COLUMN version, and T07 advanced-column identifiers, plus shared alter-action and rename matching helpers, the indexPlainComparable plain-key premise shared by the pair-comparison rules, and the memberComparisonGap attribution for vouched sets whose non-plain members leave an applicable pair comparison unverifiable
 // pos: DDL rule common helpers shared across concrete rules and parser-neutral rename semantics
 // note: if this file changes, update this header and module README.md.
 package ddl
 
 import (
+	"slices"
 	"strings"
 
+	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
@@ -568,6 +570,58 @@ func indexPlainComparable(idx spec.Index) bool {
 		len(idx.IncludedColumns) == 0 &&
 		!idx.Global &&
 		len(idx.UnmodeledOptions) == 0
+}
+
+// indexKeyPartsGapFact is the required_facts name for member-level key-part
+// detail: the index *set* may be vouched while an individual member's parts
+// are not plain-comparable. Set knownness (`target_table.indexes`) and
+// member comparability stay distinct facts.
+const indexKeyPartsGapFact = "target_table.indexes.key_parts"
+
+// indexPairing encodes a rule's plain-key comparison reach: whether the
+// declared index could have been compared against the existing member.
+// The declared side must itself be plain-comparable — a non-plain declared
+// subject is an unaudited aspect of its own statement, not a metadata gap.
+type indexPairing func(declared, existing spec.Index) bool
+
+func duplicatePairing(declared, existing spec.Index) bool {
+	return existing.Kind == declared.Kind && slices.Equal(existing.Columns, declared.Columns)
+}
+
+func leftPrefixPairing(declared, existing spec.Index) bool {
+	return declared.Kind == spec.IndexKindSecondary &&
+		existing.Kind == spec.IndexKindSecondary &&
+		isLeftPrefix(declared.Columns, existing.Columns)
+}
+
+func uniqueOverlapPairing(declared, existing spec.Index) bool {
+	return declared.Kind == spec.IndexKindSecondary &&
+		existing.Kind == spec.IndexKindUnique &&
+		slices.Equal(existing.Columns, declared.Columns)
+}
+
+// memberComparisonGap reports one attributable gap when the vouched existing
+// set holds a non-plain member that could have paired with a declared index
+// under the rule's shape: the comparison could not complete, so "no
+// redundancy found" is unverifiable rather than proven. The gap stays scoped
+// to actually-affected pairings — a non-plain member no declared index can
+// pair with emits nothing.
+func memberComparisonGap(declared, existing []spec.Index, pairing indexPairing) []rule.EvidenceGap {
+	for i := range declared {
+		if !indexPlainComparable(declared[i]) {
+			continue
+		}
+		for j := range existing {
+			if indexPlainComparable(existing[j]) || !pairing(declared[i], existing[j]) {
+				continue
+			}
+			return []rule.EvidenceGap{{
+				ReasonCode:    gapReasonUnknownTableState,
+				RequiredFacts: []string{indexKeyPartsGapFact},
+			}}
+		}
+	}
+	return nil
 }
 
 func primaryKeyColumnSpecs(statement spec.Statement) []spec.Column {

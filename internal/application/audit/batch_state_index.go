@@ -6,7 +6,8 @@
 // removed index, renamed index, or cleared primary key — or the shared
 // tombstone when the premise cannot be proven; the primary branch proves
 // its member premise (known column set, plain key parts, every member
-// present) before publishing and reconciles member nullability
+// present) before publishing and reconciles member nullability — clearing
+// only a proven SQL-NULL default (DefaultIsNull), never display text
 // pos: T09 index state chain beside the column transitions; multi-action
 // statements containing index actions keep the bounded tombstone upstream in
 // applyMultiActionAlter and never reach these publications
@@ -182,14 +183,16 @@ func (s *batchState) applyAddIndex(statement spec.Statement, alter *spec.Alter, 
 		shape.PrimaryKey = &pk
 		// Every supported anchor converts PK members to NOT NULL — a
 		// published member still claiming nullable would contradict the
-		// transition itself. The catalog also drops a member's null
-		// default on conversion; a real default survives unchanged.
+		// transition itself. The catalog also drops a member's SQL NULL
+		// default on conversion; a real default survives unchanged — and
+		// SQL NULL is only ever proven by the AST-asserted DefaultIsNull.
+		// Provider display text ("null", "NULL") is a stored string
+		// literal, and a catalog NULL arrives as HasDefault=false, so
+		// there is nothing to clear on that path.
 		for _, i := range memberIdx {
 			member := &shape.Columns[i]
 			member.NotNull = true
-			if member.DefaultIsNull ||
-				(member.HasDefault &&
-					strings.EqualFold(strings.TrimSpace(member.DefaultValue), "null")) {
+			if member.DefaultIsNull {
 				member.HasDefault = false
 				member.DefaultValue = ""
 				member.DefaultIsNull = false

@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: create-table Statement specs with typed index metadata and per-rule policy values
-// output: index-governance findings for count, naming, duplicate-index, and redundancy concerns — pair comparisons apply only to sufficiently known plain keys
+// output: index-governance findings for count, naming, duplicate-index, and redundancy concerns — pair comparisons apply only to sufficiently known plain keys, and a vouched existing set whose non-plain member could have paired reports an attributable evidence gap
 // pos: DDL rule implementations for create-table index governance
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -400,7 +400,7 @@ func (r duplicateIndexForbiddenRule) Evaluate(ctx context.Context, statement spe
 // EvidenceGaps reports the missing existing-index fact when a standalone
 // CREATE INDEX cannot know whether it duplicates an existing index.
 func (r duplicateIndexForbiddenRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
-	return lifecycleIndexGap(statement, r.AppliesTo(statement))
+	return lifecycleIndexGap(statement, r.AppliesTo(statement), duplicatePairing)
 }
 
 func duplicateSignature(index spec.Index) string {
@@ -483,7 +483,7 @@ func (r redundantLeftPrefixIndexRule) Evaluate(ctx context.Context, statement sp
 // EvidenceGaps reports the missing existing-index fact when a standalone
 // CREATE INDEX cannot know whether the existing set already covers it.
 func (r redundantLeftPrefixIndexRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
-	return lifecycleIndexGap(statement, r.AppliesTo(statement))
+	return lifecycleIndexGap(statement, r.AppliesTo(statement), leftPrefixPairing)
 }
 
 type redundantUniqueOverlapIndexRule struct {
@@ -556,24 +556,27 @@ func (r redundantUniqueOverlapIndexRule) Evaluate(ctx context.Context, statement
 // EvidenceGaps reports the missing existing-index fact when a standalone
 // CREATE INDEX cannot know whether an existing unique index already covers it.
 func (r redundantUniqueOverlapIndexRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
-	return lifecycleIndexGap(statement, r.AppliesTo(statement))
+	return lifecycleIndexGap(statement, r.AppliesTo(statement), uniqueOverlapPairing)
 }
 
-// lifecycleIndexGap reports the missing existing-index-set fact for the
+// lifecycleIndexGap reports the missing existing-index facts for the
 // standalone create_index entry: the statement declares new indexes, so the
-// only fact a lifecycle rule can lack is the target's current index set.
-// Create-table entries declare the whole set and never emit this gap; a
-// confirmed-absent target is a settled parent failure.
-func lifecycleIndexGap(statement spec.Statement, applies bool) []rule.EvidenceGap {
+// facts a lifecycle rule can lack are the target's current index set and —
+// when that set is vouched — the member key-part detail a plain-key
+// comparison could not complete without. Create-table entries declare the
+// whole set and never emit either gap; a confirmed-absent target is a
+// settled parent failure.
+func lifecycleIndexGap(statement spec.Statement, applies bool, pairing indexPairing) []rule.EvidenceGap {
 	if !applies || !orderedGapDialect(statement.Dialect) || statement.DDL == nil ||
 		statement.DDL.Operation != spec.DDLOperationCreateIndex {
 		return nil
 	}
-	if _, known := existingIndexSet(statement); known {
-		return nil
+	existing, known := existingIndexSet(statement)
+	if !known {
+		snapshot, ok := targetTableSnapshot(statement)
+		return memberExistenceGaps(snapshot, ok, "index")
 	}
-	snapshot, ok := targetTableSnapshot(statement)
-	return memberExistenceGaps(snapshot, ok, "index")
+	return memberComparisonGap(declaredIndexes(statement), existing, pairing)
 }
 
 func isLeftPrefix(shorter, longer []string) bool {

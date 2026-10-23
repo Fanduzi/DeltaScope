@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: parser-neutral alter Statement specs with richer rename, add-index, target-type, explicit-change, and metadata state detail
-// output: findings for semantic alter rename, normalized add-index lifecycle, conservative target-type-family checks, and nullability state advisories
+// output: findings for semantic alter rename, normalized add-index lifecycle, conservative target-type-family checks, and nullability state advisories — lifecycle wrappers also report the member-comparability evidence gap when a vouched existing index cannot complete a plain-key pairing
 // pos: DDL semantic alter rule implementations layered above action-level forbids and shared rename semantics
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -579,19 +579,42 @@ func (r alterAddedIndexRule) Evaluate(ctx context.Context, statement spec.Statem
 	return kept, nil
 }
 
-// EvidenceGaps reports the missing existing-index-set fact for lifecycle
-// wrappers: the statement adds indexes, so the only fact the rule can lack is
-// the target's current index set. A confirmed-absent target is a settled
-// parent failure and emits no member gap.
+// EvidenceGaps reports the missing existing-index facts for lifecycle
+// wrappers: the statement adds indexes, so the facts the rule can lack are
+// the target's current index set and — when that set is vouched — the
+// member key-part detail a plain-key comparison could not complete without.
+// A confirmed-absent target is a settled parent failure and emits no member
+// gap.
 func (r alterAddedIndexRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
 	if !r.lifecycle || !orderedGapDialect(statement.Dialect) || !r.AppliesTo(statement) {
 		return nil
 	}
-	if _, known := existingIndexSet(statement); known {
+	existing, known := existingIndexSet(statement)
+	if !known {
+		snapshot, ok := targetTableSnapshot(statement)
+		return memberExistenceGaps(snapshot, ok, "index")
+	}
+	if pairing := alterAddedIndexPairing(r.ruleID); pairing != nil {
+		return memberComparisonGap(allAlterAddedIndexes(statement), existing, pairing)
+	}
+	return nil
+}
+
+// alterAddedIndexPairing resolves each lifecycle wrapper's plain-key
+// comparison reach for member-comparability gap attribution. Non-lifecycle
+// wrappers (existence, naming, count) compare names only and never need the
+// key-part detail.
+func alterAddedIndexPairing(ruleID string) indexPairing {
+	switch ruleID {
+	case ruleIDAlterAddIndexDuplicateForbid:
+		return duplicatePairing
+	case ruleIDAlterAddIndexRedundantLeftPrefixForbid:
+		return leftPrefixPairing
+	case ruleIDAlterAddIndexRedundantUniqueOverlapForbid:
+		return uniqueOverlapPairing
+	default:
 		return nil
 	}
-	snapshot, ok := targetTableSnapshot(statement)
-	return memberExistenceGaps(snapshot, ok, "index")
 }
 
 func addedIndexNameSet(statement spec.Statement) map[string]bool {

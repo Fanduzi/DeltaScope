@@ -296,3 +296,183 @@ func TestT09R1AlterExistingPlainStillFlags(t *testing.T) {
 		t.Fatalf("plain existing index must keep the duplicate finding, got %+v", findings)
 	}
 }
+
+// --- Member-comparability evidence gaps -----------------------------------
+// A vouched index set proves WHICH indexes exist; a non-plain member inside
+// it still leaves the pair comparison incomplete. When an existing member
+// could have paired with a declared index under a rule's plain-key shape,
+// the rule must report an attributable gap — never pass as if redundancy
+// were disproved. Gaps must stay scoped to actually-affected comparisons:
+// a non-plain member no declared index could pair with emits nothing.
+
+func t09r1GapHasKeyPartsFact(gaps []rule.EvidenceGap) bool {
+	for _, gap := range gaps {
+		for _, fact := range gap.RequiredFacts {
+			if fact == indexKeyPartsGapFact {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// create_index entry: each pair rule reports the member-comparability gap
+// when a skipped existing member could have convicted a declared index.
+func TestT09R1CreateIndexGapOnSkippedExistingMember(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name     string
+		rule     func(t *testing.T) rule.StatementRule
+		declared spec.Index
+		existing spec.Index
+	}{
+		{
+			name:     "duplicate_same_signature",
+			rule:     t09r1DuplicateRule,
+			declared: spec.Index{Name: "i_new", Kind: spec.IndexKindSecondary, Columns: []string{"a"}},
+			existing: spec.Index{Name: "i_pre", Kind: spec.IndexKindSecondary, Columns: []string{"a"}, PrefixParts: 1},
+		},
+		{
+			name:     "left_prefix_covering",
+			rule:     t09r1LeftPrefixRule,
+			declared: spec.Index{Name: "i_narrow", Kind: spec.IndexKindSecondary, Columns: []string{"a"}},
+			existing: spec.Index{Name: "i_wide", Kind: spec.IndexKindSecondary, Columns: []string{"a", "b"}, PrefixParts: 1},
+		},
+		{
+			name:     "unique_overlap_same_columns",
+			rule:     t09r1UniqueOverlapRule,
+			declared: spec.Index{Name: "i_new", Kind: spec.IndexKindSecondary, Columns: []string{"a"}},
+			existing: spec.Index{Name: "uq_pre", Kind: spec.IndexKindUnique, Columns: []string{"a"}, DescParts: 1},
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			statement := withTargetSnapshot(
+				mysqlCreateIndexStatement(tc.declared),
+				snapshotWithIndexes(tc.existing),
+			)
+			reporter, ok := tc.rule(t).(rule.EvidenceReporter)
+			if !ok {
+				t.Fatal("lifecycle rule must implement EvidenceReporter")
+			}
+			gaps := reporter.EvidenceGaps(statement)
+			if !t09r1GapHasKeyPartsFact(gaps) {
+				t.Fatalf("skipped member comparison must report the key-parts gap, got %+v", gaps)
+			}
+		})
+	}
+}
+
+// Controls: the gap stays scoped to actually-affected comparisons — a
+// non-plain member no declared index can pair with, a plain member that was
+// compared, and a known-empty set all stay gap-free; an unknown set keeps the
+// original collection fact vocabulary.
+func TestT09R1CreateIndexGapScopeControls(t *testing.T) {
+	t.Parallel()
+	t.Run("non_pairing_non_plain_member", func(t *testing.T) {
+		t.Parallel()
+		statement := withTargetSnapshot(
+			mysqlCreateIndexStatement(spec.Index{Name: "i_new", Kind: spec.IndexKindSecondary, Columns: []string{"a"}}),
+			snapshotWithIndexes(spec.Index{Name: "i_other", Kind: spec.IndexKindSecondary, Columns: []string{"b"}, PrefixParts: 1}),
+		)
+		for _, build := range []func(t *testing.T) rule.StatementRule{t09r1DuplicateRule, t09r1LeftPrefixRule, t09r1UniqueOverlapRule} {
+			gaps := build(t).(rule.EvidenceReporter).EvidenceGaps(statement)
+			if len(gaps) != 0 {
+				t.Fatalf("unrelated non-plain member must not emit a comparison gap, got %+v", gaps)
+			}
+		}
+	})
+	t.Run("plain_member_compared", func(t *testing.T) {
+		t.Parallel()
+		statement := withTargetSnapshot(
+			mysqlCreateIndexStatement(spec.Index{Name: "i_new", Kind: spec.IndexKindSecondary, Columns: []string{"a"}}),
+			snapshotWithIndexes(spec.Index{Name: "i_pre", Kind: spec.IndexKindSecondary, Columns: []string{"a"}}),
+		)
+		gaps := t09r1DuplicateRule(t).(rule.EvidenceReporter).EvidenceGaps(statement)
+		if len(gaps) != 0 {
+			t.Fatalf("a compared plain member emits no gap, got %+v", gaps)
+		}
+	})
+	t.Run("known_empty_set", func(t *testing.T) {
+		t.Parallel()
+		statement := withTargetSnapshot(
+			mysqlCreateIndexStatement(spec.Index{Name: "i_new", Kind: spec.IndexKindSecondary, Columns: []string{"a"}}),
+			snapshotWithIndexes(),
+		)
+		gaps := t09r1DuplicateRule(t).(rule.EvidenceReporter).EvidenceGaps(statement)
+		if len(gaps) != 0 {
+			t.Fatalf("known-empty set emits no gap, got %+v", gaps)
+		}
+	})
+	t.Run("unknown_set_keeps_collection_fact", func(t *testing.T) {
+		t.Parallel()
+		snap := snapshotWithIndexes()
+		snap.Indexes = nil
+		snap.IndexesUnknown = true
+		statement := withTargetSnapshot(
+			mysqlCreateIndexStatement(spec.Index{Name: "i_new", Kind: spec.IndexKindSecondary, Columns: []string{"a"}}),
+			snap,
+		)
+		gaps := t09r1DuplicateRule(t).(rule.EvidenceReporter).EvidenceGaps(statement)
+		if len(gaps) != 1 || len(gaps[0].RequiredFacts) != 1 || gaps[0].RequiredFacts[0] != "target_table.indexes" {
+			t.Fatalf("unknown set must keep the collection fact, got %+v", gaps)
+		}
+	})
+}
+
+// ALTER entry: the add_index/add_constraint lifecycle wrappers report the
+// same member-comparability gap through their EvidenceGaps.
+func TestT09R1AlterAddIndexGapOnSkippedExistingMember(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name     string
+		ruleID   string
+		newRule  func(level rule.Level, cfg policy.RulePolicy) (rule.StatementRule, error)
+		declared spec.Alter
+		existing spec.Index
+	}{
+		{
+			name:     "duplicate_same_signature",
+			ruleID:   ruleIDAlterAddIndexDuplicateForbid,
+			newRule:  newAlterAddedDuplicateIndexForbiddenRule,
+			declared: alterAddIndex("i_new", spec.IndexKindSecondary, "a"),
+			existing: spec.Index{Name: "i_pre", Kind: spec.IndexKindSecondary, Columns: []string{"a"}, PrefixParts: 1},
+		},
+		{
+			name:     "left_prefix_covering",
+			ruleID:   ruleIDAlterAddIndexRedundantLeftPrefixForbid,
+			newRule:  newAlterAddedRedundantLeftPrefixRule,
+			declared: alterAddIndex("i_narrow", spec.IndexKindSecondary, "a"),
+			existing: spec.Index{Name: "i_wide", Kind: spec.IndexKindSecondary, Columns: []string{"a", "b"}, DescParts: 1},
+		},
+		{
+			name:     "unique_overlap_same_columns",
+			ruleID:   ruleIDAlterAddIndexRedundantUniqueOverlapForbid,
+			newRule:  newAlterAddedRedundantUniqueOverlapRule,
+			declared: alterAddIndex("i_new", spec.IndexKindSecondary, "a"),
+			existing: spec.Index{Name: "uq_pre", Kind: spec.IndexKindUnique, Columns: []string{"a"}, PrefixParts: 1},
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			r, err := tc.newRule(rule.LevelWarning, policy.RulePolicy{
+				Enabled: true, Level: rule.LevelWarning, Params: map[string]any{"forbid": true},
+			})
+			if err != nil {
+				t.Fatalf("new rule: %v", err)
+			}
+			statement := withTargetSnapshot(
+				alterAddIndexStatement(tc.declared),
+				snapshotWithIndexes(tc.existing),
+			)
+			gaps := r.(rule.EvidenceReporter).EvidenceGaps(statement)
+			if !t09r1GapHasKeyPartsFact(gaps) {
+				t.Fatalf("%s skipped member comparison must report the key-parts gap, got %+v", tc.ruleID, gaps)
+			}
+		})
+	}
+}

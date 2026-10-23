@@ -238,7 +238,9 @@ func TestT09R1ExpressionKeysSuppressDuplicate(t *testing.T) {
 
 // A provider-loaded index with non-plain parts is not a comparable plain
 // key — a declared plain index on the same column names is not convicted by
-// it. Covers the standalone CREATE INDEX entry.
+// it, and the skipped comparison must surface as an attributable evidence
+// gap: unverified coverage and a review verdict, never a silent pass that
+// reads as "proved no redundancy". Covers the standalone CREATE INDEX entry.
 func TestT09R1ExistingNonPlainSuppressesCreateIndex(t *testing.T) {
 	t.Parallel()
 	for _, dialect := range t09r1Dialects {
@@ -256,7 +258,136 @@ func TestT09R1ExistingNonPlainSuppressesCreateIndex(t *testing.T) {
 			if got := t05FindingsByRule(result, 0, "ddl.index.duplicate.forbid"); len(got) != 0 {
 				t.Fatalf("provider non-plain index must not convict the declared plain index, got %+v", got)
 			}
+			t09r1AssertKeyPartsGap(t, result, 0, "ddl.index.duplicate.forbid")
 		})
+	}
+}
+
+// t09r1AssertKeyPartsGap pins the member-comparability gap contract on a
+// statement result: exactly one gap carrying the index key-parts fact,
+// unverified statement coverage, and a review verdict held by the gap floor.
+func t09r1AssertKeyPartsGap(t *testing.T, result report.Result, index int, ruleID string) {
+	t.Helper()
+	statement := result.Statements[index]
+	var matched []rule.EvidenceGap
+	for _, gap := range statement.EvidenceGaps {
+		if gap.RuleID == ruleID {
+			matched = append(matched, gap)
+		}
+	}
+	if len(matched) != 1 {
+		t.Fatalf("stmt%d must report exactly one %s gap, got %+v", index, ruleID, statement.EvidenceGaps)
+	}
+	gap := matched[0]
+	if gap.ReasonCode != "unknown_table_state" ||
+		len(gap.RequiredFacts) != 1 || gap.RequiredFacts[0] != "target_table.indexes.key_parts" {
+		t.Fatalf("gap must attribute the index key-parts fact, got %+v", gap)
+	}
+	if statement.Coverage.Status != report.CoverageUnverified {
+		t.Fatalf("skipped comparison must lower coverage to unverified, got %s", statement.Coverage.Status)
+	}
+	if result.Verdict != report.VerdictReview {
+		t.Fatalf("unverifiable comparison must hold a review verdict, got %s", result.Verdict)
+	}
+}
+
+// The same member-comparability gap applies to the left-prefix and
+// unique-overlap rules on both lifecycle entries — only the pairing shape
+// differs; the attribution is identical.
+func TestT09R1ExistingNonPlainComparisonGapMatrix(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name     string
+		sql      string
+		existing spec.Index
+		ruleID   string
+	}{
+		{
+			name:     "create_index/left_prefix",
+			sql:      "CREATE INDEX i_narrow ON t(a);",
+			existing: spec.Index{Name: "i_wide", Kind: spec.IndexKindSecondary, Columns: []string{"a", "b"}, PrefixParts: 1},
+			ruleID:   "ddl.index.redundant_left_prefix.forbid",
+		},
+		{
+			name:     "create_index/unique_overlap",
+			sql:      "CREATE INDEX i_new ON t(a);",
+			existing: spec.Index{Name: "uq_pre", Kind: spec.IndexKindUnique, Columns: []string{"a"}, DescParts: 1},
+			ruleID:   "ddl.index.redundant_unique_overlap.forbid",
+		},
+		{
+			name:     "alter_add_index/left_prefix",
+			sql:      "ALTER TABLE t ADD INDEX i_narrow (a);",
+			existing: spec.Index{Name: "i_wide", Kind: spec.IndexKindSecondary, Columns: []string{"a", "b"}, DescParts: 1},
+			ruleID:   "ddl.alter.add_index.redundant_left_prefix.forbid",
+		},
+		{
+			name:     "alter_add_index/unique_overlap",
+			sql:      "ALTER TABLE t ADD INDEX i_new (a);",
+			existing: spec.Index{Name: "uq_pre", Kind: spec.IndexKindUnique, Columns: []string{"a"}, PrefixParts: 1},
+			ruleID:   "ddl.alter.add_index.redundant_unique_overlap.forbid",
+		},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			for _, dialect := range t09r1Dialects {
+				dialect := dialect
+				t.Run(string(dialect), func(t *testing.T) {
+					t.Parallel()
+					provider := &t09Provider{tables: map[string]*spec.TableSnapshot{
+						"t": t09Table("t", tc.existing),
+					}}
+					result := t09Audit(t, dialect, tc.sql, provider,
+						map[string]string{tc.ruleID: ""})
+					if got := t05FindingsByRule(result, 0, tc.ruleID); len(got) != 0 {
+						t.Fatalf("non-plain existing member must not convict, got %+v", got)
+					}
+					t09r1AssertKeyPartsGap(t, result, 0, tc.ruleID)
+				})
+			}
+		})
+	}
+}
+
+// Scope control: a non-plain existing member no declared index could pair
+// with is not a gap — coverage stays complete and the verdict can pass.
+// The gap must correspond to actually-affected comparisons only.
+func TestT09R1NonPairingExistingMemberKeepsCoverage(t *testing.T) {
+	t.Parallel()
+	nonPairing := spec.Index{Name: "i_other", Kind: spec.IndexKindSecondary, Columns: []string{"b"}, PrefixParts: 1}
+	allPairRules := map[string]string{
+		"ddl.index.duplicate.forbid":                          "",
+		"ddl.index.redundant_left_prefix.forbid":              "",
+		"ddl.index.redundant_unique_overlap.forbid":           "",
+		"ddl.alter.add_index.duplicate.forbid":                "",
+		"ddl.alter.add_index.redundant_left_prefix.forbid":    "",
+		"ddl.alter.add_index.redundant_unique_overlap.forbid": "",
+	}
+	for _, dialect := range t09r1Dialects {
+		dialect := dialect
+		for _, sql := range []string{"CREATE INDEX i_new ON t(a);", "ALTER TABLE t ADD INDEX i_new (a);"} {
+			sql := sql
+			t.Run(string(dialect)+"/"+sql, func(t *testing.T) {
+				t.Parallel()
+				provider := &t09Provider{tables: map[string]*spec.TableSnapshot{
+					"t": t09Table("t", nonPairing),
+				}}
+				result := t09Audit(t, dialect, sql, provider, allPairRules)
+				if len(result.Statements[0].Findings) != 0 {
+					t.Fatalf("non-pairing member must not produce findings, got %+v", result.Statements[0].Findings)
+				}
+				if len(result.Statements[0].EvidenceGaps) != 0 {
+					t.Fatalf("unaffected comparison must not emit a gap, got %+v", result.Statements[0].EvidenceGaps)
+				}
+				if result.Statements[0].Coverage.Status != report.CoverageComplete {
+					t.Fatalf("unaffected statement must keep complete coverage, got %s", result.Statements[0].Coverage.Status)
+				}
+				if result.Verdict != report.VerdictPass {
+					t.Fatalf("clean statement must still pass, got %s", result.Verdict)
+				}
+			})
+		}
 	}
 }
 
@@ -311,6 +442,15 @@ func TestT09R1AlterAddIndexExistingComparability(t *testing.T) {
 				}
 				if !nonPlain && len(got) != 1 {
 					t.Fatalf("provider plain same-column index must keep the duplicate finding, got %+v", got)
+				}
+				if nonPlain {
+					// The skipped comparison is an attributable gap, not a
+					// silent pass: member key-part detail is the missing fact.
+					t09r1AssertKeyPartsGap(t, result, 0, "ddl.alter.add_index.duplicate.forbid")
+				} else {
+					if len(result.Statements[0].EvidenceGaps) != 0 {
+						t.Fatalf("a compared plain pair emits no gap, got %+v", result.Statements[0].EvidenceGaps)
+					}
 				}
 			})
 		}
@@ -537,6 +677,138 @@ func TestT09R1AddThenDropPrimaryKeyChain(t *testing.T) {
 			)
 			if got := t05FindingsByRule(result, 1, "ddl.alter.drop_primary_key.exists.require"); len(got) != 0 {
 				t.Fatalf("drop must see the published primary key, got %+v", got)
+			}
+		})
+	}
+}
+
+// --- R1 fix B: ADD PRIMARY KEY must not misread a provider string default
+// as SQL NULL -----------------------------------------------------------
+
+// t09r1DefaultTable builds a provider-shaped table whose member column
+// carries catalog default facts exactly as LoadTableSnapshot records them:
+// HasDefault marks a non-NULL COLUMN_DEFAULT, DefaultValue is the stored
+// representation verbatim, DefaultIsNull stays false (the metadata path
+// never sets it), and DefaultLiteral carries the decoded literal identity.
+func t09r1DefaultTable(name, memberName, memberType string, hasDefault bool, defaultValue string, literal *spec.LiteralDefaultFacts, extraColumns ...string) *spec.TableSnapshot {
+	cols := []spec.Column{{
+		Name:           memberName,
+		Type:           memberType,
+		HasDefault:     hasDefault,
+		DefaultValue:   defaultValue,
+		DefaultLiteral: literal,
+	}}
+	for _, extra := range extraColumns {
+		cols = append(cols, spec.Column{Name: extra, Type: "int"})
+	}
+	return &spec.TableSnapshot{
+		Exists:  true,
+		Table:   &spec.Table{Name: name},
+		Columns: cols,
+		Indexes: []spec.Index{},
+	}
+}
+
+// The PK conversion must reconcile NotNull while preserving every real
+// default fact. A provider string default 'null' is HasDefault=true with
+// catalog bytes "null" and a string literal identity — never SQL NULL.
+// Reading display text as the NULL marker would erase a real default.
+func TestT09R1AddPrimaryKeyPreservesStringDefaults(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name    string
+		colType string
+		catalog string
+		literal *spec.LiteralDefaultFacts
+	}{
+		{"string_null_lower", "varchar(32)", "null", &spec.LiteralDefaultFacts{Kind: spec.LiteralDefaultString, Value: "null"}},
+		{"string_null_upper", "varchar(32)", "NULL", &spec.LiteralDefaultFacts{Kind: spec.LiteralDefaultString, Value: "NULL"}},
+		{"string_null_mixed", "varchar(32)", "NuLl", &spec.LiteralDefaultFacts{Kind: spec.LiteralDefaultString, Value: "NuLl"}},
+		{"string_null_spaced", "varchar(32)", " null ", &spec.LiteralDefaultFacts{Kind: spec.LiteralDefaultString, Value: " null "}},
+		{"string_plain", "varchar(32)", "abc", &spec.LiteralDefaultFacts{Kind: spec.LiteralDefaultString, Value: "abc"}},
+		{"numeric_five", "int", "5", &spec.LiteralDefaultFacts{Kind: spec.LiteralDefaultNumeric, Value: "5"}},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			for _, dialect := range t09r1Dialects {
+				dialect := dialect
+				t.Run(string(dialect), func(t *testing.T) {
+					t.Parallel()
+					snap := t09r1DefaultTable("t", "c", tc.colType, true, tc.catalog, tc.literal, "d")
+					provider := &t05PresentProvider{snapshots: map[string]*spec.TableSnapshot{"golden.t": snap}}
+					enriched := enrichA3(t,
+						"ALTER TABLE t ADD PRIMARY KEY (c);\nALTER TABLE t DROP PRIMARY KEY;",
+						dialect, provider)
+					next := enriched[1].Metadata.TargetTable
+					if next == nil || next.PrimaryKey == nil {
+						t.Fatalf("provable add must publish the primary key, got %+v", next)
+					}
+					member := next.FindColumn("c")
+					if member == nil {
+						t.Fatal("member c must remain in the post-state")
+					}
+					if !member.NotNull {
+						t.Fatalf("PK conversion must reconcile NotNull, got %+v", member)
+					}
+					if !member.HasDefault || member.DefaultValue != tc.catalog {
+						t.Fatalf("real %q default must survive PK conversion, got %+v", tc.catalog, member)
+					}
+					if member.DefaultIsNull {
+						t.Fatalf("a string %q default is not SQL NULL, got %+v", tc.catalog, member)
+					}
+					if member.DefaultLiteral == nil ||
+						member.DefaultLiteral.Kind != tc.literal.Kind || member.DefaultLiteral.Value != tc.literal.Value {
+						t.Fatalf("literal identity %q must survive PK conversion, got %+v", tc.catalog, member.DefaultLiteral)
+					}
+				})
+			}
+		})
+	}
+}
+
+// Declared/provider contrast: a declaration-side DEFAULT 'null' keeps its
+// quoted shape and the same preservation; a declared DEFAULT NULL stays
+// cleared by the conversion; a provider NULL default (catalog NULL →
+// HasDefault=false) publishes no invented default.
+func TestT09R1AddPrimaryKeyDefaultSourceContrast(t *testing.T) {
+	t.Parallel()
+	for _, dialect := range t09r1Dialects {
+		dialect := dialect
+		t.Run(string(dialect), func(t *testing.T) {
+			t.Parallel()
+			// Declared DEFAULT 'null' — the quoted literal is a real default.
+			enriched := enrichA3(t,
+				"CREATE TABLE t (c VARCHAR(32) DEFAULT 'null', d INT);\nALTER TABLE t ADD PRIMARY KEY (c);\nALTER TABLE t DROP PRIMARY KEY;",
+				dialect, &t05AbsentProvider{})
+			member := enriched[2].Metadata.TargetTable.FindColumn("c")
+			if member == nil || !member.NotNull || !member.HasDefault {
+				t.Fatalf("declared 'null' string default must survive PK conversion, got %+v", member)
+			}
+
+			// Declared DEFAULT NULL — SQL NULL is cleared on conversion.
+			enriched = enrichA3(t,
+				"CREATE TABLE t (c INT DEFAULT NULL, d INT);\nALTER TABLE t ADD PRIMARY KEY (c);\nALTER TABLE t DROP PRIMARY KEY;",
+				dialect, &t05AbsentProvider{})
+			member = enriched[2].Metadata.TargetTable.FindColumn("c")
+			if member == nil || !member.NotNull {
+				t.Fatalf("PK conversion must reconcile NotNull, got %+v", member)
+			}
+			if member.HasDefault || member.DefaultIsNull {
+				t.Fatalf("declared DEFAULT NULL must be cleared on PK conversion, got %+v", member)
+			}
+
+			// Provider catalog NULL — indistinguishable from an omitted
+			// clause, so nothing may be cleared or invented.
+			snap := t09r1DefaultTable("t", "c", "int", false, "", nil)
+			provider := &t05PresentProvider{snapshots: map[string]*spec.TableSnapshot{"golden.t": snap}}
+			enriched = enrichA3(t,
+				"ALTER TABLE t ADD PRIMARY KEY (c);\nALTER TABLE t DROP PRIMARY KEY;",
+				dialect, provider)
+			member = enriched[1].Metadata.TargetTable.FindColumn("c")
+			if member == nil || !member.NotNull || member.HasDefault || member.DefaultIsNull {
+				t.Fatalf("provider NULL default must stay default-free, never back-read as DEFAULT NULL, got %+v", member)
 			}
 		})
 	}
