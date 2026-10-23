@@ -5,8 +5,10 @@
 // vouched index and column facts — including provider-loaded indexes that
 // carry non-plain key parts
 // output: suppressed pair-comparison whenever either candidate side is not a
-// known plain key; kept plain positive findings; and ADD PRIMARY KEY
-// post-states that honor member-existence and member-nullability premises
+// known plain key; kept plain positive findings; ADD PRIMARY KEY post-states
+// that honor member-existence and member-nullability premises; and the R3
+// truncated-projection gap — an expression-bearing existing member whose
+// named columns match the declared index leaves left-prefix unverifiable
 // pos: application-layer regression for issue #88 T09-R1; the comparability
 // gate lives in internal/domain/rule/ddl, the member-premise gate in
 // batch_state_index.go
@@ -515,6 +517,97 @@ func TestT09R1DerivedPlainStillFlagsDeclaredPlain(t *testing.T) {
 				t.Fatalf("plain derived + plain declared must keep the duplicate finding, got %+v", got)
 			}
 		})
+	}
+}
+
+// --- R3: expression members hide key parts outside Columns ----------------
+// Provider-verbatim shape of CREATE INDEX i_pre ON t(a, (LOWER(b))): the
+// expression member marks the index but never enters Columns, so the named
+// projection is shorter than the real key sequence. A declared index that
+// matches every named column can still be a true left prefix once the
+// hidden part follows — the truncated length must not launder the skipped
+// comparison into a silent pass. Only the left-prefix rule is enabled, so
+// no other rule's gap can mask a miss here.
+
+func TestT09R3ExpressionMemberLeftPrefixGap(t *testing.T) {
+	t.Parallel()
+	existing := spec.Index{
+		Name: "i_pre", Kind: spec.IndexKindSecondary,
+		Columns:           []string{"a"},
+		HasExpressionKeys: true, ExpressionCount: 1,
+	}
+	cases := []struct {
+		name   string
+		sql    string
+		ruleID string
+	}{
+		{"create_index", "CREATE INDEX i_new ON t(a);", "ddl.index.redundant_left_prefix.forbid"},
+		{"alter_add_index", "ALTER TABLE t ADD INDEX i_new (a);", "ddl.alter.add_index.redundant_left_prefix.forbid"},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			for _, dialect := range t09r1Dialects {
+				dialect := dialect
+				t.Run(string(dialect), func(t *testing.T) {
+					t.Parallel()
+					provider := &t09Provider{tables: map[string]*spec.TableSnapshot{
+						"t": t09Table("t", existing),
+					}}
+					result := t09Audit(t, dialect, tc.sql, provider,
+						map[string]string{tc.ruleID: ""})
+					if got := result.Statements[0].Findings; len(got) != 0 {
+						t.Fatalf("unproven redundancy must not report a finding, got %+v", got)
+					}
+					t09r1AssertKeyPartsGap(t, result, 0, tc.ruleID)
+				})
+			}
+		})
+	}
+}
+
+// The relaxed pairing stays attributable: a declared index that no
+// interleaving of the hidden expression part can make a left prefix keeps
+// complete coverage and a pass verdict under the same isolated profile.
+func TestT09R3ExpressionMemberUnrelatedKeepsPass(t *testing.T) {
+	t.Parallel()
+	existing := spec.Index{
+		Name: "i_pre", Kind: spec.IndexKindSecondary,
+		Columns:           []string{"a"},
+		HasExpressionKeys: true, ExpressionCount: 1,
+	}
+	for _, dialect := range t09r1Dialects {
+		dialect := dialect
+		for _, tc := range []struct {
+			name   string
+			sql    string
+			ruleID string
+		}{
+			{"create_index", "CREATE INDEX i_new ON t(b);", "ddl.index.redundant_left_prefix.forbid"},
+			{"alter_add_index", "ALTER TABLE t ADD INDEX i_new (b);", "ddl.alter.add_index.redundant_left_prefix.forbid"},
+		} {
+			tc := tc
+			t.Run(string(dialect)+"/"+tc.name, func(t *testing.T) {
+				t.Parallel()
+				provider := &t09Provider{tables: map[string]*spec.TableSnapshot{
+					"t": t09Table("t", existing),
+				}}
+				result := t09Audit(t, dialect, tc.sql, provider,
+					map[string]string{tc.ruleID: ""})
+				statement := result.Statements[0]
+				if len(statement.Findings) != 0 || len(statement.EvidenceGaps) != 0 {
+					t.Fatalf("provably unrelated member must emit nothing, got findings=%+v gaps=%+v",
+						statement.Findings, statement.EvidenceGaps)
+				}
+				if statement.Coverage.Status != report.CoverageComplete {
+					t.Fatalf("unaffected statement must keep complete coverage, got %s", statement.Coverage.Status)
+				}
+				if result.Verdict != report.VerdictPass {
+					t.Fatalf("clean statement must still pass, got %s", result.Verdict)
+				}
+			})
+		}
 	}
 }
 

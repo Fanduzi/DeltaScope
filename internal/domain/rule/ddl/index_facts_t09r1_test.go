@@ -5,7 +5,9 @@
 // options, GLOBAL)
 // output: duplicate, left-prefix and unique-overlap rules share one
 // comparability premise — a pair involving a non-plain member never reports,
-// while plain same-column pairs keep their accurate findings
+// while plain same-column pairs keep their accurate findings; R3 adds the
+// truncated-projection pairing: an expression-bearing member's Columns omits
+// hidden parts, so equal length cannot disprove a left-prefix pairing
 // pos: domain rule coverage for issue #88 T09-R1; the audit-level matrix in
 // internal/application/audit/batch_state_t09r1_test.go covers the real
 // parser/provider chain
@@ -420,6 +422,116 @@ func TestT09R1CreateIndexGapScopeControls(t *testing.T) {
 			t.Fatalf("unknown set must keep the collection fact, got %+v", gaps)
 		}
 	})
+}
+
+// --- R3: expression members hide key parts outside Columns ----------------
+// The provider records an expression key part as a mark only — the member
+// never enters Columns, so Columns is an incomplete projection of the real
+// key sequence. A strict-length check on the truncated projection cannot
+// prove "no pairing": a declared index matching every named column can
+// still be a true left prefix once a hidden expression part follows them.
+
+// t09r3ExpressionMember is the provider-verbatim shape of
+// CREATE INDEX i ON t(a, (LOWER(b))): the expression part marks the index
+// without contributing a column name to Columns.
+func t09r3ExpressionMember(name string, kind spec.IndexKind, columns ...string) spec.Index {
+	return spec.Index{
+		Name:              name,
+		Kind:              kind,
+		Columns:           columns,
+		HasExpressionKeys: true,
+		ExpressionCount:   1,
+	}
+}
+
+// The left-prefix pairing must treat an expression-bearing existing member
+// as pairable whenever the declared columns are a prefix of the recorded
+// named columns — hidden expression parts mean the real key sequence is
+// longer than Columns, so equal length is not a non-pairing proof. Both
+// lifecycle entries report through the same pairing.
+func TestT09R3LeftPrefixGapOnTruncatedColumns(t *testing.T) {
+	t.Parallel()
+	existing := t09r3ExpressionMember("i_pre", spec.IndexKindSecondary, "a")
+
+	t.Run("create_index", func(t *testing.T) {
+		t.Parallel()
+		statement := withTargetSnapshot(
+			mysqlCreateIndexStatement(spec.Index{Name: "i_new", Kind: spec.IndexKindSecondary, Columns: []string{"a"}}),
+			snapshotWithIndexes(existing),
+		)
+		gaps := t09r1LeftPrefixRule(t).(rule.EvidenceReporter).EvidenceGaps(statement)
+		if !t09r1GapHasKeyPartsFact(gaps) {
+			t.Fatalf("equal-length truncated Columns must not disprove pairing, got %+v", gaps)
+		}
+	})
+	t.Run("alter_add_index", func(t *testing.T) {
+		t.Parallel()
+		r, err := newAlterAddedRedundantLeftPrefixRule(rule.LevelWarning, policy.RulePolicy{
+			Enabled: true, Level: rule.LevelWarning, Params: map[string]any{"forbid": true},
+		})
+		if err != nil {
+			t.Fatalf("new rule: %v", err)
+		}
+		statement := withTargetSnapshot(
+			alterAddIndexStatement(alterAddIndex("i_new", spec.IndexKindSecondary, "a")),
+			snapshotWithIndexes(existing),
+		)
+		gaps := r.(rule.EvidenceReporter).EvidenceGaps(statement)
+		if !t09r1GapHasKeyPartsFact(gaps) {
+			t.Fatalf("alter wrapper must report the same truncated-Columns gap, got %+v", gaps)
+		}
+	})
+}
+
+// The relaxed pairing stays scoped: members provably unrelated under every
+// interleaving of the hidden parts — a declared column absent from the
+// named sequence, a named sequence exhausted before the declared prefix
+// ends, or a complete Columns projection — still emit no gap.
+func TestT09R3LeftPrefixExpressionScopeControls(t *testing.T) {
+	t.Parallel()
+	cases := []struct {
+		name     string
+		declared []string
+		existing spec.Index
+		wantGap  bool
+	}{
+		// Real key parts are {a}+expressions; declared b can never head the
+		// sequence — provably unrelated.
+		{"declared_column_absent", []string{"b"}, t09r3ExpressionMember("i_pre", spec.IndexKindSecondary, "a"), false},
+		// Declared extends past the named projection: real[2] can only be an
+		// expression, never column b — provably unrelated.
+		{"declared_longer_than_named", []string{"a", "b"}, t09r3ExpressionMember("i_pre", spec.IndexKindSecondary, "a"), false},
+		// Named order puts a after b; no interleaving of hidden parts can
+		// place a first — provably unrelated.
+		{"named_order_disproves", []string{"a"}, t09r3ExpressionMember("i_pre", spec.IndexKindSecondary, "b", "a"), false},
+		// A Columns-complete non-plain member keeps the strict proof: one
+		// named part means no shorter strict prefix can exist.
+		{"complete_projection_still_strict", []string{"a"}, spec.Index{Name: "i_pre", Kind: spec.IndexKindSecondary, Columns: []string{"a"}, DescParts: 1}, false},
+		// An all-expression member holds no named column — declared a can
+		// never appear.
+		{"all_expression_member", []string{"a"}, t09r3ExpressionMember("i_pre", spec.IndexKindSecondary), false},
+		// Proper prefix of the named projection still pairs, as before.
+		{"proper_prefix_still_pairs", []string{"a"}, t09r3ExpressionMember("i_pre", spec.IndexKindSecondary, "a", "b"), true},
+		// The R3 defect cell: equal length on the truncated projection.
+		{"equal_length_truncated", []string{"a"}, t09r3ExpressionMember("i_pre", spec.IndexKindSecondary, "a"), true},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			statement := withTargetSnapshot(
+				mysqlCreateIndexStatement(spec.Index{Name: "i_new", Kind: spec.IndexKindSecondary, Columns: tc.declared}),
+				snapshotWithIndexes(tc.existing),
+			)
+			gaps := t09r1LeftPrefixRule(t).(rule.EvidenceReporter).EvidenceGaps(statement)
+			if tc.wantGap && !t09r1GapHasKeyPartsFact(gaps) {
+				t.Fatalf("pairing must report the key-parts gap, got %+v", gaps)
+			}
+			if !tc.wantGap && len(gaps) != 0 {
+				t.Fatalf("provably unrelated member must not emit a gap, got %+v", gaps)
+			}
+		})
+	}
 }
 
 // ALTER entry: the add_index/add_constraint lifecycle wrappers report the

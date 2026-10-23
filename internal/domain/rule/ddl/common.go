@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: normalized Statement specs emitted by application extraction, including alter-table and standalone rename payloads
-// output: reusable DDL rule predicates and rule identifier constants, including the CHANGE and RENAME destination-name, RENAME COLUMN version, and T07 advanced-column identifiers, plus shared alter-action and rename matching helpers, the indexPlainComparable plain-key premise shared by the pair-comparison rules, and the memberComparisonGap attribution for vouched sets whose non-plain members leave an applicable pair comparison unverifiable
+// output: reusable DDL rule predicates and rule identifier constants, including the CHANGE and RENAME destination-name, RENAME COLUMN version, and T07 advanced-column identifiers, plus shared alter-action and rename matching helpers, the indexPlainComparable plain-key premise shared by the pair-comparison rules, and the memberComparisonGap attribution for vouched sets whose non-plain members leave an applicable pair comparison unverifiable — left-prefix pairing treats an expression-bearing member's Columns as a truncated projection, so a declared prefix of the named columns is pairable even at equal length
 // pos: DDL rule common helpers shared across concrete rules and parser-neutral rename semantics
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -589,9 +589,37 @@ func duplicatePairing(declared, existing spec.Index) bool {
 }
 
 func leftPrefixPairing(declared, existing spec.Index) bool {
-	return declared.Kind == spec.IndexKindSecondary &&
-		existing.Kind == spec.IndexKindSecondary &&
-		isLeftPrefix(declared.Columns, existing.Columns)
+	if declared.Kind != spec.IndexKindSecondary || existing.Kind != spec.IndexKindSecondary ||
+		len(declared.Columns) == 0 {
+		return false
+	}
+	if existing.ExpressionCount > 0 || existing.HasExpressionKeys {
+		// Expression parts never enter Columns, so the recorded columns are
+		// a truncated projection of the real key sequence and expression
+		// positions are unrecorded. A declared index naming every recorded
+		// column in order can still be a strict left prefix of the real
+		// sequence once hidden parts follow — only a non-strict prefix of
+		// the named projection is provably pairable; anything else (a
+		// declared column absent from the named parts, or a declared prefix
+		// reaching past them) is unrelated under every interleaving.
+		return hasKeyPartPrefix(declared.Columns, existing.Columns)
+	}
+	return isLeftPrefix(declared.Columns, existing.Columns)
+}
+
+// hasKeyPartPrefix reports whether prefix matches the head of the named
+// key-part projection without requiring strict shortness — the caller uses
+// it only when hidden key parts guarantee the real sequence is longer.
+func hasKeyPartPrefix(prefix, sequence []string) bool {
+	if len(prefix) == 0 || len(prefix) > len(sequence) {
+		return false
+	}
+	for idx := range prefix {
+		if !strings.EqualFold(prefix[idx], sequence[idx]) {
+			return false
+		}
+	}
+	return true
 }
 
 func uniqueOverlapPairing(declared, existing spec.Index) bool {
