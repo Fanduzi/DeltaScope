@@ -193,3 +193,19 @@ this record, and the docs catalog sync — not evidence only). Frozen
 - Docs: `docs/work-plans/t09-index-governance/CONTRACT.md`,
   `roles.json`, `EXPECTED-UPGRADES.md`, `testdata/ddl-golden/T09.json`,
   `docs/verification/t09/51c8eec3a05db087b92f014b6ccc9378c5746dda/`
+
+## Amendment R2 consequences
+
+- R1's claim that statement coverage aspects already marked non-plain parts
+  unaudited covered only declared parts. Provider-loaded or derived
+  non-plain members in `Metadata.TargetTable.Indexes` are not statement
+  aspects, so a skipped comparison could pass silently. Lifecycle rules now
+  report an attributable `unknown_table_state` gap with the new
+  `target_table.indexes.key_parts` required fact, scoped to pairings the
+  rule could actually have reached — declared non-plain subjects stay on
+  the statement coverage channel, and unrelated non-plain members emit no
+  gap.
+- The PK member conversion clears defaults only via the AST-asserted
+  `DefaultIsNull` fact. Display text (`"null"`) is not evidence of SQL NULL
+  — provider-loaded string defaults survive the conversion verbatim, as all
+  four anchors confirm.

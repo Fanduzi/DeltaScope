@@ -528,3 +528,80 @@ evidence-only: it also wired `test_t09_contract.py` into the
 synced the docs-side coverage-catalog copy. That does not prove earlier
 runs invalid — but gate claims must bind the SHA whose Makefile actually
 ran, which the R1 evidence records verbatim.
+
+## 13. Amendment R2 — member-comparability evidence gap and the PK default boundary
+
+Authorized rework (same branch, same task owner): two defects found in R1
+acceptance are repaired here without reopening R1 scope. Frozen history and
+the R1 amendment are preserved verbatim.
+
+### 13.1 Corrected knowledge claim — coverage aspects only reach declared parts
+
+§12.2's "the statement's coverage aspects already mark the non-plain parts
+unaudited" holds only for key parts the statement itself declares.
+`statementCoverageAspects` inspects this statement's SQL; a non-plain member
+loaded into `Metadata.TargetTable.Indexes` by the provider (or derived by
+ordered state) is not a declared aspect of the audited statement. A skipped
+comparison against such a member previously produced zero findings, zero
+evidence gaps, complete coverage and a pass verdict — an unverifiable
+comparison laundered into a proved-clean result. That claim is corrected by
+§13.2.
+
+### 13.2 Member-comparability gap (new minimal required fact)
+
+When the existing index *set* is vouched but contains a member whose
+recorded key-part facts make it non-plain-comparable, and that member could
+have paired with a statement-declared index under the rule's comparison
+shape, the lifecycle rules report one attributable gap:
+
+- `reason_code`: `unknown_table_state` (the established reason for member
+  facts the ordered view cannot prove).
+- `required_facts`: `["target_table.indexes.key_parts"]` — new minimal
+  fact naming member-level key-part detail. The collection fact
+  `target_table.indexes` keeps its meaning (set existence); this names the
+  sub-member detail R1's premise needs. Set-knownness and member
+  comparability stay distinct — `IndexesUnknown` is never set for this.
+
+Pairing shapes mirror each rule's comparison reach (declared subject must
+itself be plain-comparable — a declared non-plain subject is already an
+unaudited aspect of the statement, not a metadata gap):
+
+- `duplicate`: same `Kind` and equal ordered `Columns`.
+- `redundant_left_prefix`: declared secondary is a strict left prefix of an
+  existing secondary's `Columns`.
+- `redundant_unique_overlap`: declared secondary's `Columns` equal an
+  existing unique's `Columns`.
+
+Applied identically on the standalone `create_index` entry
+(`lifecycleIndexGap`) and the ALTER `add_index`/`add_constraint` lifecycle
+wrappers (`alterAddedIndexRule.EvidenceGaps`). A non-plain member no
+declared index can pair with emits no gap — unaffected statements keep
+complete coverage and may still pass. Independently provable findings and
+the unknown-set collection gap are unchanged.
+
+### 13.3 ADD PRIMARY KEY string-default boundary
+
+The null-default clearing in §12.4 must key on the trusted semantic fact
+`DefaultIsNull` alone. `DefaultIsNull` is asserted only by the declaration
+AST (`DEFAULT NULL`); the metadata path never sets it — a catalog NULL
+`COLUMN_DEFAULT` already arrives as `HasDefault=false` (indistinguishable
+from an omitted clause), and a stored string default `'null'` arrives as
+`HasDefault=true` + `DefaultValue="null"` + a string `DefaultLiteral`.
+Guessing SQL NULL from display text (`EqualFold(TrimSpace(DefaultValue),
+"null")`) erased the real string defaults `'null'`, `'NULL'`, `'NuLl'` and
+`' null '` on the provider path — declared `'null'` keeps its quotes and
+was never at risk. Native confirmation on all four anchors: `VARCHAR(32)
+NULL DEFAULT 'null'` keeps `COLUMN_DEFAULT='null'` with `IS_NULLABLE=NO`
+after `ADD PRIMARY KEY`. A provider NULL default must never be back-read as
+a declaration that wrote `DEFAULT NULL`.
+
+### 13.4 Sensitivity anchors
+
+- Dropping the member-comparability gap fails the new gap cells (six
+  rule-level cells across the three rules and both entries, plus the
+  audit-level matrix asserting the gap, unverified coverage and review
+  verdict).
+- Reintroducing display-text NULL detection fails the provider string
+  variants (`'null'`/`'NULL'`/`'NuLl'`/`' null '`/`'abc'`/`5` preserved)
+  while the declared `DEFAULT NULL` clearing and provider catalog-NULL
+  contrast cells keep passing.

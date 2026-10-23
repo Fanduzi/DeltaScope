@@ -134,3 +134,22 @@ profiles and ids are unchanged.
   vs member-definition completeness) and §12.6 records that `dc54ecac`
   carried Makefile gate wiring, the ADR, and the docs catalog sync — gate
   claims bind the SHA whose Makefile ran, which the R1 evidence records.
+
+## Amendment R2 expected changes
+
+Rework under the same contract (see `CONTRACT.md` §13). Frozen 125-case
+denominator, roles, SQL, profiles and ids remain unchanged.
+
+- **R2-A member-comparability gap** (`lifecycleIndexGap`,
+  `alterAddedIndexRule.EvidenceGaps`): a vouched index set whose member is
+  non-plain and could pair with a declared index now reports an
+  attributable `unknown_table_state` gap requiring
+  `target_table.indexes.key_parts` — statement coverage reads unverified
+  and the verdict holds review instead of a silent pass. Non-pairing
+  non-plain members emit nothing; plain pairs and the unknown-set
+  collection gap are unchanged.
+- **R2-B PK conversion default boundary** (`applyAddIndex`): member default
+  clearing keys on `DefaultIsNull` only. Provider-loaded string defaults
+  (`'null'`, `'NULL'`, `'NuLl'`, `' null '`, `'abc'`, numeric) survive the
+  NOT NULL conversion — natively confirmed preserved on all four anchors;
+  declared `DEFAULT NULL` still clears.
