@@ -1,0 +1,7 @@
+Golden-runner CLI identities (recorded inside each artifact; runner-built per task)
+- T09: head=d31714acbd6f cli_sha256=09873690a6556b56b288cc0e588cf59259dcf8898c59ea793fb834fd67c8dca0 go=go1.26.1 cgo=0
+- T08: head=d31714acbd6f cli_sha256=09873690a6556b56b288cc0e588cf59259dcf8898c59ea793fb834fd67c8dca0 go=go1.26.1 cgo=0
+- T07: head=d31714acbd6f cli_sha256=09873690a6556b56b288cc0e588cf59259dcf8898c59ea793fb834fd67c8dca0 go=go1.26.1 cgo=0
+- T06: head=d31714acbd6f cli_sha256=09873690a6556b56b288cc0e588cf59259dcf8898c59ea793fb834fd67c8dca0 go=go1.26.1 cgo=0
+- T05: head=d31714acbd6f cli_sha256=09873690a6556b56b288cc0e588cf59259dcf8898c59ea793fb834fd67c8dca0 go=go1.26.1 cgo=0
+- T04: head=d31714acbd6f cli_sha256=09873690a6556b56b288cc0e588cf59259dcf8898c59ea793fb834fd67c8dca0 go=go1.26.1 cgo=0

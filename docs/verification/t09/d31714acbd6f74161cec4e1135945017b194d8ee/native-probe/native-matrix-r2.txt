@@ -1,0 +1,24 @@
+T09-R2 bounded native confirmation — string default under PK conversion
+=======================================================================
+Probe: native-probe/t09r2_probe.py (persisted verbatim; owned n_r2_* only)
+Output: native-matrix-r2.json (raw cells), probe-run.log (stdout)
+Bound code SHA: d31714acbd6f74161cec4e1135945017b194d8ee
+One cell per anchor (bounded extension inside the PK-conversion role):
+fixture n_r2_s (c VARCHAR(32) NULL DEFAULT 'null',
+                n2 VARCHAR(32) NULL DEFAULT 'NULL', d INT)
+then ALTER TABLE n_r2_s ADD PRIMARY KEY (c, n2).
+
+                        mysql57   mysql80   mysql84   tidb85
+                        5.7.44    8.0.46    8.4.10    8.5.0
+post c.is_nullable      NO        NO        NO        NO
+post c.column_default   null      null      null      null
+post n2.is_nullable     NO        NO        NO        NO
+post n2.column_default  NULL      NULL      NULL      NULL
+non-member d            YES/NULL  YES/NULL  YES/NULL  YES/NULL
+residual n_r2_* tables  0         0         0         0
+
+Fact the R2 fix consumes: a stored STRING default whose text reads "null"
+or "NULL" is a real default and survives ADD PRIMARY KEY's NOT NULL
+conversion verbatim on all four anchors. Only SQL NULL (a NULL catalog
+default, asserted by the declaration AST as DefaultIsNull) is dropped by
+the conversion — matching the R1 null-default clearing cell.

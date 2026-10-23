@@ -1,0 +1,24 @@
+== mysql57 5.7.44
+column_name	column_type	is_nullable	column_default
+c	varchar(32)	NO	null
+n2	varchar(32)	NO	NULL
+d	int(11)	YES	NULL
+residual: 0
+== mysql80 8.0.46
+COLUMN_NAME	COLUMN_TYPE	IS_NULLABLE	COLUMN_DEFAULT
+c	varchar(32)	NO	null
+n2	varchar(32)	NO	NULL
+d	int	YES	NULL
+residual: 0
+== mysql84 8.4.10
+COLUMN_NAME	COLUMN_TYPE	IS_NULLABLE	COLUMN_DEFAULT
+c	varchar(32)	NO	null
+n2	varchar(32)	NO	NULL
+d	int	YES	NULL
+residual: 0
+== tidb85 8.0.11-TiDB-v8.5.0
+column_name	column_type	is_nullable	column_default
+c	varchar(32)	NO	null
+n2	varchar(32)	NO	NULL
+d	int	YES	NULL
+residual: 0

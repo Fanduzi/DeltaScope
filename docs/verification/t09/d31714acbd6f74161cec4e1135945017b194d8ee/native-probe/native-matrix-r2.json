@@ -1,0 +1,98 @@
+{
+  "mysql57": {
+    "cells": {
+      "add-pk": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "post-columns": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "column_name\tcolumn_type\tis_nullable\tcolumn_default\nc\tvarchar(32)\tNO\tnull\nn2\tvarchar(32)\tNO\tNULL\nd\tint(11)\tYES\tNULL",
+        "rc": 0
+      },
+      "pre-columns": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "column_name\tcolumn_type\tis_nullable\tcolumn_default\nc\tvarchar(32)\tYES\tnull\nn2\tvarchar(32)\tYES\tNULL\nd\tint(11)\tYES\tNULL",
+        "rc": 0
+      },
+      "residual": "COUNT(*)\n0"
+    },
+    "version": "5.7.44"
+  },
+  "mysql80": {
+    "cells": {
+      "add-pk": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "post-columns": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "COLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_DEFAULT\nc\tvarchar(32)\tNO\tnull\nn2\tvarchar(32)\tNO\tNULL\nd\tint\tYES\tNULL",
+        "rc": 0
+      },
+      "pre-columns": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "COLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_DEFAULT\nc\tvarchar(32)\tYES\tnull\nn2\tvarchar(32)\tYES\tNULL\nd\tint\tYES\tNULL",
+        "rc": 0
+      },
+      "residual": "COUNT(*)\n0"
+    },
+    "version": "8.0.46"
+  },
+  "mysql84": {
+    "cells": {
+      "add-pk": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "post-columns": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "COLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_DEFAULT\nc\tvarchar(32)\tNO\tnull\nn2\tvarchar(32)\tNO\tNULL\nd\tint\tYES\tNULL",
+        "rc": 0
+      },
+      "pre-columns": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "COLUMN_NAME\tCOLUMN_TYPE\tIS_NULLABLE\tCOLUMN_DEFAULT\nc\tvarchar(32)\tYES\tnull\nn2\tvarchar(32)\tYES\tNULL\nd\tint\tYES\tNULL",
+        "rc": 0
+      },
+      "residual": "COUNT(*)\n0"
+    },
+    "version": "8.4.10"
+  },
+  "tidb85": {
+    "cells": {
+      "add-pk": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "post-columns": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "column_name\tcolumn_type\tis_nullable\tcolumn_default\nc\tvarchar(32)\tNO\tnull\nn2\tvarchar(32)\tNO\tNULL\nd\tint\tYES\tNULL",
+        "rc": 0
+      },
+      "pre-columns": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "column_name\tcolumn_type\tis_nullable\tcolumn_default\nc\tvarchar(32)\tYES\tnull\nn2\tvarchar(32)\tYES\tNULL\nd\tint\tYES\tNULL",
+        "rc": 0
+      },
+      "residual": "COUNT(*)\n0"
+    },
+    "version": "8.0.11-TiDB-v8.5.0"
+  }
+}

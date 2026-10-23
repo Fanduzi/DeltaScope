@@ -1,0 +1,77 @@
+$ go test -count=1 ./internal/domain/rule/ddl -run "TestT09R1.*Gap"
+--- FAIL: TestT09R1CreateIndexGapOnSkippedExistingMember (0.00s)
+    --- FAIL: TestT09R1CreateIndexGapOnSkippedExistingMember/duplicate_same_signature (0.00s)
+        index_facts_t09r1_test.go:366: skipped member comparison must report the key-parts gap, got []
+    --- FAIL: TestT09R1CreateIndexGapOnSkippedExistingMember/unique_overlap_same_columns (0.00s)
+        index_facts_t09r1_test.go:366: skipped member comparison must report the key-parts gap, got []
+    --- FAIL: TestT09R1CreateIndexGapOnSkippedExistingMember/left_prefix_covering (0.00s)
+        index_facts_t09r1_test.go:366: skipped member comparison must report the key-parts gap, got []
+--- FAIL: TestT09R1AlterAddIndexGapOnSkippedExistingMember (0.00s)
+    --- FAIL: TestT09R1AlterAddIndexGapOnSkippedExistingMember/left_prefix_covering (0.00s)
+        index_facts_t09r1_test.go:478: ddl.alter.add_index.redundant_left_prefix.forbid skipped member comparison must report the key-parts gap, got []
+    --- FAIL: TestT09R1AlterAddIndexGapOnSkippedExistingMember/unique_overlap_same_columns (0.00s)
+        index_facts_t09r1_test.go:478: ddl.alter.add_index.redundant_unique_overlap.forbid skipped member comparison must report the key-parts gap, got []
+    --- FAIL: TestT09R1AlterAddIndexGapOnSkippedExistingMember/duplicate_same_signature (0.00s)
+        index_facts_t09r1_test.go:478: ddl.alter.add_index.duplicate.forbid skipped member comparison must report the key-parts gap, got []
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	0.242s
+FAIL
+rc=1
+
+$ go test -count=1 ./internal/application/audit -run "T09R1"
+--- FAIL: TestT09R1ExistingNonPlainSuppressesCreateIndex (0.00s)
+    --- FAIL: TestT09R1ExistingNonPlainSuppressesCreateIndex/tidb (0.01s)
+        batch_state_t09r1_test.go:261: stmt0 must report exactly one ddl.index.duplicate.forbid gap, got []
+    --- FAIL: TestT09R1ExistingNonPlainSuppressesCreateIndex/mysql (0.01s)
+        batch_state_t09r1_test.go:261: stmt0 must report exactly one ddl.index.duplicate.forbid gap, got []
+--- FAIL: TestT09R1AddPrimaryKeyPreservesStringDefaults (0.00s)
+    --- FAIL: TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_mixed (0.00s)
+        --- FAIL: TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_mixed/tidb (0.00s)
+            batch_state_t09r1_test.go:756: real "NuLl" default must survive PK conversion, got &{Name:c Type:varchar(32) Length:0 Charset: Collation: Comment: Unsigned:false NotNull:true AutoIncrement:false HasDefault:false DefaultValue: DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[] Generated:<nil> DefaultExpression:<nil> Visibility: VisibilityExplicit:false DefaultParenthesized:false DefaultLiteral:<nil>}
+        --- FAIL: TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_mixed/mysql (0.00s)
+            batch_state_t09r1_test.go:756: real "NuLl" default must survive PK conversion, got &{Name:c Type:varchar(32) Length:0 Charset: Collation: Comment: Unsigned:false NotNull:true AutoIncrement:false HasDefault:false DefaultValue: DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[] Generated:<nil> DefaultExpression:<nil> Visibility: VisibilityExplicit:false DefaultParenthesized:false DefaultLiteral:<nil>}
+    --- FAIL: TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_lower (0.00s)
+        --- FAIL: TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_lower/mysql (0.00s)
+            batch_state_t09r1_test.go:756: real "null" default must survive PK conversion, got &{Name:c Type:varchar(32) Length:0 Charset: Collation: Comment: Unsigned:false NotNull:true AutoIncrement:false HasDefault:false DefaultValue: DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[] Generated:<nil> DefaultExpression:<nil> Visibility: VisibilityExplicit:false DefaultParenthesized:false DefaultLiteral:<nil>}
+        --- FAIL: TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_lower/tidb (0.00s)
+            batch_state_t09r1_test.go:756: real "null" default must survive PK conversion, got &{Name:c Type:varchar(32) Length:0 Charset: Collation: Comment: Unsigned:false NotNull:true AutoIncrement:false HasDefault:false DefaultValue: DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[] Generated:<nil> DefaultExpression:<nil> Visibility: VisibilityExplicit:false DefaultParenthesized:false DefaultLiteral:<nil>}
+    --- FAIL: TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_spaced (0.00s)
+        --- FAIL: TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_spaced/mysql (0.00s)
+            batch_state_t09r1_test.go:756: real " null " default must survive PK conversion, got &{Name:c Type:varchar(32) Length:0 Charset: Collation: Comment: Unsigned:false NotNull:true AutoIncrement:false HasDefault:false DefaultValue: DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[] Generated:<nil> DefaultExpression:<nil> Visibility: VisibilityExplicit:false DefaultParenthesized:false DefaultLiteral:<nil>}
+        --- FAIL: TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_spaced/tidb (0.00s)
+            batch_state_t09r1_test.go:756: real " null " default must survive PK conversion, got &{Name:c Type:varchar(32) Length:0 Charset: Collation: Comment: Unsigned:false NotNull:true AutoIncrement:false HasDefault:false DefaultValue: DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[] Generated:<nil> DefaultExpression:<nil> Visibility: VisibilityExplicit:false DefaultParenthesized:false DefaultLiteral:<nil>}
+    --- FAIL: TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_upper (0.00s)
+        --- FAIL: TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_upper/mysql (0.00s)
+            batch_state_t09r1_test.go:756: real "NULL" default must survive PK conversion, got &{Name:c Type:varchar(32) Length:0 Charset: Collation: Comment: Unsigned:false NotNull:true AutoIncrement:false HasDefault:false DefaultValue: DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[] Generated:<nil> DefaultExpression:<nil> Visibility: VisibilityExplicit:false DefaultParenthesized:false DefaultLiteral:<nil>}
+        --- FAIL: TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_upper/tidb (0.00s)
+            batch_state_t09r1_test.go:756: real "NULL" default must survive PK conversion, got &{Name:c Type:varchar(32) Length:0 Charset: Collation: Comment: Unsigned:false NotNull:true AutoIncrement:false HasDefault:false DefaultValue: DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[] Generated:<nil> DefaultExpression:<nil> Visibility: VisibilityExplicit:false DefaultParenthesized:false DefaultLiteral:<nil>}
+--- FAIL: TestT09R1AlterAddIndexExistingComparability (0.00s)
+    --- FAIL: TestT09R1AlterAddIndexExistingComparability/mysql/nonplain (0.01s)
+        batch_state_t09r1_test.go:449: stmt0 must report exactly one ddl.alter.add_index.duplicate.forbid gap, got []
+    --- FAIL: TestT09R1AlterAddIndexExistingComparability/tidb/nonplain (0.01s)
+        batch_state_t09r1_test.go:449: stmt0 must report exactly one ddl.alter.add_index.duplicate.forbid gap, got []
+--- FAIL: TestT09R1ExistingNonPlainComparisonGapMatrix (0.00s)
+    --- FAIL: TestT09R1ExistingNonPlainComparisonGapMatrix/create_index/left_prefix (0.00s)
+        --- FAIL: TestT09R1ExistingNonPlainComparisonGapMatrix/create_index/left_prefix/mysql (0.01s)
+            batch_state_t09r1_test.go:346: stmt0 must report exactly one ddl.index.redundant_left_prefix.forbid gap, got []
+        --- FAIL: TestT09R1ExistingNonPlainComparisonGapMatrix/create_index/left_prefix/tidb (0.01s)
+            batch_state_t09r1_test.go:346: stmt0 must report exactly one ddl.index.redundant_left_prefix.forbid gap, got []
+    --- FAIL: TestT09R1ExistingNonPlainComparisonGapMatrix/alter_add_index/left_prefix (0.00s)
+        --- FAIL: TestT09R1ExistingNonPlainComparisonGapMatrix/alter_add_index/left_prefix/tidb (0.01s)
+            batch_state_t09r1_test.go:346: stmt0 must report exactly one ddl.alter.add_index.redundant_left_prefix.forbid gap, got []
+        --- FAIL: TestT09R1ExistingNonPlainComparisonGapMatrix/alter_add_index/left_prefix/mysql (0.01s)
+            batch_state_t09r1_test.go:346: stmt0 must report exactly one ddl.alter.add_index.redundant_left_prefix.forbid gap, got []
+    --- FAIL: TestT09R1ExistingNonPlainComparisonGapMatrix/create_index/unique_overlap (0.00s)
+        --- FAIL: TestT09R1ExistingNonPlainComparisonGapMatrix/create_index/unique_overlap/mysql (0.01s)
+            batch_state_t09r1_test.go:346: stmt0 must report exactly one ddl.index.redundant_unique_overlap.forbid gap, got []
+        --- FAIL: TestT09R1ExistingNonPlainComparisonGapMatrix/create_index/unique_overlap/tidb (0.01s)
+            batch_state_t09r1_test.go:346: stmt0 must report exactly one ddl.index.redundant_unique_overlap.forbid gap, got []
+    --- FAIL: TestT09R1ExistingNonPlainComparisonGapMatrix/alter_add_index/unique_overlap (0.00s)
+        --- FAIL: TestT09R1ExistingNonPlainComparisonGapMatrix/alter_add_index/unique_overlap/mysql (0.01s)
+            batch_state_t09r1_test.go:346: stmt0 must report exactly one ddl.alter.add_index.redundant_unique_overlap.forbid gap, got []
+        --- FAIL: TestT09R1ExistingNonPlainComparisonGapMatrix/alter_add_index/unique_overlap/tidb (0.01s)
+            batch_state_t09r1_test.go:346: stmt0 must report exactly one ddl.alter.add_index.redundant_unique_overlap.forbid gap, got []
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.371s
+FAIL
+rc=1

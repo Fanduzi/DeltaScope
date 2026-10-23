@@ -1,0 +1,3 @@
+[ddl-golden] task=T05 head=d31714acbd6f cases=247 passed=247 assertions=5109
+[ddl-golden] artifact=/private/tmp/ddl-golden-r2b-T05/T05/artifact.json
+[ddl-golden] PASS

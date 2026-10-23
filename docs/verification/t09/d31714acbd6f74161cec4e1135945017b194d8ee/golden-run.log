@@ -1,0 +1,32 @@
+T09-R2 golden regression at the final R2 code SHA
+=================================================
+All runs executed serially at head d31714acbd6f74161cec4e1135945017b194d8ee
+on runner-managed containers (docker/ddl-golden-compose.yaml). Credential
+env vars supplied inline per manifest; the value is the compose-published
+root credential.
+
+$ T09_MYSQL_PASSWORD=root python3 scripts/ddl_golden.py run --task T09 --artifact-dir /tmp/ddl-golden-r2b-T09
+[ddl-golden] task=T09 head=d31714acbd6f cases=125 passed=125 assertions=3442 -> PASS
+$ T08_MYSQL_PASSWORD=root python3 scripts/ddl_golden.py run --task T08 --artifact-dir /tmp/ddl-golden-r2b-T08
+[ddl-golden] task=T08 head=d31714acbd6f cases=172 passed=172 assertions=4240 -> PASS
+$ T07_MYSQL_PASSWORD=root python3 scripts/ddl_golden.py run --task T07 --artifact-dir /tmp/ddl-golden-r2b-T07
+[ddl-golden] task=T07 head=d31714acbd6f cases=207 passed=207 assertions=6190 -> PASS
+$ DS_T06_GOLDEN_PW=root python3 scripts/ddl_golden.py run --task T06 --artifact-dir /tmp/ddl-golden-r2b-T06
+[ddl-golden] task=T06 head=d31714acbd6f cases=496 passed=496 assertions=11772 -> PASS
+$ DS_T05_GOLDEN_PW=root python3 scripts/ddl_golden.py run --task T05 --artifact-dir /tmp/ddl-golden-r2b-T05
+[ddl-golden] task=T05 head=d31714acbd6f cases=247 passed=247 assertions=5109 -> PASS
+$ DS_T04_GOLDEN_PW=root python3 scripts/ddl_golden.py run --task T04 --artifact-dir /tmp/ddl-golden-r2b-T04
+[ddl-golden] task=T04 head=d31714acbd6f cases=163 passed=163 assertions=1889 -> PASS
+
+Independent re-validation per artifact: golden/<T>-validate.log (all valid).
+Denominators match the frozen manifests: T04=163, T05=247, T06=496,
+T07=207, T08=172, T09=125 — assertion totals identical to the R1 archive.
+
+Run history this round:
+- A first golden batch at the same SHA recorded cases=0 with
+  external_blocker "compose up failed: container name already in use" —
+  leftover probe containers from this round's native confirmation held the
+  compose names. Environment failure, not a product result; the containers
+  were removed and the full batch re-ran clean (this archive).
+- T09 specifically had earlier proven sensitive to fixture contamination;
+  no such failure occurred this round.
