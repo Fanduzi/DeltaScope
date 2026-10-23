@@ -1,0 +1,548 @@
+{
+  "task_id": "T10",
+  "issue": "https://github.com/Fanduzi/DeltaScope/issues/89",
+  "contract": "docs/work-plans/t10-advanced-indexes/CONTRACT.md",
+  "status": "frozen-for-implementation",
+  "denominator_contract": "Every id in required_case_ids must exist in testdata/ddl-golden/T10.json or in a named unit/e2e test. Removing a case, loosening an expectation, or shrinking the denominator without amending this file is a contract violation.",
+  "fixtures": {
+    "t": "CREATE TABLE t (a INT, b INT, c VARCHAR(64), j JSON, KEY idx_c(b)); — ordinary visible secondary index, vouched set",
+    "tp": "CREATE TABLE tp (a INT, b INT, PRIMARY KEY (a), KEY idx_b(b)); — vouched primary key for PRIMARY-target cells",
+    "tinv": "CREATE TABLE tinv (a INT, KEY idx_i(a)); ALTER TABLE tinv ALTER INDEX idx_i INVISIBLE; — catalog-proven invisible member (8.0+/TiDB only)",
+    "tsp": "CREATE TABLE tsp (g GEOMETRY NOT NULL SRID 0, b VARCHAR(64)); CREATE SPATIAL INDEX idx_sp ON tsp(g); CREATE FULLTEXT INDEX idx_ft ON tsp(b); — provider kind-fidelity fixture (mysql80/84 only; 5.7 spatial uses ALTER-free spatial create)"
+  },
+  "policies": {
+    "t10-visibility": {
+      "ddl.index.invisible.forbid": {
+        "level": "warning"
+      },
+      "ddl.alter.alter_index.exists.require": {
+        "level": "blocker"
+      },
+      "ddl.index.advanced.compatibility.require": {
+        "level": "blocker",
+        "params": {
+          "required": true,
+          "features": [
+            "visibility",
+            "expression_keys",
+            "descending_keys",
+            "multi_valued"
+          ]
+        }
+      }
+    },
+    "t10-visibility-no-invisible": {
+      "ddl.alter.alter_index.exists.require": {
+        "level": "blocker"
+      },
+      "ddl.index.advanced.compatibility.require": {
+        "level": "blocker"
+      }
+    },
+    "t10-exists": {
+      "ddl.alter.alter_index.exists.require": {
+        "level": "blocker"
+      }
+    },
+    "t10-invisible": {
+      "ddl.index.invisible.forbid": {
+        "level": "warning"
+      }
+    },
+    "t10-compat": {
+      "ddl.index.advanced.compatibility.require": {
+        "level": "blocker",
+        "params": {
+          "required": true,
+          "features": [
+            "visibility",
+            "expression_keys",
+            "descending_keys",
+            "multi_valued"
+          ]
+        }
+      }
+    },
+    "t10-off": {}
+  },
+  "cli_cases": [
+    {
+      "id": "t10-cli-firstpath",
+      "dialects": [
+        "mysql"
+      ],
+      "policy": "t10-visibility",
+      "sql": "ALTER TABLE t ALTER INDEX idx_c INVISIBLE;",
+      "expect": "1 warning ddl.index.invisible.forbid (table=t,index=idx_c,visibility=invisible); gaps ddl.table.exists.alter.require[existence] + ddl.alter.alter_index.exists.require[existence,indexes] + ddl.index.advanced.compatibility.require[target.version]; unsupported=0; coverage=unverified; verdict=review"
+    },
+    {
+      "id": "t10-cli-visible",
+      "dialects": [
+        "mysql"
+      ],
+      "policy": "t10-visibility",
+      "sql": "ALTER TABLE t ALTER INDEX idx_c VISIBLE;",
+      "expect": "same gaps, 0 findings (reverse direction stays silent); verdict=review"
+    },
+    {
+      "id": "t10-cli-firstpath-tidb",
+      "dialects": [
+        "tidb"
+      ],
+      "policy": "t10-visibility",
+      "sql": "ALTER TABLE t ALTER INDEX idx_c INVISIBLE;",
+      "expect": "same as firstpath (TiDB is an audited alter_index dialect)"
+    },
+    {
+      "id": "t10-cli-off",
+      "dialects": [
+        "mysql"
+      ],
+      "policy": "t10-off",
+      "sql": "ALTER TABLE t ALTER INDEX idx_c INVISIBLE;",
+      "expect": "0 findings, 0 gaps, coverage=complete, verdict=pass — action promoted even rule-free"
+    },
+    {
+      "id": "t10-cli-no-invisible",
+      "dialects": [
+        "mysql"
+      ],
+      "policy": "t10-visibility-no-invisible",
+      "sql": "ALTER TABLE t ALTER INDEX idx_c INVISIBLE;",
+      "expect": "0 findings; exists+compat gaps remain (rule isolation)"
+    },
+    {
+      "id": "t10-cli-ver57",
+      "dialects": [
+        "mysql"
+      ],
+      "args": [
+        "--target-version",
+        "5.7.44"
+      ],
+      "policy": "t10-visibility",
+      "sql": "ALTER TABLE t ALTER INDEX idx_c INVISIBLE;",
+      "expect": "compat blocker version_unsupported min=8.0.0 + invisible warning + exists/table gaps; verdict=reject"
+    },
+    {
+      "id": "t10-cli-ver80",
+      "dialects": [
+        "mysql"
+      ],
+      "args": [
+        "--target-version",
+        "8.0.46"
+      ],
+      "policy": "t10-visibility",
+      "sql": "ALTER TABLE t ALTER INDEX idx_c INVISIBLE;",
+      "expect": "invisible warning + exists/table gaps only — no version gap"
+    },
+    {
+      "id": "t10-cli-create-invisible",
+      "dialects": [
+        "mysql"
+      ],
+      "policy": "t10-visibility",
+      "sql": "CREATE INDEX idx_i ON t(a) INVISIBLE;",
+      "expect": "invisible warning + compat missing-version gap; coverage=unverified"
+    },
+    {
+      "id": "t10-cli-create-table-invisible",
+      "dialects": [
+        "mysql"
+      ],
+      "policy": "t10-visibility",
+      "sql": "CREATE TABLE t (a INT, KEY i(a) INVISIBLE);",
+      "expect": "invisible warning + missing-version gap"
+    },
+    {
+      "id": "t10-cli-add-invisible",
+      "dialects": [
+        "mysql"
+      ],
+      "policy": "t10-visibility",
+      "sql": "ALTER TABLE t ADD INDEX i(a) INVISIBLE;",
+      "expect": "invisible warning + missing-version gap; no option.invisible aspect"
+    },
+    {
+      "id": "t10-cli-create-visible",
+      "dialects": [
+        "mysql"
+      ],
+      "policy": "t10-visibility",
+      "sql": "CREATE INDEX i ON t(a) VISIBLE;",
+      "expect": "0 invisible findings + missing-version gap (explicit attr is a gated feature)"
+    },
+    {
+      "id": "t10-cli-desc-tidb",
+      "dialects": [
+        "tidb"
+      ],
+      "policy": "t10-compat",
+      "sql": "CREATE INDEX i ON t(a DESC);",
+      "expect": "compat blocker descending_ignored + desc aspect; verdict=reject, coverage=incomplete"
+    },
+    {
+      "id": "t10-cli-desc-ver57",
+      "dialects": [
+        "mysql"
+      ],
+      "args": [
+        "--target-version",
+        "5.7.44"
+      ],
+      "policy": "t10-compat",
+      "sql": "CREATE INDEX i ON t(a DESC);",
+      "expect": "compat blocker descending_ignored + desc aspect"
+    },
+    {
+      "id": "t10-cli-desc-ver80",
+      "dialects": [
+        "mysql"
+      ],
+      "args": [
+        "--target-version",
+        "8.0.46"
+      ],
+      "policy": "t10-compat",
+      "sql": "CREATE INDEX i ON t(a DESC);",
+      "expect": "0 findings; desc aspect only"
+    },
+    {
+      "id": "t10-cli-expr-ver57",
+      "dialects": [
+        "mysql"
+      ],
+      "args": [
+        "--target-version",
+        "5.7.44"
+      ],
+      "policy": "t10-compat",
+      "sql": "CREATE INDEX i ON t((a+1));",
+      "expect": "compat blocker version_unsupported min=8.0.13 + expr aspect"
+    },
+    {
+      "id": "t10-cli-mv-ver57",
+      "dialects": [
+        "mysql"
+      ],
+      "args": [
+        "--target-version",
+        "5.7.44"
+      ],
+      "policy": "t10-compat",
+      "sql": "CREATE INDEX i ON t((CAST(j AS UNSIGNED ARRAY)));",
+      "expect": "compat blocker version_unsupported min=8.0.17 + multi_valued aspect (+ expr aspect)"
+    },
+    {
+      "id": "t10-cli-mv-tidb",
+      "dialects": [
+        "tidb"
+      ],
+      "policy": "t10-compat",
+      "sql": "CREATE INDEX i ON t((CAST(j AS UNSIGNED ARRAY)));",
+      "expect": "accepted on TiDB — missing_version gap only, no issue; multi_valued+expr aspects"
+    },
+    {
+      "id": "t10-cli-primary-mysql",
+      "dialects": [
+        "mysql"
+      ],
+      "args": [
+        "--target-version",
+        "8.0.46"
+      ],
+      "policy": "t10-visibility",
+      "sql": "ALTER TABLE t ALTER INDEX `PRIMARY` INVISIBLE;",
+      "expect": "compat blocker primary_index_visibility + invisible warning + exists gaps (no metadata); verdict=reject"
+    },
+    {
+      "id": "t10-cli-primary-tidb",
+      "dialects": [
+        "tidb"
+      ],
+      "policy": "t10-visibility",
+      "sql": "ALTER TABLE t ALTER INDEX `PRIMARY` INVISIBLE;",
+      "expect": "0 compat findings (TiDB PRIMARY is not an index); invisible warning + exists gaps; verdict=review"
+    },
+    {
+      "id": "t10-cli-pfx",
+      "dialects": [
+        "mysql"
+      ],
+      "policy": "t10-compat",
+      "sql": "CREATE INDEX i ON t(a(10));",
+      "expect": "0 findings; prefix aspect only; no version gate (all anchors support prefix)"
+    },
+    {
+      "id": "t10-cli-fulltext-tidb",
+      "dialects": [
+        "tidb"
+      ],
+      "policy": "t10-off",
+      "sql": "CREATE FULLTEXT INDEX i ON t(b);",
+      "expect": "vendor-boundary unsupported entry; coverage=incomplete (unchanged)"
+    },
+    {
+      "id": "t10-cli-spatial-tidb",
+      "dialects": [
+        "tidb"
+      ],
+      "policy": "t10-off",
+      "sql": "CREATE SPATIAL INDEX i ON t(g);",
+      "expect": "vendor-boundary unsupported entry; coverage=incomplete (unchanged)"
+    }
+  ],
+  "metadata_roles": [
+    {
+      "id": "t10-<anchor>-firstpath",
+      "anchors": [
+        "mysql80",
+        "mysql84",
+        "tidb85"
+      ],
+      "policy": "t10-visibility",
+      "sql": "ALTER TABLE t ALTER INDEX idx_c INVISIBLE;",
+      "setup": "prove idx_c exists and is_visible=YES",
+      "expect": "1 warning invisible.forbid bound idx_c/t; 0 gaps; complete; review; execute applies the audited ALTER natively and verify is_visible=NO; post-execute native truth"
+    },
+    {
+      "id": "t10-<anchor>-visible",
+      "anchors": [
+        "mysql80",
+        "mysql84",
+        "tidb85"
+      ],
+      "policy": "t10-visibility",
+      "sql": "ALTER TABLE tinv ALTER INDEX idx_i VISIBLE;",
+      "setup": "create idx_i then natively ALTER INDEX INVISIBLE (is_visible=NO proven)",
+      "expect": "0 findings; complete; pass — real invisible member in catalog, reverse direction silent"
+    },
+    {
+      "id": "t10-<anchor>-missing",
+      "anchors": [
+        "mysql80",
+        "mysql84",
+        "tidb85"
+      ],
+      "policy": "t10-visibility",
+      "sql": "ALTER TABLE t ALTER INDEX idx_nope INVISIBLE;",
+      "expect": "exists blocker exists=false (1176-class) + invisible warning; reject"
+    },
+    {
+      "id": "t10-<anchor>-absent",
+      "anchors": [
+        "mysql80",
+        "mysql84",
+        "tidb85"
+      ],
+      "policy": "t10-visibility",
+      "sql": "ALTER TABLE absent_t ALTER INDEX idx_c INVISIBLE;",
+      "expect": "table-exists blocker + invisible warning; no member gap (settled parent); reject"
+    },
+    {
+      "id": "t10-<anchor>-batch-chain",
+      "anchors": [
+        "mysql80",
+        "mysql84",
+        "tidb85"
+      ],
+      "policy": "t10-visibility",
+      "sql": "ALTER TABLE t ALTER INDEX idx_c INVISIBLE; ALTER TABLE t ALTER INDEX idx_c VISIBLE;",
+      "expect": "stmt0 invisible warning + no gaps; stmt1 0 findings 0 gaps complete — post-state member carried, exists still proven; review"
+    },
+    {
+      "id": "t10-<anchor>-unknown-set",
+      "anchors": [
+        "mysql80",
+        "mysql84",
+        "tidb85"
+      ],
+      "policy": "t10-exists",
+      "sql": "ALTER TABLE t10x ADD COLUMN x INT, ALTER INDEX i INVISIBLE; ALTER TABLE t10x ALTER INDEX i INVISIBLE;",
+      "expect": "stmt2: indexes+existence gap (multi-action tombstoned the entry; zero findings under t10-exists)"
+    },
+    {
+      "id": "t10-mysql-primary",
+      "anchors": [
+        "mysql80",
+        "mysql84"
+      ],
+      "policy": "t10-visibility",
+      "sql": "ALTER TABLE tp ALTER INDEX `PRIMARY` INVISIBLE;",
+      "expect": "compat blocker primary_index_visibility + invisible warning; no exists blocker (PK resolves); reject"
+    },
+    {
+      "id": "t10-tidb-primary",
+      "anchors": [
+        "tidb85"
+      ],
+      "policy": "t10-visibility",
+      "sql": "ALTER TABLE tp ALTER INDEX `PRIMARY` INVISIBLE;",
+      "expect": "exists blocker (1176-class: PRIMARY is not an index on TiDB) + invisible warning; reject"
+    },
+    {
+      "id": "t10-mysql57-firstpath",
+      "anchors": [
+        "mysql57"
+      ],
+      "policy": "t10-visibility",
+      "sql": "ALTER TABLE t ALTER INDEX idx_c INVISIBLE;",
+      "expect": "compat blocker version_unsupported min=8.0.0 + invisible warning; exists passes (idx_c exists); reject — version-inapplicable, never silent"
+    },
+    {
+      "id": "t10-mysql57-create-invisible",
+      "anchors": [
+        "mysql57"
+      ],
+      "policy": "t10-visibility",
+      "sql": "CREATE INDEX i ON t(a) INVISIBLE;",
+      "expect": "compat blocker version_unsupported + invisible warning; reject"
+    },
+    {
+      "id": "t10-mysql57-expr",
+      "anchors": [
+        "mysql57"
+      ],
+      "policy": "t10-compat",
+      "sql": "CREATE INDEX i ON t((a+1));",
+      "expect": "compat blocker version_unsupported min=8.0.13 + expr aspect; reject"
+    },
+    {
+      "id": "t10-mysql57-mv",
+      "anchors": [
+        "mysql57"
+      ],
+      "policy": "t10-compat",
+      "sql": "CREATE INDEX i ON t((CAST(j AS UNSIGNED ARRAY)));",
+      "expect": "compat blocker version_unsupported min=8.0.17 + multi_valued aspect; reject"
+    },
+    {
+      "id": "t10-mysql57-desc",
+      "anchors": [
+        "mysql57"
+      ],
+      "policy": "t10-compat",
+      "sql": "CREATE INDEX i ON t(a DESC);",
+      "expect": "compat blocker descending_ignored + desc aspect; reject"
+    },
+    {
+      "id": "t10-mysql57-novis-column",
+      "anchors": [
+        "mysql57"
+      ],
+      "policy": "t10-exists",
+      "sql": "ALTER TABLE t ALTER INDEX idx_c VISIBLE;",
+      "expect": "setup oracle proves STATISTICS lacks IS_VISIBLE (COUNT=0); provider still loads; exists passes"
+    },
+    {
+      "id": "t10-<anchor>-desc",
+      "anchors": [
+        "mysql80",
+        "mysql84"
+      ],
+      "policy": "t10-compat",
+      "sql": "CREATE INDEX i ON t(a DESC);",
+      "expect": "0 compat findings (8.0+ honors DESC); desc aspect only"
+    },
+    {
+      "id": "t10-tidb-desc",
+      "anchors": [
+        "tidb85"
+      ],
+      "policy": "t10-compat",
+      "sql": "CREATE INDEX i ON t(a DESC);",
+      "expect": "compat blocker descending_ignored (native silent drop); desc aspect; reject"
+    },
+    {
+      "id": "t10-<anchor>-expr",
+      "anchors": [
+        "mysql80",
+        "mysql84",
+        "tidb85"
+      ],
+      "policy": "t10-compat",
+      "sql": "CREATE INDEX i ON t((LOWER(c)));",
+      "expect": "0 compat findings (version in range); expr aspect"
+    },
+    {
+      "id": "t10-<anchor>-mv",
+      "anchors": [
+        "mysql80",
+        "mysql84",
+        "tidb85"
+      ],
+      "policy": "t10-compat",
+      "sql": "CREATE INDEX i ON t((CAST(j AS UNSIGNED ARRAY)));",
+      "expect": "0 compat findings; multi_valued+expr aspects"
+    },
+    {
+      "id": "t10-mysql-spatial-provider",
+      "anchors": [
+        "mysql80",
+        "mysql84"
+      ],
+      "policy": "t10-off",
+      "sql": "ALTER TABLE tsp ALTER INDEX idx_sp INVISIBLE;",
+      "expect": "provider loads kind=spatial for INDEX_TYPE='SPATIAL'; exists passes; execute proves native ALTER on a spatial member"
+    },
+    {
+      "id": "t10-<anchor>-fulltext",
+      "anchors": [
+        "mysql57",
+        "mysql80",
+        "mysql84"
+      ],
+      "policy": "t10-off",
+      "sql": "CREATE FULLTEXT INDEX i_ft ON t(c);",
+      "expect": "audited supported kind; execute proves native FULLTEXT create"
+    },
+    {
+      "id": "t10-tidb-fulltext",
+      "anchors": [
+        "tidb85"
+      ],
+      "policy": "t10-off",
+      "sql": "CREATE FULLTEXT INDEX i_ft ON t(c);",
+      "expect": "vendor-boundary unsupported entry; execute proves native ERROR 8200"
+    },
+    {
+      "id": "t10-tidb-spatial",
+      "anchors": [
+        "tidb85"
+      ],
+      "policy": "t10-off",
+      "sql": "CREATE SPATIAL INDEX i_sp ON t(c);",
+      "expect": "vendor-boundary unsupported entry; execute proves native ERROR 8200"
+    },
+    {
+      "id": "t10-<anchor>-provider-invisible",
+      "anchors": [
+        "mysql80",
+        "mysql84",
+        "tidb85"
+      ],
+      "policy": "t10-invisible",
+      "sql": "ALTER TABLE tinv ALTER INDEX idx_i VISIBLE;",
+      "expect": "provider member visibility=invisible loaded (is_visible=NO proven in setup); 0 findings (provider state is not a declared intent)"
+    }
+  ],
+  "error_cases": [
+    {
+      "id": "t10-clierr-alter-index-no-kw",
+      "sql": "ALTER TABLE t ALTER INDEX idx_c;",
+      "expect": "parse diagnostic; no inferred finding"
+    },
+    {
+      "id": "t10-clierr-alter-index-bad-dir",
+      "sql": "ALTER TABLE t ALTER INDEX idx_c HIDDEN;",
+      "expect": "parse diagnostic; no inferred finding"
+    }
+  ],
+  "notes": [
+    "Every gap must attribute to its owning rule and facts — no universal notice, no universal unsupported.",
+    "VISIBLE direction and ordinary indexes are explicit no-finding controls, not absent cases.",
+    "mysql57 keeps coverage of the ALTER INDEX form through the version_inapplicable result, never silent complete.",
+    "expression semantics stay unaudited: the expr/multi_valued aspects remain — T10 adds version applicability, not expression inspection."
+  ]
+}
