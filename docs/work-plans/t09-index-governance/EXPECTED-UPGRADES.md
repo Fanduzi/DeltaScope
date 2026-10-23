@@ -153,3 +153,24 @@ denominator, roles, SQL, profiles and ids remain unchanged.
   (`'null'`, `'NULL'`, `'NuLl'`, `' null '`, `'abc'`, numeric) survive the
   NOT NULL conversion — natively confirmed preserved on all four anchors;
   declared `DEFAULT NULL` still clears.
+
+## Amendment R3 expected changes
+
+Rework under the same contract (see `CONTRACT.md` §14). Frozen 125-case
+denominator, roles, SQL, profiles and ids remain unchanged.
+
+- **R3-A truncated-projection pairing** (`leftPrefixPairing`): an
+  expression-bearing existing member's `Columns` is shorter than its real
+  key sequence, so equal length can no longer disprove pairing — a declared
+  secondary matching all named columns in order reports the
+  `target_table.indexes.key_parts` gap on both the standalone
+  `create_index` and ALTER `add_index` entries. Provably unrelated members
+  (declared column absent, declared prefix past the named parts,
+  named-order disproof, all-expression member, Columns-complete non-plain)
+  still emit nothing; duplicate/unique-overlap pairings are unchanged.
+- **R3-B distinguishable default evidence** (verification only): the R2
+  probe's raw display could not separate string `'NULL'` from SQL NULL; a
+  bounded follow-up on the same anchors records `COLUMN_DEFAULT IS NULL`,
+  `HEX(COLUMN_DEFAULT)`, and `SHOW CREATE TABLE` — `'null'`→6E756C6C,
+  `'NULL'`→4E554C4C, SQL NULL→IS NULL=1 after `ADD PRIMARY KEY`. The
+  `DefaultIsNull`-only product behavior is unchanged.

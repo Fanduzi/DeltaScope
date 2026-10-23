@@ -605,3 +605,72 @@ a declaration that wrote `DEFAULT NULL`.
   variants (`'null'`/`'NULL'`/`'NuLl'`/`' null '`/`'abc'`/`5` preserved)
   while the declared `DEFAULT NULL` clearing and provider catalog-NULL
   contrast cells keep passing.
+
+## 14. Amendment R3 — truncated `Columns` cannot disprove a left-prefix pairing
+
+Authorized rework (same branch, same task owner): independent review found
+one residual hole in §13.2's pairing shapes. Frozen history, the R1 and R2
+amendments, and the R2 evidence archive are preserved verbatim.
+
+### 14.1 The defect — equal length on a truncated projection
+
+The provider records an expression key part as a mark only: a NULL
+`COLUMN_NAME` sets `HasExpressionKeys`/`ExpressionCount` but never enters
+`Columns`, so `Columns` is an incomplete projection of the real key
+sequence for exactly that member kind. §13.2's left-prefix pairing applied
+the strict `isLeftPrefix` length check to that projection. For
+
+    existing:  CREATE INDEX i_pre ON t(a, (LOWER(b)))
+               -> provider shape Columns=["a"], ExpressionCount=1
+    declared:  CREATE INDEX i_new ON t(a)
+
+the truncated lists compare equal-length, `isLeftPrefix` returns false, the
+pairing disproved itself, and `memberComparisonGap` emitted nothing — the
+same zero-findings/zero-gaps/complete/pass laundering §13 exists to
+prevent, even though the real key sequence `(a, <expr>)` makes `(a)` a
+plausible strict left prefix. The ALTER `add_index` wrapper shares the
+pairing, so both lifecycle entries were affected.
+
+### 14.2 Correction — completeness of the projection decides the proof
+
+`leftPrefixPairing` now distinguishes two member shapes:
+
+- **Complete projection** (no expression parts): every key part is a named
+  member, so `Columns` records the sequence's true order and length. The
+  strict `isLeftPrefix` check remains a sound non-pairing proof — an
+  equal-length pair still emits no gap.
+- **Truncated projection** (`HasExpressionKeys`/`ExpressionCount > 0`):
+  hidden parts mean the real sequence is longer than `Columns` and their
+  positions are unrecorded. Pairing holds when the declared columns are a
+  non-strict prefix of the named projection (`hasKeyPartPrefix`) —
+  including equal length, where trailing hidden parts can still make the
+  declared index a real strict prefix. Declared columns absent from the
+  named parts, a named order that places the declared head elsewhere, a
+  declared prefix reaching past the named parts, or an all-expression
+  member are still provably unrelated under every interleaving and emit no
+  gap.
+
+No expression evaluation or expression-equivalence reasoning is added;
+prefix/DESC/unmodeled-option members (all named, complete projection) keep
+the R2 strict behavior; `IndexesUnknown` collection semantics are
+unchanged.
+
+### 14.3 B evidence strengthening (no product change)
+
+The R2 native matrix displayed `COLUMN_DEFAULT` via `mysql --batch --raw`,
+where the string `'NULL'` and SQL `NULL` both render as `NULL`. A bounded
+follow-up probe on the same four anchors queries `COLUMN_DEFAULT IS NULL`
+and `HEX(COLUMN_DEFAULT)` (plus `SHOW CREATE TABLE`): `'null'` shows
+`IS NULL=0`/`6E756C6C`, `'NULL'` shows `IS NULL=0`/`4E554C4C`, and the SQL
+NULL contrast column shows `IS NULL=1` — all after `ADD PRIMARY KEY`
+conversion. The R2 archive is kept; the new cells are additive.
+
+### 14.4 Sensitivity anchors
+
+- Reverting `leftPrefixPairing` to the strict-only check fails
+  `equal_length_truncated` plus both entry cells; the five scope controls
+  (absent declared column, over-long declared prefix, named-order disproof,
+  complete-projection strictness, all-expression member) keep passing.
+- The audit-level pair asserts the isolated left-prefix profile: zero
+  findings, one `target_table.indexes.key_parts` gap, unverified coverage,
+  review verdict — and the unrelated-declared contrast keeps complete/pass.

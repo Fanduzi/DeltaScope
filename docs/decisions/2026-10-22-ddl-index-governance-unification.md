@@ -209,3 +209,24 @@ this record, and the docs catalog sync — not evidence only). Frozen
   `DefaultIsNull` fact. Display text (`"null"`) is not evidence of SQL NULL
   — provider-loaded string defaults survive the conversion verbatim, as all
   four anchors confirm.
+
+## Amendment R3 consequences
+
+- R2's left-prefix pairing reused the strict `isLeftPrefix` length check on
+  `existing.Columns`. For an expression-bearing member the provider never
+  enters that part into `Columns`, so the projection is truncated and the
+  equal-length check could disprove a pairing the real key sequence still
+  admits — a zero-gap silent pass of exactly the kind §13 exists to
+  prevent. `leftPrefixPairing` now keys on projection completeness:
+  expression-bearing members pair on a non-strict named-prefix
+  (`hasKeyPartPrefix`), while complete projections keep the strict proof —
+  declared columns absent from the named parts, over-long prefixes,
+  named-order disproofs, and all-expression members still emit nothing.
+- The R2-B native claim was strengthened without touching product code:
+  `COLUMN_DEFAULT IS NULL` + `HEX(COLUMN_DEFAULT)` + `SHOW CREATE TABLE`
+  on the same four anchors now separate `'null'` (6E756C6C), `'NULL'`
+  (4E554C4C), and SQL NULL (`IS NULL=1`) after PK conversion — the earlier
+  `--raw` display could not.
+- No model change: no expression evaluation, `IndexesUnknown` semantics
+  unchanged, non-plain members unrelated to the declared shape still emit
+  no gap.
