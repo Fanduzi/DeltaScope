@@ -409,18 +409,15 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
-    ],
-    "unsupported_features": [
-     "alter_table.alter_index"
+     "complete"
     ],
     "statement_sql": [
      "ALTER TABLE t ALTER INDEX idx INVISIBLE;"
@@ -2873,27 +2870,18 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
+     "complete"
     ],
     "statement_sql": [
      "CREATE INDEX ix ON t (c) INVISIBLE;"
-    ],
-    "unsupported_features": [
-     "create_index.create_index.index.option.invisible"
-    ],
-    "unsupported_entries": [
-     {
-      "feature": "create_index.create_index.index.option.invisible",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
-     }
     ]
    }
   },
