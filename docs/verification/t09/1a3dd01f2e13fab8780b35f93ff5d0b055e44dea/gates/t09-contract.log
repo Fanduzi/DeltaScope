@@ -1,0 +1,37 @@
+PASS T09 complete constructed control
+PASS T09 strict denominator drift
+PASS T09 double-side deletion
+PASS T09 duplicate case ID
+PASS T09 missing executed case
+PASS T09 frozen expectation drift
+PASS T09 fabricated status
+PASS T09 failed assertion
+PASS T09 wrong index-name metadata
+PASS T09 column-order metadata drift
+PASS T09 target-table misbinding
+PASS T09 exists blocker laundered
+PASS T09 applicable drift
+PASS T09 native rejection erased
+PASS T09 native rejection class drift
+PASS T09 skipped setup
+PASS T09 skipped execute
+PASS T09 skipped structure
+PASS T09 skipped post_verify
+PASS T09 skipped teardown
+PASS T09 anchor rebind
+PASS T09 finding borrowed across statements
+PASS T09 only first statement audited
+PASS T09 create/alter rule swap
+PASS T09 constraint judged by index rule
+PASS T09 unique/secondary kind conflation
+PASS T09 known-empty recorded as unknown
+PASS T09 missing-facts laundered to clean
+PASS T09 fabricated overlap finding
+PASS T09 tidb drop-primary flattened to mysql
+PASS T09 failed execute side effects claimed
+PASS T09 mysql57 IF-variant accepted
+PASS T09 parser-negative fabricated statement
+PASS T09 fail-on laundered
+PASS T09 applicable counter laundered
+PASS T09 manifest drift
+36/36 constructed-control checks passed

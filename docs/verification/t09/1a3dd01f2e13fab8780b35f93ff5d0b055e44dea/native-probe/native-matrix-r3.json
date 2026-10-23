@@ -1,0 +1,118 @@
+{
+  "mysql57": {
+    "cells": {
+      "add-pk": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "post-defaults": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "column_name\tis_nullable\tdefault_is_sql_null\tdefault_hex\nc\tNO\t0\t6E756C6C\nn2\tNO\t0\t4E554C4C\nn3\tYES\t1\tNULL\nd\tYES\t1\tNULL",
+        "rc": 0
+      },
+      "pre-defaults": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "column_name\tis_nullable\tdefault_is_sql_null\tdefault_hex\nc\tYES\t0\t6E756C6C\nn2\tYES\t0\t4E554C4C\nn3\tYES\t1\tNULL\nd\tYES\t1\tNULL",
+        "rc": 0
+      },
+      "residual": "COUNT(*)\n0",
+      "show-create-post": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "Table\tCreate Table\nn_r3_s\tCREATE TABLE `n_r3_s` (\n  `c` varchar(32) NOT NULL DEFAULT 'null',\n  `n2` varchar(32) NOT NULL DEFAULT 'NULL',\n  `n3` varchar(32) DEFAULT NULL,\n  `d` int(11) DEFAULT NULL,\n  PRIMARY KEY (`c`,`n2`)\n) ENGINE=InnoDB DEFAULT CHARSET=latin1",
+        "rc": 0
+      }
+    },
+    "version": "5.7.44"
+  },
+  "mysql80": {
+    "cells": {
+      "add-pk": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "post-defaults": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "COLUMN_NAME\tIS_NULLABLE\tdefault_is_sql_null\tdefault_hex\nc\tNO\t0\t6E756C6C\nn2\tNO\t0\t4E554C4C\nn3\tYES\t1\tNULL\nd\tYES\t1\tNULL",
+        "rc": 0
+      },
+      "pre-defaults": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "COLUMN_NAME\tIS_NULLABLE\tdefault_is_sql_null\tdefault_hex\nc\tYES\t0\t6E756C6C\nn2\tYES\t0\t4E554C4C\nn3\tYES\t1\tNULL\nd\tYES\t1\tNULL",
+        "rc": 0
+      },
+      "residual": "COUNT(*)\n0",
+      "show-create-post": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "Table\tCreate Table\nn_r3_s\tCREATE TABLE `n_r3_s` (\n  `c` varchar(32) NOT NULL DEFAULT 'null',\n  `n2` varchar(32) NOT NULL DEFAULT 'NULL',\n  `n3` varchar(32) DEFAULT NULL,\n  `d` int DEFAULT NULL,\n  PRIMARY KEY (`c`,`n2`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci",
+        "rc": 0
+      }
+    },
+    "version": "8.0.46"
+  },
+  "mysql84": {
+    "cells": {
+      "add-pk": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "post-defaults": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "COLUMN_NAME\tIS_NULLABLE\tdefault_is_sql_null\tdefault_hex\nc\tNO\t0\t6E756C6C\nn2\tNO\t0\t4E554C4C\nn3\tYES\t1\tNULL\nd\tYES\t1\tNULL",
+        "rc": 0
+      },
+      "pre-defaults": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "COLUMN_NAME\tIS_NULLABLE\tdefault_is_sql_null\tdefault_hex\nc\tYES\t0\t6E756C6C\nn2\tYES\t0\t4E554C4C\nn3\tYES\t1\tNULL\nd\tYES\t1\tNULL",
+        "rc": 0
+      },
+      "residual": "COUNT(*)\n0",
+      "show-create-post": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "Table\tCreate Table\nn_r3_s\tCREATE TABLE `n_r3_s` (\n  `c` varchar(32) NOT NULL DEFAULT 'null',\n  `n2` varchar(32) NOT NULL DEFAULT 'NULL',\n  `n3` varchar(32) DEFAULT NULL,\n  `d` int DEFAULT NULL,\n  PRIMARY KEY (`c`,`n2`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci",
+        "rc": 0
+      }
+    },
+    "version": "8.4.10"
+  },
+  "tidb85": {
+    "cells": {
+      "add-pk": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "create": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "rc": 0
+      },
+      "post-defaults": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "column_name\tis_nullable\tdefault_is_sql_null\tdefault_hex\nc\tNO\t0\t6E756C6C\nn2\tNO\t0\t4E554C4C\nn3\tYES\t1\tNULL\nd\tYES\t1\tNULL",
+        "rc": 0
+      },
+      "pre-defaults": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "column_name\tis_nullable\tdefault_is_sql_null\tdefault_hex\nc\tYES\t0\t6E756C6C\nn2\tYES\t0\t4E554C4C\nn3\tYES\t1\tNULL\nd\tYES\t1\tNULL",
+        "rc": 0
+      },
+      "residual": "COUNT(*)\n0",
+      "show-create-post": {
+        "err": "mysql: [Warning] Using a password on the command line interface can be insecure.",
+        "out": "Table\tCreate Table\nn_r3_s\tCREATE TABLE `n_r3_s` (\n  `c` varchar(32) NOT NULL DEFAULT 'null',\n  `n2` varchar(32) NOT NULL DEFAULT 'NULL',\n  `n3` varchar(32) DEFAULT NULL,\n  `d` int DEFAULT NULL,\n  PRIMARY KEY (`c`,`n2`) /*T![clustered_index] NONCLUSTERED */\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin",
+        "rc": 0
+      }
+    },
+    "version": "8.0.11-TiDB-v8.5.0"
+  }
+}

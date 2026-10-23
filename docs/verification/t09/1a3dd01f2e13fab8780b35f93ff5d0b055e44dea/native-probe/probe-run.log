@@ -1,0 +1,28 @@
+== mysql57 5.7.44
+column_name	is_nullable	default_is_sql_null	default_hex
+c	NO	0	6E756C6C
+n2	NO	0	4E554C4C
+n3	YES	1	NULL
+d	YES	1	NULL
+residual: 0
+== mysql80 8.0.46
+COLUMN_NAME	IS_NULLABLE	default_is_sql_null	default_hex
+c	NO	0	6E756C6C
+n2	NO	0	4E554C4C
+n3	YES	1	NULL
+d	YES	1	NULL
+residual: 0
+== mysql84 8.4.10
+COLUMN_NAME	IS_NULLABLE	default_is_sql_null	default_hex
+c	NO	0	6E756C6C
+n2	NO	0	4E554C4C
+n3	YES	1	NULL
+d	YES	1	NULL
+residual: 0
+== tidb85 8.0.11-TiDB-v8.5.0
+column_name	is_nullable	default_is_sql_null	default_hex
+c	NO	0	6E756C6C
+n2	NO	0	4E554C4C
+n3	YES	1	NULL
+d	YES	1	NULL
+residual: 0

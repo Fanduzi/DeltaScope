@@ -1,0 +1,35 @@
+T09-R3 bounded native confirmation — discriminated string-vs-NULL defaults
+=======================================================================
+Probe: native-probe/t09r3_probe.py (persisted verbatim; owned n_r3_* only)
+Output: native-matrix-r3.json (raw cells), probe-run.log (stdout)
+Bound code SHA: 1a3dd01f2e13fab8780b35f93ff5d0b055e44dea
+One cell per anchor (bounded extension inside the PK-conversion role).
+
+Why this probe exists: the R2 matrix displayed COLUMN_DEFAULT through
+mysql --batch --raw, where the string 'NULL' and SQL NULL both render as
+NULL. This follow-up adds the discriminating columns
+COLUMN_DEFAULT IS NULL and HEX(COLUMN_DEFAULT), plus SHOW CREATE TABLE.
+
+Fixture per anchor (golden schema, dropped after use):
+  CREATE TABLE n_r3_s (c  VARCHAR(32) NULL DEFAULT 'null',
+                       n2 VARCHAR(32) NULL DEFAULT 'NULL',
+                       n3 VARCHAR(32) NULL DEFAULT NULL, d INT);
+  ALTER TABLE n_r3_s ADD PRIMARY KEY (c, n2);
+
+Post-conversion discriminating result, identical on all four anchors
+(MySQL 5.7.44 / 8.0.46 / 8.4.10, TiDB 8.5.0):
+
+  column | is_nullable | default_is_sql_null | default_hex
+  c      | NO          | 0                   | 6E756C6C   ('null' string)
+  n2     | NO          | 0                   | 4E554C4C   ('NULL' string)
+  n3     | YES         | 1                   | NULL       (SQL NULL, not in PK)
+  d      | YES         | 1                   | NULL
+
+Reads:
+- 'null'  survives PK conversion as a real string default: IS NULL=0,
+  bytes 6E756C6C — not SQL NULL.
+- 'NULL'  survives identically: IS NULL=0, bytes 4E554C4C — the uppercase
+  string is now natively distinguishable from SQL NULL.
+- SQL NULL keeps IS NULL=1 — the catalog marker the provider reports as
+  HasDefault=false, never evidence the declaration wrote DEFAULT NULL.
+- Residual owned tables: 0 on every anchor.

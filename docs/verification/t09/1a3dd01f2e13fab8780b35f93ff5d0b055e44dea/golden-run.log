@@ -1,0 +1,27 @@
+T09-R3 golden runs — head=1a3dd01f2e13fab8780b35f93ff5d0b055e44dea
+=================================================================
+
+Environment: T07_MYSQL_PASSWORD=root T08_MYSQL_PASSWORD=root
+             T09_MYSQL_PASSWORD=root DS_T05_GOLDEN_PW=root
+Runner:      make ddl-golden TASK=<Tn> ARTIFACT_DIR=/tmp/ddl-golden-r3-<Tn>
+             (runner manages the compose lifecycle per task)
+
+Run history (honest record):
+- First serial pass: T04/T05/T06/T09 PASS; T07 and T08 failed on
+  "database reachable with expected version" — their manifests require
+  T07_MYSQL_PASSWORD/T08_MYSQL_PASSWORD exec credentials which were not
+  exported in that shell (only T09_MYSQL_PASSWORD was). No product
+  assertion failed; zero non-connectivity failures in either artifact.
+- After exporting all four credential env vars, T07 and T08 reran clean:
+  all cases pass at the same head SHA.
+
+Final results:
+- T04: cases=163 passed=163 assertions=1889  (rc=0)
+- T05: cases=247 passed=247 assertions=5109  (rc=0)
+- T06: cases=496 passed=496 assertions=11772 (rc=0)
+- T07: cases=207 passed=207 assertions=6190  (rc=0)
+- T08: cases=172 passed=172 assertions=4240  (rc=0)
+- T09: cases=125 passed=125 assertions=3442  (rc=0)
+
+All denominators and assertion totals identical to the frozen baselines.
+Each artifact independently re-validated (golden/<T>-validate.log rc=0).

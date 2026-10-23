@@ -1,0 +1,96 @@
+=== RUN   TestT09R3LeftPrefixGapOnTruncatedColumns
+=== PAUSE TestT09R3LeftPrefixGapOnTruncatedColumns
+=== RUN   TestT09R3LeftPrefixExpressionScopeControls
+=== PAUSE TestT09R3LeftPrefixExpressionScopeControls
+=== CONT  TestT09R3LeftPrefixGapOnTruncatedColumns
+=== RUN   TestT09R3LeftPrefixGapOnTruncatedColumns/create_index
+=== PAUSE TestT09R3LeftPrefixGapOnTruncatedColumns/create_index
+=== RUN   TestT09R3LeftPrefixGapOnTruncatedColumns/alter_add_index
+=== PAUSE TestT09R3LeftPrefixGapOnTruncatedColumns/alter_add_index
+=== CONT  TestT09R3LeftPrefixGapOnTruncatedColumns/create_index
+=== CONT  TestT09R3LeftPrefixExpressionScopeControls
+=== RUN   TestT09R3LeftPrefixExpressionScopeControls/declared_column_absent
+=== CONT  TestT09R3LeftPrefixGapOnTruncatedColumns/alter_add_index
+=== PAUSE TestT09R3LeftPrefixExpressionScopeControls/declared_column_absent
+=== RUN   TestT09R3LeftPrefixExpressionScopeControls/declared_longer_than_named
+=== PAUSE TestT09R3LeftPrefixExpressionScopeControls/declared_longer_than_named
+=== RUN   TestT09R3LeftPrefixExpressionScopeControls/named_order_disproves
+=== PAUSE TestT09R3LeftPrefixExpressionScopeControls/named_order_disproves
+=== RUN   TestT09R3LeftPrefixExpressionScopeControls/complete_projection_still_strict
+=== PAUSE TestT09R3LeftPrefixExpressionScopeControls/complete_projection_still_strict
+=== RUN   TestT09R3LeftPrefixExpressionScopeControls/all_expression_member
+=== PAUSE TestT09R3LeftPrefixExpressionScopeControls/all_expression_member
+=== RUN   TestT09R3LeftPrefixExpressionScopeControls/proper_prefix_still_pairs
+=== PAUSE TestT09R3LeftPrefixExpressionScopeControls/proper_prefix_still_pairs
+=== RUN   TestT09R3LeftPrefixExpressionScopeControls/equal_length_truncated
+=== PAUSE TestT09R3LeftPrefixExpressionScopeControls/equal_length_truncated
+--- PASS: TestT09R3LeftPrefixGapOnTruncatedColumns (0.00s)
+    --- PASS: TestT09R3LeftPrefixGapOnTruncatedColumns/create_index (0.00s)
+    --- PASS: TestT09R3LeftPrefixGapOnTruncatedColumns/alter_add_index (0.00s)
+=== CONT  TestT09R3LeftPrefixExpressionScopeControls/declared_column_absent
+=== CONT  TestT09R3LeftPrefixExpressionScopeControls/all_expression_member
+=== CONT  TestT09R3LeftPrefixExpressionScopeControls/complete_projection_still_strict
+=== CONT  TestT09R3LeftPrefixExpressionScopeControls/named_order_disproves
+=== CONT  TestT09R3LeftPrefixExpressionScopeControls/declared_longer_than_named
+=== CONT  TestT09R3LeftPrefixExpressionScopeControls/equal_length_truncated
+=== CONT  TestT09R3LeftPrefixExpressionScopeControls/proper_prefix_still_pairs
+--- PASS: TestT09R3LeftPrefixExpressionScopeControls (0.00s)
+    --- PASS: TestT09R3LeftPrefixExpressionScopeControls/declared_column_absent (0.00s)
+    --- PASS: TestT09R3LeftPrefixExpressionScopeControls/complete_projection_still_strict (0.00s)
+    --- PASS: TestT09R3LeftPrefixExpressionScopeControls/all_expression_member (0.00s)
+    --- PASS: TestT09R3LeftPrefixExpressionScopeControls/named_order_disproves (0.00s)
+    --- PASS: TestT09R3LeftPrefixExpressionScopeControls/declared_longer_than_named (0.00s)
+    --- PASS: TestT09R3LeftPrefixExpressionScopeControls/equal_length_truncated (0.00s)
+    --- PASS: TestT09R3LeftPrefixExpressionScopeControls/proper_prefix_still_pairs (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	0.579s
+=== RUN   TestT09R3ExpressionMemberLeftPrefixGap
+=== PAUSE TestT09R3ExpressionMemberLeftPrefixGap
+=== RUN   TestT09R3ExpressionMemberUnrelatedKeepsPass
+=== PAUSE TestT09R3ExpressionMemberUnrelatedKeepsPass
+=== CONT  TestT09R3ExpressionMemberLeftPrefixGap
+=== CONT  TestT09R3ExpressionMemberUnrelatedKeepsPass
+=== RUN   TestT09R3ExpressionMemberLeftPrefixGap/create_index
+=== PAUSE TestT09R3ExpressionMemberLeftPrefixGap/create_index
+=== RUN   TestT09R3ExpressionMemberUnrelatedKeepsPass/mysql/create_index
+=== RUN   TestT09R3ExpressionMemberLeftPrefixGap/alter_add_index
+=== PAUSE TestT09R3ExpressionMemberLeftPrefixGap/alter_add_index
+=== PAUSE TestT09R3ExpressionMemberUnrelatedKeepsPass/mysql/create_index
+=== CONT  TestT09R3ExpressionMemberLeftPrefixGap/create_index
+=== RUN   TestT09R3ExpressionMemberUnrelatedKeepsPass/mysql/alter_add_index
+=== PAUSE TestT09R3ExpressionMemberUnrelatedKeepsPass/mysql/alter_add_index
+=== RUN   TestT09R3ExpressionMemberUnrelatedKeepsPass/tidb/create_index
+=== PAUSE TestT09R3ExpressionMemberUnrelatedKeepsPass/tidb/create_index
+=== RUN   TestT09R3ExpressionMemberUnrelatedKeepsPass/tidb/alter_add_index
+=== PAUSE TestT09R3ExpressionMemberUnrelatedKeepsPass/tidb/alter_add_index
+=== CONT  TestT09R3ExpressionMemberUnrelatedKeepsPass/mysql/create_index
+=== CONT  TestT09R3ExpressionMemberLeftPrefixGap/alter_add_index
+=== CONT  TestT09R3ExpressionMemberUnrelatedKeepsPass/tidb/alter_add_index
+=== RUN   TestT09R3ExpressionMemberLeftPrefixGap/alter_add_index/mysql
+=== CONT  TestT09R3ExpressionMemberUnrelatedKeepsPass/tidb/create_index
+=== PAUSE TestT09R3ExpressionMemberLeftPrefixGap/alter_add_index/mysql
+=== RUN   TestT09R3ExpressionMemberLeftPrefixGap/alter_add_index/tidb
+=== PAUSE TestT09R3ExpressionMemberLeftPrefixGap/alter_add_index/tidb
+=== CONT  TestT09R3ExpressionMemberLeftPrefixGap/alter_add_index/mysql
+=== CONT  TestT09R3ExpressionMemberLeftPrefixGap/alter_add_index/tidb
+=== CONT  TestT09R3ExpressionMemberUnrelatedKeepsPass/mysql/alter_add_index
+=== RUN   TestT09R3ExpressionMemberLeftPrefixGap/create_index/mysql
+=== PAUSE TestT09R3ExpressionMemberLeftPrefixGap/create_index/mysql
+=== RUN   TestT09R3ExpressionMemberLeftPrefixGap/create_index/tidb
+=== PAUSE TestT09R3ExpressionMemberLeftPrefixGap/create_index/tidb
+=== CONT  TestT09R3ExpressionMemberLeftPrefixGap/create_index/mysql
+=== CONT  TestT09R3ExpressionMemberLeftPrefixGap/create_index/tidb
+--- PASS: TestT09R3ExpressionMemberUnrelatedKeepsPass (0.00s)
+    --- PASS: TestT09R3ExpressionMemberUnrelatedKeepsPass/mysql/create_index (0.01s)
+    --- PASS: TestT09R3ExpressionMemberUnrelatedKeepsPass/tidb/create_index (0.01s)
+    --- PASS: TestT09R3ExpressionMemberUnrelatedKeepsPass/mysql/alter_add_index (0.01s)
+    --- PASS: TestT09R3ExpressionMemberUnrelatedKeepsPass/tidb/alter_add_index (0.01s)
+--- PASS: TestT09R3ExpressionMemberLeftPrefixGap (0.00s)
+    --- PASS: TestT09R3ExpressionMemberLeftPrefixGap/alter_add_index (0.00s)
+        --- PASS: TestT09R3ExpressionMemberLeftPrefixGap/alter_add_index/mysql (0.01s)
+        --- PASS: TestT09R3ExpressionMemberLeftPrefixGap/alter_add_index/tidb (0.01s)
+    --- PASS: TestT09R3ExpressionMemberLeftPrefixGap/create_index (0.00s)
+        --- PASS: TestT09R3ExpressionMemberLeftPrefixGap/create_index/tidb (0.01s)
+        --- PASS: TestT09R3ExpressionMemberLeftPrefixGap/create_index/mysql (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.593s

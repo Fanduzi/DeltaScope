@@ -1,0 +1,44 @@
+?   	github.com/Fanduzi/DeltaScope/cmd/deltascope	[no test files]
+ok  	github.com/Fanduzi/DeltaScope/cmd/deltascope-mcp	0.599s
+ok  	github.com/Fanduzi/DeltaScope/cmd/deltascope-server	0.553s
+?   	github.com/Fanduzi/DeltaScope/internal/application	[no test files]
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/application/auditmeta	1.879s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/configlint	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/application/configstatus	0.987s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/connresolve	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/application/online	2.188s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/policy	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/application/queryaccess	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/application/rulepresence	2.597s
+?   	github.com/Fanduzi/DeltaScope/internal/domain	[no test files]
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/policy	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/queryaccess	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/report	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/catalog	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/dml	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/spec	(cached)
+?   	github.com/Fanduzi/DeltaScope/internal/infrastructure	[no test files]
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/config/viper	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/logger	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/postgresql	(cached)
+?   	github.com/Fanduzi/DeltaScope/internal/infrastructure/output	[no test files]
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/githubactions	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/githubsummary	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/gitlabcodequality	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/json	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/markdown	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/sarif	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/postgresql	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	3.104s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/cli	4.225s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/http	4.321s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/mcp	5.180s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/metadata	5.396s
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	6.423s
+ok  	github.com/Fanduzi/DeltaScope/scripts/t06a17proof	4.461s
+ok  	github.com/Fanduzi/DeltaScope/scripts/t07proof	6.532s
