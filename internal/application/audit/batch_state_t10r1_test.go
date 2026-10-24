@@ -204,8 +204,15 @@ func TestT10R1NullableUniqueNotImplicitPrimary(t *testing.T) {
 	}
 }
 
-// Control: an expression-member UNIQUE is provably not the role holder —
-// invisible is allowed on both dialects (native-observed e4).
+// Dialect split: TiDB never promotes an expression-member UNIQUE (hidden
+// member columns cannot carry the role — native rc:0 on v8.5.0), so
+// invisible is allowed. MySQL can promote it when the hidden generated
+// column is NOT NULL — and prefers a plain-column candidate over an
+// earlier-declared functional one (native-pinned: u_e((a+1)) alone on
+// NOT NULL a refuses 3522; on nullable a it hides; declared before a
+// plain unique it loses to the plain one). Neither the generated
+// column's nullability nor the mixed selection order is provable from
+// our member facts, so MySQL yields a bounded gap, not a guessed pass.
 func TestT10R1ExpressionUniqueNotImplicitPrimary(t *testing.T) {
 	t.Parallel()
 	for _, tc := range t10r1Dialects {
@@ -223,8 +230,16 @@ func TestT10R1ExpressionUniqueNotImplicitPrimary(t *testing.T) {
 				"ALTER TABLE t ALTER INDEX u_f INVISIBLE;",
 				provider, t10r1CompatVisibilityPolicy(t),
 			)
-			if len(t05FindingsByRule(result, 0, t10IndexCompat)) != 0 {
-				t.Fatalf("expression-member unique never holds the role, got %+v", result.Statements[0].Findings)
+			if findings := t05FindingsByRule(result, 0, t10IndexCompat); len(findings) != 0 {
+				t.Fatalf("expression-member unique never emits a refusal finding, got %+v", result.Statements[0].Findings)
+			}
+			gaps := t05GapsByRule(result, 0, t10IndexCompat)
+			if tc.dialect == spec.DialectMySQL {
+				if len(gaps) == 0 {
+					t.Fatalf("mysql: unprovable generated-column nullability must gap, got %+v", result.Statements[0])
+				}
+			} else if len(gaps) != 0 {
+				t.Fatalf("tidb: hidden members disqualify deterministically, got gaps %+v", gaps)
 			}
 		})
 	}

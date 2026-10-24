@@ -361,7 +361,7 @@ func (s *batchState) applyAlterIndexVisibility(statement spec.Statement, alter *
 		// parse. All native outcomes preserve the member's state, so the
 		// shape stays as it was. When the role itself is unprovable the flip
 		// might have landed: the post-state is unprovable and invalidates.
-		role := spec.ResolvePrimaryRole(entry.shape, entry.shape.IndexOrderCatalog)
+		role := spec.ResolvePrimaryRole(s.dialect, entry.shape, entry.shape.IndexOrderCatalog)
 		if !role.Resolved {
 			s.invalidateKey(key)
 			return

@@ -47,19 +47,21 @@ const (
 
 // ResolvePrimaryRole determines which index carries the primary-key role on
 // a known table shape — the explicit primary key when one exists, else the
-// first qualifying UNIQUE index in the product's selection order. Both
-// anchors agree on the semantics (native-pinned on MySQL 8.0.46/8.4.10 and
-// TiDB v8.5.0, 2026-10): qualifying means
-// every member is a plain column part (prefix members still qualify;
-// expression and unmodeled members disqualify the index) bound to a column
-// proven NOT NULL. When several candidates qualify and the slice order is
-// not the catalog order the holder is unprovable; a withheld member set or
-// unvouched primary key likewise withholds the answer.
+// first qualifying UNIQUE index in the product's selection order (natively
+// pinned on MySQL 8.0.46/8.4.10 and TiDB v8.5.0, 2026-10): qualifying means
+// every member is a plain column part bound to a column proven NOT NULL;
+// prefix members still qualify. An expression member disqualifies the index
+// on TiDB (hidden member columns never carry the role) but on MySQL the
+// hidden generated column can qualify — its nullability and the mixed
+// functional/plain selection order are facts we cannot prove, so the index
+// stays unprovable and withholds the answer instead of a guessed pass or
+// refusal. A withheld member set or unvouched primary key likewise
+// withholds the answer.
 //
 // candidateOrderCatalog reports whether the index slice's order is the
 // product's selection order — true for a declared CREATE TABLE shape and a
 // batch-derived snapshot, false for a provider-loaded (name-sorted) set.
-func ResolvePrimaryRole(snapshot *TableSnapshot, candidateOrderCatalog bool) PrimaryRoleResolution {
+func ResolvePrimaryRole(dialect Dialect, snapshot *TableSnapshot, candidateOrderCatalog bool) PrimaryRoleResolution {
 	if snapshot == nil || !snapshot.Exists {
 		return PrimaryRoleResolution{Resolved: true}
 	}
@@ -79,7 +81,7 @@ func ResolvePrimaryRole(snapshot *TableSnapshot, candidateOrderCatalog bool) Pri
 		// it and do not matter.
 		for i := range snapshot.Indexes {
 			index := &snapshot.Indexes[i]
-			eligible, provable := primaryRoleEligible(index, snapshot)
+			eligible, provable := primaryRoleEligible(dialect, index, snapshot)
 			if eligible {
 				return PrimaryRoleResolution{Resolved: true, HasHolder: true, Holder: index.Name}
 			}
@@ -93,7 +95,7 @@ func ResolvePrimaryRole(snapshot *TableSnapshot, candidateOrderCatalog bool) Pri
 	var unprovable []string
 	for i := range snapshot.Indexes {
 		index := &snapshot.Indexes[i]
-		eligible, provable := primaryRoleEligible(index, snapshot)
+		eligible, provable := primaryRoleEligible(dialect, index, snapshot)
 		if eligible {
 			candidates = append(candidates, index.Name)
 		} else if !provable {
@@ -118,7 +120,7 @@ func ResolvePrimaryRole(snapshot *TableSnapshot, candidateOrderCatalog bool) Pri
 // ResolveDeclaredPrimaryRole is the create-time analogue: the declared table
 // shape is evaluated within the statement itself (declaration order is the
 // selection order, columns and indexes are the statement's own).
-func ResolveDeclaredPrimaryRole(ddl *DDL) PrimaryRoleResolution {
+func ResolveDeclaredPrimaryRole(dialect Dialect, ddl *DDL) PrimaryRoleResolution {
 	if ddl == nil {
 		return PrimaryRoleResolution{Resolved: true}
 	}
@@ -130,7 +132,7 @@ func ResolveDeclaredPrimaryRole(ddl *DDL) PrimaryRoleResolution {
 		Columns: ddl.Columns,
 		Indexes: ddl.Indexes,
 	}
-	return ResolvePrimaryRole(&view, true)
+	return ResolvePrimaryRole(dialect, &view, true)
 }
 
 // primaryRoleEligible decides whether one index can carry the implicit
@@ -141,12 +143,18 @@ func ResolveDeclaredPrimaryRole(ddl *DDL) PrimaryRoleResolution {
 // a withheld column set, an unresolvable member, or an unmodeled member makes
 // the decision unprovable. Prefix lengths do not disqualify — the product
 // promotes a prefix-unique the same way.
-func primaryRoleEligible(index *Index, snapshot *TableSnapshot) (eligible, provable bool) {
+func primaryRoleEligible(dialect Dialect, index *Index, snapshot *TableSnapshot) (eligible, provable bool) {
 	if index == nil || index.Kind != IndexKindUnique {
 		return false, true
 	}
 	if index.ExpressionCount > 0 || index.HasExpressionKeys {
-		return false, true
+		// TiDB: hidden member columns never carry the role (native rc:0).
+		// MySQL promotes a functional unique whose hidden generated column
+		// is NOT NULL, and prefers a plain-column candidate over an
+		// earlier-declared functional one — neither fact is provable from
+		// our member set, so the index is unprovable rather than
+		// disqualified.
+		return false, dialect != DialectMySQL
 	}
 	if index.UnmodeledKeyParts > 0 {
 		return false, false

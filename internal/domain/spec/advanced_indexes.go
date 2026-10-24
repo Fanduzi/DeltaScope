@@ -605,7 +605,7 @@ func assessImplicitPrimaryVisibility(assessment *AdvancedIndexAssessment, fact a
 	holds := false
 	switch fact.action {
 	case "create_table":
-		holds = holdsRole(ResolveDeclaredPrimaryRole(ddl))
+		holds = holdsRole(ResolveDeclaredPrimaryRole(dialect, ddl))
 	case "add_index", "add_constraint", "create_index":
 		// A newly created index appends after every existing member — it can
 		// hold the role only when the snapshot proves no earlier qualifying
@@ -614,7 +614,7 @@ func assessImplicitPrimaryVisibility(assessment *AdvancedIndexAssessment, fact a
 		if snapshot == nil || !snapshot.Exists || index.Kind != IndexKindUnique {
 			return
 		}
-		role := ResolvePrimaryRole(snapshot, snapshot.IndexOrderCatalog)
+		role := ResolvePrimaryRole(dialect, snapshot, snapshot.IndexOrderCatalog)
 		if !role.Resolved {
 			assessment.appendGap(AdvancedIndexFeatureVisibility, AdvancedReasonUnknownTableState, role.GapFacts...)
 			return
@@ -622,7 +622,7 @@ func assessImplicitPrimaryVisibility(assessment *AdvancedIndexAssessment, fact a
 		if !role.HasHolder {
 			// No explicit PK and no existing candidate: the declared index
 			// becomes the holder exactly when it provably qualifies.
-			eligible, provable := primaryRoleEligible(index, snapshot)
+			eligible, provable := primaryRoleEligible(dialect, index, snapshot)
 			switch {
 			case !provable:
 				assessment.appendGap(AdvancedIndexFeatureVisibility, AdvancedReasonUnknownTableState, PrimaryRoleGapMemberFacts)
@@ -650,7 +650,7 @@ func assessImplicitPrimaryVisibility(assessment *AdvancedIndexAssessment, fact a
 			// order gap must not fire on an unrelated invisibility.
 			return
 		}
-		role := ResolvePrimaryRole(snapshot, snapshot.IndexOrderCatalog)
+		role := ResolvePrimaryRole(dialect, snapshot, snapshot.IndexOrderCatalog)
 		if !role.Resolved {
 			assessment.appendGap(AdvancedIndexFeatureVisibility, AdvancedReasonUnknownTableState, role.GapFacts...)
 			return
