@@ -48,6 +48,15 @@ type TableSnapshot struct {
 	Constraints []Constraint      `json:"constraints,omitempty"`
 	Options     map[string]string `json:"options,omitempty"`
 
+	// PrimaryKeyIsHandle marks a TiDB PKIsHandle table: the single-integer
+	// clustered primary key is the row handle, so no operable PRIMARY index
+	// object exists even though the catalog synthesizes a PRIMARY row for
+	// display (ALTER INDEX `PRIMARY` answers 1176 there). A non-handle TiDB
+	// primary key — NONCLUSTERED or clustered on a non-single-int shape —
+	// is a real index object (VISIBLE succeeds, INVISIBLE reports 3522).
+	// MySQL never sets it: PRIMARY is always an index object there.
+	PrimaryKeyIsHandle bool `json:"-"`
+
 	// PrimaryKeyUnknown/IndexesUnknown/ConstraintsUnknown mark member
 	// collections the snapshot cannot vouch for (a derived-incomplete
 	// projection). Rules must treat them as unknown — never as confirmed
@@ -55,6 +64,19 @@ type TableSnapshot struct {
 	PrimaryKeyUnknown  bool `json:"-"`
 	IndexesUnknown     bool `json:"-"`
 	ConstraintsUnknown bool `json:"-"`
+
+	// IndexOrderCatalog records that Indexes slice order is the catalog /
+	// declaration order (a table wholly created in-batch). Provider-loaded
+	// indexes arrive name-sorted, which is never the role-selection order,
+	// so provider snapshots keep this false and multi-candidate primary-role
+	// determinations degrade to a bounded gap instead of guessing Indexes[0].
+	IndexOrderCatalog bool `json:"-"`
+
+	// Partitioned reports whether the table is partitioned — the fact TiDB's
+	// GLOBAL index option is gated on. nil means the fact was never loaded
+	// (offline statement or a pre-expansion provider), not "not
+	// partitioned".
+	Partitioned *bool `json:"-"`
 }
 
 // HasColumn reports whether the snapshot contains a column by name, case-insensitively.

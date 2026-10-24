@@ -1,6 +1,6 @@
 // Package mysqlmeta implements metadata-aware audit adapters over the MySQL protocol.
 // input: sql.DB access plus connection configs, version/schema/table lookup requests, and MySQL/TiDB metadata queries
-// output: normalized instance facts with explicit known bits (innodb_page_size, 5.7 large-prefix, TiDB max-index-length via all-rows SHOW CONFIG verification — read failures propagate as provider errors, only absent/ambiguous values stay unknown), dialect detection, schema discovery, and table snapshots with preserved index cardinality plus per-member plain-key knownness facts (STATISTICS SUB_PART/COLLATION and NULL COLUMN_NAME classified into prefix/desc/expression/unmodeled marks — provider-loaded indexes carry the same comparability vocabulary declarations do), verbatim COLUMN_TYPE parameter spans on the five declared-parameter bases (DECIMAL/FLOAT/DOUBLE/ENUM/SET — member literals keep catalog case and attribute words inside quotes never set Unsigned), stored-representation default facts (COLUMN_DEFAULT IS NOT NULL → HasDefault with verbatim DefaultValue bytes; NULL rows and literal "null" text never set DefaultIsNull on this path), the comparable literal-default identity keyed by the column's own base type (temporal markers asserted only on temporal bases), and T07 advanced-column facts read from the same COLUMNS row (EXTRA DEFAULT_GENERATED → parsed DefaultExpression facts, STORED/VIRTUAL GENERATED + GENERATION_EXPRESSION → generated storage + expression facts, INVISIBLE → effective visibility; undecodable expression text stays an explicit unknown fact), per-index effective visibility via the STATISTICS.IS_VISIBLE capability probe (a catalog-count query — capable catalogs select the column, MySQL 5.7/zero-count leaves member Visibility empty rather than guessed, real probe failures propagate as load errors) plus SPATIAL/FULLTEXT INDEX_TYPE classification into spec.Index.Kind for application-level audit enrichment
+// output: normalized instance facts with explicit known bits (innodb_page_size, 5.7 large-prefix, TiDB max-index-length via all-rows SHOW CONFIG verification — read failures propagate as provider errors, only absent/ambiguous values stay unknown), dialect detection, schema discovery, and table snapshots with preserved index cardinality plus per-member plain-key knownness facts (STATISTICS SUB_PART/COLLATION and NULL COLUMN_NAME classified into prefix/desc/expression/unmodeled marks — provider-loaded indexes carry the same comparability vocabulary declarations do), verbatim COLUMN_TYPE parameter spans on the five declared-parameter bases (DECIMAL/FLOAT/DOUBLE/ENUM/SET — member literals keep catalog case and attribute words inside quotes never set Unsigned), stored-representation default facts (COLUMN_DEFAULT IS NOT NULL → HasDefault with verbatim DefaultValue bytes; NULL rows and literal "null" text never set DefaultIsNull on this path), the comparable literal-default identity keyed by the column's own base type (temporal markers asserted only on temporal bases), and T07 advanced-column facts read from the same COLUMNS row (EXTRA DEFAULT_GENERATED → parsed DefaultExpression facts, STORED/VIRTUAL GENERATED + GENERATION_EXPRESSION → generated storage + expression facts, INVISIBLE → effective visibility; undecodable expression text stays an explicit unknown fact), per-index effective visibility via the STATISTICS.IS_VISIBLE capability probe (a catalog-count query — capable catalogs select the column, MySQL 5.7/zero-count leaves member Visibility empty rather than guessed, real probe failures propagate as load errors) plus SPATIAL/FULLTEXT INDEX_TYPE classification into spec.Index.Kind, member-level KeyParts with an EXPRESSION capability probe (catalog functional text parsed into ExpressionFacts + multi-valued marks), PARTITIONS-derived Partitioned (unanswerable probe stays unknown), and TiDB PrimaryKeyIsHandle via TIDB_INDEXES.CLUSTERED + the single-integer member shape for application-level audit enrichment
 // pos: infrastructure metadata adapter between database/sql and domain metadata specs
 // note: if this file changes, update this header and module README.md.
 package mysqlmeta
@@ -305,7 +305,7 @@ func (p *Provider) loadTiDBMaxIndexLength(ctx context.Context) (value int, ok bo
 }
 
 // LoadTableSnapshot reads one target table shape from information_schema.
-func (p *Provider) LoadTableSnapshot(ctx context.Context, _ spec.Dialect, schema string, table string) (*spec.TableSnapshot, error) {
+func (p *Provider) LoadTableSnapshot(ctx context.Context, dialect spec.Dialect, schema string, table string) (*spec.TableSnapshot, error) {
 	snapshot := &spec.TableSnapshot{
 		Schema: schema,
 		Exists: false,
@@ -356,8 +356,91 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, _ spec.Dialect, schema
 	if err := p.loadIndexes(ctx, snapshot); err != nil {
 		return nil, fmt.Errorf("load table %s.%s indexes: %w", snapshot.Schema, snapshot.Table.Name, err)
 	}
+	if dialect == spec.DialectTiDB {
+		// Only TiDB consumers read Partitioned (the GLOBAL index gate) and
+		// PrimaryKeyIsHandle — skip the probes on MySQL.
+		if err := p.loadPartitioned(ctx, snapshot); err != nil {
+			return nil, fmt.Errorf("load table %s.%s partition state: %w", snapshot.Schema, snapshot.Table.Name, err)
+		}
+		if err := p.loadTiDBPrimaryKeyHandle(ctx, snapshot); err != nil {
+			return nil, fmt.Errorf("load table %s.%s primary-key handle: %w", snapshot.Schema, snapshot.Table.Name, err)
+		}
+	}
 
 	return snapshot, nil
+}
+
+// loadPartitioned records whether the table is partitioned — the fact the
+// TiDB GLOBAL index option and partition-aware checks consult. A zero-count
+// row answers false; a catalog the query cannot read keeps the fact
+// unknown (Partitioned nil).
+func (p *Provider) loadPartitioned(ctx context.Context, snapshot *spec.TableSnapshot) error {
+	var n int
+	if err := p.db.QueryRowContext(ctx, `
+		select count(*)
+		from information_schema.partitions
+		where table_schema = ? and table_name = ?
+			and partition_name is not null
+	`, snapshot.Schema, snapshot.Table.Name).Scan(&n); err != nil {
+		if err == sql.ErrNoRows {
+			// An unanswerable catalog probe keeps the fact unknown — a
+			// bounded gap, not a guessed "not partitioned".
+			return nil
+		}
+		return fmt.Errorf("query partitions: %w", err)
+	}
+	partitioned := n > 0
+	snapshot.Partitioned = &partitioned
+	return nil
+}
+
+// loadTiDBPrimaryKeyHandle resolves whether a TiDB primary key is stored as
+// PKIsHandle — the row-id promotion for a single-integer clustered PK that
+// leaves no operable PRIMARY index object. STATISTICS synthesizes a PRIMARY
+// member row even for handle tables, so the index object cannot be told
+// apart by index presence alone; information_schema.TIDB_INDEXES carries
+// the per-index CLUSTERED fact instead. A missing catalog row keeps the
+// false default — MySQL and PK-less TiDB tables never reach this probe.
+func (p *Provider) loadTiDBPrimaryKeyHandle(ctx context.Context, snapshot *spec.TableSnapshot) error {
+	if snapshot.PrimaryKey == nil {
+		return nil
+	}
+	var clustered sql.NullString
+	if err := p.db.QueryRowContext(ctx, `
+		select clustered
+		from information_schema.tidb_indexes
+		where table_schema = ? and table_name = ? and key_name = 'PRIMARY'
+	`, snapshot.Schema, snapshot.Table.Name).Scan(&clustered); err != nil {
+		if err == sql.ErrNoRows {
+			// PRIMARY not listed in TIDB_INDEXES: the index object cannot be
+			// proven clustered — leave the handle fact false.
+			return nil
+		}
+		return fmt.Errorf("query tidb_indexes clustered: %w", err)
+	}
+	if !strings.EqualFold(clustered.String, "yes") {
+		return nil
+	}
+	if len(snapshot.PrimaryKey.Columns) != 1 {
+		return nil
+	}
+	snapshot.PrimaryKeyIsHandle = tidbHandleColumnInteger(snapshot, snapshot.PrimaryKey.Columns[0])
+	return nil
+}
+
+// tidbHandleColumnInteger reports whether the PK column is an integer kind —
+// the shape TiDB promotes to PKIsHandle under clustered storage.
+func tidbHandleColumnInteger(snapshot *spec.TableSnapshot, column string) bool {
+	for i := range snapshot.Columns {
+		if strings.EqualFold(snapshot.Columns[i].Name, column) {
+			switch catalogBaseType(snapshot.Columns[i].Type) {
+			case "tinyint", "smallint", "mediumint", "int", "integer", "bigint":
+				return true
+			}
+			return false
+		}
+	}
+	return false
 }
 
 func (p *Provider) loadColumns(ctx context.Context, snapshot *spec.TableSnapshot) error {
@@ -559,9 +642,21 @@ func (p *Provider) loadIndexes(ctx context.Context, snapshot *spec.TableSnapshot
 	if hasVisible {
 		visibleSelect = ", is_visible"
 	}
+	// EXPRESSION carries the catalog-stored functional key-part text (MySQL
+	// 8.0.13+ and TiDB); MySQL 5.7 has no such column and functional parts
+	// cannot exist there, so the probe keeps the row shape honest per
+	// anchor instead of selecting a column that may not exist.
+	hasExpression, err := p.statisticsHasExpression(ctx)
+	if err != nil {
+		return err
+	}
+	expressionSelect := ""
+	if hasExpression {
+		expressionSelect = ", expression"
+	}
 	rows, err := p.db.QueryContext(ctx, `
 		select index_name, non_unique, index_type, column_name, cardinality,
-			sub_part, collation`+visibleSelect+`
+			sub_part, collation`+visibleSelect+expressionSelect+`
 		from information_schema.statistics
 		where table_schema = ? and table_name = ?
 		order by index_name, seq_in_index
@@ -576,12 +671,15 @@ func (p *Provider) loadIndexes(ctx context.Context, snapshot *spec.TableSnapshot
 
 	for rows.Next() {
 		var name, indexType string
-		var columnName, collation, visible sql.NullString
+		var columnName, collation, visible, expression sql.NullString
 		var nonUnique int
 		var cardinality, subPart sql.NullInt64
 		dest := []any{&name, &nonUnique, &indexType, &columnName, &cardinality, &subPart, &collation}
 		if hasVisible {
 			dest = append(dest, &visible)
+		}
+		if hasExpression {
+			dest = append(dest, &expression)
 		}
 		if err := rows.Scan(dest...); err != nil {
 			return fmt.Errorf("scan table index: %w", err)
@@ -592,7 +690,7 @@ func (p *Provider) loadIndexes(ctx context.Context, snapshot *spec.TableSnapshot
 			cardinalityValue = ptrInt64(cardinality.Int64)
 		}
 		accumulateIndexRow(indexes, &order, name, nonUnique, indexType,
-			indexMemberRow{columnName: columnName, collation: collation, subPart: subPart, visible: visible},
+			indexMemberRow{columnName: columnName, collation: collation, subPart: subPart, visible: visible, expression: expression},
 			cardinalityValue)
 	}
 	if err := rows.Err(); err != nil {
@@ -601,6 +699,7 @@ func (p *Provider) loadIndexes(ctx context.Context, snapshot *spec.TableSnapshot
 
 	for _, name := range order {
 		index := indexes[name]
+		index.SetKeyParts(index.KeyParts)
 		if index.Kind == spec.IndexKindPrimary {
 			snapshot.PrimaryKey = index
 			continue
@@ -633,17 +732,41 @@ func (p *Provider) statisticsHasIsVisible(ctx context.Context) (bool, error) {
 	return n > 0, nil
 }
 
+// statisticsHasExpression reports whether this server's
+// information_schema.STATISTICS exposes the EXPRESSION column (MySQL
+// 8.0.13+, TiDB; absent on 5.7). Like the IS_VISIBLE probe, the answer
+// comes from the catalog itself.
+func (p *Provider) statisticsHasExpression(ctx context.Context) (bool, error) {
+	var n int
+	err := p.db.QueryRowContext(ctx, `
+		select count(*) from information_schema.`+"`columns`"+`
+		where table_schema = 'information_schema'
+			and table_name = 'STATISTICS'
+			and column_name = 'EXPRESSION'
+	`).Scan(&n)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, fmt.Errorf("probe statistics expression: %w", err)
+	}
+	return n > 0, nil
+}
+
 // indexMemberRow carries one STATISTICS member row's plain-key knownness
 // facts: which column it names, its sort direction, and its prefix length.
 // A NULL column_name marks an expression key part; a NULL collation on a
 // named member means the row is not classifiable as a plain ascending part.
 // visible carries the index-level IS_VISIBLE fact (constant across the
 // index's rows); a NULL/unsupported value leaves Visibility unknown.
+// expression carries the catalog-stored functional key-part text when the
+// server exposes it.
 type indexMemberRow struct {
 	columnName sql.NullString
 	collation  sql.NullString
 	subPart    sql.NullInt64
 	visible    sql.NullString
+	expression sql.NullString
 }
 
 func accumulateIndexRow(indexes map[string]*spec.Index, order *[]string, name string, nonUnique int, indexType string, member indexMemberRow, cardinality *int64) {
@@ -665,26 +788,38 @@ func accumulateIndexRow(indexes map[string]*spec.Index, order *[]string, name st
 		}
 	}
 
-	// NULL column_name is an expression key part — the catalog stores no
-	// column name for it. Mark it rather than fabricating an empty column.
+	// STATISTICS emits rows in seq_in_index order inside each index group,
+	// so the accumulated slice position is the member ordinal.
+	keyPart := spec.IndexKeyPart{Ordinal: len(index.KeyParts) + 1}
 	if !member.columnName.Valid {
-		index.HasExpressionKeys = true
-		index.ExpressionCount++
+		// NULL column_name is an expression key part — the catalog stores no
+		// column name for it. Mark it rather than fabricating an empty
+		// column; the catalog EXPRESSION text supplies the member identity
+		// and column dependencies when the server exposes it.
+		keyPart.Kind = spec.IndexKeyPartExpression
+		if member.expression.Valid && strings.TrimSpace(member.expression.String) != "" {
+			keyPart.Expression = ptrExpressionFacts(tidbparser.ParseCatalogExpressionFacts(member.expression.String))
+			keyPart.MultiValued = tidbparser.CatalogExpressionIsMultiValued(member.expression.String)
+		}
 	} else {
+		keyPart.Kind = spec.IndexKeyPartColumn
+		keyPart.Column = member.columnName.String
 		index.Columns = append(index.Columns, member.columnName.String)
 		if member.subPart.Valid {
-			index.PrefixParts++
+			length := int(member.subPart.Int64)
+			keyPart.PrefixLength = &length
 		}
 		if !member.collation.Valid {
-			// A named member with no collation (e.g. spatial rows) cannot be
-			// classified as a plain ascending part.
-			index.UnmodeledKeyParts++
+			// A named member with no collation (e.g. spatial rows) cannot
+			// be classified as a plain ascending part.
+			keyPart.Kind = spec.IndexKeyPartUnmodeled
 		} else if strings.EqualFold(member.collation.String, "D") {
-			index.DescParts++
+			keyPart.Descending = true
 		} else if !strings.EqualFold(member.collation.String, "A") {
-			index.UnmodeledKeyParts++
+			keyPart.Kind = spec.IndexKeyPartUnmodeled
 		}
 	}
+	index.KeyParts = append(index.KeyParts, keyPart)
 	if cardinality == nil {
 		return
 	}

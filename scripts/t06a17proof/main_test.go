@@ -167,6 +167,10 @@ func (c *faultConn) QueryContext(_ context.Context, query string, _ []driver.Nam
 		f.providerQueries++
 		return newFaultRows([]string{"index_name", "non_unique", "index_type", "column_name", "cardinality", "sub_part", "collation"}, nil, -1), nil
 	}
+	if strings.Contains(query, "from information_schema.partitions") {
+		f.providerQueries++
+		return newFaultRows([]string{"count(*)"}, [][]driver.Value{{int64(0)}}, -1), nil
+	}
 	return nil, fmt.Errorf("unexpected query %q", query)
 }
 
@@ -225,9 +229,11 @@ func TestT06A17R1CollectorComplete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// providerQueries: tables row + columns + the IS_VISIBLE capability probe
-	// + statistics member rows = 4 catalog round-trips since T10.
-	if fixture.creates != 1 || fixture.drops != 1 || fixture.created || fixture.counts != 2 || fixture.providerQueries != 4 {
+	// providerQueries: tables row + columns + the IS_VISIBLE and EXPRESSION
+	// capability probes + statistics member rows = 5 catalog round-trips
+	// since T10-R1 (the PARTITIONS/TIDB_INDEXES probes run only for TiDB,
+	// and this fixture loads as MySQL).
+	if fixture.creates != 1 || fixture.drops != 1 || fixture.created || fixture.counts != 2 || fixture.providerQueries != 5 {
 		t.Fatalf("incomplete lifecycle/provider calls: %+v", fixture)
 	}
 	var pairs []pair

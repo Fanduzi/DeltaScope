@@ -208,3 +208,65 @@ func TestExtractorT10MultiValuedKeyParts(t *testing.T) {
 		})
 	}
 }
+
+// Member-level facts: every key part keeps its ordinal, kind, bound column,
+// explicit prefix length (including zero), declared direction, and — for
+// expression members — the structured identity and column dependencies.
+func TestExtractorT10R1MemberLevelKeyParts(t *testing.T) {
+	t.Parallel()
+	statement := extractOne(t, spec.DialectMySQL,
+		"CREATE TABLE t (a INT, b VARCHAR(64), c INT, UNIQUE KEY u (a DESC, b(0), (c+1)))")
+	index := statement.DDL.Indexes[0]
+	if len(index.KeyParts) != 3 {
+		t.Fatalf("KeyParts = %+v, want 3 members", index.KeyParts)
+	}
+	if index.KeyParts[0].Ordinal != 1 || index.KeyParts[0].Kind != spec.IndexKeyPartColumn ||
+		index.KeyParts[0].Column != "a" || !index.KeyParts[0].Descending {
+		t.Fatalf("member 1 must be a descending column a, got %+v", index.KeyParts[0])
+	}
+	if index.KeyParts[1].Ordinal != 2 || index.KeyParts[1].Column != "b" ||
+		index.KeyParts[1].PrefixLength == nil || *index.KeyParts[1].PrefixLength != 0 {
+		t.Fatalf("member 2 must carry the explicit zero prefix, got %+v", index.KeyParts[1])
+	}
+	expr := index.KeyParts[2]
+	if expr.Ordinal != 3 || expr.Kind != spec.IndexKeyPartExpression || expr.Expression == nil ||
+		!expr.Expression.Known || len(expr.Expression.References) != 1 || expr.Expression.References[0].Name != "c" {
+		t.Fatalf("member 3 must carry expression identity + column deps, got %+v", expr)
+	}
+	if index.DescParts != 1 || index.PrefixParts != 1 || index.ExpressionCount != 1 {
+		t.Fatalf("aggregates = %d/%d/%d, want 1/1/1", index.DescParts, index.PrefixParts, index.ExpressionCount)
+	}
+}
+
+// Descending member order is positional: (a DESC,b) and (a,b DESC) differ.
+func TestExtractorT10R1DescendingMemberOrder(t *testing.T) {
+	t.Parallel()
+	first := extractOne(t, spec.DialectMySQL, "CREATE TABLE t (a INT, b INT, KEY d (a DESC, b))").DDL.Indexes[0]
+	second := extractOne(t, spec.DialectMySQL, "CREATE TABLE t (a INT, b INT, KEY d (a, b DESC))").DDL.Indexes[0]
+	if !first.KeyParts[0].Descending || first.KeyParts[1].Descending {
+		t.Fatalf("(a DESC,b) must mark member 1 only, got %+v", first.KeyParts)
+	}
+	if second.KeyParts[0].Descending || !second.KeyParts[1].Descending {
+		t.Fatalf("(a,b DESC) must mark member 2 only, got %+v", second.KeyParts)
+	}
+}
+
+// PRIMARY KEY … CLUSTERED|NONCLUSTERED parses to PrimaryKeyType; the
+// primary role then decides TiDB PKIsHandle on declared shapes.
+func TestExtractorT10R1PrimaryKeyType(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		sql  string
+		want string
+	}{
+		{"CREATE TABLE t (a INT, PRIMARY KEY (a) NONCLUSTERED)", "nonclustered"},
+		{"CREATE TABLE t (a INT, PRIMARY KEY (a) CLUSTERED)", "clustered"},
+		{"CREATE TABLE t (a INT, PRIMARY KEY (a))", ""},
+		{"CREATE TABLE t (a INT PRIMARY KEY NONCLUSTERED)", "nonclustered"},
+	} {
+		statement := extractOne(t, spec.DialectTiDB, tc.sql)
+		if statement.DDL.PrimaryKey == nil || statement.DDL.PrimaryKey.PrimaryKeyType != tc.want {
+			t.Fatalf("%s → PrimaryKeyType = %q, want %q", tc.sql, statement.DDL.PrimaryKey.PrimaryKeyType, tc.want)
+		}
+	}
+}

@@ -1,10 +1,14 @@
 // Package spec defines parser-neutral advanced-index facts and assessments.
-// input: normalized statements carrying index part-kind marks, visibility
-// facts, and version metadata
+// input: normalized statements carrying member-level key-part facts
+// (ordinal/kind/prefix/direction/expression identity), index visibility
+// facts, bound table snapshots (columns/indexes/PK handle/partition state),
+// and version metadata
 // output: the shared AssessAdvancedIndexes answer — features, determined
-// product/version issues, and bounded version gaps — consumed by the index
+// product/version and member-legality issues, the implicit-primary role
+// verdict, and bounded version/fact gaps — consumed by the index
 // compatibility rule and the ordered-state publication gate
-// pos: T10 advanced-index domain model consumed by rules and the ordered-state pass
+// pos: T10 advanced-index domain model and T10-R1 primary-role/member-legality
+// determination, consumed by rules and the ordered-state pass
 // note: if this file changes, update this header and module README.md.
 package spec
 
@@ -17,6 +21,10 @@ const (
 	AdvancedIndexFeatureExpressionKeys = "expression_keys"
 	AdvancedIndexFeatureDescendingKeys = "descending_keys"
 	AdvancedIndexFeatureMultiValued    = "multi_valued"
+	AdvancedIndexFeaturePrefixLength   = "prefix_length"
+	AdvancedIndexFeatureFulltext       = "fulltext"
+	AdvancedIndexFeatureSpatial        = "spatial"
+	AdvancedIndexFeatureGlobal         = "global"
 )
 
 // Advanced-index reason codes beyond the shared AdvancedReason* set.
@@ -30,7 +38,46 @@ const (
 	// the product rejects any invisibility transition or declaration on
 	// the primary key (3522 on both MySQL 8.x and TiDB).
 	AdvancedIndexReasonPrimaryVisibility = "primary_index_visibility"
+	// AdvancedIndexReasonPrefixRequired marks a BLOB/TEXT member declared
+	// without a prefix length — the product rejects it (1170 on both
+	// MySQL and TiDB).
+	AdvancedIndexReasonPrefixRequired = "prefix_required"
+	// AdvancedIndexReasonFulltextColumnType marks a FULLTEXT member bound
+	// to a column outside the character/text family (1283 on MySQL).
+	AdvancedIndexReasonFulltextColumnType = "fulltext_column_type"
+	// AdvancedIndexReasonSpatialColumnType marks a SPATIAL member bound to
+	// a column outside the geometry family (1687 on MySQL).
+	AdvancedIndexReasonSpatialColumnType = "spatial_column_type"
+	// AdvancedIndexReasonSpatialNullable marks a SPATIAL member bound to a
+	// nullable column — every part must be NOT NULL (1252 on MySQL).
+	AdvancedIndexReasonSpatialNullable = "spatial_nullable"
+	// AdvancedIndexReasonExpressionColumn marks an expression member that
+	// references a column absent from the provable column set (1054 on
+	// both products).
+	AdvancedIndexReasonExpressionColumn = "expression_column_missing"
+	// AdvancedIndexReasonGlobalNotUnique marks a GLOBAL index option on a
+	// non-unique index — TiDB rejects it (8200) even on partitioned
+	// tables.
+	AdvancedIndexReasonGlobalNotUnique = "global_not_unique"
+	// AdvancedIndexReasonGlobalNotPartitioned marks a GLOBAL index option
+	// on a non-partitioned table — TiDB rejects it (8200).
+	AdvancedIndexReasonGlobalNotPartitioned = "global_not_partitioned"
+	// AdvancedIndexReasonJSONColumn marks a plain column member bound to a
+	// JSON column — the product requires a generated-column path (3152 on
+	// both products, even with a prefix length).
+	AdvancedIndexReasonJSONColumn = "json_column_index"
 )
+
+// advancedIndexVersionGatedFeatures marks the features whose checks consult
+// the target version. Member-legality features (prefix/FT/SPATIAL/GLOBAL
+// member rules) are product rules on every supported anchor — they never
+// consult the version, so they must not mint version gaps.
+var advancedIndexVersionGatedFeatures = map[string]bool{
+	AdvancedIndexFeatureVisibility:     true,
+	AdvancedIndexFeatureExpressionKeys: true,
+	AdvancedIndexFeatureDescendingKeys: true,
+	AdvancedIndexFeatureMultiValued:    true,
+}
 
 // Minimum supported versions for MySQL-family advanced index forms. TiDB
 // forms are gated on the validated series instead of these minimums.
@@ -159,8 +206,11 @@ func statementIndexFacts(ddl *DDL) []advancedIndexFact {
 	return out
 }
 
-// indexFeatures returns the advanced-index forms one fact carries.
-func indexFeatures(fact advancedIndexFact) []string {
+// indexFeatures returns the advanced-index forms one fact carries. ddl and
+// snapshot supply the column table a member-level feature may need to prove
+// its relevance (a BLOB/TEXT binding is inside the prefix-length contract
+// even without an authored length).
+func indexFeatures(fact advancedIndexFact, ddl *DDL, snapshot *TableSnapshot) []string {
 	index := fact.index
 	var features []string
 	if fact.action == "alter_index" || index.VisibilityExplicit {
@@ -174,6 +224,33 @@ func indexFeatures(fact advancedIndexFact) []string {
 	}
 	if index.DescParts > 0 {
 		features = append(features, AdvancedIndexFeatureDescendingKeys)
+	}
+	for _, part := range index.KeyParts {
+		if part.PrefixLength != nil {
+			features = append(features, AdvancedIndexFeaturePrefixLength)
+			break
+		}
+		if part.Kind == IndexKeyPartColumn {
+			// A member bound to a BLOB/TEXT-family column is inside the
+			// prefix-length contract even without an authored length, and
+			// so is a direct JSON binding — the member check then decides
+			// whether the fact is legal.
+			if column := factMemberColumn(fact, part.Column, ddl, snapshot); column != nil {
+				if base := baseColumnTypeName(column.Type); prefixRequiredFamilyType(base) || base == "json" {
+					features = append(features, AdvancedIndexFeaturePrefixLength)
+					break
+				}
+			}
+		}
+	}
+	switch index.Kind {
+	case IndexKindFulltext:
+		features = append(features, AdvancedIndexFeatureFulltext)
+	case IndexKindSpatial:
+		features = append(features, AdvancedIndexFeatureSpatial)
+	}
+	if index.Global {
+		features = append(features, AdvancedIndexFeatureGlobal)
 	}
 	return features
 }
@@ -194,22 +271,31 @@ func AssessAdvancedIndexes(statement Statement) AdvancedIndexAssessment {
 		return assessment
 	}
 	var version *VersionIdentity
+	var snapshot *TableSnapshot
 	if statement.Metadata != nil {
 		version = statement.Metadata.Version
+		snapshot = statement.Metadata.TargetTable
 	}
 
 	facts := statementIndexFacts(ddl)
 	var gated []string
 	for _, fact := range facts {
-		for _, feature := range indexFeatures(fact) {
-			if !assessment.Features[feature] {
+		for _, feature := range indexFeatures(fact, ddl, snapshot) {
+			// TiDB descending is a product property (accepted, stored
+			// ascending) — it never consults the version and must not
+			// mint a missing-version gap.
+			versionGated := advancedIndexVersionGatedFeatures[feature] &&
+				!(feature == AdvancedIndexFeatureDescendingKeys && statement.Dialect == DialectTiDB)
+			if !assessment.Features[feature] && versionGated {
 				gated = append(gated, feature)
 			}
 			assessment.Features[feature] = true
-			assessment.VersionGated[feature] = true
+			if versionGated {
+				assessment.VersionGated[feature] = true
+			}
 		}
 	}
-	// Every advanced-index feature consults the target version on both
+	// The version-gated features consult the target version on both
 	// dialects: MySQL forms gate on their own minimums, TiDB forms gate on
 	// the validated series. One bounded version gap per statement.
 	if len(gated) > 0 {
@@ -223,20 +309,22 @@ func AssessAdvancedIndexes(statement Statement) AdvancedIndexAssessment {
 	versionKnown := version != nil && version.ValidatedRange
 
 	for _, fact := range facts {
-		assessIndexFact(&assessment, fact, version, versionKnown, statement.Dialect)
+		assessIndexFact(&assessment, fact, version, versionKnown, statement.Dialect, ddl, snapshot)
 	}
 	assessment.Applies = len(assessment.Features) > 0
 	return assessment
 }
 
 // assessIndexFact evaluates one index fact against the product/version
-// responsibility table.
-func assessIndexFact(assessment *AdvancedIndexAssessment, fact advancedIndexFact, version *VersionIdentity, versionKnown bool, dialect Dialect) {
+// responsibility table. snapshot is the ordered pre-state the statement was
+// enriched with (nil offline); ddl supplies the statement's own declared
+// shape for create-table role determination.
+func assessIndexFact(assessment *AdvancedIndexAssessment, fact advancedIndexFact, version *VersionIdentity, versionKnown bool, dialect Dialect, ddl *DDL, snapshot *TableSnapshot) {
 	index := fact.index
 	if index == nil {
 		return
 	}
-	features := indexFeatures(fact)
+	features := indexFeatures(fact, ddl, snapshot)
 	for _, feature := range features {
 		switch feature {
 		case AdvancedIndexFeatureVisibility:
@@ -265,21 +353,314 @@ func assessIndexFact(assessment *AdvancedIndexAssessment, fact advancedIndexFact
 		}
 	}
 	// The primary-key visibility negative: declared PRIMARY KEY invisibility
-	// is rejected at 3522 on both products; ALTER INDEX `PRIMARY` on MySQL
-	// is the same refusal class (TiDB answers it through existence — PRIMARY
-	// is not an index there). An authored VISIBLE attribute on the primary
-	// key is a natively-accepted no-op, not a refusal — only invisibility
-	// fires. The issue only fires where the product answer is proven: an
-	// in-range version.
+	// is rejected at 3522 on both products (and on MySQL <8.0 the INVISIBLE
+	// keyword fails at parse) — the statement never succeeds anywhere in the
+	// supported range, so the refusal is version-free. ALTER INDEX `PRIMARY`
+	// on MySQL is the same refusal class on every version that accepts the
+	// syntax (3522 whether the request is VISIBLE or INVISIBLE). TiDB
+	// resolves `PRIMARY` to a real index object only on non-handle tables;
+	// a PKIsHandle table has no such object and the statement fails 1176
+	// through the existence rule instead. An authored VISIBLE attribute on
+	// the primary key is a natively-accepted no-op, not a refusal — only
+	// invisibility fires.
 	if index.Kind == IndexKindPrimary && index.Visibility == ColumnVisibilityInvisible {
-		if versionKnown {
-			assessment.appendIssue(fact.name, AdvancedIndexFeatureVisibility, fact.action, AdvancedIndexReasonPrimaryVisibility, "")
-		}
+		assessment.appendIssue(fact.name, AdvancedIndexFeatureVisibility, fact.action, AdvancedIndexReasonPrimaryVisibility, "")
 		return
 	}
 	if fact.action == "alter_index" && strings.EqualFold(fact.name, "primary") {
-		if dialect == DialectMySQL && versionKnown && versionAtLeast(version, advancedIndexMinimumVisibilityMySQL) {
-			assessment.appendIssue(fact.name, AdvancedIndexFeatureVisibility, fact.action, AdvancedIndexReasonPrimaryVisibility, "")
+		switch {
+		case dialect == DialectMySQL:
+			if !versionKnown || versionAtLeast(version, advancedIndexMinimumVisibilityMySQL) {
+				// 8.0+ refuses outright; <8.0 fails at parse, so the version
+				// question only scopes the 3522 attribution, never the
+				// refusal itself.
+				assessment.appendIssue(fact.name, AdvancedIndexFeatureVisibility, fact.action, AdvancedIndexReasonPrimaryVisibility, "")
+			}
+		case dialect == DialectTiDB:
+			exists, resolved := ResolveIndexPrimaryObject(snapshot, dialect)
+			switch {
+			case !resolved:
+				assessment.appendGap(AdvancedIndexFeatureVisibility, AdvancedReasonUnknownTableState, PrimaryRoleGapPrimaryKey)
+			case exists && index.Visibility == ColumnVisibilityInvisible:
+				// A real PRIMARY index object cannot be made invisible —
+				// the same 3522 refusal MySQL reports.
+				assessment.appendIssue(fact.name, AdvancedIndexFeatureVisibility, fact.action, AdvancedIndexReasonPrimaryVisibility, "")
+			}
 		}
+		return
+	}
+	assessImplicitPrimaryVisibility(assessment, fact, version, versionKnown, dialect, ddl, snapshot)
+	assessIndexMembers(assessment, fact, dialect, ddl, snapshot)
+}
+
+// assessIndexMembers applies the member-level product rules to a declared
+// index shape: prefix-required BLOB/TEXT columns (1170), JSON members (3152),
+// FULLTEXT member column families (1283), SPATIAL member geometry type and
+// NOT NULL (1687/1252), expression-member column dependencies (1054), and
+// TiDB GLOBAL's unique-plus-partitioned gate (8200). It reads the declared
+// column set on create_table and the bound snapshot on add/create-index
+// actions; facts the statement or snapshot cannot vouch for surface as
+// bounded gaps, never guessed answers.
+func assessIndexMembers(assessment *AdvancedIndexAssessment, fact advancedIndexFact, dialect Dialect, ddl *DDL, snapshot *TableSnapshot) {
+	index := fact.index
+	if index == nil || fact.action == "alter_index" {
+		return
+	}
+	if index.Global && dialect == DialectTiDB {
+		// GLOBAL legality needs no column set — the unique-kind gate is a
+		// statement fact and the partition gate answers from the bound shape
+		// or stays a bounded gap when partition state is unvouched.
+		switch index.Kind {
+		case IndexKindUnique, IndexKindPrimary:
+		default:
+			assessment.appendIssue(index.Name, AdvancedIndexFeatureGlobal, fact.action, AdvancedIndexReasonGlobalNotUnique, "")
+		}
+		var partitioned *bool
+		if fact.action == "create_table" && ddl != nil {
+			known := ddl.HasPartition
+			partitioned = &known
+		} else if snapshot != nil {
+			partitioned = snapshot.Partitioned
+		}
+		switch {
+		case partitioned == nil:
+			assessment.appendGap(AdvancedIndexFeatureGlobal, AdvancedReasonUnknownTableState, "target_table.partitions")
+		case !*partitioned:
+			assessment.appendIssue(index.Name, AdvancedIndexFeatureGlobal, fact.action, AdvancedIndexReasonGlobalNotPartitioned, "")
+		}
+	}
+	var columns []Column
+	columnsKnown := false
+	if fact.action == "create_table" && ddl != nil {
+		columns, columnsKnown = ddl.Columns, true
+	} else if snapshot != nil && snapshot.Exists {
+		if snapshot.Columns != nil {
+			columns, columnsKnown = snapshot.Columns, true
+		}
+	} else {
+		// No bound table shape — member checks wait on existence scope.
+		return
+	}
+	// needColumnsFor collects the features whose checks were blocked on an
+	// unvouched column set or a member whose column/type is unproven.
+	needColumnsFor := map[string]bool{}
+	findColumn := func(name string) *Column {
+		for i := range columns {
+			if strings.EqualFold(columns[i].Name, name) {
+				return &columns[i]
+			}
+		}
+		return nil
+	}
+
+	for _, part := range index.KeyParts {
+		switch part.Kind {
+		case IndexKeyPartColumn:
+			column := findColumn(part.Column)
+			if column == nil {
+				if !columnsKnown {
+					// Attribute the withheld answer to every member check
+					// this part feeds — prefix/JSON legality plus the
+					// kind-scoped FULLTEXT/SPATIAL type checks.
+					needColumnsFor[AdvancedIndexFeaturePrefixLength] = true
+					switch index.Kind {
+					case IndexKindFulltext:
+						needColumnsFor[AdvancedIndexFeatureFulltext] = true
+					case IndexKindSpatial:
+						needColumnsFor[AdvancedIndexFeatureSpatial] = true
+					}
+					continue
+				}
+				// A provably missing member column is the key-column
+				// existence domain (1072), not member-legality — leave it.
+				continue
+			}
+			base := baseColumnTypeName(column.Type)
+			if base == "" {
+				needColumnsFor[AdvancedIndexFeaturePrefixLength] = true
+				continue
+			}
+			if base == "json" {
+				assessment.appendIssue(index.Name, AdvancedIndexFeaturePrefixLength, fact.action, AdvancedIndexReasonJSONColumn, "")
+				continue
+			}
+			if part.PrefixLength == nil && prefixRequiredFamilyType(base) {
+				assessment.appendIssue(index.Name, AdvancedIndexFeaturePrefixLength, fact.action, AdvancedIndexReasonPrefixRequired, "")
+			}
+			if dialect == DialectMySQL {
+				switch index.Kind {
+				case IndexKindFulltext:
+					if !fulltextMemberFamilyType(base) {
+						assessment.appendIssue(index.Name, AdvancedIndexFeatureFulltext, fact.action, AdvancedIndexReasonFulltextColumnType, "")
+					}
+				case IndexKindSpatial:
+					if !spatialMemberFamilyType(base) {
+						assessment.appendIssue(index.Name, AdvancedIndexFeatureSpatial, fact.action, AdvancedIndexReasonSpatialColumnType, "")
+					} else if !column.NotNull {
+						assessment.appendIssue(index.Name, AdvancedIndexFeatureSpatial, fact.action, AdvancedIndexReasonSpatialNullable, "")
+					}
+				}
+			}
+		case IndexKeyPartExpression:
+			if part.Expression == nil || !part.Expression.Known {
+				// Expression identity unprovable — the dependency answer
+				// is withheld, not guessed.
+				assessment.appendGap(AdvancedIndexFeatureExpressionKeys, AdvancedReasonUnknownTableState, "target_table.indexes.key_parts.expression")
+				continue
+			}
+			for _, ref := range part.Expression.References {
+				if ref.Name == "" || ref.Table != "" {
+					// Qualified references and non-column shapes stay
+					// outside the bounded dependency check.
+					continue
+				}
+				if !columnsKnown {
+					needColumnsFor[AdvancedIndexFeatureExpressionKeys] = true
+					break
+				}
+				if findColumn(ref.Name) == nil {
+					assessment.appendIssue(index.Name, AdvancedIndexFeatureExpressionKeys, fact.action, AdvancedIndexReasonExpressionColumn, "")
+					break
+				}
+			}
+		}
+	}
+	for feature := range needColumnsFor {
+		assessment.appendGap(feature, AdvancedReasonUnknownTableState, PrimaryRoleGapColumnNullables)
+	}
+}
+
+// factMemberColumn resolves one member name against the column table the
+// fact can vouch for — the statement's own declared columns on
+// create_table, else the bound snapshot's catalog columns. nil when the
+// column set is absent or the name is unlisted.
+func factMemberColumn(fact advancedIndexFact, name string, ddl *DDL, snapshot *TableSnapshot) *Column {
+	var columns []Column
+	switch {
+	case fact.action == "create_table" && ddl != nil:
+		columns = ddl.Columns
+	case snapshot != nil && snapshot.Exists:
+		columns = snapshot.Columns
+	}
+	for i := range columns {
+		if strings.EqualFold(columns[i].Name, name) {
+			return &columns[i]
+		}
+	}
+	return nil
+}
+
+// prefixRequiredFamilyType reports the BLOB/TEXT family that needs an
+// explicit prefix length under MySQL-family rules (1170).
+func prefixRequiredFamilyType(base string) bool {
+	switch base {
+	case "blob", "tinyblob", "mediumblob", "longblob",
+		"text", "tinytext", "mediumtext", "longtext":
+		return true
+	}
+	return false
+}
+
+// fulltextMemberFamilyType reports the column family a FULLTEXT member may
+// bind on MySQL (1283 for anything else).
+func fulltextMemberFamilyType(base string) bool {
+	switch base {
+	case "char", "varchar", "nchar", "nvarchar",
+		"text", "tinytext", "mediumtext", "longtext":
+		return true
+	}
+	return false
+}
+
+// spatialMemberFamilyType reports the geometry family a SPATIAL member may
+// bind on MySQL (1687 for anything else).
+func spatialMemberFamilyType(base string) bool {
+	switch base {
+	case "geometry", "point", "linestring", "polygon",
+		"multipoint", "multilinestring", "multipolygon", "geometrycollection":
+		return true
+	}
+	return false
+}
+
+// assessImplicitPrimaryVisibility applies the implicit primary-key role to
+// invisibility intent on a non-PRIMARY-named fact: when no explicit primary
+// key exists, the first qualifying UNIQUE index carries the role and cannot
+// go invisible (3522 on both anchors). The determination is shared across
+// create_table declarations, add/create-index declarations, and alter_index
+// targets. Unproven role facts degrade to bounded gaps — never a fabricated
+// refusal and never a fabricated pass.
+func assessImplicitPrimaryVisibility(assessment *AdvancedIndexAssessment, fact advancedIndexFact, version *VersionIdentity, versionKnown bool, dialect Dialect, ddl *DDL, snapshot *TableSnapshot) {
+	index := fact.index
+	if index.Visibility != ColumnVisibilityInvisible {
+		return
+	}
+	holdsRole := func(role PrimaryRoleResolution) bool {
+		if !role.Resolved {
+			assessment.appendGap(AdvancedIndexFeatureVisibility, AdvancedReasonUnknownTableState, role.GapFacts...)
+			return false
+		}
+		return role.HasHolder && strings.EqualFold(role.Holder, index.Name)
+	}
+	holds := false
+	switch fact.action {
+	case "create_table":
+		holds = holdsRole(ResolveDeclaredPrimaryRole(ddl))
+	case "add_index", "add_constraint", "create_index":
+		// A newly created index appends after every existing member — it can
+		// hold the role only when the snapshot proves no earlier qualifying
+		// candidate and no explicit primary key. An unbound/absent target is
+		// the existence machinery's scope, not a role gap.
+		if snapshot == nil || !snapshot.Exists || index.Kind != IndexKindUnique {
+			return
+		}
+		role := ResolvePrimaryRole(snapshot, snapshot.IndexOrderCatalog)
+		if !role.Resolved {
+			assessment.appendGap(AdvancedIndexFeatureVisibility, AdvancedReasonUnknownTableState, role.GapFacts...)
+			return
+		}
+		if !role.HasHolder {
+			// No explicit PK and no existing candidate: the declared index
+			// becomes the holder exactly when it provably qualifies.
+			eligible, provable := primaryRoleEligible(index, snapshot)
+			switch {
+			case !provable:
+				assessment.appendGap(AdvancedIndexFeatureVisibility, AdvancedReasonUnknownTableState, PrimaryRoleGapMemberFacts)
+			case eligible:
+				holds = true
+			}
+		}
+	case "alter_index":
+		// Unbound metadata is offline scope, a confirmed-absent table fails
+		// on existence — neither is a role question. Only a vouched set that
+		// cannot enumerate candidates emits the member gap here; the plain
+		// IndexesUnknown case already surfaces through the existence rule.
+		if snapshot == nil || !snapshot.Exists || snapshot.IndexesUnknown {
+			return
+		}
+		target := snapshot.FindIndex(fact.name)
+		if target == nil {
+			// A missing target fails on existence (1176) — the role question
+			// never arises; the existence rule owns the finding/gap.
+			return
+		}
+		if target.Kind != IndexKindUnique {
+			// The role question only exists for a candidate-shaped target —
+			// a plain or fulltext index can never hold it, so a candidate-
+			// order gap must not fire on an unrelated invisibility.
+			return
+		}
+		role := ResolvePrimaryRole(snapshot, snapshot.IndexOrderCatalog)
+		if !role.Resolved {
+			assessment.appendGap(AdvancedIndexFeatureVisibility, AdvancedReasonUnknownTableState, role.GapFacts...)
+			return
+		}
+		holds = role.HasHolder && strings.EqualFold(role.Holder, target.Name)
+	}
+	if holds {
+		// The refusal holds on every supported version — MySQL <8.0 rejects
+		// the INVISIBLE keyword at parse, 8.0+ and TiDB answer 3522 — so the
+		// issue and the blocked transition are version-free.
+		assessment.appendIssue(fact.name, AdvancedIndexFeatureVisibility, fact.action, AdvancedIndexReasonPrimaryVisibility, "")
 	}
 }

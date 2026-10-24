@@ -1,6 +1,6 @@
 // Package tidbparser extracts parser-neutral statements from TiDB AST nodes.
 // input: TiDB parser statement nodes and parser-neutral dialect metadata
-// output: extractor-backed parsed statements for the application layer, including MutationTargets and mutation-target-only DML tables, normalized ALTER index/constraint actions, multi-target DDL Targets for DROP/RENAME/ALTER-rename, temporary-table scope facts, typed and unextracted column-option facts, primary-key metadata, inline PRIMARY KEY presence on column-change facts, parser-decoded COMMENT string content (no SQL quote wrapping), sentinel-faithful declared type parameters (DECIMAL/FLOAT/DOUBLE scale, byte-exact ENUM/SET members) on the five declared-parameter types, structured generated-column and expression-default facts via the shared expression-facts visitor, the comparable literal-default identity decoded from typed AST values, if_exists/if_not_exists option markers for conditional-existence derivation, and the T10 index facts — the alter_index action carrying the VISIBLE|INVISIBLE target on OldName, authored Visibility/VisibilityExplicit across index sites, and MultiValuedParts CAST-array member counts
+// output: extractor-backed parsed statements for the application layer, including MutationTargets and mutation-target-only DML tables, normalized ALTER index/constraint actions, multi-target DDL Targets for DROP/RENAME/ALTER-rename, temporary-table scope facts, typed and unextracted column-option facts, primary-key metadata, inline PRIMARY KEY presence on column-change facts, parser-decoded COMMENT string content (no SQL quote wrapping), sentinel-faithful declared type parameters (DECIMAL/FLOAT/DOUBLE scale, byte-exact ENUM/SET members) on the five declared-parameter types, structured generated-column and expression-default facts via the shared expression-facts visitor, the comparable literal-default identity decoded from typed AST values, if_exists/if_not_exists option markers for conditional-existence derivation, and the T10 index facts — the alter_index action carrying the VISIBLE|INVISIBLE target on OldName, authored Visibility/VisibilityExplicit across index sites, member-level KeyParts (ordinal/kind/prefix/direction/structured expression identity) with derived MultiValuedParts CAST-array counts, and TiDB PRIMARY KEY CLUSTERED|NONCLUSTERED on Index.PrimaryKeyType
 // pos: infrastructure extraction adapter between TiDB AST and domain spec
 // note: if this file changes, update this header and module README.md.
 package tidbparser
@@ -287,7 +287,12 @@ func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
 		ddl.Columns = append(ddl.Columns, column)
 		for _, option := range col.Options {
 			if option != nil && option.Tp == ast.ColumnOptionPrimaryKey {
-				ddl.PrimaryKey = &spec.Index{Name: "primary", Kind: spec.IndexKindPrimary, Columns: []string{column.Name}}
+				pk := &spec.Index{Name: "primary", Kind: spec.IndexKindPrimary, Columns: []string{column.Name}}
+				if option.PrimaryKeyTp != ast.PrimaryKeyTypeDefault {
+					pk.PrimaryKeyType = strings.ToLower(option.PrimaryKeyTp.String())
+				}
+				pk.SetKeyParts([]spec.IndexKeyPart{{Ordinal: 1, Kind: spec.IndexKeyPartColumn, Column: column.Name}})
+				ddl.PrimaryKey = pk
 				break
 			}
 		}
@@ -296,13 +301,20 @@ func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
 	for _, c := range stmt.Constraints {
 		switch c.Tp {
 		case ast.ConstraintPrimaryKey:
-			expr, prefix, desc, multiValued := countIndexPartKinds(c.Keys)
-			global, hasPredicate, visibility, unmodeled := indexOptionFacts(c.Option)
-			ddl.PrimaryKey = &spec.Index{Name: normalizeConstraintName(c), Kind: spec.IndexKindPrimary, Columns: extractIndexColumns(c.Keys), HasExpressionKeys: expr > 0, ExpressionCount: expr, PrefixParts: prefix, DescParts: desc, MultiValuedParts: multiValued, Visibility: visibility, VisibilityExplicit: visibility != "", Global: global, HasPredicate: hasPredicate, UnmodeledOptions: unmodeled}
+			global, hasPredicate, visibility, primaryKeyType, unmodeled := indexOptionFacts(c.Option)
+			pk := &spec.Index{Name: normalizeConstraintName(c), Kind: spec.IndexKindPrimary, Columns: extractIndexColumns(c.Keys), Visibility: visibility, VisibilityExplicit: visibility != "", Global: global, HasPredicate: hasPredicate, PrimaryKeyType: primaryKeyType, UnmodeledOptions: unmodeled}
+			pk.SetKeyParts(extractIndexKeyParts(c.Keys))
+			ddl.PrimaryKey = pk
 		case ast.ConstraintKey, ast.ConstraintIndex, ast.ConstraintUniq, ast.ConstraintUniqKey, ast.ConstraintUniqIndex, ast.ConstraintFulltext:
-			expr, prefix, desc, multiValued := countIndexPartKinds(c.Keys)
-			global, hasPredicate, visibility, unmodeled := indexOptionFacts(c.Option)
-			ddl.Indexes = append(ddl.Indexes, spec.Index{Name: normalizeConstraintName(c), Kind: indexKindForConstraint(c.Tp), Columns: extractIndexColumns(c.Keys), HasExpressionKeys: expr > 0, ExpressionCount: expr, PrefixParts: prefix, DescParts: desc, MultiValuedParts: multiValued, Visibility: visibility, VisibilityExplicit: visibility != "", Global: global, HasPredicate: hasPredicate, UnmodeledOptions: unmodeled})
+			global, hasPredicate, visibility, primaryKeyType, unmodeled := indexOptionFacts(c.Option)
+			if primaryKeyType != "" {
+				// CLUSTERED|NONCLUSTERED is a primary-key-only option; on any
+				// other index kind it stays a bounded unmodeled member.
+				unmodeled = append(unmodeled, "primary_key_type")
+			}
+			index := spec.Index{Name: normalizeConstraintName(c), Kind: indexKindForConstraint(c.Tp), Columns: extractIndexColumns(c.Keys), Visibility: visibility, VisibilityExplicit: visibility != "", Global: global, HasPredicate: hasPredicate, UnmodeledOptions: unmodeled}
+			index.SetKeyParts(extractIndexKeyParts(c.Keys))
+			ddl.Indexes = append(ddl.Indexes, index)
 		default:
 			ddl.Constraints = append(ddl.Constraints, extractConstraint(c))
 		}
@@ -796,11 +808,8 @@ func extractColumn(col *ast.ColumnDef) spec.Column {
 			if option.StrValue == "Global" {
 				column.UnextractedOptions = append(column.UnextractedOptions, "primary_key_global")
 			}
-			if option.PrimaryKeyTp != ast.PrimaryKeyTypeDefault {
-				// Inline PRIMARY KEY CLUSTERED|NONCLUSTERED mirrors the
-				// table-level index-option gap.
-				column.UnextractedOptions = append(column.UnextractedOptions, "primary_key_type")
-			}
+			// Inline PRIMARY KEY CLUSTERED|NONCLUSTERED is modeled on the
+			// primary-key index's PrimaryKeyType member, not a column gap.
 		case ast.ColumnOptionAutoIncrement:
 			column.AutoIncrement = true
 		case ast.ColumnOptionDefaultValue:
@@ -957,17 +966,21 @@ func extractCreateIndex(stmt *ast.CreateIndexStmt) *spec.DDL {
 	}
 	indexName := stmt.IndexName
 	columns := extractIndexColumns(stmt.IndexPartSpecifications)
-	expr, prefix, desc, multiValued := countIndexPartKinds(stmt.IndexPartSpecifications)
-	indexGlobal, hasPredicate, visibility, unmodeled := indexOptionFacts(stmt.IndexOption)
+	indexGlobal, hasPredicate, visibility, primaryKeyType, unmodeled := indexOptionFacts(stmt.IndexOption)
+	if primaryKeyType != "" {
+		unmodeled = append(unmodeled, "primary_key_type")
+	}
 	var unextracted []string
 	if stmt.LockAlg != nil {
 		// CREATE INDEX ... ALGORITHM=/LOCK= is real MySQL syntax the model does
 		// not carry; record bounded presence rather than the clause values.
 		unextracted = append(unextracted, "lock_algorithm")
 	}
+	definition := &spec.Index{Name: indexName, Kind: kind, Columns: columns, Visibility: visibility, VisibilityExplicit: visibility != "", Global: indexGlobal, HasPredicate: hasPredicate, UnmodeledOptions: unmodeled}
+	definition.SetKeyParts(extractIndexKeyParts(stmt.IndexPartSpecifications))
 	alter := spec.Alter{
 		Action: "create_index",
-		Index:  &spec.AlterIndex{Definition: &spec.Index{Name: indexName, Kind: kind, Columns: columns, HasExpressionKeys: expr > 0, ExpressionCount: expr, PrefixParts: prefix, DescParts: desc, MultiValuedParts: multiValued, Visibility: visibility, VisibilityExplicit: visibility != "", Global: indexGlobal, HasPredicate: hasPredicate, UnmodeledOptions: unmodeled}},
+		Index:  &spec.AlterIndex{Definition: definition},
 	}
 	if stmt.IfNotExists {
 		// Parsed conditional marker — the audit model records the flag and
@@ -1490,9 +1503,15 @@ func extractAlterIndex(specification *ast.AlterTableSpec) *spec.AlterIndex {
 		if specification.Constraint == nil || !constraintProducesIndex(specification.Constraint.Tp) {
 			return nil
 		}
-		expr, prefix, desc, multiValued := countIndexPartKinds(specification.Constraint.Keys)
-		global, hasPredicate, visibility, unmodeled := indexOptionFacts(specification.Constraint.Option)
-		return &spec.AlterIndex{Definition: &spec.Index{Kind: indexKindForConstraint(specification.Constraint.Tp), Name: normalizeConstraintName(specification.Constraint), Columns: extractIndexColumns(specification.Constraint.Keys), HasExpressionKeys: expr > 0, ExpressionCount: expr, PrefixParts: prefix, DescParts: desc, MultiValuedParts: multiValued, Visibility: visibility, VisibilityExplicit: visibility != "", Global: global, HasPredicate: hasPredicate, UnmodeledOptions: unmodeled}}
+		global, hasPredicate, visibility, primaryKeyType, unmodeled := indexOptionFacts(specification.Constraint.Option)
+		definition := &spec.Index{Kind: indexKindForConstraint(specification.Constraint.Tp), Name: normalizeConstraintName(specification.Constraint), Columns: extractIndexColumns(specification.Constraint.Keys), Visibility: visibility, VisibilityExplicit: visibility != "", Global: global, HasPredicate: hasPredicate, UnmodeledOptions: unmodeled}
+		definition.SetKeyParts(extractIndexKeyParts(specification.Constraint.Keys))
+		if specification.Constraint.Tp == ast.ConstraintPrimaryKey {
+			definition.PrimaryKeyType = primaryKeyType
+		} else if primaryKeyType != "" {
+			definition.UnmodeledOptions = append(definition.UnmodeledOptions, "primary_key_type")
+		}
+		return &spec.AlterIndex{Definition: definition}
 	case ast.AlterTableIndexInvisible:
 		// ALTER INDEX name VISIBLE|INVISIBLE — the target rides OldName and
 		// the requested visibility becomes a declared member fact.
@@ -1841,6 +1860,46 @@ func extractIndexColumns(parts []*ast.IndexPartSpecification) []string {
 	return columns
 }
 
+// extractIndexKeyParts builds the member-level key-part list: each parsed
+// part keeps its ordinal position, its column or expression identity, the
+// explicitly written prefix length (including zero), the declared sort
+// direction, and the multi-valued CAST(… AS … ARRAY) mark. Expression
+// parts carry the shared structured facts so governance can tell
+// (a+b) from (a*b) and read column dependencies without re-parsing.
+func extractIndexKeyParts(parts []*ast.IndexPartSpecification) []spec.IndexKeyPart {
+	keyParts := make([]spec.IndexKeyPart, 0, len(parts))
+	for i, part := range parts {
+		if part == nil {
+			keyParts = append(keyParts, spec.IndexKeyPart{Ordinal: i + 1, Kind: spec.IndexKeyPartUnmodeled})
+			continue
+		}
+		keyPart := spec.IndexKeyPart{Ordinal: i + 1, Descending: part.Desc}
+		switch {
+		case part.Expr != nil || part.Column == nil:
+			keyPart.Kind = spec.IndexKeyPartExpression
+			if part.Expr != nil {
+				facts := expressionFacts(part.Expr)
+				keyPart.Expression = &facts
+				if cast, ok := part.Expr.(*ast.FuncCastExpr); ok && cast.Tp != nil && cast.Tp.IsArray() {
+					keyPart.MultiValued = true
+				}
+			}
+		default:
+			keyPart.Kind = spec.IndexKeyPartColumn
+			keyPart.Column = part.Column.Name.L
+			// OptFieldLen stores UnspecifiedLength (-1) when no prefix is
+			// given; any other value is an explicitly written length,
+			// including zero.
+			if part.Length != tidbtypes.UnspecifiedLength {
+				length := int(part.Length)
+				keyPart.PrefixLength = &length
+			}
+		}
+		keyParts = append(keyParts, keyPart)
+	}
+	return keyParts
+}
+
 // countIndexPartKinds counts key-part facts extractIndexColumns cannot keep:
 // expression (non-column) parts, column-prefix lengths, descending parts,
 // and multi-valued CAST(… AS … ARRAY) members. Multi-valued parts stay
@@ -1963,9 +2022,9 @@ func countUnmodeledIndexParts(parts []*ast.IndexPartSpecification) int {
 // attribute) and bounded names for the members it does not. Only names
 // travel downstream — option values, comments, and predicate expressions
 // stay out of the audit model.
-func indexOptionFacts(option *ast.IndexOption) (global, hasPredicate bool, visibility string, unmodeled []string) {
+func indexOptionFacts(option *ast.IndexOption) (global, hasPredicate bool, visibility, primaryKeyType string, unmodeled []string) {
 	if option == nil {
-		return false, false, "", nil
+		return false, false, "", "", nil
 	}
 	global = option.Global
 	hasPredicate = option.Condition != nil
@@ -1988,7 +2047,7 @@ func indexOptionFacts(option *ast.IndexOption) (global, hasPredicate bool, visib
 		visibility = spec.ColumnVisibilityInvisible
 	}
 	if option.PrimaryKeyTp != ast.PrimaryKeyTypeDefault {
-		unmodeled = append(unmodeled, "primary_key_type")
+		primaryKeyType = strings.ToLower(option.PrimaryKeyTp.String())
 	}
 	if option.SplitOpt != nil {
 		unmodeled = append(unmodeled, "split_opt")
@@ -1999,7 +2058,7 @@ func indexOptionFacts(option *ast.IndexOption) (global, hasPredicate bool, visib
 	if option.AddColumnarReplicaOnDemand != 0 {
 		unmodeled = append(unmodeled, "columnar_replica")
 	}
-	return global, hasPredicate, visibility, unmodeled
+	return global, hasPredicate, visibility, primaryKeyType, unmodeled
 }
 
 func indexKindForConstraint(tp ast.ConstraintType) spec.IndexKind {

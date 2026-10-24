@@ -1,9 +1,12 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: normalized statements carrying T10 index visibility declarations
 // and advanced-index member marks, plus metadata-enriched ordered snapshots
-// output: invisibility-forbid findings, alter-index existence findings and
-// evidence gaps, and product/version compatibility findings and gaps for
-// visibility, expression keys, descending keys, and multi-valued members
+// output: invisibility-forbid findings, dialect-aware alter-index existence
+// findings and evidence gaps (MySQL PRIMARY key / TiDB real object vs
+// PKIsHandle), and product/version compatibility findings and gaps for
+// visibility, expression keys, descending keys, multi-valued members,
+// prefix length, fulltext, spatial, and global forms — including the
+// implicit-primary role refusal on qualifying UNIQUE indexes
 // pos: T10 advanced-index and visibility rule implementations
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -122,20 +125,26 @@ func (r indexInvisibleForbidRule) Evaluate(ctx context.Context, statement spec.S
 // alterIndexTargetExists resolves the ALTER INDEX target against the
 // ordered snapshot with a dialect-aware PRIMARY shortcut: MySQL names the
 // primary key itself (the 3522 visibility refusal then belongs to the
-// compatibility rule), while TiDB has no PRIMARY index member at all, so
-// the shared missing-index finding is the honest answer there. An
-// unvouched primary-key collection answers true — presence is unproven
-// rather than absent, and the rule's EvidenceGaps reports the missing
-// primary_key fact instead of a fabricated blocker.
+// compatibility rule). TiDB resolves `PRIMARY` to a real index object only
+// on non-handle tables — a PKIsHandle single-int clustered PK names no
+// index object (1176), while NONCLUSTERED and non-int clustered primary
+// keys are operable objects. An unvouched primary-key collection answers
+// true on either dialect — presence is unproven rather than absent, and
+// the rule's EvidenceGaps reports the missing primary_key fact instead of
+// a fabricated blocker.
 func alterIndexTargetExists(statement spec.Statement, snapshot *spec.TableSnapshot, name string) bool {
 	if snapshotHasIndex(statement, snapshot, name) {
 		return true
 	}
-	if statement.Dialect == spec.DialectMySQL && strings.EqualFold(name, "primary") {
-		if snapshot.PrimaryKeyUnknown || snapshot.ConstraintsUnknown {
+	if (statement.Dialect == spec.DialectMySQL || statement.Dialect == spec.DialectTiDB) && strings.EqualFold(name, "primary") {
+		exists, resolved := spec.ResolveIndexPrimaryObject(snapshot, statement.Dialect)
+		if !resolved {
+			// An unvouched primary-key state suppresses the blocker — the
+			// rule's EvidenceGaps reports the missing primary_key fact
+			// instead of a fabricated absence.
 			return true
 		}
-		return snapshot.HasPrimaryKey()
+		return exists
 	}
 	return false
 }
@@ -173,7 +182,7 @@ func (r alterIndexExistsRule) Evaluate(ctx context.Context, statement spec.State
 // not disappear.
 func (r alterIndexExistsRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
 	gaps := r.inner.EvidenceGaps(statement)
-	if statement.Dialect != spec.DialectMySQL {
+	if statement.Dialect != spec.DialectMySQL && statement.Dialect != spec.DialectTiDB {
 		return gaps
 	}
 	primaryTarget := false
@@ -201,12 +210,19 @@ var indexAdvancedCompatibilityFeatures = map[string]bool{
 	spec.AdvancedIndexFeatureExpressionKeys: true,
 	spec.AdvancedIndexFeatureDescendingKeys: true,
 	spec.AdvancedIndexFeatureMultiValued:    true,
+	spec.AdvancedIndexFeaturePrefixLength:   true,
+	spec.AdvancedIndexFeatureFulltext:       true,
+	spec.AdvancedIndexFeatureSpatial:        true,
+	spec.AdvancedIndexFeatureGlobal:         true,
 }
 
 // indexAdvancedCompatibilityRule enforces the frozen T10 product/version
 // responsibility table for index visibility, expression keys, descending
-// keys, and multi-valued members. Determined failures become findings;
-// missing version evidence becomes a bounded gap, never a silent pass.
+// keys, multi-valued members, and the member-legality families
+// prefix_length, fulltext, spatial, and global (primary-key invisibility
+// and TiDB PRIMARY-object identity included). Determined failures become
+// findings; missing version/fact evidence becomes a bounded gap, never a
+// silent pass.
 type indexAdvancedCompatibilityRule struct {
 	ruleID   string
 	required bool

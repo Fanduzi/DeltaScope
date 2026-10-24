@@ -441,14 +441,14 @@ func (s *batchState) applyCreateTable(statement spec.Statement) {
 		}
 		s.entries[key] = &batchTableEntry{
 			state:         tablePresent,
-			shape:         derivedCreateShape(displaySchema, displayTable, ddl),
+			shape:         derivedCreateShape(s.dialect, displaySchema, displayTable, ddl),
 			displaySchema: displaySchema,
 			displayTable:  displayTable,
 		}
 	case entry.state == tableAbsent:
 		s.entries[key] = &batchTableEntry{
 			state:         tablePresent,
-			shape:         derivedCreateShape(displaySchema, displayTable, ddl),
+			shape:         derivedCreateShape(s.dialect, displaySchema, displayTable, ddl),
 			displaySchema: displaySchema,
 			displayTable:  displayTable,
 		}
@@ -471,7 +471,7 @@ func fullyAuditedCreateTable(dialect spec.Dialect, statement spec.Statement) boo
 	return !ddl.HasReferTable && !ddl.HasSelect && ddl.TemporaryScope == "" && ddl.OmittedTargets == 0
 }
 
-func derivedCreateShape(schema, table string, ddl *spec.DDL) *spec.TableSnapshot {
+func derivedCreateShape(dialect spec.Dialect, schema, table string, ddl *spec.DDL) *spec.TableSnapshot {
 	snapshot := &spec.TableSnapshot{
 		Schema:      schema,
 		Table:       &spec.Table{Schema: schema, Name: table, Comment: ddl.Table.Comment},
@@ -486,9 +486,15 @@ func derivedCreateShape(schema, table string, ddl *spec.DDL) *spec.TableSnapshot
 	for _, index := range ddl.Indexes {
 		snapshot.Indexes = append(snapshot.Indexes, cloneIndex(index))
 	}
+	// A batch-derived index list is the declaration order — the same order
+	// the product selects the implicit primary role in.
+	snapshot.IndexOrderCatalog = true
+	partitioned := ddl.HasPartition
+	snapshot.Partitioned = &partitioned
 	if ddl.PrimaryKey != nil {
 		pk := cloneIndex(*ddl.PrimaryKey)
 		snapshot.PrimaryKey = &pk
+		snapshot.PrimaryKeyIsHandle = spec.PrimaryKeyHandle(dialect, &pk, snapshot.Columns)
 	}
 	for _, constraint := range ddl.Constraints {
 		snapshot.Constraints = append(snapshot.Constraints, cloneConstraint(constraint))
@@ -994,6 +1000,10 @@ func cloneTableSnapshot(in *spec.TableSnapshot) *spec.TableSnapshot {
 			out.Options[name] = value
 		}
 	}
+	if in.Partitioned != nil {
+		partitioned := *in.Partitioned
+		out.Partitioned = &partitioned
+	}
 	return &out
 }
 
@@ -1019,6 +1029,7 @@ func cloneIndex(in spec.Index) spec.Index {
 	// to the statement, not the published shape.
 	out.VisibilityExplicit = false
 	out.Columns = append([]string(nil), in.Columns...)
+	out.KeyParts = spec.CloneKeyParts(in.KeyParts)
 	out.IncludedColumns = append([]string(nil), in.IncludedColumns...)
 	out.UnmodeledOptions = append([]string(nil), in.UnmodeledOptions...)
 	if in.Cardinality != nil {

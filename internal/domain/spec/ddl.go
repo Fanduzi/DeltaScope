@@ -361,17 +361,104 @@ const (
 	IndexKindColumnar  IndexKind = "columnar"
 )
 
+// IndexKeyPartKind classifies one index member row.
+type IndexKeyPartKind string
+
+// Supported member kinds. "column" binds a named table column; "expression"
+// is a functional key part carrying structured expression identity facts;
+// "unmodeled" is a member row the source could not classify (e.g. a named
+// member with a NULL catalog collation).
+const (
+	IndexKeyPartColumn     IndexKeyPartKind = "column"
+	IndexKeyPartExpression IndexKeyPartKind = "expression"
+	IndexKeyPartUnmodeled  IndexKeyPartKind = "unmodeled"
+)
+
+// IndexKeyPart is one index member with its source semantics preserved:
+// ordinal position inside the index, which column it binds or which
+// expression identity it carries, the explicit prefix length when authored/
+// cataloged, and the declared or cataloged sort direction. The aggregate
+// marks (PrefixParts/DescParts/ExpressionCount/MultiValuedParts/
+// UnmodeledKeyParts) are derived from this list — SetKeyParts keeps both in
+// sync so a member position can never disagree with its count.
+type IndexKeyPart struct {
+	Ordinal      int              `json:"ordinal"`
+	Kind         IndexKeyPartKind `json:"kind"`
+	Column       string           `json:"column,omitempty"`
+	PrefixLength *int             `json:"prefix_length,omitempty"`
+	Descending   bool             `json:"descending,omitempty"`
+	// Expression carries the member's structured identity on expression
+	// parts: fingerprint for sameness, References for the column
+	// dependencies, Functions/TopForm for the governed shape. nil on
+	// column/unmodeled parts.
+	Expression *ExpressionFacts `json:"expression,omitempty"`
+	// MultiValued marks the MySQL multi-valued member form
+	// CAST(… AS … ARRAY); the member also has Kind=expression.
+	MultiValued bool `json:"multi_valued,omitempty"`
+}
+
+// SetKeyParts installs the member list and derives every aggregate mark from
+// it, so count fields can never drift from the member facts.
+func (i *Index) SetKeyParts(parts []IndexKeyPart) {
+	i.KeyParts = parts
+	i.ExpressionCount, i.PrefixParts, i.DescParts, i.MultiValuedParts, i.UnmodeledKeyParts = 0, 0, 0, 0, 0
+	i.HasExpressionKeys = false
+	for _, part := range parts {
+		switch part.Kind {
+		case IndexKeyPartExpression:
+			i.ExpressionCount++
+			i.HasExpressionKeys = true
+			if part.MultiValued {
+				i.MultiValuedParts++
+			}
+		case IndexKeyPartUnmodeled:
+			i.UnmodeledKeyParts++
+		}
+		if part.PrefixLength != nil {
+			i.PrefixParts++
+		}
+		if part.Descending {
+			i.DescParts++
+		}
+	}
+}
+
+// CloneKeyParts deep-copies the member list; ExpressionFacts are reference
+// counts and strings, so a slice copy per part is the whole clone.
+func CloneKeyParts(in []IndexKeyPart) []IndexKeyPart {
+	if in == nil {
+		return nil
+	}
+	out := make([]IndexKeyPart, len(in))
+	for i, part := range in {
+		out[i] = part
+		if part.PrefixLength != nil {
+			length := *part.PrefixLength
+			out[i].PrefixLength = &length
+		}
+		if part.Expression != nil {
+			facts := *part.Expression
+			facts.References = append([]ColumnReference(nil), part.Expression.References...)
+			facts.Functions = append([]string(nil), part.Expression.Functions...)
+			facts.Features = append([]string(nil), part.Expression.Features...)
+			out[i].Expression = &facts
+		}
+	}
+	return out
+}
+
 // Index describes an index declaration.
 type Index struct {
-	Name              string    `json:"name"`
-	Kind              IndexKind `json:"kind,omitempty"`
-	Columns           []string  `json:"columns,omitempty"`
-	Cardinality       *int64    `json:"cardinality,omitempty"`
-	AccessMethod      string    `json:"access_method,omitempty"`
-	IncludedColumns   []string  `json:"included_columns,omitempty"`
-	HasPredicate      bool      `json:"has_predicate,omitempty"`
-	HasExpressionKeys bool      `json:"has_expression_keys,omitempty"`
-	ExpressionCount   int       `json:"expression_count,omitempty"`
+	Name              string         `json:"name"`
+	Kind              IndexKind      `json:"kind,omitempty"`
+	Columns           []string       `json:"columns,omitempty"`
+	KeyParts          []IndexKeyPart `json:"key_parts,omitempty"`
+	Cardinality       *int64         `json:"cardinality,omitempty"`
+	AccessMethod      string         `json:"access_method,omitempty"`
+	IncludedColumns   []string       `json:"included_columns,omitempty"`
+	HasPredicate      bool           `json:"has_predicate,omitempty"`
+	HasExpressionKeys bool           `json:"has_expression_keys,omitempty"`
+	ExpressionCount   int            `json:"expression_count,omitempty"`
 	// PrefixParts/DescParts count column-prefix lengths and descending key
 	// parts parsed on the index but not yet modeled for audit semantics.
 	PrefixParts int `json:"prefix_parts,omitempty"`
@@ -402,6 +489,12 @@ type Index struct {
 	// UNIQUE/PRIMARY KEY constraints and standalone CREATE INDEX statements.
 	// MySQL has no such modifier, so it is a vendor boundary there.
 	Global bool `json:"global,omitempty"`
+	// PrimaryKeyType records a parsed `PRIMARY KEY … CLUSTERED|NONCLUSTERED`
+	// option (TiDB syntax) on a primary-key declaration: "clustered",
+	// "nonclustered", or "" when unwritten. It decides whether a declared
+	// TiDB single-int PK becomes the row handle (no operable index object)
+	// or a real PRIMARY index object.
+	PrimaryKeyType string `json:"primary_key_type,omitempty"`
 	// UnmodeledOptions lists bounded names of parsed IndexOption members the
 	// normalized model does not keep (comment, key_block_size, index_type,
 	// with_parser, primary_key_type, split_opt, secondary_engine_attr,

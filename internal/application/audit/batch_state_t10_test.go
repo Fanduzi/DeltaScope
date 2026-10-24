@@ -458,21 +458,24 @@ func TestT10AlterIndexPrimaryMySQL(t *testing.T) {
 	}
 }
 
-// TiDB ALTER INDEX `PRIMARY` reports a missing index — PRIMARY is not an
-// index there (1176), so the exists blocker answers instead of a
-// compatibility issue.
+// TiDB ALTER INDEX `PRIMARY` splits on the real index-object question: a
+// single-int clustered primary key is stored as PKIsHandle and names no
+// index (1176 → exists blocker), while a non-handle primary key is an
+// operable index object — INVISIBLE is refused by compatibility (3522),
+// not a missing-index error.
 func TestT10AlterIndexPrimaryTiDB(t *testing.T) {
 	t.Parallel()
-	table := t09Table("t", spec.Index{Name: "idx_b", Kind: spec.IndexKindSecondary, Columns: []string{"b"}})
-	table.PrimaryKey = &spec.Index{Name: "primary", Kind: spec.IndexKindPrimary, Columns: []string{"a"}}
-	provider := &t10Provider{version: "8.0.11-TiDB-v8.5.0", tables: map[string]*spec.TableSnapshot{"t": table}}
+	handle := t09Table("t", spec.Index{Name: "idx_b", Kind: spec.IndexKindSecondary, Columns: []string{"b"}})
+	handle.PrimaryKey = &spec.Index{Name: "primary", Kind: spec.IndexKindPrimary, Columns: []string{"a"}}
+	handle.PrimaryKeyIsHandle = true
+	provider := &t10Provider{version: "8.0.11-TiDB-v8.5.0", tables: map[string]*spec.TableSnapshot{"t": handle}}
 	result := t10Audit(t, spec.DialectTiDB,
 		"ALTER TABLE t ALTER INDEX `PRIMARY` INVISIBLE;",
 		provider, t10VisibilityPolicy(t),
 	)
 	exists := t05FindingsByRule(result, 0, t10AlterIndexExist)
 	if len(exists) != 1 || exists[0].Metadata["exists"] != false {
-		t.Fatalf("PRIMARY is not an index on TiDB — exists blocker expected, got %+v", result.Statements[0].Findings)
+		t.Fatalf("PKIsHandle names no index object — exists blocker expected, got %+v", result.Statements[0].Findings)
 	}
 	if len(t05FindingsByRule(result, 0, t10IndexCompat)) != 0 {
 		t.Fatalf("the TiDB negative belongs to existence, not compatibility, got %+v", result.Statements[0].Findings)
@@ -534,7 +537,7 @@ func TestT10CompatFormGatesMySQL57(t *testing.T) {
 	}{
 		{name: "declared invisible attr", sql: "CREATE INDEX i ON t(a) INVISIBLE", reason: spec.AdvancedReasonVersionUnsupported, minimums: map[string]string{"visibility": "8.0.0"}},
 		{name: "expression key part", sql: "CREATE INDEX i ON t((a+1))", reason: spec.AdvancedReasonVersionUnsupported, minimums: map[string]string{"expression_keys": "8.0.13"}},
-		{name: "multi-valued member", sql: "CREATE INDEX i ON t((CAST(j AS UNSIGNED ARRAY)))", reason: spec.AdvancedReasonVersionUnsupported, minimums: map[string]string{"expression_keys": "8.0.13", "multi_valued": "8.0.17"}},
+		{name: "multi-valued member", sql: "CREATE INDEX i ON t((CAST(a AS UNSIGNED ARRAY)))", reason: spec.AdvancedReasonVersionUnsupported, minimums: map[string]string{"expression_keys": "8.0.13", "multi_valued": "8.0.17"}},
 		{name: "descending member", sql: "CREATE INDEX i ON t(a DESC)", reason: "descending_ignored", minimums: map[string]string{"descending_keys": ""}},
 	}
 	for _, tc := range cases {
@@ -569,7 +572,7 @@ func TestT10CompatFormGatesMySQL80Silent(t *testing.T) {
 	cases := []struct{ name, sql string }{
 		{"invisible attr", "CREATE INDEX i ON t(a) INVISIBLE"},
 		{"expression part", "CREATE INDEX i ON t((a+1))"},
-		{"multi-valued", "CREATE INDEX i ON t((CAST(j AS UNSIGNED ARRAY)))"},
+		{"multi-valued", "CREATE INDEX i ON t((CAST(a AS UNSIGNED ARRAY)))"},
 		{"descending", "CREATE INDEX i ON t(a DESC)"},
 	}
 	for _, tc := range cases {

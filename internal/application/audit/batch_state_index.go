@@ -1,8 +1,9 @@
 // Package audit derives the bounded index-lifecycle post-state.
 // input: single-action ALTER index transitions (add_index, index-producing
-// add_constraint, drop_index, rename_index, drop_primary_key, alter_index)
-// and the standalone DROP INDEX operation, applied to request-local batch
-// entries
+// add_constraint, drop_index, rename_index, drop_primary_key, alter_index —
+// `PRIMARY` resolves dialect-aware: MySQL primary key, TiDB real index
+// object vs PKIsHandle row-id promotion) and the standalone DROP INDEX
+// operation, applied to request-local batch entries
 // output: one updated batch entry per provable transition — appended index,
 // removed index, renamed index, cleared primary key, or visibility-flipped
 // member — or the shared tombstone when the premise cannot be proven; the
@@ -10,11 +11,11 @@
 // parts, every member present) before publishing and reconciles member
 // nullability — clearing only a proven SQL-NULL default (DefaultIsNull),
 // never display text; the alter_index branch flips only the effective
-// Visibility of a provably-present member (PRIMARY always invalidates)
-// pos: T09 index state chain plus the T10 visibility transition beside the
-// column transitions; multi-action statements containing index actions keep
-// the bounded tombstone upstream in applyMultiActionAlter and never reach
-// these publications
+// Visibility of a provably-present member, with the implicit-primary holder
+// and MySQL PRIMARY always invalidating and TiDB PRIMARY resolving by index
+// object (PKIsHandle invalidates, real object no-ops VISIBLE/refuses INVISIBLE)
+// pos: T09 index state chain plus the T10 visibility transition; multi-action
+// statements keep the bounded tombstone upstream and never reach here
 // note: if this file changes, update this header and module README.md.
 package audit
 
@@ -301,10 +302,41 @@ func (s *batchState) applyAlterIndexVisibility(statement spec.Statement, alter *
 	key := s.keyFor(s.schema, targets[0])
 	entry := s.entries[key]
 	if strings.EqualFold(name, "primary") {
-		// PRIMARY never resolves on TiDB and can never take a visibility
-		// attribute on MySQL — the statement always fails, so nothing is
-		// proven regardless of what the batch knew about the table.
-		s.invalidateKey(key)
+		if s.dialect == spec.DialectMySQL {
+			// MySQL refuses ALTER INDEX `PRIMARY` outright (3522 whether the
+			// request is VISIBLE or INVISIBLE) — nothing is proven
+			// regardless of what the batch knew about the table.
+			s.invalidateKey(key)
+			return
+		}
+		// TiDB resolves `primary` to an operable index object only when the
+		// PK is not the row handle. A PKIsHandle table has no such object
+		// (1176 — the statement fails); a real PRIMARY object refuses
+		// INVISIBLE (3522) while VISIBLE is a proven no-op that keeps the
+		// member facts. An unprovable primary state withholds the answer.
+		if entry == nil || entry.state == tableUnknown {
+			s.entries[key] = presentIncompleteEntry(s.effectiveSchema(s.schema, targets[0]), targets[0].Name)
+			return
+		}
+		if entry.state != tablePresent || entry.shape == nil {
+			s.invalidateKey(key)
+			return
+		}
+		exists, resolved := spec.ResolveIndexPrimaryObject(entry.shape, s.dialect)
+		if !resolved {
+			return
+		}
+		if !exists || target == spec.ColumnVisibilityInvisible {
+			s.invalidateKey(key)
+			return
+		}
+		// VISIBLE on the addressable primary object is a successful no-op:
+		// publish the shape with the effective visibility pinned.
+		shape := cloneTableSnapshot(entry.shape)
+		if shape.PrimaryKey != nil {
+			shape.PrimaryKey.Visibility = spec.ColumnVisibilityVisible
+		}
+		s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
 		return
 	}
 	switch {
@@ -322,6 +354,21 @@ func (s *batchState) applyAlterIndexVisibility(statement spec.Statement, alter *
 	if index == nil {
 		s.invalidateKey(key)
 		return
+	}
+	if target == spec.ColumnVisibilityInvisible {
+		// Invisibility on the primary-role holder is refused by the product
+		// (3522) — on every validated version, and a sub-8.0 target fails at
+		// parse. All native outcomes preserve the member's state, so the
+		// shape stays as it was. When the role itself is unprovable the flip
+		// might have landed: the post-state is unprovable and invalidates.
+		role := spec.ResolvePrimaryRole(entry.shape, entry.shape.IndexOrderCatalog)
+		if !role.Resolved {
+			s.invalidateKey(key)
+			return
+		}
+		if role.HasHolder && strings.EqualFold(role.Holder, index.Name) {
+			return
+		}
 	}
 	shape := cloneTableSnapshot(entry.shape)
 	for i := range shape.Indexes {

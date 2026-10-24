@@ -297,6 +297,30 @@ func parseCatalogExpression(text string) (spec.ExpressionFacts, bool) {
 	return expressionFacts(expr), true
 }
 
+// CatalogExpressionIsMultiValued reports whether stored catalog expression
+// text is the MySQL multi-valued member form CAST(… AS … ARRAY). The same
+// bare-expression grammar as ParseCatalogExpressionFacts applies; anything
+// outside it is not a multi-valued member.
+func CatalogExpressionIsMultiValued(text string) bool {
+	trimmed := strings.TrimSpace(text)
+	if trimmed == "" {
+		return false
+	}
+	expr, ok := parseSelectExpressionAST(trimmed)
+	if !ok {
+		decoded, decOK := decodeCatalogEscapes(trimmed)
+		if !decOK {
+			return false
+		}
+		expr, ok = parseSelectExpressionAST(decoded)
+		if !ok {
+			return false
+		}
+	}
+	cast, isCast := unwrapParenthesesExpr(expr).(*ast.FuncCastExpr)
+	return isCast && cast.Tp != nil && cast.Tp.IsArray()
+}
+
 // parseSelectExpressionAST parses text as exactly one bare expression field:
 // it is wrapped as `SELECT (<text>)` so trailing clause tokens, aliases, and
 // second fields cannot parse, then the SELECT itself must be a single plain

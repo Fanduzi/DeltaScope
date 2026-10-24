@@ -477,8 +477,10 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 		{name: "mysql create table ignore select", sql: "CREATE TABLE t (id INT) IGNORE SELECT 1 AS id;", dialect: spec.DialectMySQL, wantFeature: "create_table.option.on_duplicate", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql drop hypo index", sql: "DROP HYPO INDEX ix ON t;", dialect: spec.DialectMySQL, wantFeature: "drop_index.option.hypo_index", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
 		{name: "tidb drop hypo index", sql: "DROP HYPO INDEX ix ON t;", dialect: spec.DialectTiDB, wantFeature: "drop_index.option.hypo_index", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
-		{name: "tidb inline primary key nonclustered", sql: "CREATE TABLE t (id INT PRIMARY KEY NONCLUSTERED);", dialect: spec.DialectTiDB, wantFeature: "create_table.column.primary_key_type", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
-		{name: "mysql inline primary key nonclustered", sql: "CREATE TABLE t (id INT PRIMARY KEY NONCLUSTERED);", dialect: spec.DialectMySQL, wantFeature: "create_table.column.primary_key_type", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
+		// The CLUSTERED|NONCLUSTERED primary-key type is a modeled fact on
+		// TiDB (drives PKIsHandle determination); under MySQL the same syntax
+		// stays a vendor boundary on the primary-key index.
+		{name: "mysql inline primary key nonclustered", sql: "CREATE TABLE t (id INT PRIMARY KEY NONCLUSTERED);", dialect: spec.DialectMySQL, wantFeature: "create_table.index.option.primary_key_type", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
 		{name: "mysql table primary key clustered", sql: "CREATE TABLE t (id INT, PRIMARY KEY (id) CLUSTERED);", dialect: spec.DialectMySQL, wantFeature: "create_table.index.option.primary_key_type", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
 	}
 	for _, tc := range cases {

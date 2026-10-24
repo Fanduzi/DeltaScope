@@ -371,10 +371,19 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 				map[string]any{"aspect": "index", "index_kind": string(index.Kind)},
 			))
 		}
+		if index.PrimaryKeyType != "" && dialect == spec.DialectMySQL {
+			// CLUSTERED|NONCLUSTERED is TiDB-only index-option syntax; it is
+			// modeled (PrimaryKeyType) for TiDB PKIsHandle determination and
+			// stays a vendor boundary under MySQL.
+			gaps = append(gaps, aspectGap(
+				fmt.Sprintf("%s.option.primary_key_type", prefix), true,
+				map[string]any{"aspect": "index_option", "index_kind": string(index.Kind)},
+			))
+		}
 		for _, option := range index.UnmodeledOptions {
-			// split_opt, secondary_engine_attr, columnar_replica, and the
-			// CLUSTERED/NONCLUSTERED primary-key type are TiDB extensions:
-			// vendor boundaries under MySQL, unaudited under TiDB.
+			// split_opt, secondary_engine_attr, and columnar_replica are
+			// TiDB extensions: vendor boundaries under MySQL, unaudited
+			// under TiDB.
 			vendor := dialect == spec.DialectMySQL && (option == "split_opt" || option == "secondary_engine_attr" || option == "columnar_replica" || option == "primary_key_type")
 			gaps = append(gaps, aspectGap(
 				fmt.Sprintf("%s.option.%s", prefix, option), vendor,

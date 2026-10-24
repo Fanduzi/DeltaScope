@@ -81,6 +81,9 @@ func TestT09R1ProviderMemberRowClassification(t *testing.T) {
 			if index == nil {
 				t.Fatalf("index not accumulated")
 			}
+			// Aggregate marks derive from the member list — the same
+			// normalization loadIndexes applies on drain.
+			index.SetKeyParts(index.KeyParts)
 			if len(index.Columns) != len(tc.wantColumns) ||
 				(len(tc.wantColumns) > 0 && index.Columns[0] != tc.wantColumns[0]) {
 				t.Fatalf("columns = %v, want %v", index.Columns, tc.wantColumns)
