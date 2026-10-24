@@ -309,7 +309,7 @@ func AssessAdvancedIndexes(statement Statement) AdvancedIndexAssessment {
 			// ascending) — it never consults the version and must not
 			// mint a missing-version gap.
 			versionGated := advancedIndexVersionGatedFeatures[feature] &&
-				!(feature == AdvancedIndexFeatureDescendingKeys && statement.Dialect == DialectTiDB)
+				(feature != AdvancedIndexFeatureDescendingKeys || statement.Dialect != DialectTiDB)
 			if !assessment.Features[feature] && versionGated {
 				gated = append(gated, feature)
 			}
@@ -399,15 +399,15 @@ func assessIndexFact(assessment *AdvancedIndexAssessment, fact advancedIndexFact
 		return
 	}
 	if fact.action == "alter_index" && strings.EqualFold(fact.name, "primary") {
-		switch {
-		case dialect == DialectMySQL:
+		switch dialect {
+		case DialectMySQL:
 			if !versionKnown || versionAtLeast(version, advancedIndexMinimumVisibilityMySQL) {
 				// 8.0+ refuses outright; <8.0 fails at parse, so the version
 				// question only scopes the 3522 attribution, never the
 				// refusal itself.
 				assessment.appendIssue(fact.name, AdvancedIndexFeatureVisibility, fact.action, AdvancedIndexReasonPrimaryVisibility, "")
 			}
-		case dialect == DialectTiDB:
+		case DialectTiDB:
 			exists, resolved := ResolveIndexPrimaryObject(snapshot, dialect)
 			switch {
 			case !resolved:
@@ -424,7 +424,7 @@ func assessIndexFact(assessment *AdvancedIndexAssessment, fact advancedIndexFact
 		}
 		return
 	}
-	assessImplicitPrimaryVisibility(assessment, fact, version, versionKnown, dialect, ddl, snapshot)
+	assessImplicitPrimaryVisibility(assessment, fact, dialect, ddl, snapshot)
 	assessIndexMembers(assessment, fact, dialect, ddl, snapshot)
 }
 
@@ -714,7 +714,7 @@ func spatialMemberFamilyType(base string) bool {
 // create_table declarations, add/create-index declarations, and alter_index
 // targets. Unproven role facts degrade to bounded gaps — never a fabricated
 // refusal and never a fabricated pass.
-func assessImplicitPrimaryVisibility(assessment *AdvancedIndexAssessment, fact advancedIndexFact, version *VersionIdentity, versionKnown bool, dialect Dialect, ddl *DDL, snapshot *TableSnapshot) {
+func assessImplicitPrimaryVisibility(assessment *AdvancedIndexAssessment, fact advancedIndexFact, dialect Dialect, ddl *DDL, snapshot *TableSnapshot) {
 	index := fact.index
 	if index.Visibility != ColumnVisibilityInvisible {
 		return

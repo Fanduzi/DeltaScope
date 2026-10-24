@@ -1892,7 +1892,7 @@ func extractIndexKeyParts(parts []*ast.IndexPartSpecification) []spec.IndexKeyPa
 			// given; any other value is an explicitly written length,
 			// including zero.
 			if part.Length != tidbtypes.UnspecifiedLength {
-				length := int(part.Length)
+				length := part.Length
 				keyPart.PrefixLength = &length
 			}
 		}
