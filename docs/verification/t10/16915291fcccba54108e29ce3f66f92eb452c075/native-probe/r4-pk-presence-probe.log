@@ -1,0 +1,65 @@
+
+=== anchor version + fixture db ===
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'SELECT TIDB_VERSION(); CREATE DATABASE IF NOT EXISTS golden;'
+TIDB_VERSION()
+Release Version: v8.5.0\nEdition: Community\nGit Commit Hash: d13e52ed6e22cc5789bed7c64c861578cd2ed55b\nGit Branch: HEAD\nUTC Build Time: 2024-12-18 02:26:12\nGoVersion: go1.23.3\nRace Enabled: false\nCheck Table Before Drop: false\nStore: unistore
+rc=0
+
+=== fixture set: pk-less / member-primary / real nonclustered PK / clustered handle / clustered common-handle ===
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'DROP TABLE IF EXISTS golden.pp_a,golden.pp_b,golden.pp_c,golden.pp_d,golden.pp_e;'
+rc=0
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'CREATE TABLE golden.pp_a(id INT, c INT, UNIQUE KEY u_a(c));'
+rc=0
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'CREATE TABLE golden.pp_b(c INT, KEY s(c)); ALTER TABLE golden.pp_b RENAME INDEX s TO `primary`;'
+rc=0
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'CREATE TABLE golden.pp_c(id INT PRIMARY KEY NONCLUSTERED, c INT);'
+rc=0
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'CREATE TABLE golden.pp_d(id INT PRIMARY KEY, c INT);'
+rc=0
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'CREATE TABLE golden.pp_e(id INT, b VARCHAR(8), PRIMARY KEY(id,b) CLUSTERED);'
+rc=0
+
+=== P1 tidb_pk_type per table — PK-less vs real PK conflation ===
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e "SELECT table_name, tidb_pk_type FROM information_schema.tables WHERE table_schema='golden' AND table_name LIKE 'pp_%' ORDER BY table_name;"
+table_name	tidb_pk_type
+pp_a	NONCLUSTERED
+pp_b	NONCLUSTERED
+pp_c	NONCLUSTERED
+pp_d	CLUSTERED
+pp_e	CLUSTERED
+rc=0
+
+=== P2 table_constraints per table — real PK object rows ===
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e "SELECT table_name, constraint_name, constraint_type FROM information_schema.table_constraints WHERE table_schema='golden' AND table_name LIKE 'pp_%' ORDER BY table_name;"
+table_name	constraint_name	constraint_type
+pp_a	u_a	UNIQUE
+pp_c	PRIMARY	PRIMARY KEY
+pp_d	PRIMARY	PRIMARY KEY
+pp_e	PRIMARY	PRIMARY KEY
+rc=0
+
+=== P3 statistics primary-fold rows per table — object vs member ===
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e "SELECT table_name, index_name, non_unique FROM information_schema.statistics WHERE table_schema='golden' AND table_name LIKE 'pp_%' ORDER BY table_name, index_name;"
+table_name	index_name	non_unique
+pp_a	u_a	0
+pp_b	primary	1
+pp_c	PRIMARY	0
+pp_d	PRIMARY	0
+pp_e	PRIMARY	0
+pp_e	PRIMARY	0
+rc=0
+
+=== P4 tidb_indexes CLUSTERED per table — storage-mode fact (not PK presence) ===
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e "SELECT table_name, key_name, clustered FROM information_schema.tidb_indexes WHERE table_schema='golden' AND table_name LIKE 'pp_%' ORDER BY table_name;"
+table_name	key_name	clustered
+pp_a	u_a	NO
+pp_b	primary	NO
+pp_c	PRIMARY	NO
+pp_d	PRIMARY	YES
+pp_e	PRIMARY	YES
+pp_e	PRIMARY	YES
+rc=0
+
+=== cleanup ===
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'DROP TABLE IF EXISTS golden.pp_a,golden.pp_b,golden.pp_c,golden.pp_d,golden.pp_e;'
+rc=0

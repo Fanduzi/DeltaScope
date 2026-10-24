@@ -27,9 +27,12 @@ bound SHA.
 ## Evidence ledger
 
 - Red→green: focused T10-R3/T09-R1 unit suites
-  (`gates/t10r3-focused-tests.log`, 600 checks run) — each fix landed
-  against a failing test asserting rule attribution, gap facts,
-  coverage, verdict, and post-state.
+  (`gates/t10r3-focused-tests.log`, 300 PASS records counting parents
+  and subtests — not 600 "checks") — each fix landed against a failing
+  test asserting rule attribution, gap facts, coverage, verdict, and
+  post-state. The in-session red runs were observed but their raw logs
+  were not preserved; this green log independently proves green only
+  and no historical red transcript is fabricated.
 - Golden at bound SHA: T09 125/125 (3442 assertions), T10 126/126
   (3175 assertions) — `golden/T09`, `golden/T10`,
   `golden/regression-t09-t10.log`.
@@ -46,8 +49,14 @@ bound SHA.
   (3 t06 archive probes + 2 t07 tests) — pre-existing, unchanged by
   this diff.
 - Native re-verification: `native-probe/r3-bounded-probes.sh` +
-  `.log` — script preserved this time; every command and rc captured
-  against mysql:8.0.46 and pingcap/tidb:v8.5.0.
+  `.log` — the script preserves M1–M6 verbatim; the M7 clustered-drop
+  commands were executed ad-hoc afterwards and appended to the same
+  transcript (they are not part of the preserved script). Every command
+  and rc was captured against mysql:8.0.46 and pingcap/tidb:v8.5.0.
+- Binary identities: the golden-runner binary sha256 is `80d06b56…`
+  (per `golden/*/artifact.json`); `67522b4d…` is the separately built
+  work CLI. Earlier revisions mislabeled the latter as the golden
+  binary — `identity/` now records both accurately.
 
 ## Boundaries held
 

@@ -45,8 +45,14 @@ bounded defect classes confirmed by independent review:
 
 ## Layout
 
-- `identity/` — bound head SHA, worktree status, toolchain version, CLI
-  sha256 of the binary the golden runner built.
+- `identity/` — bound head SHA, worktree status, toolchain version, and
+  the two distinct CLI identities: `golden-cli-sha256.txt` records
+  `80d06b56…`, the sha256 of the binary the golden runner built (as
+  recorded in both `golden/*/artifact.json` files), while
+  `work-cli-sha256.txt` records `67522b4d…`, the sha256 of the
+  separately built work CLI at `/tmp/ds-r3-bin/deltascope`. Earlier
+  revisions mislabeled the work-CLI file as the golden binary; both
+  identities are now named accurately.
 - `golden/` — `ddl_golden.py` artifacts for the directly affected
   tasks re-run at the bound SHA: **T09 125/125 cases (3442
   assertions), T10 126/126 cases (3175 assertions)** plus the run log
@@ -65,8 +71,10 @@ bounded defect classes confirmed by independent review:
   and the focused T10-R3/T09-R1 unit runs.
 - `native-probe/` — real bounded re-verification of the matrices the
   R2 archive mis-attributed to a stale R1 pin log (see below):
-  `r3-bounded-probes.sh` is the executed script and
-  `r3-bounded-probes.log` its verbatim transcript.
+  `r3-bounded-probes.sh` is the executed script (M1–M6) and
+  `r3-bounded-probes.log` its verbatim transcript — the M7 section of
+  that log was executed ad-hoc afterwards and appended to the same
+  transcript; it is not part of the preserved script.
 
 ## Native re-verification (why it exists)
 
@@ -85,10 +93,13 @@ bounded, plus the two new R3 facts, against live anchors:
 | M4 explicit PK then UNIQUE INVISIBLE | mysql:8.0.46 | real secondary unique index `c` |
 | M5 unnamed index stored names | mysql:8.0.46 | `a`,`b`; duplicate `c` → `c`,`c_2` |
 | M6 expression member direction | mysql:8.0.46 | `((a+b)) DESC` stores `COLLATION=D` |
-| M7 ALTER ADD/DROP PRIMARY object form | tidb:v8.5.0 | ADD PK → NONCLUSTERED even with `alter-primary-key=false`; DROP PK on handle table → ERROR 8200; DROP on nonclustered PK succeeds |
+| M7 ALTER ADD/DROP PRIMARY object form | tidb:v8.5.0 | ADD PK → NONCLUSTERED even with `alter-primary-key=false`; DROP PK on handle table → ERROR 8200; DROP on nonclustered PK succeeds — *executed ad-hoc and appended to the log, not part of the preserved script* |
 
 Probe time: 2026-10-24 local, code identity `ffa7d2b2`; run before the
-archive commit against the working tree that became this SHA.
+archive commit against the working tree that became this SHA. M7 proves
+only the int-PK handle drop refusal and the nonclustered success; it is
+not evidence for non-integer/composite clustered (common-handle) drops —
+those receive bounded verification in the T10-R4 archive.
 
 ## Gate summary (all at bound SHA)
 

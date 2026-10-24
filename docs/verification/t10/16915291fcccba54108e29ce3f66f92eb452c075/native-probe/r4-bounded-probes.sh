@@ -1,0 +1,65 @@
+#!/bin/bash
+# T10-R4 bounded verification probes — matrices the R3 archive does not
+# preserve: dialect-bound unnamed-index stored names (R4-B) and TiDB
+# clustered/common-handle DROP PRIMARY KEY executability (R4-C).
+# Anchors: docker/ddl-golden-compose.yaml mysql80 (mysql:8.0.46), tidb85
+# (pingcap/tidb:v8.5.0 unistore) via the tidb85-client sidecar (mysql:8.4.10).
+M="docker exec --env MYSQL_PWD=root deltascope-ddl-golden-mysql80 mysql -uroot"
+T="docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot"
+say() { echo; echo "=== $* ==="; }
+run() { echo "\$ $2"; eval "$2" 2>&1; echo "rc=$?"; }
+
+say "anchor versions + fixture db"
+run m "$M -e 'SELECT VERSION();'"
+run t "$T -e 'SELECT TIDB_VERSION(); CREATE DATABASE IF NOT EXISTS golden;'"
+
+say "M8 unnamed-index stored names (R4-B)"
+say "M8a mysql80 reserved base: column named primary -> primary_2"
+run m "$M -e 'DROP TABLE IF EXISTS golden.t10r4_n1; CREATE TABLE golden.t10r4_n1(\`primary\` INT, KEY(\`primary\`));'"
+run m "$M -e 'SELECT INDEX_NAME,SEQ_IN_INDEX,COLUMN_NAME FROM information_schema.STATISTICS WHERE table_schema=\"golden\" AND table_name=\"t10r4_n1\";'"
+say "M8b mysql80 authored name primary is refused natively (1280)"
+run m "$M -e 'DROP TABLE IF EXISTS golden.t10r4_n2; CREATE TABLE golden.t10r4_n2(\`primary\` INT, a INT, KEY(\`primary\`), KEY \`primary\`(a));'"
+say "M8c mysql80 expression member anywhere -> functional_index (not first column)"
+run m "$M -e 'DROP TABLE IF EXISTS golden.t10r4_n3; CREATE TABLE golden.t10r4_n3(a INT, b INT, KEY(a, ((b+1))), KEY(b), KEY((a+2)));'"
+run m "$M -e 'SELECT INDEX_NAME,SEQ_IN_INDEX,COLUMN_NAME,EXPRESSION FROM information_schema.STATISTICS WHERE table_schema=\"golden\" AND table_name=\"t10r4_n3\" ORDER BY INDEX_NAME,SEQ_IN_INDEX;'"
+say "M8d tidb85 expression member anywhere -> expression_index"
+run t "$T -e 'DROP TABLE IF EXISTS golden.t10r4_n3; CREATE TABLE golden.t10r4_n3(a INT, b INT, KEY(a, ((b+1))), KEY(b), KEY((a+2)));'"
+run t "$T -e 'SELECT INDEX_NAME,SEQ_IN_INDEX,COLUMN_NAME,EXPRESSION FROM information_schema.STATISTICS WHERE table_schema=\"golden\" AND table_name=\"t10r4_n3\" ORDER BY INDEX_NAME,SEQ_IN_INDEX;'"
+say "M8e tidb85 authored-name pre-occupation: unnamed KEY(a) + authored a(b) -> unnamed gets a_2 (native success)"
+run t "$T -e 'DROP TABLE IF EXISTS golden.t10r4_n5; CREATE TABLE golden.t10r4_n5(a INT, b INT, KEY(a), KEY \`a\`(b));'"
+run t "$T -e 'SELECT INDEX_NAME,COLUMN_NAME FROM information_schema.STATISTICS WHERE table_schema=\"golden\" AND table_name=\"t10r4_n5\" ORDER BY INDEX_NAME;'"
+say "M8f mysql80 sequential claim: same shape is a native duplicate (1061)"
+run m "$M -e 'DROP TABLE IF EXISTS golden.t10r4_n5; CREATE TABLE golden.t10r4_n5(a INT, b INT, KEY(a), KEY \`a\`(b));'"
+say "M8g tidb85 reserved base: column named primary -> primary_2"
+run t "$T -e 'DROP TABLE IF EXISTS golden.t10r4_n1; CREATE TABLE golden.t10r4_n1(\`primary\` INT, KEY(\`primary\`));'"
+run t "$T -e 'SELECT INDEX_NAME,COLUMN_NAME FROM information_schema.STATISTICS WHERE table_schema=\"golden\" AND table_name=\"t10r4_n1\";'"
+say "M8h tidb85 authored name primary is refused natively (1280)"
+run t "$T -e 'DROP TABLE IF EXISTS golden.t10r4_n6; CREATE TABLE golden.t10r4_n6(a INT, KEY \`primary\`(a));'"
+
+say "M9 tidb85 clustered DROP PRIMARY KEY executability (R4-C)"
+say "M9a mode=on int PK (PKIsHandle control): CLUSTERED=yes row, drop refused 8200, ALTER PRIMARY reports 1176 (no object)"
+run t "$T -e \"SET GLOBAL tidb_enable_clustered_index='on';\""
+run t "$T -e 'DROP TABLE IF EXISTS golden.t10r4_c1; CREATE TABLE golden.t10r4_c1(id INT PRIMARY KEY, c INT);'"
+run t "$T -e 'SELECT KEY_NAME,CLUSTERED FROM information_schema.TIDB_INDEXES WHERE table_schema=\"golden\" AND table_name=\"t10r4_c1\";'"
+run t "$T -e 'ALTER TABLE golden.t10r4_c1 DROP PRIMARY KEY;'"
+run t "$T -e 'ALTER TABLE golden.t10r4_c1 ALTER INDEX \`PRIMARY\` VISIBLE;'"
+say "M9b VARCHAR clustered common handle: drop refused 8200, ALTER VISIBLE succeeds (addressable object)"
+run t "$T -e 'DROP TABLE IF EXISTS golden.t10r4_c2; CREATE TABLE golden.t10r4_c2(id VARCHAR(32) PRIMARY KEY CLUSTERED, c INT);'"
+run t "$T -e 'SELECT KEY_NAME,CLUSTERED FROM information_schema.TIDB_INDEXES WHERE table_schema=\"golden\" AND table_name=\"t10r4_c2\";'"
+run t "$T -e 'ALTER TABLE golden.t10r4_c2 DROP PRIMARY KEY;'"
+run t "$T -e 'ALTER TABLE golden.t10r4_c2 ALTER INDEX \`PRIMARY\` VISIBLE;'"
+say "M9c composite clustered common handle: drop refused 8200"
+run t "$T -e 'DROP TABLE IF EXISTS golden.t10r4_c3; CREATE TABLE golden.t10r4_c3(a INT, b VARCHAR(8), c INT, PRIMARY KEY(a, b) CLUSTERED);'"
+run t "$T -e 'SELECT KEY_NAME,CLUSTERED FROM information_schema.TIDB_INDEXES WHERE table_schema=\"golden\" AND table_name=\"t10r4_c3\";'"
+run t "$T -e 'ALTER TABLE golden.t10r4_c3 DROP PRIMARY KEY;'"
+say "M9d NONCLUSTERED control: drop publishes, PK actually gone"
+run t "$T -e 'DROP TABLE IF EXISTS golden.t10r4_c4; CREATE TABLE golden.t10r4_c4(id VARCHAR(32) PRIMARY KEY NONCLUSTERED, c INT);'"
+run t "$T -e 'SELECT KEY_NAME,CLUSTERED FROM information_schema.TIDB_INDEXES WHERE table_schema=\"golden\" AND table_name=\"t10r4_c4\";'"
+run t "$T -e 'ALTER TABLE golden.t10r4_c4 DROP PRIMARY KEY;'"
+run t "$T -e 'SELECT TIDB_PK_TYPE FROM information_schema.tables WHERE table_schema=\"golden\" AND table_name=\"t10r4_c4\";'"
+run t "$T -e 'SHOW INDEX FROM golden.t10r4_c4;'"
+
+say "cleanup"
+run m "$M -e 'DROP TABLE IF EXISTS golden.t10r4_n1, golden.t10r4_n2, golden.t10r4_n3, golden.t10r4_n5;'"
+run t "$T -e 'DROP TABLE IF EXISTS golden.t10r4_n1, golden.t10r4_n3, golden.t10r4_n5, golden.t10r4_n6, golden.t10r4_c1, golden.t10r4_c2, golden.t10r4_c3, golden.t10r4_c4;'"
+run t "$T -e \"SET GLOBAL tidb_enable_clustered_index='int_only';\""

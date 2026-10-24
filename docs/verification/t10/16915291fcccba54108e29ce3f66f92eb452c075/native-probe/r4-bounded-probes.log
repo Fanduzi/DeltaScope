@@ -1,0 +1,141 @@
+
+=== anchor versions + fixture db ===
+$ docker exec --env MYSQL_PWD=root deltascope-ddl-golden-mysql80 mysql -uroot -e 'SELECT VERSION();'
+VERSION()
+8.0.46
+rc=0
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'SELECT TIDB_VERSION(); CREATE DATABASE IF NOT EXISTS golden;'
+TIDB_VERSION()
+Release Version: v8.5.0\nEdition: Community\nGit Commit Hash: d13e52ed6e22cc5789bed7c64c861578cd2ed55b\nGit Branch: HEAD\nUTC Build Time: 2024-12-18 02:26:12\nGoVersion: go1.23.3\nRace Enabled: false\nCheck Table Before Drop: false\nStore: unistore
+rc=0
+
+=== M8 unnamed-index stored names (R4-B) ===
+
+=== M8a mysql80 reserved base: column named primary -> primary_2 ===
+$ docker exec --env MYSQL_PWD=root deltascope-ddl-golden-mysql80 mysql -uroot -e 'DROP TABLE IF EXISTS golden.t10r4_n1; CREATE TABLE golden.t10r4_n1(`primary` INT, KEY(`primary`));'
+rc=0
+$ docker exec --env MYSQL_PWD=root deltascope-ddl-golden-mysql80 mysql -uroot -e 'SELECT INDEX_NAME,SEQ_IN_INDEX,COLUMN_NAME FROM information_schema.STATISTICS WHERE table_schema="golden" AND table_name="t10r4_n1";'
+INDEX_NAME	SEQ_IN_INDEX	COLUMN_NAME
+primary_2	1	primary
+rc=0
+
+=== M8b mysql80 authored name primary is refused natively (1280) ===
+$ docker exec --env MYSQL_PWD=root deltascope-ddl-golden-mysql80 mysql -uroot -e 'DROP TABLE IF EXISTS golden.t10r4_n2; CREATE TABLE golden.t10r4_n2(`primary` INT, a INT, KEY(`primary`), KEY `primary`(a));'
+ERROR 1280 (42000) at line 1: Incorrect index name 'primary'
+rc=1
+
+=== M8c mysql80 expression member anywhere -> functional_index (not first column) ===
+$ docker exec --env MYSQL_PWD=root deltascope-ddl-golden-mysql80 mysql -uroot -e 'DROP TABLE IF EXISTS golden.t10r4_n3; CREATE TABLE golden.t10r4_n3(a INT, b INT, KEY(a, ((b+1))), KEY(b), KEY((a+2)));'
+rc=0
+$ docker exec --env MYSQL_PWD=root deltascope-ddl-golden-mysql80 mysql -uroot -e 'SELECT INDEX_NAME,SEQ_IN_INDEX,COLUMN_NAME,EXPRESSION FROM information_schema.STATISTICS WHERE table_schema="golden" AND table_name="t10r4_n3" ORDER BY INDEX_NAME,SEQ_IN_INDEX;'
+INDEX_NAME	SEQ_IN_INDEX	COLUMN_NAME	EXPRESSION
+b	1	b	NULL
+functional_index	1	a	NULL
+functional_index	2	NULL	(`b` + 1)
+functional_index_2	1	NULL	(`a` + 2)
+rc=0
+
+=== M8d tidb85 expression member anywhere -> expression_index ===
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'DROP TABLE IF EXISTS golden.t10r4_n3; CREATE TABLE golden.t10r4_n3(a INT, b INT, KEY(a, ((b+1))), KEY(b), KEY((a+2)));'
+rc=0
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'SELECT INDEX_NAME,SEQ_IN_INDEX,COLUMN_NAME,EXPRESSION FROM information_schema.STATISTICS WHERE table_schema="golden" AND table_name="t10r4_n3" ORDER BY INDEX_NAME,SEQ_IN_INDEX;'
+INDEX_NAME	SEQ_IN_INDEX	COLUMN_NAME	EXPRESSION
+b	1	b	NULL
+expression_index	1	a	NULL
+expression_index	2	NULL	(`b` + 1)
+expression_index_2	1	NULL	`a` + 2
+rc=0
+
+=== M8e tidb85 authored-name pre-occupation: unnamed KEY(a) + authored a(b) -> unnamed gets a_2 (native success) ===
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'DROP TABLE IF EXISTS golden.t10r4_n5; CREATE TABLE golden.t10r4_n5(a INT, b INT, KEY(a), KEY `a`(b));'
+rc=0
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'SELECT INDEX_NAME,COLUMN_NAME FROM information_schema.STATISTICS WHERE table_schema="golden" AND table_name="t10r4_n5" ORDER BY INDEX_NAME;'
+INDEX_NAME	COLUMN_NAME
+a	b
+a_2	a
+rc=0
+
+=== M8f mysql80 sequential claim: same shape is a native duplicate (1061) ===
+$ docker exec --env MYSQL_PWD=root deltascope-ddl-golden-mysql80 mysql -uroot -e 'DROP TABLE IF EXISTS golden.t10r4_n5; CREATE TABLE golden.t10r4_n5(a INT, b INT, KEY(a), KEY `a`(b));'
+ERROR 1061 (42000) at line 1: Duplicate key name 'a'
+rc=1
+
+=== M8g tidb85 reserved base: column named primary -> primary_2 ===
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'DROP TABLE IF EXISTS golden.t10r4_n1; CREATE TABLE golden.t10r4_n1(`primary` INT, KEY(`primary`));'
+rc=0
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'SELECT INDEX_NAME,COLUMN_NAME FROM information_schema.STATISTICS WHERE table_schema="golden" AND table_name="t10r4_n1";'
+INDEX_NAME	COLUMN_NAME
+primary_2	primary
+rc=0
+
+=== M8h tidb85 authored name primary is refused natively (1280) ===
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'DROP TABLE IF EXISTS golden.t10r4_n6; CREATE TABLE golden.t10r4_n6(a INT, KEY `primary`(a));'
+ERROR 1280 (42000) at line 1: Incorrect index name 'primary'
+rc=1
+
+=== M9 tidb85 clustered DROP PRIMARY KEY executability (R4-C) ===
+
+=== M9a mode=on int PK (PKIsHandle control): CLUSTERED=yes row, drop refused 8200, ALTER PRIMARY reports 1176 (no object) ===
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e "SET GLOBAL tidb_enable_clustered_index='on';"
+rc=0
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'DROP TABLE IF EXISTS golden.t10r4_c1; CREATE TABLE golden.t10r4_c1(id INT PRIMARY KEY, c INT);'
+rc=0
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'SELECT KEY_NAME,CLUSTERED FROM information_schema.TIDB_INDEXES WHERE table_schema="golden" AND table_name="t10r4_c1";'
+KEY_NAME	CLUSTERED
+PRIMARY	YES
+rc=0
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'ALTER TABLE golden.t10r4_c1 DROP PRIMARY KEY;'
+ERROR 8200 (HY000) at line 1: Unsupported drop primary key when the table is using clustered index
+rc=1
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'ALTER TABLE golden.t10r4_c1 ALTER INDEX `PRIMARY` VISIBLE;'
+ERROR 1176 (42000) at line 1: Key 'PRIMARY' doesn't exist in table 't10r4_c1'
+rc=1
+
+=== M9b VARCHAR clustered common handle: drop refused 8200, ALTER VISIBLE succeeds (addressable object) ===
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'DROP TABLE IF EXISTS golden.t10r4_c2; CREATE TABLE golden.t10r4_c2(id VARCHAR(32) PRIMARY KEY CLUSTERED, c INT);'
+rc=0
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'SELECT KEY_NAME,CLUSTERED FROM information_schema.TIDB_INDEXES WHERE table_schema="golden" AND table_name="t10r4_c2";'
+KEY_NAME	CLUSTERED
+PRIMARY	YES
+rc=0
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'ALTER TABLE golden.t10r4_c2 DROP PRIMARY KEY;'
+ERROR 8200 (HY000) at line 1: Unsupported drop primary key when the table is using clustered index
+rc=1
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'ALTER TABLE golden.t10r4_c2 ALTER INDEX `PRIMARY` VISIBLE;'
+rc=0
+
+=== M9c composite clustered common handle: drop refused 8200 ===
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'DROP TABLE IF EXISTS golden.t10r4_c3; CREATE TABLE golden.t10r4_c3(a INT, b VARCHAR(8), c INT, PRIMARY KEY(a, b) CLUSTERED);'
+rc=0
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'SELECT KEY_NAME,CLUSTERED FROM information_schema.TIDB_INDEXES WHERE table_schema="golden" AND table_name="t10r4_c3";'
+KEY_NAME	CLUSTERED
+PRIMARY	YES
+PRIMARY	YES
+rc=0
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'ALTER TABLE golden.t10r4_c3 DROP PRIMARY KEY;'
+ERROR 8200 (HY000) at line 1: Unsupported drop primary key when the table is using clustered index
+rc=1
+
+=== M9d NONCLUSTERED control: drop publishes, PK actually gone ===
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'DROP TABLE IF EXISTS golden.t10r4_c4; CREATE TABLE golden.t10r4_c4(id VARCHAR(32) PRIMARY KEY NONCLUSTERED, c INT);'
+rc=0
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'SELECT KEY_NAME,CLUSTERED FROM information_schema.TIDB_INDEXES WHERE table_schema="golden" AND table_name="t10r4_c4";'
+KEY_NAME	CLUSTERED
+PRIMARY	NO
+rc=0
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'ALTER TABLE golden.t10r4_c4 DROP PRIMARY KEY;'
+rc=0
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'SELECT TIDB_PK_TYPE FROM information_schema.tables WHERE table_schema="golden" AND table_name="t10r4_c4";'
+TIDB_PK_TYPE
+NONCLUSTERED
+rc=0
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'SHOW INDEX FROM golden.t10r4_c4;'
+rc=0
+
+=== cleanup ===
+$ docker exec --env MYSQL_PWD=root deltascope-ddl-golden-mysql80 mysql -uroot -e 'DROP TABLE IF EXISTS golden.t10r4_n1, golden.t10r4_n2, golden.t10r4_n3, golden.t10r4_n5;'
+rc=0
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'DROP TABLE IF EXISTS golden.t10r4_n1, golden.t10r4_n3, golden.t10r4_n5, golden.t10r4_n6, golden.t10r4_c1, golden.t10r4_c2, golden.t10r4_c3, golden.t10r4_c4;'
+rc=0
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e "SET GLOBAL tidb_enable_clustered_index='int_only';"
+rc=0

@@ -1,0 +1,5 @@
+8a2268311b71aa41e134702072c6cb25f0531ae0fc7bca8d5756b5df8c16704e
+# sha256 of the deltascope binary the golden runner built at
+# /private/tmp/t10r4-final/{T09,T10}/T09,T10/bin/deltascope — recorded
+# verbatim from golden/T09-artifact.json and golden/T10-artifact.json
+# (cli.sha256, identical across both). The build tree was ephemeral.
