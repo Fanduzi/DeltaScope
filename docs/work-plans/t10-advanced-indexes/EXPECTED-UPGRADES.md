@@ -32,6 +32,12 @@ the new fact, the applicability condition, and the oracle that now holds.
   INVISIBLE`, `ALTER TABLE t ADD INDEX i(a) INVISIBLE` — invisibility
   finding + complete coverage; `VISIBLE` attributes produce no
   invisibility finding.
+- R1 catch-up: the T03 `mysql-alter-index-invisible` /
+  `mysql-create-index-invisible` cells still pinned the retired
+  `alter_table.alter_index` / `create_index.create_index.index.option.invisible`
+  aspects (the T04/T05 cells were amended in the first round; T03 was not
+  in that regression set). Same retirement, same all-off expectation:
+  pass + complete coverage, no unsupported entries.
 
 ## 3. Provider index visibility
 
@@ -82,3 +88,29 @@ the new fact, the applicability condition, and the oracle that now holds.
   `applyAddIndex` from publishing a post-state for the failing statement.
   `descending_ignored` does not invalidate — the index is created,
   merely without the declared ordering.
+
+## 8. R1 scope restoration — primary-key identity and member legality
+
+- `Index.PrimaryKeyType` now models the TiDB `CLUSTERED|NONCLUSTERED`
+  primary-key attribute (column inline and index-option sites). The T03–T05
+  `*-inline-pk-nonclustered` oracle cells change: on TiDB the
+  `create_table.column.primary_key_type` unaudited aspect retires (a
+  modeled fact, `coverage=complete`); on MySQL the same syntax now reports
+  the index-path vendor boundary
+  `create_table.index.option.primary_key_type` instead of the column-path
+  unextracted marker — the statement stays `incomplete`, only the aspect
+  identity and metadata shape change. Semantic basis: TiDB-only option
+  parsed by the shared parser, never a MySQL capability.
+- Implicit primary-key role: a qualifying `UNIQUE NOT NULL` index (first
+  declared candidate, all-column members, all members proven NOT NULL)
+  refuses invisibility (3522 on both products — natively pinned). New
+  findings/gaps only where invisibility was declared on the holder;
+  multi-candidate provider snapshots emit the
+  `target_table.indexes.ordinal` gap instead of guessing.
+- TiDB `ALTER INDEX PRIMARY`: PKIsHandle tables keep the missing-index
+  blocker (1176); real index objects (NONCLUSTERED / non-integer
+  clustered) accept `VISIBLE` as a no-op and refuse `INVISIBLE` at 3522.
+- Member-legality features `prefix_length`/`fulltext`/`spatial`/`global`
+  emit natively-pinned findings (1170/1283/1687/1252/1054/3152/8200)
+  only when enabled in the compatibility rule's `features` param; the
+  default four-feature profiles are unchanged.

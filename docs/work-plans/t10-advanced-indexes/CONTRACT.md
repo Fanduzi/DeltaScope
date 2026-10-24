@@ -218,3 +218,79 @@ INDEX idx_c INVISIBLE` emitted `alter_table.alter_index` unaudited
 evidence, `coverage=incomplete`, `verdict=review`, plus the
 `ddl.table.exists.alter.require` existence gap. Provider classified
 `INDEX_TYPE='SPATIAL'` members as secondary/unique.
+
+### 9.2 Amendment R2 — member-level facts, implicit primary role, TiDB PRIMARY objects
+
+Scope restoration round (issue #89's full responsibility, not visibility
+alone). Corrections and additions; earlier frozen wording that R2
+supersedes is noted inline.
+
+**Model vocabulary added.** `spec.Index.KeyParts []IndexKeyPart` carries
+per-member ordinal, kind (`column`/`expression`/`unmodeled`), bound
+column, `PrefixLength *int` (explicit zero preserved), `Descending`,
+structured `*ExpressionFacts` identity (references, functions, top form,
+fingerprint, knownness), and `MultiValued`. `SetKeyParts` derives the
+aggregate marks (`PrefixParts`/`DescParts`/`ExpressionCount`/
+`MultiValuedParts`/`HasExpressionKeys`); provider and parser paths keep
+them synchronized. `Index.PrimaryKeyType` models TiDB
+`PRIMARY KEY … CLUSTERED|NONCLUSTERED`. `TableSnapshot` gains
+`PrimaryKeyIsHandle` (TiDB PKIsHandle: a logical PK with no operable
+PRIMARY index object) and `Partitioned *bool` (nil = unanswerable
+catalog, never a guessed false).
+
+**Correction — §4/§5 TiDB PRIMARY.** "TiDB reports 1176 because PRIMARY
+is not an index" was an over-generalization pinned from a single-int
+clustered fixture. Natively observed on TiDB v8.5.0: `PRIMARY KEY (a)
+NONCLUSTERED` and a `VARCHAR` clustered PK *are* real index objects —
+`ALTER INDEX PRIMARY VISIBLE` is a successful no-op, `INVISIBLE` returns
+3522; only the single-integer clustered PK (`PKIsHandle`, detected via
+`information_schema.TIDB_INDEXES.CLUSTERED` plus the integer column
+shape, since STATISTICS synthesizes a PRIMARY row anyway) reports 1176
+for either direction. `alterIndexTargetExists` now resolves `PRIMARY` by
+index-object existence per dialect; an unvouched primary-key collection
+surfaces `target_table.primary_key` as a gap instead of a finding.
+
+**Correction — implicit primary role (fix A).** MySQL and TiDB both
+promote the first declared qualifying `UNIQUE NOT NULL` index to the
+implicit primary role and refuse its invisibility (3522 — natively
+verified on 8.0/8.4/TiDB, including `CREATE UNIQUE INDEX … INVISIBLE`,
+declared `UNIQUE KEY … INVISIBLE`, and `ALTER TABLE ADD UNIQUE`
+variants). `ResolvePrimaryRole`/`ResolveDeclaredPrimaryRole` in
+`internal/domain/spec/primary_key_role.go` is the shared determination
+across alter_index, create_table, add_index, add_constraint, and
+create_index. Candidate = unique, all members plain columns (prefix
+members still qualify — natively pinned), expression members provably
+disqualify, an unmodeled/unclassifiable member makes the decision
+unprovable, and every bound column must be proven NOT NULL. Multiple
+candidates resolve by declaration order only when the snapshot is
+ordered (`IndexOrderCatalog` on derived create shapes); provider
+snapshots sort by index name and cannot prove the pick → bounded gap
+`target_table.indexes.ordinal`. Unvouched primary-key/index/member facts
+degrade to `target_table.primary_key`, `target_table.indexes`, and
+`target_table.indexes.key_parts` gaps — never `Indexes[0]` guesses.
+
+**Member-legality features.** `AssessAdvancedIndexes` adds
+`prefix_length`, `fulltext`, `spatial`, and `global` to the feature
+vocabulary (non-version-gated — they never mint version gaps) with
+natively-pinned reason codes: `prefix_required` (BLOB/TEXT member without
+a length → 1170, all four anchors), `json_column_index` (direct JSON
+member → 3152, prefix does not rescue), `fulltext_column_type`
+(non-string family → 1283), `spatial_column_type` (non-geometry → 1687)
+and `spatial_nullable` (nullable geometry → 1252, MySQL 5.7 InnoDB
+included), `expression_column_missing` (unresolvable member reference →
+1054), `global_not_unique`/`global_not_partitioned` (TiDB 8200 — GLOBAL
+requires unique kind on a partitioned table; non-unique and
+non-partitioned both refuse). Unknown column/type/partition facts emit
+`target_table.columns`/`target_table.partitions` gaps rather than
+guesses. All determined negatives mark `InvalidTransition` — the
+publication gate tombstones instead of publishing a post-state the
+product would reject. TiDB FULLTEXT/SPATIAL remain vendor boundaries
+(8200); MySQL-side `primary_key_type` is a vendor boundary (TiDB-only
+syntax).
+
+**Denominator.** `required_case_ids` 81 → 123 (append-only; every
+original id retained): per-anchor implicit-PK refuse/order-gap/create,
+TiDB PRIMARY object split, prefix_required/prefix-ok, FULLTEXT-int,
+SPATIAL-nullable/type/ok, JSON-direct, expression-missing,
+multi-valued-supported, and TiDB GLOBAL gate cases. Frozen ID SHA-256
+`5efb9502716c4b2bbf66d335674a3f820cd58d8c5312aab6a32292a3b003197d`.

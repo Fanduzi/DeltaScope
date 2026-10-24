@@ -15,8 +15,8 @@ TBL_EXISTS = 'ddl.table.exists.alter.require'
 VERSIONS = {'mysql57': '5.7.44', 'mysql80': '8.0.46', 'mysql84': '8.4.10', 'tidb85': 'v8.5.0'}
 OBSERVED_VERSION = {'mysql57': '5.7.44', 'mysql80': '8.0.46', 'mysql84': '8.4.10', 'tidb85': '8.5.0'}
 
-FROZEN_REQUIRED_CASES = 81
-FROZEN_IDS_SHA256 = '4ec9ba71b3ba61295168c65007dcbe28fca1a630fe79061e548f7a5da9188d8a'
+FROZEN_REQUIRED_CASES = 123
+FROZEN_IDS_SHA256 = '5efb9502716c4b2bbf66d335674a3f820cd58d8c5312aab6a32292a3b003197d'
 
 UNAUDITED = "parsed by the shared parser but not covered by audited semantics"
 VENDOR = "parsed by the shared parser but outside the supported statement surface for this dialect"
@@ -119,6 +119,12 @@ POLICIES = {
         "ddl.index.advanced.compatibility.require": {"level": "blocker", "params": COMPAT_PARAMS},
     },
     "t10-off": {},
+    "t10-members": {
+        "ddl.index.advanced.compatibility.require": {"level": "blocker", "params": {
+            "required": True,
+            "features": ["visibility", "expression_keys", "descending_keys", "multi_valued",
+                         "prefix_length", "fulltext", "spatial", "global"]}},
+    },
 }
 
 
@@ -392,9 +398,11 @@ cli("t10-cli-primary-mysql", "mysql", "t10-visibility",
 cli("t10-cli-primary-tidb", "tidb", "t10-visibility",
     "ALTER TABLE t ALTER INDEX `PRIMARY` INVISIBLE;",
     expect(0, "review", 1, 1, 0, 0, "unverified", ["unverified"],
-           ["ALTER TABLE t ALTER INDEX `PRIMARY` INVISIBLE;"], 3,
+           ["ALTER TABLE t ALTER INDEX `PRIMARY` INVISIBLE;"], 4,
            finding_entries=[finding(0, "ddl.index.invisible.forbid", "warning")],
-           gap_entries=FIRSTPATH_GAPS,
+           gap_entries=FIRSTPATH_GAPS + [
+               gap(0, "ddl.index.advanced.compatibility.require",
+                   ["target_table.primary_key"], "unknown_table_state")],
            fmeta=[meta(0, "ddl.index.invisible.forbid", PK_INV_META)],
            loaded=4, applicable=4))
 
@@ -418,6 +426,21 @@ cli("t10-cli-spatial-tidb", "tidb", "t10-off",
            ["CREATE SPATIAL INDEX i ON t(g);"], 0,
            uentries=[uentry(0, "create_index", VENDOR)],
            loaded=0, applicable=0))
+
+cli("t10-cli-implicit-pk-create", "mysql", "t10-visibility",
+    "CREATE TABLE t (a INT NOT NULL, UNIQUE KEY u_a(a) INVISIBLE);",
+    expect(1, "reject", 1, 2, 0, 0, "unverified", ["unverified"],
+           ["CREATE TABLE t (a INT NOT NULL, UNIQUE KEY u_a(a) INVISIBLE);"], 1,
+           finding_entries=[finding(0, "ddl.index.invisible.forbid", "warning"),
+                            finding(0, "ddl.index.advanced.compatibility.require", "blocker")],
+           gap_entries=[gap(0, "ddl.index.advanced.compatibility.require", ["target.version"], "missing_target_version")],
+           fmeta=[meta(0, "ddl.index.invisible.forbid",
+                       {"table": "t", "index": "u_a", "action": "create_table", "visibility": "invisible"}),
+                  meta(0, "ddl.index.advanced.compatibility.require",
+                       {"table": "t", "index": "u_a", "feature": "visibility",
+                        "action": "create_table", "reason_code": "primary_index_visibility",
+                        "product": "mysql", "target_version": "", "minimum_version": ""})],
+           loaded=4, applicable=2))
 
 
 def parse_err(cid, dialect, sql):
@@ -811,6 +834,345 @@ for anchor in ("mysql57", "mysql80", "mysql84"):
         [{"assert": "fulltext index exists", "sql": iq("t10v", "i_ft"), "expect": "1"}],
         post_verify=[{"assert": "audit did not create i_ft", "sql": iq("t10v", "i_ft"), "expect": "0"}],
         teardown_steps=teardown("t10v"))
+
+
+# ---------------------------------------------------------------- R1 scope
+# Member-level facts (KeyParts), implicit primary-key role on qualifying
+# UNIQUE indexes, TiDB PKIsHandle vs real PRIMARY index objects, and
+# member-legality checks (prefix/JSON/FULLTEXT/SPATIAL/expression deps/
+# GLOBAL). Natively pinned: MySQL+TiDB 3522 on the implicit-PK holder, TiDB
+# 1176 on PKIsHandle PRIMARY, 1170/1283/1687/1252/1054/3152/8200 member
+# refusals.
+
+T10U = "CREATE TABLE t10u (a INT NOT NULL, b INT, UNIQUE KEY u_a(a), KEY i_b(b));"
+T10M = "CREATE TABLE t10m (a INT NOT NULL, b INT NOT NULL, UNIQUE KEY u_a(a), UNIQUE KEY u_b(b));"
+T10T = "CREATE TABLE t10t (a INT, b TEXT, s VARCHAR(64), j JSON);"
+T10GN = "CREATE TABLE t10gn (gn GEOMETRY);"
+T10F = "CREATE TABLE t10f (i INT, s VARCHAR(64));"
+T10S2 = "CREATE TABLE t10s2 (g GEOMETRY NOT NULL SRID 0);"
+T10CPK = "CREATE TABLE t10cpk (a INT, PRIMARY KEY (a));"
+T10NCP = "CREATE TABLE t10ncp (a INT, PRIMARY KEY (a) NONCLUSTERED);"
+T10VPK = "CREATE TABLE t10vpk (a VARCHAR(20), PRIMARY KEY (a));"
+T10G = "CREATE TABLE t10g (a INT, UNIQUE KEY uq(a));"
+T10GP = ("CREATE TABLE t10gp (a INT, b INT, UNIQUE KEY u_ab(a,b)) "
+         "PARTITION BY RANGE (a) (PARTITION p0 VALUES LESS THAN (100), "
+         "PARTITION p1 VALUES LESS THAN MAXVALUE);")
+
+
+def compat_meta(table, index, feature, action, reason, anchor, minv=""):
+    return meta(0, IDX_COMPAT, {"table": table, "index": index, "feature": feature,
+                                "action": action, "reason_code": reason,
+                                "product": "tidb" if anchor == "tidb85" else "mysql",
+                                "target_version": OBSERVED_VERSION[anchor],
+                                "minimum_version": minv})
+
+
+for anchor in ("mysql80", "mysql84", "tidb85"):
+    short = anchor
+    meta_case(
+        f"t10-{short}-implicit-pk", anchor, "t10-visibility",
+        "ALTER TABLE t10u ALTER INDEX u_a INVISIBLE;",
+        expect(1, "reject", 1, 2, 0, 0, "complete", ["complete"],
+               ["ALTER TABLE t10u ALTER INDEX u_a INVISIBLE;"], 0,
+               finding_entries=[finding(0, "ddl.index.invisible.forbid", "warning"),
+                                finding(0, "ddl.index.advanced.compatibility.require", "blocker")],
+               fmeta=[meta(0, "ddl.index.invisible.forbid",
+                           {"table": "t10u", "index": "u_a", "action": "alter_index", "visibility": "invisible"}),
+                      compat_meta("t10u", "u_a", "visibility", "alter_index",
+                                  "primary_index_visibility", anchor)],
+               loaded=4, applicable=4),
+        setup("t10u", T10U, [
+            {"assert": "u_a initially visible", "sql": vq("t10u", "u_a"), "expect": "YES"}]),
+        [{"name": "apply-implicit-pk-invisible", "sql": "ALTER TABLE t10u ALTER INDEX u_a INVISIBLE;",
+          "expect_rc": 1, "stderr_contains": ["3522"]}],
+        [{"assert": "u_a stays visible after refusal", "sql": vq("t10u", "u_a"), "expect": "YES"}],
+        post_verify=[{"assert": "audit did not hide u_a", "sql": vq("t10u", "u_a"), "expect": "YES"}],
+        teardown_steps=teardown("t10u"))
+
+    meta_case(
+        f"t10-{short}-implicit-pk-create", anchor, "t10-visibility",
+        "CREATE TABLE t10uc (a INT NOT NULL, UNIQUE KEY u_a(a) INVISIBLE);",
+        expect(1, "reject", 1, 2, 0, 0, "complete", ["complete"],
+               ["CREATE TABLE t10uc (a INT NOT NULL, UNIQUE KEY u_a(a) INVISIBLE);"], 0,
+               finding_entries=[finding(0, "ddl.index.invisible.forbid", "warning"),
+                                finding(0, "ddl.index.advanced.compatibility.require", "blocker")],
+               fmeta=[meta(0, "ddl.index.invisible.forbid",
+                           {"table": "t10uc", "index": "u_a", "action": "create_table", "visibility": "invisible"}),
+                      compat_meta("t10uc", "u_a", "visibility", "create_table",
+                                  "primary_index_visibility", anchor)],
+               loaded=4, applicable=2),
+        [{"name": "prove-absent-t10uc", "sql": tq("t10uc"), "expect_rc": 0,
+          "verify": [{"assert": "t10uc absent", "sql": tq("t10uc"), "expect": "0"}]}],
+        [{"name": "apply-implicit-pk-create", "sql": "CREATE TABLE t10uc (a INT NOT NULL, UNIQUE KEY u_a(a) INVISIBLE);",
+          "expect_rc": 1, "stderr_contains": ["3522"]}],
+        [{"assert": "t10uc stays absent", "sql": tq("t10uc"), "expect": "0"}],
+        post_verify=[{"assert": "audit did not create t10uc", "sql": tq("t10uc"), "expect": "0"}])
+
+    meta_case(
+        f"t10-{short}-implicit-pk-order", anchor, "t10-visibility",
+        "ALTER TABLE t10m ALTER INDEX u_a INVISIBLE;",
+        expect(0, "review", 1, 1, 0, 0, "unverified", ["unverified"],
+               ["ALTER TABLE t10m ALTER INDEX u_a INVISIBLE;"], 1,
+               finding_entries=[finding(0, "ddl.index.invisible.forbid", "warning")],
+               gap_entries=[gap(0, "ddl.index.advanced.compatibility.require",
+                                ["target_table.indexes.ordinal"])],
+               fmeta=[meta(0, "ddl.index.invisible.forbid",
+                           {"table": "t10m", "index": "u_a", "action": "alter_index", "visibility": "invisible"})],
+               loaded=4, applicable=4),
+        setup("t10m", T10M, [
+            {"assert": "u_a initially visible", "sql": vq("t10m", "u_a"), "expect": "YES"}]),
+        [{"name": "apply-order-gap", "sql": "ALTER TABLE t10m ALTER INDEX u_a INVISIBLE;",
+          "expect_rc": 1, "stderr_contains": ["3522"]}],
+        [{"assert": "u_a stays visible after refusal", "sql": vq("t10m", "u_a"), "expect": "YES"}],
+        post_verify=[{"assert": "audit did not hide u_a", "sql": vq("t10m", "u_a"), "expect": "YES"}],
+        teardown_steps=teardown("t10m"))
+
+for anchor in ("mysql57", "mysql80", "mysql84", "tidb85"):
+    meta_case(
+        f"t10-{anchor}-prefix-required", anchor, "t10-members",
+        "CREATE INDEX i ON t10t(b);",
+        expect(1, "reject", 1, 1, 0, 0, "complete", ["complete"],
+               ["CREATE INDEX i ON t10t(b);"], 0,
+               finding_entries=[finding(0, "ddl.index.advanced.compatibility.require", "blocker")],
+               fmeta=[compat_meta("t10t", "i", "prefix_length", "create_index",
+                                  "prefix_required", anchor)],
+               loaded=1, applicable=1),
+        setup("t10t", T10T),
+        [{"name": "apply-prefix-required", "sql": "CREATE INDEX i ON t10t(b);",
+          "expect_rc": 1, "stderr_contains": ["1170"]}],
+        [{"assert": "t10t present", "sql": tq("t10t"), "expect": "1"}],
+        post_verify=[{"assert": "audit did not create i", "sql": iq("t10t", "i"), "expect": "0"}],
+        teardown_steps=teardown("t10t"))
+
+for anchor in ("mysql80", "tidb85"):
+    meta_case(
+        f"t10-{anchor}-prefix-ok", anchor, "t10-members",
+        "CREATE INDEX i ON t10t(b(10));",
+        expect(1, "review", 1, 0, 0, 1, "incomplete", ["incomplete"],
+               ["CREATE INDEX i ON t10t(b(10));"], 0,
+               uentries=[uentry(0, "create_index.create_index.index.prefix", UNAUDITED)],
+               loaded=1, applicable=1),
+        setup("t10t", T10T),
+        [{"name": "apply-prefix-ok", "sql": "CREATE INDEX i ON t10t(b(10));", "expect_rc": 0}],
+        [{"assert": "prefix index exists", "sql": iq("t10t", "i"), "expect": "1"}],
+        post_verify=[{"assert": "audit did not create i", "sql": iq("t10t", "i"), "expect": "0"}],
+        teardown_steps=teardown("t10t"))
+
+for anchor in ("mysql57", "mysql80", "mysql84"):
+    meta_case(
+        f"t10-{anchor}-fulltext-int", anchor, "t10-members",
+        "CREATE FULLTEXT INDEX ft ON t10f(i);",
+        expect(1, "reject", 1, 1, 0, 0, "complete", ["complete"],
+               ["CREATE FULLTEXT INDEX ft ON t10f(i);"], 0,
+               finding_entries=[finding(0, "ddl.index.advanced.compatibility.require", "blocker")],
+               fmeta=[compat_meta("t10f", "ft", "fulltext", "create_index",
+                                  "fulltext_column_type", anchor)],
+               loaded=1, applicable=1),
+        setup("t10f", T10F),
+        [{"name": "apply-fulltext-int", "sql": "CREATE FULLTEXT INDEX ft ON t10f(i);",
+          "expect_rc": 1, "stderr_contains": ["1283"]}],
+        [{"assert": "t10f present", "sql": tq("t10f"), "expect": "1"}],
+        post_verify=[{"assert": "audit did not create ft", "sql": iq("t10f", "ft"), "expect": "0"}],
+        teardown_steps=teardown("t10f"))
+
+    meta_case(
+        f"t10-{anchor}-spatial-nullable", anchor, "t10-members",
+        "CREATE SPATIAL INDEX sp ON t10gn(gn);",
+        expect(1, "reject", 1, 1, 0, 0, "complete", ["complete"],
+               ["CREATE SPATIAL INDEX sp ON t10gn(gn);"], 0,
+               finding_entries=[finding(0, "ddl.index.advanced.compatibility.require", "blocker")],
+               fmeta=[compat_meta("t10gn", "sp", "spatial", "create_index",
+                                  "spatial_nullable", anchor)],
+               loaded=1, applicable=1),
+        setup("t10gn", T10GN),
+        [{"name": "apply-spatial-nullable", "sql": "CREATE SPATIAL INDEX sp ON t10gn(gn);",
+          "expect_rc": 1, "stderr_contains": ["1252"]}],
+        [{"assert": "t10gn present", "sql": tq("t10gn"), "expect": "1"}],
+        post_verify=[{"assert": "audit did not create sp", "sql": iq("t10gn", "sp"), "expect": "0"}],
+        teardown_steps=teardown("t10gn"))
+
+for anchor in ("mysql80", "mysql84"):
+    meta_case(
+        f"t10-{anchor}-spatial-type", anchor, "t10-members",
+        "CREATE SPATIAL INDEX sp2 ON t10f(i);",
+        expect(1, "reject", 1, 1, 0, 0, "complete", ["complete"],
+               ["CREATE SPATIAL INDEX sp2 ON t10f(i);"], 0,
+               finding_entries=[finding(0, "ddl.index.advanced.compatibility.require", "blocker")],
+               fmeta=[compat_meta("t10f", "sp2", "spatial", "create_index",
+                                  "spatial_column_type", anchor)],
+               loaded=1, applicable=1),
+        setup("t10f", T10F),
+        [{"name": "apply-spatial-type", "sql": "CREATE SPATIAL INDEX sp2 ON t10f(i);",
+          "expect_rc": 1, "stderr_contains": ["1687"]}],
+        [{"assert": "t10f present", "sql": tq("t10f"), "expect": "1"}],
+        post_verify=[{"assert": "audit did not create sp2", "sql": iq("t10f", "sp2"), "expect": "0"}],
+        teardown_steps=teardown("t10f"))
+
+    meta_case(
+        f"t10-{anchor}-spatial-ok", anchor, "t10-members",
+        "CREATE SPATIAL INDEX sp ON t10s2(g);",
+        expect(0, "pass", 1, 0, 0, 0, "complete", ["complete"],
+               ["CREATE SPATIAL INDEX sp ON t10s2(g);"], 0, loaded=1, applicable=1),
+        setup("t10s2", T10S2),
+        [{"name": "apply-spatial-ok", "sql": "CREATE SPATIAL INDEX sp ON t10s2(g);", "expect_rc": 0}],
+        [{"assert": "spatial index exists", "sql": iq("t10s2", "sp"), "expect": "1"}],
+        post_verify=[{"assert": "audit did not create sp", "sql": iq("t10s2", "sp"), "expect": "0"}],
+        teardown_steps=teardown("t10s2"))
+
+for anchor in ("mysql80", "mysql84", "tidb85"):
+    meta_case(
+        f"t10-{anchor}-json-direct", anchor, "t10-members",
+        "CREATE INDEX ji ON t10t(j);",
+        expect(1, "reject", 1, 1, 0, 0, "complete", ["complete"],
+               ["CREATE INDEX ji ON t10t(j);"], 0,
+               finding_entries=[finding(0, "ddl.index.advanced.compatibility.require", "blocker")],
+               fmeta=[compat_meta("t10t", "ji", "prefix_length", "create_index",
+                                  "json_column_index", anchor)],
+               loaded=1, applicable=1),
+        setup("t10t", T10T),
+        [{"name": "apply-json-direct", "sql": "CREATE INDEX ji ON t10t(j);",
+          "expect_rc": 1, "stderr_contains": ["3152"]}],
+        [{"assert": "t10t present", "sql": tq("t10t"), "expect": "1"}],
+        post_verify=[{"assert": "audit did not create ji", "sql": iq("t10t", "ji"), "expect": "0"}],
+        teardown_steps=teardown("t10t"))
+
+    meta_case(
+        f"t10-{anchor}-expr-missing", anchor, "t10-members",
+        "CREATE INDEX ei ON t10t((nosuch+1));",
+        expect(1, "reject", 1, 1, 0, 1, "incomplete", ["incomplete"],
+               ["CREATE INDEX ei ON t10t((nosuch+1));"], 0,
+               finding_entries=[finding(0, "ddl.index.advanced.compatibility.require", "blocker")],
+               fmeta=[compat_meta("t10t", "ei", "expression_keys", "create_index",
+                                  "expression_column_missing", anchor)],
+               uentries=[uentry(0, "create_index.create_index.index.expr", UNAUDITED)],
+               loaded=1, applicable=1),
+        setup("t10t", T10T),
+        [{"name": "apply-expr-missing", "sql": "CREATE INDEX ei ON t10t((nosuch+1));",
+          "expect_rc": 1, "stderr_contains": ["1054"]}],
+        [{"assert": "t10t present", "sql": tq("t10t"), "expect": "1"}],
+        post_verify=[{"assert": "audit did not create ei", "sql": iq("t10t", "ei"), "expect": "0"}],
+        teardown_steps=teardown("t10t"))
+
+    meta_case(
+        f"t10-{anchor}-mv-supported", anchor, "t10-members",
+        "CREATE INDEX mv ON t10t((CAST(j->'$.a' AS UNSIGNED ARRAY)));",
+        expect(1, "review", 1, 0, 0, 2, "incomplete", ["incomplete"],
+               ["CREATE INDEX mv ON t10t((CAST(j->'$.a' AS UNSIGNED ARRAY)));"], 0,
+               uentries=[uentry(0, "create_index.create_index.index.expr", UNAUDITED),
+                         uentry(0, "create_index.create_index.index.multi_valued", UNAUDITED)],
+               loaded=1, applicable=1),
+        setup("t10t", T10T),
+        [{"name": "apply-mv-supported", "sql": "CREATE INDEX mv ON t10t((CAST(j->'$.a' AS UNSIGNED ARRAY)));",
+          "expect_rc": 0}],
+        [{"assert": "multi-valued index exists", "sql": iq("t10t", "mv"), "expect": "1"}],
+        post_verify=[{"assert": "audit did not create mv", "sql": iq("t10t", "mv"), "expect": "0"}],
+        teardown_steps=teardown("t10t"))
+
+# TiDB PRIMARY index-object split (PKIsHandle vs real index object) and the
+# GLOBAL option's unique-plus-partitioned gate.
+meta_case(
+    "t10-tidb-primary-handle-visible", "tidb85", "t10-visibility",
+    "ALTER TABLE t10cpk ALTER INDEX `PRIMARY` VISIBLE;",
+    expect(1, "reject", 1, 1, 0, 0, "complete", ["complete"],
+           ["ALTER TABLE t10cpk ALTER INDEX `PRIMARY` VISIBLE;"], 0,
+           finding_entries=[finding(0, "ddl.alter.alter_index.exists.require", "blocker")],
+           loaded=4, applicable=3),
+    setup("t10cpk", T10CPK),
+    [{"name": "apply-handle-visible", "sql": "ALTER TABLE t10cpk ALTER INDEX `PRIMARY` VISIBLE;",
+      "expect_rc": 1, "stderr_contains": ["1176"]}],
+    [{"assert": "t10cpk present", "sql": tq("t10cpk"), "expect": "1"}],
+    post_verify=[{"assert": "audit did not mutate t10cpk", "sql": tq("t10cpk"), "expect": "1"}],
+    teardown_steps=teardown("t10cpk"))
+
+meta_case(
+    "t10-tidb-primary-object-visible", "tidb85", "t10-visibility",
+    "ALTER TABLE t10ncp ALTER INDEX `PRIMARY` VISIBLE;",
+    expect(0, "pass", 1, 0, 0, 0, "complete", ["complete"],
+           ["ALTER TABLE t10ncp ALTER INDEX `PRIMARY` VISIBLE;"], 0, loaded=4, applicable=3),
+    setup("t10ncp", T10NCP),
+    [{"name": "apply-object-visible", "sql": "ALTER TABLE t10ncp ALTER INDEX `PRIMARY` VISIBLE;",
+      "expect_rc": 0}],
+    [{"assert": "t10ncp present", "sql": tq("t10ncp"), "expect": "1"}],
+    post_verify=[{"assert": "audit did not mutate t10ncp", "sql": tq("t10ncp"), "expect": "1"}],
+    teardown_steps=teardown("t10ncp"))
+
+meta_case(
+    "t10-tidb-primary-object-invisible", "tidb85", "t10-visibility",
+    "ALTER TABLE t10ncp ALTER INDEX `PRIMARY` INVISIBLE;",
+    expect(1, "reject", 1, 2, 0, 0, "complete", ["complete"],
+           ["ALTER TABLE t10ncp ALTER INDEX `PRIMARY` INVISIBLE;"], 0,
+           finding_entries=[finding(0, "ddl.index.invisible.forbid", "warning"),
+                            finding(0, "ddl.index.advanced.compatibility.require", "blocker")],
+           fmeta=[meta(0, "ddl.index.invisible.forbid",
+                       {"table": "t10ncp", "index": "primary", "action": "alter_index", "visibility": "invisible"}),
+                  compat_meta("t10ncp", "primary", "visibility", "alter_index",
+                              "primary_index_visibility", "tidb85")],
+           loaded=4, applicable=4),
+    setup("t10ncp", T10NCP),
+    [{"name": "apply-object-invisible", "sql": "ALTER TABLE t10ncp ALTER INDEX `PRIMARY` INVISIBLE;",
+      "expect_rc": 1, "stderr_contains": ["3522"]}],
+    [{"assert": "t10ncp present", "sql": tq("t10ncp"), "expect": "1"}],
+    post_verify=[{"assert": "audit did not mutate t10ncp", "sql": tq("t10ncp"), "expect": "1"}],
+    teardown_steps=teardown("t10ncp"))
+
+meta_case(
+    "t10-tidb-primary-varchar", "tidb85", "t10-visibility",
+    "ALTER TABLE t10vpk ALTER INDEX `PRIMARY` VISIBLE;",
+    expect(0, "pass", 1, 0, 0, 0, "complete", ["complete"],
+           ["ALTER TABLE t10vpk ALTER INDEX `PRIMARY` VISIBLE;"], 0, loaded=4, applicable=3),
+    setup("t10vpk", T10VPK),
+    [{"name": "apply-varchar-visible", "sql": "ALTER TABLE t10vpk ALTER INDEX `PRIMARY` VISIBLE;",
+      "expect_rc": 0}],
+    [{"assert": "t10vpk present", "sql": tq("t10vpk"), "expect": "1"}],
+    post_verify=[{"assert": "audit did not mutate t10vpk", "sql": tq("t10vpk"), "expect": "1"}],
+    teardown_steps=teardown("t10vpk"))
+
+meta_case(
+    "t10-tidb-global-nonpart", "tidb85", "t10-members",
+    "CREATE UNIQUE INDEX gi ON t10g(a) GLOBAL;",
+    expect(1, "reject", 1, 1, 0, 1, "incomplete", ["incomplete"],
+           ["CREATE UNIQUE INDEX gi ON t10g(a) GLOBAL;"], 0,
+           finding_entries=[finding(0, "ddl.index.advanced.compatibility.require", "blocker")],
+           fmeta=[compat_meta("t10g", "gi", "global", "create_index",
+                              "global_not_partitioned", "tidb85")],
+           uentries=[uentry(0, "create_index.create_index.index.global", UNAUDITED)],
+           loaded=1, applicable=1),
+    setup("t10g", T10G),
+    [{"name": "apply-global-nonpart", "sql": "CREATE UNIQUE INDEX gi ON t10g(a) GLOBAL;",
+      "expect_rc": 1, "stderr_contains": ["8200"]}],
+    [{"assert": "t10g present", "sql": tq("t10g"), "expect": "1"}],
+    post_verify=[{"assert": "audit did not create gi", "sql": iq("t10g", "gi"), "expect": "0"}],
+    teardown_steps=teardown("t10g"))
+
+meta_case(
+    "t10-tidb-global-part", "tidb85", "t10-members",
+    "CREATE UNIQUE INDEX gi ON t10gp(a) GLOBAL;",
+    expect(1, "review", 1, 0, 0, 1, "incomplete", ["incomplete"],
+           ["CREATE UNIQUE INDEX gi ON t10gp(a) GLOBAL;"], 0,
+           uentries=[uentry(0, "create_index.create_index.index.global", UNAUDITED)],
+           loaded=1, applicable=1),
+    setup("t10gp", T10GP),
+    [{"name": "apply-global-part", "sql": "CREATE UNIQUE INDEX gi ON t10gp(a) GLOBAL;", "expect_rc": 0}],
+    [{"assert": "global index exists", "sql": iq("t10gp", "gi"), "expect": "1"}],
+    post_verify=[{"assert": "audit did not create gi", "sql": iq("t10gp", "gi"), "expect": "0"}],
+    teardown_steps=teardown("t10gp"))
+
+meta_case(
+    "t10-tidb-global-nonunique", "tidb85", "t10-members",
+    "CREATE INDEX gi2 ON t10gp(b) GLOBAL;",
+    expect(1, "reject", 1, 1, 0, 1, "incomplete", ["incomplete"],
+           ["CREATE INDEX gi2 ON t10gp(b) GLOBAL;"], 0,
+           finding_entries=[finding(0, "ddl.index.advanced.compatibility.require", "blocker")],
+           fmeta=[compat_meta("t10gp", "gi2", "global", "create_index",
+                              "global_not_unique", "tidb85")],
+           uentries=[uentry(0, "create_index.create_index.index.global", UNAUDITED)],
+           loaded=1, applicable=1),
+    setup("t10gp", T10GP),
+    [{"name": "apply-global-nonunique", "sql": "CREATE INDEX gi2 ON t10gp(b) GLOBAL;",
+      "expect_rc": 1, "stderr_contains": ["8200"]}],
+    [{"assert": "t10gp present", "sql": tq("t10gp"), "expect": "1"}],
+    post_verify=[{"assert": "audit did not create gi2", "sql": iq("t10gp", "gi2"), "expect": "0"}],
+    teardown_steps=teardown("t10gp"))
 
 
 

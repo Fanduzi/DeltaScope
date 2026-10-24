@@ -157,6 +157,60 @@ contract froze:
   (missing `alter_index`, missing visibility facts, no transition, no
   rules) and green after; `make test` is all-pass.
 
+## Amendment R2 (2026-10-25) — scope restoration
+
+The R1 delivery under-counted issue #89: it covered visibility plus the
+version gates but kept member-level facts and the member-legality table
+unmodeled, and it pinned two primary-key identity over-generalizations.
+R2 restores the full responsibility:
+
+- **Member-level key parts.** `spec.Index.KeyParts` replaces
+  count-only marks: ordinal, member kind (column/expression/unmodeled),
+  bound column, explicit `PrefixLength *int` (zero preserved),
+  `Descending`, structured `ExpressionFacts` identity (references,
+  functions, top form, fingerprint, knownness), and `MultiValued`. Parser
+  and provider both populate it; `SetKeyParts` derives the aggregate
+  counters so the two never drift.
+- **Implicit primary-key role.** Both products promote the first
+  declared qualifying `UNIQUE NOT NULL` index to an implicit primary
+  role and refuse its invisibility (natively pinned 3522 on MySQL
+  8.0/8.4 and TiDB 8.5 across ALTER/CREATE/ADD entries). The shared
+  `ResolvePrimaryRole`/`ResolveDeclaredPrimaryRole` answers holder or a
+  bounded gap — prefix members still qualify, expression members
+  provably disqualify, unmodelable member facts withhold the answer, and
+  declaration order is only provable on ordered
+  (derived create-table) snapshots: provider catalogs are name-sorted,
+  so multi-candidate sets emit `target_table.indexes.ordinal` rather
+  than guessing `Indexes[0]`.
+- **TiDB PRIMARY is an index object, sometimes.** The R1 contract's
+  "PRIMARY is not an index on TiDB" held only for the single-integer
+  clustered `PKIsHandle` shape. `NONCLUSTERED` and non-integer clustered
+  primary keys are real objects: `VISIBLE` is a no-op success and
+  `INVISIBLE` refuses 3522 (natively pinned). Provider detects
+  PKIsHandle via `TIDB_INDEXES.CLUSTERED` + the integer member shape
+  (STATISTICS synthesizes a PRIMARY row regardless, so presence cannot
+  prove the object). Unvouched PK identity emits a
+  `target_table.primary_key` gap, not a finding.
+- **Member legality, not just presence.** New non-version-gated
+  features `prefix_length`/`fulltext`/`spatial`/`global` drive
+  natively-pinned checks: `prefix_required` 1170, `json_column_index`
+  3152, `fulltext_column_type` 1283, `spatial_column_type` 1687,
+  `spatial_nullable` 1252, `expression_column_missing` 1054, and TiDB
+  `global_not_unique`/`global_not_partitioned` 8200. Unknown column,
+  type, or partition facts degrade to bounded gaps. Determined negatives
+  mark `InvalidTransition` and tombstone rather than publishing a
+  rejected post-state.
+- **Provider additions.** `STATISTICS.EXPRESSION` capability probe,
+  `PARTITIONS`-backed `Partitioned *bool` (nil = unanswerable), and the
+  TIDB_INDEXES handle detection above.
+- Denominator 81→123 frozen cases (append-only) under amendment R2 of
+  `CONTRACT.md`; frozen ID SHA-256
+  `5efb9502716c4b2bbf66d335674a3f820cd58d8c5312aab6a32292a3b003197d`.
+
+Deferred unchanged: expression equivalence/evaluation, per-function
+TiDB expression legality, multi-valued query semantics, optimizer-effect
+claims.
+
 ## References
 
 - Issue: Fanduzi/DeltaScope#79 (milestone), #89 (T10 scope)

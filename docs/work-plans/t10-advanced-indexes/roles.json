@@ -63,7 +63,25 @@
         }
       }
     },
-    "t10-off": {}
+    "t10-off": {},
+    "t10-members": {
+      "ddl.index.advanced.compatibility.require": {
+        "level": "blocker",
+        "params": {
+          "required": true,
+          "features": [
+            "visibility",
+            "expression_keys",
+            "descending_keys",
+            "multi_valued",
+            "prefix_length",
+            "fulltext",
+            "spatial",
+            "global"
+          ]
+        }
+      }
+    }
   },
   "cli_cases": [
     {
@@ -291,6 +309,13 @@
       "policy": "t10-off",
       "sql": "CREATE SPATIAL INDEX i ON t(g);",
       "expect": "vendor-boundary unsupported entry; coverage=incomplete (unchanged)"
+    },
+    {
+      "id": "t10-cli-implicit-pk-create",
+      "dialect": "mysql",
+      "policy": "t10-visibility",
+      "sql": "CREATE TABLE t (a INT NOT NULL, UNIQUE KEY u_a(a) INVISIBLE);",
+      "expect": "offline: declared-shape holder + invisible → invisible warning; version fact absent → compat emits missing_target_version gap instead of the refusal issue"
     }
   ],
   "metadata_roles": [
@@ -379,7 +404,7 @@
       ],
       "policy": "t10-visibility",
       "sql": "ALTER TABLE tp ALTER INDEX `PRIMARY` INVISIBLE;",
-      "expect": "exists blocker (1176-class: PRIMARY is not an index on TiDB) + invisible warning; reject"
+      "expect": "exists blocker (1176: single-int clustered PK is PKIsHandle — no operable PRIMARY index object) + invisible warning; reject"
     },
     {
       "id": "t10-mysql57-firstpath",
@@ -525,6 +550,199 @@
       "policy": "t10-invisible",
       "sql": "ALTER TABLE tinv ALTER INDEX idx_i VISIBLE;",
       "expect": "provider member visibility=invisible loaded (is_visible=NO proven in setup); 0 findings (provider state is not a declared intent)"
+    },
+    {
+      "id": "t10-<anchor>-implicit-pk",
+      "anchors": [
+        "mysql80",
+        "mysql84",
+        "tidb85"
+      ],
+      "policy": "t10-visibility",
+      "sql": "ALTER TABLE t10u ALTER INDEX u_a INVISIBLE;",
+      "expect": "u_a is the sole qualifying UNIQUE NOT NULL → implicit primary role → compat blocker primary_index_visibility + invisible warning; native execute refuses 3522"
+    },
+    {
+      "id": "t10-<anchor>-implicit-pk-create",
+      "anchors": [
+        "mysql80",
+        "mysql84",
+        "tidb85"
+      ],
+      "policy": "t10-visibility",
+      "sql": "CREATE TABLE t10uc (a INT NOT NULL, UNIQUE KEY u_a(a) INVISIBLE);",
+      "expect": "declared-shape role resolution → compat blocker + invisible warning; native 3522"
+    },
+    {
+      "id": "t10-<anchor>-implicit-pk-order",
+      "anchors": [
+        "mysql80",
+        "mysql84",
+        "tidb85"
+      ],
+      "policy": "t10-visibility",
+      "sql": "ALTER TABLE t10m ALTER INDEX u_a INVISIBLE;",
+      "expect": "two qualifying candidates on a name-sorted provider snapshot → order unprovable → compat gap target_table.indexes.ordinal, warning only; native execute still refuses u_a (3522) — the gap is the honest bounded answer"
+    },
+    {
+      "id": "t10-<anchor>-prefix-required",
+      "anchors": [
+        "mysql57",
+        "mysql80",
+        "mysql84",
+        "tidb85"
+      ],
+      "policy": "t10-members",
+      "sql": "CREATE INDEX i ON t10t(b);",
+      "expect": "TEXT member without prefix length → prefix_required blocker; native 1170"
+    },
+    {
+      "id": "t10-<anchor>-prefix-ok",
+      "anchors": [
+        "mysql80",
+        "tidb85"
+      ],
+      "policy": "t10-members",
+      "sql": "CREATE INDEX i ON t10t(b(10));",
+      "expect": "prefixed TEXT member clean; prefix aspect stays bounded unaudited; native rc0"
+    },
+    {
+      "id": "t10-<anchor>-fulltext-int",
+      "anchors": [
+        "mysql57",
+        "mysql80",
+        "mysql84"
+      ],
+      "policy": "t10-members",
+      "sql": "CREATE FULLTEXT INDEX ft ON t10f(i);",
+      "expect": "INT member → fulltext_column_type blocker; native 1283"
+    },
+    {
+      "id": "t10-<anchor>-spatial-nullable",
+      "anchors": [
+        "mysql57",
+        "mysql80",
+        "mysql84"
+      ],
+      "policy": "t10-members",
+      "sql": "CREATE SPATIAL INDEX sp ON t10gn(gn);",
+      "expect": "nullable GEOMETRY member → spatial_nullable blocker; native 1252"
+    },
+    {
+      "id": "t10-<anchor>-spatial-type",
+      "anchors": [
+        "mysql80",
+        "mysql84"
+      ],
+      "policy": "t10-members",
+      "sql": "CREATE SPATIAL INDEX sp2 ON t10f(i);",
+      "expect": "INT member → spatial_column_type blocker; native 1687"
+    },
+    {
+      "id": "t10-<anchor>-spatial-ok",
+      "anchors": [
+        "mysql80",
+        "mysql84"
+      ],
+      "policy": "t10-members",
+      "sql": "CREATE SPATIAL INDEX sp ON t10s2(g);",
+      "expect": "NOT NULL SRID-bound geometry member clean; native rc0"
+    },
+    {
+      "id": "t10-<anchor>-json-direct",
+      "anchors": [
+        "mysql80",
+        "mysql84",
+        "tidb85"
+      ],
+      "policy": "t10-members",
+      "sql": "CREATE INDEX ji ON t10t(j);",
+      "expect": "direct JSON member → json_column_index blocker; native 3152"
+    },
+    {
+      "id": "t10-<anchor>-expr-missing",
+      "anchors": [
+        "mysql80",
+        "mysql84",
+        "tidb85"
+      ],
+      "policy": "t10-members",
+      "sql": "CREATE INDEX ei ON t10t((nosuch+1));",
+      "expect": "expression member references a column absent from the bound set → expression_column_missing blocker; native 1054"
+    },
+    {
+      "id": "t10-<anchor>-mv-supported",
+      "anchors": [
+        "mysql80",
+        "mysql84",
+        "tidb85"
+      ],
+      "policy": "t10-members",
+      "sql": "CREATE INDEX mv ON t10t((CAST(j->'$.a' AS UNSIGNED ARRAY)));",
+      "expect": "supported multi-valued shape on a provable column → 0 findings; expr/multi_valued aspects stay bounded unaudited; native rc0"
+    },
+    {
+      "id": "t10-tidb-primary-handle-visible",
+      "anchors": [
+        "tidb85"
+      ],
+      "policy": "t10-visibility",
+      "sql": "ALTER TABLE t10cpk ALTER INDEX `PRIMARY` VISIBLE;",
+      "expect": "PKIsHandle single-int clustered PK → PRIMARY names no index object → exists blocker; native 1176"
+    },
+    {
+      "id": "t10-tidb-primary-object-visible",
+      "anchors": [
+        "tidb85"
+      ],
+      "policy": "t10-visibility",
+      "sql": "ALTER TABLE t10ncp ALTER INDEX `PRIMARY` VISIBLE;",
+      "expect": "NONCLUSTERED PK is a real PRIMARY index object → VISIBLE no-op, 0 findings; native rc0"
+    },
+    {
+      "id": "t10-tidb-primary-object-invisible",
+      "anchors": [
+        "tidb85"
+      ],
+      "policy": "t10-visibility",
+      "sql": "ALTER TABLE t10ncp ALTER INDEX `PRIMARY` INVISIBLE;",
+      "expect": "real PRIMARY object cannot go invisible → compat blocker primary_index_visibility + warning; native 3522"
+    },
+    {
+      "id": "t10-tidb-primary-varchar",
+      "anchors": [
+        "tidb85"
+      ],
+      "policy": "t10-visibility",
+      "sql": "ALTER TABLE t10vpk ALTER INDEX `PRIMARY` VISIBLE;",
+      "expect": "varchar clustered PK is a commonHandle real index object → VISIBLE no-op; native rc0"
+    },
+    {
+      "id": "t10-tidb-global-nonpart",
+      "anchors": [
+        "tidb85"
+      ],
+      "policy": "t10-members",
+      "sql": "CREATE UNIQUE INDEX gi ON t10g(a) GLOBAL;",
+      "expect": "GLOBAL on a non-partitioned table → global_not_partitioned blocker; native 8200"
+    },
+    {
+      "id": "t10-tidb-global-part",
+      "anchors": [
+        "tidb85"
+      ],
+      "policy": "t10-members",
+      "sql": "CREATE UNIQUE INDEX gi ON t10gp(a) GLOBAL;",
+      "expect": "GLOBAL unique on partitioned table clean (aspect stays bounded unaudited); native rc0"
+    },
+    {
+      "id": "t10-tidb-global-nonunique",
+      "anchors": [
+        "tidb85"
+      ],
+      "policy": "t10-members",
+      "sql": "CREATE INDEX gi2 ON t10gp(b) GLOBAL;",
+      "expect": "GLOBAL on a non-unique index → global_not_unique blocker; native 8200"
     }
   ],
   "error_cases": [

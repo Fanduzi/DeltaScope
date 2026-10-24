@@ -196,18 +196,15 @@
         "none"
       ],
       "expect": {
-        "exit": 1,
-        "verdict": "review",
+        "exit": 0,
+        "verdict": "pass",
         "statements": 1,
         "findings": 0,
-        "diagnostics": 1,
-        "unsupported": 1,
-        "coverage": "incomplete",
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
         "statement_coverage": [
-          "incomplete"
-        ],
-        "unsupported_features": [
-          "alter_table.alter_index"
+          "complete"
         ],
         "statement_sql": [
           "ALTER TABLE t ALTER INDEX idx INVISIBLE;"
@@ -2649,27 +2646,18 @@
         "none"
       ],
       "expect": {
-        "exit": 1,
-        "verdict": "review",
+        "exit": 0,
+        "verdict": "pass",
         "statements": 1,
         "findings": 0,
-        "diagnostics": 1,
-        "unsupported": 1,
-        "coverage": "incomplete",
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
         "statement_coverage": [
-          "incomplete"
+          "complete"
         ],
         "statement_sql": [
           "CREATE INDEX ix ON t (c) INVISIBLE;"
-        ],
-        "unsupported_features": [
-          "create_index.create_index.index.option.invisible"
-        ],
-        "unsupported_entries": [
-          {
-            "feature": "create_index.create_index.index.option.invisible",
-            "reason": "parsed by the shared parser but not covered by audited semantics"
-          }
         ]
       }
     },
@@ -3745,31 +3733,19 @@
         "none"
       ],
       "expect": {
-        "exit": 1,
-        "verdict": "review",
+        "exit": 0,
+        "verdict": "pass",
         "statements": 1,
         "findings": 0,
-        "diagnostics": 1,
-        "coverage": "incomplete",
+        "diagnostics": 0,
+        "coverage": "complete",
         "statement_coverage": [
-          "incomplete"
+          "complete"
         ],
         "statement_sql": [
           "CREATE TABLE t (id INT PRIMARY KEY NONCLUSTERED);"
         ],
-        "unsupported": 1,
-        "unsupported_features": [
-          "create_table.column.primary_key_type"
-        ],
-        "unsupported_entries": [
-          {
-            "feature": "create_table.column.primary_key_type",
-            "reason": "parsed by the shared parser but not covered by audited semantics",
-            "metadata": {
-              "aspect": "column"
-            }
-          }
-        ]
+        "unsupported": 0
       }
     },
     {
@@ -3795,14 +3771,15 @@
         ],
         "unsupported": 1,
         "unsupported_features": [
-          "create_table.column.primary_key_type"
+          "create_table.index.option.primary_key_type"
         ],
         "unsupported_entries": [
           {
-            "feature": "create_table.column.primary_key_type",
+            "feature": "create_table.index.option.primary_key_type",
             "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
             "metadata": {
-              "aspect": "column"
+              "aspect": "index_option",
+              "index_kind": "primary"
             }
           }
         ]

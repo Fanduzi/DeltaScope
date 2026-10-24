@@ -233,6 +233,26 @@
       },
       "t10-off": {
         "enable": {}
+      },
+      "t10-members": {
+        "enable": {
+          "ddl.index.advanced.compatibility.require": {
+            "level": "blocker",
+            "params": {
+              "required": true,
+              "features": [
+                "visibility",
+                "expression_keys",
+                "descending_keys",
+                "multi_valued",
+                "prefix_length",
+                "fulltext",
+                "spatial",
+                "global"
+              ]
+            }
+          }
+        }
       }
     }
   },
@@ -1374,7 +1394,7 @@
         "statement_indices": [
           0
         ],
-        "evidence_gaps": 3,
+        "evidence_gaps": 4,
         "evidence_gap_entries": [
           {
             "index": 0,
@@ -1399,6 +1419,14 @@
             "reason_code": "missing_target_version",
             "required_facts": [
               "target.version"
+            ]
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "reason_code": "unknown_table_state",
+            "required_facts": [
+              "target_table.primary_key"
             ]
           }
         ],
@@ -1530,6 +1558,82 @@
         ]
       },
       "policy": "t10-off"
+    },
+    {
+      "id": "t10-cli-implicit-pk-create",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t (a INT NOT NULL, UNIQUE KEY u_a(a) INVISIBLE);",
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 2,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "statement_coverage": [
+          "unverified"
+        ],
+        "statement_sql": [
+          "CREATE TABLE t (a INT NOT NULL, UNIQUE KEY u_a(a) INVISIBLE);"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 1,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "reason_code": "missing_target_version",
+            "required_facts": [
+              "target.version"
+            ]
+          }
+        ],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.invisible.forbid",
+            "level": "warning"
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "level": "blocker"
+          }
+        ],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 4,
+        "rule_summary_applicable": 2,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.invisible.forbid",
+            "metadata": {
+              "table": "t",
+              "index": "u_a",
+              "action": "create_table",
+              "visibility": "invisible"
+            }
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "metadata": {
+              "table": "t",
+              "index": "u_a",
+              "feature": "visibility",
+              "action": "create_table",
+              "reason_code": "primary_index_visibility",
+              "product": "mysql",
+              "target_version": "",
+              "minimum_version": ""
+            }
+          }
+        ]
+      },
+      "policy": "t10-visibility"
     },
     {
       "id": "t10-cli-alter-index-no-kw",
@@ -7189,6 +7293,4991 @@
           ]
         }
       ]
+    },
+    {
+      "id": "t10-mysql80-implicit-pk",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t10u ALTER INDEX u_a INVISIBLE;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T10_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 2,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "ALTER TABLE t10u ALTER INDEX u_a INVISIBLE;"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.invisible.forbid",
+            "level": "warning"
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "level": "blocker"
+          }
+        ],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 4,
+        "rule_summary_applicable": 4,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.invisible.forbid",
+            "metadata": {
+              "table": "t10u",
+              "index": "u_a",
+              "action": "alter_index",
+              "visibility": "invisible"
+            }
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "metadata": {
+              "table": "t10u",
+              "index": "u_a",
+              "feature": "visibility",
+              "action": "alter_index",
+              "reason_code": "primary_index_visibility",
+              "product": "mysql",
+              "target_version": "8.0.46",
+              "minimum_version": ""
+            }
+          }
+        ]
+      },
+      "policy": "t10-visibility",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10u",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10u'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10u bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10u'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10u",
+          "sql": "CREATE TABLE t10u (a INT NOT NULL, b INT, UNIQUE KEY u_a(a), KEY i_b(b));",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10u bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10u'",
+              "expect": "1"
+            },
+            {
+              "assert": "u_a initially visible",
+              "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10u' AND index_name='u_a' AND seq_in_index=1 LIMIT 1",
+              "expect": "YES"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not hide u_a",
+          "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10u' AND index_name='u_a' AND seq_in_index=1 LIMIT 1",
+          "expect": "YES"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-implicit-pk-invisible",
+          "sql": "ALTER TABLE t10u ALTER INDEX u_a INVISIBLE;",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "3522"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "u_a stays visible after refusal",
+          "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10u' AND index_name='u_a' AND seq_in_index=1 LIMIT 1",
+          "expect": "YES"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10u",
+          "sql": "DROP TABLE IF EXISTS t10u;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10u bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10u'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-mysql80-implicit-pk-create",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t10uc (a INT NOT NULL, UNIQUE KEY u_a(a) INVISIBLE);",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T10_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 2,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE TABLE t10uc (a INT NOT NULL, UNIQUE KEY u_a(a) INVISIBLE);"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.invisible.forbid",
+            "level": "warning"
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "level": "blocker"
+          }
+        ],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 4,
+        "rule_summary_applicable": 2,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.invisible.forbid",
+            "metadata": {
+              "table": "t10uc",
+              "index": "u_a",
+              "action": "create_table",
+              "visibility": "invisible"
+            }
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "metadata": {
+              "table": "t10uc",
+              "index": "u_a",
+              "feature": "visibility",
+              "action": "create_table",
+              "reason_code": "primary_index_visibility",
+              "product": "mysql",
+              "target_version": "8.0.46",
+              "minimum_version": ""
+            }
+          }
+        ]
+      },
+      "policy": "t10-visibility",
+      "setup": [
+        {
+          "name": "prove-absent-t10uc",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10uc'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10uc absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10uc'",
+              "expect": "0"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not create t10uc",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10uc'",
+          "expect": "0"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-implicit-pk-create",
+          "sql": "CREATE TABLE t10uc (a INT NOT NULL, UNIQUE KEY u_a(a) INVISIBLE);",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "3522"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "t10uc stays absent",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10uc'",
+          "expect": "0"
+        }
+      ],
+      "teardown": []
+    },
+    {
+      "id": "t10-mysql80-implicit-pk-order",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t10m ALTER INDEX u_a INVISIBLE;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T10_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "statement_coverage": [
+          "unverified"
+        ],
+        "statement_sql": [
+          "ALTER TABLE t10m ALTER INDEX u_a INVISIBLE;"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 1,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "reason_code": "unknown_table_state",
+            "required_facts": [
+              "target_table.indexes.ordinal"
+            ]
+          }
+        ],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.invisible.forbid",
+            "level": "warning"
+          }
+        ],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 4,
+        "rule_summary_applicable": 4,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.invisible.forbid",
+            "metadata": {
+              "table": "t10m",
+              "index": "u_a",
+              "action": "alter_index",
+              "visibility": "invisible"
+            }
+          }
+        ]
+      },
+      "policy": "t10-visibility",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10m",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10m'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10m bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10m'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10m",
+          "sql": "CREATE TABLE t10m (a INT NOT NULL, b INT NOT NULL, UNIQUE KEY u_a(a), UNIQUE KEY u_b(b));",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10m bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10m'",
+              "expect": "1"
+            },
+            {
+              "assert": "u_a initially visible",
+              "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10m' AND index_name='u_a' AND seq_in_index=1 LIMIT 1",
+              "expect": "YES"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not hide u_a",
+          "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10m' AND index_name='u_a' AND seq_in_index=1 LIMIT 1",
+          "expect": "YES"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-order-gap",
+          "sql": "ALTER TABLE t10m ALTER INDEX u_a INVISIBLE;",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "3522"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "u_a stays visible after refusal",
+          "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10m' AND index_name='u_a' AND seq_in_index=1 LIMIT 1",
+          "expect": "YES"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10m",
+          "sql": "DROP TABLE IF EXISTS t10m;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10m bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10m'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-mysql84-implicit-pk",
+      "anchor": "mysql84",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t10u ALTER INDEX u_a INVISIBLE;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23384,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T10_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 2,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "ALTER TABLE t10u ALTER INDEX u_a INVISIBLE;"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.invisible.forbid",
+            "level": "warning"
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "level": "blocker"
+          }
+        ],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 4,
+        "rule_summary_applicable": 4,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.invisible.forbid",
+            "metadata": {
+              "table": "t10u",
+              "index": "u_a",
+              "action": "alter_index",
+              "visibility": "invisible"
+            }
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "metadata": {
+              "table": "t10u",
+              "index": "u_a",
+              "feature": "visibility",
+              "action": "alter_index",
+              "reason_code": "primary_index_visibility",
+              "product": "mysql",
+              "target_version": "8.4.10",
+              "minimum_version": ""
+            }
+          }
+        ]
+      },
+      "policy": "t10-visibility",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10u",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10u'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10u bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10u'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10u",
+          "sql": "CREATE TABLE t10u (a INT NOT NULL, b INT, UNIQUE KEY u_a(a), KEY i_b(b));",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10u bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10u'",
+              "expect": "1"
+            },
+            {
+              "assert": "u_a initially visible",
+              "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10u' AND index_name='u_a' AND seq_in_index=1 LIMIT 1",
+              "expect": "YES"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not hide u_a",
+          "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10u' AND index_name='u_a' AND seq_in_index=1 LIMIT 1",
+          "expect": "YES"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-implicit-pk-invisible",
+          "sql": "ALTER TABLE t10u ALTER INDEX u_a INVISIBLE;",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "3522"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "u_a stays visible after refusal",
+          "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10u' AND index_name='u_a' AND seq_in_index=1 LIMIT 1",
+          "expect": "YES"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10u",
+          "sql": "DROP TABLE IF EXISTS t10u;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10u bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10u'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-mysql84-implicit-pk-create",
+      "anchor": "mysql84",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t10uc (a INT NOT NULL, UNIQUE KEY u_a(a) INVISIBLE);",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23384,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T10_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 2,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE TABLE t10uc (a INT NOT NULL, UNIQUE KEY u_a(a) INVISIBLE);"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.invisible.forbid",
+            "level": "warning"
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "level": "blocker"
+          }
+        ],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 4,
+        "rule_summary_applicable": 2,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.invisible.forbid",
+            "metadata": {
+              "table": "t10uc",
+              "index": "u_a",
+              "action": "create_table",
+              "visibility": "invisible"
+            }
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "metadata": {
+              "table": "t10uc",
+              "index": "u_a",
+              "feature": "visibility",
+              "action": "create_table",
+              "reason_code": "primary_index_visibility",
+              "product": "mysql",
+              "target_version": "8.4.10",
+              "minimum_version": ""
+            }
+          }
+        ]
+      },
+      "policy": "t10-visibility",
+      "setup": [
+        {
+          "name": "prove-absent-t10uc",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10uc'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10uc absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10uc'",
+              "expect": "0"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not create t10uc",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10uc'",
+          "expect": "0"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-implicit-pk-create",
+          "sql": "CREATE TABLE t10uc (a INT NOT NULL, UNIQUE KEY u_a(a) INVISIBLE);",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "3522"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "t10uc stays absent",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10uc'",
+          "expect": "0"
+        }
+      ],
+      "teardown": []
+    },
+    {
+      "id": "t10-mysql84-implicit-pk-order",
+      "anchor": "mysql84",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t10m ALTER INDEX u_a INVISIBLE;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23384,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T10_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "statement_coverage": [
+          "unverified"
+        ],
+        "statement_sql": [
+          "ALTER TABLE t10m ALTER INDEX u_a INVISIBLE;"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 1,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "reason_code": "unknown_table_state",
+            "required_facts": [
+              "target_table.indexes.ordinal"
+            ]
+          }
+        ],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.invisible.forbid",
+            "level": "warning"
+          }
+        ],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 4,
+        "rule_summary_applicable": 4,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.invisible.forbid",
+            "metadata": {
+              "table": "t10m",
+              "index": "u_a",
+              "action": "alter_index",
+              "visibility": "invisible"
+            }
+          }
+        ]
+      },
+      "policy": "t10-visibility",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10m",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10m'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10m bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10m'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10m",
+          "sql": "CREATE TABLE t10m (a INT NOT NULL, b INT NOT NULL, UNIQUE KEY u_a(a), UNIQUE KEY u_b(b));",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10m bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10m'",
+              "expect": "1"
+            },
+            {
+              "assert": "u_a initially visible",
+              "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10m' AND index_name='u_a' AND seq_in_index=1 LIMIT 1",
+              "expect": "YES"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not hide u_a",
+          "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10m' AND index_name='u_a' AND seq_in_index=1 LIMIT 1",
+          "expect": "YES"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-order-gap",
+          "sql": "ALTER TABLE t10m ALTER INDEX u_a INVISIBLE;",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "3522"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "u_a stays visible after refusal",
+          "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10m' AND index_name='u_a' AND seq_in_index=1 LIMIT 1",
+          "expect": "YES"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10m",
+          "sql": "DROP TABLE IF EXISTS t10m;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10m bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10m'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-tidb85-implicit-pk",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "ALTER TABLE t10u ALTER INDEX u_a INVISIBLE;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "golden"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 2,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "ALTER TABLE t10u ALTER INDEX u_a INVISIBLE;"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.invisible.forbid",
+            "level": "warning"
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "level": "blocker"
+          }
+        ],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 4,
+        "rule_summary_applicable": 4,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.invisible.forbid",
+            "metadata": {
+              "table": "t10u",
+              "index": "u_a",
+              "action": "alter_index",
+              "visibility": "invisible"
+            }
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "metadata": {
+              "table": "t10u",
+              "index": "u_a",
+              "feature": "visibility",
+              "action": "alter_index",
+              "reason_code": "primary_index_visibility",
+              "product": "tidb",
+              "target_version": "8.5.0",
+              "minimum_version": ""
+            }
+          }
+        ]
+      },
+      "policy": "t10-visibility",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10u",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10u'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10u bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10u'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10u",
+          "sql": "CREATE TABLE t10u (a INT NOT NULL, b INT, UNIQUE KEY u_a(a), KEY i_b(b));",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10u bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10u'",
+              "expect": "1"
+            },
+            {
+              "assert": "u_a initially visible",
+              "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10u' AND index_name='u_a' AND seq_in_index=1 LIMIT 1",
+              "expect": "YES"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not hide u_a",
+          "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10u' AND index_name='u_a' AND seq_in_index=1 LIMIT 1",
+          "expect": "YES"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-implicit-pk-invisible",
+          "sql": "ALTER TABLE t10u ALTER INDEX u_a INVISIBLE;",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "3522"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "u_a stays visible after refusal",
+          "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10u' AND index_name='u_a' AND seq_in_index=1 LIMIT 1",
+          "expect": "YES"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10u",
+          "sql": "DROP TABLE IF EXISTS t10u;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10u bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10u'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-tidb85-implicit-pk-create",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "CREATE TABLE t10uc (a INT NOT NULL, UNIQUE KEY u_a(a) INVISIBLE);",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "golden"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 2,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE TABLE t10uc (a INT NOT NULL, UNIQUE KEY u_a(a) INVISIBLE);"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.invisible.forbid",
+            "level": "warning"
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "level": "blocker"
+          }
+        ],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 4,
+        "rule_summary_applicable": 2,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.invisible.forbid",
+            "metadata": {
+              "table": "t10uc",
+              "index": "u_a",
+              "action": "create_table",
+              "visibility": "invisible"
+            }
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "metadata": {
+              "table": "t10uc",
+              "index": "u_a",
+              "feature": "visibility",
+              "action": "create_table",
+              "reason_code": "primary_index_visibility",
+              "product": "tidb",
+              "target_version": "8.5.0",
+              "minimum_version": ""
+            }
+          }
+        ]
+      },
+      "policy": "t10-visibility",
+      "setup": [
+        {
+          "name": "prove-absent-t10uc",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10uc'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10uc absent",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10uc'",
+              "expect": "0"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not create t10uc",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10uc'",
+          "expect": "0"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-implicit-pk-create",
+          "sql": "CREATE TABLE t10uc (a INT NOT NULL, UNIQUE KEY u_a(a) INVISIBLE);",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "3522"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "t10uc stays absent",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10uc'",
+          "expect": "0"
+        }
+      ],
+      "teardown": []
+    },
+    {
+      "id": "t10-tidb85-implicit-pk-order",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "ALTER TABLE t10m ALTER INDEX u_a INVISIBLE;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "golden"
+      },
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "statement_coverage": [
+          "unverified"
+        ],
+        "statement_sql": [
+          "ALTER TABLE t10m ALTER INDEX u_a INVISIBLE;"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 1,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "reason_code": "unknown_table_state",
+            "required_facts": [
+              "target_table.indexes.ordinal"
+            ]
+          }
+        ],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.invisible.forbid",
+            "level": "warning"
+          }
+        ],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 4,
+        "rule_summary_applicable": 4,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.invisible.forbid",
+            "metadata": {
+              "table": "t10m",
+              "index": "u_a",
+              "action": "alter_index",
+              "visibility": "invisible"
+            }
+          }
+        ]
+      },
+      "policy": "t10-visibility",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10m",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10m'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10m bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10m'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10m",
+          "sql": "CREATE TABLE t10m (a INT NOT NULL, b INT NOT NULL, UNIQUE KEY u_a(a), UNIQUE KEY u_b(b));",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10m bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10m'",
+              "expect": "1"
+            },
+            {
+              "assert": "u_a initially visible",
+              "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10m' AND index_name='u_a' AND seq_in_index=1 LIMIT 1",
+              "expect": "YES"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not hide u_a",
+          "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10m' AND index_name='u_a' AND seq_in_index=1 LIMIT 1",
+          "expect": "YES"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-order-gap",
+          "sql": "ALTER TABLE t10m ALTER INDEX u_a INVISIBLE;",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "3522"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "u_a stays visible after refusal",
+          "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10m' AND index_name='u_a' AND seq_in_index=1 LIMIT 1",
+          "expect": "YES"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10m",
+          "sql": "DROP TABLE IF EXISTS t10m;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10m bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10m'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-mysql57-prefix-required",
+      "anchor": "mysql57",
+      "dialect": "mysql",
+      "sql": "CREATE INDEX i ON t10t(b);",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23357,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T10_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX i ON t10t(b);"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "level": "blocker"
+          }
+        ],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "metadata": {
+              "table": "t10t",
+              "index": "i",
+              "feature": "prefix_length",
+              "action": "create_index",
+              "reason_code": "prefix_required",
+              "product": "mysql",
+              "target_version": "5.7.44",
+              "minimum_version": ""
+            }
+          }
+        ]
+      },
+      "policy": "t10-members",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10t",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10t",
+          "sql": "CREATE TABLE t10t (a INT, b TEXT, s VARCHAR(64), j JSON);",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not create i",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10t' AND index_name='i'",
+          "expect": "0"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-prefix-required",
+          "sql": "CREATE INDEX i ON t10t(b);",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1170"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "t10t present",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10t",
+          "sql": "DROP TABLE IF EXISTS t10t;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-mysql80-prefix-required",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "CREATE INDEX i ON t10t(b);",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T10_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX i ON t10t(b);"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "level": "blocker"
+          }
+        ],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "metadata": {
+              "table": "t10t",
+              "index": "i",
+              "feature": "prefix_length",
+              "action": "create_index",
+              "reason_code": "prefix_required",
+              "product": "mysql",
+              "target_version": "8.0.46",
+              "minimum_version": ""
+            }
+          }
+        ]
+      },
+      "policy": "t10-members",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10t",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10t",
+          "sql": "CREATE TABLE t10t (a INT, b TEXT, s VARCHAR(64), j JSON);",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not create i",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10t' AND index_name='i'",
+          "expect": "0"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-prefix-required",
+          "sql": "CREATE INDEX i ON t10t(b);",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1170"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "t10t present",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10t",
+          "sql": "DROP TABLE IF EXISTS t10t;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-mysql84-prefix-required",
+      "anchor": "mysql84",
+      "dialect": "mysql",
+      "sql": "CREATE INDEX i ON t10t(b);",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23384,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T10_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX i ON t10t(b);"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "level": "blocker"
+          }
+        ],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "metadata": {
+              "table": "t10t",
+              "index": "i",
+              "feature": "prefix_length",
+              "action": "create_index",
+              "reason_code": "prefix_required",
+              "product": "mysql",
+              "target_version": "8.4.10",
+              "minimum_version": ""
+            }
+          }
+        ]
+      },
+      "policy": "t10-members",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10t",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10t",
+          "sql": "CREATE TABLE t10t (a INT, b TEXT, s VARCHAR(64), j JSON);",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not create i",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10t' AND index_name='i'",
+          "expect": "0"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-prefix-required",
+          "sql": "CREATE INDEX i ON t10t(b);",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1170"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "t10t present",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10t",
+          "sql": "DROP TABLE IF EXISTS t10t;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-tidb85-prefix-required",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "CREATE INDEX i ON t10t(b);",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "golden"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX i ON t10t(b);"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "level": "blocker"
+          }
+        ],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "metadata": {
+              "table": "t10t",
+              "index": "i",
+              "feature": "prefix_length",
+              "action": "create_index",
+              "reason_code": "prefix_required",
+              "product": "tidb",
+              "target_version": "8.5.0",
+              "minimum_version": ""
+            }
+          }
+        ]
+      },
+      "policy": "t10-members",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10t",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10t",
+          "sql": "CREATE TABLE t10t (a INT, b TEXT, s VARCHAR(64), j JSON);",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not create i",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10t' AND index_name='i'",
+          "expect": "0"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-prefix-required",
+          "sql": "CREATE INDEX i ON t10t(b);",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1170"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "t10t present",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10t",
+          "sql": "DROP TABLE IF EXISTS t10t;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-mysql80-prefix-ok",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "CREATE INDEX i ON t10t(b(10));",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T10_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX i ON t10t(b(10));"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [],
+        "unsupported_entries": [
+          {
+            "index": 0,
+            "feature": "create_index.create_index.index.prefix",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1
+      },
+      "policy": "t10-members",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10t",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10t",
+          "sql": "CREATE TABLE t10t (a INT, b TEXT, s VARCHAR(64), j JSON);",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not create i",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10t' AND index_name='i'",
+          "expect": "0"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-prefix-ok",
+          "sql": "CREATE INDEX i ON t10t(b(10));",
+          "expect_rc": 0
+        }
+      ],
+      "structure": [
+        {
+          "assert": "prefix index exists",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10t' AND index_name='i'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10t",
+          "sql": "DROP TABLE IF EXISTS t10t;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-tidb85-prefix-ok",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "CREATE INDEX i ON t10t(b(10));",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "golden"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX i ON t10t(b(10));"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [],
+        "unsupported_entries": [
+          {
+            "index": 0,
+            "feature": "create_index.create_index.index.prefix",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1
+      },
+      "policy": "t10-members",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10t",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10t",
+          "sql": "CREATE TABLE t10t (a INT, b TEXT, s VARCHAR(64), j JSON);",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not create i",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10t' AND index_name='i'",
+          "expect": "0"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-prefix-ok",
+          "sql": "CREATE INDEX i ON t10t(b(10));",
+          "expect_rc": 0
+        }
+      ],
+      "structure": [
+        {
+          "assert": "prefix index exists",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10t' AND index_name='i'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10t",
+          "sql": "DROP TABLE IF EXISTS t10t;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-mysql57-fulltext-int",
+      "anchor": "mysql57",
+      "dialect": "mysql",
+      "sql": "CREATE FULLTEXT INDEX ft ON t10f(i);",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23357,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T10_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE FULLTEXT INDEX ft ON t10f(i);"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "level": "blocker"
+          }
+        ],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "metadata": {
+              "table": "t10f",
+              "index": "ft",
+              "feature": "fulltext",
+              "action": "create_index",
+              "reason_code": "fulltext_column_type",
+              "product": "mysql",
+              "target_version": "5.7.44",
+              "minimum_version": ""
+            }
+          }
+        ]
+      },
+      "policy": "t10-members",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10f",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10f'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10f bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10f'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10f",
+          "sql": "CREATE TABLE t10f (i INT, s VARCHAR(64));",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10f bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10f'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not create ft",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10f' AND index_name='ft'",
+          "expect": "0"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-fulltext-int",
+          "sql": "CREATE FULLTEXT INDEX ft ON t10f(i);",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1283"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "t10f present",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10f'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10f",
+          "sql": "DROP TABLE IF EXISTS t10f;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10f bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10f'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-mysql57-spatial-nullable",
+      "anchor": "mysql57",
+      "dialect": "mysql",
+      "sql": "CREATE SPATIAL INDEX sp ON t10gn(gn);",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23357,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T10_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE SPATIAL INDEX sp ON t10gn(gn);"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "level": "blocker"
+          }
+        ],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "metadata": {
+              "table": "t10gn",
+              "index": "sp",
+              "feature": "spatial",
+              "action": "create_index",
+              "reason_code": "spatial_nullable",
+              "product": "mysql",
+              "target_version": "5.7.44",
+              "minimum_version": ""
+            }
+          }
+        ]
+      },
+      "policy": "t10-members",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10gn",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10gn'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10gn bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10gn'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10gn",
+          "sql": "CREATE TABLE t10gn (gn GEOMETRY);",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10gn bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10gn'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not create sp",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10gn' AND index_name='sp'",
+          "expect": "0"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-spatial-nullable",
+          "sql": "CREATE SPATIAL INDEX sp ON t10gn(gn);",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1252"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "t10gn present",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10gn'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10gn",
+          "sql": "DROP TABLE IF EXISTS t10gn;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10gn bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10gn'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-mysql80-fulltext-int",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "CREATE FULLTEXT INDEX ft ON t10f(i);",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T10_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE FULLTEXT INDEX ft ON t10f(i);"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "level": "blocker"
+          }
+        ],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "metadata": {
+              "table": "t10f",
+              "index": "ft",
+              "feature": "fulltext",
+              "action": "create_index",
+              "reason_code": "fulltext_column_type",
+              "product": "mysql",
+              "target_version": "8.0.46",
+              "minimum_version": ""
+            }
+          }
+        ]
+      },
+      "policy": "t10-members",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10f",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10f'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10f bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10f'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10f",
+          "sql": "CREATE TABLE t10f (i INT, s VARCHAR(64));",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10f bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10f'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not create ft",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10f' AND index_name='ft'",
+          "expect": "0"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-fulltext-int",
+          "sql": "CREATE FULLTEXT INDEX ft ON t10f(i);",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1283"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "t10f present",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10f'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10f",
+          "sql": "DROP TABLE IF EXISTS t10f;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10f bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10f'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-mysql80-spatial-nullable",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "CREATE SPATIAL INDEX sp ON t10gn(gn);",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T10_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE SPATIAL INDEX sp ON t10gn(gn);"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "level": "blocker"
+          }
+        ],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "metadata": {
+              "table": "t10gn",
+              "index": "sp",
+              "feature": "spatial",
+              "action": "create_index",
+              "reason_code": "spatial_nullable",
+              "product": "mysql",
+              "target_version": "8.0.46",
+              "minimum_version": ""
+            }
+          }
+        ]
+      },
+      "policy": "t10-members",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10gn",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10gn'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10gn bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10gn'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10gn",
+          "sql": "CREATE TABLE t10gn (gn GEOMETRY);",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10gn bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10gn'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not create sp",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10gn' AND index_name='sp'",
+          "expect": "0"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-spatial-nullable",
+          "sql": "CREATE SPATIAL INDEX sp ON t10gn(gn);",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1252"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "t10gn present",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10gn'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10gn",
+          "sql": "DROP TABLE IF EXISTS t10gn;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10gn bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10gn'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-mysql84-fulltext-int",
+      "anchor": "mysql84",
+      "dialect": "mysql",
+      "sql": "CREATE FULLTEXT INDEX ft ON t10f(i);",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23384,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T10_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE FULLTEXT INDEX ft ON t10f(i);"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "level": "blocker"
+          }
+        ],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "metadata": {
+              "table": "t10f",
+              "index": "ft",
+              "feature": "fulltext",
+              "action": "create_index",
+              "reason_code": "fulltext_column_type",
+              "product": "mysql",
+              "target_version": "8.4.10",
+              "minimum_version": ""
+            }
+          }
+        ]
+      },
+      "policy": "t10-members",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10f",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10f'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10f bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10f'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10f",
+          "sql": "CREATE TABLE t10f (i INT, s VARCHAR(64));",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10f bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10f'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not create ft",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10f' AND index_name='ft'",
+          "expect": "0"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-fulltext-int",
+          "sql": "CREATE FULLTEXT INDEX ft ON t10f(i);",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1283"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "t10f present",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10f'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10f",
+          "sql": "DROP TABLE IF EXISTS t10f;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10f bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10f'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-mysql84-spatial-nullable",
+      "anchor": "mysql84",
+      "dialect": "mysql",
+      "sql": "CREATE SPATIAL INDEX sp ON t10gn(gn);",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23384,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T10_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE SPATIAL INDEX sp ON t10gn(gn);"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "level": "blocker"
+          }
+        ],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "metadata": {
+              "table": "t10gn",
+              "index": "sp",
+              "feature": "spatial",
+              "action": "create_index",
+              "reason_code": "spatial_nullable",
+              "product": "mysql",
+              "target_version": "8.4.10",
+              "minimum_version": ""
+            }
+          }
+        ]
+      },
+      "policy": "t10-members",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10gn",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10gn'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10gn bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10gn'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10gn",
+          "sql": "CREATE TABLE t10gn (gn GEOMETRY);",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10gn bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10gn'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not create sp",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10gn' AND index_name='sp'",
+          "expect": "0"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-spatial-nullable",
+          "sql": "CREATE SPATIAL INDEX sp ON t10gn(gn);",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1252"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "t10gn present",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10gn'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10gn",
+          "sql": "DROP TABLE IF EXISTS t10gn;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10gn bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10gn'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-mysql80-spatial-type",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "CREATE SPATIAL INDEX sp2 ON t10f(i);",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T10_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE SPATIAL INDEX sp2 ON t10f(i);"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "level": "blocker"
+          }
+        ],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "metadata": {
+              "table": "t10f",
+              "index": "sp2",
+              "feature": "spatial",
+              "action": "create_index",
+              "reason_code": "spatial_column_type",
+              "product": "mysql",
+              "target_version": "8.0.46",
+              "minimum_version": ""
+            }
+          }
+        ]
+      },
+      "policy": "t10-members",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10f",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10f'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10f bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10f'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10f",
+          "sql": "CREATE TABLE t10f (i INT, s VARCHAR(64));",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10f bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10f'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not create sp2",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10f' AND index_name='sp2'",
+          "expect": "0"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-spatial-type",
+          "sql": "CREATE SPATIAL INDEX sp2 ON t10f(i);",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1687"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "t10f present",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10f'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10f",
+          "sql": "DROP TABLE IF EXISTS t10f;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10f bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10f'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-mysql80-spatial-ok",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "CREATE SPATIAL INDEX sp ON t10s2(g);",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T10_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE SPATIAL INDEX sp ON t10s2(g);"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1
+      },
+      "policy": "t10-members",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10s2",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10s2'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10s2 bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10s2'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10s2",
+          "sql": "CREATE TABLE t10s2 (g GEOMETRY NOT NULL SRID 0);",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10s2 bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10s2'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not create sp",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10s2' AND index_name='sp'",
+          "expect": "0"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-spatial-ok",
+          "sql": "CREATE SPATIAL INDEX sp ON t10s2(g);",
+          "expect_rc": 0
+        }
+      ],
+      "structure": [
+        {
+          "assert": "spatial index exists",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10s2' AND index_name='sp'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10s2",
+          "sql": "DROP TABLE IF EXISTS t10s2;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10s2 bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10s2'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-mysql84-spatial-type",
+      "anchor": "mysql84",
+      "dialect": "mysql",
+      "sql": "CREATE SPATIAL INDEX sp2 ON t10f(i);",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23384,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T10_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE SPATIAL INDEX sp2 ON t10f(i);"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "level": "blocker"
+          }
+        ],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "metadata": {
+              "table": "t10f",
+              "index": "sp2",
+              "feature": "spatial",
+              "action": "create_index",
+              "reason_code": "spatial_column_type",
+              "product": "mysql",
+              "target_version": "8.4.10",
+              "minimum_version": ""
+            }
+          }
+        ]
+      },
+      "policy": "t10-members",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10f",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10f'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10f bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10f'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10f",
+          "sql": "CREATE TABLE t10f (i INT, s VARCHAR(64));",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10f bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10f'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not create sp2",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10f' AND index_name='sp2'",
+          "expect": "0"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-spatial-type",
+          "sql": "CREATE SPATIAL INDEX sp2 ON t10f(i);",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1687"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "t10f present",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10f'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10f",
+          "sql": "DROP TABLE IF EXISTS t10f;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10f bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10f'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-mysql84-spatial-ok",
+      "anchor": "mysql84",
+      "dialect": "mysql",
+      "sql": "CREATE SPATIAL INDEX sp ON t10s2(g);",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23384,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T10_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE SPATIAL INDEX sp ON t10s2(g);"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1
+      },
+      "policy": "t10-members",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10s2",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10s2'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10s2 bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10s2'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10s2",
+          "sql": "CREATE TABLE t10s2 (g GEOMETRY NOT NULL SRID 0);",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10s2 bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10s2'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not create sp",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10s2' AND index_name='sp'",
+          "expect": "0"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-spatial-ok",
+          "sql": "CREATE SPATIAL INDEX sp ON t10s2(g);",
+          "expect_rc": 0
+        }
+      ],
+      "structure": [
+        {
+          "assert": "spatial index exists",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10s2' AND index_name='sp'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10s2",
+          "sql": "DROP TABLE IF EXISTS t10s2;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10s2 bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10s2'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-mysql80-json-direct",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "CREATE INDEX ji ON t10t(j);",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T10_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX ji ON t10t(j);"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "level": "blocker"
+          }
+        ],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "metadata": {
+              "table": "t10t",
+              "index": "ji",
+              "feature": "prefix_length",
+              "action": "create_index",
+              "reason_code": "json_column_index",
+              "product": "mysql",
+              "target_version": "8.0.46",
+              "minimum_version": ""
+            }
+          }
+        ]
+      },
+      "policy": "t10-members",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10t",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10t",
+          "sql": "CREATE TABLE t10t (a INT, b TEXT, s VARCHAR(64), j JSON);",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not create ji",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10t' AND index_name='ji'",
+          "expect": "0"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-json-direct",
+          "sql": "CREATE INDEX ji ON t10t(j);",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "3152"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "t10t present",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10t",
+          "sql": "DROP TABLE IF EXISTS t10t;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-mysql80-expr-missing",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "CREATE INDEX ei ON t10t((nosuch+1));",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T10_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX ei ON t10t((nosuch+1));"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "level": "blocker"
+          }
+        ],
+        "unsupported_entries": [
+          {
+            "index": 0,
+            "feature": "create_index.create_index.index.expr",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "metadata": {
+              "table": "t10t",
+              "index": "ei",
+              "feature": "expression_keys",
+              "action": "create_index",
+              "reason_code": "expression_column_missing",
+              "product": "mysql",
+              "target_version": "8.0.46",
+              "minimum_version": ""
+            }
+          }
+        ]
+      },
+      "policy": "t10-members",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10t",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10t",
+          "sql": "CREATE TABLE t10t (a INT, b TEXT, s VARCHAR(64), j JSON);",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not create ei",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10t' AND index_name='ei'",
+          "expect": "0"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-expr-missing",
+          "sql": "CREATE INDEX ei ON t10t((nosuch+1));",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1054"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "t10t present",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10t",
+          "sql": "DROP TABLE IF EXISTS t10t;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-mysql80-mv-supported",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "CREATE INDEX mv ON t10t((CAST(j->'$.a' AS UNSIGNED ARRAY)));",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T10_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 2,
+        "unsupported": 2,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX mv ON t10t((CAST(j->'$.a' AS UNSIGNED ARRAY)));"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [],
+        "unsupported_entries": [
+          {
+            "index": 0,
+            "feature": "create_index.create_index.index.expr",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          },
+          {
+            "index": 0,
+            "feature": "create_index.create_index.index.multi_valued",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1
+      },
+      "policy": "t10-members",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10t",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10t",
+          "sql": "CREATE TABLE t10t (a INT, b TEXT, s VARCHAR(64), j JSON);",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not create mv",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10t' AND index_name='mv'",
+          "expect": "0"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-mv-supported",
+          "sql": "CREATE INDEX mv ON t10t((CAST(j->'$.a' AS UNSIGNED ARRAY)));",
+          "expect_rc": 0
+        }
+      ],
+      "structure": [
+        {
+          "assert": "multi-valued index exists",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10t' AND index_name='mv'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10t",
+          "sql": "DROP TABLE IF EXISTS t10t;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-mysql84-json-direct",
+      "anchor": "mysql84",
+      "dialect": "mysql",
+      "sql": "CREATE INDEX ji ON t10t(j);",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23384,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T10_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX ji ON t10t(j);"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "level": "blocker"
+          }
+        ],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "metadata": {
+              "table": "t10t",
+              "index": "ji",
+              "feature": "prefix_length",
+              "action": "create_index",
+              "reason_code": "json_column_index",
+              "product": "mysql",
+              "target_version": "8.4.10",
+              "minimum_version": ""
+            }
+          }
+        ]
+      },
+      "policy": "t10-members",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10t",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10t",
+          "sql": "CREATE TABLE t10t (a INT, b TEXT, s VARCHAR(64), j JSON);",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not create ji",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10t' AND index_name='ji'",
+          "expect": "0"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-json-direct",
+          "sql": "CREATE INDEX ji ON t10t(j);",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "3152"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "t10t present",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10t",
+          "sql": "DROP TABLE IF EXISTS t10t;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-mysql84-expr-missing",
+      "anchor": "mysql84",
+      "dialect": "mysql",
+      "sql": "CREATE INDEX ei ON t10t((nosuch+1));",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23384,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T10_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX ei ON t10t((nosuch+1));"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "level": "blocker"
+          }
+        ],
+        "unsupported_entries": [
+          {
+            "index": 0,
+            "feature": "create_index.create_index.index.expr",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "metadata": {
+              "table": "t10t",
+              "index": "ei",
+              "feature": "expression_keys",
+              "action": "create_index",
+              "reason_code": "expression_column_missing",
+              "product": "mysql",
+              "target_version": "8.4.10",
+              "minimum_version": ""
+            }
+          }
+        ]
+      },
+      "policy": "t10-members",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10t",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10t",
+          "sql": "CREATE TABLE t10t (a INT, b TEXT, s VARCHAR(64), j JSON);",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not create ei",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10t' AND index_name='ei'",
+          "expect": "0"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-expr-missing",
+          "sql": "CREATE INDEX ei ON t10t((nosuch+1));",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1054"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "t10t present",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10t",
+          "sql": "DROP TABLE IF EXISTS t10t;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-mysql84-mv-supported",
+      "anchor": "mysql84",
+      "dialect": "mysql",
+      "sql": "CREATE INDEX mv ON t10t((CAST(j->'$.a' AS UNSIGNED ARRAY)));",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23384,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T10_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 2,
+        "unsupported": 2,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX mv ON t10t((CAST(j->'$.a' AS UNSIGNED ARRAY)));"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [],
+        "unsupported_entries": [
+          {
+            "index": 0,
+            "feature": "create_index.create_index.index.expr",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          },
+          {
+            "index": 0,
+            "feature": "create_index.create_index.index.multi_valued",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1
+      },
+      "policy": "t10-members",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10t",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10t",
+          "sql": "CREATE TABLE t10t (a INT, b TEXT, s VARCHAR(64), j JSON);",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not create mv",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10t' AND index_name='mv'",
+          "expect": "0"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-mv-supported",
+          "sql": "CREATE INDEX mv ON t10t((CAST(j->'$.a' AS UNSIGNED ARRAY)));",
+          "expect_rc": 0
+        }
+      ],
+      "structure": [
+        {
+          "assert": "multi-valued index exists",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10t' AND index_name='mv'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10t",
+          "sql": "DROP TABLE IF EXISTS t10t;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-tidb85-json-direct",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "CREATE INDEX ji ON t10t(j);",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "golden"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX ji ON t10t(j);"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "level": "blocker"
+          }
+        ],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "metadata": {
+              "table": "t10t",
+              "index": "ji",
+              "feature": "prefix_length",
+              "action": "create_index",
+              "reason_code": "json_column_index",
+              "product": "tidb",
+              "target_version": "8.5.0",
+              "minimum_version": ""
+            }
+          }
+        ]
+      },
+      "policy": "t10-members",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10t",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10t",
+          "sql": "CREATE TABLE t10t (a INT, b TEXT, s VARCHAR(64), j JSON);",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not create ji",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10t' AND index_name='ji'",
+          "expect": "0"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-json-direct",
+          "sql": "CREATE INDEX ji ON t10t(j);",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "3152"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "t10t present",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10t",
+          "sql": "DROP TABLE IF EXISTS t10t;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-tidb85-expr-missing",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "CREATE INDEX ei ON t10t((nosuch+1));",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "golden"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX ei ON t10t((nosuch+1));"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "level": "blocker"
+          }
+        ],
+        "unsupported_entries": [
+          {
+            "index": 0,
+            "feature": "create_index.create_index.index.expr",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "metadata": {
+              "table": "t10t",
+              "index": "ei",
+              "feature": "expression_keys",
+              "action": "create_index",
+              "reason_code": "expression_column_missing",
+              "product": "tidb",
+              "target_version": "8.5.0",
+              "minimum_version": ""
+            }
+          }
+        ]
+      },
+      "policy": "t10-members",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10t",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10t",
+          "sql": "CREATE TABLE t10t (a INT, b TEXT, s VARCHAR(64), j JSON);",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not create ei",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10t' AND index_name='ei'",
+          "expect": "0"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-expr-missing",
+          "sql": "CREATE INDEX ei ON t10t((nosuch+1));",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1054"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "t10t present",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10t",
+          "sql": "DROP TABLE IF EXISTS t10t;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-tidb85-mv-supported",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "CREATE INDEX mv ON t10t((CAST(j->'$.a' AS UNSIGNED ARRAY)));",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "golden"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 2,
+        "unsupported": 2,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX mv ON t10t((CAST(j->'$.a' AS UNSIGNED ARRAY)));"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [],
+        "unsupported_entries": [
+          {
+            "index": 0,
+            "feature": "create_index.create_index.index.expr",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          },
+          {
+            "index": 0,
+            "feature": "create_index.create_index.index.multi_valued",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1
+      },
+      "policy": "t10-members",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10t",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10t",
+          "sql": "CREATE TABLE t10t (a INT, b TEXT, s VARCHAR(64), j JSON);",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not create mv",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10t' AND index_name='mv'",
+          "expect": "0"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-mv-supported",
+          "sql": "CREATE INDEX mv ON t10t((CAST(j->'$.a' AS UNSIGNED ARRAY)));",
+          "expect_rc": 0
+        }
+      ],
+      "structure": [
+        {
+          "assert": "multi-valued index exists",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10t' AND index_name='mv'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10t",
+          "sql": "DROP TABLE IF EXISTS t10t;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10t bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10t'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-tidb-primary-handle-visible",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "ALTER TABLE t10cpk ALTER INDEX `PRIMARY` VISIBLE;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "golden"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "ALTER TABLE t10cpk ALTER INDEX `PRIMARY` VISIBLE;"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.alter_index.exists.require",
+            "level": "blocker"
+          }
+        ],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 4,
+        "rule_summary_applicable": 3
+      },
+      "policy": "t10-visibility",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10cpk",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10cpk'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10cpk bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10cpk'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10cpk",
+          "sql": "CREATE TABLE t10cpk (a INT, PRIMARY KEY (a));",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10cpk bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10cpk'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not mutate t10cpk",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10cpk'",
+          "expect": "1"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-handle-visible",
+          "sql": "ALTER TABLE t10cpk ALTER INDEX `PRIMARY` VISIBLE;",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1176"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "t10cpk present",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10cpk'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10cpk",
+          "sql": "DROP TABLE IF EXISTS t10cpk;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10cpk bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10cpk'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-tidb-primary-object-visible",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "ALTER TABLE t10ncp ALTER INDEX `PRIMARY` VISIBLE;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "golden"
+      },
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "ALTER TABLE t10ncp ALTER INDEX `PRIMARY` VISIBLE;"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 4,
+        "rule_summary_applicable": 3
+      },
+      "policy": "t10-visibility",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10ncp",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10ncp'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10ncp bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10ncp'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10ncp",
+          "sql": "CREATE TABLE t10ncp (a INT, PRIMARY KEY (a) NONCLUSTERED);",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10ncp bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10ncp'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not mutate t10ncp",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10ncp'",
+          "expect": "1"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-object-visible",
+          "sql": "ALTER TABLE t10ncp ALTER INDEX `PRIMARY` VISIBLE;",
+          "expect_rc": 0
+        }
+      ],
+      "structure": [
+        {
+          "assert": "t10ncp present",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10ncp'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10ncp",
+          "sql": "DROP TABLE IF EXISTS t10ncp;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10ncp bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10ncp'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-tidb-primary-object-invisible",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "ALTER TABLE t10ncp ALTER INDEX `PRIMARY` INVISIBLE;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "golden"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 2,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "ALTER TABLE t10ncp ALTER INDEX `PRIMARY` INVISIBLE;"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.invisible.forbid",
+            "level": "warning"
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "level": "blocker"
+          }
+        ],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 4,
+        "rule_summary_applicable": 4,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.invisible.forbid",
+            "metadata": {
+              "table": "t10ncp",
+              "index": "primary",
+              "action": "alter_index",
+              "visibility": "invisible"
+            }
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "metadata": {
+              "table": "t10ncp",
+              "index": "primary",
+              "feature": "visibility",
+              "action": "alter_index",
+              "reason_code": "primary_index_visibility",
+              "product": "tidb",
+              "target_version": "8.5.0",
+              "minimum_version": ""
+            }
+          }
+        ]
+      },
+      "policy": "t10-visibility",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10ncp",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10ncp'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10ncp bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10ncp'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10ncp",
+          "sql": "CREATE TABLE t10ncp (a INT, PRIMARY KEY (a) NONCLUSTERED);",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10ncp bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10ncp'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not mutate t10ncp",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10ncp'",
+          "expect": "1"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-object-invisible",
+          "sql": "ALTER TABLE t10ncp ALTER INDEX `PRIMARY` INVISIBLE;",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "3522"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "t10ncp present",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10ncp'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10ncp",
+          "sql": "DROP TABLE IF EXISTS t10ncp;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10ncp bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10ncp'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-tidb-primary-varchar",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "ALTER TABLE t10vpk ALTER INDEX `PRIMARY` VISIBLE;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "golden"
+      },
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "ALTER TABLE t10vpk ALTER INDEX `PRIMARY` VISIBLE;"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 4,
+        "rule_summary_applicable": 3
+      },
+      "policy": "t10-visibility",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10vpk",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10vpk'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10vpk bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10vpk'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10vpk",
+          "sql": "CREATE TABLE t10vpk (a VARCHAR(20), PRIMARY KEY (a));",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10vpk bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10vpk'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not mutate t10vpk",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10vpk'",
+          "expect": "1"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-varchar-visible",
+          "sql": "ALTER TABLE t10vpk ALTER INDEX `PRIMARY` VISIBLE;",
+          "expect_rc": 0
+        }
+      ],
+      "structure": [
+        {
+          "assert": "t10vpk present",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10vpk'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10vpk",
+          "sql": "DROP TABLE IF EXISTS t10vpk;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10vpk bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10vpk'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-tidb-global-nonpart",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "CREATE UNIQUE INDEX gi ON t10g(a) GLOBAL;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "golden"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE UNIQUE INDEX gi ON t10g(a) GLOBAL;"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "level": "blocker"
+          }
+        ],
+        "unsupported_entries": [
+          {
+            "index": 0,
+            "feature": "create_index.create_index.index.global",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "metadata": {
+              "table": "t10g",
+              "index": "gi",
+              "feature": "global",
+              "action": "create_index",
+              "reason_code": "global_not_partitioned",
+              "product": "tidb",
+              "target_version": "8.5.0",
+              "minimum_version": ""
+            }
+          }
+        ]
+      },
+      "policy": "t10-members",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10g",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10g'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10g bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10g'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10g",
+          "sql": "CREATE TABLE t10g (a INT, UNIQUE KEY uq(a));",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10g bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10g'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not create gi",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10g' AND index_name='gi'",
+          "expect": "0"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-global-nonpart",
+          "sql": "CREATE UNIQUE INDEX gi ON t10g(a) GLOBAL;",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "8200"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "t10g present",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10g'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10g",
+          "sql": "DROP TABLE IF EXISTS t10g;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10g bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10g'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-tidb-global-part",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "CREATE UNIQUE INDEX gi ON t10gp(a) GLOBAL;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "golden"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE UNIQUE INDEX gi ON t10gp(a) GLOBAL;"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [],
+        "unsupported_entries": [
+          {
+            "index": 0,
+            "feature": "create_index.create_index.index.global",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1
+      },
+      "policy": "t10-members",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10gp",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10gp'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10gp bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10gp'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10gp",
+          "sql": "CREATE TABLE t10gp (a INT, b INT, UNIQUE KEY u_ab(a,b)) PARTITION BY RANGE (a) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN MAXVALUE);",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10gp bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10gp'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not create gi",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10gp' AND index_name='gi'",
+          "expect": "0"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-global-part",
+          "sql": "CREATE UNIQUE INDEX gi ON t10gp(a) GLOBAL;",
+          "expect_rc": 0
+        }
+      ],
+      "structure": [
+        {
+          "assert": "global index exists",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10gp' AND index_name='gi'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10gp",
+          "sql": "DROP TABLE IF EXISTS t10gp;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10gp bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10gp'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-tidb-global-nonunique",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "CREATE INDEX gi2 ON t10gp(b) GLOBAL;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "golden"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "statement_sql": [
+          "CREATE INDEX gi2 ON t10gp(b) GLOBAL;"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "level": "blocker"
+          }
+        ],
+        "unsupported_entries": [
+          {
+            "index": 0,
+            "feature": "create_index.create_index.index.global",
+            "reason": "parsed by the shared parser but not covered by audited semantics"
+          }
+        ],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "metadata": {
+              "table": "t10gp",
+              "index": "gi2",
+              "feature": "global",
+              "action": "create_index",
+              "reason_code": "global_not_unique",
+              "product": "tidb",
+              "target_version": "8.5.0",
+              "minimum_version": ""
+            }
+          }
+        ]
+      },
+      "policy": "t10-members",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10gp",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10gp'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10gp bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10gp'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10gp",
+          "sql": "CREATE TABLE t10gp (a INT, b INT, UNIQUE KEY u_ab(a,b)) PARTITION BY RANGE (a) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN MAXVALUE);",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10gp bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10gp'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not create gi2",
+          "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10gp' AND index_name='gi2'",
+          "expect": "0"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-global-nonunique",
+          "sql": "CREATE INDEX gi2 ON t10gp(b) GLOBAL;",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "8200"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "t10gp present",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10gp'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10gp",
+          "sql": "DROP TABLE IF EXISTS t10gp;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10gp bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10gp'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
     }
   ],
   "required_case_ids": [
@@ -7222,6 +12311,7 @@
     "T10.cli.t10-cli-pfx",
     "T10.cli.t10-cli-fulltext-tidb",
     "T10.cli.t10-cli-spatial-tidb",
+    "T10.cli.t10-cli-implicit-pk-create",
     "T10.cli.t10-cli-alter-index-no-kw",
     "T10.cli.t10-cli-alter-index-bad-dir",
     "T10.meta.t10-mysql80-firstpath",
@@ -7272,6 +12362,47 @@
     "T10.meta.t10-mysql57-novis-column",
     "T10.meta.t10-mysql57-fulltext",
     "T10.meta.t10-mysql80-fulltext",
-    "T10.meta.t10-mysql84-fulltext"
+    "T10.meta.t10-mysql84-fulltext",
+    "T10.meta.t10-mysql80-implicit-pk",
+    "T10.meta.t10-mysql80-implicit-pk-create",
+    "T10.meta.t10-mysql80-implicit-pk-order",
+    "T10.meta.t10-mysql84-implicit-pk",
+    "T10.meta.t10-mysql84-implicit-pk-create",
+    "T10.meta.t10-mysql84-implicit-pk-order",
+    "T10.meta.t10-tidb85-implicit-pk",
+    "T10.meta.t10-tidb85-implicit-pk-create",
+    "T10.meta.t10-tidb85-implicit-pk-order",
+    "T10.meta.t10-mysql57-prefix-required",
+    "T10.meta.t10-mysql80-prefix-required",
+    "T10.meta.t10-mysql84-prefix-required",
+    "T10.meta.t10-tidb85-prefix-required",
+    "T10.meta.t10-mysql80-prefix-ok",
+    "T10.meta.t10-tidb85-prefix-ok",
+    "T10.meta.t10-mysql57-fulltext-int",
+    "T10.meta.t10-mysql57-spatial-nullable",
+    "T10.meta.t10-mysql80-fulltext-int",
+    "T10.meta.t10-mysql80-spatial-nullable",
+    "T10.meta.t10-mysql84-fulltext-int",
+    "T10.meta.t10-mysql84-spatial-nullable",
+    "T10.meta.t10-mysql80-spatial-type",
+    "T10.meta.t10-mysql80-spatial-ok",
+    "T10.meta.t10-mysql84-spatial-type",
+    "T10.meta.t10-mysql84-spatial-ok",
+    "T10.meta.t10-mysql80-json-direct",
+    "T10.meta.t10-mysql80-expr-missing",
+    "T10.meta.t10-mysql80-mv-supported",
+    "T10.meta.t10-mysql84-json-direct",
+    "T10.meta.t10-mysql84-expr-missing",
+    "T10.meta.t10-mysql84-mv-supported",
+    "T10.meta.t10-tidb85-json-direct",
+    "T10.meta.t10-tidb85-expr-missing",
+    "T10.meta.t10-tidb85-mv-supported",
+    "T10.meta.t10-tidb-primary-handle-visible",
+    "T10.meta.t10-tidb-primary-object-visible",
+    "T10.meta.t10-tidb-primary-object-invisible",
+    "T10.meta.t10-tidb-primary-varchar",
+    "T10.meta.t10-tidb-global-nonpart",
+    "T10.meta.t10-tidb-global-part",
+    "T10.meta.t10-tidb-global-nonunique"
   ]
 }
