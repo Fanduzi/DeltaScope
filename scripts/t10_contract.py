@@ -967,7 +967,7 @@ meta_case(
     [{"name": "apply-expr-unique-invisible", "sql": "ALTER TABLE t10uf ALTER INDEX u_f INVISIBLE;",
       "expect_rc": 0}],
     [{"assert": "u_f now invisible", "sql": vq("t10uf", "u_f"), "expect": "NO"}],
-    post_verify=[{"assert": "audit hid u_f", "sql": vq("t10uf", "u_f"), "expect": "NO"}],
+    post_verify=[{"assert": "audit did not mutate u_f", "sql": vq("t10uf", "u_f"), "expect": "YES"}],
     teardown_steps=teardown("t10uf"))
 
 for anchor in ("mysql57", "mysql80", "mysql84", "tidb85"):

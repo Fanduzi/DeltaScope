@@ -8830,9 +8830,9 @@
       ],
       "post_verify": [
         {
-          "assert": "audit hid u_f",
+          "assert": "audit did not mutate u_f",
           "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10uf' AND index_name='u_f' AND seq_in_index=1 LIMIT 1",
-          "expect": "NO"
+          "expect": "YES"
         }
       ],
       "execute": [
