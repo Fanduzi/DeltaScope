@@ -631,19 +631,24 @@ func uniqueOverlapPairing(declared, existing spec.Index) bool {
 		slices.Equal(existing.Columns, declared.Columns)
 }
 
-// memberComparisonGap reports one attributable gap when the vouched existing
-// set holds a non-plain member that could have paired with a declared index
-// under the rule's shape: the comparison could not complete, so "no
-// redundancy found" is unverifiable rather than proven. The gap stays scoped
-// to actually-affected pairings — a non-plain member no declared index can
-// pair with emits nothing.
+// memberComparisonGap reports one attributable gap when a declared index and
+// a vouched existing member could pair under the rule's column shape but
+// either side carries a non-plain member: the pairing itself is only a
+// column-name shape, so a prefix/DESC/expression member on either side
+// leaves the plain-key comparison unanswered — "no redundancy found" is
+// unverifiable rather than proven. A declared non-plain member counts the
+// same way: product normalization can even collapse a declared form into a
+// plainer stored shape (TiDB catalogs DESC ascending), so member-shape
+// distinctness is never asserted on the declared side either. The gap stays
+// scoped to actually-affected pairings — a non-plain member no declared
+// index can pair with emits nothing.
 func memberComparisonGap(declared, existing []spec.Index, pairing indexPairing) []rule.EvidenceGap {
 	for i := range declared {
-		if !indexPlainComparable(declared[i]) {
-			continue
-		}
 		for j := range existing {
-			if indexPlainComparable(existing[j]) || !pairing(declared[i], existing[j]) {
+			if !pairing(declared[i], existing[j]) {
+				continue
+			}
+			if indexPlainComparable(declared[i]) && indexPlainComparable(existing[j]) {
 				continue
 			}
 			return []rule.EvidenceGap{{

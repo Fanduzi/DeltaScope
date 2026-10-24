@@ -78,6 +78,12 @@ type batchState struct {
 	// request has no verified version. Online enrichment stores the observed
 	// identity and does not fall back to a caller target.
 	resolvedVersion *spec.VersionIdentity
+	// instanceFacts is the request's observed server-level facts — the
+	// ordered state reads only the TiDB clustered-index default mode for
+	// declared PK handle derivation; nil means unobserved (offline or
+	// provider-less). Stored here so a batch-derived shape answers the
+	// session mode the statements actually execute under.
+	instanceFacts *spec.InstanceFacts
 }
 
 func newBatchState(dialect spec.Dialect, schema string, provider MetadataProvider) *batchState {
@@ -286,7 +292,9 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 	}
 	assessment := spec.AssessAdvancedColumns(statement)
 	indexAssessment := spec.AssessAdvancedIndexes(statement)
-	if assessment.InvalidTransition || indexAssessment.InvalidTransition || (assessment.UnresolvedTransition && len(assessment.Features) > 0) {
+	if assessment.InvalidTransition || indexAssessment.InvalidTransition ||
+		(assessment.UnresolvedTransition && len(assessment.Features) > 0) ||
+		(indexAssessment.UnresolvedTransition && len(indexAssessment.Features) > 0) {
 		targetKeys := s.modifyTargetKeys(ddl.TableTargets())
 		publication := modifyPublication{
 			invalidate: append(s.modifyIdentityDependentKeys(targetKeys), targetKeys...),
@@ -441,14 +449,14 @@ func (s *batchState) applyCreateTable(statement spec.Statement) {
 		}
 		s.entries[key] = &batchTableEntry{
 			state:         tablePresent,
-			shape:         derivedCreateShape(s.dialect, displaySchema, displayTable, ddl),
+			shape:         derivedCreateShape(s.dialect, displaySchema, displayTable, ddl, s.tidbClusteredMode()),
 			displaySchema: displaySchema,
 			displayTable:  displayTable,
 		}
 	case entry.state == tableAbsent:
 		s.entries[key] = &batchTableEntry{
 			state:         tablePresent,
-			shape:         derivedCreateShape(s.dialect, displaySchema, displayTable, ddl),
+			shape:         derivedCreateShape(s.dialect, displaySchema, displayTable, ddl, s.tidbClusteredMode()),
 			displaySchema: displaySchema,
 			displayTable:  displayTable,
 		}
@@ -471,7 +479,7 @@ func fullyAuditedCreateTable(dialect spec.Dialect, statement spec.Statement) boo
 	return !ddl.HasReferTable && !ddl.HasSelect && ddl.TemporaryScope == "" && ddl.OmittedTargets == 0
 }
 
-func derivedCreateShape(dialect spec.Dialect, schema, table string, ddl *spec.DDL) *spec.TableSnapshot {
+func derivedCreateShape(dialect spec.Dialect, schema, table string, ddl *spec.DDL, tidbClusteredDefault *string) *spec.TableSnapshot {
 	snapshot := &spec.TableSnapshot{
 		Schema:      schema,
 		Table:       &spec.Table{Schema: schema, Name: table, Comment: ddl.Table.Comment},
@@ -494,7 +502,14 @@ func derivedCreateShape(dialect spec.Dialect, schema, table string, ddl *spec.DD
 	if ddl.PrimaryKey != nil {
 		pk := cloneIndex(*ddl.PrimaryKey)
 		snapshot.PrimaryKey = &pk
-		snapshot.PrimaryKeyIsHandle = spec.PrimaryKeyHandle(dialect, &pk, snapshot.Columns)
+		if handle := spec.PrimaryKeyHandle(dialect, &pk, snapshot.Columns, tidbClusteredDefault); handle != nil {
+			snapshot.PrimaryKeyIsHandle = *handle
+		} else {
+			// The declared PK cannot prove handle vs real object (unwritten
+			// CLUSTERED|NONCLUSTERED with no observed session mode) — the
+			// snapshot must not answer either way.
+			snapshot.PrimaryKeyHandleUnknown = true
+		}
 	}
 	for _, constraint := range ddl.Constraints {
 		snapshot.Constraints = append(snapshot.Constraints, cloneConstraint(constraint))
@@ -506,6 +521,18 @@ func derivedCreateShape(dialect spec.Dialect, schema, table string, ddl *spec.DD
 		}
 	}
 	return snapshot
+}
+
+// tidbClusteredMode returns the request-observed
+// tidb_enable_clustered_index mode — nil when unobserved, in which case a
+// batch-derived PK with an unwritten type stays unknown rather than
+// inheriting the product's ON default as a guess.
+func (s *batchState) tidbClusteredMode() *string {
+	if s.instanceFacts == nil || s.instanceFacts.TiDBEnableClusteredIndex == "" {
+		return nil
+	}
+	mode := s.instanceFacts.TiDBEnableClusteredIndex
+	return &mode
 }
 
 // applyAlterTable models the frozen transitions a fully audited ALTER can

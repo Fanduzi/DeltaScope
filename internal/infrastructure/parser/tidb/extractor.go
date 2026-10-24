@@ -1,6 +1,6 @@
 // Package tidbparser extracts parser-neutral statements from TiDB AST nodes.
 // input: TiDB parser statement nodes and parser-neutral dialect metadata
-// output: extractor-backed parsed statements for the application layer, including MutationTargets and mutation-target-only DML tables, normalized ALTER index/constraint actions, multi-target DDL Targets for DROP/RENAME/ALTER-rename, temporary-table scope facts, typed and unextracted column-option facts, primary-key metadata, inline PRIMARY KEY presence on column-change facts, parser-decoded COMMENT string content (no SQL quote wrapping), sentinel-faithful declared type parameters (DECIMAL/FLOAT/DOUBLE scale, byte-exact ENUM/SET members) on the five declared-parameter types, structured generated-column and expression-default facts via the shared expression-facts visitor, the comparable literal-default identity decoded from typed AST values, if_exists/if_not_exists option markers for conditional-existence derivation, and the T10 index facts — the alter_index action carrying the VISIBLE|INVISIBLE target on OldName, authored Visibility/VisibilityExplicit across index sites, member-level KeyParts (ordinal/kind/prefix/direction/structured expression identity) with derived MultiValuedParts CAST-array counts, and TiDB PRIMARY KEY CLUSTERED|NONCLUSTERED on Index.PrimaryKeyType
+// output: extractor-backed parsed statements for the application layer, including MutationTargets and mutation-target-only DML tables, normalized ALTER index/constraint actions, multi-target DDL Targets for DROP/RENAME/ALTER-rename, temporary-table scope facts, typed and unextracted column-option facts, primary-key metadata, inline PRIMARY KEY presence on column-change facts, parser-decoded COMMENT string content (no SQL quote wrapping), sentinel-faithful declared type parameters (DECIMAL/FLOAT/DOUBLE scale, byte-exact ENUM/SET members) on the five declared-parameter types, structured generated-column and expression-default facts via the shared expression-facts visitor, the comparable literal-default identity decoded from typed AST values, if_exists/if_not_exists option markers for conditional-existence derivation, and the T10 index facts — the alter_index action carrying the VISIBLE|INVISIBLE target on OldName, authored Visibility/VisibilityExplicit across index sites, member-level KeyParts (ordinal/kind/prefix/direction/structured expression identity, multi-valued CAST-array marks with element cast-type facts via MultiValuedCastFacts) with derived MultiValuedParts CAST-array counts, and TiDB PRIMARY KEY CLUSTERED|NONCLUSTERED on Index.PrimaryKeyType
 // pos: infrastructure extraction adapter between TiDB AST and domain spec
 // note: if this file changes, update this header and module README.md.
 package tidbparser
@@ -1882,6 +1882,7 @@ func extractIndexKeyParts(parts []*ast.IndexPartSpecification) []spec.IndexKeyPa
 				keyPart.Expression = &facts
 				if cast, ok := part.Expr.(*ast.FuncCastExpr); ok && cast.Tp != nil && cast.Tp.IsArray() {
 					keyPart.MultiValued = true
+					keyPart.MultiValuedCastType, keyPart.MultiValuedCastLengthSet = MultiValuedCastFacts(cast)
 				}
 			}
 		default:

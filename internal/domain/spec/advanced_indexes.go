@@ -4,11 +4,13 @@
 // facts, bound table snapshots (columns/indexes/PK handle/partition state),
 // and version metadata
 // output: the shared AssessAdvancedIndexes answer — features, determined
-// product/version and member-legality issues, the implicit-primary role
-// verdict, and bounded version/fact gaps — consumed by the index
-// compatibility rule and the ordered-state publication gate
-// pos: T10 advanced-index domain model and T10-R1 primary-role/member-legality
-// determination, consumed by rules and the ordered-state pass
+// product/version and kind-aware member-legality issues, the four-state
+// implicit-primary role verdict, and bounded version/fact gaps —
+// InvalidTransition marks determined negatives and UnresolvedTransition
+// marks feature-bearing answers that could not be proven either way, both
+// consumed by the ordered-state publication gate
+// pos: T10 advanced-index domain model and T10-R2 four-state primary-role/
+// member-legality determination, consumed by rules and the ordered-state pass
 // note: if this file changes, update this header and module README.md.
 package spec
 
@@ -66,6 +68,22 @@ const (
 	// JSON column — the product requires a generated-column path (3152 on
 	// both products, even with a prefix length).
 	AdvancedIndexReasonJSONColumn = "json_column_index"
+	// AdvancedIndexReasonPrefixZero marks an authored 0-length key part —
+	// the product rejects it on every index kind, FULLTEXT included (1391).
+	AdvancedIndexReasonPrefixZero = "prefix_zero"
+	// AdvancedIndexReasonPrefixNotString marks an authored prefix length on
+	// a member bound to a non-string column (1089 on both products —
+	// integer, temporal, bit, and geometry members all reject).
+	AdvancedIndexReasonPrefixNotString = "prefix_not_string"
+	// AdvancedIndexReasonPrefixOverLength marks an authored prefix length
+	// past the member column's declared character length (1089).
+	AdvancedIndexReasonPrefixOverLength = "prefix_over_length"
+	// AdvancedIndexReasonMultiValuedCastType marks a multi-valued member
+	// whose CAST target is outside the product's legal ARRAY family —
+	// MySQL accepts signed/unsigned/char(n)/binary(n)/date/time/datetime/
+	// decimal while TiDB accepts signed/unsigned/char(n)/binary(n)/date/
+	// time/datetime/double; everything else answers 1235.
+	AdvancedIndexReasonMultiValuedCastType = "multi_valued_cast_type"
 )
 
 // advancedIndexVersionGatedFeatures marks the features whose checks consult
@@ -116,8 +134,14 @@ type AdvancedIndexAssessment struct {
 	Issues            []AdvancedIndexIssue
 	Gaps              []AdvancedColumnGap
 	InvalidTransition bool
-	Features          map[string]bool
-	VersionGated      map[string]bool
+	// UnresolvedTransition marks a transition whose outcome or post-state
+	// cannot be honestly derived — an unproven role or member-legality
+	// fact the statement's success depends on. The ordered-state gate
+	// tombstones the affected identities instead of publishing a guessed
+	// shape. Mirrors AdvancedColumnAssessment.UnresolvedTransition.
+	UnresolvedTransition bool
+	Features             map[string]bool
+	VersionGated         map[string]bool
 }
 
 // HasFeature reports whether the statement carries the named index feature.
@@ -305,6 +329,13 @@ func AssessAdvancedIndexes(statement Statement) AdvancedIndexAssessment {
 		case !version.ValidatedRange:
 			assessment.appendGap("", AdvancedReasonOutOfValidatedRange, AdvancedFactTargetVersionRange)
 		}
+		if version == nil || !version.ValidatedRange {
+			// The gated feature's outcome or stored shape is unprovable
+			// without the target version — the statement may have been
+			// refused outright or normalized into a different member
+			// shape, so no post-state may publish a guessed success.
+			assessment.UnresolvedTransition = true
+		}
 	}
 	versionKnown := version != nil && version.ValidatedRange
 
@@ -380,7 +411,11 @@ func assessIndexFact(assessment *AdvancedIndexAssessment, fact advancedIndexFact
 			exists, resolved := ResolveIndexPrimaryObject(snapshot, dialect)
 			switch {
 			case !resolved:
+				// Whether a PRIMARY object exists decides whether this
+				// alter can even name its target — the outcome stays
+				// unpublished while the handle answer is unvouched.
 				assessment.appendGap(AdvancedIndexFeatureVisibility, AdvancedReasonUnknownTableState, PrimaryRoleGapPrimaryKey)
+				assessment.UnresolvedTransition = true
 			case exists && index.Visibility == ColumnVisibilityInvisible:
 				// A real PRIMARY index object cannot be made invisible —
 				// the same 3522 refusal MySQL reports.
@@ -477,31 +512,105 @@ func assessIndexMembers(assessment *AdvancedIndexAssessment, fact advancedIndexF
 			}
 			base := baseColumnTypeName(column.Type)
 			if base == "" {
-				needColumnsFor[AdvancedIndexFeaturePrefixLength] = true
-				continue
-			}
-			if base == "json" {
-				assessment.appendIssue(index.Name, AdvancedIndexFeaturePrefixLength, fact.action, AdvancedIndexReasonJSONColumn, "")
-				continue
-			}
-			if part.PrefixLength == nil && prefixRequiredFamilyType(base) {
-				assessment.appendIssue(index.Name, AdvancedIndexFeaturePrefixLength, fact.action, AdvancedIndexReasonPrefixRequired, "")
-			}
-			if dialect == DialectMySQL {
+				// The member check that needs the type decides the gap's
+				// feature: a FULLTEXT member's withheld answer belongs to
+				// fulltext, never to a filtered-out prefix_length gap.
 				switch index.Kind {
 				case IndexKindFulltext:
-					if !fulltextMemberFamilyType(base) {
-						assessment.appendIssue(index.Name, AdvancedIndexFeatureFulltext, fact.action, AdvancedIndexReasonFulltextColumnType, "")
-					}
+					needColumnsFor[AdvancedIndexFeatureFulltext] = true
 				case IndexKindSpatial:
+					needColumnsFor[AdvancedIndexFeatureSpatial] = true
+				default:
+					needColumnsFor[AdvancedIndexFeaturePrefixLength] = true
+				}
+				continue
+			}
+			// Kind-scoped family legality first — each kind owns its
+			// member-type contract (MySQL 1283/1687/1252; TiDB refuses the
+			// FULLTEXT/SPATIAL kinds at the product boundary, so these
+			// checks only ever apply on MySQL).
+			switch index.Kind {
+			case IndexKindFulltext:
+				if dialect == DialectMySQL && !fulltextMemberFamilyType(base) {
+					assessment.appendIssue(index.Name, AdvancedIndexFeatureFulltext, fact.action, AdvancedIndexReasonFulltextColumnType, "")
+				}
+			case IndexKindSpatial:
+				if dialect == DialectMySQL {
 					if !spatialMemberFamilyType(base) {
 						assessment.appendIssue(index.Name, AdvancedIndexFeatureSpatial, fact.action, AdvancedIndexReasonSpatialColumnType, "")
 					} else if !column.NotNull {
 						assessment.appendIssue(index.Name, AdvancedIndexFeatureSpatial, fact.action, AdvancedIndexReasonSpatialNullable, "")
 					}
 				}
+			default:
+				if base == "json" {
+					// A direct JSON binding needs a generated-column path
+					// (3152 on both products, even with a prefix length).
+					assessment.appendIssue(index.Name, AdvancedIndexFeaturePrefixLength, fact.action, AdvancedIndexReasonJSONColumn, "")
+					continue
+				}
+			}
+			// Prefix-length legality: an authored zero is refused on every
+			// kind and both products (1391 — pinned on MySQL 5.7/8.0/8.4 and
+			// TiDB 8.5 including FULLTEXT); a nonzero prefix is only a
+			// string-family property (1089) and must not exceed the column's
+			// declared length (1089). FULLTEXT ignores a nonzero prefix on
+			// MySQL (native rc:0); SPATIAL always rejects one (its geometry
+			// member is not a string family). Expression members reject a
+			// prefix at parse (1064), before this check ever runs.
+			if part.PrefixLength != nil {
+				switch {
+				case *part.PrefixLength == 0:
+					assessment.appendIssue(index.Name, AdvancedIndexFeaturePrefixLength, fact.action, AdvancedIndexReasonPrefixZero, "")
+				case index.Kind == IndexKindFulltext:
+					// MySQL accepts and ignores a nonzero FULLTEXT prefix.
+				case index.Kind == IndexKindSpatial:
+					// A geometry member is never a string — the product
+					// reports the same 1089 refusal as a non-string prefix.
+					assessment.appendIssue(index.Name, AdvancedIndexFeaturePrefixLength, fact.action, AdvancedIndexReasonPrefixNotString, "")
+				case !prefixCapableFamilyType(base):
+					assessment.appendIssue(index.Name, AdvancedIndexFeaturePrefixLength, fact.action, AdvancedIndexReasonPrefixNotString, "")
+				case column.Length > 0 && *part.PrefixLength > column.Length:
+					assessment.appendIssue(index.Name, AdvancedIndexFeaturePrefixLength, fact.action, AdvancedIndexReasonPrefixOverLength, "")
+				}
+			} else if index.Kind != IndexKindFulltext && index.Kind != IndexKindSpatial && prefixRequiredFamilyType(base) {
+				// BLOB/TEXT members need an authored length (1170) — the
+				// contract belongs to ordinary index kinds only; a legal
+				// FULLTEXT text member never needs one.
+				assessment.appendIssue(index.Name, AdvancedIndexFeaturePrefixLength, fact.action, AdvancedIndexReasonPrefixRequired, "")
 			}
 		case IndexKeyPartExpression:
+			if part.MultiValued {
+				// A multi-valued member's CAST target has a pinned
+				// product matrix (1235): MySQL accepts signed/unsigned,
+				// char(n)/binary(n), date/time/datetime, decimal; TiDB
+				// accepts double instead of decimal. Pinned negatives
+				// refuse; everything outside the matrix is a bounded
+				// gap, not a guessed verdict.
+				switch part.MultiValuedCastType {
+				case "":
+					assessment.appendGap(AdvancedIndexFeatureMultiValued, AdvancedReasonUnknownTableState, "target_table.indexes.key_parts.cast_type")
+				case "signed", "unsigned", "char", "binary", "date", "time", "datetime":
+					if (part.MultiValuedCastType == "char" || part.MultiValuedCastType == "binary") && !part.MultiValuedCastLengthSet {
+						assessment.appendIssue(index.Name, AdvancedIndexFeatureMultiValued, fact.action, AdvancedIndexReasonMultiValuedCastType, "")
+					}
+				case "decimal":
+					if dialect != DialectMySQL {
+						assessment.appendIssue(index.Name, AdvancedIndexFeatureMultiValued, fact.action, AdvancedIndexReasonMultiValuedCastType, "")
+					}
+				case "double":
+					if dialect != DialectTiDB {
+						assessment.appendIssue(index.Name, AdvancedIndexFeatureMultiValued, fact.action, AdvancedIndexReasonMultiValuedCastType, "")
+					}
+				case "json", "year", "float":
+					// Pinned negatives on both products (1235).
+					assessment.appendIssue(index.Name, AdvancedIndexFeatureMultiValued, fact.action, AdvancedIndexReasonMultiValuedCastType, "")
+				default:
+					// A family the pinned matrix never named (vector,
+					// timestamp, set, …) is unprovable, not refused.
+					assessment.appendGap(AdvancedIndexFeatureMultiValued, AdvancedReasonUnknownTableState, "target_table.indexes.key_parts.cast_type")
+				}
+			}
 			if part.Expression == nil || !part.Expression.Known {
 				// Expression identity unprovable — the dependency answer
 				// is withheld, not guessed.
@@ -528,6 +637,21 @@ func assessIndexMembers(assessment *AdvancedIndexAssessment, fact advancedIndexF
 	for feature := range needColumnsFor {
 		assessment.appendGap(feature, AdvancedReasonUnknownTableState, PrimaryRoleGapColumnNullables)
 	}
+}
+
+// prefixCapableFamilyType reports the column families a prefix length may
+// bind — the string families plus the binary/blob families the product's
+// 1089 message treats as "a string". Integer, temporal, enum/set, bit, and
+// geometry members all reject an authored prefix.
+func prefixCapableFamilyType(base string) bool {
+	switch base {
+	case "char", "varchar", "nchar", "nvarchar",
+		"binary", "varbinary",
+		"tinytext", "text", "mediumtext", "longtext",
+		"tinyblob", "blob", "mediumblob", "longblob":
+		return true
+	}
+	return false
 }
 
 // factMemberColumn resolves one member name against the column table the
@@ -595,17 +719,28 @@ func assessImplicitPrimaryVisibility(assessment *AdvancedIndexAssessment, fact a
 	if index.Visibility != ColumnVisibilityInvisible {
 		return
 	}
-	holdsRole := func(role PrimaryRoleResolution) bool {
-		if !role.Resolved {
-			assessment.appendGap(AdvancedIndexFeatureVisibility, AdvancedReasonUnknownTableState, role.GapFacts...)
-			return false
-		}
-		return role.HasHolder && strings.EqualFold(role.Holder, index.Name)
+	// unresolvedRole marks the outcome-blocking state: whether this index
+	// lands depends on the withheld role answer, so no post-state may
+	// publish the member as created or its invisibility as applied.
+	unresolvedRole := func(role PrimaryRoleResolution) {
+		assessment.appendGap(AdvancedIndexFeatureVisibility, AdvancedReasonUnknownTableState, role.GapFacts...)
+		assessment.UnresolvedTransition = true
 	}
 	holds := false
 	switch fact.action {
 	case "create_table":
-		holds = holdsRole(ResolveDeclaredPrimaryRole(dialect, ddl))
+		role := ResolveDeclaredPrimaryRole(dialect, ddl)
+		switch {
+		case !role.Resolved:
+			unresolvedRole(role)
+			return
+		case role.HasHolder:
+			// Holder identity is the member pointer itself — two unnamed
+			// unique members share the empty name but never share the
+			// role (products auto-name and only the first qualifies).
+			holds = role.HolderIndex == index ||
+				(role.HolderIndex == nil && strings.EqualFold(role.Holder, index.Name))
+		}
 	case "add_index", "add_constraint", "create_index":
 		// A newly created index appends after every existing member — it can
 		// hold the role only when the snapshot proves no earlier qualifying
@@ -616,16 +751,18 @@ func assessImplicitPrimaryVisibility(assessment *AdvancedIndexAssessment, fact a
 		}
 		role := ResolvePrimaryRole(dialect, snapshot, snapshot.IndexOrderCatalog)
 		if !role.Resolved {
-			assessment.appendGap(AdvancedIndexFeatureVisibility, AdvancedReasonUnknownTableState, role.GapFacts...)
+			unresolvedRole(role)
 			return
 		}
-		if !role.HasHolder {
-			// No explicit PK and no existing candidate: the declared index
-			// becomes the holder exactly when it provably qualifies.
+		if !role.ExplicitPrimary && !role.HasHolder {
+			// Resolved no-candidate — distinct from both the explicit-PK
+			// and the existing-holder states, in which an appended unique
+			// can never claim the role: the declared index becomes the
+			// holder exactly when it provably qualifies.
 			eligible, provable := primaryRoleEligible(dialect, index, snapshot)
 			switch {
 			case !provable:
-				assessment.appendGap(AdvancedIndexFeatureVisibility, AdvancedReasonUnknownTableState, PrimaryRoleGapMemberFacts)
+				unresolvedRole(PrimaryRoleResolution{GapFacts: []string{PrimaryRoleGapMemberFacts}})
 			case eligible:
 				holds = true
 			}
@@ -652,7 +789,7 @@ func assessImplicitPrimaryVisibility(assessment *AdvancedIndexAssessment, fact a
 		}
 		role := ResolvePrimaryRole(dialect, snapshot, snapshot.IndexOrderCatalog)
 		if !role.Resolved {
-			assessment.appendGap(AdvancedIndexFeatureVisibility, AdvancedReasonUnknownTableState, role.GapFacts...)
+			unresolvedRole(role)
 			return
 		}
 		holds = role.HasHolder && strings.EqualFold(role.Holder, target.Name)

@@ -3,11 +3,18 @@
 // input: a table's index members (with member-level key-part facts), column
 // nullability, and the explicit-PK state of a snapshot or a declared CREATE
 // TABLE shape
-// output: the primary-role holder name ("" when none), or a bounded
-// unresolved answer listing the facts that withheld the determination —
-// consumed by the advanced-index compatibility assessment, the alter_index
-// existence resolution, and the ordered-state publication gate
-// pos: T10-R1 primary-role identity model (issue #89); upstream anchors —
+// output: a PrimaryRoleResolution — the four-state answer distinguishing an
+// explicit primary, a proven implicit holder (a member identity, not a name
+// string, so multiple unnamed members stay distinct), a proven no-candidate
+// state, and a bounded unresolved answer listing the facts that withheld the
+// determination — consumed by the advanced-index compatibility assessment,
+// the alter_index existence resolution, and the ordered-state publication
+// gate; the TiDB handle answer is the tri-state *bool (nil = unprovable,
+// explicit CLUSTERED|NONCLUSTERED overrides the session-mode observation,
+// an unstated declaration falls back to tidb_enable_clustered_index, and a
+// missing mode/CLUSTERED row stays unknown rather than guessing a PRIMARY
+// object into existence)
+// pos: T10-R2 primary-role identity model (issue #89); upstream anchors —
 // MySQL 8.0.46 mysql-test/r/invisible_indexes.result L247-289 and TiDB
 // v8.5.0 TableInfo.GetPrimaryKey + checkInvisibleIndexOnPK
 // note: if this file changes, update this header and module README.md.
@@ -15,22 +22,35 @@ package spec
 
 import "strings"
 
-// PrimaryRoleResolution is the shared three-state answer for "which index
-// carries the primary-key role on this table shape".
+// PrimaryRoleResolution is the shared four-state answer for "which index
+// carries the primary-key role on this table shape": an explicit primary
+// key, an ordinary unique index holding the implicit role, a resolved
+// absence of any candidate, or a bounded unresolved answer.
 type PrimaryRoleResolution struct {
-	// Resolved marks a determined answer: HasHolder/Holder then name the
-	// role-bearing index, or no index holds the role (explicit primary
-	// key, or no qualifying candidate).
+	// Resolved marks a determined answer: ExplicitPrimary, HasHolder with
+	// its HolderIndex identity, or neither (no qualifying candidate).
 	Resolved bool
-	// HasHolder distinguishes "resolved, no index carries the role" (an
-	// explicit primary key exists, or no qualifying candidate) from
-	// "resolved, the holder is the member named Holder" — including an
+	// ExplicitPrimary distinguishes "an explicit primary key holds the
+	// role" from "no index holds the role" — the two previous no-holder
+	// states behaved identically for an appended candidate, which is
+	// wrong: only the no-candidate state lets a newly declared qualifying
+	// UNIQUE claim the role.
+	ExplicitPrimary bool
+	// HasHolder distinguishes "resolved, no ordinary index carries the
+	// role" (explicit primary, or no qualifying candidate) from
+	// "resolved, the member at HolderIndex holds the role" — including an
 	// auto-named member whose Holder is the empty string.
 	HasHolder bool
 	// Holder is the resolved role-holder index name. It is never a model
 	// rewrite — the holder stays an ordinary unique index; only its
 	// logical role is answered.
 	Holder string
+	// HolderIndex points at the resolved holder inside the index slice the
+	// caller resolved over (declared ddl.Indexes or snapshot.Indexes) —
+	// the stable member identity when two members share the same name,
+	// including the unnamed-member "" name products auto-fill at create.
+	// nil unless HasHolder.
+	HolderIndex *Index
 	// GapFacts lists the missing facts when Resolved is false — the bounded
 	// evidence gap a rule must surface instead of guessing.
 	GapFacts []string
@@ -69,7 +89,7 @@ func ResolvePrimaryRole(dialect Dialect, snapshot *TableSnapshot, candidateOrder
 		return PrimaryRoleResolution{GapFacts: []string{PrimaryRoleGapPrimaryKey}}
 	}
 	if snapshot.HasPrimaryKey() {
-		return PrimaryRoleResolution{Resolved: true}
+		return PrimaryRoleResolution{Resolved: true, ExplicitPrimary: true}
 	}
 	if snapshot.IndexesUnknown {
 		return PrimaryRoleResolution{GapFacts: []string{PrimaryRoleGapIndexes}}
@@ -83,7 +103,7 @@ func ResolvePrimaryRole(dialect Dialect, snapshot *TableSnapshot, candidateOrder
 			index := &snapshot.Indexes[i]
 			eligible, provable := primaryRoleEligible(dialect, index, snapshot)
 			if eligible {
-				return PrimaryRoleResolution{Resolved: true, HasHolder: true, Holder: index.Name}
+				return PrimaryRoleResolution{Resolved: true, HasHolder: true, Holder: index.Name, HolderIndex: index}
 			}
 			if !provable {
 				return PrimaryRoleResolution{GapFacts: []string{PrimaryRoleGapMemberFacts}}
@@ -91,21 +111,21 @@ func ResolvePrimaryRole(dialect Dialect, snapshot *TableSnapshot, candidateOrder
 		}
 		return PrimaryRoleResolution{Resolved: true}
 	}
-	var candidates []string
-	var unprovable []string
+	var candidates []*Index
+	var unprovable int
 	for i := range snapshot.Indexes {
 		index := &snapshot.Indexes[i]
 		eligible, provable := primaryRoleEligible(dialect, index, snapshot)
 		if eligible {
-			candidates = append(candidates, index.Name)
+			candidates = append(candidates, index)
 		} else if !provable {
-			unprovable = append(unprovable, index.Name)
+			unprovable++
 		}
 	}
 	// Without catalog order, an eligibility-unprovable unique index can
 	// hold the role ahead of every provable candidate, so no determined
 	// answer exists while any is around.
-	if len(unprovable) > 0 {
+	if unprovable > 0 {
 		return PrimaryRoleResolution{GapFacts: []string{PrimaryRoleGapMemberFacts}}
 	}
 	if len(candidates) == 0 {
@@ -114,7 +134,7 @@ func ResolvePrimaryRole(dialect Dialect, snapshot *TableSnapshot, candidateOrder
 	if len(candidates) > 1 {
 		return PrimaryRoleResolution{GapFacts: []string{PrimaryRoleGapIndexOrder}}
 	}
-	return PrimaryRoleResolution{Resolved: true, HasHolder: true, Holder: candidates[0]}
+	return PrimaryRoleResolution{Resolved: true, HasHolder: true, Holder: candidates[0].Name, HolderIndex: candidates[0]}
 }
 
 // ResolveDeclaredPrimaryRole is the create-time analogue: the declared table
@@ -125,7 +145,7 @@ func ResolveDeclaredPrimaryRole(dialect Dialect, ddl *DDL) PrimaryRoleResolution
 		return PrimaryRoleResolution{Resolved: true}
 	}
 	if ddl.PrimaryKey != nil {
-		return PrimaryRoleResolution{Resolved: true}
+		return PrimaryRoleResolution{Resolved: true, ExplicitPrimary: true}
 	}
 	view := TableSnapshot{
 		Exists:  true,
@@ -196,30 +216,84 @@ func ResolveIndexPrimaryObject(snapshot *TableSnapshot, dialect Dialect) (exists
 	if !snapshot.HasPrimaryKey() {
 		return false, true
 	}
-	if dialect == DialectTiDB && snapshot.PrimaryKeyIsHandle {
-		return false, true
+	if dialect == DialectTiDB {
+		switch {
+		case snapshot.PrimaryKeyHandleUnknown:
+			// The stored shape could not prove handle vs real object —
+			// neither answer may be asserted.
+			return false, false
+		case snapshot.PrimaryKeyIsHandle:
+			return false, true
+		}
 	}
 	return true, true
 }
 
 // PrimaryKeyHandle reports whether a declared primary key becomes the row
 // handle (TiDB PKIsHandle): dialect TiDB, exactly one member bound to an
-// integer-family column, and no NONCLUSTERED override. Every other shape —
-// MySQL, composite/non-int/nonclustered TiDB PKs — keeps a real index
-// object. Integer family mirrors TiDB isSingleIntPK.
-func PrimaryKeyHandle(dialect Dialect, pk *Index, columns []Column) bool {
-	if dialect != DialectTiDB || pk == nil || len(pk.Columns) != 1 {
-		return false
+// integer-family column, and no NONCLUSTERED override. The answer is
+// tri-state: nil when the stored shape cannot be proven — an unwritten
+// CLUSTERED|NONCLUSTERED type defers to the session's
+// tidb_enable_clustered_index (upstream anchor: v8.5.0
+// pkg/ddl/create_table.go L1582-1593), so the caller passes the observed
+// default mode ("on"/"int_only" → handle-eligible, "off" → real object,
+// nil/unrecognized → unknown). Every other shape — MySQL,
+// composite/non-int/nonclustered TiDB PKs — keeps a real index object.
+// Integer family mirrors TiDB isSingleIntPK.
+func PrimaryKeyHandle(dialect Dialect, pk *Index, columns []Column, defaultMode *string) *bool {
+	no := new(bool)
+	if dialect != DialectTiDB || pk == nil {
+		return no
 	}
 	if strings.EqualFold(pk.PrimaryKeyType, "nonclustered") {
-		return false
+		return no
 	}
+	if len(pk.Columns) != 1 {
+		// Composite PKs are real index objects under every mode
+		// (common-handle storage still exposes PRIMARY).
+		return no
+	}
+	if columns == nil {
+		// A withheld column set cannot prove the member's type family —
+		// the handle answer is unprovable either way.
+		return nil
+	}
+	singleInt := false
+	memberFound := false
 	for _, column := range columns {
 		if strings.EqualFold(column.Name, pk.Columns[0]) {
-			return isIntegerType(baseColumnTypeName(column.Type))
+			memberFound = true
+			singleInt = isIntegerType(baseColumnTypeName(column.Type))
+			break
 		}
 	}
-	return false
+	if !memberFound {
+		// The PK member is not provable in the column set — the handle
+		// answer stays unknown rather than guessing non-integer.
+		return nil
+	}
+	if !singleInt {
+		// Composite and non-integer PKs are real index objects under every
+		// mode (common-handle storage still exposes PRIMARY).
+		return no
+	}
+	if strings.EqualFold(pk.PrimaryKeyType, "clustered") {
+		yes := true
+		return &yes
+	}
+	// An unwritten type follows the session default — the audit can only
+	// assert the observed mode, never assume the product's ON default.
+	if defaultMode == nil {
+		return nil
+	}
+	switch strings.ToLower(strings.TrimSpace(*defaultMode)) {
+	case "on", "int_only":
+		yes := true
+		return &yes
+	case "off":
+		return no
+	}
+	return nil
 }
 
 // isIntegerType mirrors TiDB's single-integer-PK handle condition; the

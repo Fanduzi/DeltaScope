@@ -172,6 +172,7 @@ func enrichOrderedStatements(ctx context.Context, dialect spec.Dialect, request 
 	}
 	state := newBatchState(dialect, requestSchema, provider)
 	state.resolvedVersion = resolvedVersion
+	state.instanceFacts = instanceFacts
 	return state.enrichStatements(ctx, request, statements, failures, instanceFacts, limits)
 }
 

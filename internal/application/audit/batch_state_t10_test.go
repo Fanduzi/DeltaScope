@@ -74,14 +74,18 @@ func t10Policy(t *testing.T, rules ...t10Rule) string {
 
 // t10Provider serves fixed per-table snapshots plus an optional observed
 // version banner so version-gated features run against a known identity.
+// tidbMode carries the session-observed tidb_enable_clustered_index value
+// TiDB handle determination defers to when CLUSTERED|NONCLUSTERED is
+// unwritten.
 type t10Provider struct {
-	version string
-	tables  map[string]*spec.TableSnapshot
-	calls   []string
+	version  string
+	tidbMode string
+	tables   map[string]*spec.TableSnapshot
+	calls    []string
 }
 
 func (p *t10Provider) LoadInstanceFacts(context.Context, spec.Dialect, string) (*spec.InstanceFacts, error) {
-	return &spec.InstanceFacts{Version: p.version}, nil
+	return &spec.InstanceFacts{Version: p.version, TiDBEnableClusteredIndex: p.tidbMode}, nil
 }
 
 func (p *t10Provider) LoadTableSnapshot(_ context.Context, _ spec.Dialect, schema, table string) (*spec.TableSnapshot, error) {

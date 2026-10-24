@@ -1,6 +1,6 @@
 // Package tidbparser extracts evaluation-free expression facts from parsed expressions.
 // input: TiDB AST expression nodes from column declarations and catalog generation text
-// output: spec.ExpressionFacts (references/functions/call-count/features/fingerprint/known) plus ParseCatalogExpressionFacts
+// output: spec.ExpressionFacts (references/functions/call-count/features/fingerprint/known) plus ParseCatalogExpressionFacts and MultiValuedCastFacts (the CAST(… AS <T> ARRAY) element family + authored-length bit the member-legality check consumes — FieldType.GetType reports JSON for the array wrapper, so the element byte type/length come from Tp.ArrayType())
 // pos: shared expression-fact collector used by the column extractor and the MySQL metadata provider
 // note: if this file changes, update this header and module README.md.
 package tidbparser
@@ -18,6 +18,7 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/mysql"
 	"github.com/pingcap/tidb/pkg/parser/opcode"
 	_ "github.com/pingcap/tidb/pkg/parser/test_driver"
+	tidbtypes "github.com/pingcap/tidb/pkg/parser/types"
 )
 
 // expressionFactNodeLimit bounds AST traversal so one pathological expression
@@ -319,6 +320,83 @@ func CatalogExpressionIsMultiValued(text string) bool {
 	}
 	cast, isCast := unwrapParenthesesExpr(expr).(*ast.FuncCastExpr)
 	return isCast && cast.Tp != nil && cast.Tp.IsArray()
+}
+
+// MultiValuedCastFacts normalizes a multi-valued member's
+// CAST(… AS <T> ARRAY) target into the element family the product
+// legality check consumes plus whether the declaration authored a
+// length (char/binary targets require one — the unspecified form is a
+// product rejection). FieldType.GetType reports JSON for the array
+// wrapper, so the element byte type comes from Tp.ArrayType(); flen
+// comes off the same element. Element types outside the pinned matrix
+// answer "" — the member check turns that into a bounded gap rather
+// than guessing legality.
+func MultiValuedCastFacts(cast *ast.FuncCastExpr) (family string, lengthSet bool) {
+	if cast == nil || cast.Tp == nil || !cast.Tp.IsArray() {
+		return "", false
+	}
+	elem := cast.Tp.ArrayType()
+	if elem == nil {
+		return "", false
+	}
+	lengthSet = elem.GetFlen() != tidbtypes.UnspecifiedLength
+	switch elem.GetType() {
+	case mysql.TypeTiny, mysql.TypeShort, mysql.TypeInt24, mysql.TypeLong, mysql.TypeLonglong:
+		if elem.GetFlag()&mysql.UnsignedFlag != 0 {
+			return "unsigned", lengthSet
+		}
+		return "signed", lengthSet
+	case mysql.TypeVarchar, mysql.TypeVarString, mysql.TypeString:
+		// CAST AS BINARY surfaces as a var-string element with the binary
+		// charset/flag; every other character target is the char family.
+		if elem.GetFlag()&mysql.BinaryFlag != 0 || strings.EqualFold(elem.GetCharset(), "binary") {
+			return "binary", lengthSet
+		}
+		return "char", lengthSet
+	case mysql.TypeDate, mysql.TypeNewDate:
+		return "date", lengthSet
+	case mysql.TypeDuration:
+		return "time", lengthSet
+	case mysql.TypeDatetime:
+		return "datetime", lengthSet
+	case mysql.TypeNewDecimal:
+		return "decimal", lengthSet
+	case mysql.TypeDouble:
+		return "double", lengthSet
+	case mysql.TypeFloat:
+		return "float", lengthSet
+	case mysql.TypeJSON:
+		return "json", lengthSet
+	case mysql.TypeYear:
+		return "year", lengthSet
+	}
+	return "", false
+}
+
+// CatalogMultiValuedCastFacts is the catalog-text twin of
+// MultiValuedCastFacts: it parses stored STATISTICS.EXPRESSION text and
+// answers the same normalized cast-target facts for a multi-valued member.
+// Non-multi-valued or unparseable text answers an empty family — the
+// caller already treats that shape as unknown.
+func CatalogMultiValuedCastFacts(text string) (family string, lengthSet bool) {
+	trimmed := strings.TrimSpace(text)
+	if trimmed == "" {
+		return "", false
+	}
+	expr, ok := parseSelectExpressionAST(trimmed)
+	if !ok {
+		if decoded, decOK := decodeCatalogEscapes(trimmed); decOK {
+			expr, ok = parseSelectExpressionAST(decoded)
+		}
+	}
+	if !ok {
+		return "", false
+	}
+	cast, isCast := unwrapParenthesesExpr(expr).(*ast.FuncCastExpr)
+	if !isCast {
+		return "", false
+	}
+	return MultiValuedCastFacts(cast)
 }
 
 // parseSelectExpressionAST parses text as exactly one bare expression field:

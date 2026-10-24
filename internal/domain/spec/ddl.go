@@ -395,6 +395,17 @@ type IndexKeyPart struct {
 	// MultiValued marks the MySQL multi-valued member form
 	// CAST(… AS … ARRAY); the member also has Kind=expression.
 	MultiValued bool `json:"multi_valued,omitempty"`
+	// MultiValuedCastType records the normalized cast-target family a
+	// multi-valued member declares: signed, unsigned, char, binary, date,
+	// time, datetime, decimal, double, float, json, year, vector — or ""
+	// when the member is not multi-valued or the target could not be
+	// classified. The member-legality check applies the product's allowed
+	// cast family to it (MySQL and TiDB allow disjoint subsets).
+	MultiValuedCastType string `json:"multi_valued_cast_type,omitempty"`
+	// MultiValuedCastLengthSet records that the authored cast target
+	// carried an explicit length — char and binary targets require one on
+	// both products (the unspecified-length form answers 1235).
+	MultiValuedCastLengthSet bool `json:"multi_valued_cast_length_set,omitempty"`
 }
 
 // SetKeyParts installs the member list and derives every aggregate mark from

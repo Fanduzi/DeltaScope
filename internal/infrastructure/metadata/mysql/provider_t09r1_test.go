@@ -76,7 +76,7 @@ func TestT09R1ProviderMemberRowClassification(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			indexes := make(map[string]*spec.Index)
 			order := make([]string, 0)
-			accumulateIndexRow(indexes, &order, "i", 1, "BTREE", tc.row, nil)
+			accumulateIndexRow(indexes, &order, "i", 1, "BTREE", tc.row, nil, nil)
 			index := indexes["i"]
 			if index == nil {
 				t.Fatalf("index not accumulated")

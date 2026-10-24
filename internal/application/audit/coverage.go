@@ -346,21 +346,15 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 		gaps = append(gaps, columnAspectGaps(dialect, ddl.Operation, "", column)...)
 	}
 	indexPartGaps := func(prefix string, index spec.Index) {
-		// Expression key parts are official syntax on both dialects — TiDB
-		// documents expression indexes (LOWER() among the allowed functions)
-		// and MySQL 8.0.13+ ships functional key parts — but the audit model
-		// does not inspect expressions, so the aspect is unaudited on both.
-		// Prefix lengths and descending parts are likewise merely unaudited.
-		if index.HasExpressionKeys {
+		// Expression, prefix, descending, and multi-valued member forms are
+		// member-level audited (member legality, version applicability, and
+		// ordered post-state fidelity) — no blanket unsupported aspect
+		// remains. Only members the model cannot classify at all keep the
+		// unaudited boundary.
+		if index.UnmodeledKeyParts > 0 {
 			gaps = append(gaps, aspectGap(
-				fmt.Sprintf("%s.expr", prefix), false,
-				map[string]any{"aspect": "index", "index_kind": string(index.Kind), "expression_count": index.ExpressionCount},
-			))
-		}
-		if index.PrefixParts > 0 {
-			gaps = append(gaps, aspectGap(
-				fmt.Sprintf("%s.prefix", prefix), false,
-				map[string]any{"aspect": "index", "index_kind": string(index.Kind), "prefix_parts": index.PrefixParts},
+				fmt.Sprintf("%s.unmodeled_parts", prefix), false,
+				map[string]any{"aspect": "index", "index_kind": string(index.Kind), "unmodeled_parts": index.UnmodeledKeyParts},
 			))
 		}
 		if index.HasPredicate {
@@ -390,24 +384,12 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 				map[string]any{"aspect": "index_option", "index_kind": string(index.Kind)},
 			))
 		}
-		if index.DescParts > 0 {
-			gaps = append(gaps, aspectGap(
-				fmt.Sprintf("%s.desc", prefix), false,
-				map[string]any{"aspect": "index", "index_kind": string(index.Kind), "desc_parts": index.DescParts},
-			))
-		}
-		if index.MultiValuedParts > 0 {
-			// Multi-valued members are a bounded form mark: version
-			// applicability is audited, member/query semantics are not.
-			gaps = append(gaps, aspectGap(
-				fmt.Sprintf("%s.multi_valued", prefix), false,
-				map[string]any{"aspect": "index", "index_kind": string(index.Kind), "multi_valued_parts": index.MultiValuedParts},
-			))
-		}
 	}
-	if ddl.PrimaryKey != nil && ddl.PrimaryKey.Global {
+	if ddl.PrimaryKey != nil && ddl.PrimaryKey.Global && dialect == spec.DialectMySQL {
+		// GLOBAL is TiDB-only syntax — a vendor boundary under MySQL; under
+		// TiDB the unique-kind plus partitioned-table gate is member-audited.
 		gaps = append(gaps, aspectGap(
-			fmt.Sprintf("%s.index.global", ddl.Operation), dialect == spec.DialectMySQL,
+			fmt.Sprintf("%s.index.global", ddl.Operation), true,
 			map[string]any{"aspect": "index", "index_kind": string(spec.IndexKindPrimary)},
 		))
 	}
@@ -421,11 +403,12 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 				map[string]any{"aspect": "index", "index_kind": string(index.Kind)},
 			))
 		}
-		if index.Global {
-			// The GLOBAL modifier is TiDB-only syntax (global indexes on
-			// partitioned tables); under MySQL it is a vendor boundary.
+		if index.Global && dialect == spec.DialectMySQL {
+			// The GLOBAL modifier is TiDB-only syntax — a vendor boundary
+			// under MySQL; under TiDB the unique-kind plus partitioned-table
+			// gate is member-audited.
 			gaps = append(gaps, aspectGap(
-				fmt.Sprintf("%s.index.global", ddl.Operation), dialect == spec.DialectMySQL,
+				fmt.Sprintf("%s.index.global", ddl.Operation), true,
 				map[string]any{"aspect": "index", "index_kind": string(index.Kind)},
 			))
 		}
@@ -502,9 +485,9 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 					map[string]any{"aspect": "index", "action": alter.Action, "index_kind": string(alter.Index.Definition.Kind)},
 				))
 			}
-			if alter.Index.Definition.Global {
+			if alter.Index.Definition.Global && dialect == spec.DialectMySQL {
 				gaps = append(gaps, aspectGap(
-					fmt.Sprintf("%s.%s.index.global", ddl.Operation, alter.Action), dialect == spec.DialectMySQL,
+					fmt.Sprintf("%s.%s.index.global", ddl.Operation, alter.Action), true,
 					map[string]any{"aspect": "index", "action": alter.Action, "index_kind": string(alter.Index.Definition.Kind)},
 				))
 			}

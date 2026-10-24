@@ -31,6 +31,15 @@ type InstanceFacts struct {
 	InnoDBPageSizeKnown       bool   `json:"innodb_page_size_known,omitempty"`
 	TiDBMaxIndexLengthBytes   int    `json:"tidb_max_index_length,omitempty"`
 	TiDBMaxIndexLengthKnown   bool   `json:"tidb_max_index_length_known,omitempty"`
+
+	// TiDBEnableClusteredIndex is the session-observed
+	// tidb_enable_clustered_index value (on/off/int_only). A declared
+	// TiDB primary key without CLUSTERED|NONCLUSTERED stores under this
+	// session default — an empty value means the mode was not probed, so
+	// the handle answer stays unknown rather than inheriting the
+	// product's ON default as a guess. TiDB only; never populated on
+	// MySQL.
+	TiDBEnableClusteredIndex string `json:"tidb_enable_clustered_index,omitempty"`
 }
 
 // TableSnapshot is the current metadata-backed shape of a target table.
@@ -56,6 +65,15 @@ type TableSnapshot struct {
 	// is a real index object (VISIBLE succeeds, INVISIBLE reports 3522).
 	// MySQL never sets it: PRIMARY is always an index object there.
 	PrimaryKeyIsHandle bool `json:"-"`
+
+	// PrimaryKeyHandleUnknown marks that the snapshot cannot prove the
+	// TiDB handle answer either way — e.g. the TIDB_INDEXES clustered row
+	// was absent or NULL on the provider path, or a batch-derived PK was
+	// declared without CLUSTERED|NONCLUSTERED while the session's
+	// tidb_enable_clustered_index mode is unobserved. Consumers must not
+	// read PrimaryKeyIsHandle as a determined "real object" then — the
+	// PRIMARY-object answer stays unresolved.
+	PrimaryKeyHandleUnknown bool `json:"-"`
 
 	// PrimaryKeyUnknown/IndexesUnknown/ConstraintsUnknown mark member
 	// collections the snapshot cannot vouch for (a derived-incomplete

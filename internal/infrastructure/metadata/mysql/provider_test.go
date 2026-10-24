@@ -444,9 +444,9 @@ func TestAccumulateIndexCardinalityPreservesMaximumNonNilValue(t *testing.T) {
 	indexes := make(map[string]*spec.Index)
 	order := make([]string, 0)
 
-	accumulateIndexRow(indexes, &order, "PRIMARY", 0, "BTREE", plainPart("id"), nil)
-	accumulateIndexRow(indexes, &order, "PRIMARY", 0, "BTREE", plainPart("tenant_id"), testPtrInt64(12))
-	accumulateIndexRow(indexes, &order, "PRIMARY", 0, "BTREE", plainPart("account_id"), testPtrInt64(7))
+	accumulateIndexRow(indexes, &order, "PRIMARY", 0, "BTREE", plainPart("id"), nil, nil)
+	accumulateIndexRow(indexes, &order, "PRIMARY", 0, "BTREE", plainPart("tenant_id"), testPtrInt64(12), nil)
+	accumulateIndexRow(indexes, &order, "PRIMARY", 0, "BTREE", plainPart("account_id"), testPtrInt64(7), nil)
 
 	index := indexes["PRIMARY"]
 	if index == nil {
@@ -464,8 +464,8 @@ func TestAccumulateIndexRowMultipleIndexes(t *testing.T) {
 	indexes := make(map[string]*spec.Index)
 	order := make([]string, 0)
 
-	accumulateIndexRow(indexes, &order, "PRIMARY", 0, "BTREE", plainPart("id"), testPtrInt64(100))
-	accumulateIndexRow(indexes, &order, "idx_email", 1, "BTREE", plainPart("email"), testPtrInt64(50))
+	accumulateIndexRow(indexes, &order, "PRIMARY", 0, "BTREE", plainPart("id"), testPtrInt64(100), nil)
+	accumulateIndexRow(indexes, &order, "idx_email", 1, "BTREE", plainPart("email"), testPtrInt64(50), nil)
 
 	if len(indexes) != 2 {
 		t.Fatalf("expected 2 indexes, got %d", len(indexes))

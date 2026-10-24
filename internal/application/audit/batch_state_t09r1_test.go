@@ -17,7 +17,6 @@ package audit
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
@@ -41,14 +40,14 @@ func t09r1Audit(t *testing.T, dialect spec.Dialect, sql string, provider Metadat
 	return findings
 }
 
-// t09r1RefusedNonPlain runs the real pipeline on a statement that declares a
-// non-plain key part and asserts the actual channel end to end: the
-// statement's unaudited member parts surface as coverage evidence, the
-// service refuses with ErrUnsupportedStatement, and — since rules still
-// evaluated the spec before the refusal — no rule may have convicted the
-// non-plain pair. This records the early-refusal channel instead of
-// fabricating reachability the product does not have.
-func t09r1RefusedNonPlain(t *testing.T, dialect spec.Dialect, sql string, provider MetadataProvider, rules map[string]string) report.Result {
+// t09r1AuditedNonPlain runs the real pipeline on a statement that declares a
+// non-plain key part: the member forms graduated to audited facts (T10
+// member-level model), so the statement is no longer refused wholesale.
+// What the boundary still refuses is the plain-key comparison itself — no
+// finding may pair a non-plain member under plain-column semantics, and a
+// column-pairing that could have fired must surface the attributable member
+// gap instead of a silent pass.
+func t09r1AuditedNonPlain(t *testing.T, dialect spec.Dialect, sql string, provider MetadataProvider, rules map[string]string) report.Result {
 	t.Helper()
 	result, err := AuditSQL(context.Background(), Request{
 		SQL:              sql,
@@ -57,12 +56,12 @@ func t09r1RefusedNonPlain(t *testing.T, dialect spec.Dialect, sql string, provid
 		ConfigPath:       t05A7Policy(t, rules),
 		MetadataProvider: provider,
 	})
-	if !errors.Is(err, ErrUnsupportedStatement) {
-		t.Fatalf("declared non-plain statement must surface ErrUnsupportedStatement, got err=%v", err)
+	if err != nil {
+		t.Fatalf("audited non-plain statement must not be refused, got err=%v", err)
 	}
 	for _, statement := range result.Statements {
 		for _, finding := range statement.Findings {
-			t.Fatalf("no finding may survive a refused non-plain statement, got %+v", finding)
+			t.Fatalf("no finding may pair a non-plain member under plain-key semantics, got %+v", finding)
 		}
 	}
 	return result
@@ -79,14 +78,17 @@ func TestT09R1PrefixLengthSuppressesDeclaredDuplicate(t *testing.T) {
 		dialect := dialect
 		t.Run(string(dialect), func(t *testing.T) {
 			t.Parallel()
-			// Channel: the declared prefix parts are unaudited member aspects
-			// — coverage evidence refuses the statement before a Columns-only
-			// signature could launder a duplicate verdict.
-			t09r1RefusedNonPlain(t, dialect,
+			// The prefix members are audited facts now; the comparability
+			// boundary still bars the plain Columns-only signature — the
+			// pair stays unconvicted inside the rule's scope.
+			result := t09r1AuditedNonPlain(t, dialect,
 				"CREATE TABLE t (c VARCHAR(32), KEY i_short (c(3)), KEY i_long (c(8)));",
 				&t05AbsentProvider{},
 				map[string]string{"ddl.index.duplicate.forbid": ""},
 			)
+			if result.Statements[0].Coverage.Status != report.CoverageComplete {
+				t.Fatalf("audited member forms must keep complete coverage, got %s", result.Statements[0].Coverage.Status)
+			}
 		})
 	}
 }
@@ -118,11 +120,14 @@ func TestT09R1PrefixPartSuppressesLeftPrefix(t *testing.T) {
 		dialect := dialect
 		t.Run(string(dialect), func(t *testing.T) {
 			t.Parallel()
-			t09r1RefusedNonPlain(t, dialect,
+			result := t09r1AuditedNonPlain(t, dialect,
 				"CREATE TABLE t (c VARCHAR(32), b INT, KEY i_full (c), KEY i_partial (c(3), b));",
 				&t05AbsentProvider{},
 				map[string]string{"ddl.index.redundant_left_prefix.forbid": ""},
 			)
+			if result.Statements[0].Coverage.Status != report.CoverageComplete {
+				t.Fatalf("audited member forms must keep complete coverage, got %s", result.Statements[0].Coverage.Status)
+			}
 		})
 	}
 }
@@ -154,11 +159,14 @@ func TestT09R1PrefixUniqueSuppressesUniqueOverlap(t *testing.T) {
 		dialect := dialect
 		t.Run(string(dialect), func(t *testing.T) {
 			t.Parallel()
-			t09r1RefusedNonPlain(t, dialect,
+			result := t09r1AuditedNonPlain(t, dialect,
 				"CREATE TABLE t (c VARCHAR(32), UNIQUE KEY uq_prefix (c(3)), KEY i_full (c));",
 				&t05AbsentProvider{},
 				map[string]string{"ddl.index.redundant_unique_overlap.forbid": ""},
 			)
+			if result.Statements[0].Coverage.Status != report.CoverageComplete {
+				t.Fatalf("audited member forms must keep complete coverage, got %s", result.Statements[0].Coverage.Status)
+			}
 		})
 	}
 }
@@ -210,11 +218,14 @@ func TestT09R1DescPartsSuppressDuplicate(t *testing.T) {
 		dialect := dialect
 		t.Run(string(dialect), func(t *testing.T) {
 			t.Parallel()
-			t09r1RefusedNonPlain(t, dialect,
+			result := t09r1AuditedNonPlain(t, dialect,
 				"CREATE TABLE t (a INT, b INT, KEY i_d (a DESC, b), KEY i_p (a, b));",
 				&t05AbsentProvider{},
 				map[string]string{"ddl.index.duplicate.forbid": ""},
 			)
+			if result.Statements[0].Coverage.Status != report.CoverageComplete {
+				t.Fatalf("audited member forms must keep complete coverage, got %s", result.Statements[0].Coverage.Status)
+			}
 		})
 	}
 }
@@ -227,11 +238,14 @@ func TestT09R1ExpressionKeysSuppressDuplicate(t *testing.T) {
 		dialect := dialect
 		t.Run(string(dialect), func(t *testing.T) {
 			t.Parallel()
-			t09r1RefusedNonPlain(t, dialect,
+			result := t09r1AuditedNonPlain(t, dialect,
 				"CREATE TABLE t (a INT, KEY i_e1 ((a + 1)), KEY i_e2 ((a + 1)));",
 				&t05AbsentProvider{},
 				map[string]string{"ddl.index.duplicate.forbid": ""},
 			)
+			if result.Statements[0].Coverage.Status != report.CoverageComplete {
+				t.Fatalf("audited member forms must keep complete coverage, got %s", result.Statements[0].Coverage.Status)
+			}
 		})
 	}
 }
@@ -471,11 +485,15 @@ func TestT09R1DeclaredNonPlainSuppressesExistingPlain(t *testing.T) {
 			provider := &t09Provider{tables: map[string]*spec.TableSnapshot{
 				"t": t09Table("t", spec.Index{Name: "i_pre", Kind: spec.IndexKindSecondary, Columns: []string{"a"}}),
 			}}
-			t09r1RefusedNonPlain(t, dialect,
+			result := t09r1AuditedNonPlain(t, dialect,
 				"CREATE INDEX i_new ON t(a(3));",
 				provider,
 				map[string]string{"ddl.index.duplicate.forbid": ""},
 			)
+			// The column pairing fires but the declared member is not
+			// plain-comparable — the member gap owns the unverifiable
+			// comparison, never a silent pass.
+			t09r1AssertKeyPartsGap(t, result, 0, "ddl.index.duplicate.forbid")
 		})
 	}
 }
@@ -490,11 +508,12 @@ func TestT09R1DerivedPlainSuppressesDeclaredNonPlain(t *testing.T) {
 		t.Run(string(dialect), func(t *testing.T) {
 			t.Parallel()
 			provider := &t09Provider{tables: map[string]*spec.TableSnapshot{"t": t09Table("t")}}
-			t09r1RefusedNonPlain(t, dialect,
+			result := t09r1AuditedNonPlain(t, dialect,
 				"ALTER TABLE t ADD INDEX i_pre (a);\nCREATE INDEX i_new ON t(a(3));",
 				provider,
 				map[string]string{"ddl.index.duplicate.forbid": ""},
 			)
+			t09r1AssertKeyPartsGap(t, result, 1, "ddl.index.duplicate.forbid")
 		})
 	}
 }
