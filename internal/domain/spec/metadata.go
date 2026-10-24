@@ -1,6 +1,6 @@
 // Package spec defines normalized statement specifications for rule evaluation.
 // input: optional metadata-aware audit facts such as explicit known-bit instance variables, target-table snapshots, and the canonical version identity
-// output: parser-neutral metadata structures (including per-collection unknown markers and the index name-space marker on table snapshots) and lookup helpers for future rules
+// output: parser-neutral metadata structures (including per-collection unknown markers and the index name-space marker on table snapshots) and lookup helpers for future rules — FindProvenIndex/HasUnprovenIndexName bind name-keyed consumers to per-member proven names
 // pos: domain metadata model shared by offline and metadata-aware audit paths
 // note: if this file changes, update this header and module README.md.
 package spec
@@ -84,6 +84,21 @@ type TableSnapshot struct {
 	// PRIMARY-object answer stays unresolved.
 	PrimaryKeyHandleUnknown bool `json:"-"`
 
+	// PrimaryKeyClustered marks a TiDB primary key stored clustered —
+	// PKIsHandle single-int PKs and common-handle PKs alike. The fact
+	// answers the DROP PRIMARY KEY premise (TiDB refuses the drop with
+	// 8200 on every clustered primary, handle or common-handle); it is
+	// deliberately separate from PrimaryKeyIsHandle, which answers the
+	// PRIMARY-object addressability question instead. MySQL never sets
+	// it: a MySQL primary key drops cleanly.
+	PrimaryKeyClustered bool `json:"-"`
+
+	// PrimaryKeyClusteredUnknown marks that the snapshot cannot prove the
+	// clustered-storage answer either way — the same evidence gaps that
+	// leave the handle answer unknown. Consumers must not guess drop
+	// executability under it.
+	PrimaryKeyClusteredUnknown bool `json:"-"`
+
 	// PrimaryKeyUnknown/IndexesUnknown/ConstraintsUnknown mark member
 	// collections the snapshot cannot vouch for (a derived-incomplete
 	// projection). Rules must treat them as unknown — never as confirmed
@@ -99,11 +114,15 @@ type TableSnapshot struct {
 	// determinations degrade to a bounded gap instead of guessing Indexes[0].
 	IndexOrderCatalog bool `json:"-"`
 
-	// IndexNamesUnknown marks a vouched Indexes collection whose member
-	// stored names cannot all be proven — a derived create-table shape
+	// IndexNamesUnknown marks a vouched Indexes collection whose stored
+	// index names cannot all be proven — a derived create-table shape
 	// where StoredIndexNames could not resolve every member under the
 	// product's auto-naming rule (expression first member, authored-name
-	// collision). The members stay known; name-based consumers must treat
+	// collision), or the post-state of a name-keyed transition whose target
+	// or outcome could not be proven under the prior name space. The flag
+	// covers the PRIMARY index object's stored name too
+	// (PrimaryKey.Name): a rename that may have moved it leaves that name
+	// unproven. The members stay known; name-based consumers must treat
 	// lookups as unresolved rather than reading an unmatched name as
 	// confirmed absence. Internal audit marker; not serialized.
 	IndexNamesUnknown bool `json:"-"`
@@ -151,6 +170,40 @@ func (s TableSnapshot) FindIndex(name string) *Index {
 		}
 	}
 	return nil
+}
+
+// FindProvenIndex returns the member whose stored name is both provable
+// (!NameUnknown) and equal-folds the authored name — the only member a
+// name-keyed lookup may bind. Under IndexNamesUnknown a member kept as a
+// fact may carry an unproven projected name; binding it would fabricate a
+// hit the stored name space cannot vouch for. The result points into the
+// receiver's index slice so identity comparisons (e.g. HolderIndex) work.
+func (s TableSnapshot) FindProvenIndex(name string) *Index {
+	if strings.TrimSpace(name) == "" {
+		return nil
+	}
+	for i := range s.Indexes {
+		if s.Indexes[i].NameUnknown {
+			continue
+		}
+		if strings.EqualFold(s.Indexes[i].Name, name) {
+			return &s.Indexes[i]
+		}
+	}
+	return nil
+}
+
+// HasUnprovenIndexName reports whether any member's stored name is
+// unproven — the granular form of IndexNamesUnknown used by name-keyed
+// transitions to tell a provable target from a name space that may hide
+// the real stored name.
+func (s TableSnapshot) HasUnprovenIndexName() bool {
+	for i := range s.Indexes {
+		if s.Indexes[i].NameUnknown {
+			return true
+		}
+	}
+	return false
 }
 
 // HasPrimaryKey reports whether the snapshot currently has a primary key.

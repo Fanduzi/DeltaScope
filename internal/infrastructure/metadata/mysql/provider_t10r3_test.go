@@ -4,8 +4,8 @@
 // on functional key parts (MySQL 8.0.46 functional_index.result L186-193
 // proves descending functional indexes are real objects). The expression
 // branch must read the same collation fact the column branch does; a
-// missing or unrecognized direction follows the existing unknown-member
-// semantics, never a guessed ascending.
+// missing or unrecognized direction (T10-R4) keeps the expression kind and
+// withholds only the direction answer, never a guessed ascending.
 // input: sqlmock-shaped member rows covering the collation matrix on
 // expression members plus the named-member controls
 // output: KeyParts with honest kind/direction/expression facts and the
@@ -26,21 +26,23 @@ import (
 )
 
 // C: the expression member collation matrix — 'D' keeps descending, 'A'
-// stays ascending, and unproven directions keep the member unmodeled while
-// its expression identity stays attached.
+// stays ascending, and an unproven direction keeps the expression kind
+// with the direction answer withheld (T10-R4: identity no longer demotes
+// to unmodeled when only the direction fact is missing).
 func TestT10R3ExpressionMemberCollationMatrix(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
-		name          string
-		collation     sql.NullString
-		wantKind      spec.IndexKeyPartKind
-		wantDesc      bool
-		wantDescParts int
+		name                 string
+		collation            sql.NullString
+		wantKind             spec.IndexKeyPartKind
+		wantDesc             bool
+		wantDescParts        int
+		wantDirectionUnknown bool
 	}{
 		{name: "D keeps descending", collation: t10r2Str("D"), wantKind: spec.IndexKeyPartExpression, wantDesc: true, wantDescParts: 1},
 		{name: "A stays ascending", collation: t10r2Str("A"), wantKind: spec.IndexKeyPartExpression, wantDesc: false, wantDescParts: 0},
-		{name: "NULL collation is unmodeled", collation: t10r2NullStr(), wantKind: spec.IndexKeyPartUnmodeled, wantDesc: false, wantDescParts: 0},
-		{name: "unrecognized collation is unmodeled", collation: t10r2Str("X"), wantKind: spec.IndexKeyPartUnmodeled, wantDesc: false, wantDescParts: 0},
+		{name: "NULL collation keeps expression, direction unknown", collation: t10r2NullStr(), wantKind: spec.IndexKeyPartExpression, wantDirectionUnknown: true},
+		{name: "unrecognized collation keeps expression, direction unknown", collation: t10r2Str("X"), wantKind: spec.IndexKeyPartExpression, wantDirectionUnknown: true},
 	}
 	for _, tc := range cases {
 		tc := tc
@@ -48,7 +50,7 @@ func TestT10R3ExpressionMemberCollationMatrix(t *testing.T) {
 			t.Parallel()
 			indexes := make(map[string]*spec.Index)
 			order := make([]string, 0)
-			accumulateIndexRow(indexes, &order, "i_e", 1, "BTREE",
+			accumulateIndexRow(indexes, &order, spec.DialectMySQL, "i_e", 1, "BTREE",
 				indexMemberRow{
 					columnName: t10r2NullStr(), collation: tc.collation,
 					expression: t10r2Str("`a`+1"),
@@ -65,6 +67,9 @@ func TestT10R3ExpressionMemberCollationMatrix(t *testing.T) {
 			if part.Descending != tc.wantDesc {
 				t.Fatalf("part.Descending = %v, want %v", part.Descending, tc.wantDesc)
 			}
+			if part.DirectionUnknown != tc.wantDirectionUnknown {
+				t.Fatalf("part.DirectionUnknown = %v, want %v", part.DirectionUnknown, tc.wantDirectionUnknown)
+			}
 			if index.DescParts != tc.wantDescParts {
 				t.Fatalf("DescParts = %d, want %d", index.DescParts, tc.wantDescParts)
 			}
@@ -79,7 +84,7 @@ func TestT10R3DescendingExpressionKeepsIdentity(t *testing.T) {
 	t.Parallel()
 	indexes := make(map[string]*spec.Index)
 	order := make([]string, 0)
-	accumulateIndexRow(indexes, &order, "i_mv", 1, "BTREE",
+	accumulateIndexRow(indexes, &order, spec.DialectMySQL, "i_mv", 1, "BTREE",
 		indexMemberRow{
 			columnName: t10r2NullStr(), collation: t10r2Str("D"),
 			expression: t10r2Str("cast(`a` as unsigned array)"),
@@ -107,7 +112,7 @@ func TestT10R3LiteralNullExpressionKeepsDirection(t *testing.T) {
 	t.Parallel()
 	indexes := make(map[string]*spec.Index)
 	order := make([]string, 0)
-	accumulateIndexRow(indexes, &order, "i_e", 1, "BTREE",
+	accumulateIndexRow(indexes, &order, spec.DialectMySQL, "i_e", 1, "BTREE",
 		indexMemberRow{
 			columnName: t10r2Str("NULL"), collation: t10r2Str("D"),
 			expression: t10r2Str("`a`+1"),
@@ -216,7 +221,7 @@ func TestT10R3LiteralNullColumnStillColumn(t *testing.T) {
 	columns := []spec.Column{{Name: "NULL", Type: "int", NotNull: true}}
 	indexes := make(map[string]*spec.Index)
 	order := make([]string, 0)
-	accumulateIndexRow(indexes, &order, "i_null", 1, "BTREE",
+	accumulateIndexRow(indexes, &order, spec.DialectMySQL, "i_null", 1, "BTREE",
 		indexMemberRow{columnName: t10r2Str("NULL"), collation: t10r2Str("A")},
 		nil, columns)
 	index := indexes["i_null"]

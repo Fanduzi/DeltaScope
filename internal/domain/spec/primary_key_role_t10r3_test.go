@@ -76,8 +76,10 @@ func TestT10R3PrimaryKeyHandleModeControls(t *testing.T) {
 
 // B2: StoredIndexNames applies the product's auto-naming to a CREATE TABLE's
 // declared index list — an unnamed member takes its first column member's
-// name, collisions gain a numeric suffix in declaration order, and anything
-// the name rule cannot prove keeps the name space unvouched.
+// name (or `functional_index` when any member is an expression key part,
+// MySQL 8.0.46 P12-P14 probes), collisions gain a numeric suffix in
+// declaration order, and anything the name rule cannot prove keeps the name
+// space unvouched.
 func TestT10R3StoredIndexNames(t *testing.T) {
 	t.Parallel()
 	colPart := func(name string) IndexKeyPart {
@@ -140,12 +142,13 @@ func TestT10R3StoredIndexNames(t *testing.T) {
 			wantProvable: true,
 		},
 		{
-			name: "expression first member leaves the name unproven",
+			name: "expression member names functional_index (P12 probe)",
 			indexes: []Index{
 				{Kind: IndexKindUnique, ExpressionCount: 1, HasExpressionKeys: true,
 					KeyParts: []IndexKeyPart{exprPart()}},
 			},
-			wantProvable: false,
+			wantNames:    []string{"functional_index"},
+			wantProvable: true,
 		},
 		{
 			name: "authored duplicate name is unprovable (native 1061)",
@@ -175,7 +178,7 @@ func TestT10R3StoredIndexNames(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			resolved, provable := StoredIndexNames(tc.indexes)
+			resolved, provable := StoredIndexNames(DialectMySQL, tc.indexes)
 			if provable != tc.wantProvable {
 				t.Fatalf("provable = %v, want %v", provable, tc.wantProvable)
 			}

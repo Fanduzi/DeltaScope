@@ -7,16 +7,15 @@
 // provider-sourced and CREATE-derived pre-state, MODIFY and CHANGE actions,
 // and both MySQL/TiDB dialects. Package audit cannot host the real-provider
 // cells because mysqlmeta already asserts audit.MetadataProvider.
-// input: string-family and numeric-family NULL columns with provider-catalog
-// or derived defaults, exercised through MODIFY/CHANGE under the isolated
-// compatibility policy, including YEAR cells whose MySQL catalog normalizes
-// the declared short-year integer to the full year
+// input: string/numeric NULL columns with provider-catalog or derived
+// defaults exercised through MODIFY/CHANGE (YEAR cells whose MySQL catalog
+// normalizes the declared short-year integer to the full year) — the TiDB
+// leg stubs table_constraints so the catalog PRIMARY fold binds a real PK
 // output: zero findings for proven-same literals, one transition finding for
 // proven-different ones inside a comparable domain, bounded evidence gaps
 // for unproven or cross-encoding identities (including year-type literal
 // pairs whose recorded text is not a proven final encoding, T08-R3), and an
-// independent type-family finding while the identical default identity stays
-// silent
+// independent type-family finding while the identical default identity stays silent
 // pos: application-layer real-provider regression tests for issue #87 T08-R1
 // note: if this file changes, update this header and module README.md.
 package auditmeta
@@ -136,6 +135,13 @@ func (c t08r1Conn) QueryContext(_ context.Context, query string, _ []driver.Name
 		return &t08r1Rows{
 			cols: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality", "sub_part", "collation"},
 			rows: [][]driver.Value{{"PRIMARY", int64(0), "BTREE", "id", nil, nil, "A"}},
+		}, nil
+	case strings.Contains(query, "table_constraints"):
+		// The fixture table declares a single-int PRIMARY — the pk-presence
+		// probe answers a real PK so the catalog row binds to it.
+		return &t08r1Rows{
+			cols: []string{"count"},
+			rows: [][]driver.Value{{1}},
 		}, nil
 	case strings.Contains(query, "information_schema.tables"):
 		return &t08r1Rows{

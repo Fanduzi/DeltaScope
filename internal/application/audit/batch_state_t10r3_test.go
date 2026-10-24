@@ -355,27 +355,31 @@ func TestT10R3NamedUniqueSuccessorUnchanged(t *testing.T) {
 	}
 }
 
-// When the first member cannot prove the stored name (an expression key
-// part), the name space stays unknown — a successor must get the collection
-// gap, never a fabricated absence.
-func TestT10R3UnnamedExpressionKeepsNameUnknown(t *testing.T) {
+// An unnamed expression member stores as `functional_index` on MySQL
+// 8.0.46 (native-probed, R4-B) — the stored name is now provable, so a
+// wrong guess reports a vouched absence instead of a suppressed one.
+// The R3 oracle withheld the name because expression members were not yet
+// anchored; R4 corrected the record against the native behavior.
+func TestT10R3UnnamedExpressionResolvesFunctionalIndex(t *testing.T) {
 	t.Parallel()
 	provider := &t10Provider{version: "8.0.46"}
 	result := t10Audit(t, spec.DialectMySQL,
 		"CREATE TABLE t (a INT NOT NULL, UNIQUE((a + 1)));\n"+
+			"ALTER TABLE t ALTER INDEX functional_index VISIBLE;\n"+
 			"ALTER TABLE t ALTER INDEX functional_idx VISIBLE;",
 		provider, t10ExistsPolicy(t),
 	)
 	stmt1 := result.Statements[1]
-	if got := t05FindingsByRule(result, 1, t10AlterIndexExist); len(got) != 0 {
-		t.Fatalf("unproven name space must not fabricate an absence finding, got %+v", got)
+	if len(stmt1.Findings) != 0 || len(stmt1.EvidenceGaps) != 0 {
+		t.Fatalf("the stored name functional_index must resolve cleanly, got findings=%+v gaps=%+v",
+			stmt1.Findings, stmt1.EvidenceGaps)
 	}
-	gaps := t05GapsByRule(result, 1, t10AlterIndexExist)
-	if len(gaps) != 1 {
-		t.Fatalf("unproven name space must report the collection gap, got %+v", stmt1.EvidenceGaps)
+	stmt2 := result.Statements[2]
+	if got := t05FindingsByRule(result, 2, t10AlterIndexExist); len(got) != 1 {
+		t.Fatalf("a vouched name space reports the real absence, got %+v", stmt2.Findings)
 	}
-	if stmt1.Coverage.Status != report.CoverageUnverified {
-		t.Fatalf("unproven name space must lower coverage, got %s", stmt1.Coverage.Status)
+	if len(stmt2.EvidenceGaps) != 0 {
+		t.Fatalf("a proven name space emits no collection gap, got %+v", stmt2.EvidenceGaps)
 	}
 }
 
@@ -568,10 +572,11 @@ func TestT10R3AlterPrimaryResolvesDespiteUnknownIndexNames(t *testing.T) {
 	}
 }
 
-// A CREATE INDEX authored member is provable even when the stored name
-// space is not: post-state must merge the member (column-keyed successors
-// see it) while IndexNamesUnknown keeps name-keyed readers honest.
-func TestT10R3CreateIndexMergesAuthoredMemberUnderUnknownNames(t *testing.T) {
+// A CREATE INDEX authored member merges once every member name is
+// provable: UNIQUE((a + 1)) derives functional_index through
+// StoredIndexNames, so the name space is fully vouched and the merge can
+// rule out a hidden 1061 (R4: any unproven member name unvouches instead).
+func TestT10R3CreateIndexMergesAuthoredMember(t *testing.T) {
 	t.Parallel()
 	provider := &t10Provider{version: "8.0.46"}
 	result := t10Audit(t, spec.DialectMySQL,
@@ -590,9 +595,9 @@ func TestT10R3CreateIndexMergesAuthoredMemberUnderUnknownNames(t *testing.T) {
 }
 
 // The ALTER-side member add follows the same premise: an authored
-// ADD INDEX member merges under an unproven name space — name-keyed
-// transitions keep the stricter vouched set.
-func TestT10R3AddIndexMergesAuthoredMemberUnderUnknownNames(t *testing.T) {
+// ADD INDEX member merges under a fully proven name space — an unproven
+// member name would unvouch the set (hidden 1061) instead of merging.
+func TestT10R3AddIndexMergesAuthoredMember(t *testing.T) {
 	t.Parallel()
 	provider := &t10Provider{version: "8.0.46"}
 	result := t10Audit(t, spec.DialectMySQL,

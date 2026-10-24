@@ -316,6 +316,176 @@ R3 corrects them without expanding the audited surface.
   matrices receive bounded re-verification under the T10-R3 archive
   with real execution metadata.
 
+## T10-R4 — fact propagation and post-state truthfulness
+
+Independent acceptance of R3 confirmed four remaining defect classes;
+R4 corrects them without expanding the audited surface.
+
+- **Name-keyed mutations stay truthful under `IndexNamesUnknown`.**
+  DROP/RENAME/visibility transitions now answer per target: a matched
+  authored name updates the member set while an unmatched target
+  unvouches the collection (`IndexesUnknown`) rather than publishing a
+  stale member set that can seed fabricated duplicate findings. A
+  names-only unknown without mutation keeps provable findings; the
+  exists rule's member gap is per-target so all-PRIMARY lists resolve
+  from primary-key facts without an unrelated
+  `target_table.indexes` gap.
+- **Stored names are dialect-bound.** `spec.StoredIndexNames(dialect,
+  …)` anchors on MySQL 8.0.46 `make_unique_key_name` and TiDB v8.5.0
+  `setEmptyConstraintName`: MySQL claims sequentially with `primary`
+  reserved and `functional_index` for any expression member; TiDB
+  pre-occupies authored names (unnamed collisions suffix, never fail)
+  with `expression_index`. `primary` reserves on both anchors
+  (`primary_2` for unnamed members; authored `primary` is natively
+  refused 1280). Unprovable shapes keep the whole name space
+  unvouched — no partially-guessed names.
+- **Clustered storage and PRIMARY addressability are separate facts.**
+  `PrimaryKeyClustered`/`PrimaryKeyClusteredUnknown` answer the TiDB
+  DROP PRIMARY KEY refusal class for every member shape (8200 covers
+  PKIsHandle and common-handle primaries alike — natively verified on
+  VARCHAR and composite clustered primaries, which still resolve
+  `ALTER INDEX \`PRIMARY\`` as addressable objects), while
+  `PrimaryKeyIsHandle`/`PrimaryKeyHandleUnknown` keep answering the
+  single-integer row-id promotion. CREATE derivation and the provider's
+  `TIDB_INDEXES.CLUSTERED` read feed both facts; a proven clustered
+  target keeps the PK (refused drop), a provably nonclustered one
+  publishes, an unproven answer invalidates.
+- **Direction-withheld members keep expression identity.** A NULL or
+  unrecognized `COLLATION` keeps the member `IndexKeyPartExpression`
+  with `DirectionUnknown` and its expression/multi-valued facts rather
+  than demoting to unmodeled; `DirectionUnknownParts` joins the
+  non-plain exclusions in `indexPlainComparable`, and a `KeyParts`
+  count beyond the `Columns` projection marks the member partially
+  modeled so left-prefix comparisons owe the
+  `target_table.indexes.key_parts` gap.
+- **R3 evidence labels corrected.** The R3 archive now distinguishes
+  the work-CLI SHA-256 from the golden-runner binary identity, states
+  the focused-test log as 300 PASS records (not 600 checks), records
+  that no historical red logs were preserved, and labels the M7
+  clustered-DROP probes as a separately-executed append rather than
+  part of `r3-bounded-probes.sh`.
+
+### R4 review pass — member-first `primary` binding
+
+The independent R4 review confirmed a second defect class around the
+reserved `primary` name; natively anchored (M10 matrix):
+
+- `primary` resolves **member-first, then the PK identity**. TiDB v8.5.0
+  lets a member literally own the name (`RENAME INDEX s TO \`primary\``
+  is legal on PK-less and PKIsHandle tables; DROP/ALTER/RENAME then hit
+  the member), while a real PRIMARY index object occupies the name
+  exclusively — a member `primary` can never coexist with it (1061).
+  MySQL 8.0.46 reserves `primary` outright: `DROP INDEX \`PRIMARY\`` is
+  DROP PRIMARY KEY, `RENAME` touching `primary` refuses 1280, an
+  authored `primary` member name refuses 1280, and `ALTER INDEX
+  \`PRIMARY\`` refuses 3522 — refused transitions keep their shape or
+  tombstone through the invalid-transition gate.
+- Post-state mutation paths mirror the binding order: DROP routes
+  `primary` to the drop-primary-key outcome once a member `primary` is
+  ruled out (TiDB clustered 8200 keeps; nonclustered drops), RENAME on
+  a `primary` old name updates the index-object name while the
+  constraint identity stays PRIMARY, a `primary` new name publishes
+  only while no real object occupies it (unproven occupancy unvouches
+  the name space), and duplicated stored names unvouch the member set
+  rather than mutating every equal-fold match.
+- `ddl.alter.{alter,drop,rename}_index.exists.require` now share one
+  `indexExistenceRule` shell: all-`primary` targets on an unprovable
+  table owe `target_table.primary_key` in place of the member fact
+  (TiDB keeps the member fact alongside — a member `primary` may own
+  the name), and `assessIndexFact` resolves `primary` member-first so
+  a member visibility flip can never be misread as the 3522
+  primary-object refusal.
+
+### R4 acceptance corrections — per-member name provability
+
+The frozen-diff Standards+Spec review found the collection-level
+`IndexNamesUnknown` flag too coarse in both directions: it let stale
+projected names bind members (fabricated post-state) and froze provable
+authored-name targets. The corrections:
+
+- `Index.NameUnknown` marks name provability per member — set on every
+  member when `StoredIndexNames` cannot resolve the collection
+  (cross-member suffix effects make honesty all-or-nothing there) and
+  cleared by construction for provider catalog names and authored
+  ADD/CREATE merges. Name-keyed transitions publish only on a proven
+  match; a target no proven name can bind unvouches at the mutation's
+  own granularity (`IndexesUnknown` where membership or member
+  attributes could have changed, `IndexNamesUnknown` for rename, which
+  can never change membership).
+- One `spec.ResolvePrimaryNameBinding` tri-state (member / PK /
+  ambiguous) backs every `primary` consumer in all three layers —
+  ordered-state publishers, the `*TargetExists` predicates, and
+  `assessIndexFact` — so member-first precedence cannot drift.
+- Ambiguous `primary` bindings unvouch what they cannot prove: drop
+  additionally unvouches the PK facts when a droppable real object
+  cannot be ruled out (`markPrimaryUnknown`), rename unvouches the
+  stored-name space including `PrimaryKey.Name` (which
+  `primaryKeyConstraintName` now withholds under `IndexNamesUnknown`),
+  and an unprovable destination freedom unvouches the matched member's
+  name instead of publishing a maybe-refused rename. A proven name
+  collision keeps the shape (1061 refusal), and `DROP INDEX \`primary\`
+  IF EXISTS` keeps a provably absent PK without consulting the
+  constraint-collection flag.
+
+### R4 spec-review residual — hidden collisions and provider binding
+
+A second frozen-diff pass pinned three more corrections:
+
+- Member-adding transitions under an unproven member name space can
+  collide on a *hidden* stored name — the add either landed or refused
+  on the 1061 — so `applyAddIndex`/`applyCreateIndex` unvouch the member
+  set rather than appending a member the statement may never have
+  created. The merge still publishes when every member name is
+  individually proven (no hidden name can hold the authored name).
+- TiDB `ADD PRIMARY KEY` is shape-dependent under a `primary` name
+  space a member provably or possibly owns (handle PK coexists, real
+  PRIMARY object collides) — only a proven `PrimaryNameBindsPK` binding
+  publishes; anything else invalidates.
+- A `primary`-fold TiDB STATISTICS row is not self-evidently the
+  constraint object, so `resolveTiDBPrimaryName` reads
+  `information_schema.table_constraints` for a `PRIMARY KEY` row — the
+  initial `tables.tidb_pk_type` probe conflates PK-less tables with
+  real nonclustered primaries (both NONCLUSTERED, verified on the TiDB
+  v8.5.0 anchor). Zero `primary`-fold rows prove no PK object (a real
+  PK always emits one — handle tables included), a proven constraint
+  plus exactly one fold promotes it, a proven-absent constraint keeps
+  folds secondary, and multi-fold or unproven-plus-candidate states
+  withhold all three primary facts. Rule-side name-keyed predicates
+  bind only proven member names (`FindProvenIndex`), so an unproven
+  projected name can never assert existence.
+
+### R4 spec-review residual round 2 — proven-name fidelity
+
+A second spec-axis pass on the corrected diff pinned three more
+fidelity defects, all closed in place:
+
+- TiDB `RENAME INDEX s TO \`primary\`` with unresolved PRIMARY
+  occupancy only set the collection flag, leaving the matched member's
+  old name falsely proven — `markIndexMemberNameUnknown` now unvouches
+  that member's stored name so it can never re-bind as `s`.
+- A proven 1061 collision in `applyAddIndex` / standalone
+  `applyCreateIndex` (authored name already held by a proven member)
+  invalidated/tombstoned the table instead of preserving the unchanged
+  shape — the add provably refused before touching the table, or
+  `IF NOT EXISTS` no-ops, so the entry keeps every fact.
+- The member-existence gap projection stayed collection-granular while
+  Evaluate went per-target — `indexMemberExistenceGaps` now owes
+  `target_table.indexes` only for targets with no proven match under an
+  unproven sibling name (or an unvouched member set), and a `primary`
+  target on the resolving variant owes it exactly when the binding is
+  ambiguous.
+- A third spec-axis pass closed the residual edges: standalone
+  `applyCreateIndex` now checks the authored-`primary` 1280 refusal
+  before the unknown-entry publish (an unknown table stays unknown —
+  the statement provably never touched it, mirroring `applyAddIndex`);
+  the `table_constraints`/`tidb_indexes` probes withhold their fact
+  set on any non-context error (`count(*)` can never be empty, so an
+  unreachable `ErrNoRows` arm was honest but dead); the implicit-
+  primary visibility assessment binds the target member by
+  `FindProvenIndex` and the holder by `HolderIndex` identity instead of
+  name-fold; and `ResolvePrimaryNameBinding` ignores the bare
+  collection flag once every member name is individually proven.
+
 ## References
 
 - Issue: Fanduzi/DeltaScope#79 (milestone), #89 (T10 scope)

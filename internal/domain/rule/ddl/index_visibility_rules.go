@@ -1,11 +1,13 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: normalized statements carrying T10 index visibility declarations
 // and advanced-index member marks, plus metadata-enriched ordered snapshots
-// output: invisibility-forbid findings, dialect-aware alter-index existence
-// findings and evidence gaps (MySQL PRIMARY key / TiDB real object vs
-// PKIsHandle — an unproven handle answer or unproven member name space
-// reports the primary_key/indexes identity gap instead of a fabricated
-// absence), and product/version compatibility findings and gaps for
+// output: invisibility-forbid findings, dialect-aware name-keyed index
+// existence findings and evidence gaps shared by alter/drop/rename_index
+// (member-first `primary` precedence — a TiDB member may own the name;
+// else MySQL primary key / TiDB PK presence for drop or real object for
+// alter/rename vs PKIsHandle — an unproven handle answer or unproven member
+// name space reports the primary_key/indexes identity gap instead of a
+// fabricated absence), and product/version compatibility findings and gaps for
 // visibility, expression keys, descending keys, multi-valued members,
 // prefix length, fulltext, spatial, and global forms — including the
 // implicit-primary role refusal on qualifying UNIQUE indexes
@@ -124,86 +126,180 @@ func (r indexInvisibleForbidRule) Evaluate(ctx context.Context, statement spec.S
 	return findings, nil
 }
 
+// indexPrimaryMemberMayOwnName reports whether a stored member literally
+// named `primary` could own the name — only TiDB reaches that state (RENAME
+// … TO `primary` is legal on PK-less and PKIsHandle tables), and only while
+// no real PRIMARY index object provably occupies the name space. When the
+// member collection is unvouched the possibility cannot be ruled out, so
+// existence answers stay suppressed instead of asserting member-first or
+// PK-first resolution.
+func indexPrimaryMemberMayOwnName(statement spec.Statement, snapshot *spec.TableSnapshot) bool {
+	// A member `primary` may own the name exactly when the shared binding
+	// resolution cannot pin it to the PK identity — the member-provably-
+	// owns case is already answered by the member-set check above.
+	return spec.ResolvePrimaryNameBinding(statement.Dialect, snapshot) == spec.PrimaryNameBindsAmbiguous
+}
+
 // alterIndexTargetExists resolves the ALTER INDEX target against the
 // ordered snapshot with a dialect-aware PRIMARY shortcut: MySQL names the
 // primary key itself (the 3522 visibility refusal then belongs to the
 // compatibility rule). TiDB resolves `PRIMARY` to a real index object only
 // on non-handle tables — a PKIsHandle single-int clustered PK names no
 // index object (1176), while NONCLUSTERED and non-int clustered primary
-// keys are operable objects. An unvouched primary-key collection answers
-// true on either dialect — presence is unproven rather than absent, and
-// the rule's EvidenceGaps reports the missing primary_key fact instead of
-// a fabricated blocker.
+// keys are operable objects — unless a member literally owns `primary`,
+// which the member-set check above already answered. An unvouched
+// primary-key collection answers true on either dialect — presence is
+// unproven rather than absent, and the rule's EvidenceGaps reports the
+// missing primary_key fact instead of a fabricated blocker.
 func alterIndexTargetExists(statement spec.Statement, snapshot *spec.TableSnapshot, name string) bool {
 	if snapshotHasIndex(statement, snapshot, name) {
 		return true
 	}
 	if (statement.Dialect == spec.DialectMySQL || statement.Dialect == spec.DialectTiDB) && strings.EqualFold(name, "primary") {
 		exists, resolved := spec.ResolveIndexPrimaryObject(snapshot, statement.Dialect)
-		if !resolved {
+		if !resolved || exists {
 			// An unvouched primary-key state suppresses the blocker — the
 			// rule's EvidenceGaps reports the missing primary_key fact
 			// instead of a fabricated absence.
 			return true
 		}
-		return exists
+		// No PRIMARY index object — on TiDB a member can literally own the
+		// `primary` name, so an unvouched member set cannot prove absence.
+		return indexPrimaryMemberMayOwnName(statement, snapshot)
 	}
 	return false
 }
 
-// alterIndexExistsRule reuses the shared existence frame but reports the
-// extra primary_key fact an unvouched PRIMARY target leaves behind.
-type alterIndexExistsRule struct {
+// dropIndexTargetExists resolves the DROP INDEX target. `primary` names the
+// primary key itself on both anchors — MySQL drops it outright and TiDB
+// routes the statement to the drop-primary-key outcome (8200 clustered) —
+// so presence is the PK presence question, not the operable-object one.
+// On TiDB a member literally named `primary` wins the name first, so an
+// unvouched member set cannot prove absence.
+func dropIndexTargetExists(statement spec.Statement, snapshot *spec.TableSnapshot, name string) bool {
+	if snapshotHasIndex(statement, snapshot, name) {
+		return true
+	}
+	if (statement.Dialect == spec.DialectMySQL || statement.Dialect == spec.DialectTiDB) && strings.EqualFold(name, "primary") {
+		if snapshot.PrimaryKeyUnknown || snapshot.ConstraintsUnknown || snapshot.HasPrimaryKey() {
+			return true
+		}
+		return indexPrimaryMemberMayOwnName(statement, snapshot)
+	}
+	return false
+}
+
+// renameIndexTargetExists resolves the RENAME INDEX source name. `primary`
+// names the PRIMARY index object — on TiDB a PKIsHandle primary owns no
+// such object (1176, absent like a missing member) — unless a member
+// literally owns `primary`, which the member-set check answers first.
+func renameIndexTargetExists(statement spec.Statement, snapshot *spec.TableSnapshot, name string) bool {
+	if snapshotHasIndex(statement, snapshot, name) {
+		return true
+	}
+	if (statement.Dialect == spec.DialectMySQL || statement.Dialect == spec.DialectTiDB) && strings.EqualFold(name, "primary") {
+		exists, resolved := spec.ResolveIndexPrimaryObject(snapshot, statement.Dialect)
+		if !resolved || exists {
+			return true
+		}
+		return indexPrimaryMemberMayOwnName(statement, snapshot)
+	}
+	return false
+}
+
+// indexExistenceRule reuses the shared existence frame for every
+// name-keyed index existence check — ALTER, DROP, and RENAME alike — and
+// reports the extra primary_key fact an unvouched PRIMARY target leaves
+// behind.
+type indexExistenceRule struct {
 	inner alterObjectExistenceRule
 }
 
-func newAlterIndexExistsRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+func newIndexExistenceRule(ruleID string, actions []string, cfg policy.RulePolicy,
+	checkExists func(spec.Statement, *spec.TableSnapshot, string) bool) (rule.StatementRule, error) {
 	inner, err := newAlterObjectExistenceRule(
-		ruleIDAlterIndexExistsRequire,
-		[]string{"alter_index"},
-		"index", false, rule.LevelBlocker, cfg, alterIndexTargetName, alterIndexTargetExists)
+		ruleID, actions,
+		"index", false, rule.LevelBlocker, cfg, alterIndexTargetName, checkExists)
 	if err != nil {
 		return nil, err
 	}
-	exists := inner.(alterObjectExistenceRule)
-	// alterIndexTargetExists resolves `PRIMARY` through the primary-key
-	// identity facts — that target needs no member name space.
+	exists, ok := inner.(alterObjectExistenceRule)
+	if !ok {
+		return nil, fmt.Errorf("%s: constructor returned %T, want alterObjectExistenceRule", ruleID, inner)
+	}
+	// Every variant resolves `primary` through the primary-key identity
+	// facts — that target needs no member name space.
 	exists.primaryResolves = true
-	return alterIndexExistsRule{inner: exists}, nil
+	return indexExistenceRule{inner: exists}, nil
 }
 
-func (r alterIndexExistsRule) ID() string { return r.inner.ruleID }
+func newAlterIndexExistsRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return newIndexExistenceRule(ruleIDAlterIndexExistsRequire, []string{"alter_index"}, cfg, alterIndexTargetExists)
+}
 
-func (r alterIndexExistsRule) AppliesTo(statement spec.Statement) bool {
+func (r indexExistenceRule) ID() string { return r.inner.ruleID }
+
+func (r indexExistenceRule) AppliesTo(statement spec.Statement) bool {
 	return r.inner.AppliesTo(statement)
 }
 
-func (r alterIndexExistsRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
+func (r indexExistenceRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	return r.inner.Evaluate(ctx, statement)
 }
 
-// EvidenceGaps appends a target_table.primary_key gap when an alter_index
-// PRIMARY target cannot be judged because the primary-key object identity
-// is unvouched — an unknown member collection on either dialect, or an
-// unproven TiDB handle answer (PKIsHandle vs real object). The suppressed
-// finding must surface as a gap, not disappear.
-func (r alterIndexExistsRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
+// EvidenceGaps appends a target_table.primary_key gap when a `primary`
+// target cannot be judged because the primary-key identity is unvouched —
+// an unknown member collection on either dialect, or an unproven TiDB
+// handle answer (PKIsHandle vs real object). The suppressed finding must
+// surface as a gap, not disappear. A `primary` target resolves through
+// the primary-key identity facts and never consults the member name space
+// when the name is provably bound to the PK — always on MySQL, and on
+// TiDB exactly while a real PRIMARY index object occupies it — so an
+// unvouched index collection emits no spurious target_table.indexes gap
+// for an all-`primary` target list it provably could not consult. A
+// non-`primary` target keeps its own gap.
+func (r indexExistenceRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
 	gaps := r.inner.EvidenceGaps(statement)
 	if statement.Dialect != spec.DialectMySQL && statement.Dialect != spec.DialectTiDB {
 		return gaps
 	}
-	primaryTarget := false
+	hasPrimary, allPrimary := false, true
 	for _, alter := range matchingAlterObjectActions(statement, r.inner.actions...) {
-		if strings.EqualFold(alterIndexTargetName(alter), "primary") {
-			primaryTarget = true
-			break
+		name := alterIndexTargetName(alter)
+		if name == "" {
+			continue
+		}
+		if strings.EqualFold(name, "primary") {
+			hasPrimary = true
+		} else {
+			allPrimary = false
 		}
 	}
-	if !primaryTarget {
+	if !hasPrimary {
 		return gaps
 	}
 	snapshot, ok := targetTableSnapshot(statement)
-	if !ok || snapshot == nil || !snapshot.Exists ||
+	if !ok || snapshot == nil {
+		if !allPrimary {
+			// Ordinary targets still owe the member collection fact; the
+			// `primary` target owes the primary-key identity fact.
+			return append(gaps, rule.EvidenceGap{
+				ReasonCode:    gapReasonUnknownTableState,
+				RequiredFacts: []string{"target_table.primary_key"},
+			})
+		}
+		// An all-`primary` target list on an unprovable table owes the
+		// primary-key identity fact in place of the member collection —
+		// MySQL never needs the member set (the reserved name binds only
+		// the PK); TiDB keeps it alongside because a member `primary` may
+		// own the name while the whole table state is unproven.
+		return rewritePrimaryExistenceGapFacts(gaps, statement.Dialect)
+	}
+	if snapshot.Exists && allPrimary && memberCollectionUnknown(snapshot, "index") &&
+		!indexPrimaryMemberMayOwnName(statement, snapshot) {
+		gaps = dropRequiredFactGap(gaps, "target_table.indexes")
+	}
+	if !snapshot.Exists ||
 		(!snapshot.PrimaryKeyUnknown && !snapshot.ConstraintsUnknown && !snapshot.PrimaryKeyHandleUnknown) {
 		return gaps
 	}
@@ -211,6 +307,47 @@ func (r alterIndexExistsRule) EvidenceGaps(statement spec.Statement) []rule.Evid
 		ReasonCode:    gapReasonUnknownTableState,
 		RequiredFacts: []string{"target_table.primary_key"},
 	})
+}
+
+// rewritePrimaryExistenceGapFacts trades the member-collection fact inside
+// the unknown-state gap for the primary-key identity fact — the shape an
+// all-`primary` target list owes on an unprovable table. MySQL drops the
+// member fact outright; TiDB keeps it alongside primary_key because a
+// member `primary` may own the name while nothing about the table is
+// proven.
+func rewritePrimaryExistenceGapFacts(gaps []rule.EvidenceGap, dialect spec.Dialect) []rule.EvidenceGap {
+	out := make([]rule.EvidenceGap, 0, len(gaps))
+	for _, gap := range gaps {
+		facts := make([]string, 0, len(gap.RequiredFacts)+1)
+		for _, fact := range gap.RequiredFacts {
+			if fact != "target_table.indexes" {
+				facts = append(facts, fact)
+				continue
+			}
+			if dialect == spec.DialectTiDB {
+				facts = append(facts, fact)
+			}
+			facts = append(facts, "target_table.primary_key")
+		}
+		out = append(out, rule.EvidenceGap{ReasonCode: gap.ReasonCode, RequiredFacts: facts})
+	}
+	return out
+}
+
+// dropRequiredFactGap removes the gap whose required_facts list is exactly
+// the single named fact — used when a target resolves through an
+// independent fact chain, so the collection gap it never needed is
+// spurious. A gap naming the fact alongside others stays: it carries
+// evidence this rule did consult.
+func dropRequiredFactGap(gaps []rule.EvidenceGap, fact string) []rule.EvidenceGap {
+	kept := make([]rule.EvidenceGap, 0, len(gaps))
+	for _, gap := range gaps {
+		if len(gap.RequiredFacts) == 1 && gap.RequiredFacts[0] == fact {
+			continue
+		}
+		kept = append(kept, gap)
+	}
+	return kept
 }
 
 var indexAdvancedCompatibilityFeatures = map[string]bool{

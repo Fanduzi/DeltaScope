@@ -414,19 +414,19 @@ func TestParseColumnType(t *testing.T) {
 }
 
 func TestClassifyIndex(t *testing.T) {
-	if kind := classifyIndex("PRIMARY", 0, "BTREE"); kind != spec.IndexKindPrimary {
+	if kind := classifyIndex(spec.DialectMySQL, "PRIMARY", 0, "BTREE"); kind != spec.IndexKindPrimary {
 		t.Fatalf("expected primary index kind, got %q", kind)
 	}
-	if kind := classifyIndex("uniq_email", 0, "BTREE"); kind != spec.IndexKindUnique {
+	if kind := classifyIndex(spec.DialectMySQL, "uniq_email", 0, "BTREE"); kind != spec.IndexKindUnique {
 		t.Fatalf("expected unique index kind, got %q", kind)
 	}
-	if kind := classifyIndex("full_body", 1, "FULLTEXT"); kind != spec.IndexKindFulltext {
+	if kind := classifyIndex(spec.DialectMySQL, "full_body", 1, "FULLTEXT"); kind != spec.IndexKindFulltext {
 		t.Fatalf("expected fulltext index kind, got %q", kind)
 	}
-	if kind := classifyIndex("sp_geom", 1, "SPATIAL"); kind != spec.IndexKindSpatial {
+	if kind := classifyIndex(spec.DialectMySQL, "sp_geom", 1, "SPATIAL"); kind != spec.IndexKindSpatial {
 		t.Fatalf("expected spatial index kind, got %q", kind)
 	}
-	if kind := classifyIndex("idx_email", 1, "BTREE"); kind != spec.IndexKindSecondary {
+	if kind := classifyIndex(spec.DialectMySQL, "idx_email", 1, "BTREE"); kind != spec.IndexKindSecondary {
 		t.Fatalf("expected secondary index kind, got %q", kind)
 	}
 }
@@ -444,9 +444,9 @@ func TestAccumulateIndexCardinalityPreservesMaximumNonNilValue(t *testing.T) {
 	indexes := make(map[string]*spec.Index)
 	order := make([]string, 0)
 
-	accumulateIndexRow(indexes, &order, "PRIMARY", 0, "BTREE", plainPart("id"), nil, nil)
-	accumulateIndexRow(indexes, &order, "PRIMARY", 0, "BTREE", plainPart("tenant_id"), testPtrInt64(12), nil)
-	accumulateIndexRow(indexes, &order, "PRIMARY", 0, "BTREE", plainPart("account_id"), testPtrInt64(7), nil)
+	accumulateIndexRow(indexes, &order, spec.DialectMySQL, "PRIMARY", 0, "BTREE", plainPart("id"), nil, nil)
+	accumulateIndexRow(indexes, &order, spec.DialectMySQL, "PRIMARY", 0, "BTREE", plainPart("tenant_id"), testPtrInt64(12), nil)
+	accumulateIndexRow(indexes, &order, spec.DialectMySQL, "PRIMARY", 0, "BTREE", plainPart("account_id"), testPtrInt64(7), nil)
 
 	index := indexes["PRIMARY"]
 	if index == nil {
@@ -464,8 +464,8 @@ func TestAccumulateIndexRowMultipleIndexes(t *testing.T) {
 	indexes := make(map[string]*spec.Index)
 	order := make([]string, 0)
 
-	accumulateIndexRow(indexes, &order, "PRIMARY", 0, "BTREE", plainPart("id"), testPtrInt64(100), nil)
-	accumulateIndexRow(indexes, &order, "idx_email", 1, "BTREE", plainPart("email"), testPtrInt64(50), nil)
+	accumulateIndexRow(indexes, &order, spec.DialectMySQL, "PRIMARY", 0, "BTREE", plainPart("id"), testPtrInt64(100), nil)
+	accumulateIndexRow(indexes, &order, spec.DialectMySQL, "idx_email", 1, "BTREE", plainPart("email"), testPtrInt64(50), nil)
 
 	if len(indexes) != 2 {
 		t.Fatalf("expected 2 indexes, got %d", len(indexes))

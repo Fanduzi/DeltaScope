@@ -478,3 +478,161 @@ preserved. The R2 closeout is corrected in place; the missing matrices
 receive bounded re-verification recorded with real execution time and
 code identity in the T10-R3 archive. The merged validator suite total is
 938 checks — `test_ddl_golden.py` itself contributes 758 contract cases.
+
+### 9.5 Amendment R4 — fact propagation and post-state corrections
+
+R4 closes the four defect classes independent acceptance found in R3,
+still without expanding the audited surface.
+
+**Truthful post-state under an unproven name space.** `IndexNamesUnknown`
+no longer freezes name-keyed mutations — and it no longer lets a
+best-effort projected name bind a member either. Each member carries
+`Index.NameUnknown`: members the create-table naming rule could not
+resolve are marked (all-or-nothing — cross-member suffix effects cannot
+be ruled out), while members merged by an authored ADD/CREATE stay
+provable. A name-keyed transition publishes only on exactly one proven
+match (drop removes, rename migrates, visibility flips); a target no
+proven name can bind — ambiguous because the real stored names are
+unproven — unvouches at the granularity the mutation could have touched
+(`IndexesUnknown` for membership/attribute-affecting drop and visibility,
+`IndexNamesUnknown` for rename, which can never change membership). A
+dropped index therefore cannot seed a duplicate finding on a later
+statement, provable findings under a names-only unknown still fire, and
+the PRIMARY target always resolves through primary-key identity facts.
+The exists rule's member-collection gap is per-target: an all-PRIMARY
+list answers from primary-key facts alone (no unrelated
+`target_table.indexes` gap), while mixed PRIMARY+ordinary lists keep the
+ordinary-name gap.
+
+**Dialect-bound stored names.** `spec.StoredIndexNames(dialect, …)`
+replaces the single-policy derivation with the natively anchored rule
+(MySQL 8.0.46 `make_unique_key_name`, TiDB v8.5.0
+`setEmptyConstraintName`; M8 probe matrix in the R4 archive): MySQL
+claims names in declaration order with `primary` reserved and any
+expression-bearing member named `functional_index`; TiDB pre-occupies
+authored names before deriving (an unnamed member colliding with an
+authored base is suffixed, never a native failure) and names any
+expression-bearing member `expression_index`. `primary` is reserved on
+both anchors — unnamed `primary` members store as `primary_2`, authored
+`primary` names are natively refused (1280). Unprovable shapes
+(unclassifiable/absent members, suffix truncation past 64 chars, native
+collisions) keep the whole name space unvouched — no partially-guessed
+names.
+
+**Clustered storage separated from PRIMARY addressability.** TiDB's
+`PRIMARY` object question and the DROP PRIMARY KEY refusal class are now
+independent facts: `PrimaryKeyClustered`/`PrimaryKeyClusteredUnknown`
+answer clustered storage for every member shape (native anchor: TiDB
+executor.go `IsCommonHandle || PKIsHandle` both refuse with 8200; M9
+probe — VARCHAR and composite clustered primaries refuse DROP while
+`ALTER INDEX \`PRIMARY\` VISIBLE` succeeds on the addressable object),
+while `PrimaryKeyIsHandle`/`PrimaryKeyHandleUnknown` keep answering the
+single-integer row-id promotion. CREATE-derived snapshots compute both
+through the same explicit-`CLUSTERED` → session-mode →
+`int_only`+alter-primary-key precedence; the provider reads both facts
+from `information_schema.TIDB_INDEXES.CLUSTERED` (yes → clustered, with
+handle resolved separately by member shape; no → real nonclustered
+object; NULL/missing/unrecognized → both unknown). A proven clustered
+drop target keeps the PK in post-state (refused); a provably
+nonclustered one publishes the drop; an unproven answer invalidates
+rather than guessing success. The earlier "non-integer clustered PK is
+droppable" reading is corrected — TiDB refuses every clustered primary.
+
+**Direction-withheld members keep expression identity.** A catalog
+`COLLATION` of NULL or an unrecognized value no longer demotes an
+expression member to `IndexKeyPartUnmodeled`: the member stays
+`IndexKeyPartExpression` with `DirectionUnknown`, its expression facts
+and multi-valued marks attached, and `SetKeyParts` keeps
+`ExpressionCount`/`HasExpressionKeys`/`DirectionUnknownParts`/
+`UnmodeledKeyParts` synchronized. `indexPlainComparable` excludes
+direction-unknown members alongside every other non-plain mark, and
+left-prefix pairing reads `KeyParts` beyond the `Columns` projection as
+a partially modeled member — the enabled rule reports the
+`target_table.indexes.key_parts` gap rather than answering a plain-key
+comparison on a truncated shape.
+
+**Member-first `primary` name binding (M10 matrix).** The `primary` name
+resolves inside post-state and existence checks by member-first
+precedence, then the PK identity — anchored on TiDB v8.5.0 where
+`RENAME INDEX s TO \`primary\`` is legal on PK-less and PKIsHandle tables
+and the member then owns DROP/ALTER/RENAME targets, while a real PRIMARY
+index object occupies the name exclusively (member `primary` never
+coexists with it, 1061). MySQL 8.0.46 reserves `primary` outright:
+DROP INDEX `PRIMARY` is DROP PRIMARY KEY (standalone and ALTER alike),
+RENAME touching `primary` is refused 1280, an authored `primary` member
+name is refused 1280, and ALTER INDEX `PRIMARY` is refused 3522 — refused
+transitions keep their shape or tombstone through the invalid-transition
+gate. On TiDB, DROP INDEX `primary` inherits the drop-primary-key outcome
+(8200 clustered, drop nonclustered) once a member `primary` is ruled out,
+the PRIMARY index object renames while the constraint identity stays
+PRIMARY, and PKIsHandle tables own no operable object (1176). Name-keyed
+mutations on duplicated stored names unvouch the member set rather than
+mutating every equal-fold match, and an unproven-occupancy rename to
+`primary` unvouches only the name space. The shared `indexExistenceRule`
+now backs `ddl.alter.{alter,drop,rename}_index.exists.require` alike: an
+all-`primary` target on an unprovable table owes `primary_key` in place
+of the member-collection fact (TiDB keeps the member fact alongside — a
+member `primary` may own the name), mixed targets keep both, and the
+primary-key gap still mirrors the unvouched-identity case.
+
+**R4 review pass (frozen-diff acceptance corrections).** One
+`spec.ResolvePrimaryNameBinding` tri-state — member / PK / ambiguous —
+now answers every `primary` name-keyed consumer in all three layers
+(ordered-state publishers, the three `*TargetExists` rule predicates via
+`indexPrimaryMemberMayOwnName`, and the advanced-index assessment), so
+the member-first precedence can never drift between Evaluate, post-state,
+and gap projection. Ambiguous bindings unvouch what they cannot prove: a
+`primary` drop marks the member set and — when a droppable real object
+cannot be ruled out — the primary-key facts too (`markPrimaryUnknown`,
+stale PK presence would otherwise block a later `ADD PRIMARY KEY`); an
+ambiguous `primary` rename unvouches the stored-name space (covering the
+PK object's `PrimaryKey.Name`, which `primaryKeyConstraintName` now
+withholds under `IndexNamesUnknown`); a rename whose destination freedom
+is unprovable unvouches the matched member's name rather than publishing
+a rename a hidden collision may have refused; and a proven collision
+keeps the shape (1061 refused) instead of tombstoning. `DROP INDEX
+\`primary\` IF EXISTS` keeps a provably absent PK regardless of the
+constraint-collection flag — the no-op proof needs only the PK fact.
+
+**R4 spec-review residual.** Three further corrections pinned by the
+spec-axis review of the frozen diff. (a) Member-adding transitions under
+an unproven member name space can collide on a *hidden* stored name —
+the add either landed or refused on the 1061 — so `applyAddIndex` and
+standalone `applyCreateIndex` unvouch the member set
+(`IndexesUnknown`) instead of appending a member the statement may never
+have created; the merge still publishes when every member name is
+individually proven, since no hidden name can then hold the authored
+name. (b) TiDB `ADD PRIMARY KEY` under a `primary` name space a member
+provably or possibly owns is shape-dependent (a handle PK coexists with
+the member; a real PRIMARY object collides 1061), so only a proven
+`PrimaryNameBindsPK` binding publishes — anything else invalidates.
+(c) Provider-side TiDB `primary` binding: a `primary`-fold STATISTICS
+row is not self-evidently the constraint object (a secondary can
+literally own the name), so `resolveTiDBPrimaryName` reads
+`information_schema.table_constraints` for a `PRIMARY KEY` row — the
+pk-presence probe was originally `tables.tidb_pk_type`, but the TiDB
+v8.5.0 anchor proved it conflates PK-less tables with real nonclustered
+primaries (both answer NONCLUSTERED). A real PK always emits a
+`primary`-fold STATISTICS row (handle tables synthesize one too), so
+zero folds prove no PK object without probing; a proven constraint plus
+exactly one fold promotes it to `snapshot.PrimaryKey`; a proven-absent
+constraint keeps folds as secondary members; and multiple folds or an
+unanswerable probe with a candidate member withhold
+`PrimaryKeyUnknown`/`PrimaryKeyHandleUnknown`/`PrimaryKeyClusteredUnknown`
+together rather than binding a maybe-member row — the probe's
+`count(*)` answer can never be empty, so any probe failure IS the
+unanswerable case and withholds the three facts instead of failing the
+whole table load (context cancellation still propagates); the
+`tidb_indexes` clustered probe withholds its two facts on the same
+posture. Rule-side, name-keyed
+existence predicates bind only *proven* member names
+(`FindProvenIndex`), so an unproven projected name can never assert
+existence — a `primary` target under an unproven member name resolves
+through the binding tri-state (MySQL: provably absent; TiDB: ambiguous).
+(d) The member-existence gap projection mirrors that per-target premise
+(`indexMemberExistenceGaps`): the `target_table.indexes` gap is owed
+only when the member set is unvouched or a target's name has no proven
+match while a sibling name stays unproven — a statement whose targets
+all bind proven names answers without paying an unrelated collection
+gap, and a `primary` target on the resolving variant owes the member
+fact exactly in the ambiguous-binding case.

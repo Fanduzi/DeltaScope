@@ -374,6 +374,19 @@ PK_META = {"table": "t", "index": "primary", "feature": "visibility", "action": 
            "reason_code": "primary_index_visibility", "product": "mysql",
            "target_version": "8.0.46", "minimum_version": ""}
 PK_INV_META = {"table": "t", "index": "primary", "action": "alter_index", "visibility": "invisible"}
+# A `primary` alter target binds the PK identity, not the member space:
+# MySQL reserves the name outright (only target_table.primary_key is
+# required), while TiDB's member-first precedence keeps the member space
+# in play beside the PK fact under an unvouched snapshot.
+PRIMARY_GAPS_MYSQL = [
+    gap(0, "ddl.table.exists.alter.require", ["target_table.existence"]),
+    gap(0, "ddl.alter.alter_index.exists.require", ["target_table.existence", "target_table.primary_key"]),
+]
+PRIMARY_GAPS_TIDB = [
+    gap(0, "ddl.table.exists.alter.require", ["target_table.existence"]),
+    gap(0, "ddl.alter.alter_index.exists.require", ["target_table.existence", "target_table.indexes", "target_table.primary_key"]),
+    gap(0, "ddl.index.advanced.compatibility.require", ["target.version"], "missing_target_version"),
+]
 
 cli("t10-cli-primary-mysql", "mysql", "t10-visibility",
     "ALTER TABLE t ALTER INDEX `PRIMARY` INVISIBLE;",
@@ -381,7 +394,7 @@ cli("t10-cli-primary-mysql", "mysql", "t10-visibility",
            ["ALTER TABLE t ALTER INDEX `PRIMARY` INVISIBLE;"], 2,
            finding_entries=[finding(0, "ddl.index.invisible.forbid", "warning"),
                             finding(0, "ddl.index.advanced.compatibility.require", "blocker")],
-           gap_entries=FIRSTPATH_GAPS[:2],
+           gap_entries=PRIMARY_GAPS_MYSQL,
            fmeta=[meta(0, "ddl.index.invisible.forbid", PK_INV_META),
                   meta(0, "ddl.index.advanced.compatibility.require", PK_META)],
            loaded=4, applicable=4),
@@ -392,7 +405,7 @@ cli("t10-cli-primary-tidb", "tidb", "t10-visibility",
     expect(0, "review", 1, 1, 0, 0, "unverified", ["unverified"],
            ["ALTER TABLE t ALTER INDEX `PRIMARY` INVISIBLE;"], 4,
            finding_entries=[finding(0, "ddl.index.invisible.forbid", "warning")],
-           gap_entries=FIRSTPATH_GAPS + [
+           gap_entries=PRIMARY_GAPS_TIDB + [
                gap(0, "ddl.index.advanced.compatibility.require",
                    ["target_table.primary_key"], "unknown_table_state")],
            fmeta=[meta(0, "ddl.index.invisible.forbid", PK_INV_META)],

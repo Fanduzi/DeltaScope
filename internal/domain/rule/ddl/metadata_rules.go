@@ -174,9 +174,15 @@ func (r alterObjectExistenceRule) Evaluate(ctx context.Context, statement spec.S
 		if name == "" {
 			continue
 		}
-		if r.objectLabel == "index" && (snapshot.IndexesUnknown || snapshot.IndexNamesUnknown) &&
-			(!r.primaryResolves || !strings.EqualFold(name, "primary")) {
-			continue
+		if r.objectLabel == "index" && (!r.primaryResolves || !strings.EqualFold(name, "primary")) {
+			// Name-keyed existence is per-member: an unvouched member set
+			// answers nothing, while a provable member name binds even
+			// when a sibling's name is unproven — only the absence of a
+			// proven match under an unproven name space is unanswerable.
+			if snapshot.IndexesUnknown ||
+				(snapshot.FindProvenIndex(name) == nil && snapshot.HasUnprovenIndexName()) {
+				continue
+			}
 		}
 		exists := r.checkExists(statement, snapshot, name)
 		if r.forbidIfExists && exists {
@@ -221,7 +227,49 @@ func (r alterObjectExistenceRule) EvidenceGaps(statement spec.Statement) []rule.
 		return nil
 	}
 	snapshot, ok := targetTableSnapshot(statement)
+	if ok && snapshot != nil && snapshot.Exists && r.objectLabel == "index" {
+		return r.indexMemberExistenceGaps(statement, snapshot)
+	}
 	return memberExistenceGaps(snapshot, ok, r.objectLabel)
+}
+
+// indexMemberExistenceGaps mirrors the per-target skip premise in Evaluate:
+// an unvouched member set withholds every name, but a provable target name
+// answers even while a sibling member's stored name stays unproven — the
+// collection gap is owed only for a target whose name has no proven match.
+func (r alterObjectExistenceRule) indexMemberExistenceGaps(
+	statement spec.Statement, snapshot *spec.TableSnapshot) []rule.EvidenceGap {
+	if !snapshot.IndexesUnknown {
+		answerable := true
+		for _, alter := range matchingAlterObjectActions(statement, r.actions...) {
+			name := r.selectName(alter)
+			if name == "" {
+				continue
+			}
+			// A `primary` target on the resolving variant answers from the
+			// primary-key identity facts — but it still owes the member
+			// collection while a member may literally own the name, which
+			// is exactly the ambiguous-binding case.
+			if r.primaryResolves && strings.EqualFold(name, "primary") {
+				if indexPrimaryMemberMayOwnName(statement, snapshot) {
+					answerable = false
+					break
+				}
+				continue
+			}
+			if snapshot.FindProvenIndex(name) == nil && snapshot.HasUnprovenIndexName() {
+				answerable = false
+				break
+			}
+		}
+		if answerable {
+			return nil
+		}
+	}
+	return []rule.EvidenceGap{{
+		ReasonCode:    gapReasonUnknownTableState,
+		RequiredFacts: []string{"target_table.indexes"},
+	}}
 }
 
 type alterPrimaryKeyExistenceRule struct {
@@ -337,7 +385,9 @@ func primaryKeyConstraintName(snapshot *spec.TableSnapshot) string {
 			return constraint.Name
 		}
 	}
-	if snapshot.PrimaryKey != nil {
+	if snapshot.PrimaryKey != nil && !snapshot.IndexNamesUnknown {
+		// The index-object name is a stored-name fact — under an unproven
+		// name space it may be stale (a rename may have moved it).
 		return snapshot.PrimaryKey.Name
 	}
 	return ""
@@ -523,7 +573,10 @@ func snapshotHasColumn(_ spec.Statement, snapshot *spec.TableSnapshot, name stri
 }
 
 func snapshotHasIndex(_ spec.Statement, snapshot *spec.TableSnapshot, name string) bool {
-	return snapshot.HasIndex(name)
+	// Only a member whose stored name is provable may bind a name-keyed
+	// lookup — under an unvouched name space a retained member's projected
+	// name can equal-fold the target without being its real stored name.
+	return snapshot.FindProvenIndex(name) != nil
 }
 
 // memberCollectionFact returns the required_facts name of the collection a
@@ -537,22 +590,25 @@ func memberCollectionFact(objectLabel string) string {
 
 // memberCollectionUnknown mirrors the Evaluate skip premise for each
 // collection: a withheld column set is a nil Columns slice, while an index
-// set the projection cannot vouch for is marked IndexesUnknown — or
-// IndexNamesUnknown when the members are known but their stored names are
-// not (a loaded empty Indexes list stays an authoritative answer).
+// member whose stored name is unproven leaves a name-keyed absence
+// unanswerable (HasUnprovenIndexName) and an unvouched member set
+// (IndexesUnknown) withholds every answer — the bare IndexNamesUnknown
+// flag alone does not suppress proven per-member bindings (a loaded empty
+// Indexes list stays an authoritative answer).
 func memberCollectionUnknown(snapshot *spec.TableSnapshot, objectLabel string) bool {
 	if objectLabel == "index" {
-		return snapshot.IndexesUnknown || snapshot.IndexNamesUnknown
+		return snapshot.IndexesUnknown || snapshot.HasUnprovenIndexName()
 	}
 	return snapshot.Columns == nil
 }
 
 // memberExistenceGaps is the shared evidence-gap projection for rules that
-// check table-member existence: an unknown target state needs both facts, a
-// confirmed-present table whose relevant collection is unknown needs only
+// check table-member existence: an unknown target state needs both facts,
+// a confirmed-present table whose relevant collection is unknown needs only
 // that collection, and a confirmed-absent table is a settled parent failure
 // that adds no member gap. The frozen fact ordering pins the member fact
-// first for columns and existence first for indexes.
+// first for columns and existence first for indexes. Index targets refine
+// the confirmed-present branch per target through indexMemberExistenceGaps.
 func memberExistenceGaps(snapshot *spec.TableSnapshot, ok bool, objectLabel string) []rule.EvidenceGap {
 	collectionFact := memberCollectionFact(objectLabel)
 	if !ok || snapshot == nil {

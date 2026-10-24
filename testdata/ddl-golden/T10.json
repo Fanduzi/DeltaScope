@@ -1275,7 +1275,7 @@
             "reason_code": "unknown_table_state",
             "required_facts": [
               "target_table.existence",
-              "target_table.indexes"
+              "target_table.primary_key"
             ]
           }
         ],
@@ -1364,7 +1364,8 @@
             "reason_code": "unknown_table_state",
             "required_facts": [
               "target_table.existence",
-              "target_table.indexes"
+              "target_table.indexes",
+              "target_table.primary_key"
             ]
           },
           {

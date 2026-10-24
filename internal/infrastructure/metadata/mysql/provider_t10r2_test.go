@@ -48,7 +48,7 @@ func TestT10R2LiteralNullColumnNameIsColumn(t *testing.T) {
 			// The catalog carries the member with an ascending collation and
 			// a SQL NULL expression column — the shape a real reserved-name
 			// column produces.
-			accumulateIndexRow(indexes, &order, "i_null", 1, "BTREE",
+			accumulateIndexRow(indexes, &order, spec.DialectMySQL, "i_null", 1, "BTREE",
 				indexMemberRow{columnName: t10r2Str(tc.memberName), collation: t10r2Str("A")},
 				nil, columns)
 			index := indexes["i_null"]
@@ -78,7 +78,7 @@ func TestT10R2LiteralNullWithExpressionTextIsExpression(t *testing.T) {
 	}
 	indexes := make(map[string]*spec.Index)
 	order := make([]string, 0)
-	accumulateIndexRow(indexes, &order, "i_expr", 1, "BTREE",
+	accumulateIndexRow(indexes, &order, spec.DialectMySQL, "i_expr", 1, "BTREE",
 		indexMemberRow{
 			columnName: t10r2Str("NULL"), collation: t10r2Str("A"),
 			expression: t10r2Str("upper(`a`)"),
@@ -100,7 +100,7 @@ func TestT10R2LiteralNullUnprovenIsUnmodeled(t *testing.T) {
 	columns := []spec.Column{{Name: "a", Type: "int", NotNull: true}}
 	indexes := make(map[string]*spec.Index)
 	order := make([]string, 0)
-	accumulateIndexRow(indexes, &order, "i_x", 1, "BTREE",
+	accumulateIndexRow(indexes, &order, spec.DialectMySQL, "i_x", 1, "BTREE",
 		indexMemberRow{columnName: t10r2Str("NULL"), collation: t10r2Str("A")},
 		nil, columns)
 	index := indexes["i_x"]
@@ -120,7 +120,7 @@ func TestT10R2SQLNullColumnNameWithoutExpression(t *testing.T) {
 	t.Parallel()
 	indexes := make(map[string]*spec.Index)
 	order := make([]string, 0)
-	accumulateIndexRow(indexes, &order, "i_e", 1, "BTREE",
+	accumulateIndexRow(indexes, &order, spec.DialectMySQL, "i_e", 1, "BTREE",
 		indexMemberRow{columnName: t10r2NullStr(), collation: t10r2Str("A")},
 		nil, nil)
 	index := indexes["i_e"]
@@ -140,11 +140,11 @@ func TestT10R2MixedMembersKeepIdentities(t *testing.T) {
 	}
 	indexes := make(map[string]*spec.Index)
 	order := make([]string, 0)
-	accumulateIndexRow(indexes, &order, "i", 1, "BTREE",
+	accumulateIndexRow(indexes, &order, spec.DialectMySQL, "i", 1, "BTREE",
 		indexMemberRow{columnName: t10r2Str("a"), collation: t10r2Str("A")}, nil, columns)
-	accumulateIndexRow(indexes, &order, "i", 1, "BTREE",
+	accumulateIndexRow(indexes, &order, spec.DialectMySQL, "i", 1, "BTREE",
 		indexMemberRow{columnName: t10r2Str("NULL"), collation: t10r2Str("A")}, nil, columns)
-	accumulateIndexRow(indexes, &order, "i", 1, "BTREE",
+	accumulateIndexRow(indexes, &order, spec.DialectMySQL, "i", 1, "BTREE",
 		indexMemberRow{columnName: t10r2NullStr(), collation: t10r2Str("A"), expression: t10r2Str("`a`+1")},
 		nil, columns)
 	index := indexes["i"]
@@ -198,6 +198,10 @@ func TestT10R2TiDBHandleUnknownOnMissingClusteredRow(t *testing.T) {
 		"information_schema.partitions": {
 			columns: []string{"count"},
 			rows:    [][]driver.Value{{0}},
+		},
+		"table_constraints": {
+			columns: []string{"count"},
+			rows:    [][]driver.Value{{1}},
 		},
 	}
 

@@ -8,9 +8,11 @@
 // implicit-primary role verdict, and bounded version/fact gaps —
 // InvalidTransition marks determined negatives and UnresolvedTransition
 // marks feature-bearing answers that could not be proven either way, both
-// consumed by the ordered-state publication gate
-// pos: T10 advanced-index domain model and T10-R2 four-state primary-role/
-// member-legality determination, consumed by rules and the ordered-state pass
+// consumed by the ordered-state publication gate; `alter_index primary`
+// skips the primary-object path only on a proven member binding via
+// ResolvePrimaryNameBinding (a TiDB member may own the name) — ambiguous
+// bindings still resolve through the PRIMARY-object existence probe
+// pos: T10 domain model + T10-R2/R4 primary-role/name-binding answers
 // note: if this file changes, update this header and module README.md.
 package spec
 
@@ -398,7 +400,16 @@ func assessIndexFact(assessment *AdvancedIndexAssessment, fact advancedIndexFact
 		assessment.appendIssue(fact.name, AdvancedIndexFeatureVisibility, fact.action, AdvancedIndexReasonPrimaryVisibility, "")
 		return
 	}
-	if fact.action == "alter_index" && strings.EqualFold(fact.name, "primary") {
+	if fact.action == "alter_index" && strings.EqualFold(fact.name, "primary") &&
+		(dialect != DialectTiDB || ResolvePrimaryNameBinding(dialect, snapshot) != PrimaryNameBindsMember) {
+		// TiDB member-first precedence: only a member provably owning the
+		// name (RENAME … TO `primary` is legal on PK-less and PKIsHandle
+		// tables) makes the alter an ordinary member visibility operation
+		// — an ambiguous binding can still be the PK object, so it enters
+		// this branch and the existence probe decides: a resolved PRIMARY
+		// object evaluates the 3522 refusal, an unresolved answer withholds
+		// the outcome as a primary_key gap, and a proven-absent object is
+		// provably not a PK-object operation at all.
 		switch dialect {
 		case DialectMySQL:
 			if !versionKnown || versionAtLeast(version, advancedIndexMinimumVisibilityMySQL) {
@@ -772,15 +783,18 @@ func assessImplicitPrimaryVisibility(assessment *AdvancedIndexAssessment, fact a
 		// on existence — neither is a role question. Only a vouched set that
 		// cannot enumerate candidates emits the member gap here; the plain
 		// IndexesUnknown case already surfaces through the existence rule,
-		// and an unproven name space (IndexNamesUnknown) leaves the same
-		// name lookup unresolved there.
-		if snapshot == nil || !snapshot.Exists || snapshot.IndexesUnknown || snapshot.IndexNamesUnknown {
+		// and a target with no proven name match under an unproven name
+		// space leaves the same name lookup unresolved there.
+		if snapshot == nil || !snapshot.Exists || snapshot.IndexesUnknown {
 			return
 		}
-		target := snapshot.FindIndex(fact.name)
+		target := snapshot.FindProvenIndex(fact.name)
 		if target == nil {
-			// A missing target fails on existence (1176) — the role question
-			// never arises; the existence rule owns the finding/gap.
+			// A target with no proven match either fails on existence
+			// (1176) or hides behind an unproven sibling name — the role
+			// question never arises; the existence rule owns the
+			// finding/gap either way. A proven target binds even while a
+			// sibling's stored name stays unproven.
 			return
 		}
 		if target.Kind != IndexKindUnique {
@@ -794,7 +808,9 @@ func assessImplicitPrimaryVisibility(assessment *AdvancedIndexAssessment, fact a
 			unresolvedRole(role)
 			return
 		}
-		holds = role.HasHolder && strings.EqualFold(role.Holder, target.Name)
+		holds = role.HasHolder &&
+			(role.HolderIndex == target ||
+				(role.HolderIndex == nil && strings.EqualFold(role.Holder, target.Name)))
 	}
 	if holds {
 		// The refusal holds on every supported version — MySQL <8.0 rejects

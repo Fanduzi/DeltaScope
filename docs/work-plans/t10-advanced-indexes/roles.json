@@ -281,7 +281,7 @@
       ],
       "policy": "t10-visibility",
       "sql": "ALTER TABLE t ALTER INDEX `PRIMARY` INVISIBLE;",
-      "expect": "0 compat findings (TiDB PRIMARY is not an index); invisible warning + exists gaps; verdict=review"
+      "expect": "0 compat findings offline (a `primary` alter target binds member-first on TiDB; the PK-object visibility refusal needs an unproven primary_key fact → bounded gaps, no fabricated refusal); invisible warning + exists gaps; verdict=review"
     },
     {
       "id": "t10-cli-pfx",

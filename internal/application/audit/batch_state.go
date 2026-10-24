@@ -1,6 +1,6 @@
 // Package audit orchestrates audit use cases at the application layer.
 // input: request context, ordered statements, optional metadata provider, the request's already-resolved version identity, and parse-failure positions for one audit request
-// output: request-local ordered table facts (unknown / known-absent / known-present, per-collection member knowledge, including the declared table comment on complete CREATE-derived shapes, product-derived stored index names under the native auto-naming rule — or an unvouched name space when any member's name is unprovable — and the TiDB handle answer deferring to the observed clustered mode plus the alter-primary-key config fact) feeding per-statement pre-state snapshots
+// output: request-local ordered table facts (unknown / known-absent / known-present, per-collection member knowledge, including the declared table comment on complete CREATE-derived shapes, product-derived stored index names under the native auto-naming rule — or an unvouched name space when any member's name is unprovable — and the TiDB handle and clustered-storage answers deferring to the observed clustered mode plus the alter-primary-key config fact) feeding per-statement pre-state snapshots
 // pos: prospective schema-state ownership for the first migration path — the effective (dialect, schema, table) identity drives provider reads, keys, writes, and invalidation; unsupported or executable-but-unmodeled effects settle before kind dispatch; deterministic conditional transitions update derived facts, including the bounded single-pair RENAME identity migration onto a known-absent destination, a bounded single-target DROP identity retirement, an ordinary single-column MODIFY definition replacement, a precise single CHANGE COLUMN or RENAME COLUMN identity migration, and an ordinary dependency-free single-column DROP COLUMN that removes only that column, keeps unrelated members, and clears the accepted MODIFY statistic set, FIRST|AFTER column-position moves inside admitted ADD/MODIFY/CHANGE templates, and the bounded dialect-parametrized multi-action successor (MySQL accumulated working state vs TiDB pre-statement premises, whole-statement tombstone on unprovable net effect); each tombstones loaded dependents that the transition cannot keep; a non-precise MODIFY, CHANGE, RENAME, or DROP COLUMN tombstones every named table identity and the loaded dependents of those identities, a precise replacement is withheld when a loaded foreign key cannot be recomputed, an unsupported RENAME version withholds publication, and cancellation is checked before publishing effects; unaudited, unbound, or contaminated operations invalidate them; recognized CREATE/DROP PROCEDURE statements preserve outer table facts while keeping their own audit evidence; the shared T07 advanced-column and T10 advanced-index assessments block publication of provably refused or unresolved transitions
 // note: if this file changes, update this header and module README.md.
 package audit
@@ -495,15 +495,23 @@ func derivedCreateShape(dialect spec.Dialect, schema, table string, ddl *spec.DD
 		snapshot.Indexes = append(snapshot.Indexes, cloneIndex(index))
 	}
 	// Stored names follow the product's auto-naming rule, not the authored
-	// declaration — an unnamed member takes its first column member's name
-	// (MySQL 8.0.46 invisible_indexes.result L274-285). When any name
-	// cannot be proven the members stay known but the name space is
+	// declaration — dialect-bound inside StoredIndexNames (MySQL claims
+	// first-column names with reserved-`primary` suffixing; TiDB
+	// pre-occupies authored names and derives expression_index). When any
+	// name cannot be proven the members stay known but the name space is
 	// unvouched, so name-based successors report a gap instead of reading
 	// an unmatched name as confirmed absence.
-	if resolved, provable := spec.StoredIndexNames(snapshot.Indexes); provable {
+	if resolved, provable := spec.StoredIndexNames(dialect, snapshot.Indexes); provable {
 		snapshot.Indexes = resolved
 	} else {
 		snapshot.IndexNamesUnknown = true
+		// Cross-member suffix effects make per-member name honesty
+		// all-or-nothing here: every member's stored name is unproven,
+		// while members merged later by an authored ADD/CREATE carry a
+		// provable name.
+		for i := range snapshot.Indexes {
+			snapshot.Indexes[i].NameUnknown = true
+		}
 	}
 	// A batch-derived index list is the declaration order — the same order
 	// the product selects the implicit primary role in.
@@ -520,6 +528,15 @@ func derivedCreateShape(dialect spec.Dialect, schema, table string, ddl *spec.DD
 			// CLUSTERED|NONCLUSTERED with no observed session mode) — the
 			// snapshot must not answer either way.
 			snapshot.PrimaryKeyHandleUnknown = true
+		}
+		if clustered := spec.PrimaryKeyClustered(dialect, &pk, snapshot.Columns, tidbClusteredDefault, tidbAlterPK); clustered != nil {
+			snapshot.PrimaryKeyClustered = *clustered
+		} else {
+			// Clustered storage is a separate question from handle identity:
+			// a common-handle PK is clustered yet addressable. When the
+			// answer is unprovable the snapshot withholds it rather than
+			// guessing a droppable drop target.
+			snapshot.PrimaryKeyClusteredUnknown = true
 		}
 	}
 	for _, constraint := range ddl.Constraints {
@@ -901,6 +918,16 @@ func (s *batchState) applyCreateIndex(statement spec.Statement) {
 	if len(targets) == 0 || ddl.Table == nil {
 		return
 	}
+	for _, alter := range ddl.Alter {
+		// An authored `primary` member name is natively refused (1280)
+		// before the table is touched — the entry keeps whatever state
+		// it held rather than publishing present-incomplete over a
+		// statement that provably did nothing.
+		if alter.Action == "create_index" && alter.Index != nil &&
+			alter.Index.Definition != nil && authoredPrimaryMemberName(alter.Index.Definition) {
+			return
+		}
+	}
 	key := s.keyFor(s.schema, targets[0])
 	entry := s.entries[key]
 	if !fullyAuditedStatement(s.dialect, statement) || (entry != nil && entry.state == tableAbsent) {
@@ -928,8 +955,20 @@ func (s *batchState) applyCreateIndex(statement spec.Statement) {
 			continue
 		}
 		def := alter.Index.Definition
-		if entry.shape.HasIndex(def.Name) {
-			s.invalidateKey(key)
+		if entry.shape.FindProvenIndex(def.Name) != nil {
+			// A member provably holds the authored name — the create
+			// refuses 1061 outright (or IF NOT EXISTS no-ops); either
+			// way the table is provably unchanged, so the entry keeps
+			// its facts.
+			return
+		}
+		if entry.shape.HasUnprovenIndexName() {
+			// A member whose real stored name is unproven may already
+			// hold the authored name — the create either landed or
+			// refused on the hidden 1061, so membership is unprovable;
+			// unvouch the member set rather than append a member the
+			// statement may never have created.
+			s.markIndexesUnknown(key)
 			return
 		}
 		for _, column := range def.Columns {

@@ -415,10 +415,10 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 			return newAlterObjectExistenceRule(ruleIDAlterAddIndexExistsForbid, []string{"add_constraint", "add_index", "create_index"}, "index", true, rule.LevelBlocker, cfg, alterIndexSubjectName, snapshotHasIndex)
 		}},
 		{ruleID: ruleIDAlterDropIndexExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
-			return newAlterObjectExistenceRule(ruleIDAlterDropIndexExistsRequire, []string{"drop_index"}, "index", false, rule.LevelBlocker, cfg, alterIndexTargetName, snapshotHasIndex)
+			return newIndexExistenceRule(ruleIDAlterDropIndexExistsRequire, []string{"drop_index"}, cfg, dropIndexTargetExists)
 		}},
 		{ruleID: ruleIDAlterRenameIndexExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
-			return newAlterObjectExistenceRule(ruleIDAlterRenameIndexExistsRequire, []string{"rename_index"}, "index", false, rule.LevelBlocker, cfg, alterIndexTargetName, snapshotHasIndex)
+			return newIndexExistenceRule(ruleIDAlterRenameIndexExistsRequire, []string{"rename_index"}, cfg, renameIndexTargetExists)
 		}},
 		{ruleID: ruleIDAlterIndexExistsRequire, construct: newAlterIndexExistsRule},
 		{ruleID: ruleIDIndexInvisibleForbid, construct: newIndexInvisibleForbidRule},

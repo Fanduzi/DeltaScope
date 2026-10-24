@@ -1,22 +1,20 @@
 // Package spec resolves the logical primary-key role a unique index can
 // hold independently of an explicitly declared PRIMARY KEY.
-// input: a table's index members (with member-level key-part facts), column
-// nullability, and the explicit-PK state of a snapshot or a declared CREATE
-// TABLE shape
-// output: a PrimaryRoleResolution — the four-state answer distinguishing an
-// explicit primary, a proven implicit holder (a member identity, not a name
-// string, so multiple unnamed members stay distinct), a proven no-candidate
-// state, and a bounded unresolved answer listing the facts that withheld the
-// determination — consumed by the advanced-index compatibility assessment,
-// the alter_index existence resolution, and the ordered-state publication
-// gate; the TiDB handle answer is the tri-state *bool (nil = unprovable,
-// explicit CLUSTERED|NONCLUSTERED overrides the session mode, an unstated
-// declaration falls back to tidb_enable_clustered_index — int_only also
-// defers to the alter-primary-key config fact — and missing mode/config
-// evidence stays unknown rather than guessing a PRIMARY object)
-// pos: T10-R2 primary-role identity model (issue #89); upstream anchors —
-// MySQL 8.0.46 mysql-test/r/invisible_indexes.result L247-289 and TiDB
-// v8.5.0 TableInfo.GetPrimaryKey + checkInvisibleIndexOnPK
+// input: a table's index members (with key-part facts), column nullability,
+// and the explicit-PK state of a snapshot or declared CREATE TABLE shape
+// output: PrimaryRoleResolution — the four-state answer (explicit primary,
+// proven implicit holder by member identity, proven no-candidate, bounded
+// unresolved listing the withheld facts); the TiDB handle tri-state *bool
+// (nil unprovable, CLUSTERED|NONCLUSTERED overrides the session mode, else
+// tidb_enable_clustered_index — int_only defers to alter-primary-key);
+// PrimaryKeyClustered answering the TiDB 8200 drop premise beside the
+// handle answer (common-handle PKs are clustered yet addressable); and the
+// shared ResolvePrimaryNameBinding tri-state (member / PK / ambiguous)
+// backing every `primary` consumer — ordered state, existence rules,
+// assessment
+// pos: T10-R2/R4 primary-role/clustered/name-binding model (issue #89);
+// anchors — MySQL 8.0.46 invisible_indexes.result L247-289, TiDB v8.5.0
+// TableInfo.GetPrimaryKey + checkInvisibleIndexOnPK
 // note: if this file changes, update this header and module README.md.
 package spec
 
@@ -310,6 +308,77 @@ func PrimaryKeyHandle(dialect Dialect, pk *Index, columns []Column, defaultMode 
 	return nil
 }
 
+// PrimaryKeyClustered reports whether a declared primary key stores
+// clustered (TiDB PKIsHandle row handle or IsCommonHandle common handle)
+// — the DROP PRIMARY KEY premise, since TiDB 8.5.0 refuses the drop with
+// error 8200 on every clustered primary (upstream anchor: v8.5.0
+// pkg/ddl/executor.go IsCommonHandle||PKIsHandle, probed on INT/VARCHAR/
+// composite clustered shapes). Tri-state like PrimaryKeyHandle: nil when
+// the stored shape cannot be proven. A clustered answer never implies the
+// PRIMARY object is unaddressable — common-handle PKs remain real index
+// objects. MySQL's InnoDB key is clustered on disk but DROP PRIMARY KEY
+// rebuilds it natively, so non-TiDB dialects answer false here — this
+// fact names the TiDB refusal class, not generic storage clustering.
+func PrimaryKeyClustered(dialect Dialect, pk *Index, columns []Column, defaultMode *string, alterPrimaryKey *bool) *bool {
+	no := new(bool)
+	if dialect != DialectTiDB || pk == nil {
+		return no
+	}
+	if strings.EqualFold(pk.PrimaryKeyType, "nonclustered") {
+		return no
+	}
+	if strings.EqualFold(pk.PrimaryKeyType, "clustered") {
+		// An explicit CLUSTERED declaration clusters every member shape —
+		// single-int (PKIsHandle) and common-handle alike.
+		yes := true
+		return &yes
+	}
+	if defaultMode == nil {
+		return nil
+	}
+	switch strings.ToLower(strings.TrimSpace(*defaultMode)) {
+	case "on":
+		// Clustered mode clusters every declared PK shape.
+		yes := true
+		return &yes
+	case "off":
+		return no
+	case "int_only":
+		// int_only clusters only the handle-qualified single-integer
+		// shape — the same member premise the handle answer consumes.
+		if len(pk.Columns) != 1 {
+			return no
+		}
+		if columns == nil {
+			return nil
+		}
+		singleInt := false
+		memberFound := false
+		for _, column := range columns {
+			if strings.EqualFold(column.Name, pk.Columns[0]) {
+				memberFound = true
+				singleInt = isIntegerType(baseColumnTypeName(column.Type))
+				break
+			}
+		}
+		if !memberFound {
+			return nil
+		}
+		if !singleInt {
+			return no
+		}
+		if alterPrimaryKey == nil {
+			return nil
+		}
+		if *alterPrimaryKey {
+			return no
+		}
+		yes := true
+		return &yes
+	}
+	return nil
+}
+
 // isIntegerType mirrors TiDB's single-integer-PK handle condition; the
 // caller passes the base type name already stripped of parameter spans.
 func isIntegerType(baseType string) bool {
@@ -318,4 +387,61 @@ func isIntegerType(baseType string) bool {
 		return true
 	}
 	return false
+}
+
+// PrimaryNameBinding resolves what the index name `primary` binds to
+// inside a table shape — member-first precedence, then the primary-key
+// identity. It is the single answer shared by the ordered-state
+// publishers, the name-keyed existence rules, and the advanced-index
+// assessment so all three agree on the same binding order.
+type PrimaryNameBinding int
+
+const (
+	// PrimaryNameBindsMember: a member literally named `primary` provably
+	// owns the name — reachable only on TiDB, where RENAME … TO `primary`
+	// is legal on PK-less and PKIsHandle tables (native-verified v8.5.0:
+	// the member then takes DROP/ALTER/RENAME `primary` targets, both
+	// casings). MySQL can never reach this state — the name is reserved
+	// for the PK index object outright (1280 on add/rename).
+	PrimaryNameBindsMember PrimaryNameBinding = iota
+	// PrimaryNameBindsPK: `primary` answers the primary-key identity.
+	// Always true on MySQL (the reserved name answers the PK or nothing),
+	// and true on TiDB exactly while a real PRIMARY index object provably
+	// occupies the name space — a member `primary` can never coexist with
+	// it (1061 on RENAME … TO `primary`).
+	PrimaryNameBindsPK
+	// PrimaryNameBindsAmbiguous: the member name space is unvouched and a
+	// member `primary` cannot be ruled out — the name may bind a member
+	// or the PK identity.
+	PrimaryNameBindsAmbiguous
+)
+
+// ResolvePrimaryNameBinding classifies a `primary` name-keyed target. A
+// member whose stored name is provable (!NameUnknown) always wins the
+// name; an unvouched member collection leaves the answer ambiguous unless
+// the dialect — MySQL reserves `primary` outright — or a provable real
+// PRIMARY index object rules the member out.
+func ResolvePrimaryNameBinding(dialect Dialect, snapshot *TableSnapshot) PrimaryNameBinding {
+	if snapshot == nil {
+		return PrimaryNameBindsAmbiguous
+	}
+	if !snapshot.IndexesUnknown {
+		if snapshot.FindProvenIndex("primary") != nil {
+			return PrimaryNameBindsMember
+		}
+		// The member-owned question is answered by the per-member bits:
+		// every member name proven means no member can own `primary`, so
+		// the name binds the PK identity space — the bare collection flag
+		// alone does not unset that per-member proof.
+		if !snapshot.HasUnprovenIndexName() {
+			return PrimaryNameBindsPK
+		}
+	}
+	if dialect == DialectMySQL {
+		return PrimaryNameBindsPK
+	}
+	if exists, resolved := ResolveIndexPrimaryObject(snapshot, dialect); resolved && exists {
+		return PrimaryNameBindsPK
+	}
+	return PrimaryNameBindsAmbiguous
 }

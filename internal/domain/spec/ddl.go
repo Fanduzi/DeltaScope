@@ -1,7 +1,8 @@
 // Package spec defines normalized statement specifications for rule evaluation.
 // input: DDL facts extracted from parser-specific AST adapters
 // output: parser-neutral DDL specification components for rules, including
-// the comparable literal-default identity (LiteralDefaultFacts) sources agree on
+// the comparable literal-default identity (LiteralDefaultFacts) sources agree
+// on and the per-member index name provability marker (Index.NameUnknown)
 // pos: domain DDL specification model under the unified Statement spec
 // note: if this file changes, update this header and module README.md.
 package spec
@@ -387,6 +388,12 @@ type IndexKeyPart struct {
 	Column       string           `json:"column,omitempty"`
 	PrefixLength *int             `json:"prefix_length,omitempty"`
 	Descending   bool             `json:"descending,omitempty"`
+	// DirectionUnknown marks a classified member (column or expression)
+	// whose sort direction the source could not prove — e.g. a provider
+	// catalog row with a NULL or unrecognized COLLATION. The member keeps
+	// its kind and identity; only the direction answer is withheld, so the
+	// index's key ordering stays unproven for comparisons.
+	DirectionUnknown bool `json:"direction_unknown,omitempty"`
 	// Expression carries the member's structured identity on expression
 	// parts: fingerprint for sameness, References for the column
 	// dependencies, Functions/TopForm for the governed shape. nil on
@@ -412,7 +419,7 @@ type IndexKeyPart struct {
 // it, so count fields can never drift from the member facts.
 func (i *Index) SetKeyParts(parts []IndexKeyPart) {
 	i.KeyParts = parts
-	i.ExpressionCount, i.PrefixParts, i.DescParts, i.MultiValuedParts, i.UnmodeledKeyParts = 0, 0, 0, 0, 0
+	i.ExpressionCount, i.PrefixParts, i.DescParts, i.MultiValuedParts, i.UnmodeledKeyParts, i.DirectionUnknownParts = 0, 0, 0, 0, 0, 0
 	i.HasExpressionKeys = false
 	for _, part := range parts {
 		switch part.Kind {
@@ -430,6 +437,9 @@ func (i *Index) SetKeyParts(parts []IndexKeyPart) {
 		}
 		if part.Descending {
 			i.DescParts++
+		}
+		if part.DirectionUnknown {
+			i.DirectionUnknownParts++
 		}
 	}
 }
@@ -496,6 +506,11 @@ type Index struct {
 	// is not fully known and the index must not enter ordinary-key
 	// comparisons.
 	UnmodeledKeyParts int `json:"unmodeled_key_parts,omitempty"`
+	// DirectionUnknownParts counts classified members (column or
+	// expression kind) whose sort direction the source could not prove.
+	// Any nonzero count means the index's key ordering is unproven, so it
+	// must not enter ordinary-key comparisons either.
+	DirectionUnknownParts int `json:"direction_unknown_parts,omitempty"`
 	// Global marks the TiDB-only GLOBAL index modifier parsed on table-level
 	// UNIQUE/PRIMARY KEY constraints and standalone CREATE INDEX statements.
 	// MySQL has no such modifier, so it is a vendor boundary there.
@@ -513,6 +528,15 @@ type Index struct {
 	// VisibilityExplicit. Any name present means that parsed aspect is
 	// unaudited.
 	UnmodeledOptions []string `json:"unmodeled_options,omitempty"`
+	// NameUnknown marks a member whose stored name the projection cannot
+	// prove — set on every member when StoredIndexNames cannot resolve the
+	// collection under the product's auto-naming rule (cross-member suffix
+	// effects make per-member honesty all-or-nothing there), and cleared by
+	// construction everywhere else: provider names are catalog facts and
+	// members merged by an authored ADD/CREATE carry an authored name.
+	// Name-keyed lookups must only bind members with a proven name.
+	// Internal audit marker; not serialized.
+	NameUnknown bool `json:"-"`
 }
 
 // Constraint describes a non-index table constraint worth preserving for later rules.

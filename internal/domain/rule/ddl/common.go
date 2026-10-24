@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: normalized Statement specs emitted by application extraction, including alter-table and standalone rename payloads
-// output: reusable DDL rule predicates and rule identifier constants, including the CHANGE and RENAME destination-name, RENAME COLUMN version, and T07 advanced-column identifiers, plus shared alter-action and rename matching helpers, the indexPlainComparable plain-key premise shared by the pair-comparison rules, and the memberComparisonGap/declaredComparisonGap attribution for applicable pair comparisons a non-plain member leaves unverifiable (declared-vs-existing on create_index, declaration-vs-declaration inside create_table), and the T10 alter_index/invisibility/advanced-index-compatibility rule identifiers — left-prefix pairing treats an expression-bearing member's Columns as a truncated projection, so a declared prefix of the named columns is pairable even at equal length
+// output: reusable DDL rule predicates and rule identifier constants, including the CHANGE and RENAME destination-name, RENAME COLUMN version, and T07 advanced-column identifiers, plus shared alter-action and rename matching helpers, the indexPlainComparable plain-key premise shared by the pair-comparison rules, and the memberComparisonGap/declaredComparisonGap attribution for applicable pair comparisons a non-plain member leaves unverifiable (declared-vs-existing on create_index, declaration-vs-declaration inside create_table), and the T10 alter_index/invisibility/advanced-index-compatibility rule identifiers — left-prefix pairing treats any member the key-part list counts beyond the named columns (expression-bearing or unmodeled alike) as a truncated projection, so a declared prefix of the named columns is pairable even at equal length
 // pos: DDL rule common helpers shared across concrete rules and parser-neutral rename semantics
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -569,6 +569,7 @@ func indexPlainComparable(idx spec.Index) bool {
 		idx.ExpressionCount == 0 &&
 		!idx.HasExpressionKeys &&
 		idx.UnmodeledKeyParts == 0 &&
+		idx.DirectionUnknownParts == 0 &&
 		!idx.HasPredicate &&
 		len(idx.IncludedColumns) == 0 &&
 		!idx.Global &&
@@ -597,15 +598,19 @@ func leftPrefixPairing(declared, existing spec.Index) bool {
 		len(declared.Columns) == 0 {
 		return false
 	}
-	if existing.ExpressionCount > 0 || existing.HasExpressionKeys {
+	if existing.ExpressionCount > 0 || existing.HasExpressionKeys ||
+		len(existing.KeyParts) > len(existing.Columns) {
 		// Expression parts never enter Columns, so the recorded columns are
 		// a truncated projection of the real key sequence and expression
-		// positions are unrecorded. A declared index naming every recorded
-		// column in order can still be a strict left prefix of the real
-		// sequence once hidden parts follow — only a non-strict prefix of
-		// the named projection is provably pairable; anything else (a
-		// declared column absent from the named parts, or a declared prefix
-		// reaching past them) is unrelated under every interleaving.
+		// positions are unrecorded; the same truncation holds for any
+		// member the key-part list counts beyond the named columns
+		// (unmodeled rows hide members too). A declared index naming every
+		// recorded column in order can still be a strict left prefix of
+		// the real sequence once hidden parts follow — only a non-strict
+		// prefix of the named projection is provably pairable; anything
+		// else (a declared column absent from the named parts, or a
+		// declared prefix reaching past them) is unrelated under every
+		// interleaving.
 		return hasKeyPartPrefix(declared.Columns, existing.Columns)
 	}
 	return isLeftPrefix(declared.Columns, existing.Columns)
