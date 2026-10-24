@@ -1,0 +1,5 @@
+go test ./internal/application/audit -run TestDDLInventoryContract -count=1
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.329s
+== corpus ==
+go test ./internal/application/audit -run 'TestSQLCorpusMySQLAndTiDB|TestSQLCorpusExpectedFilesAreWellFormed|TestSQLCorpusCoversSupportedRuleDialects' -count=1
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.387s

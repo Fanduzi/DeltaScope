@@ -1,0 +1,9 @@
+== go test ./... ==
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig	(cached)
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/cli	5.433s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/http	5.188s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/mcp	5.961s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/metadata	5.258s
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	6.159s
+ok  	github.com/Fanduzi/DeltaScope/scripts/t06a17proof	5.491s
+ok  	github.com/Fanduzi/DeltaScope/scripts/t07proof	6.144s

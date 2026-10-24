@@ -1,0 +1,41 @@
+python3 ./scripts/ddl_golden.py run --task "T03" --artifact-dir "/tmp/ddl-golden-r8-T03"
+[ddl-golden] task=T03 head=3a92a02a5d0c cases=118 passed=118 assertions=1376
+[ddl-golden] artifact=/private/tmp/ddl-golden-r8-T03/T03/artifact.json
+[ddl-golden] PASS
+== T03 rc=0
+python3 ./scripts/ddl_golden.py run --task "T04" --artifact-dir "/tmp/ddl-golden-r8-T04"
+[ddl-golden] task=T04 head=3a92a02a5d0c cases=163 passed=163 assertions=1880
+[ddl-golden] artifact=/private/tmp/ddl-golden-r8-T04/T04/artifact.json
+[ddl-golden] PASS
+== T04 rc=0
+python3 ./scripts/ddl_golden.py run --task "T05" --artifact-dir "/tmp/ddl-golden-r8-T05"
+[ddl-golden] task=T05 head=3a92a02a5d0c cases=247 passed=247 assertions=5100
+[ddl-golden] artifact=/private/tmp/ddl-golden-r8-T05/T05/artifact.json
+[ddl-golden] PASS
+== T05 rc=0
+python3 ./scripts/ddl_golden.py run --task "T06" --artifact-dir "/tmp/ddl-golden-r8-T06"
+[ddl-golden] task=T06 head=3a92a02a5d0c cases=496 passed=496 assertions=11772
+[ddl-golden] artifact=/private/tmp/ddl-golden-r8-T06/T06/artifact.json
+[ddl-golden] PASS
+== T06 rc=0
+python3 ./scripts/ddl_golden.py run --task "T07" --artifact-dir "/tmp/ddl-golden-r8-T07"
+[ddl-golden] task=T07 head=3a92a02a5d0c cases=207 passed=207 assertions=6190
+[ddl-golden] artifact=/private/tmp/ddl-golden-r8-T07/T07/artifact.json
+[ddl-golden] PASS
+== T07 rc=0
+python3 ./scripts/ddl_golden.py run --task "T08" --artifact-dir "/tmp/ddl-golden-r8-T08"
+[ddl-golden] task=T08 head=3a92a02a5d0c cases=172 passed=172 assertions=4240
+[ddl-golden] artifact=/private/tmp/ddl-golden-r8-T08/T08/artifact.json
+[ddl-golden] PASS
+== T08 rc=0
+python3 ./scripts/ddl_golden.py run --task "T09" --artifact-dir "/tmp/ddl-golden-r8-T09"
+[ddl-golden] task=T09 head=3a92a02a5d0c cases=125 passed=125 assertions=3442
+[ddl-golden] artifact=/private/tmp/ddl-golden-r8-T09/T09/artifact.json
+[ddl-golden] PASS
+== T09 rc=0
+python3 ./scripts/ddl_golden.py run --task "T10" --artifact-dir "/tmp/ddl-golden-r8-T10"
+[ddl-golden] task=T10 head=3a92a02a5d0c cases=126 passed=126 assertions=3214
+[ddl-golden] artifact=/private/tmp/ddl-golden-r8-T10/T10/artifact.json
+[ddl-golden] PASS
+== T10 rc=0
+ALLDONE

@@ -297,4 +297,5 @@ original id retained): per-anchor implicit-PK refuse/order-gap/create,
 TiDB PRIMARY object split, prefix_required/prefix-ok, FULLTEXT-int,
 SPATIAL-nullable/type/ok, JSON-direct, expression-missing,
 multi-valued-supported, and TiDB GLOBAL gate cases. Frozen ID SHA-256
-`5efb9502716c4b2bbf66d335674a3f820cd58d8c5312aab6a32292a3b003197d`.
+`3d526e8ef8199b18fbbf39fa1af024192948fee3a0ebefeea6d086c330329311`
+(123-case intermediate freeze was `5efb9502…`).

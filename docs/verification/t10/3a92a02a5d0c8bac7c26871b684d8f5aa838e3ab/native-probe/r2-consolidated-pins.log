@@ -1,0 +1,64 @@
+===== mysql80 implicit-pk =====
+mysql80|imp_first_invisible|rc:1 ERROR 3522 (HY000) at line 1: A primary key index cannot be invisible
+mysql80|imp_second_invisible|rc:0 
+mysql80|imp_nullable_invisible|rc:0 
+mysql80|imp_order_b_invisible|rc:1 ERROR 3522 (HY000) at line 1: A primary key index cannot be invisible
+mysql80|imp_order_a_invisible|rc:0 
+mysql80|imp_create_holder|rc:1 ERROR 3522 (HY000) at line 1: A primary key index cannot be invisible
+mysql80|imp_create_second|rc:0 
+mysql80|imp_prefix_holder|rc:1 ERROR 3522 (HY000) at line 1: A primary key index cannot be invisible
+mysql80|imp_expr_member|rc:1 ERROR 3522 (HY000) at line 1: A primary key index cannot be invisible
+mysql80|imp_add_unique_first|rc:1 ERROR 3522 (HY000) at line 1: A primary key index cannot be invisible
+===== mysql80 tidb/mysql primary object =====
+mysql80|ncp_visible|rc:1 ERROR 1146 (42S02) at line 1: Table 'probe_mysql80.ncp' doesn't exist
+mysql80|ncp_invisible|rc:1 ERROR 1146 (42S02) at line 1: Table 'probe_mysql80.ncp' doesn't exist
+mysql80|cpk_visible|rc:1 ERROR 3522 (HY000) at line 1: A primary key index cannot be invisible
+mysql80|vpk_invisible|rc:1 ERROR 3522 (HY000) at line 1: A primary key index cannot be invisible
+mysql80|cpk_catalog|rc:1 ERROR 1109 (42S02) at line 1: Unknown table 'TIDB_INDEXES' in information_schema
+mysql80|cpk_pktype|rc:1 ERROR 1054 (42S22) at line 1: Unknown column 'tidb_pk_type' in 'field list'
+===== tidb85 implicit-pk =====
+tidb85|imp_first_invisible|rc:1 ERROR 3522 (HY000) at line 1: A primary key index cannot be invisible
+tidb85|imp_second_invisible|rc:0 
+tidb85|imp_nullable_invisible|rc:0 
+tidb85|imp_order_b_invisible|rc:1 ERROR 3522 (HY000) at line 1: A primary key index cannot be invisible
+tidb85|imp_order_a_invisible|rc:0 
+tidb85|imp_create_holder|rc:1 ERROR 3522 (HY000) at line 1: A primary key index cannot be invisible
+tidb85|imp_create_second|rc:0 
+tidb85|imp_prefix_holder|rc:1 ERROR 3522 (HY000) at line 1: A primary key index cannot be invisible
+tidb85|imp_expr_member|rc:0 
+tidb85|imp_add_unique_first|rc:1 ERROR 3522 (HY000) at line 1: A primary key index cannot be invisible
+===== tidb85 tidb/mysql primary object =====
+tidb85|ncp_visible|rc:0 
+tidb85|ncp_invisible|rc:1 ERROR 3522 (HY000) at line 1: A primary key index cannot be invisible
+tidb85|cpk_visible|rc:1 ERROR 1176 (42000) at line 1: Key 'PRIMARY' doesn't exist in table 'cpk'
+tidb85|vpk_invisible|rc:1 ERROR 3522 (HY000) at line 1: A primary key index cannot be invisible
+tidb85|cpk_catalog|rc:0 PRIMARY	YES
+tidb85|cpk_pktype|rc:0 CLUSTERED
+===== member-legality pins =====
+mysql80|blob_noprefix|rc:1 ERROR 1170 (42000) at line 1: BLOB/TEXT column 'b' used in key specification without a key length
+mysql80|blob_prefix|rc:0 
+mysql80|json_direct|rc:1 ERROR 3152 (42000) at line 1: JSON column 'j' supports indexing only via generated columns on a specified JSON path.
+mysql80|json_mv_ok|rc:0 
+mysql80|ft_int|rc:1 ERROR 1283 (HY000) at line 1: Column 'n' cannot be part of FULLTEXT index
+mysql80|ft_text|rc:0 
+mysql80|sp_int|rc:1 ERROR 1687 (42000) at line 1: A SPATIAL index may only contain a geometrical type column
+mysql80|sp_geom_null|rc:1 ERROR 1252 (42000) at line 1: All parts of a SPATIAL index must be NOT NULL
+mysql80|sp_geom_nn|rc:0 
+mysql80|expr_missing|rc:1 ERROR 1054 (42S22) at line 1: Unknown column 'b' in 'functional index'
+mysql80|expr_ok|rc:0 
+mysql84|blob_noprefix|rc:1 ERROR 1170 (42000) at line 1: BLOB/TEXT column 'b' used in key specification without a key length
+mysql57|ft_int|rc:1 ERROR 1283 (HY000) at line 1: Column 'n' cannot be part of FULLTEXT index
+mysql57|sp_geom_null|rc:1 ERROR 1252 (42000) at line 1: All parts of a SPATIAL index must be NOT NULL
+mysql57|sp_geom_nn|rc:0 
+mysql57|sp_geom_innodb|rc:0 
+tidb85|global_nonpart|rc:1 ERROR 8200 (HY000) at line 1: Unsupported Global Index on non-partitioned table
+tidb85|global_part|rc:0 
+tidb85|global_nonunique|rc:1 ERROR 8200 (HY000) at line 1: Unsupported Global Index on non-partitioned table
+tidb85|prefix_t_ok|rc:0 
+tidb85|prefix_t_noprefix|rc:1 ERROR 1170 (42000) at line 1: BLOB/TEXT column 'b' used in key specification without a key length
+tidb85|desc_dir|rc:0 
+tidb85|desc_collation|rc:0 A
+tidb85|ft_syntax|rc:0 
+tidb85|sp_syntax|rc:1 ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 37 near "geometry, spatial key i(g))" 
+tidb85|json_direct|rc:1 ERROR 3152 (42000) at line 1: JSON column 'j' cannot be used in key specification.
+DONE

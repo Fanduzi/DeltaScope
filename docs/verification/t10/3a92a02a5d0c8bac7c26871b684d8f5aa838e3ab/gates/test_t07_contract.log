@@ -1,0 +1,91 @@
+PASS T07 complete constructed control
+PASS T07 wrong finding column
+PASS T07 wrong finding dependent_column
+PASS T07 wrong finding dependency_kind
+PASS T07 wrong finding dependency
+PASS T07 wrong finding action
+PASS T07 wrong statement ownership
+PASS T07 finding remove
+PASS T07 finding duplicate
+PASS T07 finding wrong-rule
+PASS T07 finding wrong-message
+PASS T07 finding wrong-location
+PASS T07 cross-dependent pairing
+PASS T07 unknown dependencies laundered to none
+PASS T07 declaration known laundered metadata unknown
+PASS T07 vendor negative replaced by positive
+PASS T07 skipped setup
+PASS T07 skipped execute
+PASS T07 skipped structure
+PASS T07 skipped post_verify
+PASS T07 skipped teardown
+PASS T07 structure missing-column
+PASS T07 structure duplicate-column
+PASS T07 structure missing-dependency
+PASS T07 structure failed-query
+PASS T07 structure false-rc
+PASS T07 rejection reason skipped
+PASS T07 anchor rebind
+PASS T07 required=false profile swap
+PASS T07 strict loaded None
+PASS T07 strict applicable None
+PASS T07 strict raw summary None
+PASS T07 strict denominator None
+PASS T07 strict loaded False
+PASS T07 strict applicable False
+PASS T07 strict raw summary False
+PASS T07 strict denominator False
+PASS T07 strict loaded 1.0
+PASS T07 strict applicable 1.0
+PASS T07 strict raw summary 1.0
+PASS T07 strict denominator 1.0
+PASS T07 strict loaded '1'
+PASS T07 strict applicable '1'
+PASS T07 strict raw summary '1'
+PASS T07 strict denominator '1'
+PASS T07 disabled summary key None
+PASS T07 disabled summary key False
+PASS T07 disabled summary key {}
+PASS T07 disabled summary key []
+PASS T07 disabled summary key 0
+PASS T07 required=false applicable
+PASS T07 unknown expression disguised empty references
+PASS T07 privacy finding
+PASS T07 privacy gap
+PASS T07 privacy diagnostic
+PASS T07 privacy explanation
+PASS T07 double-side deletion verify
+PASS T07 double-side deletion execute
+PASS T07 double-side deletion case
+PASS T07 duplicate case ID
+PASS T07 raw/parsed drift
+PASS T07 raw summary statements False
+PASS T07 raw summary statements 0.0
+PASS T07 raw summary statements None
+PASS T07 raw summary warnings False
+PASS T07 raw summary warnings 0.0
+PASS T07 raw summary warnings None
+PASS T07 raw summary notices False
+PASS T07 raw summary notices 0.0
+PASS T07 raw summary notices None
+PASS T07 boundary version role swap
+PASS T07 vendor negative cross-anchor positive
+PASS T07 native step reorder
+PASS T07 private literal payload key
+PASS T07 malformed case ID
+PASS T07 fixture preexisting preserves unowned resources
+PASS T07 fixture count-error preserves unowned resources
+PASS T07 fixture count-empty preserves unowned resources
+PASS T07 fixture wrong-version preserves unowned resources
+PASS T07 fixture version-query-error preserves unowned resources
+PASS T07 fixture collision preserves unowned resources
+PASS T07 fixture owned intermediate failure cleans without audit
+PASS T07 fixture primary and cleanup errors preserved False
+PASS T07 fixture primary and cleanup errors preserved True
+PASS T07 fixture fixture credentials environment-only
+PASS T07 fixture missing fixture environment fails closed
+{
+  "constructed_checks": 86,
+  "failures": 0,
+  "note": "validator sensitivity only; not product or native execution"
+}
