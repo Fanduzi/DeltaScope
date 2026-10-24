@@ -1467,27 +1467,18 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
+     "complete"
     ],
     "statement_sql": [
      "ALTER TABLE t ADD (c INT, UNIQUE KEY uk (c) GLOBAL);"
-    ],
-    "unsupported_features": [
-     "alter_table.add_index.index.global"
-    ],
-    "unsupported_entries": [
-     {
-      "feature": "alter_table.add_index.index.global",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
-     }
     ]
    }
   },
@@ -1709,27 +1700,18 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
+     "complete"
     ],
     "statement_sql": [
      "ALTER TABLE t ADD (c INT, PRIMARY KEY (c) GLOBAL);"
-    ],
-    "unsupported_features": [
-     "alter_table.add_constraint.index.global"
-    ],
-    "unsupported_entries": [
-     {
-      "feature": "alter_table.add_constraint.index.global",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
-     }
     ]
    }
   },
@@ -1742,27 +1724,18 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
+     "complete"
     ],
     "statement_sql": [
      "CREATE TABLE t (a VARCHAR(32), KEY ix (a, (LOWER(a))));"
-    ],
-    "unsupported_features": [
-     "create_table.index.expr"
-    ],
-    "unsupported_entries": [
-     {
-      "feature": "create_table.index.expr",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
-     }
     ]
    }
   },
@@ -1775,27 +1748,18 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
+     "complete"
     ],
     "statement_sql": [
      "CREATE TABLE t (a VARCHAR(32), KEY ix (a, (LOWER(a))));"
-    ],
-    "unsupported_features": [
-     "create_table.index.expr"
-    ],
-    "unsupported_entries": [
-     {
-      "feature": "create_table.index.expr",
-      "reason": "parsed by the shared parser but not covered by audited semantics"
-     }
     ]
    }
   },
@@ -1808,52 +1772,18 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 3,
-    "unsupported": 3,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
+     "complete"
     ],
     "statement_sql": [
      "CREATE INDEX ix ON t (c(10), (LOWER(b)) DESC);"
-    ],
-    "unsupported_features": [
-     "create_index.create_index.index.expr",
-     "create_index.create_index.index.prefix",
-     "create_index.create_index.index.desc"
-    ],
-    "unsupported_entries": [
-     {
-      "feature": "create_index.create_index.index.expr",
-      "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {
-       "aspect": "index",
-       "index_kind": "secondary",
-       "expression_count": 1
-      }
-     },
-     {
-      "feature": "create_index.create_index.index.prefix",
-      "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {
-       "aspect": "index",
-       "index_kind": "secondary",
-       "prefix_parts": 1
-      }
-     },
-     {
-      "feature": "create_index.create_index.index.desc",
-      "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {
-       "aspect": "index",
-       "index_kind": "secondary",
-       "desc_parts": 1
-      }
-     }
     ]
    }
   },
@@ -1866,52 +1796,18 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 3,
-    "unsupported": 3,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
+     "complete"
     ],
     "statement_sql": [
      "CREATE INDEX ix ON t (c(10), (LOWER(b)) DESC);"
-    ],
-    "unsupported_features": [
-     "create_index.create_index.index.expr",
-     "create_index.create_index.index.prefix",
-     "create_index.create_index.index.desc"
-    ],
-    "unsupported_entries": [
-     {
-      "feature": "create_index.create_index.index.expr",
-      "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {
-       "aspect": "index",
-       "index_kind": "secondary",
-       "expression_count": 1
-      }
-     },
-     {
-      "feature": "create_index.create_index.index.prefix",
-      "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {
-       "aspect": "index",
-       "index_kind": "secondary",
-       "prefix_parts": 1
-      }
-     },
-     {
-      "feature": "create_index.create_index.index.desc",
-      "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {
-       "aspect": "index",
-       "index_kind": "secondary",
-       "desc_parts": 1
-      }
-     }
     ]
    }
   },
@@ -2227,32 +2123,18 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
+     "complete"
     ],
     "statement_sql": [
      "CREATE INDEX ix ON t (c(0));"
-    ],
-    "unsupported_features": [
-     "create_index.create_index.index.prefix"
-    ],
-    "unsupported_entries": [
-     {
-      "feature": "create_index.create_index.index.prefix",
-      "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {
-       "aspect": "index",
-       "index_kind": "secondary",
-       "prefix_parts": 1
-      }
-     }
     ]
    }
   },
@@ -2576,32 +2458,18 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
+     "complete"
     ],
     "statement_sql": [
      "ALTER TABLE t ADD INDEX ix (c(8));"
-    ],
-    "unsupported_features": [
-     "alter_table.add_index.index.prefix"
-    ],
-    "unsupported_entries": [
-     {
-      "feature": "alter_table.add_index.index.prefix",
-      "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {
-       "aspect": "index",
-       "index_kind": "secondary",
-       "prefix_parts": 1
-      }
-     }
     ]
    }
   },
@@ -2614,32 +2482,18 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
+     "complete"
     ],
     "statement_sql": [
      "ALTER TABLE t ADD PRIMARY KEY (c(8));"
-    ],
-    "unsupported_features": [
-     "alter_table.add_constraint.index.prefix"
-    ],
-    "unsupported_entries": [
-     {
-      "feature": "alter_table.add_constraint.index.prefix",
-      "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {
-       "aspect": "index",
-       "index_kind": "primary",
-       "prefix_parts": 1
-      }
-     }
     ]
    }
   },
@@ -2879,42 +2733,18 @@
     "none"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "review",
+    "exit": 0,
+    "verdict": "pass",
     "statements": 1,
     "findings": 0,
-    "diagnostics": 2,
-    "unsupported": 2,
-    "coverage": "incomplete",
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
     "statement_coverage": [
-     "incomplete"
+     "complete"
     ],
     "statement_sql": [
      "CREATE TABLE t (a VARCHAR(32), b VARCHAR(32), KEY ix1 ((LOWER(a))), KEY ix2 ((LOWER(a)), (LOWER(b))));"
-    ],
-    "unsupported_features": [
-     "create_table.index.expr",
-     "create_table.index.expr"
-    ],
-    "unsupported_entries": [
-     {
-      "feature": "create_table.index.expr",
-      "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {
-       "aspect": "index",
-       "index_kind": "secondary",
-       "expression_count": 1
-      }
-     },
-     {
-      "feature": "create_table.index.expr",
-      "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {
-       "aspect": "index",
-       "index_kind": "secondary",
-       "expression_count": 2
-      }
-     }
     ]
    }
   },
