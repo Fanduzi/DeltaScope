@@ -1,0 +1,29 @@
+go test ./internal/application/audit -run 'TestSQLCorpusMySQLAndTiDB|TestSQLCorpusExpectedFilesAreWellFormed|TestSQLCorpusCoversSupportedRuleDialects' -count=1
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.375s
+go test ./internal/application/audit -count=1 -tags postgresql -run TestDDLCoverageCatalog
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.489s
+go test ./internal/application/audit -count=1 -run TestDDLParserErrorUnsupportedContract
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.333s
+go test ./internal/application/audit -count=1 -tags postgresql -run TestDDLParserErrorUnsupportedContract
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.390s
+go test ./pkg/deltascope -count=1 -run ParserErrorUnsupportedContract
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.369s
+go test ./internal/interfaces/cli -count=1 -run CLIparserErrorUnsupported
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/cli	0.588s
+go test ./internal/interfaces/http -count=1 -run HandlerAuditParserErrorUnsupportedContract
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/http	0.671s
+go test ./internal/interfaces/mcp -count=1 -run MCPParserErrorUnsupportedContract
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/mcp	0.567s
+go test ./internal/application/audit -count=1 -run TestParserErrorDiagnosticEvidence
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.339s
+go test ./internal/application/audit -count=1 -tags postgresql -run TestUnsupportedStatementDiagnosticEvidencePostgreSQL
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.388s
+go test ./pkg/deltascope -count=1 -run TestUnsupportedDiagnosticsEvidenceSDKParserError
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.376s
+go test ./internal/interfaces/cli -count=1 -run TestUnsupportedDiagnosticsEvidenceCLI
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/cli	0.359s
+go test ./internal/interfaces/http -count=1 -run TestUnsupportedDiagnosticsEvidenceHTTPParserError
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/http	0.459s
+go test ./internal/interfaces/mcp -count=1 -run TestUnsupportedDiagnosticsEvidenceMCPParserError
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/mcp	0.361s
+docs-examples: PASS

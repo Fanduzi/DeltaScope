@@ -1,0 +1,195 @@
+testing: warning: no tests to run
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/spec	0.193s [no tests to run]
+=== RUN   TestT10R1ImplicitPrimaryUniqueInvisibleRefused
+=== PAUSE TestT10R1ImplicitPrimaryUniqueInvisibleRefused
+=== RUN   TestT10R1CreateTableImplicitPrimaryInvisibleRefused
+=== PAUSE TestT10R1CreateTableImplicitPrimaryInvisibleRefused
+=== RUN   TestT10R1ImplicitPrimaryInvisibleSharedEntries
+=== PAUSE TestT10R1ImplicitPrimaryInvisibleSharedEntries
+=== RUN   TestT10R1ExplicitPrimaryKeepsUniqueHidable
+=== PAUSE TestT10R1ExplicitPrimaryKeepsUniqueHidable
+=== RUN   TestT10R1NullableUniqueNotImplicitPrimary
+=== PAUSE TestT10R1NullableUniqueNotImplicitPrimary
+=== RUN   TestT10R1ExpressionUniqueNotImplicitPrimary
+=== PAUSE TestT10R1ExpressionUniqueNotImplicitPrimary
+=== RUN   TestT10R1ImplicitPrimaryOrderDeclared
+=== PAUSE TestT10R1ImplicitPrimaryOrderDeclared
+=== RUN   TestT10R1ImplicitPrimaryOrderGap
+=== PAUSE TestT10R1ImplicitPrimaryOrderGap
+=== RUN   TestT10R1ImplicitPrimaryUnknownPKGap
+=== PAUSE TestT10R1ImplicitPrimaryUnknownPKGap
+=== RUN   TestT10R1TiDBPrimaryIndexObjectVisible
+=== PAUSE TestT10R1TiDBPrimaryIndexObjectVisible
+=== RUN   TestT10R1TiDBPrimaryIndexObjectInvisibleRefused
+=== PAUSE TestT10R1TiDBPrimaryIndexObjectInvisibleRefused
+=== RUN   TestT10R1TiDBPrimaryHandleMissingIndex
+=== PAUSE TestT10R1TiDBPrimaryHandleMissingIndex
+=== RUN   TestT10R1PrefixRequiredMemberLegality
+=== PAUSE TestT10R1PrefixRequiredMemberLegality
+=== RUN   TestT10R1PrefixMemberFacts
+=== PAUSE TestT10R1PrefixMemberFacts
+=== RUN   TestT10R1FulltextSpatialMemberLegality
+=== PAUSE TestT10R1FulltextSpatialMemberLegality
+=== RUN   TestT10R1ExpressionMemberDependency
+=== PAUSE TestT10R1ExpressionMemberDependency
+=== RUN   TestT10R1TiDBGlobalIndexGate
+=== PAUSE TestT10R1TiDBGlobalIndexGate
+=== RUN   TestT10R1DescendingMemberFactsDistinct
+=== PAUSE TestT10R1DescendingMemberFactsDistinct
+=== CONT  TestT10R1ImplicitPrimaryUniqueInvisibleRefused
+=== RUN   TestT10R1ImplicitPrimaryUniqueInvisibleRefused/mysql
+=== CONT  TestT10R1TiDBPrimaryIndexObjectVisible
+=== PAUSE TestT10R1ImplicitPrimaryUniqueInvisibleRefused/mysql
+=== CONT  TestT10R1ImplicitPrimaryUnknownPKGap
+=== CONT  TestT10R1ImplicitPrimaryOrderGap
+=== CONT  TestT10R1ImplicitPrimaryOrderDeclared
+=== CONT  TestT10R1ExpressionUniqueNotImplicitPrimary
+=== CONT  TestT10R1NullableUniqueNotImplicitPrimary
+=== CONT  TestT10R1ExplicitPrimaryKeepsUniqueHidable
+=== CONT  TestT10R1ImplicitPrimaryInvisibleSharedEntries
+=== CONT  TestT10R1CreateTableImplicitPrimaryInvisibleRefused
+=== CONT  TestT10R1FulltextSpatialMemberLegality
+=== RUN   TestT10R1ImplicitPrimaryUnknownPKGap/mysql
+=== PAUSE TestT10R1ImplicitPrimaryUnknownPKGap/mysql
+=== CONT  TestT10R1DescendingMemberFactsDistinct
+--- PASS: TestT10R1DescendingMemberFactsDistinct (0.00s)
+=== RUN   TestT10R1ImplicitPrimaryUnknownPKGap/tidb
+=== CONT  TestT10R1TiDBGlobalIndexGate
+=== RUN   TestT10R1ImplicitPrimaryInvisibleSharedEntries/mysql/alter_add_unique
+=== PAUSE TestT10R1ImplicitPrimaryInvisibleSharedEntries/mysql/alter_add_unique
+=== RUN   TestT10R1ImplicitPrimaryInvisibleSharedEntries/mysql/create_unique_index
+=== PAUSE TestT10R1ImplicitPrimaryInvisibleSharedEntries/mysql/create_unique_index
+=== RUN   TestT10R1TiDBGlobalIndexGate/non-partitioned_refuses
+=== RUN   TestT10R1ImplicitPrimaryInvisibleSharedEntries/tidb/alter_add_unique
+=== PAUSE TestT10R1ImplicitPrimaryInvisibleSharedEntries/tidb/alter_add_unique
+=== RUN   TestT10R1ImplicitPrimaryInvisibleSharedEntries/tidb/create_unique_index
+=== PAUSE TestT10R1ImplicitPrimaryInvisibleSharedEntries/tidb/create_unique_index
+=== RUN   TestT10R1ImplicitPrimaryUniqueInvisibleRefused/tidb
+=== PAUSE TestT10R1ImplicitPrimaryUniqueInvisibleRefused/tidb
+=== CONT  TestT10R1ExpressionMemberDependency
+=== RUN   TestT10R1CreateTableImplicitPrimaryInvisibleRefused/mysql
+=== PAUSE TestT10R1CreateTableImplicitPrimaryInvisibleRefused/mysql
+=== CONT  TestT10R1PrefixMemberFacts
+=== RUN   TestT10R1ImplicitPrimaryOrderGap/mysql
+=== RUN   TestT10R1ImplicitPrimaryOrderDeclared/mysql
+=== PAUSE TestT10R1ImplicitPrimaryOrderDeclared/mysql
+=== PAUSE TestT10R1ImplicitPrimaryOrderGap/mysql
+=== RUN   TestT10R1ImplicitPrimaryOrderDeclared/tidb
+=== PAUSE TestT10R1ImplicitPrimaryOrderDeclared/tidb
+=== RUN   TestT10R1ExpressionUniqueNotImplicitPrimary/mysql
+=== PAUSE TestT10R1ExpressionUniqueNotImplicitPrimary/mysql
+=== RUN   TestT10R1NullableUniqueNotImplicitPrimary/mysql
+=== PAUSE TestT10R1NullableUniqueNotImplicitPrimary/mysql
+=== RUN   TestT10R1ImplicitPrimaryOrderGap/tidb
+=== RUN   TestT10R1NullableUniqueNotImplicitPrimary/tidb
+=== PAUSE TestT10R1NullableUniqueNotImplicitPrimary/tidb
+=== CONT  TestT10R1TiDBPrimaryIndexObjectInvisibleRefused
+=== PAUSE TestT10R1ImplicitPrimaryOrderGap/tidb
+=== RUN   TestT10R1FulltextSpatialMemberLegality/fulltext_on_int
+=== CONT  TestT10R1PrefixRequiredMemberLegality
+=== RUN   TestT10R1PrefixRequiredMemberLegality/mysql
+=== PAUSE TestT10R1PrefixRequiredMemberLegality/mysql
+=== RUN   TestT10R1PrefixRequiredMemberLegality/tidb
+=== PAUSE TestT10R1ImplicitPrimaryUnknownPKGap/tidb
+=== RUN   TestT10R1CreateTableImplicitPrimaryInvisibleRefused/tidb
+=== PAUSE TestT10R1CreateTableImplicitPrimaryInvisibleRefused/tidb
+=== CONT  TestT10R1ImplicitPrimaryInvisibleSharedEntries/mysql/alter_add_unique
+=== RUN   TestT10R1ExpressionUniqueNotImplicitPrimary/tidb
+=== PAUSE TestT10R1ExpressionUniqueNotImplicitPrimary/tidb
+=== CONT  TestT10R1ImplicitPrimaryInvisibleSharedEntries/tidb/create_unique_index
+=== CONT  TestT10R1TiDBPrimaryHandleMissingIndex
+=== RUN   TestT10R1ExplicitPrimaryKeepsUniqueHidable/mysql
+=== PAUSE TestT10R1PrefixRequiredMemberLegality/tidb
+=== CONT  TestT10R1ImplicitPrimaryInvisibleSharedEntries/tidb/alter_add_unique
+=== PAUSE TestT10R1ExplicitPrimaryKeepsUniqueHidable/mysql
+=== RUN   TestT10R1ExplicitPrimaryKeepsUniqueHidable/tidb
+=== PAUSE TestT10R1ExplicitPrimaryKeepsUniqueHidable/tidb
+=== CONT  TestT10R1ImplicitPrimaryUniqueInvisibleRefused/mysql
+=== CONT  TestT10R1ImplicitPrimaryInvisibleSharedEntries/mysql/create_unique_index
+--- PASS: TestT10R1TiDBPrimaryIndexObjectVisible (0.01s)
+=== CONT  TestT10R1ImplicitPrimaryUniqueInvisibleRefused/tidb
+--- PASS: TestT10R1PrefixMemberFacts (0.01s)
+=== CONT  TestT10R1ImplicitPrimaryOrderDeclared/mysql
+=== RUN   TestT10R1TiDBGlobalIndexGate/non-unique_refuses
+=== CONT  TestT10R1ImplicitPrimaryOrderDeclared/tidb
+--- PASS: TestT10R1ExpressionMemberDependency (0.01s)
+=== CONT  TestT10R1NullableUniqueNotImplicitPrimary/mysql
+=== CONT  TestT10R1ImplicitPrimaryOrderGap/mysql
+=== RUN   TestT10R1FulltextSpatialMemberLegality/fulltext_on_text
+--- PASS: TestT10R1TiDBPrimaryHandleMissingIndex (0.01s)
+=== CONT  TestT10R1ImplicitPrimaryOrderGap/tidb
+=== CONT  TestT10R1NullableUniqueNotImplicitPrimary/tidb
+=== CONT  TestT10R1ImplicitPrimaryUnknownPKGap/mysql
+--- PASS: TestT10R1ImplicitPrimaryInvisibleSharedEntries (0.00s)
+    --- PASS: TestT10R1ImplicitPrimaryInvisibleSharedEntries/mysql/alter_add_unique (0.01s)
+    --- PASS: TestT10R1ImplicitPrimaryInvisibleSharedEntries/tidb/alter_add_unique (0.01s)
+    --- PASS: TestT10R1ImplicitPrimaryInvisibleSharedEntries/mysql/create_unique_index (0.01s)
+    --- PASS: TestT10R1ImplicitPrimaryInvisibleSharedEntries/tidb/create_unique_index (0.02s)
+=== CONT  TestT10R1CreateTableImplicitPrimaryInvisibleRefused/mysql
+=== CONT  TestT10R1ImplicitPrimaryUnknownPKGap/tidb
+=== RUN   TestT10R1FulltextSpatialMemberLegality/spatial_on_int
+--- PASS: TestT10R1ImplicitPrimaryOrderDeclared (0.00s)
+    --- PASS: TestT10R1ImplicitPrimaryOrderDeclared/tidb (0.01s)
+    --- PASS: TestT10R1ImplicitPrimaryOrderDeclared/mysql (0.01s)
+=== CONT  TestT10R1ExpressionUniqueNotImplicitPrimary/mysql
+--- PASS: TestT10R1TiDBPrimaryIndexObjectInvisibleRefused (0.02s)
+=== CONT  TestT10R1CreateTableImplicitPrimaryInvisibleRefused/tidb
+=== RUN   TestT10R1TiDBGlobalIndexGate/unique_partitioned_passes
+=== CONT  TestT10R1ExpressionUniqueNotImplicitPrimary/tidb
+=== CONT  TestT10R1PrefixRequiredMemberLegality/mysql
+=== CONT  TestT10R1PrefixRequiredMemberLegality/tidb
+--- PASS: TestT10R1NullableUniqueNotImplicitPrimary (0.00s)
+    --- PASS: TestT10R1NullableUniqueNotImplicitPrimary/mysql (0.01s)
+    --- PASS: TestT10R1NullableUniqueNotImplicitPrimary/tidb (0.01s)
+=== CONT  TestT10R1ExplicitPrimaryKeepsUniqueHidable/mysql
+=== RUN   TestT10R1FulltextSpatialMemberLegality/spatial_on_nullable_geometry
+--- PASS: TestT10R1ImplicitPrimaryOrderGap (0.00s)
+    --- PASS: TestT10R1ImplicitPrimaryOrderGap/mysql (0.01s)
+    --- PASS: TestT10R1ImplicitPrimaryOrderGap/tidb (0.01s)
+=== CONT  TestT10R1ExplicitPrimaryKeepsUniqueHidable/tidb
+--- PASS: TestT10R1ImplicitPrimaryUnknownPKGap (0.00s)
+    --- PASS: TestT10R1ImplicitPrimaryUnknownPKGap/mysql (0.01s)
+    --- PASS: TestT10R1ImplicitPrimaryUnknownPKGap/tidb (0.01s)
+--- PASS: TestT10R1ImplicitPrimaryUniqueInvisibleRefused (0.00s)
+    --- PASS: TestT10R1ImplicitPrimaryUniqueInvisibleRefused/mysql (0.02s)
+    --- PASS: TestT10R1ImplicitPrimaryUniqueInvisibleRefused/tidb (0.02s)
+=== RUN   TestT10R1TiDBGlobalIndexGate/unknown_partition_gaps
+--- PASS: TestT10R1CreateTableImplicitPrimaryInvisibleRefused (0.00s)
+    --- PASS: TestT10R1CreateTableImplicitPrimaryInvisibleRefused/mysql (0.01s)
+    --- PASS: TestT10R1CreateTableImplicitPrimaryInvisibleRefused/tidb (0.01s)
+=== RUN   TestT10R1FulltextSpatialMemberLegality/spatial_on_notnull_geometry
+--- PASS: TestT10R1ExpressionUniqueNotImplicitPrimary (0.00s)
+    --- PASS: TestT10R1ExpressionUniqueNotImplicitPrimary/mysql (0.01s)
+    --- PASS: TestT10R1ExpressionUniqueNotImplicitPrimary/tidb (0.01s)
+--- PASS: TestT10R1ExplicitPrimaryKeepsUniqueHidable (0.00s)
+    --- PASS: TestT10R1ExplicitPrimaryKeepsUniqueHidable/tidb (0.01s)
+    --- PASS: TestT10R1ExplicitPrimaryKeepsUniqueHidable/mysql (0.01s)
+--- PASS: TestT10R1TiDBGlobalIndexGate (0.04s)
+    --- PASS: TestT10R1TiDBGlobalIndexGate/non-partitioned_refuses (0.01s)
+    --- PASS: TestT10R1TiDBGlobalIndexGate/non-unique_refuses (0.01s)
+    --- PASS: TestT10R1TiDBGlobalIndexGate/unique_partitioned_passes (0.01s)
+    --- PASS: TestT10R1TiDBGlobalIndexGate/unknown_partition_gaps (0.01s)
+--- PASS: TestT10R1FulltextSpatialMemberLegality (0.04s)
+    --- PASS: TestT10R1FulltextSpatialMemberLegality/fulltext_on_int (0.01s)
+    --- PASS: TestT10R1FulltextSpatialMemberLegality/fulltext_on_text (0.01s)
+    --- PASS: TestT10R1FulltextSpatialMemberLegality/spatial_on_int (0.01s)
+    --- PASS: TestT10R1FulltextSpatialMemberLegality/spatial_on_nullable_geometry (0.01s)
+    --- PASS: TestT10R1FulltextSpatialMemberLegality/spatial_on_notnull_geometry (0.00s)
+--- PASS: TestT10R1PrefixRequiredMemberLegality (0.00s)
+    --- PASS: TestT10R1PrefixRequiredMemberLegality/tidb (0.01s)
+    --- PASS: TestT10R1PrefixRequiredMemberLegality/mysql (0.02s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.352s
+testing: warning: no tests to run
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	1.257s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	1.054s [no tests to run]
+testing: warning: no tests to run
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql	0.806s [no tests to run]
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	2.495s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/spec	0.688s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql	1.173s

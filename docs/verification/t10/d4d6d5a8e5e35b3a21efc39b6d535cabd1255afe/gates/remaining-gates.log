@@ -1,0 +1,121 @@
+=== sql-corpus-gates
+go test ./internal/application/audit -run 'TestSQLCorpusMySQLAndTiDB|TestSQLCorpusExpectedFilesAreWellFormed|TestSQLCorpusCoversSupportedRuleDialects' -count=1
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	1.045s
+RC=0
+=== query-access-corpus-gates
+go test ./internal/application/queryaccess/ -run TestQueryAccessCorpus -count=1
+ok  	github.com/Fanduzi/DeltaScope/internal/application/queryaccess	1.278s
+go test -tags postgresql ./internal/application/queryaccess/ -run TestQueryAccessCorpusPostgreSQL -count=1
+ok  	github.com/Fanduzi/DeltaScope/internal/application/queryaccess	0.912s
+RC=0
+=== pg-confidence-gates
+/Library/Developer/CommandLineTools/usr/bin/make pg-unit-test-gates
+CGO_ENABLED=1 go test -tags postgresql -count=1 ./internal/infrastructure/parser/postgresql ./internal/application/audit ./internal/application/auditmeta ./internal/interfaces/cli ./internal/interfaces/http ./internal/interfaces/mcp ./pkg/deltascope
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/postgresql	0.763s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	7.937s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/auditmeta	3.339s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/cli	3.915s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/http	4.093s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/mcp	6.606s
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	4.938s
+/Library/Developer/CommandLineTools/usr/bin/make pg-e2e-gates
+/Library/Developer/CommandLineTools/usr/bin/make test-e2e-cli-postgresql
+mkdir -p bin
+CGO_ENABLED=1 go build -tags postgresql  -o bin/deltascope ./cmd/deltascope
+./scripts/test_cli_metadata_e2e_postgresql.sh
+[pg-cli-metadata-e2e] starting PostgreSQL fixtures
+ Network docker_default Creating 
+ Network docker_default Creating 
+ Network docker_default Created 
+ Network docker_default Created 
+ Container deltascope-pg-e2e Creating 
+ Container deltascope-pg-e2e Created 
+ Container deltascope-pg-e2e Starting 
+ Container deltascope-pg-e2e Started 
+[pg-cli-metadata-e2e] running PostgreSQL metadata-aware CLI cases
+[pg-cli-metadata-e2e] all PostgreSQL CLI metadata-aware e2e cases passed
+/Library/Developer/CommandLineTools/usr/bin/make test-e2e-http-postgresql
+./scripts/test_http_metadata_e2e_postgresql.sh
+[http-metadata-e2e-pg] starting PostgreSQL fixtures
+ Network docker_default Creating 
+ Network docker_default Creating 
+ Network docker_default Created 
+ Network docker_default Created 
+ Container deltascope-pg-e2e Creating 
+ Container deltascope-pg-e2e Created 
+ Container deltascope-pg-e2e Starting 
+ Container deltascope-pg-e2e Started 
+[http-metadata-e2e-pg] running HTTP metadata-aware PostgreSQL e2e tests
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/qualified_schema
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/explicit_schema
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/table_exists
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/plan_delete
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/plan_update
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/drop_pk
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/rename_col_missing
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/rename_idx_notice
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/drop_col_missing
+--- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL (4.52s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/qualified_schema (0.02s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/explicit_schema (0.01s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/table_exists (0.01s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/plan_delete (0.01s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/plan_update (0.01s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/drop_pk (0.01s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/rename_col_missing (0.01s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/rename_idx_notice (0.01s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/drop_col_missing (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/cmd/deltascope-server	5.154s
+/Library/Developer/CommandLineTools/usr/bin/make test-e2e-mcp-postgresql
+./scripts/test_mcp_metadata_e2e_postgresql.sh
+[mcp-metadata-e2e-pg] starting PostgreSQL fixtures
+ Network docker_default Creating 
+ Network docker_default Creating 
+ Network docker_default Created 
+ Network docker_default Created 
+ Container deltascope-pg-e2e Creating 
+ Container deltascope-pg-e2e Created 
+ Container deltascope-pg-e2e Starting 
+ Container deltascope-pg-e2e Started 
+[mcp-metadata-e2e-pg] running MCP metadata-aware PostgreSQL e2e tests
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/qualified_schema
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/explicit_schema
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/database_selection
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/table_exists
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/plan_delete
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/plan_update
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/drop_pk
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/rename_col_missing
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/rename_idx_forbid
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/drop_col_missing
+--- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL (33.19s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/qualified_schema (3.58s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/explicit_schema (3.23s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/database_selection (3.53s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/table_exists (3.21s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/plan_delete (3.23s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/plan_update (3.35s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/drop_pk (3.44s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/rename_col_missing (3.10s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/rename_idx_forbid (3.08s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/drop_col_missing (3.44s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/cmd/deltascope-mcp	33.826s
+RC=0
+=== decision-record-gate
+./scripts/check_decision_record.sh main...HEAD
+decision-record-gate: trigger paths hit but no trigger keywords in diff, PASS
+RC=0
+=== docs-example-gates
+docs-examples: PASS
+RC=0
+=== go vet
+RC=0
+=== release-dialect-hygiene-gates
+mkdir -p bin
+CGO_ENABLED=1 go build -tags postgresql  -o bin/deltascope ./cmd/deltascope
+DELTASCOPE_BIN="bin/deltascope" bash ./scripts/verify_release_dialect_hygiene.sh
+RC=0

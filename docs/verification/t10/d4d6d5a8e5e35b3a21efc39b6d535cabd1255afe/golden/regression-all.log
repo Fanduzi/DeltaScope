@@ -1,0 +1,652 @@
+===== T03 =====
+[ddl-golden] task=T03 head=1135e3f5dbee cases=118 passed=118 assertions=1330
+[ddl-golden] artifact=/private/tmp/ddl-golden-r4-T03/T03/artifact.json
+[ddl-golden] PASS
+RC=T03 0
+===== T04 =====
+[ddl-golden] task=T04 head=1135e3f5dbee cases=163 passed=163 assertions=1834
+[ddl-golden] artifact=/private/tmp/ddl-golden-r4-T04/T04/artifact.json
+[ddl-golden] PASS
+RC=T04 0
+===== T05 =====
+[ddl-golden] task=T05 head=1135e3f5dbee cases=247 passed=247 assertions=5054
+[ddl-golden] artifact=/private/tmp/ddl-golden-r4-T05/T05/artifact.json
+[ddl-golden] PASS
+RC=T05 0
+===== T06 =====
+[ddl-golden] task=T06 head=d4d6d5a8e5e3 cases=496 passed=496 assertions=11772
+[ddl-golden] artifact=/private/tmp/ddl-golden-r4-T06/T06/artifact.json
+[ddl-golden] PASS
+RC=T06 0
+===== T07 =====
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g01-stored-dependent-drop raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g01-stored-dependent-drop raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g01-stored-dependent-drop raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g02-stored-unrelated-drop raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g02-stored-unrelated-drop raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g02-stored-unrelated-drop raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g03-virtual-transitive raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g03-virtual-transitive raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g03-virtual-transitive raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g04-omitted-storage raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g04-omitted-storage raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g04-omitted-storage raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g05-literal-not-reference raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g05-literal-not-reference raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g05-literal-not-reference raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g06-quoted-identifier raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g06-quoted-identifier raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g06-quoted-identifier raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g07-generated-index raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g07-generated-index raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g07-generated-index raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g08-add-virtual raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g08-add-virtual raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g08-add-virtual raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g09-add-stored raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g09-add-stored raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g09-add-stored raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g10-modify-stored-expression raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g10-modify-stored-expression raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g10-modify-stored-expression raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g11-change-stored-name raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g11-change-stored-name raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g11-change-stored-name raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g12-virtual-to-stored raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g12-virtual-to-stored raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g12-virtual-to-stored raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g13-ordinary-to-stored raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g13-ordinary-to-stored raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g13-ordinary-to-stored raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g14-stored-to-ordinary raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g14-stored-to-ordinary raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g14-stored-to-ordinary raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g15-drop-generated-leaf raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g15-drop-generated-leaf raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g15-drop-generated-leaf raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g16-unrelated-modify raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g16-unrelated-modify raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g16-unrelated-modify raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g17-change-referenced-base raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g17-change-referenced-base raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g17-change-referenced-base raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-g18-rename-referenced-base raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-g18-rename-referenced-base raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-g18-rename-referenced-base raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-d01-literal raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d01-literal raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d01-literal raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-d02-sql-null raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d02-sql-null raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d02-sql-null raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-d03-constant-expression raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d03-constant-expression raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d03-constant-expression raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-d04-column-expression raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d04-column-expression raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d04-column-expression raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-d05-json-object raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d05-json-object raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d05-json-object raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-d06-alter-set-expression raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d06-alter-set-expression raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d06-alter-set-expression raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-d07-alter-literal-drop raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d07-alter-literal-drop raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d07-alter-literal-drop raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-d08-alter-json-set raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d08-alter-json-set raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d08-alter-json-set raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-d09-dependent-generated-chain raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d09-dependent-generated-chain raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d09-dependent-generated-chain raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-d10-alter-uuid-default raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d10-alter-uuid-default raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d10-alter-uuid-default raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-d11-drop-json-expression-default raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-d11-drop-json-expression-default raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-d11-drop-json-expression-default raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-v01-create-invisible raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-v01-create-invisible raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-v01-create-invisible raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-v02-create-explicit-visible raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-v02-create-explicit-visible raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-v02-create-explicit-visible raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-v03-create-omitted raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-v03-create-omitted raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-v03-create-omitted raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-v04-alter-visibility raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-v04-alter-visibility raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-v04-alter-visibility raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-v05-modify-omitted raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-v05-modify-omitted raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-v05-modify-omitted raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-v06-change-omitted raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-v06-change-omitted raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-v06-change-omitted raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-v07-all-invisible raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-v07-all-invisible raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-v07-all-invisible raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-v08-hidden-index raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-v08-hidden-index raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-v08-hidden-index raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql57-x01-generated-invisible raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql80-x01-generated-invisible raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-mysql84-x01-generated-invisible raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-provider-mysql57-g01-stored-dependent-drop raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-provider-mysql80-g01-stored-dependent-drop raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-provider-mysql84-g01-stored-dependent-drop raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-provider-mysql80-d04-column-expression raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-provider-mysql80-v08-hidden-index raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-provider-mysql84-d04-column-expression raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-provider-mysql84-v08-hidden-index raw/parsed payload types
+[ddl-golden][FAIL] T07 T07.meta.t07-provider-mysql57-v04-alter-visibility raw/parsed payload types
+[ddl-golden] task=T07 head=d4d6d5a8e5e3 cases=207 passed=79 assertions=2166
+[ddl-golden] artifact=/private/tmp/ddl-golden-r4-T07/T07/artifact.json
+RC=T07 1
+===== T08 =====
+[ddl-golden][FAIL] T08 T08.db.mysql57.ddl status must be pass
+[ddl-golden][FAIL] T08 T08.db.mysql57.syntax_negative status must be pass
+[ddl-golden][FAIL] T08 T08.db.mysql80.ddl status must be pass
+[ddl-golden][FAIL] T08 T08.db.mysql80.syntax_negative status must be pass
+[ddl-golden][FAIL] T08 T08.db.mysql84.ddl status must be pass
+[ddl-golden][FAIL] T08 T08.db.mysql84.syntax_negative status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-fp-set-blocker status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-fp-set-blocker failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-fp-set-blocker status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-fp-set-blocker failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-fp-set-blocker status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-fp-set-blocker failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-fp-modify-equiv status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-fp-modify-equiv failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-fp-drop-blocker status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-fp-drop-blocker failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-fp-non-target status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-fp-non-target failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-setter-set-default status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-setter-set-default failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-setter-set-default status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-setter-set-default failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-setter-set-default status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-setter-set-default failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-setter-set-null status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-setter-set-null failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-setter-set-null status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-setter-set-null failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-setter-set-strnull status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-setter-set-strnull failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-setter-set-strnull status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-setter-set-strnull failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-setter-drop status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-setter-drop failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-setter-drop status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-setter-drop failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-setter-missing-column status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-setter-missing-column failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-setter-missing-column status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-setter-missing-column failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-setter-missing-column status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-setter-missing-column failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-setter-missing-table status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-setter-missing-table failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-setter-missing-table status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-setter-missing-table failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-setter-missing-table status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-setter-missing-table failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-drop-missing-column status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-drop-missing-column failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-drop-missing-column status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-drop-missing-column failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-modify-notnull status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-modify-notnull failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-modify-notnull status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-modify-notnull failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-modify-notnull status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-modify-notnull failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-modify-null status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-modify-null failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-modify-null status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-modify-null failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-modify-shrink status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-modify-shrink failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-modify-shrink status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-modify-shrink failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-modify-widen status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-modify-widen failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-modify-family-change status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-modify-family-change failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-modify-family-change status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-modify-family-change failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-modify-unsigned-drop status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-modify-unsigned-drop failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-modify-unsigned-drop status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-modify-unsigned-drop failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-modify-ai-keep status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-modify-ai-keep failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-modify-ai-drop status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-modify-ai-drop failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-modify-ai-drop status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-modify-ai-drop failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-modify-omit-default status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-modify-omit-default failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-modify-omit-default status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-modify-omit-default failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-modify-omit-default status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-modify-omit-default failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-modify-default-same status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-modify-default-same failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-modify-default-same status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-modify-default-same failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-modify-default-diff status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-modify-default-diff failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-modify-default-diff status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-modify-default-diff failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-modify-default-diff status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-modify-default-diff failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-modify-default-added status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-modify-default-added failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-modify-pk-null status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-modify-pk-null failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-modify-pk-null status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-modify-pk-null failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-pos-add-first status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-pos-add-first failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-pos-add-first status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-pos-add-first failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-pos-add-first status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-pos-add-first failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-pos-add-after status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-pos-add-after failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-pos-add-after status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-pos-add-after failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-pos-add-after status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-pos-add-after failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-pos-add-after-missing status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-pos-add-after-missing failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-pos-add-after-missing status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-pos-add-after-missing failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-pos-add-after-missing status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-pos-add-after-missing failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-pos-modify-first status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-pos-modify-first failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-pos-modify-first status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-pos-modify-first failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-pos-modify-first status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-pos-modify-first failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-pos-change-after status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-pos-change-after failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-pos-change-after status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-pos-change-after failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-pos-derived-chain status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-pos-derived-chain failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-pos-derived-chain status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-pos-derived-chain failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-pos-derived-chain status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-pos-derived-chain failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-multi-add2 status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-multi-add2 failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-multi-add2 status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-multi-add2 failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-multi-add2 status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-multi-add2 failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-multi-add-setter status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-multi-add-setter failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-multi-add-setter status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-multi-add-setter failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-multi-add2-after-sibling status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-multi-add2-after-sibling failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-multi-add2-after-sibling status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-multi-add2-after-sibling failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-multi-add2-after-sibling status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-multi-add2-after-sibling failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-multi-same-obj status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-multi-same-obj failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-multi-same-obj status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-multi-same-obj failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-multi-drop-add-same status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-multi-drop-add-same failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-multi-drop-add-same status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-multi-drop-add-same failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-multi-modify-x2 status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-multi-modify-x2 failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-multi-modify-x2 status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-multi-modify-x2 failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-chain-setter-then-modify status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-chain-setter-then-modify failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-chain-setter-then-modify status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-chain-setter-then-modify failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-chain-setter-then-modify status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-chain-setter-then-modify failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-chain-drop-then-modify status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-chain-drop-then-modify failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-chain-drop-then-modify status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-chain-drop-then-modify failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-chain-add-rename-index status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-chain-add-rename-index failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-chain-add-rename-index status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-chain-add-rename-index failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-chain-change-oldname status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-chain-change-oldname failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-chain-change-oldname status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql80-chain-change-oldname failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-chain-change-oldname status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-chain-change-oldname failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-rename-mysql57-gate status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-rename-mysql57-gate failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-chain-drop-col status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql57-chain-drop-col failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-chain-drop-col status must be pass
+[ddl-golden][FAIL] T08 T08.meta.t08-mysql84-chain-drop-col failed assertion 'database reachable with expected version'
+[ddl-golden] task=T08 head=d4d6d5a8e5e3 cases=172 passed=73 assertions=1611
+[ddl-golden] artifact=/private/tmp/ddl-golden-r4-T08/T08/artifact.json
+RC=T08 1
+===== T09 =====
+[ddl-golden][FAIL] T09 T09.db.mysql57.ddl status must be pass
+[ddl-golden][FAIL] T09 T09.db.mysql57.syntax_negative status must be pass
+[ddl-golden][FAIL] T09 T09.db.mysql80.ddl status must be pass
+[ddl-golden][FAIL] T09 T09.db.mysql80.syntax_negative status must be pass
+[ddl-golden][FAIL] T09 T09.db.mysql84.ddl status must be pass
+[ddl-golden][FAIL] T09 T09.db.mysql84.syntax_negative status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-dup-create status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-dup-create failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-dup-create status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-dup-create failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-dup-create status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-dup-create failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-dup-alter status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-dup-alter failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-dup-alter status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-dup-alter failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-dup-alter status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-dup-alter failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-lp-create status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-lp-create failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-lp-create status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-lp-create failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-lp-create status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-lp-create failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-lp-alter status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-lp-alter failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-lp-alter status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-lp-alter failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-lp-alter status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-lp-alter failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-uo-create status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-uo-create failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-uo-create status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-uo-create failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-uo-create status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-uo-create failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-uo-alter status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-uo-alter failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-uo-alter status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-uo-alter failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-uo-alter status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-uo-alter failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-exists-create status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-exists-create failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-exists-create status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-exists-create failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-exists-create status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-exists-create failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-exists-alter status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-exists-alter failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-exists-alter status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-exists-alter failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-exists-alter status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-exists-alter failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-cols-exists-create status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-cols-exists-create failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-cols-exists-create status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-cols-exists-create failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-cols-exists-create status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-cols-exists-create failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-drop-missing status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-drop-missing failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-drop-missing status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-drop-missing failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-drop-missing status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-drop-missing failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-rename-missing status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-rename-missing failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-rename-missing status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-rename-missing failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-rename-missing status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-rename-missing failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-state-add-then-dup status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-state-add-then-dup failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-state-add-then-dup status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-state-add-then-dup failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-state-add-then-dup status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-state-add-then-dup failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-state-add-rename-add status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-state-add-rename-add failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-state-add-rename-add status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-state-add-rename-add failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-state-add-rename-add status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-state-add-rename-add failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-state-add-drop-add status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-state-add-drop-add failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-state-add-drop-add status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-state-add-drop-add failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-state-add-drop-add status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-state-add-drop-add failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-state-create-drop-create status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-state-create-drop-create failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-state-create-drop-create status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-state-create-drop-create failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-state-create-drop-create status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-state-create-drop-create failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-state-constraint-then-overlap status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-state-constraint-then-overlap failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-state-constraint-then-overlap status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-state-constraint-then-overlap failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-state-constraint-then-overlap status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-state-constraint-then-overlap failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-cross-table-samename status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-cross-table-samename failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-cross-table-samename status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-cross-table-samename failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-cross-table-samename status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-cross-table-samename failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-drop-primary status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-drop-primary failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-drop-primary status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-drop-primary failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-drop-primary status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-drop-primary failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-rename-index status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-rename-index failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-rename-index status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-rename-index failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-rename-index status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-rename-index failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-add-ine status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-add-ine failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-add-ine status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-add-ine failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-add-ine status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-add-ine failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-drop-ie status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql57-drop-ie failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-drop-ie status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql80-drop-ie failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-drop-ie status must be pass
+[ddl-golden][FAIL] T09 T09.meta.t09-mysql84-drop-ie failed assertion 'database reachable with expected version'
+[ddl-golden] task=T09 head=d4d6d5a8e5e3 cases=125 passed=56 assertions=1350
+[ddl-golden] artifact=/private/tmp/ddl-golden-r4-T09/T09/artifact.json
+RC=T09 1
+===== T10 =====
+[ddl-golden][FAIL] T10 T10.db.mysql57.ddl status must be pass
+[ddl-golden][FAIL] T10 T10.db.mysql57.syntax_negative status must be pass
+[ddl-golden][FAIL] T10 T10.db.mysql80.ddl status must be pass
+[ddl-golden][FAIL] T10 T10.db.mysql80.syntax_negative status must be pass
+[ddl-golden][FAIL] T10 T10.db.mysql84.ddl status must be pass
+[ddl-golden][FAIL] T10 T10.db.mysql84.syntax_negative status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-firstpath status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-firstpath failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-visible status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-visible failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-missing status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-missing failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-absent status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-absent failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-batch-chain status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-batch-chain failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-drop-then-alter status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-drop-then-alter failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-unknown-set status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-unknown-set failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-expr status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-expr failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-mv status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-mv failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-provider-invisible status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-provider-invisible failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-firstpath status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-firstpath failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-visible status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-visible failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-missing status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-missing failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-absent status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-absent failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-batch-chain status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-batch-chain failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-drop-then-alter status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-drop-then-alter failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-unknown-set status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-unknown-set failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-expr status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-expr failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-mv status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-mv failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-provider-invisible status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-provider-invisible failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-primary status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-primary failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-desc status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-desc failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-spatial-provider status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-spatial-provider failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-primary status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-primary failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-desc status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-desc failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-spatial-provider status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-spatial-provider failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql57-firstpath status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql57-firstpath failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql57-create-invisible status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql57-create-invisible failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql57-expr status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql57-expr failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql57-mv status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql57-mv failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql57-desc status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql57-desc failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql57-novis-column status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql57-novis-column failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql57-fulltext status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql57-fulltext failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-fulltext status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-fulltext failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-fulltext status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-fulltext failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-implicit-pk status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-implicit-pk failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-implicit-pk-create status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-implicit-pk-create failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-implicit-pk-order status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-implicit-pk-order failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-implicit-pk status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-implicit-pk failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-implicit-pk-create status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-implicit-pk-create failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-implicit-pk-order status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-implicit-pk-order failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-implicit-pk-expr-gap status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-implicit-pk-expr-gap failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-implicit-pk-expr-gap status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-implicit-pk-expr-gap failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql57-prefix-required status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql57-prefix-required failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-prefix-required status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-prefix-required failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-prefix-required status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-prefix-required failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-prefix-ok status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-prefix-ok failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql57-fulltext-int status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql57-fulltext-int failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql57-spatial-nullable status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql57-spatial-nullable failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-fulltext-int status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-fulltext-int failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-spatial-nullable status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-spatial-nullable failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-fulltext-int status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-fulltext-int failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-spatial-nullable status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-spatial-nullable failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-spatial-type status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-spatial-type failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-spatial-ok status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-spatial-ok failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-spatial-type status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-spatial-type failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-spatial-ok status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-spatial-ok failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-json-direct status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-json-direct failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-expr-missing status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-expr-missing failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-mv-supported status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql80-mv-supported failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-json-direct status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-json-direct failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-expr-missing status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-expr-missing failed assertion 'database reachable with expected version'
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-mv-supported status must be pass
+[ddl-golden][FAIL] T10 T10.meta.t10-mysql84-mv-supported failed assertion 'database reachable with expected version'
+[ddl-golden] task=T10 head=d4d6d5a8e5e3 cases=126 passed=57 assertions=1419
+[ddl-golden] artifact=/private/tmp/ddl-golden-r4-T10/T10/artifact.json
+RC=T10 1
+===== T07 =====
+[ddl-golden][FAIL] T07 strict executed_count/denominator
+[ddl-golden][FAIL] T07 complete unique case identity set
+[ddl-golden] task=T07 head=d4d6d5a8e5e3 cases=0 passed=0 assertions=0
+[ddl-golden] artifact=/private/tmp/ddl-golden-r6-T07/T07/artifact.json
+RC=T07 1
+===== T08 =====
+[ddl-golden][FAIL] T08 strict executed_count/denominator
+[ddl-golden][FAIL] T08 complete unique case identity set
+[ddl-golden] task=T08 head=d4d6d5a8e5e3 cases=0 passed=0 assertions=0
+[ddl-golden] artifact=/private/tmp/ddl-golden-r6-T08/T08/artifact.json
+RC=T08 1
+===== T09 =====
+[ddl-golden][FAIL] T09 strict executed_count/denominator
+[ddl-golden][FAIL] T09 complete unique case identity set
+[ddl-golden] task=T09 head=d4d6d5a8e5e3 cases=0 passed=0 assertions=0
+[ddl-golden] artifact=/private/tmp/ddl-golden-r6-T09/T09/artifact.json
+RC=T09 1
+===== T10 =====
+[ddl-golden] task=T10 head=d4d6d5a8e5e3 cases=126 passed=126 assertions=3175
+[ddl-golden] artifact=/private/tmp/ddl-golden-r6-T10/T10/artifact.json
+[ddl-golden] PASS
+RC=T10 0
+===== T07 =====
+[ddl-golden] task=T07 head=d4d6d5a8e5e3 cases=207 passed=207 assertions=6190
+[ddl-golden] artifact=/private/tmp/ddl-golden-r7-T07/T07/artifact.json
+[ddl-golden] PASS
+RC=T07 0
+===== T08 =====
+[ddl-golden] task=T08 head=d4d6d5a8e5e3 cases=172 passed=172 assertions=4240
+[ddl-golden] artifact=/private/tmp/ddl-golden-r7-T08/T08/artifact.json
+[ddl-golden] PASS
+RC=T08 0
+===== T09 =====
+[ddl-golden] task=T09 head=d4d6d5a8e5e3 cases=125 passed=125 assertions=3442
+[ddl-golden] artifact=/private/tmp/ddl-golden-r7-T09/T09/artifact.json
+[ddl-golden] PASS
+RC=T09 0
