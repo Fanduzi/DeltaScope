@@ -10,10 +10,10 @@
 // determination — consumed by the advanced-index compatibility assessment,
 // the alter_index existence resolution, and the ordered-state publication
 // gate; the TiDB handle answer is the tri-state *bool (nil = unprovable,
-// explicit CLUSTERED|NONCLUSTERED overrides the session-mode observation,
-// an unstated declaration falls back to tidb_enable_clustered_index, and a
-// missing mode/CLUSTERED row stays unknown rather than guessing a PRIMARY
-// object into existence)
+// explicit CLUSTERED|NONCLUSTERED overrides the session mode, an unstated
+// declaration falls back to tidb_enable_clustered_index — int_only also
+// defers to the alter-primary-key config fact — and missing mode/config
+// evidence stays unknown rather than guessing a PRIMARY object)
 // pos: T10-R2 primary-role identity model (issue #89); upstream anchors —
 // MySQL 8.0.46 mysql-test/r/invisible_indexes.result L247-289 and TiDB
 // v8.5.0 TableInfo.GetPrimaryKey + checkInvisibleIndexOnPK
@@ -236,11 +236,13 @@ func ResolveIndexPrimaryObject(snapshot *TableSnapshot, dialect Dialect) (exists
 // CLUSTERED|NONCLUSTERED type defers to the session's
 // tidb_enable_clustered_index (upstream anchor: v8.5.0
 // pkg/ddl/create_table.go L1582-1593), so the caller passes the observed
-// default mode ("on"/"int_only" → handle-eligible, "off" → real object,
-// nil/unrecognized → unknown). Every other shape — MySQL,
-// composite/non-int/nonclustered TiDB PKs — keeps a real index object.
-// Integer family mirrors TiDB isSingleIntPK.
-func PrimaryKeyHandle(dialect Dialect, pk *Index, columns []Column, defaultMode *string) *bool {
+// default mode. "on" and "off" decide outright; "int_only" clusters a
+// single-int PK only when alter-primary-key is disabled, so it also defers
+// to the caller-passed alterPrimaryKey fact (true → real object, false →
+// handle, nil/unobserved → unknown); nil/unrecognized modes stay unknown.
+// Every other shape — MySQL, composite/non-int/nonclustered TiDB PKs —
+// keeps a real index object. Integer family mirrors TiDB isSingleIntPK.
+func PrimaryKeyHandle(dialect Dialect, pk *Index, columns []Column, defaultMode *string, alterPrimaryKey *bool) *bool {
 	no := new(bool)
 	if dialect != DialectTiDB || pk == nil {
 		return no
@@ -287,7 +289,19 @@ func PrimaryKeyHandle(dialect Dialect, pk *Index, columns []Column, defaultMode 
 		return nil
 	}
 	switch strings.ToLower(strings.TrimSpace(*defaultMode)) {
-	case "on", "int_only":
+	case "on":
+		yes := true
+		return &yes
+	case "int_only":
+		// int_only clusters a single-int PK only while alter-primary-key is
+		// disabled (upstream: !AlterPrimaryKey && isSingleIntPK). With the
+		// config on the PK is a real index object; unobserved → unknown.
+		if alterPrimaryKey == nil {
+			return nil
+		}
+		if *alterPrimaryKey {
+			return no
+		}
 		yes := true
 		return &yes
 	case "off":

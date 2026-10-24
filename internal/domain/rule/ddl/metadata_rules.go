@@ -119,6 +119,11 @@ type alterObjectExistenceRule struct {
 	selectName     func(spec.Alter) string
 	checkExists    func(spec.Statement, *spec.TableSnapshot, string) bool
 	level          rule.Level
+	// primaryResolves marks the index-label variant whose checkExists
+	// resolves a `PRIMARY` target through the primary-key identity facts —
+	// that target needs no member name space, so the collection-unknown
+	// skip must not suppress it.
+	primaryResolves bool
 }
 
 func newAlterObjectExistenceRule(ruleID string, actions []string, objectLabel string, forbidIfExists bool, fallbackLevel rule.Level, cfg policy.RulePolicy, selectName func(spec.Alter) string, checkExists func(spec.Statement, *spec.TableSnapshot, string) bool) (rule.StatementRule, error) {
@@ -149,10 +154,13 @@ func (r alterObjectExistenceRule) Evaluate(ctx context.Context, statement spec.S
 	// fabricate absent members. Index members are not gated on Columns: a
 	// loaded-but-empty Indexes set is authoritative for the provider — but a
 	// projection that cannot vouch for indexes (IndexesUnknown) must skip
-	// the same way.
+	// the same way — including a vouched member set whose stored names are
+	// unproven (IndexNamesUnknown), where an unmatched name must never
+	// read as confirmed absence. The skip is per-target: a `PRIMARY`
+	// target on the resolving variant answers from the primary-key
+	// identity facts and needs no member name space.
 	if !ok || snapshot == nil || !snapshot.Exists ||
-		(r.objectLabel == "column" && snapshot.Columns == nil) ||
-		(r.objectLabel == "index" && snapshot.IndexesUnknown) {
+		(r.objectLabel == "column" && snapshot.Columns == nil) {
 		return nil, nil
 	}
 
@@ -164,6 +172,10 @@ func (r alterObjectExistenceRule) Evaluate(ctx context.Context, statement spec.S
 		}
 		name := r.selectName(alter)
 		if name == "" {
+			continue
+		}
+		if r.objectLabel == "index" && (snapshot.IndexesUnknown || snapshot.IndexNamesUnknown) &&
+			(!r.primaryResolves || !strings.EqualFold(name, "primary")) {
 			continue
 		}
 		exists := r.checkExists(statement, snapshot, name)
@@ -525,11 +537,12 @@ func memberCollectionFact(objectLabel string) string {
 
 // memberCollectionUnknown mirrors the Evaluate skip premise for each
 // collection: a withheld column set is a nil Columns slice, while an index
-// set the projection cannot vouch for is marked IndexesUnknown (a loaded
-// empty Indexes list stays an authoritative answer).
+// set the projection cannot vouch for is marked IndexesUnknown — or
+// IndexNamesUnknown when the members are known but their stored names are
+// not (a loaded empty Indexes list stays an authoritative answer).
 func memberCollectionUnknown(snapshot *spec.TableSnapshot, objectLabel string) bool {
 	if objectLabel == "index" {
-		return snapshot.IndexesUnknown
+		return snapshot.IndexesUnknown || snapshot.IndexNamesUnknown
 	}
 	return snapshot.Columns == nil
 }

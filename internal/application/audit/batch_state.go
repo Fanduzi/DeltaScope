@@ -1,6 +1,6 @@
 // Package audit orchestrates audit use cases at the application layer.
 // input: request context, ordered statements, optional metadata provider, the request's already-resolved version identity, and parse-failure positions for one audit request
-// output: request-local ordered table facts (unknown / known-absent / known-present, per-collection member knowledge, including the declared table comment on complete CREATE-derived shapes) feeding per-statement pre-state snapshots
+// output: request-local ordered table facts (unknown / known-absent / known-present, per-collection member knowledge, including the declared table comment on complete CREATE-derived shapes, product-derived stored index names under the native auto-naming rule — or an unvouched name space when any member's name is unprovable — and the TiDB handle answer deferring to the observed clustered mode plus the alter-primary-key config fact) feeding per-statement pre-state snapshots
 // pos: prospective schema-state ownership for the first migration path — the effective (dialect, schema, table) identity drives provider reads, keys, writes, and invalidation; unsupported or executable-but-unmodeled effects settle before kind dispatch; deterministic conditional transitions update derived facts, including the bounded single-pair RENAME identity migration onto a known-absent destination, a bounded single-target DROP identity retirement, an ordinary single-column MODIFY definition replacement, a precise single CHANGE COLUMN or RENAME COLUMN identity migration, and an ordinary dependency-free single-column DROP COLUMN that removes only that column, keeps unrelated members, and clears the accepted MODIFY statistic set, FIRST|AFTER column-position moves inside admitted ADD/MODIFY/CHANGE templates, and the bounded dialect-parametrized multi-action successor (MySQL accumulated working state vs TiDB pre-statement premises, whole-statement tombstone on unprovable net effect); each tombstones loaded dependents that the transition cannot keep; a non-precise MODIFY, CHANGE, RENAME, or DROP COLUMN tombstones every named table identity and the loaded dependents of those identities, a precise replacement is withheld when a loaded foreign key cannot be recomputed, an unsupported RENAME version withholds publication, and cancellation is checked before publishing effects; unaudited, unbound, or contaminated operations invalidate them; recognized CREATE/DROP PROCEDURE statements preserve outer table facts while keeping their own audit evidence; the shared T07 advanced-column and T10 advanced-index assessments block publication of provably refused or unresolved transitions
 // note: if this file changes, update this header and module README.md.
 package audit
@@ -449,14 +449,14 @@ func (s *batchState) applyCreateTable(statement spec.Statement) {
 		}
 		s.entries[key] = &batchTableEntry{
 			state:         tablePresent,
-			shape:         derivedCreateShape(s.dialect, displaySchema, displayTable, ddl, s.tidbClusteredMode()),
+			shape:         derivedCreateShape(s.dialect, displaySchema, displayTable, ddl, s.tidbClusteredMode(), s.tidbAlterPrimaryKey()),
 			displaySchema: displaySchema,
 			displayTable:  displayTable,
 		}
 	case entry.state == tableAbsent:
 		s.entries[key] = &batchTableEntry{
 			state:         tablePresent,
-			shape:         derivedCreateShape(s.dialect, displaySchema, displayTable, ddl, s.tidbClusteredMode()),
+			shape:         derivedCreateShape(s.dialect, displaySchema, displayTable, ddl, s.tidbClusteredMode(), s.tidbAlterPrimaryKey()),
 			displaySchema: displaySchema,
 			displayTable:  displayTable,
 		}
@@ -479,7 +479,7 @@ func fullyAuditedCreateTable(dialect spec.Dialect, statement spec.Statement) boo
 	return !ddl.HasReferTable && !ddl.HasSelect && ddl.TemporaryScope == "" && ddl.OmittedTargets == 0
 }
 
-func derivedCreateShape(dialect spec.Dialect, schema, table string, ddl *spec.DDL, tidbClusteredDefault *string) *spec.TableSnapshot {
+func derivedCreateShape(dialect spec.Dialect, schema, table string, ddl *spec.DDL, tidbClusteredDefault *string, tidbAlterPK *bool) *spec.TableSnapshot {
 	snapshot := &spec.TableSnapshot{
 		Schema:      schema,
 		Table:       &spec.Table{Schema: schema, Name: table, Comment: ddl.Table.Comment},
@@ -494,6 +494,17 @@ func derivedCreateShape(dialect spec.Dialect, schema, table string, ddl *spec.DD
 	for _, index := range ddl.Indexes {
 		snapshot.Indexes = append(snapshot.Indexes, cloneIndex(index))
 	}
+	// Stored names follow the product's auto-naming rule, not the authored
+	// declaration — an unnamed member takes its first column member's name
+	// (MySQL 8.0.46 invisible_indexes.result L274-285). When any name
+	// cannot be proven the members stay known but the name space is
+	// unvouched, so name-based successors report a gap instead of reading
+	// an unmatched name as confirmed absence.
+	if resolved, provable := spec.StoredIndexNames(snapshot.Indexes); provable {
+		snapshot.Indexes = resolved
+	} else {
+		snapshot.IndexNamesUnknown = true
+	}
 	// A batch-derived index list is the declaration order — the same order
 	// the product selects the implicit primary role in.
 	snapshot.IndexOrderCatalog = true
@@ -502,7 +513,7 @@ func derivedCreateShape(dialect spec.Dialect, schema, table string, ddl *spec.DD
 	if ddl.PrimaryKey != nil {
 		pk := cloneIndex(*ddl.PrimaryKey)
 		snapshot.PrimaryKey = &pk
-		if handle := spec.PrimaryKeyHandle(dialect, &pk, snapshot.Columns, tidbClusteredDefault); handle != nil {
+		if handle := spec.PrimaryKeyHandle(dialect, &pk, snapshot.Columns, tidbClusteredDefault, tidbAlterPK); handle != nil {
 			snapshot.PrimaryKeyIsHandle = *handle
 		} else {
 			// The declared PK cannot prove handle vs real object (unwritten
@@ -533,6 +544,18 @@ func (s *batchState) tidbClusteredMode() *string {
 	}
 	mode := s.instanceFacts.TiDBEnableClusteredIndex
 	return &mode
+}
+
+// tidbAlterPrimaryKey returns the request-observed alter-primary-key
+// configuration fact the int_only clustered mode defers to — nil when
+// unobserved, in which case an int_only single-int PK's handle answer stays
+// unknown rather than collapsing to either shape.
+func (s *batchState) tidbAlterPrimaryKey() *bool {
+	if s.instanceFacts == nil || !s.instanceFacts.TiDBAlterPrimaryKeyKnown {
+		return nil
+	}
+	alterPK := s.instanceFacts.TiDBAlterPrimaryKey
+	return &alterPK
 }
 
 // applyAlterTable models the frozen transitions a fully audited ALTER can
@@ -889,6 +912,15 @@ func (s *batchState) applyCreateIndex(statement spec.Statement) {
 		return
 	}
 	if entry.shape == nil || entry.shape.Columns == nil {
+		return
+	}
+	// An unvouched member set can never vouch for the merged collection —
+	// keep the entry rather than merge into a shape that cannot be read.
+	// An unproven name space is different: the CREATE INDEX member itself
+	// is authored, so it merges and preserves member truth; the surviving
+	// IndexNamesUnknown flag keeps name-keyed readers honest, while the
+	// collision check below still refuses a provable duplicate name.
+	if entry.shape.IndexesUnknown {
 		return
 	}
 	for _, alter := range ddl.Alter {

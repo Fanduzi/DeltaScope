@@ -1,6 +1,6 @@
 // Package mysqlmeta implements metadata-aware audit adapters over the MySQL protocol.
 // input: sql.DB access plus connection configs, version/schema/table lookup requests, and MySQL/TiDB metadata queries
-// output: normalized instance facts with explicit known bits (innodb_page_size, 5.7 large-prefix, TiDB max-index-length via all-rows SHOW CONFIG verification, TiDB tidb_enable_clustered_index session mode — read failures propagate as provider errors, only absent/ambiguous values stay unknown), dialect detection, schema discovery, and table snapshots with preserved index cardinality plus per-member plain-key knownness facts (STATISTICS SUB_PART/COLLATION and NULL COLUMN_NAME classified into prefix/desc/expression/unmodeled marks — provider-loaded indexes carry the same comparability vocabulary declarations do), verbatim COLUMN_TYPE parameter spans on the five declared-parameter bases (DECIMAL/FLOAT/DOUBLE/ENUM/SET — member literals keep catalog case and attribute words inside quotes never set Unsigned), stored-representation default facts (COLUMN_DEFAULT IS NOT NULL → HasDefault with verbatim DefaultValue bytes; NULL rows and literal "null" text never set DefaultIsNull on this path), the comparable literal-default identity keyed by the column's own base type (temporal markers asserted only on temporal bases), and T07 advanced-column facts read from the same COLUMNS row (EXTRA DEFAULT_GENERATED → parsed DefaultExpression facts, STORED/VIRTUAL GENERATED + GENERATION_EXPRESSION → generated storage + expression facts, INVISIBLE → effective visibility; undecodable expression text stays an explicit unknown fact), per-index effective visibility via the STATISTICS.IS_VISIBLE capability probe (a catalog-count query — capable catalogs select the column, MySQL 5.7/zero-count leaves member Visibility empty rather than guessed, real probe failures propagate as load errors) plus SPATIAL/FULLTEXT INDEX_TYPE classification into spec.Index.Kind, member-level KeyParts with an EXPRESSION capability probe (catalog functional text parsed into ExpressionFacts + multi-valued marks — TiDB reports expression members as the literal string 'NULL' in COLUMN_NAME, so the literal is classified three ways: SQL NULL or literal-with-expression-text stays an expression member, a literal matching a loaded real column name stays a plain column member — a backticked `NULL` column is legal MySQL — and neither provable stays unmodeled), PARTITIONS-derived Partitioned (unanswerable probe stays unknown), and TiDB PrimaryKeyIsHandle via TIDB_INDEXES.CLUSTERED + the single-integer member shape (a missing CLUSTERED row or unmatchable member shape stays unknown — never defaulted false into a fabricated PRIMARY object) for application-level audit enrichment
+// output: normalized instance facts with explicit known bits (innodb_page_size, 5.7 large-prefix, TiDB max-index-length and alter-primary-key via all-rows SHOW CONFIG verification, TiDB tidb_enable_clustered_index session mode — read failures propagate as provider errors, only absent/ambiguous values stay unknown), dialect detection, schema discovery, and table snapshots with preserved index cardinality plus per-member plain-key knownness facts (STATISTICS SUB_PART/COLLATION and NULL COLUMN_NAME classified into prefix/desc/expression/unmodeled marks — provider-loaded indexes carry the same comparability vocabulary declarations do, including catalog sort direction on expression members), verbatim COLUMN_TYPE parameter spans on the five declared-parameter bases (DECIMAL/FLOAT/DOUBLE/ENUM/SET — member literals keep catalog case and attribute words inside quotes never set Unsigned), stored-representation default facts (COLUMN_DEFAULT IS NOT NULL → HasDefault with verbatim DefaultValue bytes; NULL rows and literal "null" text never set DefaultIsNull on this path), the comparable literal-default identity keyed by the column's own base type (temporal markers asserted only on temporal bases), and T07 advanced-column facts read from the same COLUMNS row (EXTRA DEFAULT_GENERATED → parsed DefaultExpression facts, STORED/VIRTUAL GENERATED + GENERATION_EXPRESSION → generated storage + expression facts, INVISIBLE → effective visibility; undecodable expression text stays an explicit unknown fact), per-index effective visibility via the STATISTICS.IS_VISIBLE capability probe (a catalog-count query — capable catalogs select the column, MySQL 5.7/zero-count leaves member Visibility empty rather than guessed, real probe failures propagate as load errors) plus SPATIAL/FULLTEXT INDEX_TYPE classification into spec.Index.Kind, member-level KeyParts with an EXPRESSION capability probe (catalog functional text parsed into ExpressionFacts + multi-valued marks — TiDB reports expression members as the literal string 'NULL' in COLUMN_NAME, so the literal is classified three ways: SQL NULL or literal-with-expression-text stays an expression member, a literal matching a loaded real column name stays a plain column member — a backticked `NULL` column is legal MySQL — and neither provable stays unmodeled), PARTITIONS-derived Partitioned (unanswerable probe stays unknown), and TiDB PrimaryKeyIsHandle via TIDB_INDEXES.CLUSTERED + the single-integer member shape (a missing CLUSTERED row or unmatchable member shape stays unknown — never defaulted false into a fabricated PRIMARY object) for application-level audit enrichment
 // pos: infrastructure metadata adapter between database/sql and domain metadata specs
 // note: if this file changes, update this header and module README.md.
 package mysqlmeta
@@ -258,6 +258,14 @@ func (p *Provider) LoadInstanceFacts(ctx context.Context, _ spec.Dialect, _ stri
 			facts.TiDBMaxIndexLengthBytes = value
 			facts.TiDBMaxIndexLengthKnown = true
 		}
+		alterPK, alterKnown, alterErr := p.loadTiDBAlterPrimaryKey(ctx)
+		if alterErr != nil {
+			return nil, fmt.Errorf("load tidb alter-primary-key: %w", alterErr)
+		}
+		if alterKnown {
+			facts.TiDBAlterPrimaryKey = alterPK
+			facts.TiDBAlterPrimaryKeyKnown = true
+		}
 	} else {
 		// A non-TiDB server never consults the clustered-index mode — an
 		// unexpected row must not leak a TiDB fact onto MySQL facts.
@@ -309,6 +317,49 @@ func (p *Provider) loadTiDBMaxIndexLength(ctx context.Context) (value int, ok bo
 	}
 	if !consistent {
 		return 0, false, nil
+	}
+	return value, ok, nil
+}
+
+// loadTiDBAlterPrimaryKey reads the effective tidb-server
+// alter-primary-key configuration via SHOW CONFIG — the fact the int_only
+// clustered mode defers to for a single-int PK (upstream: !AlterPrimaryKey
+// && isSingleIntPK). Same contract as loadTiDBMaxIndexLength: query, scan,
+// and iteration failures propagate as provider errors; every matching row
+// (one per tidb-server instance) must parse and agree, otherwise the fact
+// stays unknown so a declared unstated-type PK resolves to a bounded gap
+// rather than a guessed handle answer.
+func (p *Provider) loadTiDBAlterPrimaryKey(ctx context.Context) (value bool, ok bool, err error) {
+	rows, err := p.db.QueryContext(ctx, `
+		show config where Type = 'tidb' and Name = 'alter-primary-key'
+	`)
+	if err != nil {
+		return false, false, fmt.Errorf("query tidb alter-primary-key: %w", err)
+	}
+	defer rows.Close()
+
+	consistent := true
+	for rows.Next() {
+		var typ, instance, name, raw string
+		if err := rows.Scan(&typ, &instance, &name, &raw); err != nil {
+			return false, false, fmt.Errorf("scan tidb alter-primary-key: %w", err)
+		}
+		parsed, parseErr := strconv.ParseBool(strings.ToLower(strings.TrimSpace(raw)))
+		if parseErr != nil {
+			consistent = false
+			continue
+		}
+		if !ok {
+			value, ok = parsed, true
+		} else if parsed != value {
+			consistent = false
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return false, false, fmt.Errorf("iterate tidb alter-primary-key: %w", err)
+	}
+	if !consistent {
+		return false, false, nil
 	}
 	return value, ok, nil
 }
@@ -869,8 +920,24 @@ func accumulateIndexRow(indexes map[string]*spec.Index, order *[]string, name st
 // classifyExpressionMember marks the member an expression key part and
 // attaches the catalog-stored functional text when the server exposes it —
 // the EXPRESSION column is authoritative for identity and dependencies.
+// The catalog records sort direction on functional key parts too (MySQL
+// 8.0.46 functional_index.result L186-193 proves descending functional
+// indexes are real objects), so the member reads the same collation fact
+// the column branch does: 'D' keeps descending, 'A' stays ascending, and
+// an unproven or unrecognized direction leaves the member unmodeled rather
+// than guessing ascending — its expression identity still attaches.
 func classifyExpressionMember(keyPart *spec.IndexKeyPart, member indexMemberRow) {
-	keyPart.Kind = spec.IndexKeyPartExpression
+	switch {
+	case !member.collation.Valid:
+		keyPart.Kind = spec.IndexKeyPartUnmodeled
+	case strings.EqualFold(member.collation.String, "D"):
+		keyPart.Kind = spec.IndexKeyPartExpression
+		keyPart.Descending = true
+	case strings.EqualFold(member.collation.String, "A"):
+		keyPart.Kind = spec.IndexKeyPartExpression
+	default:
+		keyPart.Kind = spec.IndexKeyPartUnmodeled
+	}
 	if member.expression.Valid && strings.TrimSpace(member.expression.String) != "" {
 		keyPart.Expression = ptrExpressionFacts(tidbparser.ParseCatalogExpressionFacts(member.expression.String))
 		keyPart.MultiValued = tidbparser.CatalogExpressionIsMultiValued(member.expression.String)

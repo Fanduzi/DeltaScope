@@ -218,44 +218,48 @@ func TestT10R2UnknownPrimaryBlocksPublication(t *testing.T) {
 
 // B4: the TiDB handle answer is three-state — explicit CLUSTERED/declared
 // int decides, NONCLUSTERED is a real object, and an unwritten type follows
-// the observed tidb_enable_clustered_index default (on/int_only → handle,
-// off → real object, unread → unknown).
+// the observed tidb_enable_clustered_index default (on → handle, off → real
+// object, unread → unknown; int_only additionally defers to the
+// alter-primary-key fact — T10-R3).
 func TestT10R2PrimaryKeyHandleTriState(t *testing.T) {
 	t.Parallel()
 	columns := []Column{{Name: "id", Type: "int(11)", NotNull: true}}
 	on, off, intOnly := "on", "off", "int_only"
+	alterFalse := false
 	cases := []struct {
 		name   string
 		pkType string
 		mode   *string
+		apk    *bool
 		want   *bool
 	}{
 		{name: "explicit clustered single-int", pkType: "clustered", want: boolPtr(true)},
 		{name: "explicit nonclustered single-int", pkType: "nonclustered", want: boolPtr(false)},
 		{name: "unstated + mode on", mode: &on, want: boolPtr(true)},
 		{name: "unstated + mode off", mode: &off, want: boolPtr(false)},
-		{name: "unstated + mode int_only", mode: &intOnly, want: boolPtr(true)},
+		{name: "unstated + mode int_only + alter_pk off", mode: &intOnly, apk: &alterFalse, want: boolPtr(true)},
+		{name: "unstated + mode int_only + alter_pk unobserved", mode: &intOnly, want: nil},
 		{name: "unstated + mode unknown", mode: nil, want: nil},
 	}
 	for _, tc := range cases {
 		pk := &Index{Kind: IndexKindPrimary, Columns: []string{"id"}, PrimaryKeyType: tc.pkType}
-		got := PrimaryKeyHandle(DialectTiDB, pk, columns, tc.mode)
+		got := PrimaryKeyHandle(DialectTiDB, pk, columns, tc.mode, tc.apk)
 		if (got == nil) != (tc.want == nil) || (got != nil && tc.want != nil && *got != *tc.want) {
 			t.Fatalf("%s: PrimaryKeyHandle = %v, want %v", tc.name, got, tc.want)
 		}
 	}
 	// Non-single-int PKs are never the handle regardless of mode.
 	pk := &Index{Kind: IndexKindPrimary, Columns: []string{"id", "id"}}
-	if got := PrimaryKeyHandle(DialectTiDB, pk, columns, &on); got == nil || *got {
+	if got := PrimaryKeyHandle(DialectTiDB, pk, columns, &on, nil); got == nil || *got {
 		t.Fatalf("composite PK is never the row handle, got %v", got)
 	}
 	varcharColumns := []Column{{Name: "id", Type: "varchar(10)", NotNull: true}}
 	one := &Index{Kind: IndexKindPrimary, Columns: []string{"id"}}
-	if got := PrimaryKeyHandle(DialectTiDB, one, varcharColumns, &on); got == nil || *got {
+	if got := PrimaryKeyHandle(DialectTiDB, one, varcharColumns, &on, nil); got == nil || *got {
 		t.Fatalf("non-integer PK is never the row handle, got %v", got)
 	}
 	// MySQL never produces a handle.
-	if got := PrimaryKeyHandle(DialectMySQL, one, columns, &on); got == nil || *got {
+	if got := PrimaryKeyHandle(DialectMySQL, one, columns, &on, nil); got == nil || *got {
 		t.Fatalf("MySQL always keeps a real PRIMARY object, got %v", got)
 	}
 }

@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: normalized Statement specs emitted by application extraction, including alter-table and standalone rename payloads
-// output: reusable DDL rule predicates and rule identifier constants, including the CHANGE and RENAME destination-name, RENAME COLUMN version, and T07 advanced-column identifiers, plus shared alter-action and rename matching helpers, the indexPlainComparable plain-key premise shared by the pair-comparison rules, and the memberComparisonGap attribution for vouched sets whose non-plain members leave an applicable pair comparison unverifiable, and the T10 alter_index/invisibility/advanced-index-compatibility rule identifiers — left-prefix pairing treats an expression-bearing member's Columns as a truncated projection, so a declared prefix of the named columns is pairable even at equal length
+// output: reusable DDL rule predicates and rule identifier constants, including the CHANGE and RENAME destination-name, RENAME COLUMN version, and T07 advanced-column identifiers, plus shared alter-action and rename matching helpers, the indexPlainComparable plain-key premise shared by the pair-comparison rules, and the memberComparisonGap/declaredComparisonGap attribution for applicable pair comparisons a non-plain member leaves unverifiable (declared-vs-existing on create_index, declaration-vs-declaration inside create_table), and the T10 alter_index/invisibility/advanced-index-compatibility rule identifiers — left-prefix pairing treats an expression-bearing member's Columns as a truncated projection, so a declared prefix of the named columns is pairable even at equal length
 // pos: DDL rule common helpers shared across concrete rules and parser-neutral rename semantics
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -583,8 +583,9 @@ const indexKeyPartsGapFact = "target_table.indexes.key_parts"
 
 // indexPairing encodes a rule's plain-key comparison reach: whether the
 // declared index could have been compared against the existing member.
-// The declared side must itself be plain-comparable — a non-plain declared
-// subject is an unaudited aspect of its own statement, not a metadata gap.
+// A non-plain member on either side leaves the comparison unanswerable —
+// the gap functions below report it as attributable key-parts evidence
+// rather than reading the declared subject as standalone unaudited.
 type indexPairing func(declared, existing spec.Index) bool
 
 func duplicatePairing(declared, existing spec.Index) bool {
@@ -649,6 +650,35 @@ func memberComparisonGap(declared, existing []spec.Index, pairing indexPairing) 
 				continue
 			}
 			if indexPlainComparable(declared[i]) && indexPlainComparable(existing[j]) {
+				continue
+			}
+			return []rule.EvidenceGap{{
+				ReasonCode:    gapReasonUnknownTableState,
+				RequiredFacts: []string{indexKeyPartsGapFact},
+			}}
+		}
+	}
+	return nil
+}
+
+// declaredComparisonGap is the create-table analogue of memberComparisonGap:
+// every comparison pairs two different declarations inside the statement —
+// never a member with itself — and direction stays inside the pairing
+// predicate (a left-prefix subject is the shorter side, a unique-overlap
+// subject the secondary). An applicable pair carrying a non-plain member on
+// either side leaves the plain-key comparison unanswered, so the skipped
+// comparison reports the same attributable key-parts gap the existing-set
+// path emits.
+func declaredComparisonGap(declared []spec.Index, pairing indexPairing) []rule.EvidenceGap {
+	for i := range declared {
+		for j := range declared {
+			if i == j {
+				continue
+			}
+			if !pairing(declared[i], declared[j]) {
+				continue
+			}
+			if indexPlainComparable(declared[i]) && indexPlainComparable(declared[j]) {
 				continue
 			}
 			return []rule.EvidenceGap{{

@@ -80,15 +80,14 @@ func TestT09R1PrefixLengthSuppressesDeclaredDuplicate(t *testing.T) {
 			t.Parallel()
 			// The prefix members are audited facts now; the comparability
 			// boundary still bars the plain Columns-only signature — the
-			// pair stays unconvicted inside the rule's scope.
+			// pair stays unconvicted inside the rule's scope, and the
+			// skipped applicable comparison surfaces as the member gap.
 			result := t09r1AuditedNonPlain(t, dialect,
 				"CREATE TABLE t (c VARCHAR(32), KEY i_short (c(3)), KEY i_long (c(8)));",
 				&t05AbsentProvider{},
 				map[string]string{"ddl.index.duplicate.forbid": ""},
 			)
-			if result.Statements[0].Coverage.Status != report.CoverageComplete {
-				t.Fatalf("audited member forms must keep complete coverage, got %s", result.Statements[0].Coverage.Status)
-			}
+			t09r1AssertKeyPartsGap(t, result, 0, "ddl.index.duplicate.forbid")
 		})
 	}
 }
@@ -125,9 +124,10 @@ func TestT09R1PrefixPartSuppressesLeftPrefix(t *testing.T) {
 				&t05AbsentProvider{},
 				map[string]string{"ddl.index.redundant_left_prefix.forbid": ""},
 			)
-			if result.Statements[0].Coverage.Status != report.CoverageComplete {
-				t.Fatalf("audited member forms must keep complete coverage, got %s", result.Statements[0].Coverage.Status)
-			}
+			// (c) pairs against (c(3), b) under the column shape but the
+			// prefix member leaves the real sequence unproven — the skipped
+			// applicable comparison reports the member gap.
+			t09r1AssertKeyPartsGap(t, result, 0, "ddl.index.redundant_left_prefix.forbid")
 		})
 	}
 }
@@ -164,9 +164,10 @@ func TestT09R1PrefixUniqueSuppressesUniqueOverlap(t *testing.T) {
 				&t05AbsentProvider{},
 				map[string]string{"ddl.index.redundant_unique_overlap.forbid": ""},
 			)
-			if result.Statements[0].Coverage.Status != report.CoverageComplete {
-				t.Fatalf("audited member forms must keep complete coverage, got %s", result.Statements[0].Coverage.Status)
-			}
+			// The secondary pairs against the same-column unique; the
+			// prefix member on the unique side leaves the overlap
+			// unverifiable — the skipped comparison reports the member gap.
+			t09r1AssertKeyPartsGap(t, result, 0, "ddl.index.redundant_unique_overlap.forbid")
 		})
 	}
 }
@@ -223,9 +224,9 @@ func TestT09R1DescPartsSuppressDuplicate(t *testing.T) {
 				&t05AbsentProvider{},
 				map[string]string{"ddl.index.duplicate.forbid": ""},
 			)
-			if result.Statements[0].Coverage.Status != report.CoverageComplete {
-				t.Fatalf("audited member forms must keep complete coverage, got %s", result.Statements[0].Coverage.Status)
-			}
+			// Same kind, same named columns, a DESC member on one side —
+			// the skipped applicable comparison reports the member gap.
+			t09r1AssertKeyPartsGap(t, result, 0, "ddl.index.duplicate.forbid")
 		})
 	}
 }
@@ -243,9 +244,11 @@ func TestT09R1ExpressionKeysSuppressDuplicate(t *testing.T) {
 				&t05AbsentProvider{},
 				map[string]string{"ddl.index.duplicate.forbid": ""},
 			)
-			if result.Statements[0].Coverage.Status != report.CoverageComplete {
-				t.Fatalf("audited member forms must keep complete coverage, got %s", result.Statements[0].Coverage.Status)
-			}
+			// Two same-shape expression indexes pair under the column
+			// projection (both hide every member name) — member-form
+			// graduation does not make the comparison complete, so the
+			// skipped applicable comparison reports the member gap.
+			t09r1AssertKeyPartsGap(t, result, 0, "ddl.index.duplicate.forbid")
 		})
 	}
 }

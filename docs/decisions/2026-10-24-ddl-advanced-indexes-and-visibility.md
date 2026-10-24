@@ -277,6 +277,45 @@ Deferred still unchanged: expression equivalence/evaluation,
 per-function TiDB expression legality, multi-valued query semantics,
 optimizer-effect claims, and every boundary that stays bounded above.
 
+## T10-R3 — consumer interfaces, member fidelity, evidence gaps
+
+Independent review of R2 confirmed three consumer-side defect classes;
+R3 corrects them without expanding the audited surface.
+
+- **Create-table comparisons are member-bound.** A pair comparison
+  between two different declarations inside one `CREATE TABLE` now
+  applies the same evidence discipline as `create_index`: when the
+  column shape pairs under the rule's existing pairing predicate but a
+  member is non-plain, the enabled rule emits
+  `unknown_table_state` + `target_table.indexes.key_parts` instead of a
+  silent complete/pass. Plain-comparable pairs, non-pairing members,
+  lone non-plain indexes, and disabled rules keep exact outcomes.
+- **Primary-key identity is a three-way fact everywhere.**
+  `PrimaryKeyHandleUnknown` joins `PrimaryKeyUnknown`/
+  `ConstraintsUnknown` in the exists rule's knowledge premise — an
+  unvouched TiDB handle answer yields the `target_table.primary_key`
+  gap under exists-only, compat-only, or both. Derived create-table
+  snapshots compute stored names via `spec.StoredIndexNames` (first
+  column member's name, `_N` ordered collision suffix — MySQL 8.0.46
+  `invisible_indexes.result` verified); unprovable name spaces mark
+  `IndexNamesUnknown` so name-keyed consumers gap instead of reading
+  an unmatched name as confirmed absence. TiDB `int_only` additionally
+  defers to the observed `alter-primary-key` config fact
+  (`InstanceFacts.TiDBAlterPrimaryKey{,Known}`, loaded via the all-rows
+  `SHOW CONFIG` pattern); unobserved keeps the handle unknown.
+- **Provider expression members keep direction.**
+  `classifyExpressionMember` reads `STATISTICS.COLLATION` like the
+  column branch: `D`→`Descending`, `A`→ascending, NULL/unrecognized→
+  unmodeled member with expression identity preserved. No expression
+  evaluation introduced.
+- **Evidence archive corrected.** The R2 archive's consolidated pin
+  log is byte-identical to the R1 file and lacks the FT(5)/FT(0), MV
+  DECIMAL/DOUBLE, clustered default-mode, and explicit-PK-then-UNIQUE
+  probes it was described as containing; original scripts were not
+  preserved. The R2 closeout is annotated in place and the missing
+  matrices receive bounded re-verification under the T10-R3 archive
+  with real execution metadata.
+
 ## References
 
 - Issue: Fanduzi/DeltaScope#79 (milestone), #89 (T10 scope)

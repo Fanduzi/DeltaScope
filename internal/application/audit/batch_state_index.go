@@ -2,19 +2,20 @@
 // input: single-action ALTER index transitions (add_index, index-producing
 // add_constraint, drop_index, rename_index, drop_primary_key, alter_index —
 // `PRIMARY` resolves dialect-aware: MySQL primary key, TiDB real index
-// object vs PKIsHandle row-id promotion) and the standalone DROP INDEX
-// operation, applied to request-local batch entries
+// object vs PKIsHandle row-id promotion) plus standalone DROP INDEX,
+// applied to request-local batch entries
 // output: one updated batch entry per provable transition — appended index,
 // removed index, renamed index, cleared primary key, or visibility-flipped
 // member — or the shared tombstone when the premise cannot be proven; the
 // primary branch proves its member premise (known column set, plain key
 // parts, every member present) before publishing and reconciles member
 // nullability — clearing only a proven SQL-NULL default (DefaultIsNull),
-// never display text; the alter_index branch flips only the effective
-// Visibility of a provably-present member, with the implicit-primary holder
-// and MySQL PRIMARY always invalidating and TiDB PRIMARY resolving by index
-// object (PKIsHandle invalidates, real object no-ops VISIBLE/refuses INVISIBLE)
-// pos: T09 index state chain plus the T10 visibility transition; multi-action
+// never display text — while a handle-table drop keeps the entry (TiDB
+// 8200 refuses natively) and an unproven handle answer invalidates; the
+// alter_index branch flips only the effective Visibility of a provably-
+// present member (MySQL PRIMARY/implicit holder invalidates; TiDB PRIMARY
+// resolves by index object — handle invalidates, real object refuses INVISIBLE)
+// pos: T09 index state chain plus the T10 visibility transition — multi-action
 // statements keep the bounded tombstone upstream and never reach here
 // note: if this file changes, update this header and module README.md.
 package audit
@@ -95,9 +96,23 @@ func indexRenamePair(alter *spec.Alter) (oldName, newName string, ok bool) {
 
 // indexSetVouched reports whether the entry's shape carries a verifiable
 // index member set — a present table whose Indexes collection is not marked
-// unknown. A loaded nil/empty Indexes is a vouched empty set; only a nil
-// shape (present-incomplete) or IndexesUnknown withholds the member set.
+// unknown and whose member names are all proven (IndexNamesUnknown means
+// members are known but name-keyed operations cannot resolve targets). A
+// loaded nil/empty Indexes is a vouched empty set; a nil shape
+// (present-incomplete), IndexesUnknown, or IndexNamesUnknown withholds.
 func indexSetVouched(entry *batchTableEntry) bool {
+	return entry != nil && entry.state == tablePresent && entry.shape != nil &&
+		!entry.shape.IndexesUnknown && !entry.shape.IndexNamesUnknown
+}
+
+// indexSetKnown reports only the member premise — a present table whose
+// Indexes collection is not marked unknown. Member-adding transitions
+// (add_index, index-producing add_constraint, standalone CREATE INDEX)
+// consult this rather than the name space: the declared member is authored,
+// so it merges and preserves member truth while the surviving
+// IndexNamesUnknown flag keeps name-keyed readers honest. Name-keyed
+// transitions (drop/rename/alter) keep the stricter indexSetVouched.
+func indexSetKnown(entry *batchTableEntry) bool {
 	return entry != nil && entry.state == tablePresent && entry.shape != nil &&
 		!entry.shape.IndexesUnknown
 }
@@ -139,7 +154,10 @@ func (s *batchState) applyAddIndex(statement spec.Statement, alter *spec.Alter, 
 		s.invalidateKey(key)
 		return
 	}
-	if !indexSetVouched(entry) {
+	// Member-adding transitions need only the member premise: the declared
+	// index is authored, so it merges even under an unproven name space —
+	// the surviving IndexNamesUnknown flag keeps name-keyed readers honest.
+	if !indexSetKnown(entry) {
 		return
 	}
 	if strings.TrimSpace(def.Name) == "" {
@@ -185,6 +203,11 @@ func (s *batchState) applyAddIndex(statement spec.Statement, alter *spec.Alter, 
 		}
 		shape := cloneTableSnapshot(entry.shape)
 		pk := cloneIndex(*def)
+		// An ALTER-added primary key is always a real index object, never
+		// the row handle — TiDB v8.5.0 stores it NONCLUSTERED under on and
+		// int_only alike with alter-primary-key=false (verified natively),
+		// and MySQL has no handle concept — so no handle resolution is
+		// needed here.
 		shape.PrimaryKey = &pk
 		// Every supported anchor converts PK members to NOT NULL — a
 		// published member still claiming nullable would contradict the
@@ -448,6 +471,18 @@ func (s *batchState) applyDropPrimaryKey(statement spec.Statement, targets []spe
 	if entry.shape.PrimaryKeyUnknown || !entry.shape.HasPrimaryKey() {
 		// An unknown PK state cannot prove the drop premise; a vouched
 		// absent PK is already a broken premise. Neither publishes success.
+		s.invalidateKey(key)
+		return
+	}
+	// TiDB refuses DROP PRIMARY KEY on a handle table natively (8200 "the
+	// table is using clustered index", verified on v8.5.0) — the statement
+	// fails and the table is provably unchanged, so the entry survives
+	// rather than publishing a fabricated drop. An unproven handle answer
+	// cannot prove the outcome either way and invalidates.
+	if entry.shape.PrimaryKeyIsHandle {
+		return
+	}
+	if entry.shape.PrimaryKeyHandleUnknown {
 		s.invalidateKey(key)
 		return
 	}

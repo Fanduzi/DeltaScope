@@ -3,7 +3,9 @@
 // and advanced-index member marks, plus metadata-enriched ordered snapshots
 // output: invisibility-forbid findings, dialect-aware alter-index existence
 // findings and evidence gaps (MySQL PRIMARY key / TiDB real object vs
-// PKIsHandle), and product/version compatibility findings and gaps for
+// PKIsHandle — an unproven handle answer or unproven member name space
+// reports the primary_key/indexes identity gap instead of a fabricated
+// absence), and product/version compatibility findings and gaps for
 // visibility, expression keys, descending keys, multi-valued members,
 // prefix length, fulltext, spatial, and global forms — including the
 // implicit-primary role refusal on qualifying UNIQUE indexes
@@ -163,7 +165,11 @@ func newAlterIndexExistsRule(cfg policy.RulePolicy) (rule.StatementRule, error) 
 	if err != nil {
 		return nil, err
 	}
-	return alterIndexExistsRule{inner: inner.(alterObjectExistenceRule)}, nil
+	exists := inner.(alterObjectExistenceRule)
+	// alterIndexTargetExists resolves `PRIMARY` through the primary-key
+	// identity facts — that target needs no member name space.
+	exists.primaryResolves = true
+	return alterIndexExistsRule{inner: exists}, nil
 }
 
 func (r alterIndexExistsRule) ID() string { return r.inner.ruleID }
@@ -176,10 +182,11 @@ func (r alterIndexExistsRule) Evaluate(ctx context.Context, statement spec.State
 	return r.inner.Evaluate(ctx, statement)
 }
 
-// EvidenceGaps appends a target_table.primary_key gap when a MySQL
-// alter_index PRIMARY target cannot be judged because the primary-key
-// collection is unvouched — the suppressed finding must surface as a gap,
-// not disappear.
+// EvidenceGaps appends a target_table.primary_key gap when an alter_index
+// PRIMARY target cannot be judged because the primary-key object identity
+// is unvouched — an unknown member collection on either dialect, or an
+// unproven TiDB handle answer (PKIsHandle vs real object). The suppressed
+// finding must surface as a gap, not disappear.
 func (r alterIndexExistsRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
 	gaps := r.inner.EvidenceGaps(statement)
 	if statement.Dialect != spec.DialectMySQL && statement.Dialect != spec.DialectTiDB {
@@ -196,7 +203,8 @@ func (r alterIndexExistsRule) EvidenceGaps(statement spec.Statement) []rule.Evid
 		return gaps
 	}
 	snapshot, ok := targetTableSnapshot(statement)
-	if !ok || snapshot == nil || !snapshot.Exists || !(snapshot.PrimaryKeyUnknown || snapshot.ConstraintsUnknown) {
+	if !ok || snapshot == nil || !snapshot.Exists ||
+		(!snapshot.PrimaryKeyUnknown && !snapshot.ConstraintsUnknown && !snapshot.PrimaryKeyHandleUnknown) {
 		return gaps
 	}
 	return append(gaps, rule.EvidenceGap{

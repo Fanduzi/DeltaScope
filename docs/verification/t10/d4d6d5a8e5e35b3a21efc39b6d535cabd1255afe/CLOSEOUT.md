@@ -72,8 +72,9 @@ behavior-neutral style commit; see archive README for the split note)
 - Unit/spec: `go test ./...` all ok / 0 FAIL; `pg-unit-test-gates` and
   `pg-confidence-gates` green (unit + e2e CLI/HTTP/MCP); focused T10-R2
   suites green across spec/audit/provider; race clean.
-- Contract: 938 constructed validator checks / 0 failures
-  (`test_ddl_golden.py`), 33/33 T10 control checks, contract drift
+- Contract: merged validator suite **938 checks / 0 failures**
+  (`test_ddl_golden.py` contributes 758 contract cases; T07–T10
+  constructed-control blocks contribute 86/25/36/33), contract drift
   test green.
 - Gates: sql-corpus, query-access-corpus, inventory, catalog,
   parser-error + unsupported-diagnostics evidence, docs examples,
@@ -84,13 +85,22 @@ behavior-neutral style commit; see archive README for the split note)
   t06 `probe/main.go` scratch fixtures). `golangci-lint` on the touched
   packages: four R2 items fixed in `d4d6d5a8`; the remainder are
   baseline findings on pre-milestone commits.
-- Native pins: `native-probe/r2-consolidated-pins.log` — implicit-PK
-  promotion matrix, explicit-PK-frees-later-unique, TiDB
-  PRIMARY-object truth table (1176 on PKIsHandle),
-  `tidb_enable_clustered_index` mode observation, member-legality error
-  table (1170/1089/1391/3152/1283/1687/1252/1054/8200/3522/1176),
-  FT(5)-accepted / FT(0)-refused, TiDB descending-accepted-stored-
-  ascending, multi-valued cast allow/deny per dialect.
+- Native pins: `native-probe/r2-consolidated-pins.log` —
+  **corrected in T10-R3**: this file is byte-identical to the R1
+  consolidated pin log (git blob
+  `c83362698c9b91664f5f7e6cd2a90890e38f4f72`) and actually contains the
+  implicit-PK promotion matrix, the dialect split on expression-unique
+  promotion (MySQL 3522 vs TiDB allow), the TiDB PRIMARY-object truth
+  table (1176 on PKIsHandle), `TIDB_INDEXES.CLUSTERED`/`TIDB_PK_TYPE`
+  catalog shapes, the member-legality error table
+  (1170/3152/1283/1687/1252/1054/8200), and TiDB descending
+  accepted-stored-ascending (`desc_dir rc:0`, `desc_collation A`).
+  The R2 closeout originally also attributed FT(5)/FT(0), multi-valued
+  DECIMAL/DOUBLE dialect, clustered default-mode, and
+  explicit-PK-then-UNIQUE probes to it — those outputs were not
+  preserved here and no probe scripts were archived; bounded
+  re-verification of exactly those matrices is recorded in the T10-R3
+  archive.
 
 ## Corrections found in this round
 

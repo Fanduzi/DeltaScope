@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: create-table Statement specs with typed index metadata and per-rule policy values
-// output: index-governance findings for count, naming, duplicate-index, and redundancy concerns — pair comparisons apply only to sufficiently known plain keys, and a vouched existing set whose non-plain member could have paired reports an attributable evidence gap
+// output: index-governance findings for count, naming, duplicate-index, and redundancy concerns — pair comparisons apply only to sufficiently known plain keys, and an applicable pair carrying a non-plain member reports an attributable evidence gap (declared-vs-existing on create_index, declaration-vs-declaration inside create_table)
 // pos: DDL rule implementations for create-table index governance
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -559,24 +559,32 @@ func (r redundantUniqueOverlapIndexRule) EvidenceGaps(statement spec.Statement) 
 	return lifecycleIndexGap(statement, r.AppliesTo(statement), uniqueOverlapPairing)
 }
 
-// lifecycleIndexGap reports the missing existing-index facts for the
-// standalone create_index entry: the statement declares new indexes, so the
-// facts a lifecycle rule can lack are the target's current index set and —
-// when that set is vouched — the member key-part detail a plain-key
-// comparison could not complete without. Create-table entries declare the
-// whole set and never emit either gap; a confirmed-absent target is a
-// settled parent failure.
+// lifecycleIndexGap reports the missing member-comparison facts for the
+// lifecycle entries. The standalone create_index entry declares new indexes
+// against a target table, so the facts it can lack are the existing index
+// set and — when that set is vouched — the member key-part detail a
+// plain-key comparison could not complete without. The create-table entry
+// declares the whole set and needs no existing-set fact, but a comparison
+// between two different declarations inside it is equally member-bound: an
+// applicable pair carrying a non-plain member leaves the plain-key verdict
+// unverifiable, so the same key-parts gap applies. A confirmed-absent
+// target is a settled parent failure.
 func lifecycleIndexGap(statement spec.Statement, applies bool, pairing indexPairing) []rule.EvidenceGap {
-	if !applies || !orderedGapDialect(statement.Dialect) || statement.DDL == nil ||
-		statement.DDL.Operation != spec.DDLOperationCreateIndex {
+	if !applies || !orderedGapDialect(statement.Dialect) || statement.DDL == nil {
 		return nil
 	}
-	existing, known := existingIndexSet(statement)
-	if !known {
-		snapshot, ok := targetTableSnapshot(statement)
-		return memberExistenceGaps(snapshot, ok, "index")
+	switch statement.DDL.Operation {
+	case spec.DDLOperationCreateIndex:
+		existing, known := existingIndexSet(statement)
+		if !known {
+			snapshot, ok := targetTableSnapshot(statement)
+			return memberExistenceGaps(snapshot, ok, "index")
+		}
+		return memberComparisonGap(declaredIndexes(statement), existing, pairing)
+	case spec.DDLOperationCreateTable:
+		return declaredComparisonGap(declaredIndexes(statement), pairing)
 	}
-	return memberComparisonGap(declaredIndexes(statement), existing, pairing)
+	return nil
 }
 
 func isLeftPrefix(shorter, longer []string) bool {

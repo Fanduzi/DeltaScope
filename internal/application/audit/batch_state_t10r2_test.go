@@ -211,9 +211,12 @@ func TestT10R2UnresolvedPrimaryRoleWithholdsMember(t *testing.T) {
 }
 
 // B4: a TiDB create-derived PK without CLUSTERED|NONCLUSTERED defers to the
-// observed tidb_enable_clustered_index — on/int_only makes the single-int
-// PK the row handle (no PRIMARY object), off makes it a real index, and an
-// unobserved mode leaves the answer unknown instead of guessing.
+// observed tidb_enable_clustered_index — on makes the single-int PK the
+// row handle (no PRIMARY object), off makes it a real index, int_only
+// defers further to the alter-primary-key config fact (its conditioned
+// answers live in the T10-R3 matrix), and an unobserved mode — or an
+// int_only mode with the config fact unobserved — leaves the answer
+// unknown instead of guessing.
 func TestT10R2TiDBHandleFollowsObservedMode(t *testing.T) {
 	t.Parallel()
 	cases := []struct {
@@ -224,7 +227,7 @@ func TestT10R2TiDBHandleFollowsObservedMode(t *testing.T) {
 		wantGap        bool // unresolved — bounded gap only
 	}{
 		{name: "mode on", mode: "on", wantExistsDeny: true},
-		{name: "mode int_only", mode: "int_only", wantExistsDeny: true},
+		{name: "mode int_only + alter_pk unobserved", mode: "int_only", wantGap: true},
 		{name: "mode off", mode: "off", wantVisibility: true},
 		{name: "mode unobserved", mode: "", wantGap: true},
 	}

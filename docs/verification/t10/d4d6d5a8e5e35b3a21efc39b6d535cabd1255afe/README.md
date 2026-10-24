@@ -37,19 +37,24 @@ forms out of blanket-unsupported coverage.
   golden validator suite, focused T10-R2 tests, `release-gofmt-gate`.
 - `golden/` — `ddl_golden.py` artifacts per task at the bound SHA plus
   the consolidated run log (`regression-all.log`).
-- `native-probe/r2-consolidated-pins.log` — live-product pins recorded
-  2026-10 against MySQL 5.7.44/8.0.46/8.4.10 and TiDB v8.5.0 containers:
+- `native-probe/r2-consolidated-pins.log` — live-product pins from the
+  R1 archive carried byte-identical (git blob
+  `c83362698c9b91664f5f7e6cd2a90890e38f4f72`) against MySQL/TiDB
+  anchors. **Corrected in T10-R3**: the file actually contains the
   implicit-PK promotion matrix (first/second candidate, nullable,
   declaration order, prefix-unique, expression member, create/add
-  entries), explicit-PK-frees-later-unique, TiDB PRIMARY-object truth
-  table (NONCLUSTERED and non-integer clustered = real object; single-int
-  clustered PKIsHandle = 1176 on `ALTER INDEX PRIMARY`),
-  `tidb_enable_clustered_index` session-mode observation, the member
-  legality error table (1170/1089/1391/3152/1283/1687/1252/1054/8200/
-  3522/1176), FULLTEXT prefix-length acceptance (FT(5) legal, FT(0)
-  refused), TiDB descending-accepted-stored-ascending, and the
-  multi-valued cast allow/deny matrix per dialect (MySQL accepts
-  DECIMAL, rejects DOUBLE; TiDB accepts DOUBLE, rejects DECIMAL).
+  entries), the expression-unique promotion dialect split (MySQL 3522
+  vs TiDB allow), the TiDB PRIMARY-object truth table (NONCLUSTERED and
+  non-integer clustered = real object; single-int clustered PKIsHandle
+  = 1176 on `ALTER INDEX PRIMARY`), `TIDB_INDEXES.CLUSTERED`/
+  `TIDB_PK_TYPE` catalog shapes, the member-legality error table
+  (1170/3152/1283/1687/1252/1054/8200), and TiDB
+  descending-accepted-stored-ascending (`desc_dir`/`desc_collation`
+  rows). The FT(5)/FT(0), multi-valued DECIMAL/DOUBLE dialect,
+  clustered default-mode, and explicit-PK-then-UNIQUE probes listed
+  here before were not preserved in this file and no probe scripts were
+  archived — bounded re-verification of exactly those matrices is
+  recorded in the T10-R3 archive.
 - `identity/` — bound HEAD, CLI sha256, Go toolchain, working-tree
   status at capture time.
 

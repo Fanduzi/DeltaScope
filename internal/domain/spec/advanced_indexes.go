@@ -771,8 +771,10 @@ func assessImplicitPrimaryVisibility(assessment *AdvancedIndexAssessment, fact a
 		// Unbound metadata is offline scope, a confirmed-absent table fails
 		// on existence — neither is a role question. Only a vouched set that
 		// cannot enumerate candidates emits the member gap here; the plain
-		// IndexesUnknown case already surfaces through the existence rule.
-		if snapshot == nil || !snapshot.Exists || snapshot.IndexesUnknown {
+		// IndexesUnknown case already surfaces through the existence rule,
+		// and an unproven name space (IndexNamesUnknown) leaves the same
+		// name lookup unresolved there.
+		if snapshot == nil || !snapshot.Exists || snapshot.IndexesUnknown || snapshot.IndexNamesUnknown {
 			return
 		}
 		target := snapshot.FindIndex(fact.name)

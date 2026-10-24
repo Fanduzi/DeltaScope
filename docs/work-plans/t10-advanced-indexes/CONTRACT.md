@@ -420,3 +420,61 @@ boundaries, MySQL-side GLOBAL/`primary_key_type` vendor boundaries,
 unprovable-fact cases. The frozen ID SHA-256 is unchanged —
 `3d526e8ef8199b18fbbf39fa1af024192948fee3a0ebefeea6d086c330329311`
 (126 append-only IDs; expect bodies are not part of the identity hash).
+
+### 9.4 Amendment R3 — consumer-interface, member-fidelity, and evidence-gap corrections
+
+Independent review confirmed three classes of consumer-side defects;
+R3 corrects them without expanding the audited surface.
+
+**Create-table member-comparison gap.** A pair comparison between two
+different declarations inside one `CREATE TABLE` is member-bound exactly
+like the declared-vs-existing `create_index` comparison: when the column
+shape pairs under duplicate/left-prefix/unique-overlap semantics but
+either member is non-plain, the plain-key verdict is unverifiable and the
+enabled rule emits `unknown_table_state` + `target_table.indexes.key_parts`
+instead of a silent pass (`declaredComparisonGap`, never self-paired).
+Non-pairing members, lone non-plain indexes, provable plain pairs, and
+disabled rules keep their exact outcomes; the `create_index` /
+`ALTER ADD INDEX` member controls are unchanged.
+
+**Primary-key identity through all consumers.** `PrimaryKeyHandleUnknown`
+now participates in the exists rule's knowledge premise exactly as
+`PrimaryKeyUnknown`/`ConstraintsUnknown` do — an unvouched TiDB handle
+answer suppresses the absence finding *and* reports the
+`target_table.primary_key` identity gap under `exists` alone, `compat`
+alone, or both. Derived create-table snapshots assign product stored
+names via `spec.StoredIndexNames` (native anchor: MySQL 8.0.46
+invisible_indexes.result L274-285 — an unnamed member stores under its
+first column member's name with `_N` suffixing): a provable name space
+lets successors resolve `ALTER INDEX`/`DROP INDEX` members, while an
+unprovable name (expression first member, empty member list,
+authored-name collision) marks `IndexNamesUnknown` — the member set
+stays known but name-keyed consumers report the collection gap rather
+than reading an unmatched name as confirmed absence. TiDB `int_only`
+clustered mode additionally defers to the observed `alter-primary-key`
+config fact (upstream: `!AlterPrimaryKey && isSingleIntPK`), carried as
+`InstanceFacts.TiDBAlterPrimaryKey{,Known}` and loaded through the same
+all-rows `SHOW CONFIG` verification as `max-index-length`; an unobserved
+fact keeps the handle answer unknown. `on`/`off`/explicit
+`CLUSTERED`/`NONCLUSTERED` semantics are unchanged.
+
+**Provider expression direction.** `classifyExpressionMember` reads the
+same `STATISTICS.COLLATION` fact the column branch does (native anchor:
+MySQL 8.0.46 functional_index.result L186-193 — descending functional
+indexes are real objects): `D` lands `Descending` on the expression key
+part, `A` stays ascending, and a NULL/unrecognized collation leaves the
+member unmodeled with its expression identity still attached — never a
+guessed ascending. No expression evaluation or optimizer analysis is
+introduced.
+
+**Evidence-archive correction.** `docs/verification/t10/d4d6d5a8…` shipped
+`native-probe/r2-consolidated-pins.log` byte-identical to the R1 file
+(blob `c83362698c9b91664f5f7e6cd2a90890e38f4f72`): it contains the
+implicit-PK promotion matrix, TiDB PRIMARY-object truth table, and the
+member-legality error table, but *not* the FT(5)/FT(0), multi-valued
+DECIMAL/DOUBLE dialect, clustered default-mode, or explicit-PK-then-UNIQUE
+probes the R2 closeout attributed to it, and no probe scripts were
+preserved. The R2 closeout is corrected in place; the missing matrices
+receive bounded re-verification recorded with real execution time and
+code identity in the T10-R3 archive. The merged validator suite total is
+938 checks — `test_ddl_golden.py` itself contributes 758 contract cases.

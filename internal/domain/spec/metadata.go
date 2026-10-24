@@ -1,6 +1,6 @@
 // Package spec defines normalized statement specifications for rule evaluation.
 // input: optional metadata-aware audit facts such as explicit known-bit instance variables, target-table snapshots, and the canonical version identity
-// output: parser-neutral metadata structures (including per-collection unknown markers on table snapshots) and lookup helpers for future rules
+// output: parser-neutral metadata structures (including per-collection unknown markers and the index name-space marker on table snapshots) and lookup helpers for future rules
 // pos: domain metadata model shared by offline and metadata-aware audit paths
 // note: if this file changes, update this header and module README.md.
 package spec
@@ -40,6 +40,15 @@ type InstanceFacts struct {
 	// product's ON default as a guess. TiDB only; never populated on
 	// MySQL.
 	TiDBEnableClusteredIndex string `json:"tidb_enable_clustered_index,omitempty"`
+
+	// TiDBAlterPrimaryKey is the observed alter-primary-key configuration
+	// fact the int_only clustered mode defers to: int_only clusters a
+	// single-int PK only while alter-primary-key is disabled. An
+	// unobserved fact keeps the int_only handle answer unknown — the
+	// Known bit separates "probed false" from "never probed" so a zero
+	// value is never read as evidence. TiDB only.
+	TiDBAlterPrimaryKey      bool `json:"tidb_alter_primary_key,omitempty"`
+	TiDBAlterPrimaryKeyKnown bool `json:"tidb_alter_primary_key_known,omitempty"`
 }
 
 // TableSnapshot is the current metadata-backed shape of a target table.
@@ -89,6 +98,15 @@ type TableSnapshot struct {
 	// so provider snapshots keep this false and multi-candidate primary-role
 	// determinations degrade to a bounded gap instead of guessing Indexes[0].
 	IndexOrderCatalog bool `json:"-"`
+
+	// IndexNamesUnknown marks a vouched Indexes collection whose member
+	// stored names cannot all be proven — a derived create-table shape
+	// where StoredIndexNames could not resolve every member under the
+	// product's auto-naming rule (expression first member, authored-name
+	// collision). The members stay known; name-based consumers must treat
+	// lookups as unresolved rather than reading an unmatched name as
+	// confirmed absence. Internal audit marker; not serialized.
+	IndexNamesUnknown bool `json:"-"`
 
 	// Partitioned reports whether the table is partitioned — the fact TiDB's
 	// GLOBAL index option is gated on. nil means the fact was never loaded
