@@ -259,9 +259,13 @@ variants). `ResolvePrimaryRole`/`ResolveDeclaredPrimaryRole` in
 `internal/domain/spec/primary_key_role.go` is the shared determination
 across alter_index, create_table, add_index, add_constraint, and
 create_index. Candidate = unique, all members plain columns (prefix
-members still qualify — natively pinned), expression members provably
-disqualify, an unmodeled/unclassifiable member makes the decision
-unprovable, and every bound column must be proven NOT NULL. Multiple
+members still qualify — natively pinned); expression members disqualify
+on TiDB (hidden member columns never carry the role) while on MySQL a
+functional unique can qualify through its hidden generated column —
+whose nullability and the mixed functional/plain selection order we
+cannot prove, so the index stays unprovable — and an
+unmodeled/unclassifiable member also makes the decision unprovable.
+Every bound column must be proven NOT NULL. Multiple
 candidates resolve by declaration order only when the snapshot is
 ordered (`IndexOrderCatalog` on derived create shapes); provider
 snapshots sort by index name and cannot prove the pick → bounded gap
@@ -288,7 +292,7 @@ product would reject. TiDB FULLTEXT/SPATIAL remain vendor boundaries
 (8200); MySQL-side `primary_key_type` is a vendor boundary (TiDB-only
 syntax).
 
-**Denominator.** `required_case_ids` 81 → 123 (append-only; every
+**Denominator.** `required_case_ids` 81 → 126 (append-only; every
 original id retained): per-anchor implicit-PK refuse/order-gap/create,
 TiDB PRIMARY object split, prefix_required/prefix-ok, FULLTEXT-int,
 SPATIAL-nullable/type/ok, JSON-direct, expression-missing,

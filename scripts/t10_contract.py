@@ -15,8 +15,8 @@ TBL_EXISTS = 'ddl.table.exists.alter.require'
 VERSIONS = {'mysql57': '5.7.44', 'mysql80': '8.0.46', 'mysql84': '8.4.10', 'tidb85': 'v8.5.0'}
 OBSERVED_VERSION = {'mysql57': '5.7.44', 'mysql80': '8.0.46', 'mysql84': '8.4.10', 'tidb85': '8.5.0'}
 
-FROZEN_REQUIRED_CASES = 123
-FROZEN_IDS_SHA256 = '5efb9502716c4b2bbf66d335674a3f820cd58d8c5312aab6a32292a3b003197d'
+FROZEN_REQUIRED_CASES = 126
+FROZEN_IDS_SHA256 = '3d526e8ef8199b18fbbf39fa1af024192948fee3a0ebefeea6d086c330329311'
 
 UNAUDITED = "parsed by the shared parser but not covered by audited semantics"
 VENDOR = "parsed by the shared parser but outside the supported statement surface for this dialect"
@@ -853,6 +853,7 @@ T10S2 = "CREATE TABLE t10s2 (g GEOMETRY NOT NULL SRID 0);"
 T10CPK = "CREATE TABLE t10cpk (a INT, PRIMARY KEY (a));"
 T10NCP = "CREATE TABLE t10ncp (a INT, PRIMARY KEY (a) NONCLUSTERED);"
 T10VPK = "CREATE TABLE t10vpk (a VARCHAR(20), PRIMARY KEY (a));"
+T10UF = "CREATE TABLE t10uf (a INT NOT NULL, UNIQUE KEY u_f((a+1)));"
 T10G = "CREATE TABLE t10g (a INT, UNIQUE KEY uq(a));"
 T10GP = ("CREATE TABLE t10gp (a INT, b INT, UNIQUE KEY u_ab(a,b)) "
          "PARTITION BY RANGE (a) (PARTITION p0 VALUES LESS THAN (100), "
@@ -926,6 +927,48 @@ for anchor in ("mysql80", "mysql84", "tidb85"):
         [{"assert": "u_a stays visible after refusal", "sql": vq("t10m", "u_a"), "expect": "YES"}],
         post_verify=[{"assert": "audit did not hide u_a", "sql": vq("t10m", "u_a"), "expect": "YES"}],
         teardown_steps=teardown("t10m"))
+
+# Expression-member UNIQUE implicit-role split (native-pinned 2026-10):
+# TiDB disqualifies hidden member columns outright (alter succeeds); MySQL
+# can promote a functional unique whose generated column is NOT NULL, and
+# prefers plain-column candidates — neither fact is provable from our
+# member set, so MySQL emits a bounded key_parts gap instead of a guess.
+for anchor in ("mysql80", "mysql84"):
+    meta_case(
+        f"t10-{anchor}-implicit-pk-expr-gap", anchor, "t10-visibility",
+        "ALTER TABLE t10uf ALTER INDEX u_f INVISIBLE;",
+        expect(0, "review", 1, 1, 0, 0, "unverified", ["unverified"],
+               ["ALTER TABLE t10uf ALTER INDEX u_f INVISIBLE;"], 1,
+               finding_entries=[finding(0, "ddl.index.invisible.forbid", "warning")],
+               gap_entries=[gap(0, "ddl.index.advanced.compatibility.require",
+                                ["target_table.indexes.key_parts"])],
+               fmeta=[meta(0, "ddl.index.invisible.forbid",
+                           {"table": "t10uf", "index": "u_f", "action": "alter_index", "visibility": "invisible"})],
+               loaded=4, applicable=4),
+        setup("t10uf", T10UF, [
+            {"assert": "u_f initially visible", "sql": vq("t10uf", "u_f"), "expect": "YES"}]),
+        [{"name": "apply-expr-unique-invisible", "sql": "ALTER TABLE t10uf ALTER INDEX u_f INVISIBLE;",
+          "expect_rc": 1, "stderr_contains": ["3522"]}],
+        [{"assert": "u_f stays visible after refusal", "sql": vq("t10uf", "u_f"), "expect": "YES"}],
+        post_verify=[{"assert": "audit did not hide u_f", "sql": vq("t10uf", "u_f"), "expect": "YES"}],
+        teardown_steps=teardown("t10uf"))
+
+meta_case(
+    "t10-tidb85-implicit-pk-expr-allowed", "tidb85", "t10-visibility",
+    "ALTER TABLE t10uf ALTER INDEX u_f INVISIBLE;",
+    expect(0, "review", 1, 1, 0, 0, "complete", ["complete"],
+           ["ALTER TABLE t10uf ALTER INDEX u_f INVISIBLE;"], 0,
+           finding_entries=[finding(0, "ddl.index.invisible.forbid", "warning")],
+           fmeta=[meta(0, "ddl.index.invisible.forbid",
+                       {"table": "t10uf", "index": "u_f", "action": "alter_index", "visibility": "invisible"})],
+           loaded=4, applicable=4),
+    setup("t10uf", T10UF, [
+        {"assert": "u_f initially visible", "sql": vq("t10uf", "u_f"), "expect": "YES"}]),
+    [{"name": "apply-expr-unique-invisible", "sql": "ALTER TABLE t10uf ALTER INDEX u_f INVISIBLE;",
+      "expect_rc": 0}],
+    [{"assert": "u_f now invisible", "sql": vq("t10uf", "u_f"), "expect": "NO"}],
+    post_verify=[{"assert": "audit hid u_f", "sql": vq("t10uf", "u_f"), "expect": "NO"}],
+    teardown_steps=teardown("t10uf"))
 
 for anchor in ("mysql57", "mysql80", "mysql84", "tidb85"):
     meta_case(

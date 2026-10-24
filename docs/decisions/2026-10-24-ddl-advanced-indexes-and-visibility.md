@@ -177,7 +177,10 @@ R2 restores the full responsibility:
   8.0/8.4 and TiDB 8.5 across ALTER/CREATE/ADD entries). The shared
   `ResolvePrimaryRole`/`ResolveDeclaredPrimaryRole` answers holder or a
   bounded gap — prefix members still qualify, expression members
-  provably disqualify, unmodelable member facts withhold the answer, and
+  disqualify on TiDB but stay unprovable on MySQL (the hidden
+  generated column can qualify; its nullability and the mixed
+  functional/plain selection order are facts we cannot prove),
+  unmodelable member facts withhold the answer, and
   declaration order is only provable on ordered
   (derived create-table) snapshots: provider catalogs are name-sorted,
   so multi-candidate sets emit `target_table.indexes.ordinal` rather

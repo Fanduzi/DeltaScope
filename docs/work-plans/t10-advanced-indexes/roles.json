@@ -585,6 +585,25 @@
       "expect": "two qualifying candidates on a name-sorted provider snapshot → order unprovable → compat gap target_table.indexes.ordinal, warning only; native execute still refuses u_a (3522) — the gap is the honest bounded answer"
     },
     {
+      "id": "t10-<anchor>-implicit-pk-expr-gap",
+      "anchors": [
+        "mysql80",
+        "mysql84"
+      ],
+      "policy": "t10-visibility",
+      "sql": "ALTER TABLE t10uf ALTER INDEX u_f INVISIBLE;",
+      "expect": "expression-member UNIQUE on MySQL: hidden generated column can hold the role but its nullability/selection order is unprovable → compat gap target_table.indexes.key_parts + invisible warning; native still refuses 3522"
+    },
+    {
+      "id": "t10-tidb85-implicit-pk-expr-allowed",
+      "anchors": [
+        "tidb85"
+      ],
+      "policy": "t10-visibility",
+      "sql": "ALTER TABLE t10uf ALTER INDEX u_f INVISIBLE;",
+      "expect": "TiDB hidden member columns never carry the role → invisible warning only, complete coverage; native apply hides u_f (rc 0)"
+    },
+    {
       "id": "t10-<anchor>-prefix-required",
       "anchors": [
         "mysql57",

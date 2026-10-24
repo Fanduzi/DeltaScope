@@ -8474,6 +8474,397 @@
       ]
     },
     {
+      "id": "t10-mysql80-implicit-pk-expr-gap",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t10uf ALTER INDEX u_f INVISIBLE;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T10_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "statement_coverage": [
+          "unverified"
+        ],
+        "statement_sql": [
+          "ALTER TABLE t10uf ALTER INDEX u_f INVISIBLE;"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 1,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "reason_code": "unknown_table_state",
+            "required_facts": [
+              "target_table.indexes.key_parts"
+            ]
+          }
+        ],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.invisible.forbid",
+            "level": "warning"
+          }
+        ],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 4,
+        "rule_summary_applicable": 4,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.invisible.forbid",
+            "metadata": {
+              "table": "t10uf",
+              "index": "u_f",
+              "action": "alter_index",
+              "visibility": "invisible"
+            }
+          }
+        ]
+      },
+      "policy": "t10-visibility",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10uf",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10uf'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10uf bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10uf'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10uf",
+          "sql": "CREATE TABLE t10uf (a INT NOT NULL, UNIQUE KEY u_f((a+1)));",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10uf bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10uf'",
+              "expect": "1"
+            },
+            {
+              "assert": "u_f initially visible",
+              "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10uf' AND index_name='u_f' AND seq_in_index=1 LIMIT 1",
+              "expect": "YES"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not hide u_f",
+          "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10uf' AND index_name='u_f' AND seq_in_index=1 LIMIT 1",
+          "expect": "YES"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-expr-unique-invisible",
+          "sql": "ALTER TABLE t10uf ALTER INDEX u_f INVISIBLE;",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "3522"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "u_f stays visible after refusal",
+          "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10uf' AND index_name='u_f' AND seq_in_index=1 LIMIT 1",
+          "expect": "YES"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10uf",
+          "sql": "DROP TABLE IF EXISTS t10uf;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10uf bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10uf'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-mysql84-implicit-pk-expr-gap",
+      "anchor": "mysql84",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t10uf ALTER INDEX u_f INVISIBLE;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23384,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T10_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "statement_coverage": [
+          "unverified"
+        ],
+        "statement_sql": [
+          "ALTER TABLE t10uf ALTER INDEX u_f INVISIBLE;"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 1,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.advanced.compatibility.require",
+            "reason_code": "unknown_table_state",
+            "required_facts": [
+              "target_table.indexes.key_parts"
+            ]
+          }
+        ],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.invisible.forbid",
+            "level": "warning"
+          }
+        ],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 4,
+        "rule_summary_applicable": 4,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.invisible.forbid",
+            "metadata": {
+              "table": "t10uf",
+              "index": "u_f",
+              "action": "alter_index",
+              "visibility": "invisible"
+            }
+          }
+        ]
+      },
+      "policy": "t10-visibility",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10uf",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10uf'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10uf bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10uf'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10uf",
+          "sql": "CREATE TABLE t10uf (a INT NOT NULL, UNIQUE KEY u_f((a+1)));",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10uf bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10uf'",
+              "expect": "1"
+            },
+            {
+              "assert": "u_f initially visible",
+              "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10uf' AND index_name='u_f' AND seq_in_index=1 LIMIT 1",
+              "expect": "YES"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit did not hide u_f",
+          "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10uf' AND index_name='u_f' AND seq_in_index=1 LIMIT 1",
+          "expect": "YES"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-expr-unique-invisible",
+          "sql": "ALTER TABLE t10uf ALTER INDEX u_f INVISIBLE;",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "3522"
+          ]
+        }
+      ],
+      "structure": [
+        {
+          "assert": "u_f stays visible after refusal",
+          "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10uf' AND index_name='u_f' AND seq_in_index=1 LIMIT 1",
+          "expect": "YES"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10uf",
+          "sql": "DROP TABLE IF EXISTS t10uf;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10uf bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10uf'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t10-tidb85-implicit-pk-expr-allowed",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "ALTER TABLE t10uf ALTER INDEX u_f INVISIBLE;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "golden"
+      },
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_sql": [
+          "ALTER TABLE t10uf ALTER INDEX u_f INVISIBLE;"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "evidence_gap_entries": [],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.invisible.forbid",
+            "level": "warning"
+          }
+        ],
+        "unsupported_entries": [],
+        "rule_summary_loaded": 4,
+        "rule_summary_applicable": 4,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.index.invisible.forbid",
+            "metadata": {
+              "table": "t10uf",
+              "index": "u_f",
+              "action": "alter_index",
+              "visibility": "invisible"
+            }
+          }
+        ]
+      },
+      "policy": "t10-visibility",
+      "setup": [
+        {
+          "name": "prove-prior-state-t10uf",
+          "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10uf'",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10uf bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10uf'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t10uf",
+          "sql": "CREATE TABLE t10uf (a INT NOT NULL, UNIQUE KEY u_f((a+1)));",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10uf bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10uf'",
+              "expect": "1"
+            },
+            {
+              "assert": "u_f initially visible",
+              "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10uf' AND index_name='u_f' AND seq_in_index=1 LIMIT 1",
+              "expect": "YES"
+            }
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "audit hid u_f",
+          "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10uf' AND index_name='u_f' AND seq_in_index=1 LIMIT 1",
+          "expect": "NO"
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-expr-unique-invisible",
+          "sql": "ALTER TABLE t10uf ALTER INDEX u_f INVISIBLE;",
+          "expect_rc": 0
+        }
+      ],
+      "structure": [
+        {
+          "assert": "u_f now invisible",
+          "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10uf' AND index_name='u_f' AND seq_in_index=1 LIMIT 1",
+          "expect": "NO"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t10uf",
+          "sql": "DROP TABLE IF EXISTS t10uf;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t10uf bound table count",
+              "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10uf'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "t10-mysql57-prefix-required",
       "anchor": "mysql57",
       "dialect": "mysql",
@@ -12372,6 +12763,9 @@
     "T10.meta.t10-tidb85-implicit-pk",
     "T10.meta.t10-tidb85-implicit-pk-create",
     "T10.meta.t10-tidb85-implicit-pk-order",
+    "T10.meta.t10-mysql80-implicit-pk-expr-gap",
+    "T10.meta.t10-mysql84-implicit-pk-expr-gap",
+    "T10.meta.t10-tidb85-implicit-pk-expr-allowed",
     "T10.meta.t10-mysql57-prefix-required",
     "T10.meta.t10-mysql80-prefix-required",
     "T10.meta.t10-mysql84-prefix-required",
