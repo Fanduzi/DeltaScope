@@ -791,11 +791,13 @@ func accumulateIndexRow(indexes map[string]*spec.Index, order *[]string, name st
 	// STATISTICS emits rows in seq_in_index order inside each index group,
 	// so the accumulated slice position is the member ordinal.
 	keyPart := spec.IndexKeyPart{Ordinal: len(index.KeyParts) + 1}
-	if !member.columnName.Valid {
+	if !member.columnName.Valid || strings.EqualFold(member.columnName.String, "NULL") {
 		// NULL column_name is an expression key part — the catalog stores no
-		// column name for it. Mark it rather than fabricating an empty
-		// column; the catalog EXPRESSION text supplies the member identity
-		// and column dependencies when the server exposes it.
+		// column name for it (TiDB emits the literal text 'NULL' instead of
+		// a SQL NULL; a real column can never carry the reserved name).
+		// Mark it rather than fabricating an empty column; the catalog
+		// EXPRESSION text supplies the member identity and column
+		// dependencies when the server exposes it.
 		keyPart.Kind = spec.IndexKeyPartExpression
 		if member.expression.Valid && strings.TrimSpace(member.expression.String) != "" {
 			keyPart.Expression = ptrExpressionFacts(tidbparser.ParseCatalogExpressionFacts(member.expression.String))
