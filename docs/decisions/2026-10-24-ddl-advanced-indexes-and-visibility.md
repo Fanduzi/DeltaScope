@@ -214,6 +214,69 @@ Deferred unchanged: expression equivalence/evaluation, per-function
 TiDB expression legality, multi-valued query semantics, optimizer-effect
 claims.
 
+## Amendment R3 (2026-10-24) — role knownness, legality matrices, coverage graduation
+
+The R1-R2 review confirmed four residual gaps against #89; R3 closes
+them and graduates the member forms it can now audit.
+
+- **Four-state primary role.** `ResolvePrimaryRole`/
+  `ResolveDeclaredPrimaryRole` collapse nothing: explicit primary,
+  proven implicit holder (a member-identity pointer, so two unnamed
+  `UNIQUE` members stay distinct), proven no-candidate, or bounded
+  unresolved. The R1 `Resolved`/`HasHolder` pair misfiled "explicit
+  primary exists" as "no holder" (a later UNIQUE INVISIBLE was wrongly
+  refused) and name-string identity conflated unnamed members (the
+  second unnamed UNIQUE was wrongly refused).
+- **Unresolved transitions withhold publication.** The ordered-state
+  gate tombstones on `UnresolvedTransition` with features exactly like
+  `InvalidTransition` — an unprovable role/member answer or a missing
+  version on a gated form no longer publishes a success post-state.
+- **TiDB handle is a tri-state.** `PrimaryKeyIsHandle` +
+  `PrimaryKeyHandleUnknown`: provider no-row/NULL CLUSTERED evidence and
+  unmatchable member shapes stay unknown; declared shapes resolve
+  explicit `CLUSTERED|NONCLUSTERED` first, then the session-observed
+  `tidb_enable_clustered_index` instance fact (new provider probe,
+  TiDB-only); unprobed mode stays unknown. Anchored on
+  pingcap/tidb v8.5.0 `pkg/ddl/create_table.go`.
+- **Literal-`NULL` members classify three ways.** TiDB catalog rows
+  report expression members as the literal string `'NULL'` in
+  `COLUMN_NAME`; MySQL permits a backticked column named `NULL`.
+  SQL-NULL or literal-with-expression-text → expression; literal
+  matching a loaded column → plain column; neither → unmodeled.
+- **Kind-aware member legality.** Index kind routes before prefix logic:
+  FULLTEXT text members bind without `prefix_required` (non-string →
+  1283 `fulltext_column_type`), SPATIAL requires geometry + NOT NULL
+  (1687/1252), the prefix matrix is zero(1391)/non-string(1089)/
+  over-length(1089)/required(1170) with nonzero FULLTEXT prefixes
+  ignored natively, and multi-valued casts split by dialect — MySQL
+  {signed,unsigned,char(n),binary(n),date,time,datetime,decimal} vs TiDB
+  allowing `double` where MySQL allows `decimal`; {json,year,float} and
+  length-less char/binary refuse on both, unlisted families stay gaps.
+  Unknown member facts attribute gaps to the feature that needed them.
+- **Coverage graduation.** `expr`/`prefix`/`desc`/`multi_valued` member
+  forms and TiDB `GLOBAL` no longer mint unsupported aspects — legal
+  positives audit complete and publish member facts (ordinals, prefix
+  lengths, directions, expression dependencies) into the next
+  statement's pre-state. The remaining boundary is honest:
+  `unmodeled_parts`, predicates, MySQL-side `GLOBAL`/`primary_key_type`,
+  unmodeled options, TiDB fulltext/spatial, vector/columnar. Graduated
+  forms still do not answer plain-key pair comparisons — a vouched
+  pairing with a non-plain member keeps the
+  `target_table.indexes.key_parts` gap (T09 boundary preserved).
+- **Oracle upgrade, not shrink.** 30 of the 126 frozen expects moved off
+  the incorrect R1 unsupported exit to their natively-verified outcomes
+  (supported-version positives pass; old-version refusals stay
+  determined with complete coverage; TiDB/MySQL<8 descending emit
+  `descending_ignored`; TiDB GLOBAL splits pass/refuse on the
+  unique+partitioned gate). Case IDs are append-only and the frozen
+  identity SHA-256 is unchanged
+  (`3d526e8ef8199b18fbbf39fa1af024192948fee3a0ebefeea6d086c330329311` —
+  126 cases; expect bodies sit outside the identity hash).
+
+Deferred still unchanged: expression equivalence/evaluation,
+per-function TiDB expression legality, multi-valued query semantics,
+optimizer-effect claims, and every boundary that stays bounded above.
+
 ## References
 
 - Issue: Fanduzi/DeltaScope#79 (milestone), #89 (T10 scope)

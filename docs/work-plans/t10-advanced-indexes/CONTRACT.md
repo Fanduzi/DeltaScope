@@ -118,10 +118,15 @@ are independent); an unknown index set emits the
   = true.
 - `spec.AssessAdvancedIndexes(statement)` — shared product/version answer:
   features `visibility`, `expression_keys`, `descending_keys`,
-  `multi_valued`; issues with bounded `reason_code` and optional
-  `minimum_version`; gaps for version facts; `VersionGated` marks the
-  version-consulting subset; `InvalidTransition` marks determined-negative
-  issues that must never publish post-state.
+  `multi_valued`, plus the R2 member-legality features `prefix_length`,
+  `fulltext`, `spatial`, `global`; issues with bounded `reason_code` and
+  optional `minimum_version`; gaps for version facts; `VersionGated` marks
+  the version-consulting subset; `InvalidTransition` marks
+  determined-negative issues that must never publish post-state, and
+  `UnresolvedTransition` marks feature-bearing answers that could not be
+  proven either way (unprovable role/member facts, missing version on a
+  version-gated form) — the ordered-state gate withholds publication for
+  both.
 
 ## 4. Native-observed responsibility matrix (T10 anchors)
 
@@ -194,9 +199,20 @@ forces invalidate on both `applyAlterIndexVisibility` and `applyAddIndex`
   facts, not unmodeled options).
 - `<op>.index.multi_valued` is emitted for `MultiValuedParts>0`
   (unaudited — multi-valued query semantics are not inspected).
+  **Superseded by 9.3:** retired under R2-final — the cast-type legality
+  matrix is member-audited; only multi-valued *query* semantics stay out
+  of scope and need no coverage mark.
 - `expr`/`prefix`/`desc`/`predicate`/unmodeled-option aspects are
   unchanged; TiDB `fulltext`/`spatial` remain vendor boundaries; vector /
   columnar kinds are unchanged.
+- **Superseded by 9.3:** under R2-final, `expr`/`prefix`/`desc`/
+  `multi_valued` member forms and TiDB `GLOBAL` graduated out of the
+  aspect set — they are audited by the shared member-legality matrix
+  instead of marking unsupported coverage. What remains bounded:
+  `unmodeled_parts` (provider member rows that could not classify),
+  index `WHERE` predicates, `primary_key_type` on MySQL (TiDB-only
+  syntax), other unmodeled `IndexOption` members, TiDB
+  `fulltext`/`spatial` vendor boundaries, and vector/columnar kinds.
 
 ## 8. Golden path and denominator
 
@@ -299,3 +315,108 @@ SPATIAL-nullable/type/ok, JSON-direct, expression-missing,
 multi-valued-supported, and TiDB GLOBAL gate cases. Frozen ID SHA-256
 `3d526e8ef8199b18fbbf39fa1af024192948fee3a0ebefeea6d086c330329311`
 (123-case intermediate freeze was `5efb9502…`).
+
+### 9.3 Amendment R2-final — four-state role, member-legality matrices, coverage graduation
+
+Close-out of the four confirmed R1 review gaps. Corrections and additions;
+earlier frozen wording that R2-final replaces is annotated in place.
+
+**Four-state primary-role answer.** `ResolvePrimaryRole`/
+`ResolveDeclaredPrimaryRole` now return `PrimaryRoleResolution` with four
+distinct outcomes instead of a `Resolved`/`HasHolder` pair that collapsed
+"explicit primary present" into "no holder" and compared holders by name:
+
+- `ExplicitPrimary` — a real PRIMARY KEY exists; a later UNIQUE can never
+  hold the implicit role, so `UNIQUE … INVISIBLE` is legal on every entry
+  (natively rc:0 on MySQL 8.0/8.4 and TiDB 8.5; previously refused as a
+  spurious first-candidate).
+- `HasHolder` + `HolderIndex` — a member *identity* pointer into the
+  index collection, not a name string. Two unnamed `UNIQUE` members no
+  longer collapse: the first qualifying member holds the role and the
+  second may be invisible (named and unnamed variants pinned).
+- proven no-candidate — resolved, no qualifier.
+- unresolved — the primary/member facts needed for the answer are
+  unvouched (`PrimaryKeyUnknown`, unproven member sets, unprovable
+  declaration order on name-sorted provider snapshots); the answer emits
+  bounded gaps (`target_table.primary_key`, `target_table.indexes`,
+  `target_table.indexes.ordinal`, `target_table.indexes.key_parts`) and
+  marks `UnresolvedTransition`.
+
+**Unresolved-transition publication gate.** The shared ordered-state gate
+now withholds publication on `UnresolvedTransition` exactly like
+`InvalidTransition` whenever the transition carries features — an
+`ALTER TABLE t ADD UNIQUE KEY u_a(a) INVISIBLE` whose role answer is
+unprovable tombstones `t`, so a follow-up `ALTER INDEX u_a` sees the
+existence gap instead of an unproven post-state. Missing version on a
+version-gated form follows the same precedent the column assessment
+already set.
+
+**TiDB handle tri-state.** `PrimaryKeyIsHandle` gains
+`PrimaryKeyHandleUnknown`: provider `TIDB_INDEXES` no-row/NULL or an
+unmatchable member shape no longer defaults the PRIMARY object into
+existence. Declared create-table shapes resolve `PKIsHandle` through
+explicit `CLUSTERED|NONCLUSTERED` first, then the session-observed
+`tidb_enable_clustered_index` instance fact (new provider probe;
+on/int_only → handle, off → real object); unprobed or ambiguous mode
+leaves the answer unknown. Anchored on pingcap/tidb v8.5.0
+`pkg/ddl/create_table.go` handle selection.
+
+**Literal-`NULL` member classification.** TiDB `STATISTICS.COLUMN_NAME`
+returns the literal string `'NULL'` for expression members; MySQL allows
+a backticked column named `NULL`. The provider now classifies three ways:
+SQL NULL or literal-with-expression-text → expression member; a literal
+matching a loaded real column name → plain column member; neither
+provable → `UnmodeledKeyParts`. A reserved-word column no longer
+disappears from `Columns`/comparison.
+
+**Kind-aware member legality.** `assessIndexMembers` routes by index kind
+before ordinary prefix logic, so FULLTEXT text members no longer mint
+`prefix_required`, and unknown member types attribute the gap to the
+feature that needed the fact (fulltext) instead of a filtered prefix
+gap. Natively pinned matrix:
+
+- prefix: `prefix_required` 1170 (BLOB/TEXT no-length), `prefix_zero`
+  1391 on *every* kind including FULLTEXT, `prefix_not_string` 1089
+  (enum/date/int pinned non-capable; unlisted families stay gaps),
+  `prefix_over_length` 1089; nonzero FULLTEXT prefixes are ignored by
+  MySQL (rc:0) and SPATIAL prefixes refuse as non-string.
+- FULLTEXT members: string/text families (1283 on others).
+- SPATIAL members: geometry family + NOT NULL (1687/1252).
+- multi-valued casts: MySQL allows
+  {signed, unsigned, char(n), binary(n), date, time, datetime, decimal}
+  and TiDB allows `double` where MySQL allows `decimal` — refused on
+  both: {json, year, float} plus char/binary without a length (1235);
+  unlisted families and missing cast facts emit the
+  `multi_valued_cast_type` bounded gap.
+- expression members keep structured facts and dependencies; an
+  unresolvable bound reference refuses `expression_column_missing`
+  (1054), unproven identity emits the feature gap.
+
+**Coverage graduation.** `expr`/`prefix`/`desc`/`multi_valued` member
+forms and TiDB `GLOBAL` left the unsupported aspect set — legal positives
+on enabled checks complete their audit and publish member facts into the
+next statement's pre-state (ordinals, prefix lengths, directions,
+expression dependencies verified through `Metadata.TargetTable`), while
+the graduated-member boundary keeps `unmodeled_parts`, predicates,
+MySQL-side `GLOBAL`/`primary_key_type`, unmodeled options, TiDB
+fulltext/spatial, and vector/columnar. Graduated does not mean
+comparable: the T09 pair-comparison boundary is preserved — a vouched
+pairing where either side is non-plain still emits
+`target_table.indexes.key_parts` rather than answering under plain-key
+semantics.
+
+**Oracle upgrade.** 30 frozen expects inside the same 126 `required_case_ids`
+moved off the R1-frozen unsupported exit where the audited semantics
+differ (natively verified per anchor): expression/multi-valued/prefix
+positives on supported versions pass with complete coverage; MySQL 5.7
+expression/multi-valued stay determined version refusals *with complete
+coverage*; MySQL <8 and TiDB descending emit `descending_ignored`
+compat findings (TiDB unconditional, MySQL version-gated); missing
+version on a gated form emits the version gap; TiDB GLOBAL partitioned-
+unique passes while non-partitioned/non-unique refuse
+`global_not_partitioned`/`global_not_unique`; expression-missing refuses
+`expression_column_missing`. Unchanged: TiDB FULLTEXT/SPATIAL vendor
+boundaries, MySQL-side GLOBAL/`primary_key_type` vendor boundaries,
+unprovable-fact cases. The frozen ID SHA-256 is unchanged —
+`3d526e8ef8199b18fbbf39fa1af024192948fee3a0ebefeea6d086c330329311`
+(126 append-only IDs; expect bodies are not part of the identity hash).
