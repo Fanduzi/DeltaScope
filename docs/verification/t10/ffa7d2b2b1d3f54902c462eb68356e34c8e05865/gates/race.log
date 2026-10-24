@@ -1,0 +1,4 @@
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	14.034s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/spec	1.901s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	1.556s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql	2.979s

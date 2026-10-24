@@ -1,0 +1,8 @@
+release-gofmt-gate: gofmt violations in tracked Go files:
+  docs/verification/t06-a12/1a5dd90de898a59590ef8a19aa068c4b5e8ce7f8/baseline/probe/main.go
+  docs/verification/t06-a8/767a19c995234e44aea28e1648e77e7118b50ec6/baseline-25c4eaa2/probe/main.go
+  docs/verification/t06-a9/b9af1238c9bf99eaced7b39834de52f24a4dc866/baseline-3c8bac8b/probe/main.go
+  internal/application/audit/batch_state_t07_matrix_test.go
+  internal/application/audit/batch_state_t07_test.go
+Fix with: gofmt -w $(git ls-files '*.go')  (or: make lint-fix)
+make: *** [release-gofmt-gate] Error 1

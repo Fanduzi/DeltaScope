@@ -1,0 +1,1192 @@
+=== RUN   TestT09R1PrefixLengthSuppressesDeclaredDuplicate
+=== PAUSE TestT09R1PrefixLengthSuppressesDeclaredDuplicate
+=== RUN   TestT09R1PlainDeclaredDuplicateStillFires
+=== PAUSE TestT09R1PlainDeclaredDuplicateStillFires
+=== RUN   TestT09R1PrefixPartSuppressesLeftPrefix
+=== PAUSE TestT09R1PrefixPartSuppressesLeftPrefix
+=== RUN   TestT09R1PlainLeftPrefixStillFires
+=== PAUSE TestT09R1PlainLeftPrefixStillFires
+=== RUN   TestT09R1PrefixUniqueSuppressesUniqueOverlap
+=== PAUSE TestT09R1PrefixUniqueSuppressesUniqueOverlap
+=== RUN   TestT09R1PlainUniqueOverlapStillFires
+=== PAUSE TestT09R1PlainUniqueOverlapStillFires
+=== RUN   TestT09R1KeyOrderNeverDuplicate
+=== PAUSE TestT09R1KeyOrderNeverDuplicate
+=== RUN   TestT09R1DescPartsSuppressDuplicate
+=== PAUSE TestT09R1DescPartsSuppressDuplicate
+=== RUN   TestT09R1ExpressionKeysSuppressDuplicate
+=== PAUSE TestT09R1ExpressionKeysSuppressDuplicate
+=== RUN   TestT09R1ExistingNonPlainSuppressesCreateIndex
+=== PAUSE TestT09R1ExistingNonPlainSuppressesCreateIndex
+=== RUN   TestT09R1ExistingNonPlainComparisonGapMatrix
+=== PAUSE TestT09R1ExistingNonPlainComparisonGapMatrix
+=== RUN   TestT09R1NonPairingExistingMemberKeepsCoverage
+=== PAUSE TestT09R1NonPairingExistingMemberKeepsCoverage
+=== RUN   TestT09R1ExistingPlainStillFlagsCreateIndex
+=== PAUSE TestT09R1ExistingPlainStillFlagsCreateIndex
+=== RUN   TestT09R1AlterAddIndexExistingComparability
+=== PAUSE TestT09R1AlterAddIndexExistingComparability
+=== RUN   TestT09R1DeclaredNonPlainSuppressesExistingPlain
+=== PAUSE TestT09R1DeclaredNonPlainSuppressesExistingPlain
+=== RUN   TestT09R1DerivedPlainSuppressesDeclaredNonPlain
+=== PAUSE TestT09R1DerivedPlainSuppressesDeclaredNonPlain
+=== RUN   TestT09R1DerivedPlainStillFlagsDeclaredPlain
+=== PAUSE TestT09R1DerivedPlainStillFlagsDeclaredPlain
+=== RUN   TestT09R1AddPrimaryKeyMissingMemberDoesNotPublish
+=== PAUSE TestT09R1AddPrimaryKeyMissingMemberDoesNotPublish
+=== RUN   TestT09R1AddPrimaryKeyReconcilesMemberNullability
+=== PAUSE TestT09R1AddPrimaryKeyReconcilesMemberNullability
+=== RUN   TestT09R1AddPrimaryKeyWithheldColumnsDoesNotPublish
+=== PAUSE TestT09R1AddPrimaryKeyWithheldColumnsDoesNotPublish
+=== RUN   TestT09R1AddPrimaryKeyControls
+=== PAUSE TestT09R1AddPrimaryKeyControls
+=== RUN   TestT09R1AddThenDropPrimaryKeyChain
+=== PAUSE TestT09R1AddThenDropPrimaryKeyChain
+=== RUN   TestT09R1AddPrimaryKeyPreservesStringDefaults
+=== PAUSE TestT09R1AddPrimaryKeyPreservesStringDefaults
+=== RUN   TestT09R1AddPrimaryKeyDefaultSourceContrast
+=== PAUSE TestT09R1AddPrimaryKeyDefaultSourceContrast
+=== RUN   TestT10R3CreateTablePrefixDuplicateReportsGap
+=== PAUSE TestT10R3CreateTablePrefixDuplicateReportsGap
+=== RUN   TestT10R3CreateTableGapAttributionMatrix
+=== PAUSE TestT10R3CreateTableGapAttributionMatrix
+=== RUN   TestT10R3CreateTableComparisonControls
+=== PAUSE TestT10R3CreateTableComparisonControls
+=== RUN   TestT10R3AlterPrimaryHandleUnknownExistsOnlyGap
+=== PAUSE TestT10R3AlterPrimaryHandleUnknownExistsOnlyGap
+=== RUN   TestT10R3AlterPrimaryHandleUnknownCompatOnlyGap
+=== PAUSE TestT10R3AlterPrimaryHandleUnknownCompatOnlyGap
+=== RUN   TestT10R3AlterPrimaryHandleUnknownBothRulesGap
+=== PAUSE TestT10R3AlterPrimaryHandleUnknownBothRulesGap
+=== RUN   TestT10R3AlterPrimaryHandleUnknownRulesDisabled
+=== PAUSE TestT10R3AlterPrimaryHandleUnknownRulesDisabled
+=== RUN   TestT10R3UnnamedUniqueSuccessorResolvesAutoName
+=== PAUSE TestT10R3UnnamedUniqueSuccessorResolvesAutoName
+=== RUN   TestT10R3UnnamedUniquePostStateDrop
+=== PAUSE TestT10R3UnnamedUniquePostStateDrop
+=== RUN   TestT10R3NamedUniqueSuccessorUnchanged
+=== PAUSE TestT10R3NamedUniqueSuccessorUnchanged
+=== RUN   TestT10R3UnnamedExpressionKeepsNameUnknown
+=== PAUSE TestT10R3UnnamedExpressionKeepsNameUnknown
+=== RUN   TestT10R3AutoNameCollisionKeepsNameUnknown
+=== PAUSE TestT10R3AutoNameCollisionKeepsNameUnknown
+=== RUN   TestT10R3TiDBIntOnlyAlterPrimaryKeyTrueIsRealObject
+=== PAUSE TestT10R3TiDBIntOnlyAlterPrimaryKeyTrueIsRealObject
+=== RUN   TestT10R3TiDBIntOnlyAlterPrimaryKeyFalseIsHandle
+=== PAUSE TestT10R3TiDBIntOnlyAlterPrimaryKeyFalseIsHandle
+=== RUN   TestT10R3TiDBIntOnlyAlterPrimaryKeyUnknownStaysUnknown
+=== PAUSE TestT10R3TiDBIntOnlyAlterPrimaryKeyUnknownStaysUnknown
+=== RUN   TestT10R3TiDBHandleModeControls
+=== PAUSE TestT10R3TiDBHandleModeControls
+=== RUN   TestT10R3ExpressionDescendingSurvivesPostState
+=== PAUSE TestT10R3ExpressionDescendingSurvivesPostState
+=== RUN   TestT10R3AlterPrimaryResolvesDespiteUnknownIndexNames
+=== PAUSE TestT10R3AlterPrimaryResolvesDespiteUnknownIndexNames
+=== RUN   TestT10R3CreateIndexMergesAuthoredMemberUnderUnknownNames
+=== PAUSE TestT10R3CreateIndexMergesAuthoredMemberUnderUnknownNames
+=== RUN   TestT10R3AddIndexMergesAuthoredMemberUnderUnknownNames
+=== PAUSE TestT10R3AddIndexMergesAuthoredMemberUnderUnknownNames
+=== RUN   TestT10R3TiDBDropPrimaryHandleKeepsTable
+=== PAUSE TestT10R3TiDBDropPrimaryHandleKeepsTable
+=== RUN   TestT10R3TiDBDropPrimaryHandleUnknownInvalidates
+=== PAUSE TestT10R3TiDBDropPrimaryHandleUnknownInvalidates
+=== RUN   TestT10R3DropPrimaryRealObjectPublishes
+=== PAUSE TestT10R3DropPrimaryRealObjectPublishes
+=== CONT  TestT09R1PrefixLengthSuppressesDeclaredDuplicate
+=== CONT  TestT10R3CreateTablePrefixDuplicateReportsGap
+=== RUN   TestT09R1PrefixLengthSuppressesDeclaredDuplicate/mysql
+=== CONT  TestT09R1AddPrimaryKeyReconcilesMemberNullability
+=== CONT  TestT09R1DerivedPlainStillFlagsDeclaredPlain
+=== RUN   TestT09R1AddPrimaryKeyReconcilesMemberNullability/mysql
+=== RUN   TestT10R3CreateTablePrefixDuplicateReportsGap/mysql
+=== PAUSE TestT10R3CreateTablePrefixDuplicateReportsGap/mysql
+=== PAUSE TestT09R1PrefixLengthSuppressesDeclaredDuplicate/mysql
+=== RUN   TestT10R3CreateTablePrefixDuplicateReportsGap/tidb
+=== CONT  TestT09R1AddPrimaryKeyMissingMemberDoesNotPublish
+=== RUN   TestT09R1AddPrimaryKeyMissingMemberDoesNotPublish/mysql
+=== CONT  TestT09R1NonPairingExistingMemberKeepsCoverage
+=== PAUSE TestT09R1AddPrimaryKeyMissingMemberDoesNotPublish/mysql
+=== CONT  TestT10R3DropPrimaryRealObjectPublishes
+=== RUN   TestT09R1NonPairingExistingMemberKeepsCoverage/mysql/CREATE_INDEX_i_new_ON_t(a);
+=== RUN   TestT09R1AddPrimaryKeyMissingMemberDoesNotPublish/tidb
+=== PAUSE TestT09R1NonPairingExistingMemberKeepsCoverage/mysql/CREATE_INDEX_i_new_ON_t(a);
+=== RUN   TestT10R3DropPrimaryRealObjectPublishes/mysql
+=== PAUSE TestT09R1AddPrimaryKeyMissingMemberDoesNotPublish/tidb
+=== CONT  TestT09R1ExistingNonPlainComparisonGapMatrix
+=== PAUSE TestT10R3DropPrimaryRealObjectPublishes/mysql
+=== RUN   TestT09R1NonPairingExistingMemberKeepsCoverage/mysql/ALTER_TABLE_t_ADD_INDEX_i_new_(a);
+=== CONT  TestT10R3TiDBDropPrimaryHandleKeepsTable
+=== CONT  TestT09R1ExistingNonPlainSuppressesCreateIndex
+=== PAUSE TestT09R1NonPairingExistingMemberKeepsCoverage/mysql/ALTER_TABLE_t_ADD_INDEX_i_new_(a);
+=== RUN   TestT09R1ExistingNonPlainSuppressesCreateIndex/mysql
+=== RUN   TestT10R3DropPrimaryRealObjectPublishes/tidb
+=== PAUSE TestT09R1ExistingNonPlainSuppressesCreateIndex/mysql
+=== RUN   TestT09R1NonPairingExistingMemberKeepsCoverage/tidb/CREATE_INDEX_i_new_ON_t(a);
+=== CONT  TestT10R3TiDBDropPrimaryHandleUnknownInvalidates
+=== PAUSE TestT10R3DropPrimaryRealObjectPublishes/tidb
+=== CONT  TestT09R1ExistingPlainStillFlagsCreateIndex
+=== RUN   TestT09R1DerivedPlainStillFlagsDeclaredPlain/mysql
+=== PAUSE TestT09R1AddPrimaryKeyReconcilesMemberNullability/mysql
+=== PAUSE TestT10R3CreateTablePrefixDuplicateReportsGap/tidb
+=== RUN   TestT09R1PrefixLengthSuppressesDeclaredDuplicate/tidb
+=== PAUSE TestT09R1PrefixLengthSuppressesDeclaredDuplicate/tidb
+=== PAUSE TestT09R1NonPairingExistingMemberKeepsCoverage/tidb/CREATE_INDEX_i_new_ON_t(a);
+=== RUN   TestT09R1ExistingNonPlainComparisonGapMatrix/create_index/left_prefix
+=== PAUSE TestT09R1ExistingNonPlainComparisonGapMatrix/create_index/left_prefix
+=== RUN   TestT09R1NonPairingExistingMemberKeepsCoverage/tidb/ALTER_TABLE_t_ADD_INDEX_i_new_(a);
+=== RUN   TestT09R1ExistingNonPlainSuppressesCreateIndex/tidb
+=== PAUSE TestT09R1NonPairingExistingMemberKeepsCoverage/tidb/ALTER_TABLE_t_ADD_INDEX_i_new_(a);
+=== RUN   TestT09R1ExistingNonPlainComparisonGapMatrix/create_index/unique_overlap
+=== PAUSE TestT09R1ExistingNonPlainComparisonGapMatrix/create_index/unique_overlap
+=== PAUSE TestT09R1ExistingNonPlainSuppressesCreateIndex/tidb
+=== CONT  TestT09R1DescPartsSuppressDuplicate
+=== CONT  TestT09R1PlainUniqueOverlapStillFires
+=== CONT  TestT10R3CreateIndexMergesAuthoredMemberUnderUnknownNames
+=== PAUSE TestT09R1DerivedPlainStillFlagsDeclaredPlain/mysql
+=== RUN   TestT09R1ExistingNonPlainComparisonGapMatrix/alter_add_index/left_prefix
+=== RUN   TestT09R1DescPartsSuppressDuplicate/mysql
+=== PAUSE TestT09R1DescPartsSuppressDuplicate/mysql
+=== PAUSE TestT09R1ExistingNonPlainComparisonGapMatrix/alter_add_index/left_prefix
+=== RUN   TestT09R1ExistingPlainStillFlagsCreateIndex/mysql
+=== RUN   TestT09R1AddPrimaryKeyReconcilesMemberNullability/tidb
+=== RUN   TestT09R1DerivedPlainStillFlagsDeclaredPlain/tidb
+=== PAUSE TestT09R1AddPrimaryKeyReconcilesMemberNullability/tidb
+=== RUN   TestT09R1DescPartsSuppressDuplicate/tidb
+=== PAUSE TestT09R1ExistingPlainStillFlagsCreateIndex/mysql
+=== PAUSE TestT09R1DescPartsSuppressDuplicate/tidb
+=== PAUSE TestT09R1DerivedPlainStillFlagsDeclaredPlain/tidb
+=== CONT  TestT10R3AddIndexMergesAuthoredMemberUnderUnknownNames
+=== CONT  TestT09R1ExpressionKeysSuppressDuplicate
+=== RUN   TestT09R1ExistingPlainStillFlagsCreateIndex/tidb
+=== RUN   TestT09R1ExpressionKeysSuppressDuplicate/mysql
+=== PAUSE TestT09R1ExistingPlainStillFlagsCreateIndex/tidb
+=== CONT  TestT09R1KeyOrderNeverDuplicate
+=== CONT  TestT09R1PrefixUniqueSuppressesUniqueOverlap
+=== RUN   TestT09R1ExistingNonPlainComparisonGapMatrix/alter_add_index/unique_overlap
+=== PAUSE TestT09R1ExistingNonPlainComparisonGapMatrix/alter_add_index/unique_overlap
+=== PAUSE TestT09R1ExpressionKeysSuppressDuplicate/mysql
+=== RUN   TestT09R1ExpressionKeysSuppressDuplicate/tidb
+=== CONT  TestT09R1PrefixPartSuppressesLeftPrefix
+=== RUN   TestT09R1PrefixPartSuppressesLeftPrefix/mysql
+=== PAUSE TestT09R1PrefixPartSuppressesLeftPrefix/mysql
+=== RUN   TestT09R1PrefixPartSuppressesLeftPrefix/tidb
+=== PAUSE TestT09R1PrefixPartSuppressesLeftPrefix/tidb
+=== RUN   TestT09R1PrefixUniqueSuppressesUniqueOverlap/mysql
+=== PAUSE TestT09R1PrefixUniqueSuppressesUniqueOverlap/mysql
+=== PAUSE TestT09R1ExpressionKeysSuppressDuplicate/tidb
+=== RUN   TestT09R1PrefixUniqueSuppressesUniqueOverlap/tidb
+=== CONT  TestT09R1PlainLeftPrefixStillFires
+=== RUN   TestT09R1PlainLeftPrefixStillFires/mysql
+=== PAUSE TestT09R1PlainLeftPrefixStillFires/mysql
+=== RUN   TestT09R1PlainLeftPrefixStillFires/tidb
+=== PAUSE TestT09R1PlainLeftPrefixStillFires/tidb
+=== CONT  TestT10R3ExpressionDescendingSurvivesPostState
+=== RUN   TestT09R1KeyOrderNeverDuplicate/mysql
+=== CONT  TestT10R3TiDBIntOnlyAlterPrimaryKeyUnknownStaysUnknown
+=== CONT  TestT10R3AlterPrimaryResolvesDespiteUnknownIndexNames
+=== RUN   TestT09R1PlainUniqueOverlapStillFires/mysql
+=== CONT  TestT10R3TiDBHandleModeControls
+=== PAUSE TestT09R1PlainUniqueOverlapStillFires/mysql
+=== CONT  TestT09R1PlainDeclaredDuplicateStillFires
+=== PAUSE TestT09R1PrefixUniqueSuppressesUniqueOverlap/tidb
+=== CONT  TestT10R3TiDBIntOnlyAlterPrimaryKeyFalseIsHandle
+=== RUN   TestT10R3TiDBHandleModeControls/on_ignores_alter_pk
+=== CONT  TestT10R3TiDBIntOnlyAlterPrimaryKeyTrueIsRealObject
+--- PASS: TestT10R3TiDBDropPrimaryHandleKeepsTable (0.00s)
+=== CONT  TestT10R3AutoNameCollisionKeepsNameUnknown
+=== PAUSE TestT09R1KeyOrderNeverDuplicate/mysql
+=== PAUSE TestT10R3TiDBHandleModeControls/on_ignores_alter_pk
+--- PASS: TestT10R3TiDBDropPrimaryHandleUnknownInvalidates (0.00s)
+=== RUN   TestT09R1KeyOrderNeverDuplicate/tidb
+=== PAUSE TestT09R1KeyOrderNeverDuplicate/tidb
+=== CONT  TestT09R1AddPrimaryKeyControls
+=== RUN   TestT09R1PlainUniqueOverlapStillFires/tidb
+=== PAUSE TestT09R1PlainUniqueOverlapStillFires/tidb
+=== CONT  TestT09R1AddThenDropPrimaryKeyChain
+=== RUN   TestT09R1PlainDeclaredDuplicateStillFires/mysql
+=== PAUSE TestT09R1PlainDeclaredDuplicateStillFires/mysql
+=== RUN   TestT09R1PlainDeclaredDuplicateStillFires/tidb
+=== PAUSE TestT09R1PlainDeclaredDuplicateStillFires/tidb
+=== CONT  TestT10R3UnnamedExpressionKeepsNameUnknown
+=== RUN   TestT10R3TiDBHandleModeControls/off_is_real_object
+=== PAUSE TestT10R3TiDBHandleModeControls/off_is_real_object
+=== RUN   TestT10R3TiDBHandleModeControls/explicit_clustered_ignores_mode
+=== PAUSE TestT10R3TiDBHandleModeControls/explicit_clustered_ignores_mode
+=== RUN   TestT10R3TiDBHandleModeControls/explicit_nonclustered_is_real
+=== PAUSE TestT10R3TiDBHandleModeControls/explicit_nonclustered_is_real
+=== RUN   TestT09R1AddThenDropPrimaryKeyChain/mysql
+=== PAUSE TestT09R1AddThenDropPrimaryKeyChain/mysql
+=== RUN   TestT09R1AddThenDropPrimaryKeyChain/tidb
+=== PAUSE TestT09R1AddThenDropPrimaryKeyChain/tidb
+=== CONT  TestT09R1DeclaredNonPlainSuppressesExistingPlain
+=== RUN   TestT09R1DeclaredNonPlainSuppressesExistingPlain/mysql
+=== RUN   TestT09R1AddPrimaryKeyControls/mysql
+=== CONT  TestT10R3NamedUniqueSuccessorUnchanged
+=== PAUSE TestT09R1DeclaredNonPlainSuppressesExistingPlain/mysql
+=== PAUSE TestT09R1AddPrimaryKeyControls/mysql
+=== RUN   TestT09R1DeclaredNonPlainSuppressesExistingPlain/tidb
+=== PAUSE TestT09R1DeclaredNonPlainSuppressesExistingPlain/tidb
+=== RUN   TestT09R1AddPrimaryKeyControls/tidb
+=== PAUSE TestT09R1AddPrimaryKeyControls/tidb
+=== CONT  TestT09R1DerivedPlainSuppressesDeclaredNonPlain
+=== RUN   TestT09R1DerivedPlainSuppressesDeclaredNonPlain/mysql
+=== CONT  TestT10R3UnnamedUniquePostStateDrop
+=== PAUSE TestT09R1DerivedPlainSuppressesDeclaredNonPlain/mysql
+=== RUN   TestT09R1DerivedPlainSuppressesDeclaredNonPlain/tidb
+=== PAUSE TestT09R1DerivedPlainSuppressesDeclaredNonPlain/tidb
+=== CONT  TestT10R3UnnamedUniqueSuccessorResolvesAutoName
+--- PASS: TestT10R3AddIndexMergesAuthoredMemberUnderUnknownNames (0.01s)
+=== CONT  TestT09R1AlterAddIndexExistingComparability
+=== RUN   TestT09R1AlterAddIndexExistingComparability/mysql/nonplain
+=== PAUSE TestT09R1AlterAddIndexExistingComparability/mysql/nonplain
+=== RUN   TestT09R1AlterAddIndexExistingComparability/mysql/plain
+=== PAUSE TestT09R1AlterAddIndexExistingComparability/mysql/plain
+--- PASS: TestT10R3NamedUniqueSuccessorUnchanged (0.01s)
+=== RUN   TestT09R1AlterAddIndexExistingComparability/tidb/nonplain
+=== CONT  TestT09R1AddPrimaryKeyWithheldColumnsDoesNotPublish
+=== PAUSE TestT09R1AlterAddIndexExistingComparability/tidb/nonplain
+=== RUN   TestT09R1AddPrimaryKeyWithheldColumnsDoesNotPublish/mysql
+=== PAUSE TestT09R1AddPrimaryKeyWithheldColumnsDoesNotPublish/mysql
+=== RUN   TestT09R1AddPrimaryKeyWithheldColumnsDoesNotPublish/tidb
+=== PAUSE TestT09R1AddPrimaryKeyWithheldColumnsDoesNotPublish/tidb
+=== RUN   TestT09R1AlterAddIndexExistingComparability/tidb/plain
+=== PAUSE TestT09R1AlterAddIndexExistingComparability/tidb/plain
+=== CONT  TestT09R1AddPrimaryKeyPreservesStringDefaults
+=== RUN   TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_lower
+=== PAUSE TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_lower
+=== RUN   TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_upper
+=== PAUSE TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_upper
+=== RUN   TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_mixed
+=== PAUSE TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_mixed
+=== RUN   TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_spaced
+=== PAUSE TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_spaced
+=== RUN   TestT09R1AddPrimaryKeyPreservesStringDefaults/string_plain
+=== PAUSE TestT09R1AddPrimaryKeyPreservesStringDefaults/string_plain
+=== RUN   TestT09R1AddPrimaryKeyPreservesStringDefaults/numeric_five
+=== PAUSE TestT09R1AddPrimaryKeyPreservesStringDefaults/numeric_five
+=== CONT  TestT10R3AlterPrimaryHandleUnknownExistsOnlyGap
+--- PASS: TestT10R3TiDBIntOnlyAlterPrimaryKeyUnknownStaysUnknown (0.01s)
+=== CONT  TestT10R3AlterPrimaryHandleUnknownCompatOnlyGap
+--- PASS: TestT10R3TiDBIntOnlyAlterPrimaryKeyTrueIsRealObject (0.01s)
+=== CONT  TestT10R3CreateTableComparisonControls
+=== RUN   TestT10R3CreateTableComparisonControls/mysql/single_non_plain
+--- PASS: TestT10R3CreateIndexMergesAuthoredMemberUnderUnknownNames (0.01s)
+--- PASS: TestT10R3AlterPrimaryResolvesDespiteUnknownIndexNames (0.01s)
+=== CONT  TestT09R1AddPrimaryKeyDefaultSourceContrast
+--- PASS: TestT10R3TiDBIntOnlyAlterPrimaryKeyFalseIsHandle (0.01s)
+=== RUN   TestT09R1AddPrimaryKeyDefaultSourceContrast/mysql
+=== PAUSE TestT09R1AddPrimaryKeyDefaultSourceContrast/mysql
+=== RUN   TestT09R1AddPrimaryKeyDefaultSourceContrast/tidb
+=== PAUSE TestT09R1AddPrimaryKeyDefaultSourceContrast/tidb
+=== CONT  TestT09R1AddPrimaryKeyMissingMemberDoesNotPublish/tidb
+--- PASS: TestT10R3AutoNameCollisionKeepsNameUnknown (0.01s)
+=== CONT  TestT09R1AddPrimaryKeyMissingMemberDoesNotPublish/mysql
+=== CONT  TestT10R3DropPrimaryRealObjectPublishes/mysql
+=== CONT  TestT10R3CreateTableGapAttributionMatrix
+=== CONT  TestT10R3AlterPrimaryHandleUnknownBothRulesGap
+=== CONT  TestT10R3DropPrimaryRealObjectPublishes/tidb
+=== CONT  TestT10R3AlterPrimaryHandleUnknownRulesDisabled
+=== CONT  TestT10R3CreateTablePrefixDuplicateReportsGap/mysql
+--- PASS: TestT10R3UnnamedUniquePostStateDrop (0.01s)
+--- PASS: TestT10R3UnnamedExpressionKeepsNameUnknown (0.01s)
+=== CONT  TestT10R3CreateTablePrefixDuplicateReportsGap/tidb
+=== CONT  TestT09R1PrefixLengthSuppressesDeclaredDuplicate/mysql
+=== CONT  TestT09R1PrefixLengthSuppressesDeclaredDuplicate/tidb
+=== PAUSE TestT10R3CreateTableComparisonControls/mysql/single_non_plain
+--- PASS: TestT10R3ExpressionDescendingSurvivesPostState (0.01s)
+=== CONT  TestT09R1NonPairingExistingMemberKeepsCoverage/mysql/CREATE_INDEX_i_new_ON_t(a);
+=== RUN   TestT10R3CreateTableGapAttributionMatrix/left_prefix
+--- PASS: TestT09R1AddPrimaryKeyMissingMemberDoesNotPublish (0.00s)
+    --- PASS: TestT09R1AddPrimaryKeyMissingMemberDoesNotPublish/tidb (0.00s)
+    --- PASS: TestT09R1AddPrimaryKeyMissingMemberDoesNotPublish/mysql (0.00s)
+--- PASS: TestT10R3DropPrimaryRealObjectPublishes (0.00s)
+    --- PASS: TestT10R3DropPrimaryRealObjectPublishes/mysql (0.00s)
+    --- PASS: TestT10R3DropPrimaryRealObjectPublishes/tidb (0.00s)
+=== RUN   TestT10R3CreateTableComparisonControls/mysql/non_pairing_pair
+=== PAUSE TestT10R3CreateTableGapAttributionMatrix/left_prefix
+=== RUN   TestT10R3CreateTableGapAttributionMatrix/unique_overlap
+=== PAUSE TestT10R3CreateTableGapAttributionMatrix/unique_overlap
+=== PAUSE TestT10R3CreateTableComparisonControls/mysql/non_pairing_pair
+=== RUN   TestT10R3CreateTableComparisonControls/mysql/plain_duplicate_finding_kept
+=== PAUSE TestT10R3CreateTableComparisonControls/mysql/plain_duplicate_finding_kept
+=== RUN   TestT10R3CreateTableComparisonControls/mysql/disabled_rules
+=== PAUSE TestT10R3CreateTableComparisonControls/mysql/disabled_rules
+=== RUN   TestT10R3CreateTableComparisonControls/tidb/single_non_plain
+=== PAUSE TestT10R3CreateTableComparisonControls/tidb/single_non_plain
+=== RUN   TestT10R3CreateTableComparisonControls/tidb/non_pairing_pair
+=== PAUSE TestT10R3CreateTableComparisonControls/tidb/non_pairing_pair
+=== RUN   TestT10R3CreateTableComparisonControls/tidb/plain_duplicate_finding_kept
+=== PAUSE TestT10R3CreateTableComparisonControls/tidb/plain_duplicate_finding_kept
+=== RUN   TestT10R3CreateTableComparisonControls/tidb/disabled_rules
+=== PAUSE TestT10R3CreateTableComparisonControls/tidb/disabled_rules
+=== CONT  TestT09R1NonPairingExistingMemberKeepsCoverage/tidb/CREATE_INDEX_i_new_ON_t(a);
+=== CONT  TestT09R1NonPairingExistingMemberKeepsCoverage/mysql/ALTER_TABLE_t_ADD_INDEX_i_new_(a);
+--- PASS: TestT10R3UnnamedUniqueSuccessorResolvesAutoName (0.01s)
+=== CONT  TestT09R1NonPairingExistingMemberKeepsCoverage/tidb/ALTER_TABLE_t_ADD_INDEX_i_new_(a);
+--- PASS: TestT10R3AlterPrimaryHandleUnknownCompatOnlyGap (0.01s)
+=== CONT  TestT09R1ExistingNonPlainSuppressesCreateIndex/mysql
+--- PASS: TestT10R3AlterPrimaryHandleUnknownExistsOnlyGap (0.01s)
+=== CONT  TestT09R1ExistingNonPlainSuppressesCreateIndex/tidb
+--- PASS: TestT10R3AlterPrimaryHandleUnknownBothRulesGap (0.01s)
+=== CONT  TestT09R1AddPrimaryKeyReconcilesMemberNullability/mysql
+=== CONT  TestT09R1AddPrimaryKeyReconcilesMemberNullability/tidb
+--- PASS: TestT09R1AddPrimaryKeyReconcilesMemberNullability (0.00s)
+    --- PASS: TestT09R1AddPrimaryKeyReconcilesMemberNullability/mysql (0.00s)
+    --- PASS: TestT09R1AddPrimaryKeyReconcilesMemberNullability/tidb (0.00s)
+=== CONT  TestT09R1DescPartsSuppressDuplicate/mysql
+=== CONT  TestT09R1DerivedPlainStillFlagsDeclaredPlain/mysql
+=== CONT  TestT09R1DerivedPlainStillFlagsDeclaredPlain/tidb
+=== CONT  TestT09R1ExistingPlainStillFlagsCreateIndex/mysql
+--- PASS: TestT10R3AlterPrimaryHandleUnknownRulesDisabled (0.01s)
+=== CONT  TestT09R1DescPartsSuppressDuplicate/tidb
+=== CONT  TestT09R1ExistingPlainStillFlagsCreateIndex/tidb
+--- PASS: TestT09R1PrefixLengthSuppressesDeclaredDuplicate (0.00s)
+    --- PASS: TestT09R1PrefixLengthSuppressesDeclaredDuplicate/tidb (0.01s)
+    --- PASS: TestT09R1PrefixLengthSuppressesDeclaredDuplicate/mysql (0.01s)
+=== CONT  TestT09R1ExistingNonPlainComparisonGapMatrix/create_index/left_prefix
+=== RUN   TestT09R1ExistingNonPlainComparisonGapMatrix/create_index/left_prefix/mysql
+=== PAUSE TestT09R1ExistingNonPlainComparisonGapMatrix/create_index/left_prefix/mysql
+=== RUN   TestT09R1ExistingNonPlainComparisonGapMatrix/create_index/left_prefix/tidb
+=== PAUSE TestT09R1ExistingNonPlainComparisonGapMatrix/create_index/left_prefix/tidb
+=== CONT  TestT09R1ExistingNonPlainComparisonGapMatrix/alter_add_index/left_prefix
+=== RUN   TestT09R1ExistingNonPlainComparisonGapMatrix/alter_add_index/left_prefix/mysql
+=== PAUSE TestT09R1ExistingNonPlainComparisonGapMatrix/alter_add_index/left_prefix/mysql
+=== RUN   TestT09R1ExistingNonPlainComparisonGapMatrix/alter_add_index/left_prefix/tidb
+=== PAUSE TestT09R1ExistingNonPlainComparisonGapMatrix/alter_add_index/left_prefix/tidb
+=== CONT  TestT09R1ExistingNonPlainComparisonGapMatrix/create_index/unique_overlap
+=== RUN   TestT09R1ExistingNonPlainComparisonGapMatrix/create_index/unique_overlap/mysql
+=== PAUSE TestT09R1ExistingNonPlainComparisonGapMatrix/create_index/unique_overlap/mysql
+=== RUN   TestT09R1ExistingNonPlainComparisonGapMatrix/create_index/unique_overlap/tidb
+=== PAUSE TestT09R1ExistingNonPlainComparisonGapMatrix/create_index/unique_overlap/tidb
+=== CONT  TestT09R1ExistingNonPlainComparisonGapMatrix/alter_add_index/unique_overlap
+=== RUN   TestT09R1ExistingNonPlainComparisonGapMatrix/alter_add_index/unique_overlap/mysql
+=== PAUSE TestT09R1ExistingNonPlainComparisonGapMatrix/alter_add_index/unique_overlap/mysql
+=== RUN   TestT09R1ExistingNonPlainComparisonGapMatrix/alter_add_index/unique_overlap/tidb
+=== PAUSE TestT09R1ExistingNonPlainComparisonGapMatrix/alter_add_index/unique_overlap/tidb
+=== CONT  TestT09R1PrefixPartSuppressesLeftPrefix/mysql
+--- PASS: TestT10R3CreateTablePrefixDuplicateReportsGap (0.00s)
+    --- PASS: TestT10R3CreateTablePrefixDuplicateReportsGap/mysql (0.01s)
+    --- PASS: TestT10R3CreateTablePrefixDuplicateReportsGap/tidb (0.01s)
+=== CONT  TestT09R1PrefixPartSuppressesLeftPrefix/tidb
+=== CONT  TestT09R1ExpressionKeysSuppressDuplicate/mysql
+--- PASS: TestT09R1NonPairingExistingMemberKeepsCoverage (0.00s)
+    --- PASS: TestT09R1NonPairingExistingMemberKeepsCoverage/tidb/ALTER_TABLE_t_ADD_INDEX_i_new_(a); (0.01s)
+    --- PASS: TestT09R1NonPairingExistingMemberKeepsCoverage/tidb/CREATE_INDEX_i_new_ON_t(a); (0.01s)
+    --- PASS: TestT09R1NonPairingExistingMemberKeepsCoverage/mysql/CREATE_INDEX_i_new_ON_t(a); (0.01s)
+    --- PASS: TestT09R1NonPairingExistingMemberKeepsCoverage/mysql/ALTER_TABLE_t_ADD_INDEX_i_new_(a); (0.01s)
+=== CONT  TestT09R1ExpressionKeysSuppressDuplicate/tidb
+=== CONT  TestT09R1PlainLeftPrefixStillFires/mysql
+=== CONT  TestT09R1PlainLeftPrefixStillFires/tidb
+=== CONT  TestT09R1PrefixUniqueSuppressesUniqueOverlap/tidb
+--- PASS: TestT09R1DerivedPlainStillFlagsDeclaredPlain (0.00s)
+    --- PASS: TestT09R1DerivedPlainStillFlagsDeclaredPlain/tidb (0.01s)
+    --- PASS: TestT09R1DerivedPlainStillFlagsDeclaredPlain/mysql (0.01s)
+--- PASS: TestT09R1ExistingNonPlainSuppressesCreateIndex (0.00s)
+    --- PASS: TestT09R1ExistingNonPlainSuppressesCreateIndex/mysql (0.01s)
+    --- PASS: TestT09R1ExistingNonPlainSuppressesCreateIndex/tidb (0.01s)
+=== CONT  TestT09R1KeyOrderNeverDuplicate/mysql
+=== CONT  TestT09R1KeyOrderNeverDuplicate/tidb
+=== CONT  TestT09R1PrefixUniqueSuppressesUniqueOverlap/mysql
+=== CONT  TestT09R1PlainUniqueOverlapStillFires/mysql
+--- PASS: TestT09R1DescPartsSuppressDuplicate (0.00s)
+    --- PASS: TestT09R1DescPartsSuppressDuplicate/mysql (0.01s)
+    --- PASS: TestT09R1DescPartsSuppressDuplicate/tidb (0.01s)
+=== CONT  TestT09R1PlainUniqueOverlapStillFires/tidb
+--- PASS: TestT09R1ExistingPlainStillFlagsCreateIndex (0.00s)
+    --- PASS: TestT09R1ExistingPlainStillFlagsCreateIndex/mysql (0.01s)
+    --- PASS: TestT09R1ExistingPlainStillFlagsCreateIndex/tidb (0.01s)
+=== CONT  TestT09R1PlainDeclaredDuplicateStillFires/mysql
+=== CONT  TestT09R1PlainDeclaredDuplicateStillFires/tidb
+=== CONT  TestT10R3TiDBHandleModeControls/on_ignores_alter_pk
+--- PASS: TestT09R1PrefixPartSuppressesLeftPrefix (0.00s)
+    --- PASS: TestT09R1PrefixPartSuppressesLeftPrefix/mysql (0.01s)
+    --- PASS: TestT09R1PrefixPartSuppressesLeftPrefix/tidb (0.01s)
+--- PASS: TestT09R1ExpressionKeysSuppressDuplicate (0.00s)
+    --- PASS: TestT09R1ExpressionKeysSuppressDuplicate/mysql (0.01s)
+    --- PASS: TestT09R1ExpressionKeysSuppressDuplicate/tidb (0.01s)
+=== CONT  TestT09R1AddThenDropPrimaryKeyChain/mysql
+=== CONT  TestT10R3TiDBHandleModeControls/explicit_nonclustered_is_real
+=== CONT  TestT10R3TiDBHandleModeControls/explicit_clustered_ignores_mode
+=== CONT  TestT09R1AddThenDropPrimaryKeyChain/tidb
+=== CONT  TestT10R3TiDBHandleModeControls/off_is_real_object
+=== CONT  TestT09R1DeclaredNonPlainSuppressesExistingPlain/mysql
+--- PASS: TestT09R1PlainUniqueOverlapStillFires (0.00s)
+    --- PASS: TestT09R1PlainUniqueOverlapStillFires/mysql (0.01s)
+    --- PASS: TestT09R1PlainUniqueOverlapStillFires/tidb (0.01s)
+=== CONT  TestT09R1AddPrimaryKeyControls/mysql
+--- PASS: TestT09R1PlainLeftPrefixStillFires (0.00s)
+    --- PASS: TestT09R1PlainLeftPrefixStillFires/mysql (0.01s)
+    --- PASS: TestT09R1PlainLeftPrefixStillFires/tidb (0.01s)
+=== CONT  TestT09R1DeclaredNonPlainSuppressesExistingPlain/tidb
+=== CONT  TestT09R1AddPrimaryKeyControls/tidb
+--- PASS: TestT09R1AddPrimaryKeyControls (0.00s)
+    --- PASS: TestT09R1AddPrimaryKeyControls/mysql (0.00s)
+    --- PASS: TestT09R1AddPrimaryKeyControls/tidb (0.00s)
+=== CONT  TestT09R1DerivedPlainSuppressesDeclaredNonPlain/mysql
+--- PASS: TestT09R1PlainDeclaredDuplicateStillFires (0.00s)
+    --- PASS: TestT09R1PlainDeclaredDuplicateStillFires/mysql (0.01s)
+    --- PASS: TestT09R1PlainDeclaredDuplicateStillFires/tidb (0.01s)
+=== CONT  TestT09R1DerivedPlainSuppressesDeclaredNonPlain/tidb
+--- PASS: TestT09R1KeyOrderNeverDuplicate (0.00s)
+    --- PASS: TestT09R1KeyOrderNeverDuplicate/mysql (0.01s)
+    --- PASS: TestT09R1KeyOrderNeverDuplicate/tidb (0.01s)
+=== CONT  TestT09R1AddPrimaryKeyWithheldColumnsDoesNotPublish/mysql
+=== CONT  TestT09R1AlterAddIndexExistingComparability/mysql/nonplain
+--- PASS: TestT09R1PrefixUniqueSuppressesUniqueOverlap (0.00s)
+    --- PASS: TestT09R1PrefixUniqueSuppressesUniqueOverlap/mysql (0.01s)
+    --- PASS: TestT09R1PrefixUniqueSuppressesUniqueOverlap/tidb (0.01s)
+=== CONT  TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_lower
+=== RUN   TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_lower/mysql
+=== PAUSE TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_lower/mysql
+=== RUN   TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_lower/tidb
+=== PAUSE TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_lower/tidb
+=== CONT  TestT09R1AddPrimaryKeyWithheldColumnsDoesNotPublish/tidb
+--- PASS: TestT09R1AddPrimaryKeyWithheldColumnsDoesNotPublish (0.00s)
+    --- PASS: TestT09R1AddPrimaryKeyWithheldColumnsDoesNotPublish/mysql (0.00s)
+    --- PASS: TestT09R1AddPrimaryKeyWithheldColumnsDoesNotPublish/tidb (0.00s)
+=== CONT  TestT09R1AddPrimaryKeyPreservesStringDefaults/numeric_five
+=== RUN   TestT09R1AddPrimaryKeyPreservesStringDefaults/numeric_five/mysql
+=== PAUSE TestT09R1AddPrimaryKeyPreservesStringDefaults/numeric_five/mysql
+=== RUN   TestT09R1AddPrimaryKeyPreservesStringDefaults/numeric_five/tidb
+=== PAUSE TestT09R1AddPrimaryKeyPreservesStringDefaults/numeric_five/tidb
+=== CONT  TestT09R1AlterAddIndexExistingComparability/tidb/plain
+=== CONT  TestT09R1AlterAddIndexExistingComparability/tidb/nonplain
+=== CONT  TestT09R1AlterAddIndexExistingComparability/mysql/plain
+=== CONT  TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_spaced
+=== RUN   TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_spaced/mysql
+=== PAUSE TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_spaced/mysql
+=== RUN   TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_spaced/tidb
+=== PAUSE TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_spaced/tidb
+=== CONT  TestT09R1AddPrimaryKeyPreservesStringDefaults/string_plain
+=== RUN   TestT09R1AddPrimaryKeyPreservesStringDefaults/string_plain/mysql
+=== PAUSE TestT09R1AddPrimaryKeyPreservesStringDefaults/string_plain/mysql
+=== RUN   TestT09R1AddPrimaryKeyPreservesStringDefaults/string_plain/tidb
+=== PAUSE TestT09R1AddPrimaryKeyPreservesStringDefaults/string_plain/tidb
+=== CONT  TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_mixed
+=== RUN   TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_mixed/mysql
+=== PAUSE TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_mixed/mysql
+=== RUN   TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_mixed/tidb
+=== PAUSE TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_mixed/tidb
+=== CONT  TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_upper
+=== RUN   TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_upper/mysql
+=== PAUSE TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_upper/mysql
+=== RUN   TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_upper/tidb
+=== PAUSE TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_upper/tidb
+=== CONT  TestT09R1AddPrimaryKeyDefaultSourceContrast/mysql
+=== CONT  TestT09R1AddPrimaryKeyDefaultSourceContrast/tidb
+=== CONT  TestT10R3CreateTableGapAttributionMatrix/left_prefix
+--- PASS: TestT09R1AddPrimaryKeyDefaultSourceContrast (0.00s)
+    --- PASS: TestT09R1AddPrimaryKeyDefaultSourceContrast/tidb (0.00s)
+    --- PASS: TestT09R1AddPrimaryKeyDefaultSourceContrast/mysql (0.00s)
+=== RUN   TestT10R3CreateTableGapAttributionMatrix/left_prefix/mysql
+=== PAUSE TestT10R3CreateTableGapAttributionMatrix/left_prefix/mysql
+=== RUN   TestT10R3CreateTableGapAttributionMatrix/left_prefix/tidb
+=== PAUSE TestT10R3CreateTableGapAttributionMatrix/left_prefix/tidb
+=== CONT  TestT10R3CreateTableComparisonControls/mysql/single_non_plain
+=== CONT  TestT10R3CreateTableComparisonControls/tidb/non_pairing_pair
+=== CONT  TestT10R3CreateTableComparisonControls/mysql/plain_duplicate_finding_kept
+--- PASS: TestT10R3TiDBHandleModeControls (0.00s)
+    --- PASS: TestT10R3TiDBHandleModeControls/on_ignores_alter_pk (0.01s)
+    --- PASS: TestT10R3TiDBHandleModeControls/explicit_nonclustered_is_real (0.01s)
+    --- PASS: TestT10R3TiDBHandleModeControls/explicit_clustered_ignores_mode (0.01s)
+    --- PASS: TestT10R3TiDBHandleModeControls/off_is_real_object (0.01s)
+=== CONT  TestT10R3CreateTableGapAttributionMatrix/unique_overlap
+=== RUN   TestT10R3CreateTableGapAttributionMatrix/unique_overlap/mysql
+=== PAUSE TestT10R3CreateTableGapAttributionMatrix/unique_overlap/mysql
+=== RUN   TestT10R3CreateTableGapAttributionMatrix/unique_overlap/tidb
+=== PAUSE TestT10R3CreateTableGapAttributionMatrix/unique_overlap/tidb
+=== CONT  TestT10R3CreateTableComparisonControls/mysql/non_pairing_pair
+--- PASS: TestT09R1DeclaredNonPlainSuppressesExistingPlain (0.00s)
+    --- PASS: TestT09R1DeclaredNonPlainSuppressesExistingPlain/mysql (0.01s)
+    --- PASS: TestT09R1DeclaredNonPlainSuppressesExistingPlain/tidb (0.01s)
+=== CONT  TestT10R3CreateTableComparisonControls/tidb/disabled_rules
+=== CONT  TestT10R3CreateTableComparisonControls/tidb/single_non_plain
+=== CONT  TestT10R3CreateTableComparisonControls/mysql/disabled_rules
+--- PASS: TestT09R1AddThenDropPrimaryKeyChain (0.00s)
+    --- PASS: TestT09R1AddThenDropPrimaryKeyChain/mysql (0.01s)
+    --- PASS: TestT09R1AddThenDropPrimaryKeyChain/tidb (0.01s)
+=== CONT  TestT10R3CreateTableComparisonControls/tidb/plain_duplicate_finding_kept
+--- PASS: TestT09R1DerivedPlainSuppressesDeclaredNonPlain (0.00s)
+    --- PASS: TestT09R1DerivedPlainSuppressesDeclaredNonPlain/mysql (0.01s)
+    --- PASS: TestT09R1DerivedPlainSuppressesDeclaredNonPlain/tidb (0.01s)
+=== CONT  TestT09R1ExistingNonPlainComparisonGapMatrix/create_index/left_prefix/mysql
+=== CONT  TestT09R1ExistingNonPlainComparisonGapMatrix/alter_add_index/left_prefix/mysql
+=== CONT  TestT09R1ExistingNonPlainComparisonGapMatrix/create_index/left_prefix/tidb
+=== CONT  TestT09R1ExistingNonPlainComparisonGapMatrix/create_index/unique_overlap/mysql
+--- PASS: TestT09R1AlterAddIndexExistingComparability (0.00s)
+    --- PASS: TestT09R1AlterAddIndexExistingComparability/mysql/nonplain (0.01s)
+    --- PASS: TestT09R1AlterAddIndexExistingComparability/mysql/plain (0.01s)
+    --- PASS: TestT09R1AlterAddIndexExistingComparability/tidb/plain (0.01s)
+    --- PASS: TestT09R1AlterAddIndexExistingComparability/tidb/nonplain (0.01s)
+=== CONT  TestT09R1ExistingNonPlainComparisonGapMatrix/alter_add_index/left_prefix/tidb
+=== CONT  TestT09R1ExistingNonPlainComparisonGapMatrix/alter_add_index/unique_overlap/mysql
+=== CONT  TestT09R1ExistingNonPlainComparisonGapMatrix/create_index/unique_overlap/tidb
+=== CONT  TestT09R1ExistingNonPlainComparisonGapMatrix/alter_add_index/unique_overlap/tidb
+=== CONT  TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_lower/mysql
+=== CONT  TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_lower/tidb
+=== CONT  TestT09R1AddPrimaryKeyPreservesStringDefaults/numeric_five/mysql
+=== CONT  TestT09R1AddPrimaryKeyPreservesStringDefaults/numeric_five/tidb
+=== CONT  TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_spaced/mysql
+=== CONT  TestT09R1AddPrimaryKeyPreservesStringDefaults/string_plain/mysql
+=== CONT  TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_spaced/tidb
+=== CONT  TestT09R1AddPrimaryKeyPreservesStringDefaults/string_plain/tidb
+=== CONT  TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_mixed/mysql
+=== CONT  TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_upper/mysql
+=== CONT  TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_mixed/tidb
+=== CONT  TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_upper/tidb
+--- PASS: TestT09R1AddPrimaryKeyPreservesStringDefaults (0.00s)
+    --- PASS: TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_lower (0.00s)
+        --- PASS: TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_lower/mysql (0.00s)
+        --- PASS: TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_lower/tidb (0.00s)
+    --- PASS: TestT09R1AddPrimaryKeyPreservesStringDefaults/numeric_five (0.00s)
+        --- PASS: TestT09R1AddPrimaryKeyPreservesStringDefaults/numeric_five/mysql (0.00s)
+        --- PASS: TestT09R1AddPrimaryKeyPreservesStringDefaults/numeric_five/tidb (0.00s)
+    --- PASS: TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_spaced (0.00s)
+        --- PASS: TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_spaced/mysql (0.00s)
+        --- PASS: TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_spaced/tidb (0.00s)
+    --- PASS: TestT09R1AddPrimaryKeyPreservesStringDefaults/string_plain (0.00s)
+        --- PASS: TestT09R1AddPrimaryKeyPreservesStringDefaults/string_plain/mysql (0.00s)
+        --- PASS: TestT09R1AddPrimaryKeyPreservesStringDefaults/string_plain/tidb (0.00s)
+    --- PASS: TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_mixed (0.00s)
+        --- PASS: TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_mixed/mysql (0.00s)
+        --- PASS: TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_mixed/tidb (0.00s)
+    --- PASS: TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_upper (0.00s)
+        --- PASS: TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_upper/mysql (0.00s)
+        --- PASS: TestT09R1AddPrimaryKeyPreservesStringDefaults/string_null_upper/tidb (0.00s)
+=== CONT  TestT10R3CreateTableGapAttributionMatrix/left_prefix/mysql
+=== CONT  TestT10R3CreateTableGapAttributionMatrix/left_prefix/tidb
+=== CONT  TestT10R3CreateTableGapAttributionMatrix/unique_overlap/mysql
+=== CONT  TestT10R3CreateTableGapAttributionMatrix/unique_overlap/tidb
+--- PASS: TestT10R3CreateTableComparisonControls (0.00s)
+    --- PASS: TestT10R3CreateTableComparisonControls/mysql/single_non_plain (0.01s)
+    --- PASS: TestT10R3CreateTableComparisonControls/mysql/non_pairing_pair (0.01s)
+    --- PASS: TestT10R3CreateTableComparisonControls/tidb/disabled_rules (0.01s)
+    --- PASS: TestT10R3CreateTableComparisonControls/tidb/non_pairing_pair (0.01s)
+    --- PASS: TestT10R3CreateTableComparisonControls/mysql/plain_duplicate_finding_kept (0.01s)
+    --- PASS: TestT10R3CreateTableComparisonControls/mysql/disabled_rules (0.01s)
+    --- PASS: TestT10R3CreateTableComparisonControls/tidb/single_non_plain (0.01s)
+    --- PASS: TestT10R3CreateTableComparisonControls/tidb/plain_duplicate_finding_kept (0.01s)
+--- PASS: TestT09R1ExistingNonPlainComparisonGapMatrix (0.00s)
+    --- PASS: TestT09R1ExistingNonPlainComparisonGapMatrix/create_index/left_prefix (0.00s)
+        --- PASS: TestT09R1ExistingNonPlainComparisonGapMatrix/create_index/left_prefix/tidb (0.01s)
+        --- PASS: TestT09R1ExistingNonPlainComparisonGapMatrix/create_index/left_prefix/mysql (0.01s)
+    --- PASS: TestT09R1ExistingNonPlainComparisonGapMatrix/alter_add_index/left_prefix (0.00s)
+        --- PASS: TestT09R1ExistingNonPlainComparisonGapMatrix/alter_add_index/left_prefix/mysql (0.01s)
+        --- PASS: TestT09R1ExistingNonPlainComparisonGapMatrix/alter_add_index/left_prefix/tidb (0.01s)
+    --- PASS: TestT09R1ExistingNonPlainComparisonGapMatrix/create_index/unique_overlap (0.00s)
+        --- PASS: TestT09R1ExistingNonPlainComparisonGapMatrix/create_index/unique_overlap/mysql (0.01s)
+        --- PASS: TestT09R1ExistingNonPlainComparisonGapMatrix/create_index/unique_overlap/tidb (0.01s)
+    --- PASS: TestT09R1ExistingNonPlainComparisonGapMatrix/alter_add_index/unique_overlap (0.00s)
+        --- PASS: TestT09R1ExistingNonPlainComparisonGapMatrix/alter_add_index/unique_overlap/mysql (0.01s)
+        --- PASS: TestT09R1ExistingNonPlainComparisonGapMatrix/alter_add_index/unique_overlap/tidb (0.01s)
+--- PASS: TestT10R3CreateTableGapAttributionMatrix (0.00s)
+    --- PASS: TestT10R3CreateTableGapAttributionMatrix/left_prefix (0.00s)
+        --- PASS: TestT10R3CreateTableGapAttributionMatrix/left_prefix/mysql (0.01s)
+        --- PASS: TestT10R3CreateTableGapAttributionMatrix/left_prefix/tidb (0.01s)
+    --- PASS: TestT10R3CreateTableGapAttributionMatrix/unique_overlap (0.00s)
+        --- PASS: TestT10R3CreateTableGapAttributionMatrix/unique_overlap/tidb (0.01s)
+        --- PASS: TestT10R3CreateTableGapAttributionMatrix/unique_overlap/mysql (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.593s
+=== RUN   TestT10R3CreateTableDuplicateNonPlainPairReportsGap
+=== PAUSE TestT10R3CreateTableDuplicateNonPlainPairReportsGap
+=== RUN   TestT10R3CreateTableDuplicateNonPlainUniquePairReportsGap
+=== PAUSE TestT10R3CreateTableDuplicateNonPlainUniquePairReportsGap
+=== RUN   TestT10R3CreateTableDuplicateMixedPlainNonPlainReportsGap
+=== PAUSE TestT10R3CreateTableDuplicateMixedPlainNonPlainReportsGap
+=== RUN   TestT10R3CreateTableDuplicateGapControls
+=== PAUSE TestT10R3CreateTableDuplicateGapControls
+=== RUN   TestT10R3CreateTableLeftPrefixNonPlainPairReportsGap
+=== PAUSE TestT10R3CreateTableLeftPrefixNonPlainPairReportsGap
+=== RUN   TestT10R3CreateTableLeftPrefixExpressionComparatorReportsGap
+=== PAUSE TestT10R3CreateTableLeftPrefixExpressionComparatorReportsGap
+=== RUN   TestT10R3CreateTableLeftPrefixGapControls
+=== PAUSE TestT10R3CreateTableLeftPrefixGapControls
+=== RUN   TestT10R3CreateTableUniqueOverlapNonPlainPairReportsGap
+=== PAUSE TestT10R3CreateTableUniqueOverlapNonPlainPairReportsGap
+=== RUN   TestT10R3CreateTableUniqueOverlapNonPlainSecondaryReportsGap
+=== PAUSE TestT10R3CreateTableUniqueOverlapNonPlainSecondaryReportsGap
+=== RUN   TestT10R3CreateTableUniqueOverlapGapControls
+=== PAUSE TestT10R3CreateTableUniqueOverlapGapControls
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs
+=== RUN   TestT09R1DuplicatePlainControl
+=== PAUSE TestT09R1DuplicatePlainControl
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs
+=== RUN   TestT09R1LeftPrefixPlainControl
+=== PAUSE TestT09R1LeftPrefixPlainControl
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs
+=== RUN   TestT09R1UniqueOverlapPlainControl
+=== PAUSE TestT09R1UniqueOverlapPlainControl
+=== RUN   TestT09R1AlterExistingNonPlainSuppresses
+=== PAUSE TestT09R1AlterExistingNonPlainSuppresses
+=== RUN   TestT09R1AlterExistingPlainStillFlags
+=== PAUSE TestT09R1AlterExistingPlainStillFlags
+=== RUN   TestT09R1CreateIndexGapOnSkippedExistingMember
+=== PAUSE TestT09R1CreateIndexGapOnSkippedExistingMember
+=== RUN   TestT09R1CreateIndexGapScopeControls
+=== PAUSE TestT09R1CreateIndexGapScopeControls
+=== RUN   TestT09R1AlterAddIndexGapOnSkippedExistingMember
+=== PAUSE TestT09R1AlterAddIndexGapOnSkippedExistingMember
+=== CONT  TestT10R3CreateTableDuplicateNonPlainPairReportsGap
+=== CONT  TestT09R1DuplicatePlainControl
+=== CONT  TestT10R3CreateTableLeftPrefixGapControls
+=== CONT  TestT10R3CreateTableUniqueOverlapGapControls
+=== RUN   TestT10R3CreateTableLeftPrefixGapControls/equal-length_members_do_not_pair
+=== CONT  TestT10R3CreateTableUniqueOverlapNonPlainPairReportsGap
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs
+=== CONT  TestT09R1AlterExistingNonPlainSuppresses
+=== CONT  TestT09R1AlterAddIndexGapOnSkippedExistingMember
+=== CONT  TestT09R1CreateIndexGapScopeControls
+=== RUN   TestT10R3CreateTableUniqueOverlapGapControls/two_uniques_do_not_pair
+=== RUN   TestT09R1CreateIndexGapScopeControls/non_pairing_non_plain_member
+=== PAUSE TestT09R1CreateIndexGapScopeControls/non_pairing_non_plain_member
+--- PASS: TestT10R3CreateTableDuplicateNonPlainPairReportsGap (0.00s)
+=== CONT  TestT10R3CreateTableLeftPrefixExpressionComparatorReportsGap
+=== CONT  TestT09R1AlterExistingPlainStillFlags
+=== CONT  TestT10R3CreateTableDuplicateGapControls
+=== PAUSE TestT10R3CreateTableUniqueOverlapGapControls/two_uniques_do_not_pair
+--- PASS: TestT09R1DuplicatePlainControl (0.00s)
+=== PAUSE TestT10R3CreateTableLeftPrefixGapControls/equal-length_members_do_not_pair
+=== CONT  TestT10R3CreateTableLeftPrefixNonPlainPairReportsGap
+=== CONT  TestT09R1CreateIndexGapOnSkippedExistingMember
+=== RUN   TestT10R3CreateTableUniqueOverlapNonPlainPairReportsGap/unique_first
+--- PASS: TestT10R3CreateTableLeftPrefixExpressionComparatorReportsGap (0.00s)
+=== RUN   TestT10R3CreateTableUniqueOverlapGapControls/different_columns_do_not_pair
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs
+=== PAUSE TestT10R3CreateTableUniqueOverlapGapControls/different_columns_do_not_pair
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/desc_part
+=== RUN   TestT10R3CreateTableLeftPrefixGapControls/plain_left-prefix_pair_is_provable_—_no_gap
+--- PASS: TestT09R1AlterExistingPlainStillFlags (0.00s)
+=== CONT  TestT09R1UniqueOverlapPlainControl
+=== PAUSE TestT10R3CreateTableUniqueOverlapNonPlainPairReportsGap/unique_first
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/desc_part
+--- PASS: TestT09R1UniqueOverlapPlainControl (0.00s)
+=== CONT  TestT10R3CreateTableDuplicateMixedPlainNonPlainReportsGap
+=== PAUSE TestT10R3CreateTableLeftPrefixGapControls/plain_left-prefix_pair_is_provable_—_no_gap
+--- PASS: TestT10R3CreateTableDuplicateMixedPlainNonPlainReportsGap (0.00s)
+=== CONT  TestT10R3CreateTableUniqueOverlapNonPlainSecondaryReportsGap
+--- PASS: TestT10R3CreateTableUniqueOverlapNonPlainSecondaryReportsGap (0.00s)
+=== CONT  TestT09R1LeftPrefixPlainControl
+=== RUN   TestT09R1AlterAddIndexGapOnSkippedExistingMember/duplicate_same_signature
+--- PASS: TestT09R1LeftPrefixPlainControl (0.00s)
+=== PAUSE TestT09R1AlterAddIndexGapOnSkippedExistingMember/duplicate_same_signature
+=== RUN   TestT09R1CreateIndexGapScopeControls/plain_member_compared
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs
+=== PAUSE TestT09R1CreateIndexGapScopeControls/plain_member_compared
+=== RUN   TestT10R3CreateTableLeftPrefixNonPlainPairReportsGap/shorter_first
+=== RUN   TestT09R1AlterExistingNonPlainSuppresses/unmodeled_option
+=== RUN   TestT09R1CreateIndexGapOnSkippedExistingMember/duplicate_same_signature
+=== RUN   TestT09R1CreateIndexGapScopeControls/known_empty_set
+=== PAUSE TestT09R1CreateIndexGapOnSkippedExistingMember/duplicate_same_signature
+=== RUN   TestT10R3CreateTableDuplicateGapControls/kind_mismatch_does_not_pair
+=== PAUSE TestT09R1CreateIndexGapScopeControls/known_empty_set
+=== PAUSE TestT10R3CreateTableLeftPrefixNonPlainPairReportsGap/shorter_first
+=== PAUSE TestT10R3CreateTableDuplicateGapControls/kind_mismatch_does_not_pair
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/prefix_part
+=== RUN   TestT09R1CreateIndexGapOnSkippedExistingMember/left_prefix_covering
+=== PAUSE TestT09R1CreateIndexGapOnSkippedExistingMember/left_prefix_covering
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/prefix_part
+=== RUN   TestT10R3CreateTableDuplicateGapControls/different_columns_do_not_pair
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/desc_part
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/desc_part
+=== PAUSE TestT09R1AlterExistingNonPlainSuppresses/unmodeled_option
+=== RUN   TestT10R3CreateTableUniqueOverlapNonPlainPairReportsGap/secondary_first
+=== RUN   TestT09R1AlterExistingNonPlainSuppresses/prefix_part
+=== PAUSE TestT10R3CreateTableDuplicateGapControls/different_columns_do_not_pair
+=== PAUSE TestT09R1AlterExistingNonPlainSuppresses/prefix_part
+=== RUN   TestT09R1AlterAddIndexGapOnSkippedExistingMember/left_prefix_covering
+=== RUN   TestT10R3CreateTableLeftPrefixGapControls/unique_kind_never_enters_left-prefix_pairing
+=== PAUSE TestT09R1AlterAddIndexGapOnSkippedExistingMember/left_prefix_covering
+=== RUN   TestT09R1AlterExistingNonPlainSuppresses/desc_part
+=== PAUSE TestT10R3CreateTableUniqueOverlapNonPlainPairReportsGap/secondary_first
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/unmodeled_option
+=== CONT  TestT10R3CreateTableDuplicateNonPlainUniquePairReportsGap
+--- PASS: TestT10R3CreateTableDuplicateNonPlainUniquePairReportsGap (0.00s)
+=== PAUSE TestT10R3CreateTableLeftPrefixGapControls/unique_kind_never_enters_left-prefix_pairing
+=== RUN   TestT09R1CreateIndexGapScopeControls/unknown_set_keeps_collection_fact
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/unmodeled_option
+=== CONT  TestT10R3CreateTableUniqueOverlapNonPlainPairReportsGap/unique_first
+=== RUN   TestT10R3CreateTableUniqueOverlapGapControls/plain_overlap_pair_is_provable_—_no_gap
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/prefix_part
+=== PAUSE TestT10R3CreateTableUniqueOverlapGapControls/plain_overlap_pair_is_provable_—_no_gap
+=== PAUSE TestT09R1CreateIndexGapScopeControls/unknown_set_keeps_collection_fact
+=== RUN   TestT10R3CreateTableLeftPrefixGapControls/disabled_rule_emits_nothing
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/prefix_part
+=== RUN   TestT10R3CreateTableUniqueOverlapGapControls/disabled_rule_emits_nothing
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/expression_keys
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/desc_part
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/expression_keys
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/predicate
+=== PAUSE TestT09R1AlterExistingNonPlainSuppresses/desc_part
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/predicate
+=== RUN   TestT09R1CreateIndexGapOnSkippedExistingMember/unique_overlap_same_columns
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/included_columns
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/included_columns
+=== CONT  TestT10R3CreateTableUniqueOverlapNonPlainPairReportsGap/secondary_first
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/global
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/global
+=== CONT  TestT09R1CreateIndexGapScopeControls/unknown_set_keeps_collection_fact
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/unmodeled_option
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/unmodeled_option
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/prefix_part
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/expression_keys
+=== RUN   TestT10R3CreateTableDuplicateGapControls/single_non-plain_member_has_no_pair
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/expression_keys
+=== CONT  TestT09R1CreateIndexGapScopeControls/non_pairing_non_plain_member
+=== CONT  TestT09R1CreateIndexGapScopeControls/known_empty_set
+=== PAUSE TestT10R3CreateTableLeftPrefixGapControls/disabled_rule_emits_nothing
+=== CONT  TestT09R1CreateIndexGapScopeControls/plain_member_compared
+=== RUN   TestT09R1AlterAddIndexGapOnSkippedExistingMember/unique_overlap_same_columns
+=== CONT  TestT10R3CreateTableLeftPrefixGapControls/unique_kind_never_enters_left-prefix_pairing
+=== CONT  TestT10R3CreateTableLeftPrefixGapControls/equal-length_members_do_not_pair
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/desc_part
+=== RUN   TestT09R1AlterExistingNonPlainSuppresses/expression_keys
+=== PAUSE TestT09R1AlterExistingNonPlainSuppresses/expression_keys
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/expression_keys
+=== RUN   TestT09R1AlterExistingNonPlainSuppresses/predicate
+=== PAUSE TestT09R1AlterExistingNonPlainSuppresses/predicate
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/expression_keys
+=== RUN   TestT09R1AlterExistingNonPlainSuppresses/included_columns
+=== PAUSE TestT09R1CreateIndexGapOnSkippedExistingMember/unique_overlap_same_columns
+=== PAUSE TestT09R1AlterExistingNonPlainSuppresses/included_columns
+=== CONT  TestT09R1CreateIndexGapOnSkippedExistingMember/duplicate_same_signature
+=== RUN   TestT09R1AlterExistingNonPlainSuppresses/global
+=== PAUSE TestT09R1AlterExistingNonPlainSuppresses/global
+=== CONT  TestT09R1AlterExistingNonPlainSuppresses/unmodeled_option
+=== CONT  TestT09R1CreateIndexGapOnSkippedExistingMember/unique_overlap_same_columns
+=== CONT  TestT09R1AlterExistingNonPlainSuppresses/global
+=== CONT  TestT09R1AlterExistingNonPlainSuppresses/predicate
+=== CONT  TestT09R1AlterExistingNonPlainSuppresses/included_columns
+=== CONT  TestT09R1AlterExistingNonPlainSuppresses/expression_keys
+=== CONT  TestT09R1AlterExistingNonPlainSuppresses/prefix_part
+=== PAUSE TestT10R3CreateTableDuplicateGapControls/single_non-plain_member_has_no_pair
+=== CONT  TestT09R1AlterExistingNonPlainSuppresses/desc_part
+=== RUN   TestT10R3CreateTableDuplicateGapControls/plain_duplicate_pair_is_provable_—_no_gap
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/predicate
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/predicate
+=== PAUSE TestT09R1AlterAddIndexGapOnSkippedExistingMember/unique_overlap_same_columns
+=== CONT  TestT09R1AlterAddIndexGapOnSkippedExistingMember/duplicate_same_signature
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/included_columns
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/included_columns
+=== PAUSE TestT10R3CreateTableUniqueOverlapGapControls/disabled_rule_emits_nothing
+=== CONT  TestT10R3CreateTableUniqueOverlapGapControls/two_uniques_do_not_pair
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/global
+=== CONT  TestT09R1AlterAddIndexGapOnSkippedExistingMember/left_prefix_covering
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/global
+=== RUN   TestT10R3CreateTableLeftPrefixNonPlainPairReportsGap/longer_first
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/unmodeled_option
+=== CONT  TestT10R3CreateTableUniqueOverlapGapControls/plain_overlap_pair_is_provable_—_no_gap
+=== CONT  TestT10R3CreateTableUniqueOverlapGapControls/different_columns_do_not_pair
+=== CONT  TestT10R3CreateTableUniqueOverlapGapControls/disabled_rule_emits_nothing
+=== CONT  TestT10R3CreateTableLeftPrefixGapControls/plain_left-prefix_pair_is_provable_—_no_gap
+=== PAUSE TestT10R3CreateTableLeftPrefixNonPlainPairReportsGap/longer_first
+=== CONT  TestT09R1CreateIndexGapOnSkippedExistingMember/left_prefix_covering
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/predicate
+--- PASS: TestT10R3CreateTableUniqueOverlapNonPlainPairReportsGap (0.00s)
+    --- PASS: TestT10R3CreateTableUniqueOverlapNonPlainPairReportsGap/unique_first (0.00s)
+    --- PASS: TestT10R3CreateTableUniqueOverlapNonPlainPairReportsGap/secondary_first (0.00s)
+=== PAUSE TestT10R3CreateTableDuplicateGapControls/plain_duplicate_pair_is_provable_—_no_gap
+--- PASS: TestT09R1CreateIndexGapScopeControls (0.00s)
+    --- PASS: TestT09R1CreateIndexGapScopeControls/unknown_set_keeps_collection_fact (0.00s)
+    --- PASS: TestT09R1CreateIndexGapScopeControls/non_pairing_non_plain_member (0.00s)
+    --- PASS: TestT09R1CreateIndexGapScopeControls/known_empty_set (0.00s)
+    --- PASS: TestT09R1CreateIndexGapScopeControls/plain_member_compared (0.00s)
+=== RUN   TestT10R3CreateTableDuplicateGapControls/disabled_rule_emits_nothing
+=== CONT  TestT09R1AlterAddIndexGapOnSkippedExistingMember/unique_overlap_same_columns
+=== PAUSE TestT10R3CreateTableDuplicateGapControls/disabled_rule_emits_nothing
+=== CONT  TestT10R3CreateTableLeftPrefixGapControls/disabled_rule_emits_nothing
+=== CONT  TestT10R3CreateTableDuplicateGapControls/different_columns_do_not_pair
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/unmodeled_option
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/prefix_part
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/included_columns
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/unmodeled_option
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/prefix_part/unique
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/global
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/prefix_part/unique
+=== CONT  TestT10R3CreateTableLeftPrefixNonPlainPairReportsGap/shorter_first
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/global/unique
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/unmodeled_option/unique
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/global/unique
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/prefix_part
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/included_columns/unique
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/predicate
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/included_columns/unique
+=== CONT  TestT10R3CreateTableLeftPrefixNonPlainPairReportsGap/longer_first
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/included_columns/secondary
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/expression_keys
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/expression_keys/unique
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/included_columns/secondary
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/expression_keys/unique
+=== CONT  TestT10R3CreateTableDuplicateGapControls/disabled_rule_emits_nothing
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/expression_keys/secondary
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/expression_keys/secondary
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/global
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/prefix_part
+=== CONT  TestT10R3CreateTableDuplicateGapControls/plain_duplicate_pair_is_provable_—_no_gap
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/desc_part
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/prefix_part/first
+=== CONT  TestT10R3CreateTableDuplicateGapControls/single_non-plain_member_has_no_pair
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/prefix_part/first
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/unmodeled_option
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/unmodeled_option/unique
+--- PASS: TestT09R1AlterExistingNonPlainSuppresses (0.00s)
+    --- PASS: TestT09R1AlterExistingNonPlainSuppresses/unmodeled_option (0.00s)
+    --- PASS: TestT09R1AlterExistingNonPlainSuppresses/global (0.00s)
+    --- PASS: TestT09R1AlterExistingNonPlainSuppresses/included_columns (0.00s)
+    --- PASS: TestT09R1AlterExistingNonPlainSuppresses/predicate (0.00s)
+    --- PASS: TestT09R1AlterExistingNonPlainSuppresses/expression_keys (0.00s)
+    --- PASS: TestT09R1AlterExistingNonPlainSuppresses/prefix_part (0.00s)
+    --- PASS: TestT09R1AlterExistingNonPlainSuppresses/desc_part (0.00s)
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/unmodeled_option/secondary
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/unmodeled_option/secondary
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/prefix_part/second
+--- PASS: TestT10R3CreateTableUniqueOverlapGapControls (0.00s)
+    --- PASS: TestT10R3CreateTableUniqueOverlapGapControls/two_uniques_do_not_pair (0.00s)
+    --- PASS: TestT10R3CreateTableUniqueOverlapGapControls/different_columns_do_not_pair (0.00s)
+    --- PASS: TestT10R3CreateTableUniqueOverlapGapControls/plain_overlap_pair_is_provable_—_no_gap (0.00s)
+    --- PASS: TestT10R3CreateTableUniqueOverlapGapControls/disabled_rule_emits_nothing (0.00s)
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/predicate
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/included_columns
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/predicate/first
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/included_columns
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/predicate/first
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/predicate
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/global
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/predicate/unique
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/global
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/predicate/unique
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/prefix_part/secondary
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/included_columns
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/predicate/second
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/prefix_part/secondary
+=== CONT  TestT10R3CreateTableDuplicateGapControls/kind_mismatch_does_not_pair
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/included_columns/unique
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/predicate/secondary
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/included_columns/first
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/predicate/secondary
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/expression_keys/unique
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/unmodeled_option/unique
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/included_columns/secondary
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/global/first
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/global/first
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/expression_keys
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/unmodeled_option/secondary
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/expression_keys/secondary
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/expression_keys/first
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/included_columns/first
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/predicate
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/global/second
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/global/second
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/expression_keys/first
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/included_columns
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/unmodeled_option/first
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/prefix_part/second
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/unmodeled_option/first
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/expression_keys
+--- PASS: TestT10R3CreateTableLeftPrefixGapControls (0.00s)
+    --- PASS: TestT10R3CreateTableLeftPrefixGapControls/unique_kind_never_enters_left-prefix_pairing (0.00s)
+    --- PASS: TestT10R3CreateTableLeftPrefixGapControls/equal-length_members_do_not_pair (0.00s)
+    --- PASS: TestT10R3CreateTableLeftPrefixGapControls/plain_left-prefix_pair_is_provable_—_no_gap (0.00s)
+    --- PASS: TestT10R3CreateTableLeftPrefixGapControls/disabled_rule_emits_nothing (0.00s)
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/included_columns/second
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/predicate/second
+--- PASS: TestT09R1AlterAddIndexGapOnSkippedExistingMember (0.00s)
+    --- PASS: TestT09R1AlterAddIndexGapOnSkippedExistingMember/duplicate_same_signature (0.00s)
+    --- PASS: TestT09R1AlterAddIndexGapOnSkippedExistingMember/left_prefix_covering (0.00s)
+    --- PASS: TestT09R1AlterAddIndexGapOnSkippedExistingMember/unique_overlap_same_columns (0.00s)
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/prefix_part/unique
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/included_columns/second
+--- PASS: TestT10R3CreateTableLeftPrefixNonPlainPairReportsGap (0.00s)
+    --- PASS: TestT10R3CreateTableLeftPrefixNonPlainPairReportsGap/shorter_first (0.00s)
+    --- PASS: TestT10R3CreateTableLeftPrefixNonPlainPairReportsGap/longer_first (0.00s)
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/expression_keys/second
+--- PASS: TestT09R1CreateIndexGapOnSkippedExistingMember (0.00s)
+    --- PASS: TestT09R1CreateIndexGapOnSkippedExistingMember/duplicate_same_signature (0.00s)
+    --- PASS: TestT09R1CreateIndexGapOnSkippedExistingMember/unique_overlap_same_columns (0.00s)
+    --- PASS: TestT09R1CreateIndexGapOnSkippedExistingMember/left_prefix_covering (0.00s)
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/global/secondary
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/prefix_part
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/expression_keys/second
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/global/secondary
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/prefix_part/secondary
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/predicate/unique
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/global
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/global/shorter
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/predicate/secondary
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/predicate/shorter
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/predicate/shorter
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/unmodeled_option/second
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/global/shorter
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/unmodeled_option/second
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/global/first
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/desc_part
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/included_columns/shorter
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/global/longer
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/prefix_part/second
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/global/longer
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/predicate/first
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/included_columns/first
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/included_columns/second
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/prefix_part/first
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/expression_keys/first
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/included_columns/shorter
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/included_columns/longer
+--- PASS: TestT10R3CreateTableDuplicateGapControls (0.00s)
+    --- PASS: TestT10R3CreateTableDuplicateGapControls/different_columns_do_not_pair (0.00s)
+    --- PASS: TestT10R3CreateTableDuplicateGapControls/disabled_rule_emits_nothing (0.00s)
+    --- PASS: TestT10R3CreateTableDuplicateGapControls/plain_duplicate_pair_is_provable_—_no_gap (0.00s)
+    --- PASS: TestT10R3CreateTableDuplicateGapControls/single_non-plain_member_has_no_pair (0.00s)
+    --- PASS: TestT10R3CreateTableDuplicateGapControls/kind_mismatch_does_not_pair (0.00s)
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/desc_part/first
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/expression_keys/second
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/global/secondary
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/desc_part/first
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/unmodeled_option/first
+=== RUN   TestT09R1DuplicateSuppressesNonPlainPairs/desc_part/second
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/unmodeled_option/second
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/predicate/longer
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/expression_keys/shorter
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/expression_keys/shorter
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/predicate/longer
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/unmodeled_option
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/global/second
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/desc_part
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/desc_part/shorter
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/desc_part/unique
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/predicate/second
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/global/unique
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/included_columns/longer
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/predicate/longer
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/unmodeled_option/shorter
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/prefix_part/shorter
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/unmodeled_option/shorter
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/prefix_part/shorter
+=== PAUSE TestT09R1DuplicateSuppressesNonPlainPairs/desc_part/second
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/desc_part/first
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/unmodeled_option/longer
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/global/shorter
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/unmodeled_option/longer
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/unmodeled_option/shorter
+=== CONT  TestT09R1DuplicateSuppressesNonPlainPairs/desc_part/second
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/expression_keys/longer
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/expression_keys/longer
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/expression_keys/shorter
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/prefix_part/longer
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/prefix_part/longer
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/global/longer
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/prefix_part/shorter
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/expression_keys/longer
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/unmodeled_option/longer
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/included_columns/longer
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/prefix_part/longer
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/desc_part/unique
+=== RUN   TestT09R1UniqueOverlapSuppressesNonPlainPairs/desc_part/secondary
+=== PAUSE TestT09R1UniqueOverlapSuppressesNonPlainPairs/desc_part/secondary
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/desc_part/unique
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/desc_part/shorter
+=== RUN   TestT09R1LeftPrefixSuppressesNonPlainPairs/desc_part/longer
+=== PAUSE TestT09R1LeftPrefixSuppressesNonPlainPairs/desc_part/longer
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/desc_part/shorter
+--- PASS: TestT09R1DuplicateSuppressesNonPlainPairs (0.00s)
+    --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/expression_keys (0.00s)
+        --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/expression_keys/first (0.00s)
+        --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/expression_keys/second (0.00s)
+    --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/included_columns (0.00s)
+        --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/included_columns/first (0.00s)
+        --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/included_columns/second (0.00s)
+    --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/prefix_part (0.00s)
+        --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/prefix_part/second (0.00s)
+        --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/prefix_part/first (0.00s)
+    --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/unmodeled_option (0.00s)
+        --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/unmodeled_option/second (0.00s)
+        --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/unmodeled_option/first (0.00s)
+    --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/global (0.00s)
+        --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/global/first (0.00s)
+        --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/global/second (0.00s)
+    --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/desc_part (0.00s)
+        --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/desc_part/first (0.00s)
+        --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/desc_part/second (0.00s)
+    --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/predicate (0.00s)
+        --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/predicate/first (0.00s)
+        --- PASS: TestT09R1DuplicateSuppressesNonPlainPairs/predicate/second (0.00s)
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/included_columns/shorter
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/predicate/shorter
+=== CONT  TestT09R1UniqueOverlapSuppressesNonPlainPairs/desc_part/secondary
+--- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs (0.00s)
+    --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/unmodeled_option (0.00s)
+        --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/unmodeled_option/unique (0.00s)
+        --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/unmodeled_option/secondary (0.00s)
+    --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/included_columns (0.00s)
+        --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/included_columns/unique (0.00s)
+        --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/included_columns/secondary (0.00s)
+    --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/expression_keys (0.00s)
+        --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/expression_keys/unique (0.00s)
+        --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/expression_keys/secondary (0.00s)
+    --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/prefix_part (0.00s)
+        --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/prefix_part/unique (0.00s)
+        --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/prefix_part/secondary (0.00s)
+    --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/predicate (0.00s)
+        --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/predicate/secondary (0.00s)
+        --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/predicate/unique (0.00s)
+    --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/global (0.00s)
+        --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/global/secondary (0.00s)
+        --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/global/unique (0.00s)
+    --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/desc_part (0.00s)
+        --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/desc_part/unique (0.00s)
+        --- PASS: TestT09R1UniqueOverlapSuppressesNonPlainPairs/desc_part/secondary (0.00s)
+=== CONT  TestT09R1LeftPrefixSuppressesNonPlainPairs/desc_part/longer
+--- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs (0.00s)
+    --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/global (0.00s)
+        --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/global/shorter (0.00s)
+        --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/global/longer (0.00s)
+    --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/expression_keys (0.00s)
+        --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/expression_keys/shorter (0.00s)
+        --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/expression_keys/longer (0.00s)
+    --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/unmodeled_option (0.00s)
+        --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/unmodeled_option/shorter (0.00s)
+        --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/unmodeled_option/longer (0.00s)
+    --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/prefix_part (0.00s)
+        --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/prefix_part/shorter (0.00s)
+        --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/prefix_part/longer (0.00s)
+    --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/included_columns (0.00s)
+        --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/included_columns/longer (0.00s)
+        --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/included_columns/shorter (0.00s)
+    --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/predicate (0.00s)
+        --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/predicate/longer (0.00s)
+        --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/predicate/shorter (0.00s)
+    --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/desc_part (0.00s)
+        --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/desc_part/shorter (0.00s)
+        --- PASS: TestT09R1LeftPrefixSuppressesNonPlainPairs/desc_part/longer (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	1.423s
+=== RUN   TestT10R3PrimaryKeyHandleIntOnlyAlterPrimaryKey
+=== PAUSE TestT10R3PrimaryKeyHandleIntOnlyAlterPrimaryKey
+=== RUN   TestT10R3PrimaryKeyHandleModeControls
+=== PAUSE TestT10R3PrimaryKeyHandleModeControls
+=== RUN   TestT10R3StoredIndexNames
+=== PAUSE TestT10R3StoredIndexNames
+=== CONT  TestT10R3PrimaryKeyHandleIntOnlyAlterPrimaryKey
+=== CONT  TestT10R3StoredIndexNames
+--- PASS: TestT10R3PrimaryKeyHandleIntOnlyAlterPrimaryKey (0.00s)
+=== CONT  TestT10R3PrimaryKeyHandleModeControls
+--- PASS: TestT10R3PrimaryKeyHandleModeControls (0.00s)
+=== RUN   TestT10R3StoredIndexNames/authored_names_pass_through_verbatim
+=== PAUSE TestT10R3StoredIndexNames/authored_names_pass_through_verbatim
+=== RUN   TestT10R3StoredIndexNames/unnamed_member_takes_first_column_member_name
+=== PAUSE TestT10R3StoredIndexNames/unnamed_member_takes_first_column_member_name
+=== RUN   TestT10R3StoredIndexNames/two_unnamed_members_sharing_a_first_column_suffix_in_order
+=== PAUSE TestT10R3StoredIndexNames/two_unnamed_members_sharing_a_first_column_suffix_in_order
+=== RUN   TestT10R3StoredIndexNames/auto_name_against_an_authored_collision_suffixes
+=== PAUSE TestT10R3StoredIndexNames/auto_name_against_an_authored_collision_suffixes
+=== RUN   TestT10R3StoredIndexNames/prefix_member_still_names_its_column
+=== PAUSE TestT10R3StoredIndexNames/prefix_member_still_names_its_column
+=== RUN   TestT10R3StoredIndexNames/expression_first_member_leaves_the_name_unproven
+=== PAUSE TestT10R3StoredIndexNames/expression_first_member_leaves_the_name_unproven
+=== RUN   TestT10R3StoredIndexNames/authored_duplicate_name_is_unprovable_(native_1061)
+=== PAUSE TestT10R3StoredIndexNames/authored_duplicate_name_is_unprovable_(native_1061)
+=== RUN   TestT10R3StoredIndexNames/member_projection_without_key_parts_falls_back_to_columns
+=== PAUSE TestT10R3StoredIndexNames/member_projection_without_key_parts_falls_back_to_columns
+=== RUN   TestT10R3StoredIndexNames/empty_member_list_leaves_the_name_unproven
+=== PAUSE TestT10R3StoredIndexNames/empty_member_list_leaves_the_name_unproven
+=== CONT  TestT10R3StoredIndexNames/authored_names_pass_through_verbatim
+=== CONT  TestT10R3StoredIndexNames/member_projection_without_key_parts_falls_back_to_columns
+=== CONT  TestT10R3StoredIndexNames/auto_name_against_an_authored_collision_suffixes
+=== CONT  TestT10R3StoredIndexNames/prefix_member_still_names_its_column
+=== CONT  TestT10R3StoredIndexNames/expression_first_member_leaves_the_name_unproven
+=== CONT  TestT10R3StoredIndexNames/empty_member_list_leaves_the_name_unproven
+=== CONT  TestT10R3StoredIndexNames/two_unnamed_members_sharing_a_first_column_suffix_in_order
+=== CONT  TestT10R3StoredIndexNames/unnamed_member_takes_first_column_member_name
+=== CONT  TestT10R3StoredIndexNames/authored_duplicate_name_is_unprovable_(native_1061)
+--- PASS: TestT10R3StoredIndexNames (0.00s)
+    --- PASS: TestT10R3StoredIndexNames/authored_names_pass_through_verbatim (0.00s)
+    --- PASS: TestT10R3StoredIndexNames/member_projection_without_key_parts_falls_back_to_columns (0.00s)
+    --- PASS: TestT10R3StoredIndexNames/auto_name_against_an_authored_collision_suffixes (0.00s)
+    --- PASS: TestT10R3StoredIndexNames/prefix_member_still_names_its_column (0.00s)
+    --- PASS: TestT10R3StoredIndexNames/expression_first_member_leaves_the_name_unproven (0.00s)
+    --- PASS: TestT10R3StoredIndexNames/empty_member_list_leaves_the_name_unproven (0.00s)
+    --- PASS: TestT10R3StoredIndexNames/two_unnamed_members_sharing_a_first_column_suffix_in_order (0.00s)
+    --- PASS: TestT10R3StoredIndexNames/unnamed_member_takes_first_column_member_name (0.00s)
+    --- PASS: TestT10R3StoredIndexNames/authored_duplicate_name_is_unprovable_(native_1061) (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/spec	1.813s
+=== RUN   TestT09R1ProviderMemberRowClassification
+=== RUN   TestT09R1ProviderMemberRowClassification/plain_ascending_whole_column
+=== RUN   TestT09R1ProviderMemberRowClassification/prefix_length_marks_PrefixParts_but_keeps_the_column
+=== RUN   TestT09R1ProviderMemberRowClassification/descending_collation_marks_DescParts
+=== RUN   TestT09R1ProviderMemberRowClassification/NULL_column_name_is_an_expression_key_part
+=== RUN   TestT09R1ProviderMemberRowClassification/NULL_collation_on_a_named_member_is_unclassifiable
+=== RUN   TestT09R1ProviderMemberRowClassification/unrecognized_collation_value_is_unclassifiable
+--- PASS: TestT09R1ProviderMemberRowClassification (0.00s)
+    --- PASS: TestT09R1ProviderMemberRowClassification/plain_ascending_whole_column (0.00s)
+    --- PASS: TestT09R1ProviderMemberRowClassification/prefix_length_marks_PrefixParts_but_keeps_the_column (0.00s)
+    --- PASS: TestT09R1ProviderMemberRowClassification/descending_collation_marks_DescParts (0.00s)
+    --- PASS: TestT09R1ProviderMemberRowClassification/NULL_column_name_is_an_expression_key_part (0.00s)
+    --- PASS: TestT09R1ProviderMemberRowClassification/NULL_collation_on_a_named_member_is_unclassifiable (0.00s)
+    --- PASS: TestT09R1ProviderMemberRowClassification/unrecognized_collation_value_is_unclassifiable (0.00s)
+=== RUN   TestT09R1ProviderLoadIndexesMarksNonPlain
+--- PASS: TestT09R1ProviderLoadIndexesMarksNonPlain (0.00s)
+=== RUN   TestT10R3ExpressionMemberCollationMatrix
+=== PAUSE TestT10R3ExpressionMemberCollationMatrix
+=== RUN   TestT10R3DescendingExpressionKeepsIdentity
+=== PAUSE TestT10R3DescendingExpressionKeepsIdentity
+=== RUN   TestT10R3LiteralNullExpressionKeepsDirection
+=== PAUSE TestT10R3LiteralNullExpressionKeepsDirection
+=== RUN   TestT10R3TiDBAlterPrimaryKeyFactMatrix
+=== PAUSE TestT10R3TiDBAlterPrimaryKeyFactMatrix
+=== RUN   TestT10R3LiteralNullColumnStillColumn
+=== PAUSE TestT10R3LiteralNullColumnStillColumn
+=== CONT  TestT10R3ExpressionMemberCollationMatrix
+=== RUN   TestT10R3ExpressionMemberCollationMatrix/D_keeps_descending
+=== CONT  TestT10R3TiDBAlterPrimaryKeyFactMatrix
+=== CONT  TestT10R3LiteralNullExpressionKeepsDirection
+=== CONT  TestT10R3DescendingExpressionKeepsIdentity
+=== RUN   TestT10R3TiDBAlterPrimaryKeyFactMatrix/true_across_instances_becomes_known
+=== CONT  TestT10R3LiteralNullColumnStillColumn
+=== PAUSE TestT10R3ExpressionMemberCollationMatrix/D_keeps_descending
+=== PAUSE TestT10R3TiDBAlterPrimaryKeyFactMatrix/true_across_instances_becomes_known
+--- PASS: TestT10R3LiteralNullColumnStillColumn (0.00s)
+=== RUN   TestT10R3ExpressionMemberCollationMatrix/A_stays_ascending
+=== PAUSE TestT10R3ExpressionMemberCollationMatrix/A_stays_ascending
+=== RUN   TestT10R3TiDBAlterPrimaryKeyFactMatrix/false_becomes_known
+=== RUN   TestT10R3ExpressionMemberCollationMatrix/NULL_collation_is_unmodeled
+=== PAUSE TestT10R3TiDBAlterPrimaryKeyFactMatrix/false_becomes_known
+=== PAUSE TestT10R3ExpressionMemberCollationMatrix/NULL_collation_is_unmodeled
+=== RUN   TestT10R3ExpressionMemberCollationMatrix/unrecognized_collation_is_unmodeled
+=== RUN   TestT10R3TiDBAlterPrimaryKeyFactMatrix/disagreeing_instances_stay_unknown
+=== PAUSE TestT10R3ExpressionMemberCollationMatrix/unrecognized_collation_is_unmodeled
+=== PAUSE TestT10R3TiDBAlterPrimaryKeyFactMatrix/disagreeing_instances_stay_unknown
+=== CONT  TestT10R3ExpressionMemberCollationMatrix/D_keeps_descending
+=== RUN   TestT10R3TiDBAlterPrimaryKeyFactMatrix/unparsable_value_stays_unknown
+=== PAUSE TestT10R3TiDBAlterPrimaryKeyFactMatrix/unparsable_value_stays_unknown
+=== CONT  TestT10R3ExpressionMemberCollationMatrix/NULL_collation_is_unmodeled
+=== RUN   TestT10R3TiDBAlterPrimaryKeyFactMatrix/zero_rows_stays_unknown
+=== PAUSE TestT10R3TiDBAlterPrimaryKeyFactMatrix/zero_rows_stays_unknown
+=== RUN   TestT10R3TiDBAlterPrimaryKeyFactMatrix/query_error_propagates_as_provider_error
+=== PAUSE TestT10R3TiDBAlterPrimaryKeyFactMatrix/query_error_propagates_as_provider_error
+=== CONT  TestT10R3ExpressionMemberCollationMatrix/unrecognized_collation_is_unmodeled
+=== CONT  TestT10R3TiDBAlterPrimaryKeyFactMatrix/true_across_instances_becomes_known
+=== CONT  TestT10R3TiDBAlterPrimaryKeyFactMatrix/disagreeing_instances_stay_unknown
+=== CONT  TestT10R3TiDBAlterPrimaryKeyFactMatrix/unparsable_value_stays_unknown
+=== CONT  TestT10R3TiDBAlterPrimaryKeyFactMatrix/false_becomes_known
+=== CONT  TestT10R3ExpressionMemberCollationMatrix/A_stays_ascending
+=== CONT  TestT10R3TiDBAlterPrimaryKeyFactMatrix/query_error_propagates_as_provider_error
+=== CONT  TestT10R3TiDBAlterPrimaryKeyFactMatrix/zero_rows_stays_unknown
+--- PASS: TestT10R3TiDBAlterPrimaryKeyFactMatrix (0.00s)
+    --- PASS: TestT10R3TiDBAlterPrimaryKeyFactMatrix/true_across_instances_becomes_known (0.00s)
+    --- PASS: TestT10R3TiDBAlterPrimaryKeyFactMatrix/unparsable_value_stays_unknown (0.00s)
+    --- PASS: TestT10R3TiDBAlterPrimaryKeyFactMatrix/disagreeing_instances_stay_unknown (0.00s)
+    --- PASS: TestT10R3TiDBAlterPrimaryKeyFactMatrix/false_becomes_known (0.00s)
+    --- PASS: TestT10R3TiDBAlterPrimaryKeyFactMatrix/zero_rows_stays_unknown (0.00s)
+    --- PASS: TestT10R3TiDBAlterPrimaryKeyFactMatrix/query_error_propagates_as_provider_error (0.00s)
+--- PASS: TestT10R3LiteralNullExpressionKeepsDirection (0.00s)
+--- PASS: TestT10R3DescendingExpressionKeepsIdentity (0.00s)
+--- PASS: TestT10R3ExpressionMemberCollationMatrix (0.00s)
+    --- PASS: TestT10R3ExpressionMemberCollationMatrix/unrecognized_collation_is_unmodeled (0.00s)
+    --- PASS: TestT10R3ExpressionMemberCollationMatrix/NULL_collation_is_unmodeled (0.00s)
+    --- PASS: TestT10R3ExpressionMemberCollationMatrix/A_stays_ascending (0.00s)
+    --- PASS: TestT10R3ExpressionMemberCollationMatrix/D_keeps_descending (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql	2.330s

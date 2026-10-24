@@ -1,0 +1,12 @@
+go test ./internal/application/audit -count=1 -run TestParserErrorDiagnosticEvidence
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.625s
+go test ./internal/application/audit -count=1 -tags postgresql -run TestUnsupportedStatementDiagnosticEvidencePostgreSQL
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.427s
+go test ./pkg/deltascope -count=1 -run TestUnsupportedDiagnosticsEvidenceSDKParserError
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.873s
+go test ./internal/interfaces/cli -count=1 -run TestUnsupportedDiagnosticsEvidenceCLI
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/cli	0.603s
+go test ./internal/interfaces/http -count=1 -run TestUnsupportedDiagnosticsEvidenceHTTPParserError
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/http	0.694s
+go test ./internal/interfaces/mcp -count=1 -run TestUnsupportedDiagnosticsEvidenceMCPParserError
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/mcp	0.396s
