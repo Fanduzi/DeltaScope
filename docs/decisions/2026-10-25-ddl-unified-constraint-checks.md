@@ -1,0 +1,158 @@
+# Decision: Unified PK/UNIQUE/FK CREATE/ALTER checks and foreign-key ordered state
+
+Date: 2026-10-25
+Status: Accepted
+Related milestone/version: mysql-tidb-ddl-completion (issue #79, task T11 under #90)
+Related commits: this task's commits on the workfree line after `8b6f3098`
+Related tests: `internal/domain/rule/ddl/constraint_fk_t11_test.go`, `internal/application/audit/batch_state_t11_fk_test.go`, `make ddl-golden TASK=T11 ARTIFACT_DIR=...`, `testdata/ddl-golden/T11.json`
+Related docs: `docs/work-plans/t11-unified-constraints/CONTRACT.md`, module README updates in the same change
+
+## Context
+
+Before T11, foreign-key governance was asymmetric. `ddl.table.foreign_key.forbid`
+and the `ddl.constraint.foreign_key.name.*` rules fired only on CREATE TABLE
+constraints; `ALTER TABLE ... ADD [CONSTRAINT n] FOREIGN KEY ... REFERENCES ...`
+produced zero findings (`applicable=0`) and fell through to the generic
+`ddl.alter.add_constraint.notice`. `ddl.table.primary_key.columns.max_count`
+similarly ignored ALTER `ADD PRIMARY KEY`. `DROP FOREIGN KEY` had only a notice —
+no proven-missing blocker — and provider snapshots never loaded FK members, so
+ordered state could not reason about constraint presence, supporting indexes, or
+dependent edges.
+
+Four native anchors (MySQL 5.7.44 / 8.0.46 / 8.4.10, TiDB v8.5.0) were probed
+before the contract froze:
+
+- Adding an FK creates a supporting index only when nothing already covers the
+  local columns leftmost; a named constraint gives the index its name, a bare
+  add derives it from the first local column.
+- `DROP FOREIGN KEY` removes the constraint but never the supporting index
+  (1553 refuses dropping an index an FK still needs; duplicate FK name
+  refuses 1022/1826; missing member column refuses 1072; missing FK name on
+  drop refuses 1091).
+- TiDB enforces FKs natively (`tidb_enable_foreign_key=ON`) and additionally
+  accepts `DROP CONSTRAINT fk`; that spelling stays a CHECK-clause boundary
+  (T12), not silently governed FK removal.
+- `information_schema.REFERENTIAL_CONSTRAINTS` defaults differ: MySQL 5.7
+  stores `RESTRICT`, 8.x/TiDB store `NO ACTION` — both normalize to the same
+  lowercase vocabulary.
+
+## Decision
+
+1. **One normalized fact, both paths.** `spec.Constraint` is the shared record:
+   MySQL/TiDB ALTER carries it on `alter.Constraint`, PostgreSQL through the
+   `alter.Options` vocabulary. Every consumer extended in T11 consults both:
+   `appliesToCreateTableOrAlterFKConstraint`, the FK naming subject selector
+   (`alter.Constraint.Name` for MySQL/TiDB — a bare `ADD FOREIGN KEY` authors
+   no name and yields no subject; `alter.Name` for PostgreSQL), and the PK
+   column-count rule (produced index definition or constraint columns for
+   MySQL/TiDB, options vocabulary for PostgreSQL).
+2. **`ddl.table.foreign_key.forbid` keeps its id** and now evaluates
+   `DDL.Constraints` plus every `add_constraint` FK in `DDL.Alter` — one
+   finding per declared foreign key with `table`, `constraint`, ordered
+   `columns`, `referenced_schema`/`referenced_table`/ordered
+   `referenced_columns`, and `on_delete`/`on_update` metadata. Second and
+   later constraints are judged exactly like the first.
+3. **New rule `ddl.alter.drop_foreign_key.exists.require`** (blocker) rides the
+   shared `alterObjectExistenceRule` shell: a proven-absent member name emits
+   the missing finding (`exists=false`); a proven member or an unvouched set
+   stays silent in Evaluate while EvidenceGaps emits `unknown_table_state`
+   with `target_table.constraints` (plus `target_table.existence` when the
+   table itself is unproven). Registered in defaults, catalog, and
+   `configs/deltascope.example.yaml`.
+4. **Referential actions become modeled facts.** `Constraint.OnDelete`/
+   `OnUpdate` carry normalized lowercase tokens on both CREATE and ALTER
+   paths (extractor and provider); `MATCH` stays unmodeled and keeps its
+   unsupported-evidence row — the boundary moved from "actions unmodeled" to
+   "only MATCH unmodeled" and corpus/expected files reflect it.
+5. **Provider loads FK members** (`loadForeignKeys`): `KEY_COLUMN_USAGE` joined
+   to `REFERENTIAL_CONSTRAINTS`, grouped by constraint name with ordered
+   column pairs; a clean empty result is a proven empty collection
+   (`Constraints=[]`), DISTINCT from a nil withheld collection. UNIQUE stays
+   index-side; CHECK and other types are not folded in — a
+   `TABLE_CONSTRAINTS` unmodeled-type scan marks `ConstraintsUnknown` when
+   any type the projection cannot represent is present, so a CHECK-bearing
+   table yields honest partial collection semantics rather than a fabricated
+   complete answer. Query/scan/iteration failures propagate (R5-B contract).
+6. **Member-name provability mirrors the index model.** `Constraint.NameUnknown`
+   (`json:"-"`) marks a member whose stored name is unproven — a bare ordered-
+   state add, where the server derives the catalog name. `FindForeignKeyConstraint`
+   binds only proven names; `ForeignKeyNameSpaceUnvouched` (nil collection,
+   `ConstraintsUnknown`, or any unproven member name) withholds every
+   name-keyed answer — no fabricated presence or absence.
+7. **Ordered state (`batch_state_fk.go`)** publishes bounded transitions:
+   - `applyAddForeignKey` proves the local-column premise (like `add_index`)
+     and the referenced-side premise across the table edge — a proven-absent
+     parent or proven-missing referenced column is a provable refusal that
+     keeps the child shape; an unknown parent, withheld parent column set,
+     or unmodeled referenced parts leaves the landing unprovable and
+     unvouches the constraint set rather than publishing a maybe-unlanded
+     member. A self-reference answers against the child's own pre-transition
+     shape. A proven duplicate authored name is the 1826 no-op; an unvouched
+     name space unvouches. A landing add appends the normalized member (bare
+     adds keep `NameUnknown` — CREATE-derived bare foreign keys get the same
+     marker since the server-derived ibfk_N/fk_N name is never authored)
+     plus the implicit supporting index only when no member or primary
+     object covers the local columns leftmost. The implicit index name
+     follows the dialect's native rule: a named constraint lends its name on
+     both anchors, a bare MySQL add takes the first local column (a taken
+     name is a server `_2`-style dedup the model does not guess — the member
+     set unvouches), and a bare TiDB add pairs the server-derived `fk_<n>`
+     constraint name with an equally derived index name, published with
+     `NameUnknown` rather than an invented numeral.
+   - `applyDropForeignKey` removes only the proven-named member — the
+     supporting index survives on every anchor; a proven-missing name is the
+     1091 no-op; an unvouched space unvouches.
+   - `foreignKeyIndexDependency` gates `drop_index`: a member that is the
+     sole covering index of a proven FK is the 1553 refusal (provable no-op);
+     unprovable dependency facts tombstone.
+   - Non-FK `add_constraint` actions (CHECK et al.) stay conservative
+     tombstones — unchanged from the pre-T11 path.
+   - The PostgreSQL `ddl.pg.table.foreign_key.cross_schema.advisory` rule
+     judges an ALTER-declared foreign key exactly like a CREATE-declared
+     one: the `referenced_schema` options fact is evaluated, never a
+     silently-applicable pass.
+   - Loaded-dependents invalidation (`referencingEntryKeys`) now sees real
+     edges once provider populates `Constraints`; the boundary stays
+     "already-loaded dependents" — a dependent resolved only after the
+     parent transition loads provider-fresh facts, which natively already
+     follow the rename, so lazy resolution is honest, not a hole.
+
+## Public contract
+
+- Finding metadata gains `on_delete`/`on_update` keys on FK-forbid findings
+  (both paths) — additive, never a removal.
+- `spec.Constraint` gains exported `OnDelete`/`OnUpdate` fields; `NameUnknown`
+  is `json:"-"` and never reaches public output.
+- New rule id appears in the catalog, example config, and evidence-gap
+  `rule_id` attribution.
+- No new CLI/SDK surface; exit/verdict/coverage vocabulary unchanged.
+
+## Boundaries (recorded, not silently governed)
+
+- Inline column `REFERENCES` stays parse-and-ignore (native: no constraint is
+  created) — existing `create_table.column.reference` evidence.
+- `MATCH` clauses stay unmodeled refer actions → bounded unsupported evidence.
+- FK referencing-key *legality* is bounded to referenced table/column
+  existence — version-dependent uniqueness requirements (non-unique referenced
+  indexes differ by version) are not a policy surface.
+- TiDB `DROP CONSTRAINT` for FKs stays a T12 CHECK-clause boundary.
+- CREATE TABLE with an FK to a proven-absent parent: the CREATE path keeps its
+  declared-shape derivation contract (premise modeling belongs to the ALTER
+  add path frozen in the contract); recorded as a same-family boundary.
+- Provider-dependent resolution is request-local and per-key cached — one
+  extra catalog read at most per referenced parent per batch.
+
+## Verification
+
+- First golden: `ALTER TABLE child ADD CONSTRAINT fk_c FOREIGN KEY (c)
+  REFERENCES parent(id);` → exactly one `ddl.table.foreign_key.forbid`
+  blocker, `reject`, full reference metadata, `complete`, zero gaps, CLI
+  exit 1 — with CREATE-parity, bare-add, composite+actions, two-FK,
+  forbid-off, add-column, and dialect controls.
+- Ordered-state: add→drop-index 1553 refusal (member survives, second drop
+  identical), add→drop-FK net effect (constraint gone, index stays),
+  missing/present/unvouched drop matrix, rename-parent invalidation on a
+  resolved dependent, composite ordered pairs.
+- Provider: grouped ordered pairs, action vocabulary, proven-empty vs error
+  propagation; T06A17 proof harness extended for the extra catalog read.
+- Golden: `T11.json`, 38 cases / 474 assertions on the four anchors.

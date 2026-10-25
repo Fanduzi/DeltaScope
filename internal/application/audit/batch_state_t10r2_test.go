@@ -6,7 +6,9 @@
 // ordered post-state those forms publish.
 // input: CREATE/ADD/ALTER index statements audited through AuditSQL with a
 // stub provider carrying versioned instance facts, observed
-// tidb_enable_clustered_index modes, and vouched column/index sets
+// tidb_enable_clustered_index modes, and vouched column/index/constraint
+// sets (the shared fixture now carries a proven-empty constraint
+// collection so the T11 dependency gate never misreads it as withheld)
 // output: statement-bound findings, evidence gaps, coverage statuses, and
 // post-state behavior proving member facts survive publication — and the
 // controls proving unknown role/member facts tombstone instead of
@@ -43,10 +45,11 @@ func t10r2CompatPolicy(t *testing.T, features ...string) string {
 // int-only set cannot express.
 func t10r2Table(name string, columns []spec.Column, indexes ...spec.Index) *spec.TableSnapshot {
 	return &spec.TableSnapshot{
-		Exists:  true,
-		Table:   &spec.Table{Name: name},
-		Columns: columns,
-		Indexes: indexes,
+		Exists:      true,
+		Table:       &spec.Table{Name: name},
+		Columns:     columns,
+		Indexes:     indexes,
+		Constraints: []spec.Constraint{},
 	}
 }
 

@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: domain policy values and a shared rule registry
-// output: deterministic registration of shipped create-table and alter-table DDL rule batches, including the column-identity destination, RENAME version, T07 advanced-column, and T10 advanced-index rules (alter-index existence, invisibility, per-feature compatibility)
+// output: deterministic registration of shipped create-table and alter-table DDL rule batches, including the column-identity destination, RENAME version, T07 advanced-column, T10 advanced-index rules (alter-index existence, invisibility, per-feature compatibility), and the T11 foreign-key existence rule plus ALTER-path selector wiring
 // pos: DDL rule assembly entrypoint for application wiring
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -98,13 +98,13 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 			return newNamingContainsRule(ruleIDConstraintUniqueKeyNameContainsRequire, "unique key constraint", rule.LevelWarning, cfg, selectUniqueConstraintNames, appliesToCreateTableOrAlterConstraintNames)
 		}},
 		{ruleID: ruleIDConstraintForeignKeyNamePrefixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
-			return newNamingPrefixRule(ruleIDConstraintForeignKeyNamePrefixRequire, "foreign key constraint", rule.LevelWarning, cfg, selectForeignKeyConstraintNames)
+			return newNamingPrefixRule(ruleIDConstraintForeignKeyNamePrefixRequire, "foreign key constraint", rule.LevelWarning, cfg, selectForeignKeyConstraintNames, appliesToCreateTableOrAlterFKConstraint)
 		}},
 		{ruleID: ruleIDConstraintForeignKeyNameSuffixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
-			return newNamingSuffixRule(ruleIDConstraintForeignKeyNameSuffixRequire, "foreign key constraint", rule.LevelWarning, cfg, selectForeignKeyConstraintNames)
+			return newNamingSuffixRule(ruleIDConstraintForeignKeyNameSuffixRequire, "foreign key constraint", rule.LevelWarning, cfg, selectForeignKeyConstraintNames, appliesToCreateTableOrAlterFKConstraint)
 		}},
 		{ruleID: ruleIDConstraintForeignKeyNameContainsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
-			return newNamingContainsRule(ruleIDConstraintForeignKeyNameContainsRequire, "foreign key constraint", rule.LevelWarning, cfg, selectForeignKeyConstraintNames)
+			return newNamingContainsRule(ruleIDConstraintForeignKeyNameContainsRequire, "foreign key constraint", rule.LevelWarning, cfg, selectForeignKeyConstraintNames, appliesToCreateTableOrAlterFKConstraint)
 		}},
 		{ruleID: ruleIDConstraintCheckNamePrefixRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newNamingPrefixRule(ruleIDConstraintCheckNamePrefixRequire, "check constraint", rule.LevelWarning, cfg, selectCheckConstraintNames, appliesToCreateTableOrAlterCheckConstraint)
@@ -673,6 +673,11 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDAlterModifyColumnNotice, construct: newAlterModifyColumnNoticeRule},
 		{ruleID: ruleIDAlterDropIndexNotice, construct: newAlterDropIndexNoticeRule},
 		{ruleID: ruleIDAlterDropForeignKeyNotice, construct: newAlterDropForeignKeyNoticeRule},
+		{ruleID: ruleIDAlterDropForeignKeyExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newAlterObjectExistenceRule(ruleIDAlterDropForeignKeyExistsRequire,
+				[]string{"drop_foreign_key"}, "foreign_key", false, rule.LevelBlocker, cfg,
+				alterObjectName, snapshotHasForeignKeyConstraint)
+		}},
 		{ruleID: ruleIDTiDBAlterTablePlacementPolicyNotice, construct: newTiDBAlterTablePlacementPolicyNoticeRule},
 	} {
 		ruleCfg, ok := cfg.Rules[factory.ruleID]

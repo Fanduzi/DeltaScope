@@ -1,6 +1,6 @@
 // Package mysqlmeta verifies metadata normalization helpers for the MySQL provider.
 // input: synthetic variable, version, DSN, collation, type, column-nullability, and index classification scenarios
-// output: stable provider helper behavior and normalized column metadata without requiring a live database
+// output: stable provider helper behavior and normalized column metadata without requiring a live database — the query stub answers the foreign-key join fragment with a default zero-row result under longest-fragment matching so existing fixtures keep their intent
 // pos: infrastructure metadata adapter test coverage
 // note: if this file changes, update this header and module README.md.
 package mysqlmeta
@@ -964,6 +964,27 @@ func registerTestDriverResults(name string, results map[string]testQueryResult) 
 			rowErr:   result.rowErr,
 		}
 	}
+	// The foreign-key loader shares the key_column_usage table with the
+	// TiDB primary-column probe, so its stub lives under the longer
+	// referential_constraints fragment (longest-fragment matching keeps
+	// the two deterministic). A fixture without it means "no foreign
+	// keys" — an explicit zero-row answer for this one query, not a
+	// silent success for arbitrary unstubbed queries.
+	if _, ok := cloned[testForeignKeyFragment]; !ok {
+		cloned[testForeignKeyFragment] = testQueryResult{
+			columns: []string{"constraint_name", "column_name", "referenced_table_schema", "referenced_table_name", "referenced_column_name", "delete_rule", "update_rule", "match_option"},
+		}
+	}
+	// The unmodeled-constraint-type probe shares table_constraints with the
+	// TiDB pk-presence count, so its stub lives under the longer
+	// constraint_type-not-in fragment. A fixture without it means "no
+	// unmodeled constraint types" — a clean zero count, not a silent pass.
+	if _, ok := cloned[testUnmodeledConstraintFragment]; !ok {
+		cloned[testUnmodeledConstraintFragment] = testQueryResult{
+			columns: []string{"count"},
+			rows:    [][]driver.Value{{int64(0)}},
+		}
+	}
 	testDriverResults.Store(name, cloned)
 }
 
@@ -981,21 +1002,42 @@ func (c testConn) Prepare(string) (driver.Stmt, error) { return nil, driver.ErrS
 func (c testConn) Close() error                        { return nil }
 func (c testConn) Begin() (driver.Tx, error)           { return nil, driver.ErrSkip }
 
+// testForeignKeyFragment is the stub key for the foreign-key catalog join —
+// longer than the shared key_column_usage fragment so longest-match wins.
+const testForeignKeyFragment = "left join information_schema.referential_constraints"
+
+// testUnmodeledConstraintFragment is the stub key for the
+// TABLE_CONSTRAINTS unmodeled-type probe — longer than the shared
+// table_constraints fragment so longest-match keeps the pk-presence count
+// and the type scan deterministic.
+const testUnmodeledConstraintFragment = "constraint_type not in"
+
 func (c testConn) QueryContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Rows, error) {
-	for fragment, result := range c.results {
-		if strings.Contains(query, fragment) {
-			if result.queryErr != nil {
-				return nil, result.queryErr
-			}
-			return &testRows{
-				columns:  append([]string(nil), result.columns...),
-				rows:     append([][]driver.Value(nil), result.rows...),
-				rowErrAt: result.rowErrAt,
-				rowErr:   result.rowErr,
-			}, nil
+	// Longest matching fragment wins: loaders sharing a catalog table (the
+	// foreign-key join and the TiDB primary-column probe both read
+	// key_column_usage) resolve deterministically instead of depending on
+	// map iteration order.
+	var result *testQueryResult
+	longest := -1
+	for fragment, candidate := range c.results {
+		if strings.Contains(query, fragment) && len(fragment) > longest {
+			matched := candidate
+			result = &matched
+			longest = len(fragment)
 		}
 	}
-	return nil, sql.ErrNoRows
+	if result == nil {
+		return nil, sql.ErrNoRows
+	}
+	if result.queryErr != nil {
+		return nil, result.queryErr
+	}
+	return &testRows{
+		columns:  append([]string(nil), result.columns...),
+		rows:     append([][]driver.Value(nil), result.rows...),
+		rowErrAt: result.rowErrAt,
+		rowErr:   result.rowErr,
+	}, nil
 }
 
 func (r *testRows) Columns() []string {
@@ -1019,4 +1061,84 @@ func (r *testRows) Next(dest []driver.Value) error {
 	copy(dest, r.rows[r.index])
 	r.index++
 	return nil
+}
+
+// An unmodeled TABLE_CONSTRAINTS type (CHECK and friends) is a member the
+// constraint projection cannot represent — the collection reports loaded
+// foreign-key members but does not vouch for completeness. A clean zero
+// count keeps the collection vouched; the probe failure itself propagates
+// because a failed catalog read is not an answerable absence.
+func TestLoadTableSnapshotUnmodeledConstraintTypeUnvouchesCollection(t *testing.T) {
+	t.Parallel()
+	baseResults := func() map[string]testQueryResult {
+		return map[string]testQueryResult{
+			"from information_schema.tables": {
+				columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
+				rows:    [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "t", nil, "Dynamic", int64(10)}},
+			},
+			"from information_schema.columns": {
+				columns: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"},
+				rows:    [][]driver.Value{{"id", "int", nil, nil, "", nil, "NO", "", ""}},
+			},
+			"from information_schema.statistics": {
+				columns: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality", "sub_part", "collation"},
+				rows:    [][]driver.Value{{"PRIMARY", int64(0), "BTREE", "id", int64(10), nil, "A"}},
+			},
+			testForeignKeyFragment: {
+				columns: []string{"constraint_name", "column_name", "referenced_table_schema", "referenced_table_name", "referenced_column_name", "delete_rule", "update_rule", "match_option"},
+				rows:    [][]driver.Value{{"fk_t", "id", "app", "p", "id", "RESTRICT", "CASCADE", nil}},
+			},
+		}
+	}
+
+	t.Run("check-bearing table unvouches the constraint set", func(t *testing.T) {
+		t.Parallel()
+		results := baseResults()
+		results[testUnmodeledConstraintFragment] = testQueryResult{
+			columns: []string{"count"},
+			rows:    [][]driver.Value{{int64(1)}},
+		}
+		db := openTestDB(t, results)
+		defer db.Close()
+		snapshot, err := NewProvider(db).LoadTableSnapshot(context.Background(), spec.DialectMySQL, "app", "t")
+		if err != nil {
+			t.Fatalf("load: %v", err)
+		}
+		if !snapshot.ConstraintsUnknown {
+			t.Fatal("unmodeled constraint type must unvouch the collection")
+		}
+		if len(snapshot.Constraints) != 1 || snapshot.Constraints[0].Name != "fk_t" {
+			t.Fatalf("loaded fk members stay real under the unvouched set: %+v", snapshot.Constraints)
+		}
+	})
+
+	t.Run("clean modeled types keep the collection vouched", func(t *testing.T) {
+		t.Parallel()
+		db := openTestDB(t, baseResults())
+		defer db.Close()
+		snapshot, err := NewProvider(db).LoadTableSnapshot(context.Background(), spec.DialectMySQL, "app", "t")
+		if err != nil {
+			t.Fatalf("load: %v", err)
+		}
+		if snapshot.ConstraintsUnknown {
+			t.Fatal("zero unmodeled types must keep the collection vouched")
+		}
+		if len(snapshot.Constraints) != 1 || snapshot.Constraints[0].OnUpdate != "cascade" {
+			t.Fatalf("fk member facts wrong: %+v", snapshot.Constraints)
+		}
+	})
+
+	t.Run("type-scan failure propagates as provider error", func(t *testing.T) {
+		t.Parallel()
+		results := baseResults()
+		results[testUnmodeledConstraintFragment] = testQueryResult{
+			columns:  []string{"count"},
+			queryErr: errors.New("catalog down"),
+		}
+		db := openTestDB(t, results)
+		defer db.Close()
+		if _, err := NewProvider(db).LoadTableSnapshot(context.Background(), spec.DialectMySQL, "app", "t"); err == nil {
+			t.Fatal("a failed constraint-type read is a provider error, not a clean absence")
+		}
+	})
 }

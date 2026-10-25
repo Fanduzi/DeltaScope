@@ -1,7 +1,7 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: create-table Statement specs with table options, constraints, and shape flags plus per-rule policy values
-// output: findings for table options and object-shape restrictions
-// pos: DDL rule implementations for create-table option governance
+// input: create-table and alter-table Statement specs with table options, constraints, alter constraint payloads, and shape flags plus per-rule policy values
+// output: findings for table options and object-shape restrictions — the foreign-key forbid fires the same finding on CREATE constraints and ALTER add_constraint declarations (issue #90 T11 parity)
+// pos: DDL rule implementations for table option and foreign-key governance
 // note: if this file changes, update this header and module README.md.
 package ddl
 
@@ -9,6 +9,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -237,6 +238,20 @@ func (r tableForeignKeyForbidRule) Evaluate(ctx context.Context, statement spec.
 	}
 
 	findings := make([]rule.Finding, 0)
+	emit := func(constraint spec.Constraint) {
+		message := fmt.Sprintf("foreign key constraint %q is forbidden", constraint.Name)
+		if constraint.Name == "" {
+			// A bare ADD FOREIGN KEY authors no constraint name — report
+			// the columns instead of quoting an empty name.
+			message = fmt.Sprintf("foreign key on columns (%s) is forbidden", strings.Join(constraint.Columns, ", "))
+		}
+		findings = append(findings, rule.Finding{
+			Level:      r.level,
+			Message:    message,
+			Suggestion: "remove the foreign key constraint or disable the policy intentionally",
+			Metadata:   foreignKeyForbidMetadata(statement.DDL.Table.Name, constraint),
+		})
+	}
 	for _, constraint := range statement.DDL.Constraints {
 		if err := ctx.Err(); err != nil {
 			return nil, err
@@ -244,30 +259,65 @@ func (r tableForeignKeyForbidRule) Evaluate(ctx context.Context, statement spec.
 		if constraint.Type != "foreign_key" {
 			continue
 		}
-		findings = append(findings, rule.Finding{
-			Level:      r.level,
-			Message:    fmt.Sprintf("foreign key constraint %q is forbidden", constraint.Name),
-			Suggestion: "remove the foreign key constraint or disable the policy intentionally",
-			Metadata: func() map[string]any {
-				m := map[string]any{
-					"table":      statement.DDL.Table.Name,
-					"constraint": constraint.Name,
-					"columns":    append([]string(nil), constraint.Columns...),
-				}
-				if constraint.ReferencedSchema != "" {
-					m["referenced_schema"] = constraint.ReferencedSchema
-				}
-				if constraint.ReferencedTable != "" {
-					m["referenced_table"] = constraint.ReferencedTable
-				}
-				if len(constraint.ReferencedColumns) > 0 {
-					m["referenced_columns"] = append([]string(nil), constraint.ReferencedColumns...)
-				}
-				return m
-			}(),
-		})
+		emit(constraint)
+	}
+	for _, alter := range statement.DDL.Alter {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		if alter.Action != "add_constraint" {
+			continue
+		}
+		switch {
+		case alter.Constraint != nil && alter.Constraint.Type == "foreign_key":
+			emit(*alter.Constraint)
+		case alter.Options["constraint_type"] == "foreign_key":
+			emit(alterForeignKeyConstraint(alter))
+		}
 	}
 	return findings, nil
+}
+
+// alterForeignKeyConstraint rebuilds the normalized constraint record the
+// PostgreSQL extractor carries in the alter options vocabulary.
+func alterForeignKeyConstraint(alter spec.Alter) spec.Constraint {
+	return spec.Constraint{
+		Type:              "foreign_key",
+		Name:              strings.TrimSpace(alter.Name),
+		Columns:           splitAlterConstraintColumns(alter.Options["columns"]),
+		ReferencedSchema:  strings.TrimSpace(alter.Options["referenced_schema"]),
+		ReferencedTable:   strings.TrimSpace(alter.Options["referenced_table"]),
+		ReferencedColumns: splitAlterConstraintColumns(alter.Options["referenced_columns"]),
+	}
+}
+
+// foreignKeyForbidMetadata projects the shared foreign-key facts into the
+// finding metadata identically for CREATE table constraints and ALTER
+// add_constraint declarations.
+func foreignKeyForbidMetadata(tableName string, constraint spec.Constraint) map[string]any {
+	m := map[string]any{
+		"table":   tableName,
+		"columns": append([]string(nil), constraint.Columns...),
+	}
+	if constraint.Name != "" {
+		m["constraint"] = constraint.Name
+	}
+	if constraint.ReferencedSchema != "" {
+		m["referenced_schema"] = constraint.ReferencedSchema
+	}
+	if constraint.ReferencedTable != "" {
+		m["referenced_table"] = constraint.ReferencedTable
+	}
+	if len(constraint.ReferencedColumns) > 0 {
+		m["referenced_columns"] = append([]string(nil), constraint.ReferencedColumns...)
+	}
+	if constraint.OnDelete != "" {
+		m["on_delete"] = constraint.OnDelete
+	}
+	if constraint.OnUpdate != "" {
+		m["on_update"] = constraint.OnUpdate
+	}
+	return m
 }
 
 // ---------------------------------------------------------------------------
@@ -298,18 +348,12 @@ func (r tableForeignKeyCrossSchemaAdvisoryRule) Evaluate(ctx context.Context, st
 	}
 
 	findings := make([]rule.Finding, 0)
-	for _, constraint := range statement.DDL.Constraints {
-		if err := ctx.Err(); err != nil {
-			return nil, err
-		}
-		if constraint.Type != "foreign_key" {
-			continue
-		}
+	emit := func(constraint spec.Constraint) {
 		if statement.DDL.Table.Schema == "" || constraint.ReferencedSchema == "" {
-			continue
+			return
 		}
 		if statement.DDL.Table.Schema == constraint.ReferencedSchema {
-			continue
+			return
 		}
 		findings = append(findings, rule.Finding{
 			Level:   r.level,
@@ -324,6 +368,29 @@ func (r tableForeignKeyCrossSchemaAdvisoryRule) Evaluate(ctx context.Context, st
 				"referenced_columns": append([]string(nil), constraint.ReferencedColumns...),
 			},
 		})
+	}
+	for _, constraint := range statement.DDL.Constraints {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		if constraint.Type != "foreign_key" {
+			continue
+		}
+		emit(constraint)
+	}
+	for _, alter := range statement.DDL.Alter {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		if alter.Action != "add_constraint" {
+			continue
+		}
+		// PostgreSQL carries the constraint payload in the options
+		// vocabulary; a declared referenced schema is judged exactly like
+		// a CREATE-side one rather than silently passing.
+		if alter.Options["constraint_type"] == "foreign_key" {
+			emit(alterForeignKeyConstraint(alter))
+		}
 	}
 	return findings, nil
 }

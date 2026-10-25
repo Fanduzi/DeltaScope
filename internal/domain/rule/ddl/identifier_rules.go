@@ -1,7 +1,7 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: create-table Statement specs carrying table, column, and index names plus per-rule policy values
-// output: identifier-pattern and reserved-keyword findings for create-table object names
-// pos: DDL rule implementations for create-table identifier governance
+// input: create-table and alter-table Statement specs carrying table, column, index, and constraint names plus per-rule policy values
+// output: identifier-pattern and reserved-keyword findings for declared object names — foreign-key subjects include ALTER add_constraint authored names on both dialect paths, a bare ADD FOREIGN KEY producing none
+// pos: DDL rule implementations for identifier governance
 // note: if this file changes, update this header and module README.md.
 package ddl
 
@@ -383,7 +383,26 @@ func selectUniqueConstraintNames(statement spec.Statement) []identifierSubject {
 }
 
 func selectForeignKeyConstraintNames(statement spec.Statement) []identifierSubject {
-	return selectConstraintNamesByType(statement, "foreign_key", "constraint.foreign_key")
+	subjects := selectConstraintNamesByType(statement, "foreign_key", "constraint.foreign_key")
+	if !appliesToAlterTable(statement) {
+		return subjects
+	}
+	for _, alter := range matchingAlterActions(statement, "add_constraint") {
+		switch {
+		case alter.Constraint != nil && alter.Constraint.Type == "foreign_key":
+			// MySQL/TiDB carry the declared name on the constraint payload;
+			// a bare ADD FOREIGN KEY has no authored name to judge.
+			if name := strings.TrimSpace(alter.Constraint.Name); name != "" {
+				subjects = append(subjects, identifierSubject{kind: "constraint.foreign_key", name: name})
+			}
+		case alter.Options["constraint_type"] == "foreign_key":
+			// PostgreSQL carries the constraint name on alter.Name.
+			if name := strings.TrimSpace(alter.Name); name != "" {
+				subjects = append(subjects, identifierSubject{kind: "constraint.foreign_key", name: name})
+			}
+		}
+	}
+	return subjects
 }
 
 func selectCheckConstraintNames(statement spec.Statement) []identifierSubject {

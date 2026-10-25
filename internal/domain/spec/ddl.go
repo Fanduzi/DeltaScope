@@ -2,7 +2,9 @@
 // input: DDL facts extracted from parser-specific AST adapters
 // output: parser-neutral DDL specification components for rules, including
 // the comparable literal-default identity (LiteralDefaultFacts) sources agree
-// on and the per-member index name provability marker (Index.NameUnknown)
+// on, the per-member index name provability marker (Index.NameUnknown), and
+// the foreign-key constraint refer-action facts (OnDelete/OnUpdate) plus the
+// member name provability marker (Constraint.NameUnknown)
 // pos: domain DDL specification model under the unified Statement spec
 // note: if this file changes, update this header and module README.md.
 package spec
@@ -554,10 +556,20 @@ type Constraint struct {
 	// UnmodeledReferencedParts is the same count over the referenced
 	// IndexPartSpecification list of a foreign key.
 	UnmodeledReferencedParts int `json:"unmodeled_referenced_parts,omitempty"`
+	// OnDelete/OnUpdate carry the declared referential actions as normalized
+	// lowercase tokens (restrict, cascade, set_null, no_action, set_default);
+	// an empty string means the clause was not declared.
+	OnDelete string `json:"on_delete,omitempty"`
+	OnUpdate string `json:"on_update,omitempty"`
 	// UnmodeledReferActions counts parsed reference options a foreign key
-	// carries that the normalized model does not keep: ON DELETE, ON UPDATE,
-	// and MATCH.
+	// carries that the normalized model does not keep: MATCH clauses. ON
+	// DELETE and ON UPDATE are modeled facts in OnDelete/OnUpdate.
 	UnmodeledReferActions int `json:"unmodeled_refer_actions,omitempty"`
+	// NameUnknown marks a member whose stored name is unproven — a bare
+	// foreign key added through ordered state, where the server derives a
+	// catalog name the statement itself does not author. Name-keyed
+	// lookups must never bind or disprove on the empty stored name.
+	NameUnknown bool `json:"-"`
 }
 
 // AlterColumnChange describes statement-local column-change intent.

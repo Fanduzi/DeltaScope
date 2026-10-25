@@ -30,9 +30,13 @@ the two accepted T07 baseline files (`batch_state_t07_matrix_test.go`,
 `release-dialect-hygiene-gates` 0 (dialect-isolation policy check across
 PostgreSQL/MySQL/TiDB default rules — not a release authorization),
 `decision-record-gate` 0, `pg-confidence-gates` 0 (unit gates plus the
-three Docker-backed PostgreSQL E2E suites), `three-level-doc` OK, and
+three Docker-backed PostgreSQL E2E suites), `three-level-doc` OK
+(archived stdout is the script's post-commit "no changed files" output;
+the actual static-diff check ran in-session on the changed files before
+the product commit and passed), and
 `lint` rc=1 with the pre-existing baseline findings only — identical to
-the R6 baseline modulo line-number shifts (52 findings, 0 added).
+the R6 baseline modulo line-number shifts (15 issues / 52 output lines,
+0 added vs the R6 baseline).
 
 ## Golden
 

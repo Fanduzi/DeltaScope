@@ -60,8 +60,12 @@ query-access-corpus 0 · ddl-inventory 0 · ddl-coverage-catalog 0 ·
 ddl-golden-validator 0 · parser-error-unsupported-contract 0 ·
 unsupported-diagnostics-evidence 0 · docs-example 0 ·
 release-dialect-hygiene-gates 0 · decision-record 0 ·
-pg-confidence-gates 0 · three-level-doc OK · lint rc=1 baseline-only
-(52 findings, identical to R6 modulo line numbers, 0 added).
+pg-confidence-gates 0 · three-level-doc OK (archived stdout is the
+script's post-commit "no changed files" output; the actual static-diff
+check ran in-session on the changed files before commit and passed) ·
+lint rc=1 baseline-only
+(15 issues / 52 output lines, identical to the R6 baseline modulo line
+numbers, 0 added).
 
 Golden: T09 125/125 / 3442 assertions, T10 126/126 / 3175 — frozen
 oracle denominators, `head_sha=fd849db5`, CLI sha256 `e22931ada0…`

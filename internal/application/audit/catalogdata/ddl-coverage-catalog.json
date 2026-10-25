@@ -61,7 +61,8 @@
       "form": "ALTER TABLE ADD FOREIGN KEY",
       "classification": "finding_covered",
       "finding_rule_ids": [
-        "ddl.alter.add_constraint.notice"
+        "ddl.alter.add_constraint.notice",
+        "ddl.table.foreign_key.forbid"
       ],
       "notes": ""
     },
@@ -781,6 +782,7 @@
       "form": "ALTER TABLE ADD CONSTRAINT FOREIGN KEY",
       "classification": "finding_covered",
       "finding_rule_ids": [
+        "ddl.table.foreign_key.forbid",
         "ddl.table.foreign_key.forbid"
       ],
       "notes": ""
@@ -3676,7 +3678,8 @@
       "form": "ALTER TABLE ADD FOREIGN KEY",
       "classification": "finding_covered",
       "finding_rule_ids": [
-        "ddl.alter.add_constraint.notice"
+        "ddl.alter.add_constraint.notice",
+        "ddl.table.foreign_key.forbid"
       ],
       "notes": ""
     },

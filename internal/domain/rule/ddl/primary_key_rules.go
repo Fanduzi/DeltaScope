@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: create-table Statement specs and per-rule policy values
-// output: primary-key findings for missing or oversized primary-key definitions
+// input: create-table and alter-table Statement specs and per-rule policy values
+// output: primary-key findings for missing or oversized primary-key definitions — the column-count rule measures the produced primary key on both paths (CREATE declaration and ALTER add_constraint via the produced index/constraint columns or PostgreSQL options)
 // pos: DDL rule implementations for primary-key requirements and shape
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -96,7 +96,25 @@ func (r primaryKeyColumnCountRule) Evaluate(ctx context.Context, statement spec.
 		actual = len(statement.DDL.PrimaryKey.Columns)
 	} else {
 		for _, alter := range statement.DDL.Alter {
-			if alter.Action == "add_constraint" && alter.Options["constraint_type"] == "primary_key" {
+			if alter.Action != "add_constraint" {
+				continue
+			}
+			// MySQL/TiDB: the produced primary index definition carries the
+			// declared key columns; the constraint payload is the fallback.
+			// PostgreSQL: the options vocabulary carries them.
+			if index, ok := alterIndexDefinition(alter); ok && index.Kind == spec.IndexKindPrimary {
+				if len(index.Columns) > 0 {
+					actual = len(index.Columns)
+					continue
+				}
+			}
+			if alter.Constraint != nil && alter.Constraint.Type == "primary_key" {
+				if len(alter.Constraint.Columns) > 0 {
+					actual = len(alter.Constraint.Columns)
+				}
+				continue
+			}
+			if alter.Options["constraint_type"] == "primary_key" {
 				if cols := splitAlterConstraintColumns(alter.Options["columns"]); len(cols) > 0 {
 					actual = len(cols)
 				}

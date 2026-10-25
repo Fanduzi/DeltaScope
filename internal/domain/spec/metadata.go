@@ -1,6 +1,6 @@
 // Package spec defines normalized statement specifications for rule evaluation.
 // input: optional metadata-aware audit facts such as explicit known-bit instance variables, target-table snapshots, and the canonical version identity
-// output: parser-neutral metadata structures (including per-collection unknown markers and the index name-space marker on table snapshots) and lookup helpers for future rules — FindProvenIndex/HasUnprovenIndexName/IndexNameSpaceUnvouched bind name-keyed consumers to per-member proven names
+// output: parser-neutral metadata structures (including per-collection unknown markers and the index/foreign-key name-space markers on table snapshots) and lookup helpers for future rules — FindProvenIndex/HasUnprovenIndexName/IndexNameSpaceUnvouched and FindForeignKeyConstraint/HasUnprovenForeignKeyName/ForeignKeyNameSpaceUnvouched bind name-keyed consumers to per-member proven names
 // pos: domain metadata model shared by offline and metadata-aware audit paths
 // note: if this file changes, update this header and module README.md.
 package spec
@@ -213,6 +213,50 @@ func (s TableSnapshot) HasUnprovenIndexName() bool {
 // so they cannot drift on what "the member space is vouched" means.
 func (s TableSnapshot) IndexNameSpaceUnvouched() bool {
 	return s.IndexesUnknown || s.IndexNamesUnknown || s.HasUnprovenIndexName()
+}
+
+// FindForeignKeyConstraint binds a name-keyed foreign-key lookup to a
+// proven member of the loaded constraint set (case-insensitive like the
+// catalog's foreign-key name space). It returns nil when no member carries
+// the name; callers must treat nil with Constraints==nil/ConstraintsUnknown
+// as "unknown", not absence.
+func (s TableSnapshot) FindForeignKeyConstraint(name string) *Constraint {
+	if strings.TrimSpace(name) == "" {
+		return nil
+	}
+	for i := range s.Constraints {
+		if s.Constraints[i].Type != "foreign_key" {
+			continue
+		}
+		if s.Constraints[i].NameUnknown {
+			continue
+		}
+		if strings.EqualFold(s.Constraints[i].Name, name) {
+			return &s.Constraints[i]
+		}
+	}
+	return nil
+}
+
+// HasUnprovenForeignKeyName reports whether any foreign-key member's stored
+// name is unproven — the granular form of an unvouched constraint name
+// space used by name-keyed transitions to tell a provable target from a
+// member that may hide the real stored name.
+func (s TableSnapshot) HasUnprovenForeignKeyName() bool {
+	for i := range s.Constraints {
+		if s.Constraints[i].Type == "foreign_key" && s.Constraints[i].NameUnknown {
+			return true
+		}
+	}
+	return false
+}
+
+// ForeignKeyNameSpaceUnvouched reports whether the foreign-key member name
+// space cannot vouch every stored name — the collection unread or
+// unvouched, or one member's stored name unproven. Name-keyed consumers
+// share this check so "not found" can never read as confirmed absence.
+func (s TableSnapshot) ForeignKeyNameSpaceUnvouched() bool {
+	return s.Constraints == nil || s.ConstraintsUnknown || s.HasUnprovenForeignKeyName()
 }
 
 // HasPrimaryKey reports whether the snapshot currently has a primary key.

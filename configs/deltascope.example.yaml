@@ -727,6 +727,11 @@ rules:
     level: notice
     params:
 
+  ddl.alter.drop_foreign_key.exists.require:
+    enabled: true
+    level: blocker
+    params:
+
   ddl.tidb.alter_table.placement_policy.notice:
     enabled: true
     level: notice

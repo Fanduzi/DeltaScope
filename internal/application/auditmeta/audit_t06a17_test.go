@@ -92,6 +92,15 @@ func (c t06a17Conn) QueryContext(_ context.Context, query string, _ []driver.Nam
 		return &t06a17Rows{
 			cols: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality", "sub_part", "collation"},
 		}, nil
+	case strings.Contains(query, "constraint_type not in"):
+		return &t06a17Rows{
+			cols: []string{"count"},
+			rows: [][]driver.Value{{int64(0)}},
+		}, nil
+	case strings.Contains(query, "information_schema.referential_constraints"):
+		return &t06a17Rows{
+			cols: []string{"constraint_name", "column_name", "referenced_table_schema", "referenced_table_name", "referenced_column_name", "delete_rule", "update_rule", "match_option"},
+		}, nil
 	case strings.Contains(query, "information_schema.tables"):
 		return &t06a17Rows{
 			cols: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},

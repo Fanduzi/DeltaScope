@@ -138,6 +138,15 @@ func (c t06a4Conn) answer(query string) t06a4Result {
 			cols: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality", "sub_part", "collation"},
 			rows: [][]driver.Value{{"PRIMARY", int64(0), "BTREE", "id", nil, nil, "A"}},
 		}
+	case strings.Contains(query, "constraint_type not in"):
+		return t06a4Result{
+			cols: []string{"count"},
+			rows: [][]driver.Value{{int64(0)}},
+		}
+	case strings.Contains(query, "information_schema.referential_constraints"):
+		return t06a4Result{
+			cols: []string{"constraint_name", "column_name", "referenced_table_schema", "referenced_table_name", "referenced_column_name", "delete_rule", "update_rule", "match_option"},
+		}
 	case strings.Contains(query, "information_schema.tables"):
 		return t06a4Result{
 			cols: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},

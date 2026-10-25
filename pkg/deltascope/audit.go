@@ -535,6 +535,7 @@ func cloneConstraints(in []spec.Constraint) []spec.Constraint {
 	for i := range in {
 		out[i] = in[i]
 		out[i].Columns = append([]string(nil), in[i].Columns...)
+		out[i].ReferencedColumns = append([]string(nil), in[i].ReferencedColumns...)
 	}
 	return out
 }

@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: metadata-enriched DDL Statement specs plus per-rule policy values, where enriched snapshots may be unknown, known-absent, complete, or complete-present with incomplete structural collections
-// output: existence and snapshot-backed findings for create-table, alter-table, and standalone create-index operations, plus evidence gaps (unknown_table_state / table_not_found) on the whitelisted existence rules when the ordered schema state cannot prove a premise — a decided `primary` binding (member-owned, PK-bound, or freed) owes no primary_key gap since unproven PK-side facts were never consulted
+// output: existence and snapshot-backed findings for create-table, alter-table, and standalone create-index operations, plus evidence gaps (unknown_table_state / table_not_found) on the whitelisted existence rules when the ordered schema state cannot prove a premise — a decided `primary` binding (member-owned, PK-bound, or freed) owes no primary_key gap since unproven PK-side facts were never consulted, and the foreign-key member rule binds only proven constraint names under a vouched name space while owing target_table.constraints
 // pos: DDL rule implementations that depend on optional metadata-aware or batch-derived facts
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -181,6 +181,15 @@ func (r alterObjectExistenceRule) Evaluate(ctx context.Context, statement spec.S
 			// name — answers even when a sibling's name is unproven.
 			if !snapshotHasIndex(statement, snapshot, name) &&
 				(snapshot.IndexesUnknown || snapshot.HasUnprovenIndexName()) {
+				continue
+			}
+		}
+		if r.objectLabel == "foreign_key" {
+			// Same per-target premise on the constraint collection: an
+			// unprovided, unvouched, or member-name-unproven constraint
+			// space withholds every name-keyed absence answer.
+			if !snapshotHasForeignKeyConstraint(statement, snapshot, name) &&
+				snapshot.ForeignKeyNameSpaceUnvouched() {
 				continue
 			}
 		}
@@ -637,6 +646,12 @@ func snapshotHasColumn(_ spec.Statement, snapshot *spec.TableSnapshot, name stri
 	return snapshot.HasColumn(name)
 }
 
+// snapshotHasForeignKeyConstraint binds a name-keyed foreign-key lookup to a
+// proven member of the loaded constraint set.
+func snapshotHasForeignKeyConstraint(_ spec.Statement, snapshot *spec.TableSnapshot, name string) bool {
+	return snapshot.FindForeignKeyConstraint(name) != nil
+}
+
 func snapshotHasIndex(_ spec.Statement, snapshot *spec.TableSnapshot, name string) bool {
 	// Only a member whose stored name is provable may bind a name-keyed
 	// lookup — under an unvouched name space a retained member's projected
@@ -659,10 +674,14 @@ func snapshotHasIndex(_ spec.Statement, snapshot *spec.TableSnapshot, name strin
 // memberCollectionFact returns the required_facts name of the collection a
 // member rule consults.
 func memberCollectionFact(objectLabel string) string {
-	if objectLabel == "index" {
+	switch objectLabel {
+	case "index":
 		return "target_table.indexes"
+	case "foreign_key":
+		return "target_table.constraints"
+	default:
+		return "target_table.columns"
 	}
-	return "target_table.columns"
 }
 
 // memberCollectionUnknown mirrors the Evaluate skip premise for each
@@ -673,10 +692,14 @@ func memberCollectionFact(objectLabel string) string {
 // flag alone does not suppress proven per-member bindings (a loaded empty
 // Indexes list stays an authoritative answer).
 func memberCollectionUnknown(snapshot *spec.TableSnapshot, objectLabel string) bool {
-	if objectLabel == "index" {
+	switch objectLabel {
+	case "index":
 		return snapshot.IndexesUnknown || snapshot.HasUnprovenIndexName()
+	case "foreign_key":
+		return snapshot.ForeignKeyNameSpaceUnvouched()
+	default:
+		return snapshot.Columns == nil
 	}
-	return snapshot.Columns == nil
 }
 
 // memberExistenceGaps is the shared evidence-gap projection for rules that

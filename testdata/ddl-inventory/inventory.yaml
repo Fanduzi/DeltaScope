@@ -340,11 +340,11 @@ rows:
     sql_shape: "CREATE TABLE tf (id INT, pid INT, CONSTRAINT fk FOREIGN KEY (pid) REFERENCES tp(id))"
     prerequisites: "InnoDB for FK; CHECK enforcement needs 8.0.16+"
     status: semantically_checked
-    status_evidence: "2026-09-22 CLI probe: ddl.table.foreign_key.forbid fires on CREATE; CHECK parses but no constraint-policy check fires; table-level UNIQUE/PRIMARY KEY ... GLOBAL now records create_table.index.global evidence; 2026-09-24 T03 rework (#82): FK local/referenced key parts beyond plain columns (expression, explicit prefix incl. zero length, DESC) and ON DELETE/UPDATE/MATCH actions now record create_table.constraint.foreign_key.parts evidence — the referenced target and columns are also normalized into the constraint"
+    status_evidence: "2026-09-22 CLI probe: ddl.table.foreign_key.forbid fires on CREATE; CHECK parses but no constraint-policy check fires; table-level UNIQUE/PRIMARY KEY ... GLOBAL now records create_table.index.global evidence; 2026-09-24 T03 rework (#82): FK local/referenced key parts beyond plain columns (expression, explicit prefix incl. zero length, DESC) and ON DELETE/UPDATE/MATCH actions now record create_table.constraint.foreign_key.parts evidence — the referenced target and columns are also normalized into the constraint. 2026-10-25 T11 (#90): CREATE/ALTER FK parity delivered — the same forbid finding with identical constraint/reference/action metadata fires on both paths; ON DELETE/UPDATE are modeled spec facts (MATCH stays unmodeled evidence)"
     targets: "constraint identity, referenced parent, referential actions, CHECK enforcement state by version"
     acceptance:
       dimensions: "CREATE vs ALTER FK parity (T11), CHECK version semantics (T12), UNIQUE consistency"
-      refs: ["file:testdata/sql-corpus/mysql/ddl/findings", "missing: CREATE-vs-ALTER parity fixtures"]
+      refs: ["file:testdata/sql-corpus/mysql/ddl/findings", "file:testdata/ddl-golden/T11.json"]
     owner: T11
 
   - id: mysql.create-table-partitioning
@@ -564,12 +564,12 @@ rows:
     subactions: ["ADD PRIMARY KEY", "ADD CONSTRAINT ... PRIMARY KEY"]
     sql_shape: "ALTER TABLE t ADD PRIMARY KEY (id)"
     prerequisites: "column legality for PK"
-    status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: only ddl.alter.add_constraint.notice fires; no PK-specific policy on ALTER path; ADD PRIMARY KEY ... GLOBAL records alter_table.add_constraint.index.global evidence (add_constraint keeps PK actions; bare ADD UNIQUE KEY ... GLOBAL records alter_table.add_index.index.global). 2026-09-25 T03 follow-up (#82): parenthesized ALTER TABLE t ADD (...) now expands NewConstraints into the same normalized alters as standalone clauses - previously every constraint in the list (UNIQUE/PRIMARY/FK/CHECK incl. GLOBAL) was silently dropped and could pass complete; synthetic constraint actions derive from constraint type only (parent clause text such as a column COMMENT can no longer flip add_index to add_constraint)"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: only ddl.alter.add_constraint.notice fires; no PK-specific policy on ALTER path; ADD PRIMARY KEY ... GLOBAL records alter_table.add_constraint.index.global evidence (add_constraint keeps PK actions; bare ADD UNIQUE KEY ... GLOBAL records alter_table.add_index.index.global). 2026-09-25 T03 follow-up (#82): parenthesized ALTER TABLE t ADD (...) now expands NewConstraints into the same normalized alters as standalone clauses - previously every constraint in the list (UNIQUE/PRIMARY/FK/CHECK incl. GLOBAL) was silently dropped and could pass complete; synthetic constraint actions derive from constraint type only (parent clause text such as a column COMMENT can no longer flip add_index to add_constraint). 2026-10-25 T11 (#90): ALTER ADD PRIMARY KEY now answers ddl.table.primary_key.columns.max_count through the produced primary index/constraint columns, matching the CREATE oracle"
     targets: "table, PK columns, clustered-index implications"
     acceptance:
       dimensions: "CREATE-vs-ALTER PK governance parity"
-      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go", "missing: PK parity fixtures"]
+      refs: ["file:testdata/ddl-golden/T11.json"]
     owner: T11
 
   - id: mysql.alter-table.drop-primary-key
@@ -581,11 +581,11 @@ rows:
     sql_shape: "ALTER TABLE t DROP PRIMARY KEY"
     prerequisites: "none"
     status: semantically_checked
-    status_evidence: "2026-09-22 CLI probe: ddl.alter.drop_primary_key.forbid fires"
+    status_evidence: "2026-09-22 CLI probe: ddl.alter.drop_primary_key.forbid fires. 2026-10-25 T11 (#90): the drop-PK ordered path now coexists with provider-loaded FK dependents — child tables referencing the touched parent are invalidated alongside the transition"
     targets: "table, PK removal risk"
     acceptance:
       dimensions: "PK-drop policy, interaction with auto_increment/FK dependents"
-      refs: ["file:testdata/sql-corpus/mysql/ddl/findings"]
+      refs: ["file:testdata/sql-corpus/mysql/ddl/findings", "file:testdata/ddl-golden/T11.json"]
     owner: T11
 
   - id: mysql.alter-table.add-foreign-key
@@ -596,12 +596,12 @@ rows:
     subactions: ["ADD CONSTRAINT fk FOREIGN KEY ... REFERENCES ... ON DELETE/UPDATE", "ADD FOREIGN KEY"]
     sql_shape: "ALTER TABLE t ADD CONSTRAINT fk FOREIGN KEY (c) REFERENCES p (id)"
     prerequisites: "parent identity and key legality"
-    status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: only ddl.alter.add_constraint.notice; CREATE-path ddl.table.foreign_key.forbid has no ALTER-path parity (spec calls this a governance gap). 2026-09-24 T03 rework (#82): FK local/referenced key parts beyond plain columns and ON DELETE/UPDATE/MATCH actions now record alter_table.add_constraint.constraint.foreign_key.parts evidence"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: only ddl.alter.add_constraint.notice; CREATE-path ddl.table.foreign_key.forbid has no ALTER-path parity (spec calls this a governance gap). 2026-09-24 T03 rework (#82): FK local/referenced key parts beyond plain columns and ON DELETE/UPDATE/MATCH actions now record alter_table.add_constraint.constraint.foreign_key.parts evidence. 2026-10-25 T11 (#90): ddl.table.foreign_key.forbid and ddl.constraint.foreign_key.name.* now fire on ALTER add_constraint through alter.Constraint with the same finding/metadata shape as CREATE; ON DELETE/UPDATE modeled; ordered state publishes the member plus implicit supporting index under local and referenced-side premises"
     targets: "table, constraint name, referencing/parent columns, referential actions"
     acceptance:
       dimensions: "CREATE/ALTER FK parity (exactly the spec's parity oracle)"
-      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go", "missing: FK parity oracle"]
+      refs: ["file:testdata/ddl-golden/T11.json"]
     owner: T11
 
   - id: mysql.alter-table.drop-foreign-key
@@ -612,12 +612,12 @@ rows:
     subactions: ["DROP FOREIGN KEY name"]
     sql_shape: "ALTER TABLE t DROP FOREIGN KEY fk"
     prerequisites: "none"
-    status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: only ddl.alter.drop_foreign_key.notice fires"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: only ddl.alter.drop_foreign_key.notice fires. 2026-10-25 T11 (#90): new ddl.alter.drop_foreign_key.exists.require emits a proven-missing blocker and a target_table.constraints evidence gap when the loaded constraint set cannot answer the name; ordered state removes only the proven member and keeps the supporting index (native fact on all four anchors)"
     targets: "table, constraint identity, referential-protection removal"
     acceptance:
       dimensions: "drop-constraint risk policy"
-      refs: ["missing: owner adds drop-FK policy fixtures"]
+      refs: ["file:testdata/ddl-golden/T11.json"]
     owner: T11
 
   - id: mysql.alter-table.check-constraints
@@ -1533,12 +1533,12 @@ rows:
     subactions: ["ADD/DROP FOREIGN KEY", "ADD/DROP CHECK"]
     sql_shape: "ALTER TABLE t ADD CONSTRAINT fk FOREIGN KEY (c) REFERENCES p (id)"
     prerequisites: "TiDB FK enforcement exists (6.6+) unlike older compat"
-    status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: only add_constraint.notice on FK and CHECK adds. 2026-09-24 T03 rework (#82): DROP CHECK has no rule consumer and now carries bounded unsupported evidence (alter_table.drop_check) with coverage=incomplete"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: only add_constraint.notice on FK and CHECK adds. 2026-09-24 T03 rework (#82): DROP CHECK has no rule consumer and now carries bounded unsupported evidence (alter_table.drop_check) with coverage=incomplete. 2026-10-25 T11 (#90): the FK half is delivered — forbid/naming/exists rules fire on TiDB ALTER paths and ordered state publishes FK facts under tidb_enable_foreign_key=ON anchors; the CHECK half stays a T12 boundary (bounded evidence, not silent pass)"
     targets: "constraint identity, TiDB enforcement facts"
     acceptance:
       dimensions: "FK/CHECK parity under TiDB enforcement semantics"
-      refs: ["missing: owner adds fixtures"]
+      refs: ["file:testdata/ddl-golden/T11.json"]
     owner: T11
 
   - id: tidb.alter-table.partition-ops

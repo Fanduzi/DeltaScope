@@ -25,3 +25,4 @@ CREATE TABLE wide_table (
   KEY idx_wide (a, b)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 ROW_FORMAT=COMPACT;
 CREATE INDEX idx_ci_missing ON ci_table (Missing_Col);
+ALTER TABLE fk_table DROP FOREIGN KEY missing_fk;

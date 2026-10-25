@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: normalized Statement specs emitted by application extraction, including alter-table and standalone rename payloads
-// output: reusable DDL rule predicates and rule identifier constants, including the CHANGE and RENAME destination-name, RENAME COLUMN version, and T07 advanced-column identifiers, plus shared alter-action and rename matching helpers, the indexPlainComparable plain-key premise shared by the pair-comparison rules, and the memberComparisonGap/declaredComparisonGap attribution for applicable pair comparisons a non-plain member leaves unverifiable (declared-vs-existing on create_index, declaration-vs-declaration inside create_table — R6: a kind-withheld maybe-PK candidate also unverifies the pairing and owes target_table.indexes), and the T10 alter_index/invisibility/advanced-index-compatibility rule identifiers — left-prefix pairing treats any member the key-part list counts beyond the named columns (expression-bearing or unmodeled alike) as a truncated projection, so a declared prefix of the named columns is pairable even at equal length
+// output: reusable DDL rule predicates and rule identifier constants, including the CHANGE and RENAME destination-name, RENAME COLUMN version, and T07 advanced-column identifiers, plus shared alter-action and rename matching helpers, the indexPlainComparable plain-key premise shared by the pair-comparison rules, and the memberComparisonGap/declaredComparisonGap attribution for applicable pair comparisons a non-plain member leaves unverifiable (declared-vs-existing on create_index, declaration-vs-declaration inside create_table — R6: a kind-withheld maybe-PK candidate also unverifies the pairing and owes target_table.indexes), and the T10 alter_index/invisibility/advanced-index-compatibility rule identifiers — left-prefix pairing treats any member the key-part list counts beyond the named columns (expression-bearing or unmodeled alike) as a truncated projection, so a declared prefix of the named columns is pairable even at equal length — plus the T11 dual-path constraint applicability helpers (alter.Constraint on MySQL/TiDB beside the PostgreSQL options vocabulary, the produced index definition for primary keys, and the drop_foreign_key existence rule identifier)
 // pos: DDL rule common helpers shared across concrete rules and parser-neutral rename semantics
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -152,6 +152,7 @@ const (
 	ruleIDIndexInvisibleForbid                               = "ddl.index.invisible.forbid"
 	ruleIDIndexAdvancedCompatibilityRequire                  = "ddl.index.advanced.compatibility.require"
 	ruleIDAlterDropPrimaryKeyExistsRequire                   = "ddl.alter.drop_primary_key.exists.require"
+	ruleIDAlterDropForeignKeyExistsRequire                   = "ddl.alter.drop_foreign_key.exists.require"
 	ruleIDAlterModifyColumnCompatibilityRequire              = "ddl.alter.modify_column.compatibility.require"
 	ruleIDAlterChangeColumnCompatibilityRequire              = "ddl.alter.change_column.compatibility.require"
 	ruleIDAlterTableOptionCompatibilityRequire               = "ddl.alter.table_option.compatibility.require"
@@ -798,7 +799,15 @@ func appliesToCreateTableOrAlterFKConstraint(statement spec.Statement) bool {
 		return false
 	}
 	for _, alter := range statement.DDL.Alter {
-		if alter.Action == "add_constraint" && alter.Options["constraint_type"] == "foreign_key" {
+		if alter.Action != "add_constraint" {
+			continue
+		}
+		// MySQL/TiDB carry the constraint payload on alter.Constraint;
+		// PostgreSQL carries it in the options vocabulary.
+		if alter.Constraint != nil && alter.Constraint.Type == "foreign_key" {
+			return true
+		}
+		if alter.Options["constraint_type"] == "foreign_key" {
 			return true
 		}
 	}
@@ -825,7 +834,16 @@ func appliesToAlterAddConstraintPrimaryKey(statement spec.Statement) bool {
 		return false
 	}
 	for _, alter := range statement.DDL.Alter {
-		if alter.Action == "add_constraint" && alter.Options["constraint_type"] == "primary_key" {
+		if alter.Action != "add_constraint" {
+			continue
+		}
+		if alter.Options["constraint_type"] == "primary_key" {
+			return true
+		}
+		if index, ok := alterIndexDefinition(alter); ok && index.Kind == spec.IndexKindPrimary {
+			return true
+		}
+		if alter.Constraint != nil && alter.Constraint.Type == "primary_key" {
 			return true
 		}
 	}

@@ -18,7 +18,7 @@ Two provenance layers, honestly labeled:
   | `TestT10R6DropPKMemberBoundOwesNoPrimaryKeyGap` | (B) member-owned `primary` owed an unrelated `target_table.primary_key` gap |
   | `TestT10R6DroppedPKUnrelatedNameKeepsAbsenceDecided` | (review finding) `primaryNameMayOwnTarget` re-opened a proven absence on an unrelated ambiguous name-keyed drop |
   | `TestT10R6DropPKFreedPrimaryFiresUnderConstraintsUnknown` | (review finding) the `PrimaryKeyUnknown`/`ConstraintsUnknown` flag gate suppressed the freed-`primary` 1091 finding before binding |
-  | `TestT10R6TiDBFoldedClusteredRowKeepsUnproven` | (C) a folded same-name `NO` row overwrote a `NULL` sibling, fabricating a proven-NO clustered answer; run covers both row orders |
+  | `TestT10R6TiDBFoldedClusteredRowKeepsUnproven` | (C) a folded same-name `NO` row overwrote a `NULL` sibling, fabricating a proven-NO clustered answer; the replay failed on the first of the two row orders, and the fixed green run covers both orders |
 
   `TestT10R6DropPKObjectUnderUnvouchedMembers` and
   `TestT10R6TiDBFoldedClusteredAllNOProvesNonclustered` ran as controls

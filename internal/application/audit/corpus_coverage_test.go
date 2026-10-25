@@ -1,6 +1,6 @@
 // Package audit verifies SQL corpus coverage for default policy rules.
 // input: checked-in SQL corpus expectations and default policy rule identifiers
-// output: dialect coverage guarantees for supported and non-deferred default rules, with RENAME COLUMN version applicability limited to MySQL and the two destination-name rules limited to the MySQL family
+// output: dialect coverage guarantees for supported and non-deferred default rules, with RENAME COLUMN version applicability limited to MySQL and the two destination-name rules plus the drop-foreign-key existence rule limited to the MySQL family
 // pos: application audit corpus inventory and coverage test seam
 // note: if this file changes, update this header and module README.md.
 package audit
@@ -230,6 +230,7 @@ func isMySQLFamilyOnlyRule(ruleID string) bool {
 		"ddl.alter.modify_column.notice",
 		"ddl.alter.drop_index.notice",
 		"ddl.alter.drop_foreign_key.notice",
+		"ddl.alter.drop_foreign_key.exists.require",
 		// The advanced-column assessment only applies to MySQL/TiDB
 		// statements; PostgreSQL never binds these facts.
 		"ddl.alter.column.dependency.require",

@@ -1,22 +1,22 @@
 // Package audit derives the bounded index-lifecycle post-state.
 // input: single-action ALTER index transitions (add_index, index-producing
-// add_constraint, drop_index, rename_index, drop_primary_key, alter_index —
-// `primary` resolves member-first then dialect-aware: a TiDB member may
-// literally own the name, else MySQL primary key / TiDB real index object
-// vs PKIsHandle row-id promotion) plus standalone DROP INDEX
-// output: one updated batch entry per provable transition — appended index,
-// removed index, renamed index, cleared primary key, or visibility-flipped
-// member — or the shared tombstone when the premise cannot be proven; the
-// primary branch proves its member premise before publishing and reconciles
-// member nullability, clearing only a proven SQL-NULL default; a handle-table
-// drop keeps the entry (8200) and an unproven answer invalidates; name-keyed
-// members bind proven stored names only, member-adds under unproven name
-// spaces unvouch the member set (hidden 1061), and every name-keyed entry
-// resolves spec.ResolveIndexNameBinding before member gates — a renamed PK
-// object claims only its actual stored name, a freed `primary` never
-// fabricates PK presence, a proven-absent PK ignores the dropped object's
-// stale storage unknowns, and ambiguous bindings unvouch only the moved side
-// pos: T09 index state chain plus the T10 visibility transition
+// add_constraint, drop_index, rename_index, drop_primary_key, alter_index)
+// plus standalone DROP INDEX — `primary` resolves member-first then
+// dialect-aware (TiDB member may own the name, else MySQL PK / TiDB real
+// index object vs PKIsHandle row-id promotion)
+// output: one updated batch entry per provable transition — appended,
+// removed, renamed, cleared-PK, or visibility-flipped member — or the
+// shared tombstone when the premise cannot be proven; the primary branch
+// proves its member premise and reconciles nullability, clearing only a
+// proven SQL-NULL default; a handle-table drop keeps the entry (8200);
+// name-keyed members bind proven stored names only and member-adds under
+// unproven name spaces unvouch the set (1061); every name-keyed entry
+// resolves spec.ResolveIndexNameBinding first — a renamed PK claims only
+// its stored name, a freed `primary` never fabricates PK presence, a
+// proven-absent PK ignores stale unknowns, ambiguous bindings unvouch
+// only the moved side, and a proven-FK sole covering index refuses
+// drop_index (1553 no-op) while unprovable dependency facts tombstone
+// pos: T09 index chain + T10 visibility + T11 foreign-key dependency gate
 // note: if this file changes, update this header and module README.md.
 package audit
 
@@ -113,6 +113,17 @@ func (s *batchState) withClonedShape(key batchTableKey, mutate func(*spec.TableS
 func (s *batchState) markIndexesUnknown(key batchTableKey) {
 	s.withClonedShape(key, func(shape *spec.TableSnapshot) {
 		shape.IndexesUnknown = true
+	})
+}
+
+// markConstraintsUnknown unvouches the constraint member collection while
+// keeping the recorded members attached — the same withheld-membership
+// shape markIndexesUnknown leaves: the statement may have mutated a member
+// the projection cannot resolve, so the collection can no longer vouch for
+// itself.
+func (s *batchState) markConstraintsUnknown(key batchTableKey) {
+	s.withClonedShape(key, func(shape *spec.TableSnapshot) {
+		shape.ConstraintsUnknown = true
 	})
 }
 
@@ -600,6 +611,18 @@ func (s *batchState) applyDropIndex(statement spec.Statement, alter *spec.Alter,
 			return
 		}
 		s.invalidateKey(key)
+		return
+	}
+	// A member still needed as the sole covering index of a proven foreign
+	// key refuses the drop natively (1553) — a provable no-op. When the
+	// constraint space or member shape cannot answer the dependency, the
+	// outcome is unprovable and the entry tombstones.
+	needed, provable := foreignKeyIndexDependency(entry.shape, indexPos)
+	if !provable {
+		s.invalidateKey(key)
+		return
+	}
+	if needed {
 		return
 	}
 	s.dropIndexMemberAt(key, entry, indexPos)

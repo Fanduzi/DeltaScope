@@ -1,6 +1,6 @@
 // Package tidbparser extracts parser-neutral statements from TiDB AST nodes.
 // input: TiDB parser statement nodes and parser-neutral dialect metadata
-// output: extractor-backed parsed statements for the application layer, including MutationTargets and mutation-target-only DML tables, normalized ALTER index/constraint actions, multi-target DDL Targets for DROP/RENAME/ALTER-rename, temporary-table scope facts, typed and unextracted column-option facts, primary-key metadata, inline PRIMARY KEY presence on column-change facts, parser-decoded COMMENT string content (no SQL quote wrapping), sentinel-faithful declared type parameters (DECIMAL/FLOAT/DOUBLE scale, byte-exact ENUM/SET members) on the five declared-parameter types, structured generated-column and expression-default facts via the shared expression-facts visitor, the comparable literal-default identity decoded from typed AST values, if_exists/if_not_exists option markers for conditional-existence derivation, and the T10 index facts — the alter_index action carrying the VISIBLE|INVISIBLE target on OldName, authored Visibility/VisibilityExplicit across index sites, member-level KeyParts (ordinal/kind/prefix/direction/structured expression identity, multi-valued CAST-array marks with element cast-type facts via MultiValuedCastFacts) with derived MultiValuedParts CAST-array counts, and TiDB PRIMARY KEY CLUSTERED|NONCLUSTERED on Index.PrimaryKeyType
+// output: extractor-backed parsed statements for the application layer, including MutationTargets and mutation-target-only DML tables, normalized ALTER index/constraint actions, multi-target DDL Targets for DROP/RENAME/ALTER-rename, temporary-table scope facts, typed and unextracted column-option facts, primary-key metadata, inline PRIMARY KEY presence on column-change facts, parser-decoded COMMENT string content (no SQL quote wrapping), sentinel-faithful declared type parameters (DECIMAL/FLOAT/DOUBLE scale, byte-exact ENUM/SET members) on the five declared-parameter types, structured generated-column and expression-default facts via the shared expression-facts visitor, the comparable literal-default identity decoded from typed AST values, if_exists/if_not_exists option markers for conditional-existence derivation, the T11 foreign-key refer-action facts (OnDelete/OnUpdate normalized to the shared lowercase vocabulary while MATCH stays in UnmodeledReferActions), and the T10 index facts — the alter_index action carrying the VISIBLE|INVISIBLE target on OldName, authored Visibility/VisibilityExplicit across index sites, member-level KeyParts (ordinal/kind/prefix/direction/structured expression identity, multi-valued CAST-array marks with element cast-type facts via MultiValuedCastFacts) with derived MultiValuedParts CAST-array counts, and TiDB PRIMARY KEY CLUSTERED|NONCLUSTERED on Index.PrimaryKeyType
 // pos: infrastructure extraction adapter between TiDB AST and domain spec
 // note: if this file changes, update this header and module README.md.
 package tidbparser
@@ -1990,16 +1990,35 @@ func extractConstraint(c *ast.Constraint) spec.Constraint {
 		constraint.ReferencedColumns = extractIndexColumns(c.Refer.IndexPartSpecifications)
 		constraint.UnmodeledReferencedParts = countUnmodeledIndexParts(c.Refer.IndexPartSpecifications)
 		if c.Refer.OnDelete != nil && c.Refer.OnDelete.ReferOpt != ast.ReferOptionNoOption {
-			constraint.UnmodeledReferActions++
+			constraint.OnDelete = referOptionName(c.Refer.OnDelete.ReferOpt)
 		}
 		if c.Refer.OnUpdate != nil && c.Refer.OnUpdate.ReferOpt != ast.ReferOptionNoOption {
-			constraint.UnmodeledReferActions++
+			constraint.OnUpdate = referOptionName(c.Refer.OnUpdate.ReferOpt)
 		}
 		if c.Refer.Match != ast.MatchNone {
 			constraint.UnmodeledReferActions++
 		}
 	}
 	return constraint
+}
+
+// referOptionName normalizes a parsed referential action to the shared
+// lowercase vocabulary; unrecognized options withhold as empty.
+func referOptionName(opt ast.ReferOptionType) string {
+	switch opt {
+	case ast.ReferOptionRestrict:
+		return "restrict"
+	case ast.ReferOptionCascade:
+		return "cascade"
+	case ast.ReferOptionSetNull:
+		return "set_null"
+	case ast.ReferOptionNoAction:
+		return "no_action"
+	case ast.ReferOptionSetDefault:
+		return "set_default"
+	default:
+		return ""
+	}
 }
 
 // countUnmodeledIndexParts counts key parts that carry any fact beyond a plain

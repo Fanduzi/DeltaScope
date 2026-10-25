@@ -1,6 +1,6 @@
 // Package catalog defines explanation-oriented metadata for shipped audit rules.
 // input: built-in policy defaults, shipped opt-in catalog-only rules, rule IDs, and catalog template heuristics
-// output: stable rule catalog entries for CLI discovery, search, and rule-detail rendering, including default-disabled shipped rules and metadata-aware column-identity destination, RENAME version, and T10 alter-index existence plus advanced-index compatibility rules
+// output: stable rule catalog entries for CLI discovery, search, and rule-detail rendering, including default-disabled shipped rules and metadata-aware column-identity destination, RENAME version, T10 alter-index existence plus advanced-index compatibility, and T11 drop-foreign-key existence rules
 // pos: explanation-oriented rule metadata layer above execution-only rule registration
 // note: if this file changes, update this header and module README.md.
 package catalog
@@ -717,6 +717,7 @@ var metadataAwareRuleIDs = map[string]bool{
 	"ddl.alter.change_column.target.exists.forbid":  true,
 	"ddl.alter.drop_column.exists.require":          true,
 	"ddl.alter.drop_index.exists.require":           true,
+	"ddl.alter.drop_foreign_key.exists.require":     true,
 	"ddl.alter.drop_primary_key.exists.require":     true,
 	"ddl.alter.modify_column.compatibility.require": true,
 	"ddl.alter.modify_column.exists.require":        true,

@@ -1,0 +1,1753 @@
+{
+  "task_id": "T11",
+  "issue": "https://github.com/Fanduzi/DeltaScope/issues/90",
+  "policy_profile": "all-rules-disabled",
+  "description": "Frozen unified PK/UNIQUE/FK CREATE/ALTER contract: foreign-key forbid and naming rules judge ALTER add_constraint identically to CREATE table constraints, primary-key column-count parity, modeled ON DELETE/ON UPDATE referential actions (MATCH stays unmodeled evidence), a new ddl.alter.drop_foreign_key.exists.require member rule over the constraint collection, provider-loaded foreign-key constraints, and ordered-state constraint/supporting-index semantics \u2014 independent T11 acceptance contract",
+  "anchors": {
+    "mysql57": {
+      "service": "mysql57",
+      "container": "deltascope-ddl-golden-mysql57",
+      "image": "mysql:5.7.44",
+      "product": "mysql",
+      "version_contains": "5.7.44",
+      "database": "golden",
+      "exec_client": [
+        "mysql",
+        "-uroot",
+        "--default-character-set=utf8mb4"
+      ],
+      "needs_database_create": false,
+      "exec_password_env": "T11_MYSQL_PASSWORD"
+    },
+    "mysql80": {
+      "service": "mysql80",
+      "container": "deltascope-ddl-golden-mysql80",
+      "image": "mysql:8.0.46",
+      "product": "mysql",
+      "version_contains": "8.0.46",
+      "database": "golden",
+      "exec_client": [
+        "mysql",
+        "-uroot",
+        "--default-character-set=utf8mb4"
+      ],
+      "needs_database_create": false,
+      "exec_password_env": "T11_MYSQL_PASSWORD"
+    },
+    "mysql84": {
+      "service": "mysql84",
+      "container": "deltascope-ddl-golden-mysql84",
+      "image": "mysql:8.4.10",
+      "product": "mysql",
+      "version_contains": "8.4.10",
+      "database": "golden",
+      "exec_client": [
+        "mysql",
+        "-uroot",
+        "--default-character-set=utf8mb4"
+      ],
+      "needs_database_create": false,
+      "exec_password_env": "T11_MYSQL_PASSWORD"
+    },
+    "tidb85": {
+      "service": "tidb85",
+      "container": "deltascope-ddl-golden-tidb85",
+      "client_container": "deltascope-ddl-golden-tidb85-client",
+      "client_service": "tidb85-client",
+      "image": "pingcap/tidb:v8.5.0",
+      "product": "tidb",
+      "version_contains": "v8.5.0",
+      "database": "golden",
+      "exec_client": [
+        "mysql",
+        "--protocol=tcp",
+        "-h",
+        "tidb85",
+        "-P",
+        "4000",
+        "-uroot",
+        "--default-character-set=utf8mb4"
+      ],
+      "needs_database_create": true
+    }
+  },
+  "ddl_steps": [
+    {
+      "name": "create-parent",
+      "sql": "CREATE TABLE golden_p (id INT PRIMARY KEY)",
+      "expect_rc": 0,
+      "verify": [
+        {
+          "assert": "parent table exists",
+          "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_p'",
+          "expect": "1"
+        }
+      ]
+    },
+    {
+      "name": "create-child",
+      "sql": "CREATE TABLE golden_c (a INT, b INT, x INT)",
+      "expect_rc": 0,
+      "verify": [
+        {
+          "assert": "child table exists",
+          "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c'",
+          "expect": "1"
+        }
+      ]
+    },
+    {
+      "name": "add-named-fk",
+      "sql": "ALTER TABLE golden_c ADD CONSTRAINT fk_a FOREIGN KEY (a) REFERENCES golden_p(id)",
+      "expect_rc": 0,
+      "verify": [
+        {
+          "assert": "fk constraint row exists",
+          "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c' AND CONSTRAINT_TYPE='FOREIGN KEY' AND CONSTRAINT_NAME='fk_a'",
+          "expect": "1"
+        },
+        {
+          "assert": "implicit supporting index named after constraint",
+          "sql": "SELECT COUNT(DISTINCT INDEX_NAME) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c' AND INDEX_NAME='fk_a'",
+          "expect": "1"
+        },
+        {
+          "assert": "ordered local and referenced columns",
+          "sql": "SELECT COUNT(*) FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c' AND CONSTRAINT_NAME='fk_a' AND COLUMN_NAME='a' AND REFERENCED_TABLE_NAME='golden_p' AND REFERENCED_COLUMN_NAME='id'",
+          "expect": "1"
+        }
+      ]
+    },
+    {
+      "name": "create-ref-composite",
+      "sql": "CREATE TABLE golden_r (y INT, z INT, PRIMARY KEY (y, z))",
+      "expect_rc": 0,
+      "verify": [
+        {
+          "assert": "composite ref table exists",
+          "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_r'",
+          "expect": "1"
+        }
+      ]
+    },
+    {
+      "name": "add-composite-fk-actions",
+      "sql": "ALTER TABLE golden_c ADD CONSTRAINT fk_bx FOREIGN KEY (b, x) REFERENCES golden_r (y, z) ON DELETE SET NULL ON UPDATE CASCADE",
+      "expect_rc": 0,
+      "verify": [
+        {
+          "assert": "composite key parts keep ordinal order",
+          "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME, '->', REFERENCED_COLUMN_NAME) ORDER BY ORDINAL_POSITION) FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c' AND CONSTRAINT_NAME='fk_bx'",
+          "expect": "b->y,x->z"
+        },
+        {
+          "assert": "referential actions recorded in catalog",
+          "sql": "SELECT CONCAT(DELETE_RULE, '/', UPDATE_RULE) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='golden' AND TABLE_NAME='golden_c' AND CONSTRAINT_NAME='fk_bx'",
+          "expect": "SET NULL/CASCADE"
+        }
+      ]
+    },
+    {
+      "name": "create-child-bare",
+      "sql": "CREATE TABLE golden_c2 (q INT)",
+      "expect_rc": 0,
+      "verify": [
+        {
+          "assert": "bare-fk child exists",
+          "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c2'",
+          "expect": "1"
+        }
+      ]
+    },
+    {
+      "name": "add-bare-fk-derived-name",
+      "sql": "ALTER TABLE golden_c2 ADD FOREIGN KEY (q) REFERENCES golden_p(id)",
+      "expect_rc": 0,
+      "verify": [
+        {
+          "assert": "exactly one fk constraint lands",
+          "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c2' AND CONSTRAINT_TYPE='FOREIGN KEY'",
+          "expect": "1"
+        },
+        {
+          "assert": "one supporting index exists",
+          "sql": "SELECT COUNT(DISTINCT INDEX_NAME) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c2'",
+          "expect": "1"
+        }
+      ]
+    },
+    {
+      "name": "dup-fk-name-refused",
+      "sql": "ALTER TABLE golden_c ADD CONSTRAINT fk_a FOREIGN KEY (x) REFERENCES golden_p(id)",
+      "expect_rc": 1,
+      "verify": [
+        {
+          "assert": "constraint count unchanged by refused duplicate",
+          "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c' AND CONSTRAINT_TYPE='FOREIGN KEY'",
+          "expect": "2"
+        }
+      ]
+    },
+    {
+      "name": "add-fk-missing-column-refused",
+      "sql": "ALTER TABLE golden_c ADD CONSTRAINT fk_missing FOREIGN KEY (no_such_col) REFERENCES golden_p(id)",
+      "expect_rc": 1,
+      "verify": [
+        {
+          "assert": "no fk added on missing column",
+          "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c' AND CONSTRAINT_NAME='fk_missing'",
+          "expect": "0"
+        }
+      ]
+    },
+    {
+      "name": "drop-fk-keeps-index",
+      "sql": "ALTER TABLE golden_c DROP FOREIGN KEY fk_a",
+      "expect_rc": 0,
+      "verify": [
+        {
+          "assert": "constraint removed",
+          "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c' AND CONSTRAINT_NAME='fk_a'",
+          "expect": "0"
+        },
+        {
+          "assert": "supporting index survives constraint drop",
+          "sql": "SELECT COUNT(DISTINCT INDEX_NAME) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c' AND INDEX_NAME='fk_a'",
+          "expect": "1"
+        }
+      ]
+    },
+    {
+      "name": "drop-needed-index-refused",
+      "sql": "ALTER TABLE golden_c DROP INDEX fk_bx",
+      "expect_rc": 1,
+      "verify": [
+        {
+          "assert": "needed index survives refused drop",
+          "sql": "SELECT COUNT(DISTINCT INDEX_NAME) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c' AND INDEX_NAME='fk_bx'",
+          "expect": "1"
+        }
+      ]
+    },
+    {
+      "name": "drop-fixtures",
+      "sql": "DROP TABLE golden_c, golden_c2, golden_r, golden_p",
+      "expect_rc": 0,
+      "verify": [
+        {
+          "assert": "fixtures dropped",
+          "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME IN ('golden_c','golden_c2','golden_r','golden_p')",
+          "expect": "0"
+        }
+      ]
+    }
+  ],
+  "syntax_negative": {
+    "sql": "ALTER TABLE golden_c ADD CONSTRAINT FOREIGN KEY (",
+    "expect": {
+      "rc_nonzero": true,
+      "error_class": "1064",
+      "forbidden_markers": [
+        "ERROR 1045",
+        "ERROR 1044",
+        "ERROR 1049",
+        "ERROR 1142",
+        "ERROR 1143",
+        "ERROR 2002",
+        "ERROR 2003",
+        "ERROR 2005",
+        "Access denied",
+        "Unknown database",
+        "Can't connect",
+        "Connection refused",
+        "already exists"
+      ]
+    }
+  },
+  "cli_audit": {
+    "dialects": [
+      "mysql",
+      "tidb"
+    ],
+    "sql": "CREATE TABLE t (a INT);",
+    "expect": {
+      "exit": 0,
+      "verdict": "pass",
+      "statements": 1,
+      "findings": 0,
+      "diagnostics": 0,
+      "unsupported": 0,
+      "coverage": "complete"
+    }
+  },
+  "policy": {
+    "profiles": {
+      "t11-fk-forbid": {
+        "enable": {
+          "ddl.table.foreign_key.forbid": {
+            "level": "blocker",
+            "params": {
+              "forbid": true
+            }
+          }
+        }
+      },
+      "t11-fk-name": {
+        "enable": {
+          "ddl.constraint.foreign_key.name.prefix.require": {
+            "level": "warning",
+            "params": {
+              "prefix": "fk_"
+            }
+          }
+        }
+      },
+      "t11-pk-max": {
+        "enable": {
+          "ddl.table.primary_key.columns.max_count": {
+            "level": "blocker",
+            "params": {
+              "limit": 1
+            }
+          }
+        }
+      },
+      "t11-pk-name": {
+        "enable": {
+          "ddl.constraint.primary_key.name.prefix.require": {
+            "level": "warning",
+            "params": {
+              "prefix": "pk_"
+            }
+          }
+        }
+      },
+      "t11-uk-name": {
+        "enable": {
+          "ddl.constraint.unique_key.name.prefix.require": {
+            "level": "warning",
+            "params": {
+              "prefix": "uk_"
+            }
+          }
+        }
+      },
+      "t11-fk-exists": {
+        "enable": {
+          "ddl.alter.drop_foreign_key.exists.require": {
+            "level": "blocker"
+          }
+        }
+      },
+      "t11-fk-exists-notice": {
+        "enable": {
+          "ddl.alter.drop_foreign_key.exists.require": {
+            "level": "blocker"
+          },
+          "ddl.alter.drop_foreign_key.notice": {
+            "level": "notice"
+          },
+          "ddl.table.exists.alter.require": {
+            "level": "blocker"
+          }
+        }
+      },
+      "t11-drop-index": {
+        "enable": {
+          "ddl.alter.drop_index.exists.require": {
+            "level": "blocker"
+          },
+          "ddl.table.exists.alter.require": {
+            "level": "blocker"
+          }
+        }
+      },
+      "t11-notice": {
+        "enable": {
+          "ddl.alter.add_constraint.notice": {
+            "level": "notice"
+          },
+          "ddl.alter.drop_foreign_key.notice": {
+            "level": "notice"
+          }
+        }
+      },
+      "t11-off": {
+        "enable": {}
+      }
+    }
+  },
+  "cli_cases": [
+    {
+      "id": "t11-cli-fk-alter-firstpath",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE child ADD CONSTRAINT fk_c FOREIGN KEY (c) REFERENCES parent(id);",
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "statement_indices": [
+          0
+        ],
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.foreign_key.forbid",
+            "level": "blocker"
+          }
+        ],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.foreign_key.forbid",
+            "metadata": {
+              "table": "child",
+              "constraint": "fk_c",
+              "columns": [
+                "c"
+              ],
+              "referenced_table": "parent",
+              "referenced_columns": [
+                "id"
+              ]
+            }
+          }
+        ]
+      },
+      "policy": "t11-fk-forbid"
+    },
+    {
+      "id": "t11-cli-fk-create-pair",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE child (c INT, CONSTRAINT fk_c FOREIGN KEY (c) REFERENCES parent(id));",
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.foreign_key.forbid",
+            "level": "blocker"
+          }
+        ],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.foreign_key.forbid",
+            "metadata": {
+              "table": "child",
+              "constraint": "fk_c",
+              "columns": [
+                "c"
+              ],
+              "referenced_table": "parent",
+              "referenced_columns": [
+                "id"
+              ]
+            }
+          }
+        ]
+      },
+      "policy": "t11-fk-forbid"
+    },
+    {
+      "id": "t11-cli-fk-alter-bare",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE child ADD FOREIGN KEY (c) REFERENCES parent(id);",
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.foreign_key.forbid",
+            "level": "blocker"
+          }
+        ],
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.foreign_key.forbid",
+            "metadata": {
+              "table": "child",
+              "columns": [
+                "c"
+              ],
+              "referenced_table": "parent",
+              "referenced_columns": [
+                "id"
+              ]
+            }
+          }
+        ]
+      },
+      "policy": "t11-fk-forbid"
+    },
+    {
+      "id": "t11-cli-fk-alter-composite-actions",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE child ADD CONSTRAINT fk_bx FOREIGN KEY (b, x) REFERENCES ref (y, z) ON DELETE CASCADE ON UPDATE SET NULL;",
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.foreign_key.forbid",
+            "level": "blocker"
+          }
+        ],
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.foreign_key.forbid",
+            "metadata": {
+              "table": "child",
+              "constraint": "fk_bx",
+              "columns": [
+                "b",
+                "x"
+              ],
+              "referenced_table": "ref",
+              "referenced_columns": [
+                "y",
+                "z"
+              ],
+              "on_delete": "cascade",
+              "on_update": "set_null"
+            }
+          }
+        ]
+      },
+      "policy": "t11-fk-forbid"
+    },
+    {
+      "id": "t11-cli-fk-alter-two",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE child ADD CONSTRAINT f1 FOREIGN KEY (a) REFERENCES p(id), ADD CONSTRAINT f2 FOREIGN KEY (b) REFERENCES p(id);",
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 2,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.foreign_key.forbid",
+            "level": "blocker"
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.table.foreign_key.forbid",
+            "level": "blocker"
+          }
+        ]
+      },
+      "policy": "t11-fk-forbid"
+    },
+    {
+      "id": "t11-cli-addcol-control",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE child ADD COLUMN d INT;",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 0
+      },
+      "policy": "t11-fk-forbid"
+    },
+    {
+      "id": "t11-cli-fk-forbid-off",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE child ADD CONSTRAINT fk_c FOREIGN KEY (c) REFERENCES parent(id);",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete"
+      },
+      "policy": "t11-off"
+    },
+    {
+      "id": "t11-cli-fk-alter-tidb",
+      "dialect": "tidb",
+      "sql": "ALTER TABLE child ADD CONSTRAINT fk_c FOREIGN KEY (c) REFERENCES parent(id);",
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.foreign_key.forbid",
+            "level": "blocker"
+          }
+        ],
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.foreign_key.forbid",
+            "metadata": {
+              "table": "child",
+              "constraint": "fk_c",
+              "columns": [
+                "c"
+              ],
+              "referenced_table": "parent",
+              "referenced_columns": [
+                "id"
+              ]
+            }
+          }
+        ]
+      },
+      "policy": "t11-fk-forbid"
+    },
+    {
+      "id": "t11-cli-fk-name-alter-bad",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE child ADD CONSTRAINT bad FOREIGN KEY (c) REFERENCES parent(id);",
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.foreign_key.name.prefix.require",
+            "level": "warning"
+          }
+        ],
+        "rule_summary_applicable": 1
+      },
+      "policy": "t11-fk-name"
+    },
+    {
+      "id": "t11-cli-fk-name-alter-ok",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE child ADD CONSTRAINT fk_x FOREIGN KEY (c) REFERENCES parent(id);",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "rule_summary_applicable": 1
+      },
+      "policy": "t11-fk-name"
+    },
+    {
+      "id": "t11-cli-fk-name-create-pair",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE child (c INT, CONSTRAINT bad FOREIGN KEY (c) REFERENCES parent(id));",
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.foreign_key.name.prefix.require",
+            "level": "warning"
+          }
+        ]
+      },
+      "policy": "t11-fk-name"
+    },
+    {
+      "id": "t11-cli-pk-max-alter",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t ADD PRIMARY KEY (a, b);",
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.primary_key.columns.max_count",
+            "level": "blocker"
+          }
+        ],
+        "rule_summary_applicable": 1
+      },
+      "policy": "t11-pk-max"
+    },
+    {
+      "id": "t11-cli-pk-max-create-pair",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t (a INT, b INT, PRIMARY KEY (a, b));",
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.primary_key.columns.max_count",
+            "level": "blocker"
+          }
+        ]
+      },
+      "policy": "t11-pk-max"
+    },
+    {
+      "id": "t11-cli-pk-name-alter-control",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t ADD CONSTRAINT bad PRIMARY KEY (a);",
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.primary_key.name.prefix.require",
+            "level": "warning"
+          }
+        ]
+      },
+      "policy": "t11-pk-name"
+    },
+    {
+      "id": "t11-cli-uk-name-alter-control",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t ADD CONSTRAINT bad UNIQUE (a);",
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.unique_key.name.prefix.require",
+            "level": "warning"
+          }
+        ]
+      },
+      "policy": "t11-uk-name"
+    },
+    {
+      "id": "t11-cli-fk-notice-control",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE child ADD CONSTRAINT fk_c FOREIGN KEY (c) REFERENCES parent(id);",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.add_constraint.notice",
+            "level": "notice"
+          }
+        ]
+      },
+      "policy": "t11-notice"
+    },
+    {
+      "id": "t11-cli-fk-actions-modeled",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE c (a INT, CONSTRAINT fk_a FOREIGN KEY (a) REFERENCES p(id) ON DELETE CASCADE ON UPDATE RESTRICT);",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete"
+      },
+      "policy": "t11-off"
+    },
+    {
+      "id": "t11-cli-fk-match-evidence",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE c (a INT, CONSTRAINT fk_a FOREIGN KEY (a) REFERENCES p(id) MATCH FULL);",
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "unsupported_entries": [
+          {
+            "index": 0,
+            "feature": "create_table.constraint.foreign_key.parts",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "aspect": "constraint_parts",
+              "constraint_type": "foreign_key",
+              "local_parts": 0,
+              "referenced_parts": 0,
+              "refer_actions": 1
+            }
+          }
+        ]
+      },
+      "policy": "t11-off"
+    },
+    {
+      "id": "t11-cli-dropfk-exists-offline",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE child DROP FOREIGN KEY fk_c;",
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "evidence_gaps": 1,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.drop_foreign_key.exists.require",
+            "reason_code": "unknown_table_state",
+            "required_facts": [
+              "target_table.constraints",
+              "target_table.existence"
+            ]
+          }
+        ],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1
+      },
+      "policy": "t11-fk-exists"
+    },
+    {
+      "id": "t11-cli-fk-schema-ref",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE child ADD CONSTRAINT fk_s FOREIGN KEY (c) REFERENCES other.parent (id);",
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.foreign_key.forbid",
+            "metadata": {
+              "table": "child",
+              "constraint": "fk_s",
+              "columns": [
+                "c"
+              ],
+              "referenced_schema": "other",
+              "referenced_table": "parent",
+              "referenced_columns": [
+                "id"
+              ]
+            }
+          }
+        ]
+      },
+      "policy": "t11-fk-forbid"
+    }
+  ],
+  "metadata_cases": [
+    {
+      "id": "t11-mysql80-firstpath",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t11c ADD CONSTRAINT fk_c FOREIGN KEY (c) REFERENCES t11p(id);",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T11_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.foreign_key.forbid",
+            "level": "blocker"
+          }
+        ],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.foreign_key.forbid",
+            "metadata": {
+              "table": "t11c",
+              "constraint": "fk_c",
+              "columns": [
+                "c"
+              ],
+              "referenced_table": "t11p",
+              "referenced_columns": [
+                "id"
+              ]
+            }
+          }
+        ]
+      },
+      "policy": "t11-fk-forbid",
+      "setup": [
+        {
+          "name": "create-fixture-t11p",
+          "sql": "CREATE TABLE t11p (id INT PRIMARY KEY);",
+          "expect_rc": 0
+        },
+        {
+          "name": "create-fixture-t11c",
+          "sql": "CREATE TABLE t11c (c INT);",
+          "expect_rc": 0
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t11c",
+          "sql": "DROP TABLE IF EXISTS t11c;",
+          "expect_rc": 0
+        },
+        {
+          "name": "drop-t11p",
+          "sql": "DROP TABLE IF EXISTS t11p;",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t11-mysql80-ordered-drop-present",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t11c ADD CONSTRAINT fk_c FOREIGN KEY (c) REFERENCES t11p(id); ALTER TABLE t11c DROP FOREIGN KEY fk_c;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T11_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 2,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete",
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "rule_summary_applicable": 1
+      },
+      "policy": "t11-fk-exists",
+      "setup": [
+        {
+          "name": "create-fixture-t11p",
+          "sql": "CREATE TABLE t11p (id INT PRIMARY KEY);",
+          "expect_rc": 0
+        },
+        {
+          "name": "create-fixture-t11c",
+          "sql": "CREATE TABLE t11c (c INT);",
+          "expect_rc": 0
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t11c",
+          "sql": "DROP TABLE IF EXISTS t11c;",
+          "expect_rc": 0
+        },
+        {
+          "name": "drop-t11p",
+          "sql": "DROP TABLE IF EXISTS t11p;",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t11-mysql80-dropfk-missing",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t11c DROP FOREIGN KEY fk_absent;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T11_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.drop_foreign_key.exists.require",
+            "level": "blocker"
+          }
+        ],
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.drop_foreign_key.exists.require",
+            "metadata": {
+              "table": "t11c",
+              "name": "fk_absent",
+              "exists": false
+            }
+          }
+        ]
+      },
+      "policy": "t11-fk-exists",
+      "setup": [
+        {
+          "name": "create-fixture-t11c",
+          "sql": "CREATE TABLE t11c (c INT);",
+          "expect_rc": 0
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t11c",
+          "sql": "DROP TABLE IF EXISTS t11c;",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t11-mysql80-dropfk-provider-present",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t11c DROP FOREIGN KEY fk_real;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T11_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "evidence_gaps": 0
+      },
+      "policy": "t11-fk-exists",
+      "setup": [
+        {
+          "name": "create-fixture-t11p",
+          "sql": "CREATE TABLE t11p (id INT PRIMARY KEY);",
+          "expect_rc": 0
+        },
+        {
+          "name": "create-fixture-t11c",
+          "sql": "CREATE TABLE t11c (c INT);",
+          "expect_rc": 0
+        },
+        {
+          "name": "native-add-real-fk",
+          "sql": "ALTER TABLE t11c ADD CONSTRAINT fk_real FOREIGN KEY (c) REFERENCES t11p(id);",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "fk_real in catalog",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t11c' AND CONSTRAINT_NAME='fk_real'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t11c",
+          "sql": "DROP TABLE IF EXISTS t11c;",
+          "expect_rc": 0
+        },
+        {
+          "name": "drop-t11p",
+          "sql": "DROP TABLE IF EXISTS t11p;",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t11-mysql80-dropfk-constraints-unknown",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t11c ADD FOREIGN KEY (c) REFERENCES t11p(id); ALTER TABLE t11c DROP FOREIGN KEY t11c_ibfk_1;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T11_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 2,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "statement_coverage": [
+          "complete",
+          "unverified"
+        ],
+        "evidence_gaps": 1,
+        "evidence_gap_entries": [
+          {
+            "index": 1,
+            "rule_id": "ddl.alter.drop_foreign_key.exists.require",
+            "reason_code": "unknown_table_state",
+            "required_facts": [
+              "target_table.constraints"
+            ]
+          }
+        ]
+      },
+      "policy": "t11-fk-exists",
+      "setup": [
+        {
+          "name": "create-fixture-t11p",
+          "sql": "CREATE TABLE t11p (id INT PRIMARY KEY);",
+          "expect_rc": 0
+        },
+        {
+          "name": "create-fixture-t11c",
+          "sql": "CREATE TABLE t11c (c INT);",
+          "expect_rc": 0
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t11c",
+          "sql": "DROP TABLE IF EXISTS t11c;",
+          "expect_rc": 0
+        },
+        {
+          "name": "drop-t11p",
+          "sql": "DROP TABLE IF EXISTS t11p;",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t11-mysql80-dropfk-check-bearing",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t11ck DROP FOREIGN KEY ghost_fk;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T11_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "statement_coverage": [
+          "unverified"
+        ],
+        "evidence_gaps": 1,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.drop_foreign_key.exists.require",
+            "reason_code": "unknown_table_state",
+            "required_facts": [
+              "target_table.constraints"
+            ]
+          }
+        ]
+      },
+      "policy": "t11-fk-exists",
+      "setup": [
+        {
+          "name": "create-check-fixture",
+          "sql": "CREATE TABLE t11ck (id INT PRIMARY KEY, v INT, CONSTRAINT ck_v CHECK (v > 0));",
+          "expect_rc": 0
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t11ck",
+          "sql": "DROP TABLE IF EXISTS t11ck;",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t11-mysql80-create-bare-fk-drop-derived",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t11cb (c INT, FOREIGN KEY (c) REFERENCES t11p(id)); ALTER TABLE t11cb DROP FOREIGN KEY t11cb_ibfk_1;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T11_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 2,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "statement_coverage": [
+          "complete",
+          "unverified"
+        ],
+        "evidence_gaps": 1,
+        "evidence_gap_entries": [
+          {
+            "index": 1,
+            "rule_id": "ddl.alter.drop_foreign_key.exists.require",
+            "reason_code": "unknown_table_state",
+            "required_facts": [
+              "target_table.constraints"
+            ]
+          }
+        ]
+      },
+      "policy": "t11-fk-exists",
+      "setup": [
+        {
+          "name": "create-fixture-t11p",
+          "sql": "CREATE TABLE t11p (id INT PRIMARY KEY);",
+          "expect_rc": 0
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t11cb",
+          "sql": "DROP TABLE IF EXISTS t11cb;",
+          "expect_rc": 0
+        },
+        {
+          "name": "drop-t11p",
+          "sql": "DROP TABLE IF EXISTS t11p;",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t11-mysql80-drop-needed-index",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t11c ADD CONSTRAINT fk_x FOREIGN KEY (x) REFERENCES t11p(id); ALTER TABLE t11c DROP INDEX fk_x; ALTER TABLE t11c DROP INDEX fk_x;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T11_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 3,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete",
+          "complete",
+          "complete"
+        ],
+        "evidence_gaps": 0
+      },
+      "policy": "t11-drop-index",
+      "setup": [
+        {
+          "name": "create-fixture-t11p",
+          "sql": "CREATE TABLE t11p (id INT PRIMARY KEY);",
+          "expect_rc": 0
+        },
+        {
+          "name": "create-fixture-t11c",
+          "sql": "CREATE TABLE t11c (x INT);",
+          "expect_rc": 0
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t11c",
+          "sql": "DROP TABLE IF EXISTS t11c;",
+          "expect_rc": 0
+        },
+        {
+          "name": "drop-t11p",
+          "sql": "DROP TABLE IF EXISTS t11p;",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t11-mysql80-rename-parent-invalidates",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t11c ADD COLUMN d INT; ALTER TABLE t11p RENAME TO t11p2; ALTER TABLE t11c DROP FOREIGN KEY fk_c;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T11_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 3,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "statement_coverage": [
+          "complete",
+          "complete",
+          "unverified"
+        ],
+        "evidence_gaps": 1,
+        "evidence_gap_entries": [
+          {
+            "index": 2,
+            "rule_id": "ddl.alter.drop_foreign_key.exists.require",
+            "reason_code": "unknown_table_state",
+            "required_facts": [
+              "target_table.constraints",
+              "target_table.existence"
+            ]
+          }
+        ]
+      },
+      "policy": "t11-fk-exists",
+      "setup": [
+        {
+          "name": "create-fixture-t11p",
+          "sql": "CREATE TABLE t11p (id INT PRIMARY KEY);",
+          "expect_rc": 0
+        },
+        {
+          "name": "create-fixture-t11c",
+          "sql": "CREATE TABLE t11c (c INT);",
+          "expect_rc": 0
+        },
+        {
+          "name": "native-add-real-fk",
+          "sql": "ALTER TABLE t11c ADD CONSTRAINT fk_c FOREIGN KEY (c) REFERENCES t11p(id);",
+          "expect_rc": 0
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t11c",
+          "sql": "DROP TABLE IF EXISTS t11c;",
+          "expect_rc": 0
+        },
+        {
+          "name": "drop-t11p2",
+          "sql": "DROP TABLE IF EXISTS t11p2;",
+          "expect_rc": 0
+        },
+        {
+          "name": "drop-t11p",
+          "sql": "DROP TABLE IF EXISTS t11p;",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t11-mysql80-composite-actions",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t11c ADD CONSTRAINT fk_bx FOREIGN KEY (b, x) REFERENCES t11r (y, z) ON DELETE SET NULL ON UPDATE CASCADE;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T11_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "evidence_gaps": 0,
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.foreign_key.forbid",
+            "metadata": {
+              "table": "t11c",
+              "constraint": "fk_bx",
+              "columns": [
+                "b",
+                "x"
+              ],
+              "referenced_table": "t11r",
+              "referenced_columns": [
+                "y",
+                "z"
+              ],
+              "on_delete": "set_null",
+              "on_update": "cascade"
+            }
+          }
+        ]
+      },
+      "policy": "t11-fk-forbid",
+      "setup": [
+        {
+          "name": "create-fixture-t11r",
+          "sql": "CREATE TABLE t11r (y INT, z INT, PRIMARY KEY (y, z));",
+          "expect_rc": 0
+        },
+        {
+          "name": "create-fixture-t11c",
+          "sql": "CREATE TABLE t11c (b INT, x INT);",
+          "expect_rc": 0
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t11c",
+          "sql": "DROP TABLE IF EXISTS t11c;",
+          "expect_rc": 0
+        },
+        {
+          "name": "drop-t11r",
+          "sql": "DROP TABLE IF EXISTS t11r;",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t11-tidb85-firstpath",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "ALTER TABLE t11c ADD CONSTRAINT fk_c FOREIGN KEY (c) REFERENCES t11p(id);",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "golden"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.foreign_key.forbid",
+            "level": "blocker"
+          }
+        ],
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.foreign_key.forbid",
+            "metadata": {
+              "table": "t11c",
+              "constraint": "fk_c",
+              "columns": [
+                "c"
+              ],
+              "referenced_table": "t11p",
+              "referenced_columns": [
+                "id"
+              ]
+            }
+          }
+        ]
+      },
+      "policy": "t11-fk-forbid",
+      "setup": [
+        {
+          "name": "create-fixture-t11p",
+          "sql": "CREATE TABLE t11p (id INT PRIMARY KEY);",
+          "expect_rc": 0
+        },
+        {
+          "name": "create-fixture-t11c",
+          "sql": "CREATE TABLE t11c (c INT);",
+          "expect_rc": 0
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t11c",
+          "sql": "DROP TABLE IF EXISTS t11c;",
+          "expect_rc": 0
+        },
+        {
+          "name": "drop-t11p",
+          "sql": "DROP TABLE IF EXISTS t11p;",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t11-tidb85-clustered-parent",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "ALTER TABLE t11c ADD CONSTRAINT fk_c FOREIGN KEY (c) REFERENCES t11p(id);",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "golden"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.foreign_key.forbid",
+            "level": "blocker"
+          }
+        ]
+      },
+      "policy": "t11-fk-forbid",
+      "setup": [
+        {
+          "name": "create-clustered-parent",
+          "sql": "CREATE TABLE t11p (id INT PRIMARY KEY CLUSTERED);",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "parent clustered",
+              "sql": "SELECT TIDB_PK_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t11p'",
+              "expect": "CLUSTERED"
+            }
+          ]
+        },
+        {
+          "name": "create-fixture-t11c",
+          "sql": "CREATE TABLE t11c (c INT);",
+          "expect_rc": 0
+        },
+        {
+          "name": "create-fixture-t11c2",
+          "sql": "CREATE TABLE t11c2 (c INT);",
+          "expect_rc": 0
+        }
+      ],
+      "execute": [
+        {
+          "name": "native-fk-to-clustered-accepted",
+          "sql": "ALTER TABLE t11c2 ADD CONSTRAINT fk_c2 FOREIGN KEY (c) REFERENCES t11p(id);",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "fk bound to clustered parent",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t11c2' AND CONSTRAINT_NAME='fk_c2'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t11c2",
+          "sql": "DROP TABLE IF EXISTS t11c2;",
+          "expect_rc": 0
+        },
+        {
+          "name": "drop-t11c",
+          "sql": "DROP TABLE IF EXISTS t11c;",
+          "expect_rc": 0
+        },
+        {
+          "name": "drop-t11p",
+          "sql": "DROP TABLE IF EXISTS t11p;",
+          "expect_rc": 0
+        }
+      ]
+    }
+  ],
+  "required_case_ids": [
+    "T11.db.mysql57.ddl",
+    "T11.db.mysql57.syntax_negative",
+    "T11.db.mysql80.ddl",
+    "T11.db.mysql80.syntax_negative",
+    "T11.db.mysql84.ddl",
+    "T11.db.mysql84.syntax_negative",
+    "T11.db.tidb85.ddl",
+    "T11.db.tidb85.syntax_negative",
+    "T11.cli.t11-cli-fk-alter-firstpath",
+    "T11.cli.t11-cli-fk-create-pair",
+    "T11.cli.t11-cli-fk-alter-bare",
+    "T11.cli.t11-cli-fk-alter-composite-actions",
+    "T11.cli.t11-cli-fk-alter-two",
+    "T11.cli.t11-cli-addcol-control",
+    "T11.cli.t11-cli-fk-forbid-off",
+    "T11.cli.t11-cli-fk-alter-tidb",
+    "T11.cli.t11-cli-fk-name-alter-bad",
+    "T11.cli.t11-cli-fk-name-alter-ok",
+    "T11.cli.t11-cli-fk-name-create-pair",
+    "T11.cli.t11-cli-pk-max-alter",
+    "T11.cli.t11-cli-pk-max-create-pair",
+    "T11.cli.t11-cli-pk-name-alter-control",
+    "T11.cli.t11-cli-uk-name-alter-control",
+    "T11.cli.t11-cli-fk-notice-control",
+    "T11.cli.t11-cli-fk-actions-modeled",
+    "T11.cli.t11-cli-fk-match-evidence",
+    "T11.cli.t11-cli-dropfk-exists-offline",
+    "T11.cli.t11-cli-fk-schema-ref",
+    "T11.meta.t11-mysql80-firstpath",
+    "T11.meta.t11-mysql80-ordered-drop-present",
+    "T11.meta.t11-mysql80-dropfk-missing",
+    "T11.meta.t11-mysql80-dropfk-provider-present",
+    "T11.meta.t11-mysql80-dropfk-constraints-unknown",
+    "T11.meta.t11-mysql80-dropfk-check-bearing",
+    "T11.meta.t11-mysql80-create-bare-fk-drop-derived",
+    "T11.meta.t11-mysql80-drop-needed-index",
+    "T11.meta.t11-mysql80-rename-parent-invalidates",
+    "T11.meta.t11-mysql80-composite-actions",
+    "T11.meta.t11-tidb85-firstpath",
+    "T11.meta.t11-tidb85-clustered-parent"
+  ]
+}

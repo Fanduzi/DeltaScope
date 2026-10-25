@@ -1,7 +1,7 @@
 // Package audit orchestrates audit use cases at the application layer.
 // input: request context, ordered statements, optional metadata provider, the request's already-resolved version identity, and parse-failure positions for one audit request
-// output: request-local ordered table facts (unknown / known-absent / known-present, per-collection member knowledge, including the declared table comment on complete CREATE-derived shapes, product-derived stored index names under the native auto-naming rule — or an unvouched name space when any member's name is unprovable — the CREATE-derived primary key stored under its native `primary` object name while the authored CONSTRAINT symbol stays on the parsed spec for naming rules, and the TiDB handle and clustered-storage answers deferring to the observed clustered mode plus the alter-primary-key config fact) feeding per-statement pre-state snapshots
-// pos: prospective schema-state ownership for the first migration path — the effective (dialect, schema, table) identity drives provider reads, keys, writes, and invalidation; unsupported or executable-but-unmodeled effects settle before kind dispatch; deterministic conditional transitions update derived facts, including the bounded single-pair RENAME identity migration onto a known-absent destination, a bounded single-target DROP identity retirement, an ordinary single-column MODIFY definition replacement, a precise single CHANGE COLUMN or RENAME COLUMN identity migration, and an ordinary dependency-free single-column DROP COLUMN that removes only that column, keeps unrelated members, and clears the accepted MODIFY statistic set, FIRST|AFTER column-position moves inside admitted ADD/MODIFY/CHANGE templates, and the bounded dialect-parametrized multi-action successor (MySQL accumulated working state vs TiDB pre-statement premises, whole-statement tombstone on unprovable net effect); each tombstones loaded dependents that the transition cannot keep; a non-precise MODIFY, CHANGE, RENAME, or DROP COLUMN tombstones every named table identity and the loaded dependents of those identities, a precise replacement is withheld when a loaded foreign key cannot be recomputed, an unsupported RENAME version withholds publication, and cancellation is checked before publishing effects; unaudited, unbound, or contaminated operations invalidate them; recognized CREATE/DROP PROCEDURE statements preserve outer table facts while keeping their own audit evidence; the shared T07 advanced-column and T10 advanced-index assessments block publication of provably refused or unresolved transitions
+// output: request-local ordered table facts (unknown / known-absent / known-present, per-collection member knowledge, including the declared table comment on complete CREATE-derived shapes, product-derived stored index names under the native auto-naming rule — or an unvouched name space when any member's name is unprovable — the CREATE-derived primary key stored under its native `primary` object name while the authored CONSTRAINT symbol stays on the parsed spec for naming rules, and a CREATE-derived bare foreign key keeping its server-derived name unproven (NameUnknown) exactly like a bare ALTER-side add, and the TiDB handle and clustered-storage answers deferring to the observed clustered mode plus the alter-primary-key config fact) feeding per-statement pre-state snapshots
+// pos: prospective schema-state ownership for the first migration path — the effective (dialect, schema, table) identity drives provider reads, keys, writes, and invalidation; unsupported or executable-but-unmodeled effects settle before kind dispatch; deterministic conditional transitions update derived facts, including the bounded single-pair RENAME identity migration onto a known-absent destination, a bounded single-target DROP identity retirement, an ordinary single-column MODIFY definition replacement, a precise single CHANGE COLUMN or RENAME COLUMN identity migration, and an ordinary dependency-free single-column DROP COLUMN that removes only that column, keeps unrelated members, and clears the accepted MODIFY statistic set, FIRST|AFTER column-position moves inside admitted ADD/MODIFY/CHANGE templates, and the bounded dialect-parametrized multi-action successor (MySQL accumulated working state vs TiDB pre-statement premises, whole-statement tombstone on unprovable net effect); each tombstones loaded dependents that the transition cannot keep; a non-precise MODIFY, CHANGE, RENAME, or DROP COLUMN tombstones every named table identity and the loaded dependents of those identities, a precise replacement is withheld when a loaded foreign key cannot be recomputed, an unsupported RENAME version withholds publication, and cancellation is checked before publishing effects; unaudited, unbound, or contaminated operations invalidate them; recognized CREATE/DROP PROCEDURE statements preserve outer table facts while keeping their own audit evidence; the shared T07 advanced-column and T10 advanced-index assessments block publication of provably refused or unresolved transitions, and T11 foreign-key add_constraint/drop_foreign_key actions delegate to batch_state_fk.go (non-foreign-key constraint adds stay conservative tombstones)
 // note: if this file changes, update this header and module README.md.
 package audit
 
@@ -545,7 +545,14 @@ func derivedCreateShape(dialect spec.Dialect, schema, table string, ddl *spec.DD
 		}
 	}
 	for _, constraint := range ddl.Constraints {
-		snapshot.Constraints = append(snapshot.Constraints, cloneConstraint(constraint))
+		member := cloneConstraint(constraint)
+		if member.Type == "foreign_key" && member.Name == "" {
+			// A bare declared foreign key gets a server-derived catalog
+			// name (ibfk_N / fk_N) that is never authored — the stored
+			// name stays unproven exactly like a bare ALTER-side add.
+			member.NameUnknown = true
+		}
+		snapshot.Constraints = append(snapshot.Constraints, member)
 	}
 	if len(ddl.Options) > 0 {
 		snapshot.Options = make(map[string]string, len(ddl.Options))
@@ -651,6 +658,19 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 	}
 	if (alter.Action == "add_index" || alter.Action == "add_constraint") && alter.Index != nil && alter.Index.Definition != nil {
 		s.applyAddIndex(statement, alter, targets)
+		return nil
+	}
+	if alter.Action == "add_constraint" && alter.Constraint != nil {
+		if alter.Constraint.Type == "foreign_key" {
+			return s.applyAddForeignKey(ctx, statement, alter, targets)
+		}
+		// CHECK and other non-foreign-key constraint adds are unmodeled
+		// post-state transitions — tombstone rather than guess the member.
+		s.invalidateAll(targets)
+		return nil
+	}
+	if alter.Action == "drop_foreign_key" {
+		s.applyDropForeignKey(statement, alter, targets)
 		return nil
 	}
 	if alter.Action == "drop_index" {

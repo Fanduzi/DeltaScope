@@ -1,6 +1,6 @@
 // Package mysqlmeta implements metadata-aware audit adapters over the MySQL protocol.
 // input: sql.DB access plus connection configs, version/schema/table lookup requests, and MySQL/TiDB metadata queries
-// output: normalized instance facts with explicit known bits (innodb_page_size, 5.7 large-prefix, TiDB max-index-length and alter-primary-key via all-rows SHOW CONFIG verification, TiDB tidb_enable_clustered_index session mode — read failures propagate as provider errors, only absent/ambiguous values stay unknown), dialect detection, schema discovery, and table snapshots with preserved index cardinality plus per-member plain-key knownness facts (STATISTICS SUB_PART/COLLATION and NULL COLUMN_NAME classified into prefix/desc/expression/unmodeled marks — provider-loaded indexes carry the same comparability vocabulary declarations do, including catalog sort direction on expression members), verbatim COLUMN_TYPE parameter spans on the five declared-parameter bases (DECIMAL/FLOAT/DOUBLE/ENUM/SET — member literals keep catalog case and attribute words inside quotes never set Unsigned), stored-representation default facts (COLUMN_DEFAULT IS NOT NULL → HasDefault with verbatim DefaultValue bytes; NULL rows and literal "null" text never set DefaultIsNull on this path), the comparable literal-default identity keyed by the column's own base type (temporal markers asserted only on temporal bases), and T07 advanced-column facts read from the same COLUMNS row (EXTRA DEFAULT_GENERATED → parsed DefaultExpression facts, STORED/VIRTUAL GENERATED + GENERATION_EXPRESSION → generated storage + expression facts, INVISIBLE → effective visibility; undecodable expression text stays an explicit unknown fact), per-index effective visibility via the STATISTICS.IS_VISIBLE capability probe (a catalog-count query — capable catalogs select the column, MySQL 5.7/zero-count leaves member Visibility empty rather than guessed, real probe failures propagate as load errors) plus SPATIAL/FULLTEXT INDEX_TYPE classification into spec.Index.Kind, member-level KeyParts with an EXPRESSION capability probe (catalog functional text parsed into ExpressionFacts + multi-valued marks — TiDB reports expression members as the literal string 'NULL' in COLUMN_NAME, so the literal is classified three ways: SQL NULL or literal-with-expression-text stays an expression member, a literal matching a loaded real column name stays a plain column member — a backticked `NULL` column is legal MySQL — and neither provable stays unmodeled), PARTITIONS-derived Partitioned (unanswerable probe stays unknown), and the two independent TiDB primary facts via TIDB_INDEXES.CLUSTERED — PrimaryKeyClustered (the DROP PRIMARY KEY 8200 refusal class) plus PrimaryKeyIsHandle via the single-integer member shape (a missing CLUSTERED row or unmatchable member shape stays unknown — never defaulted false into a fabricated PRIMARY object), and the TiDB `primary` name binding via table_constraints pk-presence — a `primary`-fold STATISTICS row is not self-evidently the constraint object (a secondary can literally own the name), so zero folds prove no PK object, a proven PRIMARY KEY constraint plus exactly one fold promotes it, proven-absent keeps folds secondary, and multi-fold or unproven-plus-candidate states withhold all three primary facts while every potentially-PK unique candidate demotes to IndexKindUnknown — candidate folds match the KEY_COLUMN_USAGE primary list by ordered sequence only ([a,b] never binds [b,a]), multiple same-sequence matches withhold object identity, CLUSTERED reads as a tri-state (YES/NO/unproven) so NONCLUSTERED requires every candidate proved NO — case-variant catalog names folding to one key merge YES over unproven over NO in read-order independence so a sibling NO never covers an unproven row, and an inconsistent pkCount>1 demotes all candidates with primary facts unvouched — probe failures (constraint count, clustered rows, column list) propagate as provider errors because a failed read is not an answerable absence (issue #79), context cancellation included; only clean proven-absent and unattributable-catalog states stay unknown, never fabricated) for application-level audit enrichment
+// output: normalized instance facts with explicit known bits (innodb_page_size, 5.7 large-prefix, TiDB max-index-length and alter-primary-key via all-rows SHOW CONFIG verification, TiDB tidb_enable_clustered_index session mode — read failures propagate as provider errors, only absent/ambiguous values stay unknown), dialect detection, schema discovery, and table snapshots with preserved index cardinality plus per-member plain-key knownness facts (STATISTICS SUB_PART/COLLATION and NULL COLUMN_NAME classified into prefix/desc/expression/unmodeled marks — provider-loaded indexes carry the same comparability vocabulary declarations do, including catalog sort direction on expression members), verbatim COLUMN_TYPE parameter spans on the five declared-parameter bases (DECIMAL/FLOAT/DOUBLE/ENUM/SET — member literals keep catalog case and attribute words inside quotes never set Unsigned), stored-representation default facts (COLUMN_DEFAULT IS NOT NULL → HasDefault with verbatim DefaultValue bytes; NULL rows and literal "null" text never set DefaultIsNull on this path), the comparable literal-default identity keyed by the column's own base type (temporal markers asserted only on temporal bases), and T07 advanced-column facts read from the same COLUMNS row (EXTRA DEFAULT_GENERATED → parsed DefaultExpression facts, STORED/VIRTUAL GENERATED + GENERATION_EXPRESSION → generated storage + expression facts, INVISIBLE → effective visibility; undecodable expression text stays an explicit unknown fact), per-index effective visibility via the STATISTICS.IS_VISIBLE capability probe (a catalog-count query — capable catalogs select the column, MySQL 5.7/zero-count leaves member Visibility empty rather than guessed, real probe failures propagate as load errors) plus SPATIAL/FULLTEXT INDEX_TYPE classification into spec.Index.Kind, member-level KeyParts with an EXPRESSION capability probe (catalog functional text parsed into ExpressionFacts + multi-valued marks — TiDB reports expression members as the literal string 'NULL' in COLUMN_NAME, so the literal is classified three ways: SQL NULL or literal-with-expression-text stays an expression member, a literal matching a loaded real column name stays a plain column member — a backticked `NULL` column is legal MySQL — and neither provable stays unmodeled), PARTITIONS-derived Partitioned (unanswerable probe stays unknown), and the two independent TiDB primary facts via TIDB_INDEXES.CLUSTERED — PrimaryKeyClustered (the DROP PRIMARY KEY 8200 refusal class) plus PrimaryKeyIsHandle via the single-integer member shape (a missing CLUSTERED row or unmatchable member shape stays unknown — never defaulted false into a fabricated PRIMARY object), and the TiDB `primary` name binding via table_constraints pk-presence — a `primary`-fold STATISTICS row is not self-evidently the constraint object (a secondary can literally own the name), so zero folds prove no PK object, a proven PRIMARY KEY constraint plus exactly one fold promotes it, proven-absent keeps folds secondary, and multi-fold or unproven-plus-candidate states withhold all three primary facts while every potentially-PK unique candidate demotes to IndexKindUnknown — candidate folds match the KEY_COLUMN_USAGE primary list by ordered sequence only ([a,b] never binds [b,a]), multiple same-sequence matches withhold object identity, CLUSTERED reads as a tri-state (YES/NO/unproven) so NONCLUSTERED requires every candidate proved NO — case-variant catalog names folding to one key merge YES over unproven over NO in read-order independence so a sibling NO never covers an unproven row, and an inconsistent pkCount>1 demotes all candidates with primary facts unvouched — probe failures (constraint count, clustered rows, column list) propagate as provider errors because a failed read is not an answerable absence (issue #79), context cancellation included; only clean proven-absent and unattributable-catalog states stay unknown, never fabricated) for application-level audit enrichment, and T11 foreign-key constraint members via the KEY_COLUMN_USAGE+REFERENTIAL_CONSTRAINTS join — ordered local/referenced column pairs folded by constraint name, referential actions normalized to the shared lowercase vocabulary, non-NONE MATCH counted unmodeled, a clean empty result landing as the proven empty Constraints collection, and a TABLE_CONSTRAINTS unmodeled-type scan unvouching the collection when a CHECK-class type it cannot represent is present (issue #90 T11)
 // pos: infrastructure metadata adapter between database/sql and domain metadata specs
 // note: if this file changes, update this header and module README.md.
 package mysqlmeta
@@ -415,6 +415,9 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, dialect spec.Dialect, 
 	}
 	if err := p.loadIndexes(ctx, snapshot, dialect); err != nil {
 		return nil, fmt.Errorf("load table %s.%s indexes: %w", snapshot.Schema, snapshot.Table.Name, err)
+	}
+	if err := p.loadForeignKeys(ctx, snapshot); err != nil {
+		return nil, fmt.Errorf("load table %s.%s foreign keys: %w", snapshot.Schema, snapshot.Table.Name, err)
 	}
 	if dialect == spec.DialectTiDB {
 		// Only TiDB consumers read Partitioned (the GLOBAL index gate) and
@@ -1150,6 +1153,113 @@ func (p *Provider) loadIndexes(ctx context.Context, snapshot *spec.TableSnapshot
 		snapshot.Indexes = append(snapshot.Indexes, *index)
 	}
 	return nil
+}
+
+// loadForeignKeys loads the table's foreign-key members into
+// snapshot.Constraints — the only constraint type the collection vouches
+// for on the provider path (primary-key identity lives on PrimaryKey and
+// unique keys on index members; statement-derived shapes may append
+// primary_key members the parser itself proved). KEY_COLUMN_USAGE rows
+// with a non-NULL referenced table are exactly the FK column pairs, in
+// ORDINAL_POSITION order, so local and referenced columns fold into
+// aligned ordered lists. REFERENTIAL_CONSTRAINTS supplies delete/update
+// rules; a MATCH option other than NONE counts as an unmodeled refer
+// action rather than silently dropping. A clean empty result is a proven
+// empty set — never a withheld one — while query/scan failures propagate
+// because a failed catalog read is not an answerable absence.
+func (p *Provider) loadForeignKeys(ctx context.Context, snapshot *spec.TableSnapshot) error {
+	rows, err := p.db.QueryContext(ctx, `
+		select k.constraint_name, k.column_name,
+			k.referenced_table_schema, k.referenced_table_name, k.referenced_column_name,
+			r.delete_rule, r.update_rule, r.match_option
+		from information_schema.key_column_usage k
+		left join information_schema.referential_constraints r
+			on r.constraint_schema = k.constraint_schema
+			and r.table_name = k.table_name
+			and r.constraint_name = k.constraint_name
+		where k.table_schema = ? and k.table_name = ?
+			and k.referenced_table_name is not null
+		order by k.constraint_name, k.ordinal_position
+	`, snapshot.Schema, snapshot.Table.Name)
+	if err != nil {
+		return fmt.Errorf("query table foreign keys: %w", err)
+	}
+	defer rows.Close()
+
+	constraints := make([]spec.Constraint, 0)
+	byName := make(map[string]int)
+	for rows.Next() {
+		var name, column, refSchema, refTable, refColumn string
+		var deleteRule, updateRule, matchOption sql.NullString
+		if err := rows.Scan(&name, &column, &refSchema, &refTable, &refColumn,
+			&deleteRule, &updateRule, &matchOption); err != nil {
+			return fmt.Errorf("scan table foreign key: %w", err)
+		}
+		pos, seen := byName[name]
+		if !seen {
+			constraints = append(constraints, spec.Constraint{Type: "foreign_key", Name: name})
+			pos = len(constraints) - 1
+			byName[name] = pos
+		}
+		member := &constraints[pos]
+		member.Columns = append(member.Columns, column)
+		member.ReferencedSchema = refSchema
+		member.ReferencedTable = refTable
+		member.ReferencedColumns = append(member.ReferencedColumns, refColumn)
+		if deleteRule.Valid {
+			member.OnDelete = referActionName(deleteRule.String)
+		}
+		if updateRule.Valid {
+			member.OnUpdate = referActionName(updateRule.String)
+		}
+		if matchOption.Valid && !strings.EqualFold(matchOption.String, "NONE") {
+			member.UnmodeledReferActions++
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("iterate table foreign keys: %w", err)
+	}
+	snapshot.Constraints = constraints
+
+	// The collection vouches for foreign-key members only — primary keys
+	// live on PrimaryKey and unique keys on index members. Any other
+	// TABLE_CONSTRAINTS type (CHECK and friends) is a member this
+	// projection cannot represent, so its presence unvouches the
+	// collection rather than letting a partial answer pose as complete.
+	var unmodeled int
+	err = p.db.QueryRowContext(ctx, `
+		select count(*)
+		from information_schema.table_constraints
+		where table_schema = ? and table_name = ?
+			and constraint_type not in ('PRIMARY KEY', 'UNIQUE', 'FOREIGN KEY')
+	`, snapshot.Schema, snapshot.Table.Name).Scan(&unmodeled)
+	if err != nil {
+		return fmt.Errorf("query table unmodeled constraint types: %w", err)
+	}
+	if unmodeled > 0 {
+		snapshot.ConstraintsUnknown = true
+	}
+	return nil
+}
+
+// referActionName normalizes a catalog DELETE_RULE/UPDATE_RULE token into
+// the same lowercase vocabulary parser-extracted referential actions use.
+// An unrecognized token stays an empty string rather than a guessed fact.
+func referActionName(rule string) string {
+	switch strings.ToUpper(strings.TrimSpace(rule)) {
+	case "RESTRICT":
+		return "restrict"
+	case "CASCADE":
+		return "cascade"
+	case "SET NULL":
+		return "set_null"
+	case "NO ACTION":
+		return "no_action"
+	case "SET DEFAULT":
+		return "set_default"
+	default:
+		return ""
+	}
 }
 
 // statisticsHasIsVisible reports whether this server's
