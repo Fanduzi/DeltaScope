@@ -1,0 +1,20 @@
+=== r5 green evidence: T10R5 tests on R5 working tree (pre-commit) ===
+=== generated: 2026-10-25T03:14:55Z host=Darwin arm64 ===
+=== go: go version go1.26.1 darwin/arm64 ===
+
+--- go test ./internal/domain/spec -run TestT10R5 -count=1 (on R5 worktree) ---
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/spec	0.196s
+rc=0
+
+--- go test ./internal/domain/rule/ddl -run TestT10R5 -count=1 (on R5 worktree) ---
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	0.247s
+rc=0
+
+--- go test ./internal/infrastructure/metadata/mysql -run TestT10R5 -count=1 (on R5 worktree) ---
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql	0.295s
+rc=0
+
+--- go test ./internal/application/audit -run TestT10R5 -count=1 (on R5 worktree) ---
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.348s
+rc=0
+

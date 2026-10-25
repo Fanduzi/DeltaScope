@@ -1,4 +1,9 @@
 #!/bin/bash
+# input: live mysql80/tidb85 docker anchors and golden-schema fixtures
+# output: name-keyed `primary` operation results with rc and post-state catalog reads
+# pos: T10-R4 native evidence for member-vs-PK `primary` name binding
+# note: M10b header backticks were unescaped at first archive — the log's eaten
+# `primary` word is title-only damage; all probe commands logged and ran intact.
 # T10-R4 M10: name-keyed ops targeting `primary` — DROP/RENAME/ADD/CREATE INDEX.
 # Answers the review question: when a statement names `primary`, does the
 # product hit the PK, a member, or refuse?
@@ -47,7 +52,7 @@ run "tidb common-handle invisible" "$TI -e 'DROP TABLE IF EXISTS golden.m10q; CR
 run "tidb pkishandle invisible" "$TI -e 'DROP TABLE IF EXISTS golden.m10r; CREATE TABLE golden.m10r(id INT PRIMARY KEY, c INT); ALTER TABLE golden.m10r ALTER INDEX \`PRIMARY\` INVISIBLE;'"
 run "mysql alter-index-primary visible" "$MY -e 'DROP TABLE IF EXISTS golden.m10s; CREATE TABLE golden.m10s(id INT PRIMARY KEY, c INT); ALTER TABLE golden.m10s ALTER INDEX \`PRIMARY\` VISIBLE;'"
 
-echo; echo "=== M10b TiDB: member `primary` coexists with PKIsHandle — name is free ==="
+echo; echo "=== M10b TiDB: member \`primary\` coexists with PKIsHandle — name is free ==="
 
 run "tidb pkishandle rename member -> primary" "$TI -e 'DROP TABLE IF EXISTS golden.m10t; CREATE TABLE golden.m10t(id INT PRIMARY KEY, c INT, KEY s(c)); ALTER TABLE golden.m10t RENAME INDEX s TO \`primary\`; SHOW INDEX FROM golden.m10t;'"
 run "tidb pkishandle member-primary drop hits member not pk" "$TI -e 'DROP TABLE IF EXISTS golden.m10u; CREATE TABLE golden.m10u(id INT PRIMARY KEY, c INT, KEY s(c)); ALTER TABLE golden.m10u RENAME INDEX s TO \`primary\`; DROP INDEX \`primary\` ON golden.m10u; SHOW INDEX FROM golden.m10u; SELECT COUNT(*) pk_left FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA=\"golden\" AND TABLE_NAME=\"m10u\" AND CONSTRAINT_TYPE=\"PRIMARY KEY\";'"

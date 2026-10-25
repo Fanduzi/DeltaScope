@@ -1,0 +1,14 @@
+ A docs/verification/t10/16915291fcccba54108e29ce3f66f92eb452c075/native-probe/README.md
+ M docs/verification/t10/16915291fcccba54108e29ce3f66f92eb452c075/native-probe/r4-m10-primary-name-probes.sh
+?? .agents/
+?? .codex/
+?? .cursor/
+?? .debug-journal.md
+?? .devin/
+?? .grok/
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? docs/quality/architecture-review-2026-08-11.html
+?? docs/verification/t06-a12/1a5dd90de898a59590ef8a19aa068c4b5e8ce7f8/T06/
+?? docs/verification/t10/2f37fbd484c7804691f278ad617ac4ed42a880c2/

@@ -1,0 +1,107 @@
+=== anchors ===
+
+=== versions ===
+$ docker exec --env MYSQL_PWD=root deltascope-ddl-golden-mysql80 mysql -uroot -e 'SELECT VERSION();' && docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'SELECT TIDB_VERSION();'
+VERSION()
+8.0.46
+TIDB_VERSION()
+Release Version: v8.5.0\nEdition: Community\nGit Commit Hash: d13e52ed6e22cc5789bed7c64c861578cd2ed55b\nGit Branch: HEAD\nUTC Build Time: 2024-12-18 02:26:12\nGoVersion: go1.23.3\nRace Enabled: false\nCheck Table Before Drop: false\nStore: unistore
+rc=0
+
+=== R5-A TiDB: renamed-PK object (pk2) successor ops ===
+
+=== a1a pk2 ALTER VISIBLE no-op ===
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'DROP TABLE IF EXISTS golden.r5a1; CREATE TABLE golden.r5a1(id VARCHAR(32) PRIMARY KEY NONCLUSTERED, c INT); ALTER TABLE golden.r5a1 RENAME INDEX `PRIMARY` TO pk2; ALTER TABLE golden.r5a1 ALTER INDEX pk2 VISIBLE;'
+rc=0
+
+=== a1b pk2 ALTER INVISIBLE refused ===
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'DROP TABLE IF EXISTS golden.r5a1; CREATE TABLE golden.r5a1(id VARCHAR(32) PRIMARY KEY NONCLUSTERED, c INT); ALTER TABLE golden.r5a1 RENAME INDEX `PRIMARY` TO pk2; ALTER TABLE golden.r5a1 ALTER INDEX pk2 INVISIBLE; SHOW INDEX FROM golden.r5a1;'
+ERROR 3522 (HY000) at line 1: A primary key index cannot be invisible
+rc=1
+
+=== a1c common-handle DROP INDEX pk2 drops the PK object ===
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'DROP TABLE IF EXISTS golden.r5a2; CREATE TABLE golden.r5a2(id VARCHAR(32) PRIMARY KEY CLUSTERED, c INT); ALTER TABLE golden.r5a2 RENAME INDEX `PRIMARY` TO pk2; DROP INDEX pk2 ON golden.r5a2; SHOW INDEX FROM golden.r5a2; SELECT COUNT(*) pk_left FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA="golden" AND TABLE_NAME="r5a2" AND CONSTRAINT_TYPE="PRIMARY KEY";'
+pk_left
+0
+rc=0
+
+=== a1c2 post-drop confirmations ===
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'ALTER TABLE golden.r5a2 DROP PRIMARY KEY; ALTER TABLE golden.r5a2 RENAME INDEX pk2 TO pk3;'
+ERROR 1091 (42000) at line 1: Can't DROP 'PRIMARY'; check that column/key exists
+rc=1
+
+=== a1d renamed-object renames again pk2->pk3 ===
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'DROP TABLE IF EXISTS golden.r5a3; CREATE TABLE golden.r5a3(id VARCHAR(32) PRIMARY KEY NONCLUSTERED, c INT); ALTER TABLE golden.r5a3 RENAME INDEX `PRIMARY` TO pk2; ALTER TABLE golden.r5a3 RENAME INDEX pk2 TO pk3; SHOW INDEX FROM golden.r5a3;'
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment	Visible	Expression	Clustered	Global
+r5a3	0	pk3	1	id	A	0	NULL	NULL		BTREE			YES	NULL	NO	NO
+rc=0
+
+=== a1e freed primary name after rename ===
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'DROP INDEX `PRIMARY` ON golden.r5a3;'
+ERROR 1091 (42000) at line 1: Can't DROP 'PRIMARY'; check that column/key exists
+rc=1
+
+=== R5-A TiDB: DROP PRIMARY KEY routes member-first ===
+
+=== a2a nonclustered member-primary coexistence refused ===
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'DROP TABLE IF EXISTS golden.r5b0; CREATE TABLE golden.r5b0(id VARCHAR(32) PRIMARY KEY NONCLUSTERED, c INT, KEY s(c)); ALTER TABLE golden.r5b0 RENAME INDEX s TO `primary`;'
+ERROR 1061 (42000) at line 1: Duplicate key name 'PRIMARY'
+rc=1
+
+=== a2a-fixed drop-primary-key on handle table hits member primary ===
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'DROP TABLE IF EXISTS golden.r5b1; CREATE TABLE golden.r5b1(id INT PRIMARY KEY, c INT, KEY s(c)); ALTER TABLE golden.r5b1 RENAME INDEX s TO `primary`; ALTER TABLE golden.r5b1 DROP PRIMARY KEY; SHOW INDEX FROM golden.r5b1; SELECT COUNT(*) pk_left FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA="golden" AND TABLE_NAME="r5b1" AND CONSTRAINT_TYPE="PRIMARY KEY"; SELECT TIDB_PK_TYPE FROM information_schema.tables WHERE table_schema="golden" AND table_name="r5b1";'
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment	Visible	Expression	Clustered	Global
+r5b1	0	PRIMARY	1	id	A	0	NULL	NULL		BTREE			YES	NULL	YES	NO
+pk_left
+1
+TIDB_PK_TYPE
+CLUSTERED
+rc=0
+
+=== a2b drop-primary-key after PK rename misses ===
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'DROP TABLE IF EXISTS golden.r5b2; CREATE TABLE golden.r5b2(id VARCHAR(32) PRIMARY KEY NONCLUSTERED, c INT); ALTER TABLE golden.r5b2 RENAME INDEX `PRIMARY` TO pk2; ALTER TABLE golden.r5b2 DROP PRIMARY KEY;'
+ERROR 1091 (42000) at line 1: Can't DROP 'PRIMARY'; check that column/key exists
+rc=1
+
+=== R5-A TiDB: freed primary name usable by members ===
+
+=== a3a member takes freed primary name ===
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'DROP TABLE IF EXISTS golden.r5c1; CREATE TABLE golden.r5c1(id VARCHAR(32) PRIMARY KEY NONCLUSTERED, c INT, KEY s(c)); ALTER TABLE golden.r5c1 RENAME INDEX `PRIMARY` TO pk3; ALTER TABLE golden.r5c1 RENAME INDEX s TO `primary`; SHOW INDEX FROM golden.r5c1;'
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment	Visible	Expression	Clustered	Global
+r5c1	1	primary	1	c	A	0	NULL	NULL	YES	BTREE			YES	NULL	NO	NO
+r5c1	0	pk3	1	id	A	0	NULL	NULL		BTREE			YES	NULL	NO	NO
+rc=0
+
+=== a3b PK rename back onto occupied primary refused ===
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'ALTER TABLE golden.r5c1 RENAME INDEX pk3 TO `primary`;'
+ERROR 1061 (42000) at line 1: Duplicate key name 'primary'
+rc=1
+
+=== R5-C MySQL: auto-name 61-byte truncation suffix ===
+
+=== c1 mysql 62c col collides -> 61c+_2=63 ===
+$ docker exec --env MYSQL_PWD=root deltascope-ddl-golden-mysql80 mysql -uroot -e 'DROP TABLE IF EXISTS golden.r5d1; CREATE TABLE golden.r5d1(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa INT, c INT, KEY(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa), KEY(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa)); SHOW INDEX FROM golden.r5d1;'
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment	Visible	Expression
+r5d1	1	aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa	1	aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa	A	0	NULL	NULL	YES	BTREE			YES	NULL
+r5d1	1	aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_2	1	aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa	A	0	NULL	NULL	YES	BTREE			YES	NULL
+rc=0
+
+=== c2 mysql 63c col no-collision control ===
+$ docker exec --env MYSQL_PWD=root deltascope-ddl-golden-mysql80 mysql -uroot -e 'DROP TABLE IF EXISTS golden.r5d2; CREATE TABLE golden.r5d2(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa INT, KEY(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa)); SHOW INDEX FROM golden.r5d2;'
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment	Visible	Expression
+r5d2	1	aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa	1	aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa	A	0	NULL	NULL	YES	BTREE			YES	NULL
+rc=0
+
+=== R5-C TiDB: auto-name suffix does NOT truncate ===
+
+=== c3 tidb 62c col collides -> 62c+_2=64 ===
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'DROP TABLE IF EXISTS golden.r5e1; CREATE TABLE golden.r5e1(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa INT, c INT, KEY(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa), KEY(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa)); SHOW INDEX FROM golden.r5e1;'
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment	Visible	Expression	Clustered	Global
+r5e1	1	aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa	1	aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa	A	0	NULL	NULL	YES	BTREE			YES	NULL	NO	NO
+r5e1	1	aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_2	1	aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa	A	0	NULL	NULL	YES	BTREE			YES	NULL	NO	NO
+rc=0
+
+=== c4 tidb 64c col collides -> derived exceeds limit ===
+$ docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot -e 'DROP TABLE IF EXISTS golden.r5e2; CREATE TABLE golden.r5e2(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa INT, c INT, KEY(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa), KEY(aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa));'
+ERROR 1059 (42000) at line 1: Identifier name 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_2' is too long
+rc=1
