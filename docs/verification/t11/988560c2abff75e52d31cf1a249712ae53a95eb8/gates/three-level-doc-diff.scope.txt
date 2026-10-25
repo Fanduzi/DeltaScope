@@ -1,0 +1,11 @@
+# three-level-doc on committed diff d0c7cf33..988560c2
+# script rule replicated: every changed source file's module README.md must also be in the diff
+internal/application/audit/README.md
+internal/application/audit/batch_state_fk.go
+internal/application/audit/batch_state_t11r2_a_test.go
+internal/application/audit/batch_state_t11r2_d_test.go
+internal/application/audit/batch_state_t11r2_e_test.go
+internal/application/audit/batch_state_t11r2_f_test.go
+internal/domain/rule/ddl/README.md
+internal/domain/rule/ddl/common.go
+internal/domain/rule/ddl/primary_key_semantic_rules.go

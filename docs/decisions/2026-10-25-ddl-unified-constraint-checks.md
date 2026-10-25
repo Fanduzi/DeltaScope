@@ -230,3 +230,59 @@ Related tests: `batch_state_t11r1_c_test.go` (cross-schema),
 `batch_state_t11r1_de_test.go` (premise + dependency matrix),
 `batch_state_t11r1_f_test.go` (DROP CHECK|CONSTRAINT seam),
 `pkg/deltascope/audit_t11r1_test.go` (SDK clone + entry parity).
+
+## R2 amendment (verified against the r2 probe logs under
+`docs/verification/t11/988560c2abff75e52d31cf1a249712ae53a95eb8/native-probe/`)
+
+Four counterexample-driven corrections, one shared premise each:
+
+1. **PK structural rules read the statement's ordered column facts, not
+   only the pre-state.** Probes show MySQL evaluates the key action
+   against the effective statement-local declaration — `ADD COLUMN` +
+   `ADD PRIMARY KEY` lands in either action order, `MODIFY` + `ADD
+   PRIMARY KEY` reads the new definition (8.0.46/8.4.10) — while TiDB
+   validates every action against the pre-state and refuses the
+   statement (1072/8200). `statementColumnDecls` folds column actions in
+   authored order; `orderedColumnFact` returns a tri-state verdict —
+   resolved / proven-absent (native refusal, no gap) / undecidable
+   (bounded `target_table.columns` gap) — shared verbatim by Evaluate
+   and EvidenceGaps on the bigint/unsigned/auto_increment family.
+2. **The referenced-key premise distinguishes complete keys from
+   partial references for NEW MySQL references.** Under observed
+   `restrict_fk_on_non_standard_key=ON` the referenced columns must
+   equal the member's entire key — partial unique and partial primary
+   references refuse 6125 like non-unique members (probed 8.4.10).
+   `referencedKeyMatch` keeps leftmost-prefix coverage and adds
+   `indexMatchesColumnsExactly`: an exact match needs no flag fact, an
+   unobserved flag or unproven version leaves a prefix-only match
+   undecidable (never defaulted ON or OFF), pre-8.4 MySQL keeps the
+   proven prefix rule, and TiDB accepts partial references (v8.5.0).
+3. **Drop dependencies ask the binding question, not the creatability
+   one.** `referencedDropDependency` now scans every loaded table
+   including the drop target itself — a self-reference's referenced-side
+   sole coverer binds (1553 on 8.0/8.4 for both `DROP PRIMARY KEY` and
+   the child supporting index) — and answers with
+   `supportingIndexCandidate` kinds plus physical prefix coverage. A
+   provider-proven relationship keeps binding a non-standard member
+   under observed restrict ON: the flag gates creating an equivalent
+   new reference, never retroactively an existing binding (probed —
+   OFF-built non-unique parent index still refuses the drop with 1553
+   after the flag flips ON).
+4. **`applyDropCheck` covers every kind `DROP CONSTRAINT` removes.**
+   Probes on 8.0.46/8.4.10: `DROP CONSTRAINT` removes a foreign key, a
+   unique member, the stored-`PRIMARY` object, and a real CHECK;
+   `DROP CHECK` removes only a real CHECK (3821/3940 elsewhere). The
+   authored keyword is unrecoverable from the shared AST node, so a
+   proven unique member or `PRIMARY` object now unvouches like the FK
+   arm — `unvouchIndexMember`/`unvouchPrimaryKeyObject` drop the
+   projection and unvouch the affected collection. A proven secondary
+   member provably survives both keywords, an unmatched name refuses
+   both, and untargeted columns/indexes/constraints stay put. TiDB's
+   arms are unchanged: warning-1105 no-op under
+   `tidb_enable_check_constraint=OFF`, 3940 under ON — verified with a
+   complete fixture/SQL/rc/warnings/KCU/SHOW CREATE cell.
+
+Related tests: `batch_state_t11r2_a_test.go` (same-statement declared
+facts), `batch_state_t11r2_d_test.go` (strict anchor + flag tri-state),
+`batch_state_t11r2_e_test.go` (self/existing binding dependencies),
+`batch_state_t11r2_f_test.go` (DROP CHECK|CONSTRAINT kind coverage).

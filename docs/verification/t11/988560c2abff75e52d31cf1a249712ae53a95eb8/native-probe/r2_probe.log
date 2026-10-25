@@ -1,0 +1,316 @@
+## anchor deltascope-ddl-golden-mysql84
+version/restrict: mysql: [Warning] Using a password on the command line interface can be insecure. 8.4.10 1 
+## anchor deltascope-ddl-golden-mysql80
+version/restrict: mysql: [Warning] Using a password on the command line interface can be insecure. 8.0.46 ERROR 1193 (HY000) at line 1: Unknown system variable 'restrict_fk_on_non_standard_key' 
+=== CELL D-OFF restrict_fk_on_non_standard_key=OFF (8.4)
+$ SET GLOBAL restrict_fk_on_non_standard_key=OFF
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  global=mysql: [Warning] Using a password on the command line interface can be insecure.
+  global=0
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+=== CELL D-OFF partial UNIQUE: FK(c) REFERENCES puq(a) where unique is (a,b)
+$ ALTER TABLE t11r2d.c1 ADD CONSTRAINT fk1 FOREIGN KEY(c) REFERENCES t11r2d.puq(a);
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  post KCU=mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== CELL D-OFF partial PK: FK(c) REFERENCES ppk(a) where pk is (a,b)
+$ ALTER TABLE t11r2d.c2 ADD CONSTRAINT fk2 FOREIGN KEY(c) REFERENCES t11r2d.ppk(a);
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  post KCU=mysql: [Warning] Using a password on the command line interface can be insecure.
+2
+=== CELL D-OFF partial secondary: FK(c) REFERENCES psc(a) where index is (a,b)
+$ ALTER TABLE t11r2d.c3 ADD CONSTRAINT fk3 FOREIGN KEY(c) REFERENCES t11r2d.psc(a);
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  post KCU=mysql: [Warning] Using a password on the command line interface can be insecure.
+3
+=== CELL D-OFF full UNIQUE: FK(a,b) REFERENCES puq(a,b)
+$ ALTER TABLE t11r2d.c4 ADD CONSTRAINT fk4 FOREIGN KEY(a,b) REFERENCES t11r2d.puq(a,b);
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  post KCU=mysql: [Warning] Using a password on the command line interface can be insecure.
+5
+=== CELL D-OFF wrong-order UNIQUE: FK(c) REFERENCES puq(b)
+$ ALTER TABLE t11r2d.c5 ADD CONSTRAINT fk5 FOREIGN KEY(c) REFERENCES t11r2d.puq(b);
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1822 (HY000) at line 1: Failed to add the foreign key constraint. Missing index for constraint 'fk5' in the referenced table 'puq'
+  rc=1
+=== CELL D-ON restrict_fk_on_non_standard_key=ON (8.4)
+$ SET GLOBAL restrict_fk_on_non_standard_key=ON
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  global=mysql: [Warning] Using a password on the command line interface can be insecure.
+  global=1
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+=== CELL D-ON partial UNIQUE: FK(c) REFERENCES puq(a) where unique is (a,b)
+$ ALTER TABLE t11r2d.c1 ADD CONSTRAINT fk1 FOREIGN KEY(c) REFERENCES t11r2d.puq(a);
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 6125 (HY000) at line 1: Failed to add the foreign key constraint. Missing unique key for constraint 'fk1' in the referenced table 'puq'
+  rc=1
+  post KCU=mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== CELL D-ON partial PK: FK(c) REFERENCES ppk(a) where pk is (a,b)
+$ ALTER TABLE t11r2d.c2 ADD CONSTRAINT fk2 FOREIGN KEY(c) REFERENCES t11r2d.ppk(a);
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 6125 (HY000) at line 1: Failed to add the foreign key constraint. Missing unique key for constraint 'fk2' in the referenced table 'ppk'
+  rc=1
+  post KCU=mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== CELL D-ON partial secondary: FK(c) REFERENCES psc(a) where index is (a,b)
+$ ALTER TABLE t11r2d.c3 ADD CONSTRAINT fk3 FOREIGN KEY(c) REFERENCES t11r2d.psc(a);
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 6125 (HY000) at line 1: Failed to add the foreign key constraint. Missing unique key for constraint 'fk3' in the referenced table 'psc'
+  rc=1
+  post KCU=mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== CELL D-ON full UNIQUE: FK(a,b) REFERENCES puq(a,b)
+$ ALTER TABLE t11r2d.c4 ADD CONSTRAINT fk4 FOREIGN KEY(a,b) REFERENCES t11r2d.puq(a,b);
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  post KCU=mysql: [Warning] Using a password on the command line interface can be insecure.
+2
+=== CELL D-ON wrong-order UNIQUE: FK(c) REFERENCES puq(b)
+$ ALTER TABLE t11r2d.c5 ADD CONSTRAINT fk5 FOREIGN KEY(c) REFERENCES t11r2d.puq(b);
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 6125 (HY000) at line 1: Failed to add the foreign key constraint. Missing unique key for constraint 'fk5' in the referenced table 'puq'
+  rc=1
+=== CELL E1 self-reference sole referenced coverer drop (deltascope-ddl-golden-mysql80)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+$ CREATE TABLE t11r2e.t(id int not null, parent_id int null, primary key(id), key ix_parent(parent_id), constraint fk_parent foreign key(parent_id) references t11r2e.t(id));
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+$ ALTER TABLE t11r2e.t DROP PRIMARY KEY;
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1553 (HY000) at line 1: Cannot drop index 'PRIMARY': needed in a foreign key constraint
+  rc=1
+  post: pk_exists=mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+$ ALTER TABLE t11r2e.t DROP INDEX ix_parent;
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1553 (HY000) at line 1: Cannot drop index 'ix_parent': needed in a foreign key constraint
+  rc=1
+=== CELL E1 self-reference sole referenced coverer drop (deltascope-ddl-golden-mysql84)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+$ CREATE TABLE t11r2e.t(id int not null, parent_id int null, primary key(id), key ix_parent(parent_id), constraint fk_parent foreign key(parent_id) references t11r2e.t(id));
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+$ ALTER TABLE t11r2e.t DROP PRIMARY KEY;
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1553 (HY000) at line 1: Cannot drop index 'PRIMARY': needed in a foreign key constraint
+  rc=1
+  post: pk_exists=mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+$ ALTER TABLE t11r2e.t DROP INDEX ix_parent;
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1553 (HY000) at line 1: Cannot drop index 'ix_parent': needed in a foreign key constraint
+  rc=1
+=== CELL E1 self-reference sole referenced coverer drop (deltascope-ddl-golden-tidb85-client)
+$ CREATE TABLE t11r2e.t(id int not null, parent_id int null, primary key(id), key ix_parent(parent_id), constraint fk_parent foreign key(parent_id) references t11r2e.t(id));
+  rc=0
+$ ALTER TABLE t11r2e.t DROP PRIMARY KEY;
+ERROR 8200 (HY000) at line 1: Unsupported drop primary key when the table is using clustered index
+  rc=1
+  post: pk_exists=1
+$ ALTER TABLE t11r2e.t DROP INDEX ix_parent;
+ERROR 1553 (HY000) at line 1: Cannot drop index 'ix_parent': needed in a foreign key constraint
+  rc=1
+=== CELL E2 existing non-unique parent index drop under restrict ON (8.4)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+built under OFF; switching ON
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  global=mysql: [Warning] Using a password on the command line interface can be insecure.
+  global=1
+$ ALTER TABLE t11r2e2.p DROP INDEX ix_id;
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1553 (HY000) at line 1: Cannot drop index '<unknown key name>': needed in a foreign key constraint
+  rc=1
+  post: ix_id_exists=mysql: [Warning] Using a password on the command line interface can be insecure.
+1 fk_exists=mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+$ ALTER TABLE t11r2e2.t DROP INDEX ix_c; (child supporting index)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1553 (HY000) at line 1: Cannot drop index 'ix_c': needed in a foreign key constraint
+  rc=1
+  post: ix_c_exists=mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== CELL F target types (deltascope-ddl-golden-mysql80)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+$ ALTER TABLE t11r2f.t drop constraint uk_v;
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  post: uk_v=mysql: [Warning] Using a password on the command line interface can be insecure.
+0 ix_u=mysql: [Warning] Using a password on the command line interface can be insecure.
+1 pk=mysql: [Warning] Using a password on the command line interface can be insecure.
+2 chk=mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+$ ALTER TABLE t11r2f.t drop check uk_v;
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3821 (HY000) at line 1: Check constraint 'uk_v' is not found in the table.
+  rc=1
+  post: uk_v=mysql: [Warning] Using a password on the command line interface can be insecure.
+0 ix_u=mysql: [Warning] Using a password on the command line interface can be insecure.
+1 pk=mysql: [Warning] Using a password on the command line interface can be insecure.
+2 chk=mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+$ ALTER TABLE t11r2f.t drop constraint ix_u;
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3940 (HY000) at line 1: Constraint 'ix_u' does not exist.
+  rc=1
+  post: uk_v=mysql: [Warning] Using a password on the command line interface can be insecure.
+0 ix_u=mysql: [Warning] Using a password on the command line interface can be insecure.
+1 pk=mysql: [Warning] Using a password on the command line interface can be insecure.
+2 chk=mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+$ ALTER TABLE t11r2f.t drop constraint missing_x;
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3940 (HY000) at line 1: Constraint 'missing_x' does not exist.
+  rc=1
+  post: uk_v=mysql: [Warning] Using a password on the command line interface can be insecure.
+0 ix_u=mysql: [Warning] Using a password on the command line interface can be insecure.
+1 pk=mysql: [Warning] Using a password on the command line interface can be insecure.
+2 chk=mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+$ ALTER TABLE t11r2f.t drop check missing_x;
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3821 (HY000) at line 1: Check constraint 'missing_x' is not found in the table.
+  rc=1
+  post: uk_v=mysql: [Warning] Using a password on the command line interface can be insecure.
+0 ix_u=mysql: [Warning] Using a password on the command line interface can be insecure.
+1 pk=mysql: [Warning] Using a password on the command line interface can be insecure.
+2 chk=mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+$ ALTER TABLE t11r2f.t drop constraint primary;
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'primary' at line 1
+  rc=1
+  post: uk_v=mysql: [Warning] Using a password on the command line interface can be insecure.
+0 ix_u=mysql: [Warning] Using a password on the command line interface can be insecure.
+1 pk=mysql: [Warning] Using a password on the command line interface can be insecure.
+2 chk=mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+$ ALTER TABLE t11r2f.t drop check primary;
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'primary' at line 1
+  rc=1
+  post: uk_v=mysql: [Warning] Using a password on the command line interface can be insecure.
+0 ix_u=mysql: [Warning] Using a password on the command line interface can be insecure.
+1 pk=mysql: [Warning] Using a password on the command line interface can be insecure.
+2 chk=mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+$ ALTER TABLE t11r2f.t DROP CONSTRAINT chk-named? (real CHECK survives above; drop by auto name)
+  check_name=mysql: [Warning] Using a password on the command line interface can be insecure.
+t_chk_1
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3940 (HY000) at line 1: Constraint 'mysql: [Warning] Using a password on the command line interface can be insecure.
+t_chk_1' does not exist.
+  rc=1
+  post chk=mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== CELL F target types (deltascope-ddl-golden-mysql84)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+$ ALTER TABLE t11r2f.t drop constraint uk_v;
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  post: uk_v=mysql: [Warning] Using a password on the command line interface can be insecure.
+0 ix_u=mysql: [Warning] Using a password on the command line interface can be insecure.
+1 pk=mysql: [Warning] Using a password on the command line interface can be insecure.
+2 chk=mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+$ ALTER TABLE t11r2f.t drop check uk_v;
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3821 (HY000) at line 1: Check constraint 'uk_v' is not found in the table.
+  rc=1
+  post: uk_v=mysql: [Warning] Using a password on the command line interface can be insecure.
+0 ix_u=mysql: [Warning] Using a password on the command line interface can be insecure.
+1 pk=mysql: [Warning] Using a password on the command line interface can be insecure.
+2 chk=mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+$ ALTER TABLE t11r2f.t drop constraint ix_u;
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3940 (HY000) at line 1: Constraint 'ix_u' does not exist.
+  rc=1
+  post: uk_v=mysql: [Warning] Using a password on the command line interface can be insecure.
+0 ix_u=mysql: [Warning] Using a password on the command line interface can be insecure.
+1 pk=mysql: [Warning] Using a password on the command line interface can be insecure.
+2 chk=mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+$ ALTER TABLE t11r2f.t drop constraint missing_x;
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3940 (HY000) at line 1: Constraint 'missing_x' does not exist.
+  rc=1
+  post: uk_v=mysql: [Warning] Using a password on the command line interface can be insecure.
+0 ix_u=mysql: [Warning] Using a password on the command line interface can be insecure.
+1 pk=mysql: [Warning] Using a password on the command line interface can be insecure.
+2 chk=mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+$ ALTER TABLE t11r2f.t drop check missing_x;
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3821 (HY000) at line 1: Check constraint 'missing_x' is not found in the table.
+  rc=1
+  post: uk_v=mysql: [Warning] Using a password on the command line interface can be insecure.
+0 ix_u=mysql: [Warning] Using a password on the command line interface can be insecure.
+1 pk=mysql: [Warning] Using a password on the command line interface can be insecure.
+2 chk=mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+$ ALTER TABLE t11r2f.t drop constraint primary;
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'primary' at line 1
+  rc=1
+  post: uk_v=mysql: [Warning] Using a password on the command line interface can be insecure.
+0 ix_u=mysql: [Warning] Using a password on the command line interface can be insecure.
+1 pk=mysql: [Warning] Using a password on the command line interface can be insecure.
+2 chk=mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+$ ALTER TABLE t11r2f.t drop check primary;
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'primary' at line 1
+  rc=1
+  post: uk_v=mysql: [Warning] Using a password on the command line interface can be insecure.
+0 ix_u=mysql: [Warning] Using a password on the command line interface can be insecure.
+1 pk=mysql: [Warning] Using a password on the command line interface can be insecure.
+2 chk=mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+$ ALTER TABLE t11r2f.t DROP CONSTRAINT chk-named? (real CHECK survives above; drop by auto name)
+  check_name=mysql: [Warning] Using a password on the command line interface can be insecure.
+t_chk_1
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3940 (HY000) at line 1: Constraint 'mysql: [Warning] Using a password on the command line interface can be insecure.
+t_chk_1' does not exist.
+  rc=1
+  post chk=mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== CELL F 5.7 syntax control
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'constraint uk_v' at line 1
+  rc=1
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'constraint uk_v' at line 1
+  rc=1
+=== CELL TiDB tidb_enable_check_constraint OFF/ON (v8.5.0)
+var=0
+$ SET GLOBAL tidb_enable_check_constraint=0
+0
+  session=0
+$ ALTER TABLE t11r2t.t DROP CONSTRAINT fk_c; SHOW WARNINGS;
+Warning	1105	tidb_enable_check_constraint is off
+  rc-of-ddl-alone:   rc=0
+  post fk KCU=1
+$ ALTER TABLE t11r2t.t DROP CHECK fk_c; SHOW WARNINGS;
+Warning	1105	tidb_enable_check_constraint is off
+  post fk KCU=1
+$ SET GLOBAL tidb_enable_check_constraint=1
+1
+  session=1
+$ ALTER TABLE t11r2t.t DROP CONSTRAINT fk_c; SHOW WARNINGS;
+ERROR 3940 (HY000) at line 1: Constraint 'fk_c' does not exist.
+  rc-of-ddl-alone: ERROR 3940 (HY000) at line 1: Constraint 'fk_c' does not exist.
+  rc=1
+  post fk KCU=1
+$ ALTER TABLE t11r2t.t DROP CHECK fk_c; SHOW WARNINGS;
+ERROR 3940 (HY000) at line 1: Constraint 'fk_c' does not exist.
+  post fk KCU=1
+## DONE

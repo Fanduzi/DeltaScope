@@ -10,7 +10,7 @@ T11 contract (issue #79 parent).
 |-----------|----------|
 | gates/ | Per-gate quad files (`<gate>.{command,stdout,stderr,rc}.txt`) executed against the bound SHA on this host |
 | green/ | `go test -count=1` logs for the packages touched by the R1 product diff on `216e187c` |
-| red/ | Revert-stub replay evidence: five `REDSTUB` mutations disable one R1 seam each; the focused R1 tests must fail — 21 audit FAILs, 4 SDK FAILs, 4 rule FAILs. Marked REPLAY; see `red/README.md` |
+| red/ | Revert-stub replay evidence: five `REDSTUB` mutations disable one R1 seam each; the focused R1 tests must fail — 21 audit `--- FAIL` markers over 16 leaf tests / 9 parents, 1 SDK FAIL, 1 rule FAIL. Marked REPLAY — a mutation replay demonstrating the seams are load-bearing, not a rerun of the original baseline reds; see `red/README.md` |
 | golden/ | `T11-artifact.json` (40/40, 505 assertions), `T09-artifact.json` (125/125, 3442), `T10-artifact.json` (126/126, 3175), plus per-task run-log summaries derived from each artifact JSON (artifact-derived digests, not verbatim runner stdout) — all `head_sha=216e187c` |
 | native-probe/ | Raw R1 four-anchor probe logs (MySQL 5.7.44/8.0.46/8.4.10, TiDB v8.5.0) with the corrected fact matrix |
 | identity.txt | Product SHA, parent chain, CLI sha256, golden totals, anchor versions, credential-env convention |

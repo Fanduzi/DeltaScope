@@ -1,0 +1,86 @@
+## anchor: TiDB 8.0.11-TiDB-v8.5.0
+-- fixture --
+fixture rc=0
+*************************** 1. row ***************************
+       Table: t
+Create Table: CREATE TABLE `t` (
+  `id` int NOT NULL,
+  `v` int DEFAULT NULL,
+  `c` int DEFAULT NULL,
+  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */,
+  UNIQUE KEY `uk_v` (`v`),
+  KEY `ix_c` (`c`),
+  CONSTRAINT `fk_c` FOREIGN KEY (`c`) REFERENCES `t` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+===== tidb_enable_check_constraint=0 =====
+var=0
+KCU-before: fk_c	t11r2f3;
+-- $ ALTER TABLE t11r2f3.t drop constraint uk_v
+Level	Code	Message
+Warning	1105	tidb_enable_check_constraint is off
+client_rc=0
+-- $ ALTER TABLE t11r2f3.t drop check uk_v
+Level	Code	Message
+Warning	1105	tidb_enable_check_constraint is off
+client_rc=0
+-- $ ALTER TABLE t11r2f3.t drop constraint fk_c
+Level	Code	Message
+Warning	1105	tidb_enable_check_constraint is off
+client_rc=0
+-- $ ALTER TABLE t11r2f3.t drop check fk_c
+Level	Code	Message
+Warning	1105	tidb_enable_check_constraint is off
+client_rc=0
+-- $ ALTER TABLE t11r2f3.t drop constraint `primary`
+Level	Code	Message
+Warning	1105	tidb_enable_check_constraint is off
+client_rc=0
+-- $ ALTER TABLE t11r2f3.t drop check `primary`
+Level	Code	Message
+Warning	1105	tidb_enable_check_constraint is off
+client_rc=0
+KCU-after: fk_c;
+post-objects: pk=1 uk=1
+       Table: t
+Create Table: CREATE TABLE `t` (
+  `id` int NOT NULL,
+  `v` int DEFAULT NULL,
+  `c` int DEFAULT NULL,
+  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */,
+  UNIQUE KEY `uk_v` (`v`),
+  KEY `ix_c` (`c`),
+  CONSTRAINT `fk_c` FOREIGN KEY (`c`) REFERENCES `t` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+===== tidb_enable_check_constraint=1 =====
+var=1
+KCU-before: fk_c	t11r2f3;
+-- $ ALTER TABLE t11r2f3.t drop constraint uk_v
+ERROR 3940 (HY000) at line 1: Constraint 'uk_v' does not exist.
+client_rc=1
+-- $ ALTER TABLE t11r2f3.t drop check uk_v
+ERROR 3940 (HY000) at line 1: Constraint 'uk_v' does not exist.
+client_rc=1
+-- $ ALTER TABLE t11r2f3.t drop constraint fk_c
+ERROR 3940 (HY000) at line 1: Constraint 'fk_c' does not exist.
+client_rc=1
+-- $ ALTER TABLE t11r2f3.t drop check fk_c
+ERROR 3940 (HY000) at line 1: Constraint 'fk_c' does not exist.
+client_rc=1
+-- $ ALTER TABLE t11r2f3.t drop constraint `primary`
+ERROR 3940 (HY000) at line 1: Constraint 'primary' does not exist.
+client_rc=1
+-- $ ALTER TABLE t11r2f3.t drop check `primary`
+ERROR 3940 (HY000) at line 1: Constraint 'primary' does not exist.
+client_rc=1
+KCU-after: fk_c;
+post-objects: pk=1 uk=1
+       Table: t
+Create Table: CREATE TABLE `t` (
+  `id` int NOT NULL,
+  `v` int DEFAULT NULL,
+  `c` int DEFAULT NULL,
+  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */,
+  UNIQUE KEY `uk_v` (`v`),
+  KEY `ix_c` (`c`),
+  CONSTRAINT `fk_c` FOREIGN KEY (`c`) REFERENCES `t` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin

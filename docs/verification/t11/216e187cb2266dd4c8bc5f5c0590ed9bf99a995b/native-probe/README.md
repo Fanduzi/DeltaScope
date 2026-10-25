@@ -1,8 +1,13 @@
 # T11-R1 native-anchor probes
 
 Targeted probes run on the live ddl-golden compose anchors during the
-R1 hardening pass. Raw session logs (verbatim client output) are
-preserved beside this file and under
+R1 hardening pass. *rc convention note (added for R2): these logs print
+client rc inline where captured, but several early cells recorded the
+combined command's rc rather than the per-statement client rc — treat
+`rc=` lines in `r1-probe*`/`r1-probe2.log` as indicative and trust the
+KCU/SHOW-CREATE post-state rows for landed truth; the T11-R2 probe logs
+capture the real `docker exec`/client rc per statement.* Raw session
+logs (verbatim client output) are preserved beside this file and under
 `docs/work-plans/t11-unified-constraints/r1/`:
 
 - `r1-probe-mysql57-80.log` — referenced-key eligibility, refer actions,

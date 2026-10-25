@@ -177,7 +177,7 @@ finding set for the same fact.
 | E1 | TiDB bare FK → derived name fk_1; MySQL → table_ibfk_1, index first-col | native verify + state publish |
 | E2 | TiDB FK referencing clustered-PK parent | fk-forbid fires; native accepted |
 | E3 | 5.7 default RESTRICT vs 8.x/TiDB NO ACTION | native catalog assertions (ddl_steps) |
-| E4 | `DROP CONSTRAINT`/`DROP CHECK` share one AST node — post-state answers by proven target type, never the unrecoverable keyword: TiDB never removes a foreign key that way (v8.5.0 probe — warned no-op under `tidb_enable_check_constraint=OFF`, 3940 under ON; an earlier `rc=0` oracle was probe-falsified), MySQL 5.7 rejects the syntax, and MySQL 8.x drops the FK under `DROP CONSTRAINT` but refuses `DROP CHECK` (3821) so a proven-FK name unvouches that member's fate. Real CHECK removal stays T12 |
+| E4 | `DROP CONSTRAINT`/`DROP CHECK` share one AST node — post-state answers by proven target type, never the unrecoverable keyword: TiDB never removes a foreign key that way (v8.5.0 probe — warned no-op under `tidb_enable_check_constraint=OFF`, 3940 under ON; an earlier `rc=0` oracle was probe-falsified), MySQL 5.7 rejects the syntax, and MySQL 8.x drops the FK under `DROP CONSTRAINT` but refuses `DROP CHECK` (3821) so a proven-FK name unvouches that member's fate. R2: the same unprovable-fate treatment covers the other kinds `DROP CONSTRAINT` removes natively — a proven unique member and the stored-`PRIMARY` object (probed on 8.0.46/8.4.10). Real CHECK removal stays T12 |
 
 Anti-false-green: negative SQL must fail for the intended reason (missing
 column → 1072, dup name → 1022/1826, no usable referenced key → 1215 on
@@ -237,6 +237,49 @@ T11-R1 additions (verified against the r1/ probe logs):
   unproven kinds and unvouched collections make the answer unprovable.
 - `DROP CHECK`/`DROP CONSTRAINT` publishes by proven target type (row E4);
   a real CHECK member remains unmodeled and out of audited scope (T12).
+
+T11-R2 additions (verified against the r2 probe logs under
+`docs/verification/t11/<sha>/native-probe/`):
+- PK structural rules resolve the member against the statement's ordered
+  column facts, not only the pre-state: `statementColumnDecls` folds
+  same-statement column actions in authored order and `orderedColumnFact`
+  returns a tri-state verdict shared verbatim by Evaluate and
+  EvidenceGaps. MySQL evaluates the key action against the effective
+  statement-local declaration (probed 8.0.46/8.4.10: `ADD COLUMN`+`ADD
+  PRIMARY KEY` lands in either action order, `MODIFY`+`ADD PRIMARY KEY`
+  reads the new definition — so a same-statement ADD supplies a member
+  the pre-state never had); TiDB validates every action against the
+  pre-state (1072 for an unknown member, 8200 for an operated same
+  column — a touched member is undecidable, never resolvable). A
+  proven-absent member is the native refusal; only the undecidable
+  middle owes the bounded `target_table.columns` gap.
+- The referenced-key premise distinguishes complete keys from partial
+  references for NEW MySQL references: `referencedKeyMatch` keeps the
+  leftmost-prefix test and adds the strict-anchor complete-key test —
+  under observed `restrict_fk_on_non_standard_key=ON` the referenced
+  columns must equal the member's entire key (partial unique and partial
+  primary refuse 6125 like non-unique members, probed on 8.4.10). An
+  exact match needs no flag fact, an unobserved flag or unproven version
+  leaves a prefix-only match undecidable, pre-8.4 keeps the proven
+  prefix rule, and TiDB accepts partial references (probed v8.5.0).
+- Drop dependencies ask the binding question, not the creatability one:
+  `referencedDropDependency` scans every loaded table including the drop
+  target itself (a self-reference's referenced-side sole coverer binds —
+  1553 on 8.0/8.4 for both `DROP PRIMARY KEY` and the child supporting
+  index) and uses `supportingIndexCandidate` kinds plus physical prefix
+  coverage, so a provider-proven relationship keeps binding a
+  non-standard member under observed restrict ON (probed: an OFF-built
+  non-unique parent index still refuses its drop with 1553 after
+  switching ON).
+- `applyDropCheck`'s MySQL 8.x arm covers every constraint kind DROP
+  CONSTRAINT removes: the unrecoverable authored keyword leaves a proven
+  FK member's, unique member's, or stored-`PRIMARY` object's fate
+  unprovable — `unvouchForeignKeyMember`/`unvouchIndexMember`/
+  `unvouchPrimaryKeyObject` drop the projection and unvouch the affected
+  collection (probed on 8.0.46/8.4.10: `DROP CONSTRAINT` removes all
+  three, `DROP CHECK` removes only a real CHECK — 3821/3940 elsewhere).
+  A proven secondary member, an unmatched name, and untargeted facts
+  stay put; TiDB's OFF-warning/ON-3940 no-op arms are unchanged.
 
 `applyDropForeignKey` (new):
 - proven constraint name → remove that row only; the supporting index

@@ -1,0 +1,253 @@
+=== RUN   TestT11R2MySQLAddColumnSuppliesPKMember
+=== PAUSE TestT11R2MySQLAddColumnSuppliesPKMember
+=== RUN   TestT11R2MySQLAddColumnCompliantPKMember
+=== PAUSE TestT11R2MySQLAddColumnCompliantPKMember
+=== RUN   TestT11R2MySQLModifyColumnSuppliesPKMember
+=== PAUSE TestT11R2MySQLModifyColumnSuppliesPKMember
+=== RUN   TestT11R2MySQLModifyColumnNarrowsPKMember
+=== PAUSE TestT11R2MySQLModifyColumnNarrowsPKMember
+=== RUN   TestT11R2MySQLDeclaredMemberFeedsSiblingRules
+=== PAUSE TestT11R2MySQLDeclaredMemberFeedsSiblingRules
+=== RUN   TestT11R2MySQLUnrelatedColumnActionKeepsPreStateFact
+=== PAUSE TestT11R2MySQLUnrelatedColumnActionKeepsPreStateFact
+=== RUN   TestT11R2MySQLRenameCarriesPreStateFact
+=== PAUSE TestT11R2MySQLRenameCarriesPreStateFact
+=== RUN   TestT11R2MySQLDroppedMemberIsUndecidable
+=== PAUSE TestT11R2MySQLDroppedMemberIsUndecidable
+=== RUN   TestT11R2TiDBSameStatementDeclarationUnprovable
+=== PAUSE TestT11R2TiDBSameStatementDeclarationUnprovable
+=== RUN   TestT11R2DeclaredMemberRuleOff
+=== PAUSE TestT11R2DeclaredMemberRuleOff
+=== RUN   TestT11R2RestrictOnPartialKeysRefuse
+=== PAUSE TestT11R2RestrictOnPartialKeysRefuse
+=== RUN   TestT11R2RestrictOnFullKeysLand
+=== PAUSE TestT11R2RestrictOnFullKeysLand
+=== RUN   TestT11R2RestrictOffPartialKeysLand
+=== PAUSE TestT11R2RestrictOffPartialKeysLand
+=== RUN   TestT11R2RestrictUnreadPartialUndecidable
+=== PAUSE TestT11R2RestrictUnreadPartialUndecidable
+=== RUN   TestT11R2Pre84PartialKeysLand
+=== PAUSE TestT11R2Pre84PartialKeysLand
+=== RUN   TestT11R2TiDBPartialKeysLand
+=== PAUSE TestT11R2TiDBPartialKeysLand
+=== RUN   TestT11R2UnknownVersionPartialUndecidable
+=== PAUSE TestT11R2UnknownVersionPartialUndecidable
+=== RUN   TestT11R2SelfReferenceSoleCovererRefuses
+=== PAUSE TestT11R2SelfReferenceSoleCovererRefuses
+=== RUN   TestT11R2SelfReferenceChildSideSoleCoverer
+=== PAUSE TestT11R2SelfReferenceChildSideSoleCoverer
+=== RUN   TestT11R2ExistingNonStandardBindingSurvivesRestrict
+=== PAUSE TestT11R2ExistingNonStandardBindingSurvivesRestrict
+=== RUN   TestT11R2ExistingBindingAlternativeCovererFrees
+=== PAUSE TestT11R2ExistingBindingAlternativeCovererFrees
+=== RUN   TestT11R2UnvouchedChildKeepsDependencyUnprovable
+=== PAUSE TestT11R2UnvouchedChildKeepsDependencyUnprovable
+=== RUN   TestT11R2DropConstraintUnvouchesUniqueMember
+=== PAUSE TestT11R2DropConstraintUnvouchesUniqueMember
+=== RUN   TestT11R2DropConstraintUnvouchesPrimaryKeyObject
+=== PAUSE TestT11R2DropConstraintUnvouchesPrimaryKeyObject
+=== RUN   TestT11R2DropConstraintKeepsSecondaryMember
+=== PAUSE TestT11R2DropConstraintKeepsSecondaryMember
+=== RUN   TestT11R2DropConstraintMissingNameKeepsFacts
+=== PAUSE TestT11R2DropConstraintMissingNameKeepsFacts
+=== RUN   TestT11R2DropCheckKeywordSameAmbiguity
+=== PAUSE TestT11R2DropCheckKeywordSameAmbiguity
+=== RUN   TestT11R2TiDBDropConstraintNoOp
+=== PAUSE TestT11R2TiDBDropConstraintNoOp
+=== RUN   TestT11R2MySQL57DropConstraintSyntaxRefusal
+=== PAUSE TestT11R2MySQL57DropConstraintSyntaxRefusal
+=== RUN   TestT11R2UnknownVersionDropConstraintUnvouches
+=== PAUSE TestT11R2UnknownVersionDropConstraintUnvouches
+=== RUN   TestT11R2DropConstraintPreservesUntargetedFacts
+=== PAUSE TestT11R2DropConstraintPreservesUntargetedFacts
+=== CONT  TestT11R2MySQLAddColumnSuppliesPKMember
+=== CONT  TestT11R2UnknownVersionPartialUndecidable
+=== CONT  TestT11R2DropConstraintKeepsSecondaryMember
+=== CONT  TestT11R2ExistingBindingAlternativeCovererFrees
+=== CONT  TestT11R2DropConstraintPreservesUntargetedFacts
+=== CONT  TestT11R2DropConstraintUnvouchesPrimaryKeyObject
+=== CONT  TestT11R2UnknownVersionDropConstraintUnvouches
+=== CONT  TestT11R2DropConstraintUnvouchesUniqueMember
+=== CONT  TestT11R2ExistingNonStandardBindingSurvivesRestrict
+=== CONT  TestT11R2UnvouchedChildKeepsDependencyUnprovable
+=== CONT  TestT11R2TiDBSameStatementDeclarationUnprovable
+=== CONT  TestT11R2SelfReferenceChildSideSoleCoverer
+--- PASS: TestT11R2SelfReferenceChildSideSoleCoverer (0.00s)
+--- PASS: TestT11R2ExistingBindingAlternativeCovererFrees (0.00s)
+=== CONT  TestT11R2TiDBPartialKeysLand
+=== CONT  TestT11R2Pre84PartialKeysLand
+=== CONT  TestT11R2RestrictOffPartialKeysLand
+--- PASS: TestT11R2UnvouchedChildKeepsDependencyUnprovable (0.00s)
+=== RUN   TestT11R2TiDBPartialKeysLand/partial_unique
+=== PAUSE TestT11R2TiDBPartialKeysLand/partial_unique
+=== NAME  TestT11R2DropConstraintPreservesUntargetedFacts
+    batch_state_t11r2_f_test.go:192: the member's fate is undecidable — the index set unvouches, got [{Name:uk_v Kind:unique Columns:[v] KeyParts:[] Cardinality:<nil> AccessMethod: IncludedColumns:[] HasPredicate:false HasExpressionKeys:false ExpressionCount:0 PrefixParts:0 DescParts:0 MultiValuedParts:0 Visibility: VisibilityExplicit:false UnmodeledKeyParts:0 DirectionUnknownParts:0 Global:false PrimaryKeyType: UnmodeledOptions:[] NameUnknown:false} {Name:ix_u Kind:secondary Columns:[u] KeyParts:[] Cardinality:<nil> AccessMethod: IncludedColumns:[] HasPredicate:false HasExpressionKeys:false ExpressionCount:0 PrefixParts:0 DescParts:0 MultiValuedParts:0 Visibility: VisibilityExplicit:false UnmodeledKeyParts:0 DirectionUnknownParts:0 Global:false PrimaryKeyType: UnmodeledOptions:[] NameUnknown:false}]
+--- FAIL: TestT11R2DropConstraintPreservesUntargetedFacts (0.00s)
+=== CONT  TestT11R2RestrictUnreadPartialUndecidable
+=== RUN   TestT11R2RestrictOffPartialKeysLand/partial_unique
+=== PAUSE TestT11R2RestrictOffPartialKeysLand/partial_unique
+=== RUN   TestT11R2RestrictOffPartialKeysLand/partial_primary_key
+=== PAUSE TestT11R2RestrictOffPartialKeysLand/partial_primary_key
+=== RUN   TestT11R2RestrictOffPartialKeysLand/partial_secondary
+=== PAUSE TestT11R2RestrictOffPartialKeysLand/partial_secondary
+=== RUN   TestT11R2TiDBPartialKeysLand/partial_primary_key
+=== PAUSE TestT11R2TiDBPartialKeysLand/partial_primary_key
+=== RUN   TestT11R2TiDBPartialKeysLand/partial_secondary
+=== CONT  TestT11R2SelfReferenceSoleCovererRefuses
+=== RUN   TestT11R2SelfReferenceSoleCovererRefuses/mysql
+=== PAUSE TestT11R2SelfReferenceSoleCovererRefuses/mysql
+=== PAUSE TestT11R2TiDBPartialKeysLand/partial_secondary
+=== RUN   TestT11R2SelfReferenceSoleCovererRefuses/tidb
+=== CONT  TestT11R2RestrictOnPartialKeysRefuse
+=== PAUSE TestT11R2SelfReferenceSoleCovererRefuses/tidb
+=== RUN   TestT11R2RestrictOnPartialKeysRefuse/partial_unique
+=== CONT  TestT11R2DeclaredMemberRuleOff
+=== PAUSE TestT11R2RestrictOnPartialKeysRefuse/partial_unique
+=== RUN   TestT11R2RestrictOnPartialKeysRefuse/partial_primary_key
+=== PAUSE TestT11R2RestrictOnPartialKeysRefuse/partial_primary_key
+=== RUN   TestT11R2RestrictOnPartialKeysRefuse/partial_secondary
+=== PAUSE TestT11R2RestrictOnPartialKeysRefuse/partial_secondary
+=== CONT  TestT11R2MySQLModifyColumnNarrowsPKMember
+=== RUN   TestT11R2TiDBSameStatementDeclarationUnprovable/member_declared_in_statement
+=== PAUSE TestT11R2TiDBSameStatementDeclarationUnprovable/member_declared_in_statement
+=== RUN   TestT11R2TiDBSameStatementDeclarationUnprovable/member_modified_in_statement
+=== PAUSE TestT11R2TiDBSameStatementDeclarationUnprovable/member_modified_in_statement
+=== RUN   TestT11R2TiDBSameStatementDeclarationUnprovable/untouched_member_keeps_pre-state_fact
+=== PAUSE TestT11R2TiDBSameStatementDeclarationUnprovable/untouched_member_keeps_pre-state_fact
+=== CONT  TestT11R2MySQLModifyColumnSuppliesPKMember
+=== NAME  TestT11R2UnknownVersionPartialUndecidable
+    batch_state_t11r2_d_test.go:260: an undecidable landing owes the evidence gap, got none
+--- FAIL: TestT11R2UnknownVersionPartialUndecidable (0.01s)
+=== CONT  TestT11R2MySQLAddColumnCompliantPKMember
+--- PASS: TestT11R2DropConstraintKeepsSecondaryMember (0.01s)
+=== CONT  TestT11R2MySQLRenameCarriesPreStateFact
+=== NAME  TestT11R2ExistingNonStandardBindingSurvivesRestrict
+    batch_state_t11r2_e_test.go:110: stmt 1: the existing binding refuses the drop natively — the member stays present, got []rule.Finding{rule.Finding{RuleID:"ddl.alter.drop_index.exists.require", Level:"blocker", Message:"index \"ix_id\" does not exist on table \"p\"", StatementIndex:1, StatementKind:"ddl", Location:(*rule.Location)(0x2cf065804070), Suggestion:"fix the index name or refresh metadata before auditing this change", Metadata:map[string]interface {}{"action":"drop_index", "exists":false, "name":"ix_id", "table":"p"}, Explanation:(*rule.FindingExplanation)(0x2cf06510a140)}}
+=== NAME  TestT11R2DropConstraintUnvouchesUniqueMember
+    batch_state_t11r2_f_test.go:49: an undecidable member fate owes the index-set gap, got none
+--- PASS: TestT11R2Pre84PartialKeysLand (0.01s)
+=== CONT  TestT11R2MySQLDroppedMemberIsUndecidable
+--- FAIL: TestT11R2ExistingNonStandardBindingSurvivesRestrict (0.01s)
+=== CONT  TestT11R2MySQLUnrelatedColumnActionKeepsPreStateFact
+--- FAIL: TestT11R2DropConstraintUnvouchesUniqueMember (0.01s)
+=== CONT  TestT11R2TiDBDropConstraintNoOp
+=== NAME  TestT11R2MySQLModifyColumnSuppliesPKMember
+    batch_state_t11r2_a_test.go:98: the member's new declared BIGINT satisfies the rule — the stale INT must not fire, got findings=[]rule.Finding{rule.Finding{RuleID:"ddl.table.primary_key.bigint.require", Level:"blocker", Message:"primary key column \"id\" must use bigint", StatementIndex:0, StatementKind:"ddl", Location:(*rule.Location)(0x2cf0651a2070), Suggestion:"change the primary key column type to bigint", Metadata:map[string]interface {}{"column":"id", "table":"t", "type":"int"}, Explanation:(*rule.FindingExplanation)(0x2cf0650320f0)}}
+=== NAME  TestT11R2UnknownVersionDropConstraintUnvouches
+    batch_state_t11r2_f_test.go:171: version unproven leaves the fate undecidable — gap owed
+=== NAME  TestT11R2MySQLAddColumnSuppliesPKMember
+    batch_state_t11r2_a_test.go:44: the in-statement declared INT member must emit the bigint blocker, got findings=[]rule.Finding(nil) gaps=[]rule.EvidenceGap(nil)
+--- FAIL: TestT11R2UnknownVersionDropConstraintUnvouches (0.01s)
+=== CONT  TestT11R2DropCheckKeywordSameAmbiguity
+--- FAIL: TestT11R2MySQLModifyColumnSuppliesPKMember (0.01s)
+=== CONT  TestT11R2MySQL57DropConstraintSyntaxRefusal
+--- FAIL: TestT11R2MySQLAddColumnSuppliesPKMember (0.01s)
+=== NAME  TestT11R2DropConstraintUnvouchesPrimaryKeyObject
+    batch_state_t11r2_f_test.go:70: an undecidable primary-key fate owes the gap, got none
+=== NAME  TestT11R2RestrictUnreadPartialUndecidable
+    batch_state_t11r2_d_test.go:199: the undecidable landing owes the evidence gap, got none
+=== NAME  TestT11R2MySQLModifyColumnNarrowsPKMember
+    batch_state_t11r2_a_test.go:123: the narrowed INT member must emit the blocker, got findings=[]rule.Finding(nil) gaps=[]rule.EvidenceGap(nil)
+=== CONT  TestT11R2DropConstraintMissingNameKeepsFacts
+--- FAIL: TestT11R2DropConstraintUnvouchesPrimaryKeyObject (0.02s)
+=== CONT  TestT11R2RestrictOnFullKeysLand
+=== RUN   TestT11R2RestrictOnFullKeysLand/full_single_unique
+=== PAUSE TestT11R2RestrictOnFullKeysLand/full_single_unique
+=== RUN   TestT11R2RestrictOnFullKeysLand/full_composite_unique
+=== PAUSE TestT11R2RestrictOnFullKeysLand/full_composite_unique
+=== RUN   TestT11R2RestrictOnFullKeysLand/wrong_order_unique
+--- FAIL: TestT11R2RestrictUnreadPartialUndecidable (0.01s)
+=== CONT  TestT11R2MySQLDeclaredMemberFeedsSiblingRules
+=== PAUSE TestT11R2RestrictOnFullKeysLand/wrong_order_unique
+=== CONT  TestT11R2RestrictOffPartialKeysLand/partial_unique
+=== RUN   TestT11R2MySQLDeclaredMemberFeedsSiblingRules/unsigned_on_declared_int
+=== PAUSE TestT11R2MySQLDeclaredMemberFeedsSiblingRules/unsigned_on_declared_int
+=== RUN   TestT11R2MySQLDeclaredMemberFeedsSiblingRules/unsigned_on_declared_int_unsigned
+=== PAUSE TestT11R2MySQLDeclaredMemberFeedsSiblingRules/unsigned_on_declared_int_unsigned
+=== RUN   TestT11R2MySQLDeclaredMemberFeedsSiblingRules/auto_increment_on_declared_int
+=== PAUSE TestT11R2MySQLDeclaredMemberFeedsSiblingRules/auto_increment_on_declared_int
+=== RUN   TestT11R2MySQLDeclaredMemberFeedsSiblingRules/auto_increment_on_declared_auto_increment
+--- FAIL: TestT11R2MySQLModifyColumnNarrowsPKMember (0.01s)
+=== CONT  TestT11R2RestrictOffPartialKeysLand/partial_secondary
+=== PAUSE TestT11R2MySQLDeclaredMemberFeedsSiblingRules/auto_increment_on_declared_auto_increment
+=== CONT  TestT11R2RestrictOffPartialKeysLand/partial_primary_key
+=== CONT  TestT11R2TiDBPartialKeysLand/partial_unique
+--- PASS: TestT11R2DeclaredMemberRuleOff (0.01s)
+--- PASS: TestT11R2MySQL57DropConstraintSyntaxRefusal (0.01s)
+=== CONT  TestT11R2TiDBPartialKeysLand/partial_secondary
+=== NAME  TestT11R2DropCheckKeywordSameAmbiguity
+    batch_state_t11r2_f_test.go:121: the ambiguous keyword leaves the fate unprovable — gap owed
+--- PASS: TestT11R2TiDBDropConstraintNoOp (0.01s)
+=== NAME  TestT11R2MySQLDroppedMemberIsUndecidable
+    batch_state_t11r2_a_test.go:221: a dropped member fabricates no violation, got []rule.Finding{rule.Finding{RuleID:"ddl.table.primary_key.bigint.require", Level:"blocker", Message:"primary key column \"id\" must use bigint", StatementIndex:0, StatementKind:"ddl", Location:(*rule.Location)(0x2cf064ea8050), Suggestion:"change the primary key column type to bigint", Metadata:map[string]interface {}{"column":"id", "table":"t", "type":"int"}, Explanation:(*rule.FindingExplanation)(0x2cf06510a140)}}
+=== CONT  TestT11R2TiDBPartialKeysLand/partial_primary_key
+=== NAME  TestT11R2MySQLRenameCarriesPreStateFact
+    batch_state_t11r2_a_test.go:200: the renamed member carries the proven INT facts — blocker owed, got findings=[]rule.Finding(nil) gaps=[]rule.EvidenceGap(nil)
+=== CONT  TestT11R2SelfReferenceSoleCovererRefuses/mysql
+--- FAIL: TestT11R2MySQLDroppedMemberIsUndecidable (0.01s)
+=== CONT  TestT11R2SelfReferenceSoleCovererRefuses/tidb
+--- FAIL: TestT11R2DropCheckKeywordSameAmbiguity (0.01s)
+=== CONT  TestT11R2RestrictOnPartialKeysRefuse/partial_unique
+--- PASS: TestT11R2MySQLAddColumnCompliantPKMember (0.01s)
+=== CONT  TestT11R2RestrictOnPartialKeysRefuse/partial_secondary
+--- FAIL: TestT11R2MySQLRenameCarriesPreStateFact (0.01s)
+=== CONT  TestT11R2RestrictOnPartialKeysRefuse/partial_primary_key
+=== CONT  TestT11R2TiDBSameStatementDeclarationUnprovable/member_declared_in_statement
+=== CONT  TestT11R2TiDBSameStatementDeclarationUnprovable/untouched_member_keeps_pre-state_fact
+--- PASS: TestT11R2DropConstraintMissingNameKeepsFacts (0.01s)
+--- PASS: TestT11R2RestrictOffPartialKeysLand (0.00s)
+    --- PASS: TestT11R2RestrictOffPartialKeysLand/partial_secondary (0.01s)
+    --- PASS: TestT11R2RestrictOffPartialKeysLand/partial_primary_key (0.01s)
+    --- PASS: TestT11R2RestrictOffPartialKeysLand/partial_unique (0.01s)
+=== CONT  TestT11R2TiDBSameStatementDeclarationUnprovable/member_modified_in_statement
+--- PASS: TestT11R2MySQLUnrelatedColumnActionKeepsPreStateFact (0.01s)
+=== CONT  TestT11R2RestrictOnFullKeysLand/full_single_unique
+=== CONT  TestT11R2RestrictOnFullKeysLand/wrong_order_unique
+=== NAME  TestT11R2SelfReferenceSoleCovererRefuses/tidb
+    batch_state_t11r2_e_test.go:62: stmt 1: the self-bound PK must refuse the drop and stay present — no missing finding, got []rule.Finding{rule.Finding{RuleID:"ddl.alter.drop_primary_key.exists.require", Level:"blocker", Message:"primary key does not exist on table \"t\"", StatementIndex:1, StatementKind:"ddl", Location:(*rule.Location)(0x2cf065828490), Suggestion:"remove the drop primary key action or refresh metadata before auditing this change", Metadata:map[string]interface {}{"action":"drop_primary_key", "exists":false, "table":"t"}, Explanation:(*rule.FindingExplanation)(0x2cf064e40140)}}
+=== CONT  TestT11R2RestrictOnFullKeysLand/full_composite_unique
+=== NAME  TestT11R2TiDBSameStatementDeclarationUnprovable/member_declared_in_statement
+    batch_state_t11r2_a_test.go:249: the statement-declared member is unprovable on TiDB — gap owed
+=== CONT  TestT11R2MySQLDeclaredMemberFeedsSiblingRules/unsigned_on_declared_int
+=== NAME  TestT11R2RestrictOnPartialKeysRefuse/partial_unique
+    batch_state_t11r2_d_test.go:83: 6125 refuses a partial unique key — drop must answer missing, got findings=[]rule.Finding(nil) gaps=[]rule.EvidenceGap(nil)
+=== CONT  TestT11R2MySQLDeclaredMemberFeedsSiblingRules/auto_increment_on_declared_auto_increment
+=== NAME  TestT11R2TiDBSameStatementDeclarationUnprovable/member_modified_in_statement
+    batch_state_t11r2_a_test.go:264: TiDB refuses to operate the same column — no finding on the refused shape, got []rule.Finding{rule.Finding{RuleID:"ddl.table.primary_key.bigint.require", Level:"blocker", Message:"primary key column \"id\" must use bigint", StatementIndex:0, StatementKind:"ddl", Location:(*rule.Location)(0x2cf064eb0100), Suggestion:"change the primary key column type to bigint", Metadata:map[string]interface {}{"column":"id", "table":"t", "type":"int"}, Explanation:(*rule.FindingExplanation)(0x2cf065032410)}}
+=== CONT  TestT11R2MySQLDeclaredMemberFeedsSiblingRules/auto_increment_on_declared_int
+--- FAIL: TestT11R2TiDBSameStatementDeclarationUnprovable (0.00s)
+    --- FAIL: TestT11R2TiDBSameStatementDeclarationUnprovable/member_declared_in_statement (0.01s)
+    --- FAIL: TestT11R2TiDBSameStatementDeclarationUnprovable/member_modified_in_statement (0.01s)
+    --- PASS: TestT11R2TiDBSameStatementDeclarationUnprovable/untouched_member_keeps_pre-state_fact (0.01s)
+=== CONT  TestT11R2MySQLDeclaredMemberFeedsSiblingRules/unsigned_on_declared_int_unsigned
+=== NAME  TestT11R2SelfReferenceSoleCovererRefuses/mysql
+    batch_state_t11r2_e_test.go:62: stmt 1: the self-bound PK must refuse the drop and stay present — no missing finding, got []rule.Finding{rule.Finding{RuleID:"ddl.alter.drop_primary_key.exists.require", Level:"blocker", Message:"primary key does not exist on table \"t\"", StatementIndex:1, StatementKind:"ddl", Location:(*rule.Location)(0x2cf064f08040), Suggestion:"remove the drop primary key action or refresh metadata before auditing this change", Metadata:map[string]interface {}{"action":"drop_primary_key", "exists":false, "table":"t"}, Explanation:(*rule.FindingExplanation)(0x2cf064da20f0)}}
+--- FAIL: TestT11R2SelfReferenceSoleCovererRefuses (0.00s)
+    --- FAIL: TestT11R2SelfReferenceSoleCovererRefuses/tidb (0.01s)
+    --- FAIL: TestT11R2SelfReferenceSoleCovererRefuses/mysql (0.01s)
+=== NAME  TestT11R2RestrictOnPartialKeysRefuse/partial_primary_key
+    batch_state_t11r2_d_test.go:95: 6125 refuses a partial primary key too — drop must answer missing, got []rule.Finding(nil)
+--- PASS: TestT11R2TiDBPartialKeysLand (0.00s)
+    --- PASS: TestT11R2TiDBPartialKeysLand/partial_unique (0.01s)
+    --- PASS: TestT11R2TiDBPartialKeysLand/partial_primary_key (0.01s)
+    --- PASS: TestT11R2TiDBPartialKeysLand/partial_secondary (0.01s)
+--- FAIL: TestT11R2RestrictOnPartialKeysRefuse (0.00s)
+    --- FAIL: TestT11R2RestrictOnPartialKeysRefuse/partial_unique (0.01s)
+    --- FAIL: TestT11R2RestrictOnPartialKeysRefuse/partial_primary_key (0.01s)
+    --- PASS: TestT11R2RestrictOnPartialKeysRefuse/partial_secondary (0.01s)
+--- PASS: TestT11R2RestrictOnFullKeysLand (0.00s)
+    --- PASS: TestT11R2RestrictOnFullKeysLand/full_single_unique (0.01s)
+    --- PASS: TestT11R2RestrictOnFullKeysLand/wrong_order_unique (0.01s)
+    --- PASS: TestT11R2RestrictOnFullKeysLand/full_composite_unique (0.01s)
+=== NAME  TestT11R2MySQLDeclaredMemberFeedsSiblingRules/auto_increment_on_declared_int
+    batch_state_t11r2_a_test.go:157: declared member must emit ddl.table.primary_key.auto_increment.require, got []rule.Finding(nil)
+=== NAME  TestT11R2MySQLDeclaredMemberFeedsSiblingRules/unsigned_on_declared_int
+    batch_state_t11r2_a_test.go:157: declared member must emit ddl.table.primary_key.unsigned.require, got []rule.Finding(nil)
+--- FAIL: TestT11R2MySQLDeclaredMemberFeedsSiblingRules (0.00s)
+    --- PASS: TestT11R2MySQLDeclaredMemberFeedsSiblingRules/auto_increment_on_declared_auto_increment (0.01s)
+    --- FAIL: TestT11R2MySQLDeclaredMemberFeedsSiblingRules/auto_increment_on_declared_int (0.01s)
+    --- FAIL: TestT11R2MySQLDeclaredMemberFeedsSiblingRules/unsigned_on_declared_int (0.01s)
+    --- PASS: TestT11R2MySQLDeclaredMemberFeedsSiblingRules/unsigned_on_declared_int_unsigned (0.01s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.594s
+FAIL

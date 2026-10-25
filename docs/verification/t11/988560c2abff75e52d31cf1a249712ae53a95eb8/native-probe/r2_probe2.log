@@ -1,0 +1,79 @@
+== deltascope-ddl-golden-mysql80
+$ alter table t11r2f2.t drop constraint `primary`
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+pk=0
+chk=1
+$ alter table t11r2f2.t drop check `primary`
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3821 (HY000) at line 1: Check constraint 'primary' is not found in the table.
+  rc=1
+pk=0
+chk=1
+$ alter table t11r2f2.t drop constraint chk_v
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+pk=0
+chk=0
+$ alter table t11r2f2.t drop check chk_v
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3821 (HY000) at line 1: Check constraint 'chk_v' is not found in the table.
+  rc=1
+pk=0
+chk=0
+== deltascope-ddl-golden-mysql84
+$ alter table t11r2f2.t drop constraint `primary`
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+pk=0
+chk=1
+$ alter table t11r2f2.t drop check `primary`
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3821 (HY000) at line 1: Check constraint 'primary' is not found in the table.
+  rc=1
+pk=0
+chk=1
+$ alter table t11r2f2.t drop constraint chk_v
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+pk=0
+chk=0
+$ alter table t11r2f2.t drop check chk_v
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3821 (HY000) at line 1: Check constraint 'chk_v' is not found in the table.
+  rc=1
+pk=0
+chk=0
+== TiDB unique/drop-constraint arms
+flag=0
+$ alter table t11r2t2.t drop constraint uk_v
+Warning	1105	tidb_enable_check_constraint is off
+  rc=0
+uk_v=1
+pk=1
+$ alter table t11r2t2.t drop check uk_v
+Warning	1105	tidb_enable_check_constraint is off
+  rc=0
+uk_v=1
+pk=1
+$ alter table t11r2t2.t drop constraint `primary`
+Warning	1105	tidb_enable_check_constraint is off
+  rc=0
+uk_v=1
+pk=1
+flag=1
+$ alter table t11r2t2.t drop constraint uk_v
+ERROR 3940 (HY000) at line 1: Constraint 'uk_v' does not exist.
+  rc=1
+uk_v=1
+pk=1
+$ alter table t11r2t2.t drop check uk_v
+ERROR 3940 (HY000) at line 1: Constraint 'uk_v' does not exist.
+  rc=1
+uk_v=1
+pk=1
+$ alter table t11r2t2.t drop constraint `primary`
+ERROR 3940 (HY000) at line 1: Constraint 'primary' does not exist.
+  rc=1
+uk_v=1
+pk=1

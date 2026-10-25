@@ -79,7 +79,9 @@ denominators preserved (125/126/40 cases).
 **Not verified / bounded:**
 - `restrict_fk_on_non_standard_key` unobserved on a live 8.4+ target
   resolves by version fallback — observed-OFF arm not probed (factory
-  ON confirmed on 8.4.10).
+  ON confirmed on 8.4.10). *[Superseded by T11-R2: both flag arms probed
+  on 8.4.10 — OFF accepts partial unique/primary/secondary references,
+  ON refuses them 6125; see the R2 bundle's `native-probe/` logs.]*
 - Lazy dependency invalidation remains bounded to already-loaded
   entries (no whole-catalog reverse scan), per CONTRACT §6.
 - `MATCH` clauses stay unmodeled evidence; real CHECK removal stays

@@ -1,0 +1,28 @@
+product_sha: 988560c2abff75e52d31cf1a249712ae53a95eb8
+product_parent: d0c7cf3373167db7065d3027088a43c56ed6dbf5 (chore: remove L3 file-header convention)
+prior_chain: d0c7cf33 -> ec9629d8 (T11-R1 evidence) -> 216e187c (R1-A oracles) -> 20649919 (R1 product) -> 661e5756
+branch: milestone/mysql-tidb-ddl-completion
+cli_sha256: 246d9de88e95c714818e512dad61a8e338add6475fadc0e936f881c6cae035de
+cli_build: CGO_ENABLED=0 go build -o <artifact>/deltascope ./cmd/deltascope (go1.26.1, deterministic)
+
+golden:
+  T09: 125/125 cases, 3442 assertions, head_sha=988560c2abff75e52d31cf1a249712ae53a95eb8
+  T10: 126/126 cases, 3175 assertions, head_sha=988560c2abff75e52d31cf1a249712ae53a95eb8
+  T11: 40/40 cases, 505 assertions, head_sha=988560c2abff75e52d31cf1a249712ae53a95eb8
+  (frozen denominators preserved: same 125/126/40 case counts and
+   3442/3175/505 assertion totals as the R1 bundle)
+
+anchors (ddl-golden compose, runner-managed serial lifecycle, all healthy per artifact):
+  mysql57  = mysql:5.7.44
+  mysql80  = mysql:8.0.46
+  mysql84  = mysql:8.4.10
+  tidb85   = pingcap/tidb:v8.5.0 (via mysql-client sidecar)
+
+credential convention: per-task <TASK>_MYSQL_PASSWORD env (root), as in
+`make ddl-golden` runs; never committed.
+
+remote status at archive time:
+  origin/workfree = d0c7cf33 (product+evidence through the L3 retirement)
+  origin/milestone/mysql-tidb-ddl-completion = d0c7cf33 — pushed by an
+  external actor ahead of the declared 1d60d578 baseline; recorded as
+  drift, not corrected here.
