@@ -1,0 +1,230 @@
+command: go test ./internal/application/audit/ -run 'TestT11R2' -v -count=1
+product_sha: 27edfea2f41ed699e32cf47d5c76db5cad36f897
+rc: 0
+
+=== RUN   TestT11R2MySQLAddColumnSuppliesPKMember
+=== PAUSE TestT11R2MySQLAddColumnSuppliesPKMember
+=== RUN   TestT11R2MySQLAddColumnCompliantPKMember
+=== PAUSE TestT11R2MySQLAddColumnCompliantPKMember
+=== RUN   TestT11R2MySQLModifyColumnSuppliesPKMember
+=== PAUSE TestT11R2MySQLModifyColumnSuppliesPKMember
+=== RUN   TestT11R2MySQLModifyColumnNarrowsPKMember
+=== PAUSE TestT11R2MySQLModifyColumnNarrowsPKMember
+=== RUN   TestT11R2MySQLDeclaredMemberFeedsSiblingRules
+=== PAUSE TestT11R2MySQLDeclaredMemberFeedsSiblingRules
+=== RUN   TestT11R2MySQLUnrelatedColumnActionKeepsPreStateFact
+=== PAUSE TestT11R2MySQLUnrelatedColumnActionKeepsPreStateFact
+=== RUN   TestT11R2MySQLRenameCarriesPreStateFact
+=== PAUSE TestT11R2MySQLRenameCarriesPreStateFact
+=== RUN   TestT11R2MySQLDroppedMemberIsUndecidable
+=== PAUSE TestT11R2MySQLDroppedMemberIsUndecidable
+=== RUN   TestT11R2TiDBSameStatementDeclarationUnprovable
+=== PAUSE TestT11R2TiDBSameStatementDeclarationUnprovable
+=== RUN   TestT11R2DeclaredMemberRuleOff
+=== PAUSE TestT11R2DeclaredMemberRuleOff
+=== RUN   TestT11R2RestrictOnPartialKeysRefuse
+=== PAUSE TestT11R2RestrictOnPartialKeysRefuse
+=== RUN   TestT11R2RestrictOnFullKeysLand
+=== PAUSE TestT11R2RestrictOnFullKeysLand
+=== RUN   TestT11R2RestrictOffPartialKeysLand
+=== PAUSE TestT11R2RestrictOffPartialKeysLand
+=== RUN   TestT11R2RestrictUnreadPartialUndecidable
+=== PAUSE TestT11R2RestrictUnreadPartialUndecidable
+=== RUN   TestT11R2Pre84PartialKeysLand
+=== PAUSE TestT11R2Pre84PartialKeysLand
+=== RUN   TestT11R2TiDBPartialKeysLand
+=== PAUSE TestT11R2TiDBPartialKeysLand
+=== RUN   TestT11R2UnknownVersionPartialUndecidable
+=== PAUSE TestT11R2UnknownVersionPartialUndecidable
+=== RUN   TestT11R2SelfReferenceSoleCovererRefuses
+=== PAUSE TestT11R2SelfReferenceSoleCovererRefuses
+=== RUN   TestT11R2SelfReferenceChildSideSoleCoverer
+=== PAUSE TestT11R2SelfReferenceChildSideSoleCoverer
+=== RUN   TestT11R2ExistingNonStandardBindingSurvivesRestrict
+=== PAUSE TestT11R2ExistingNonStandardBindingSurvivesRestrict
+=== RUN   TestT11R2ExistingBindingAlternativeCovererFrees
+=== PAUSE TestT11R2ExistingBindingAlternativeCovererFrees
+=== RUN   TestT11R2UnvouchedChildKeepsDependencyUnprovable
+=== PAUSE TestT11R2UnvouchedChildKeepsDependencyUnprovable
+=== RUN   TestT11R2DropConstraintUnvouchesUniqueMember
+=== PAUSE TestT11R2DropConstraintUnvouchesUniqueMember
+=== RUN   TestT11R2DropConstraintUnvouchesPrimaryKeyObject
+=== PAUSE TestT11R2DropConstraintUnvouchesPrimaryKeyObject
+=== RUN   TestT11R2DropConstraintUnknownKindUnvouches
+=== PAUSE TestT11R2DropConstraintUnknownKindUnvouches
+=== RUN   TestT11R2DropConstraintUnknownKindPreStateUnvouched
+=== PAUSE TestT11R2DropConstraintUnknownKindPreStateUnvouched
+=== RUN   TestT11R2DropConstraintKeepsSecondaryMember
+=== PAUSE TestT11R2DropConstraintKeepsSecondaryMember
+=== RUN   TestT11R2DropConstraintMissingNameKeepsFacts
+=== PAUSE TestT11R2DropConstraintMissingNameKeepsFacts
+=== RUN   TestT11R2DropCheckKeywordSameAmbiguity
+=== PAUSE TestT11R2DropCheckKeywordSameAmbiguity
+=== RUN   TestT11R2TiDBDropConstraintNoOp
+=== PAUSE TestT11R2TiDBDropConstraintNoOp
+=== RUN   TestT11R2MySQL57DropConstraintSyntaxRefusal
+=== PAUSE TestT11R2MySQL57DropConstraintSyntaxRefusal
+=== RUN   TestT11R2UnknownVersionDropConstraintUnvouches
+=== PAUSE TestT11R2UnknownVersionDropConstraintUnvouches
+=== RUN   TestT11R2DropConstraintPreservesUntargetedFacts
+=== PAUSE TestT11R2DropConstraintPreservesUntargetedFacts
+=== CONT  TestT11R2MySQLAddColumnSuppliesPKMember
+=== CONT  TestT11R2SelfReferenceSoleCovererRefuses
+=== CONT  TestT11R2DeclaredMemberRuleOff
+=== CONT  TestT11R2RestrictOffPartialKeysLand
+=== CONT  TestT11R2RestrictOnFullKeysLand
+=== CONT  TestT11R2RestrictOnPartialKeysRefuse
+=== CONT  TestT11R2TiDBPartialKeysLand
+=== CONT  TestT11R2UnknownVersionPartialUndecidable
+=== CONT  TestT11R2MySQLUnrelatedColumnActionKeepsPreStateFact
+=== CONT  TestT11R2TiDBSameStatementDeclarationUnprovable
+=== CONT  TestT11R2MySQLDroppedMemberIsUndecidable
+=== CONT  TestT11R2MySQLRenameCarriesPreStateFact
+=== RUN   TestT11R2SelfReferenceSoleCovererRefuses/mysql
+=== PAUSE TestT11R2SelfReferenceSoleCovererRefuses/mysql
+=== RUN   TestT11R2RestrictOffPartialKeysLand/partial_unique
+=== PAUSE TestT11R2RestrictOffPartialKeysLand/partial_unique
+=== RUN   TestT11R2RestrictOnFullKeysLand/full_single_unique
+=== PAUSE TestT11R2RestrictOnFullKeysLand/full_single_unique
+=== RUN   TestT11R2RestrictOnFullKeysLand/full_composite_unique
+=== PAUSE TestT11R2RestrictOnFullKeysLand/full_composite_unique
+=== RUN   TestT11R2RestrictOnFullKeysLand/wrong_order_unique
+=== PAUSE TestT11R2RestrictOnFullKeysLand/wrong_order_unique
+=== RUN   TestT11R2RestrictOnPartialKeysRefuse/partial_unique
+=== PAUSE TestT11R2RestrictOnPartialKeysRefuse/partial_unique
+=== CONT  TestT11R2Pre84PartialKeysLand
+=== RUN   TestT11R2TiDBPartialKeysLand/partial_unique
+=== PAUSE TestT11R2TiDBPartialKeysLand/partial_unique
+=== RUN   TestT11R2SelfReferenceSoleCovererRefuses/tidb
+=== PAUSE TestT11R2SelfReferenceSoleCovererRefuses/tidb
+=== RUN   TestT11R2RestrictOffPartialKeysLand/partial_primary_key
+=== CONT  TestT11R2MySQLModifyColumnNarrowsPKMember
+=== PAUSE TestT11R2RestrictOffPartialKeysLand/partial_primary_key
+=== RUN   TestT11R2TiDBPartialKeysLand/partial_primary_key
+=== PAUSE TestT11R2TiDBPartialKeysLand/partial_primary_key
+=== RUN   TestT11R2TiDBPartialKeysLand/partial_secondary
+=== PAUSE TestT11R2TiDBPartialKeysLand/partial_secondary
+=== CONT  TestT11R2MySQLDeclaredMemberFeedsSiblingRules
+=== RUN   TestT11R2RestrictOffPartialKeysLand/partial_secondary
+=== PAUSE TestT11R2RestrictOffPartialKeysLand/partial_secondary
+=== CONT  TestT11R2DropConstraintUnknownKindPreStateUnvouched
+=== RUN   TestT11R2RestrictOnPartialKeysRefuse/partial_primary_key
+=== RUN   TestT11R2MySQLDeclaredMemberFeedsSiblingRules/unsigned_on_declared_int
+=== PAUSE TestT11R2MySQLDeclaredMemberFeedsSiblingRules/unsigned_on_declared_int
+=== PAUSE TestT11R2RestrictOnPartialKeysRefuse/partial_primary_key
+=== RUN   TestT11R2MySQLDeclaredMemberFeedsSiblingRules/unsigned_on_declared_int_unsigned
+=== PAUSE TestT11R2MySQLDeclaredMemberFeedsSiblingRules/unsigned_on_declared_int_unsigned
+=== RUN   TestT11R2RestrictOnPartialKeysRefuse/partial_secondary
+=== RUN   TestT11R2MySQLDeclaredMemberFeedsSiblingRules/auto_increment_on_declared_int
+=== PAUSE TestT11R2RestrictOnPartialKeysRefuse/partial_secondary
+=== PAUSE TestT11R2MySQLDeclaredMemberFeedsSiblingRules/auto_increment_on_declared_int
+=== RUN   TestT11R2MySQLDeclaredMemberFeedsSiblingRules/auto_increment_on_declared_auto_increment
+=== CONT  TestT11R2DropConstraintPreservesUntargetedFacts
+=== PAUSE TestT11R2MySQLDeclaredMemberFeedsSiblingRules/auto_increment_on_declared_auto_increment
+=== CONT  TestT11R2UnknownVersionDropConstraintUnvouches
+--- PASS: TestT11R2DropConstraintUnknownKindPreStateUnvouched (0.00s)
+=== RUN   TestT11R2TiDBSameStatementDeclarationUnprovable/member_declared_in_statement
+=== PAUSE TestT11R2TiDBSameStatementDeclarationUnprovable/member_declared_in_statement
+=== RUN   TestT11R2TiDBSameStatementDeclarationUnprovable/member_modified_in_statement
+=== PAUSE TestT11R2TiDBSameStatementDeclarationUnprovable/member_modified_in_statement
+=== RUN   TestT11R2TiDBSameStatementDeclarationUnprovable/untouched_member_keeps_pre-state_fact
+=== PAUSE TestT11R2TiDBSameStatementDeclarationUnprovable/untouched_member_keeps_pre-state_fact
+=== CONT  TestT11R2TiDBDropConstraintNoOp
+--- PASS: TestT11R2DropConstraintPreservesUntargetedFacts (0.00s)
+=== CONT  TestT11R2DropCheckKeywordSameAmbiguity
+=== CONT  TestT11R2MySQL57DropConstraintSyntaxRefusal
+--- PASS: TestT11R2DeclaredMemberRuleOff (0.01s)
+--- PASS: TestT11R2UnknownVersionPartialUndecidable (0.01s)
+=== CONT  TestT11R2DropConstraintMissingNameKeepsFacts
+=== CONT  TestT11R2MySQLModifyColumnSuppliesPKMember
+--- PASS: TestT11R2MySQLDroppedMemberIsUndecidable (0.01s)
+=== CONT  TestT11R2DropConstraintKeepsSecondaryMember
+--- PASS: TestT11R2MySQLModifyColumnNarrowsPKMember (0.01s)
+=== CONT  TestT11R2MySQLAddColumnCompliantPKMember
+--- PASS: TestT11R2MySQLRenameCarriesPreStateFact (0.01s)
+=== CONT  TestT11R2UnvouchedChildKeepsDependencyUnprovable
+--- PASS: TestT11R2UnvouchedChildKeepsDependencyUnprovable (0.00s)
+=== CONT  TestT11R2DropConstraintUnknownKindUnvouches
+=== RUN   TestT11R2DropConstraintUnknownKindUnvouches/index_kind_unknown
+=== PAUSE TestT11R2DropConstraintUnknownKindUnvouches/index_kind_unknown
+=== RUN   TestT11R2DropConstraintUnknownKindUnvouches/empty_kind
+=== PAUSE TestT11R2DropConstraintUnknownKindUnvouches/empty_kind
+=== CONT  TestT11R2DropConstraintUnvouchesPrimaryKeyObject
+--- PASS: TestT11R2DropCheckKeywordSameAmbiguity (0.01s)
+=== CONT  TestT11R2DropConstraintUnvouchesUniqueMember
+--- PASS: TestT11R2UnknownVersionDropConstraintUnvouches (0.01s)
+=== CONT  TestT11R2ExistingNonStandardBindingSurvivesRestrict
+--- PASS: TestT11R2MySQLUnrelatedColumnActionKeepsPreStateFact (0.01s)
+=== CONT  TestT11R2ExistingBindingAlternativeCovererFrees
+--- PASS: TestT11R2TiDBDropConstraintNoOp (0.01s)
+=== CONT  TestT11R2SelfReferenceChildSideSoleCoverer
+--- PASS: TestT11R2SelfReferenceChildSideSoleCoverer (0.00s)
+=== CONT  TestT11R2RestrictUnreadPartialUndecidable
+--- PASS: TestT11R2ExistingBindingAlternativeCovererFrees (0.00s)
+=== CONT  TestT11R2RestrictOnFullKeysLand/full_single_unique
+--- PASS: TestT11R2Pre84PartialKeysLand (0.01s)
+=== CONT  TestT11R2RestrictOnFullKeysLand/wrong_order_unique
+--- PASS: TestT11R2MySQLAddColumnSuppliesPKMember (0.02s)
+=== CONT  TestT11R2RestrictOnFullKeysLand/full_composite_unique
+--- PASS: TestT11R2MySQL57DropConstraintSyntaxRefusal (0.01s)
+=== CONT  TestT11R2SelfReferenceSoleCovererRefuses/mysql
+--- PASS: TestT11R2DropConstraintKeepsSecondaryMember (0.01s)
+=== CONT  TestT11R2SelfReferenceSoleCovererRefuses/tidb
+--- PASS: TestT11R2MySQLAddColumnCompliantPKMember (0.01s)
+=== CONT  TestT11R2TiDBPartialKeysLand/partial_unique
+--- PASS: TestT11R2DropConstraintUnvouchesUniqueMember (0.01s)
+=== CONT  TestT11R2TiDBPartialKeysLand/partial_secondary
+--- PASS: TestT11R2DropConstraintMissingNameKeepsFacts (0.01s)
+=== CONT  TestT11R2TiDBPartialKeysLand/partial_primary_key
+--- PASS: TestT11R2RestrictUnreadPartialUndecidable (0.01s)
+=== CONT  TestT11R2RestrictOffPartialKeysLand/partial_unique
+--- PASS: TestT11R2MySQLModifyColumnSuppliesPKMember (0.01s)
+=== CONT  TestT11R2RestrictOffPartialKeysLand/partial_secondary
+=== CONT  TestT11R2RestrictOffPartialKeysLand/partial_primary_key
+=== CONT  TestT11R2RestrictOnPartialKeysRefuse/partial_unique
+--- PASS: TestT11R2DropConstraintUnvouchesPrimaryKeyObject (0.01s)
+=== CONT  TestT11R2RestrictOnPartialKeysRefuse/partial_secondary
+=== CONT  TestT11R2RestrictOnPartialKeysRefuse/partial_primary_key
+--- PASS: TestT11R2ExistingNonStandardBindingSurvivesRestrict (0.01s)
+=== CONT  TestT11R2MySQLDeclaredMemberFeedsSiblingRules/unsigned_on_declared_int
+--- PASS: TestT11R2RestrictOnFullKeysLand (0.00s)
+    --- PASS: TestT11R2RestrictOnFullKeysLand/wrong_order_unique (0.01s)
+    --- PASS: TestT11R2RestrictOnFullKeysLand/full_single_unique (0.01s)
+    --- PASS: TestT11R2RestrictOnFullKeysLand/full_composite_unique (0.01s)
+=== CONT  TestT11R2MySQLDeclaredMemberFeedsSiblingRules/auto_increment_on_declared_auto_increment
+--- PASS: TestT11R2SelfReferenceSoleCovererRefuses (0.00s)
+    --- PASS: TestT11R2SelfReferenceSoleCovererRefuses/mysql (0.01s)
+    --- PASS: TestT11R2SelfReferenceSoleCovererRefuses/tidb (0.01s)
+=== CONT  TestT11R2MySQLDeclaredMemberFeedsSiblingRules/auto_increment_on_declared_int
+=== CONT  TestT11R2MySQLDeclaredMemberFeedsSiblingRules/unsigned_on_declared_int_unsigned
+=== CONT  TestT11R2TiDBSameStatementDeclarationUnprovable/member_declared_in_statement
+=== CONT  TestT11R2TiDBSameStatementDeclarationUnprovable/untouched_member_keeps_pre-state_fact
+=== CONT  TestT11R2TiDBSameStatementDeclarationUnprovable/member_modified_in_statement
+--- PASS: TestT11R2TiDBPartialKeysLand (0.00s)
+    --- PASS: TestT11R2TiDBPartialKeysLand/partial_unique (0.01s)
+    --- PASS: TestT11R2TiDBPartialKeysLand/partial_secondary (0.01s)
+    --- PASS: TestT11R2TiDBPartialKeysLand/partial_primary_key (0.01s)
+=== CONT  TestT11R2DropConstraintUnknownKindUnvouches/index_kind_unknown
+=== CONT  TestT11R2DropConstraintUnknownKindUnvouches/empty_kind
+--- PASS: TestT11R2RestrictOffPartialKeysLand (0.00s)
+    --- PASS: TestT11R2RestrictOffPartialKeysLand/partial_secondary (0.01s)
+    --- PASS: TestT11R2RestrictOffPartialKeysLand/partial_primary_key (0.01s)
+    --- PASS: TestT11R2RestrictOffPartialKeysLand/partial_unique (0.01s)
+--- PASS: TestT11R2RestrictOnPartialKeysRefuse (0.00s)
+    --- PASS: TestT11R2RestrictOnPartialKeysRefuse/partial_secondary (0.01s)
+    --- PASS: TestT11R2RestrictOnPartialKeysRefuse/partial_primary_key (0.01s)
+    --- PASS: TestT11R2RestrictOnPartialKeysRefuse/partial_unique (0.01s)
+--- PASS: TestT11R2MySQLDeclaredMemberFeedsSiblingRules (0.00s)
+    --- PASS: TestT11R2MySQLDeclaredMemberFeedsSiblingRules/auto_increment_on_declared_int (0.01s)
+    --- PASS: TestT11R2MySQLDeclaredMemberFeedsSiblingRules/unsigned_on_declared_int_unsigned (0.01s)
+    --- PASS: TestT11R2MySQLDeclaredMemberFeedsSiblingRules/auto_increment_on_declared_auto_increment (0.01s)
+    --- PASS: TestT11R2MySQLDeclaredMemberFeedsSiblingRules/unsigned_on_declared_int (0.01s)
+--- PASS: TestT11R2TiDBSameStatementDeclarationUnprovable (0.00s)
+    --- PASS: TestT11R2TiDBSameStatementDeclarationUnprovable/untouched_member_keeps_pre-state_fact (0.00s)
+    --- PASS: TestT11R2TiDBSameStatementDeclarationUnprovable/member_declared_in_statement (0.01s)
+    --- PASS: TestT11R2TiDBSameStatementDeclarationUnprovable/member_modified_in_statement (0.00s)
+--- PASS: TestT11R2DropConstraintUnknownKindUnvouches (0.00s)
+    --- PASS: TestT11R2DropConstraintUnknownKindUnvouches/empty_kind (0.00s)
+    --- PASS: TestT11R2DropConstraintUnknownKindUnvouches/index_kind_unknown (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.382s

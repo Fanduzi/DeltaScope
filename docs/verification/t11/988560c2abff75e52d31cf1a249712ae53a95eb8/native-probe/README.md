@@ -10,21 +10,20 @@ preserved beside this file:
 - `r2_probe.sh` / `r2_probe.log` — main R2 matrix: fixture SQL printed
   per cell, restrict flag values observed via `@@global`, real rc per
   statement, before/after KCU counts:
-  - MySQL same-statement semantics (8.0.46/8.4.10): `ADD COLUMN` +
-    `ADD PRIMARY KEY` lands in **either** action order (rc=0 both);
-    `MODIFY` + `ADD PRIMARY KEY` reads the new definition (rc=0).
-    TiDB v8.5.0 refuses both: 1072 (unknown member at key action) and
-    8200 ("unsupported operate same column").
   - 8.4 `restrict_fk_on_non_standard_key` both arms on 8.4.10: OFF
     accepts partial UNIQUE / partial PK / partial secondary
     referenced-key coverage; ON refuses all three with 6125. A
     complete-key (`(a,b)` covering `(a,b)`) reference lands under ON.
-    Wrong-order/non-covering references fail 1822 either way.
-  - TiDB v8.5.0 accepts partial UNIQUE / partial PK / partial
-    secondary referenced-key coverage (rc=0 — no restrict concept).
+    Wrong-order/non-covering references fail **1822 under OFF and
+    6125 under ON** (the earlier "1822 either way" wording here was
+    wrong — the archived cells show the codes per arm).
   - Self-reference sole coverer: `DROP PRIMARY KEY` and `DROP INDEX`
-    on the only backing member refuse **1553** on 8.0/8.4 (and TiDB
-    nonclustered; TiDB clustered refuses earlier at 8200).
+    on the only backing member refuse **1553** on 8.0/8.4. TiDB
+    v8.5.0's self-reference PK cell is **clustered**: the PK-object
+    drop refuses earlier at 8200, while the sole-coverer
+    `DROP INDEX` still refuses 1553 (the earlier "TiDB
+    nonclustered" wording here was wrong — no nonclustered arm was
+    probed).
   - Existing binding survives a flag flip: an FK built under
     restrict OFF keeps its non-unique parent index bound — the sole-
     coverer drop still refuses 1553 after switching ON (8.4.10).
@@ -35,6 +34,24 @@ preserved beside this file:
 - `r2_probe2.log` — follow-up cells: MySQL `DROP CONSTRAINT \`primary\``
   and `DROP CHECK \`primary\`` arms, real-CHECK arm, TiDB unique-member
   OFF/ON cells (warning 1105 / error 3940, post-state unchanged).
+  **Caveat:** its MySQL `DROP CHECK <name>` cells ran only *after*
+  `DROP CONSTRAINT` had already removed the target, so a "not found"
+  error there cannot prove refusal while the object exists — see the
+  corrected present-object cells in `r2_tail_probe.log`.
+- `r2_tail_probe.sh` / `r2_tail_probe.log` — tail cells run but never
+  archived in the first pass, plus the r2_probe2 correction above:
+  - MySQL same-statement semantics (8.0.46/8.4.10): `ADD COLUMN` +
+    `ADD PRIMARY KEY` lands in **either** action order (rc=0 both);
+    `MODIFY` + `ADD PRIMARY KEY` reads the new definition (rc=0).
+    TiDB v8.5.0 refuses both: 1072 (unknown member at key action) and
+    8200 ("unsupported operate same column").
+  - TiDB v8.5.0 accepts partial UNIQUE / partial PK / partial
+    secondary referenced-key coverage (rc=0 — no restrict concept).
+  - MySQL 8.0.46/8.4.10 `DROP CHECK` on **still-present** objects:
+    unique/secondary members refuse 3821 (check-constraint
+    namespace miss, object survives); `DROP CONSTRAINT` on a present
+    secondary refuses 3940; `DROP CHECK` on a real CHECK removes it
+    (rc=0).
 - `r2_tidb_flag_probe.sh` / `r2_tidb_flag_probe.log` — the complete
   `tidb_enable_check_constraint` OFF/ON cell mandated by the R2 scope:
   fixture SQL, actual `@@global.tidb_enable_check_constraint` values,

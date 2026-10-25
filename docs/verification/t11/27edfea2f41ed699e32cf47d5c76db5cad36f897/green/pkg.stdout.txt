@@ -1,0 +1,6 @@
+command: go test ./internal/application/audit/ ./internal/domain/rule/ddl/ -count=1
+product_sha: 27edfea2f41ed699e32cf47d5c76db5cad36f897
+rc: 0
+
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	2.980s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	1.236s

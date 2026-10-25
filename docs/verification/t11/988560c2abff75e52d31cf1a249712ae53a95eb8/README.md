@@ -1,5 +1,14 @@
 # T11-R2 verification — 988560c2
 
+> **R2-tail note:** this bundle was amended by the tail delivery — the
+> native-probe README gained cell-attribution corrections (A-group and
+> TiDB partial cells now live in `r2_tail_probe.log`; wrong-order codes
+> per arm; TiDB self-ref cell is clustered/8200; `r2_probe2.log`
+> post-removal caveat), `red/` gained `tail_f_a_red_988560c2.log` and
+> `e_binding_replay_d0c7cf33.log` plus README re-labelling. The
+> tail's own gate/golden/green evidence bound to product `27edfea2`
+> lives in `../27edfea2f41ed699e32cf47d5c76db5cad36f897/`.
+
 Product HEAD `988560c2abff75e52d31cf1a249712ae53a95eb8` — appended on
 `d0c7cf33` (L3 header-convention retirement), itself on the T11-R1
 evidence chain (`ec9629d8` → `216e187c` → `20649919` → `661e5756`).

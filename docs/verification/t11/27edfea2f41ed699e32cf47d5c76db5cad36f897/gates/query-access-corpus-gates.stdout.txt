@@ -1,0 +1,4 @@
+go test ./internal/application/queryaccess/ -run TestQueryAccessCorpus -count=1
+ok  	github.com/Fanduzi/DeltaScope/internal/application/queryaccess	0.547s
+go test -tags postgresql ./internal/application/queryaccess/ -run TestQueryAccessCorpusPostgreSQL -count=1
+ok  	github.com/Fanduzi/DeltaScope/internal/application/queryaccess	0.587s

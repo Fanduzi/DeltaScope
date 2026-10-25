@@ -8,11 +8,15 @@ files were authored — not a revert-stub replay. Command:
 go test ./internal/application/audit/ -run 'TestT11R2' -v
 ```
 
-Result: `rc=1`, **25 `--- FAIL` markers over 17 parent test functions**,
-covering all four R2 groups. Fixtures used only legal declarations
-(valid parent keys, real column definitions, provider-proven bindings);
-every failure is a behavioral red, not a fixture or compile error —
-the final run of the same tests on `988560c2` is green (52 PASS).
+Result: `rc=1`, **25 `--- FAIL` markers over 17 parent test functions =
+21 failing leaves** (13 leaf-free parents + 8 named sub-failures across
+4 parents), covering all four R2 groups. Fixtures used only legal
+declarations (valid parent keys, real column definitions,
+provider-proven bindings); every failure is a behavioral red, not a
+fixture or compile error — the concentrated run of the same tests on
+`988560c2` is green (**52 `--- PASS` markers = 45 passing leaves**).
+These are the original first-run counts; effective root-cause proofs
+for individual cells are noted per group below.
 
 ## Failing leaves by group
 
@@ -50,6 +54,15 @@ the final run of the same tests on `988560c2` is green (52 PASS).
 - `TestT11R2ExistingNonStandardBindingSurvivesRestrict` — the
   creatability answer (secondary ineligible under restrict ON) was
   reused for the loaded binding; the proven-dependent member dropped.
+  **Correction:** this cell's entry in `baseline_red.log` ran the
+  earlier fixture that never loaded the child table, so its red
+  exercised the accepted lazy-boundary artifact, not the final root
+  cause. The effective root-cause proof for the final fixture (with
+  the leading child-load statement) is `e_binding_replay_d0c7cf33.log`
+  — a **replay** on `d0c7cf33` (four R2 test files copied verbatim
+  onto the untouched baseline product), rc=1, `exists:false`
+  fabricated on statement 2. Marked replay, not first-run evidence;
+  the full R2 red matrix was not recreated.
 
 **R2-F — DROP CHECK|CONSTRAINT kind coverage (5 parents)**
 
@@ -62,6 +75,22 @@ the final run of the same tests on `988560c2` is green (52 PASS).
 - `TestT11R2DropConstraintPreservesUntargetedFacts`,
   `TestT11R2DropCheckKeywordSameAmbiguity` — pin the bounded shape:
   only the affected collection unvouches.
+
+## Tail reds (R2-tail, on `988560c2` before the tail fix)
+
+`tail_f_a_red_988560c2.log` — `rc=1`, 4 FAIL markers, captured on the
+committed R2 product `988560c2` before the tail patch:
+
+- `TestT11R2DropConstraintUnknownKindUnvouches/{index_kind_unknown,empty_kind}`
+  — `applyDropCheck` bound a proven name with an unproven kind as a
+  guaranteed survivor: the successor `DROP INDEX` found the member
+  still provable and skipped the owed index-set gap.
+- `TestT11R2DropConstraintUnknownKindPreStateUnvouched` — the
+  successor `Metadata.TargetTable` kept `uk_v` bindable by
+  `FindProvenIndex` after `DROP CONSTRAINT uk_v`.
+- `TestT11R2MySQLRenameCarriesPreStateFact` — the `RENAME COLUMN a TO
+  id` pass-through returned the pre-state column object, so the
+  finding attributed `column=a` instead of the effective member `id`.
 
 ## Positive controls green at baseline (unchanged contracts)
 

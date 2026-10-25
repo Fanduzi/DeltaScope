@@ -1,0 +1,6 @@
+SKIP internal/application/audit/README.md (not a source module file)
+OK   internal/application/audit/batch_state_fk.go — module README updated
+OK   internal/application/audit/batch_state_t11r2_a_test.go — module README updated
+OK   internal/application/audit/batch_state_t11r2_f_test.go — module README updated
+SKIP internal/domain/rule/ddl/README.md (not a source module file)
+OK   internal/domain/rule/ddl/common.go — module README updated

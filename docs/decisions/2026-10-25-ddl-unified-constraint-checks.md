@@ -286,3 +286,33 @@ Related tests: `batch_state_t11r2_a_test.go` (same-statement declared
 facts), `batch_state_t11r2_d_test.go` (strict anchor + flag tri-state),
 `batch_state_t11r2_e_test.go` (self/existing binding dependencies),
 `batch_state_t11r2_f_test.go` (DROP CHECK|CONSTRAINT kind coverage).
+
+## R2-tail amendment (verified against `r2_tail_probe.log` and the tail
+red log under the same verification bundle)
+
+- **Only a proven-secondary member keeps proven presence through
+  `applyDropCheck`.** `FindProvenIndex` answers name+existence, never
+  kind: an `IndexKindUnknown`/empty-kind member may still be the unique
+  member `DROP CONSTRAINT` removes, so it now unvouches via
+  `unvouchIndexMember` instead of staying bound. Native cells added:
+  `DROP CHECK`/`DROP CONSTRAINT` refuse a *still-present* secondary
+  member (3821/3940 on 8.0.46/8.4.10) — the earlier log's "not found"
+  cells ran post-removal and could not prove that refusal; other
+  kinds' refusal is unprobed, so the secondary kind alone keeps the
+  bound arm. The successor `DROP INDEX` owes the attributed
+  `target_table.indexes` gap with unverified coverage and a review
+  verdict rather than binding a maybe-gone member or fabricating
+  proven-missing.
+- **MySQL rename pass-through binds the new member name.** The
+  `orderedColumnFact` copy returned for `RENAME COLUMN a TO id, ADD
+  PRIMARY KEY(id)` now carries `Name=id` with `a`'s proven attributes,
+  so findings attribute the effective member; the provider snapshot
+  is never mutated and no broader ALTER semantics were added.
+- **Evidence precision (same bundle).** The A-group same-statement
+  cells and TiDB partial-key cells previously run but not archived
+  now live in `r2_tail_probe.log`; `baseline_red.log`'s E-binding
+  entry is re-labelled as the accepted lazy-boundary artifact with
+  `e_binding_replay_d0c7cf33.log` as the marked focused replay;
+  wrong-order native errors are recorded per arm (OFF 1822 / ON
+  6125); the TiDB self-reference PK cell is clustered/8200, not the
+  earlier NONCLUSTERED/1553 wording.

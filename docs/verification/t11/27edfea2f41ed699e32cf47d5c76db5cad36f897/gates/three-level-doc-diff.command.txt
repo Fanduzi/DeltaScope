@@ -1,0 +1,1 @@
+git diff --name-only --diff-filter=ACMR efc004c7..27edfea2f41ed699e32cf47d5c76db5cad36f897 + per-source-file module README presence check (script rule replicated — script itself reads worktree only)

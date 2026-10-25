@@ -281,6 +281,33 @@ T11-R2 additions (verified against the r2 probe logs under
   A proven secondary member, an unmatched name, and untargeted facts
   stay put; TiDB's OFF-warning/ON-3940 no-op arms are unchanged.
 
+T11-R2-tail additions (red→green archived under the same verification
+bundle):
+- `applyDropCheck`'s member arm now vouches only a proven
+  `IndexKindSecondary` hit: `FindProvenIndex` proves name+existence, not
+  kind, so an `IndexKindUnknown`/empty-kind member may still BE the
+  unique member `DROP CONSTRAINT` removes — it now takes the same
+  `unvouchIndexMember` path (probed: `DROP CHECK`/`DROP CONSTRAINT`
+  refuse a still-present secondary 3821/3940 on 8.0.46/8.4.10; other
+  kinds' refusal under either keyword is unprobed, so only the
+  secondary kind keeps proven presence). The successor `DROP INDEX`
+  owes the attributed `target_table.indexes` gap and unverified
+  coverage/review verdict instead of binding a maybe-gone member.
+- `orderedColumnFact`'s MySQL rename pass-through returns a copy of
+  the pre-state column rebound to the new member name: `RENAME COLUMN
+  a TO id, ADD PRIMARY KEY(id)` attributes the finding to `id` while
+  type/attributes still come from `a` (the provider object is never
+  mutated). No broader ALTER semantics added.
+- Evidence corrections in the same bundle: the missing A/TiDB-partial
+  native cells are archived in `r2_tail_probe.log`; the E-binding
+  baseline red is re-labelled (old fixture exercised the accepted
+  lazy boundary; `e_binding_replay_d0c7cf33.log` is the marked
+  focused replay); wrong-order errors recorded per arm (OFF 1822 /
+  ON 6125); the TiDB self-reference PK cell is clustered/8200 (the
+  earlier NONCLUSTERED/1553 wording was wrong); `r2_probe2.log`'s
+  post-removal `DROP CHECK` cells are caveated and the still-present
+  refusals live in `r2_tail_probe.log`.
+
 `applyDropForeignKey` (new):
 - proven constraint name → remove that row only; the supporting index
   member stays (native fact on all four anchors).

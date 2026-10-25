@@ -1,0 +1,15 @@
+# E focused replay — TestT11R2ExistingNonStandardBindingSurvivesRestrict
+# REPLAY, not first-run evidence: final fixture with leading child-load statement
+command: go test ./internal/application/audit/ -run 'TestT11R2ExistingNonStandardBindingSurvivesRestrict' -v -count=1
+product_sha_under_test: d0c7cf3373167db7065d3027088a43c56ed6dbf5
+note: four r2 test files copied verbatim from 988560c2; product code untouched at d0c7cf33
+
+=== RUN   TestT11R2ExistingNonStandardBindingSurvivesRestrict
+=== PAUSE TestT11R2ExistingNonStandardBindingSurvivesRestrict
+=== CONT  TestT11R2ExistingNonStandardBindingSurvivesRestrict
+    batch_state_t11r2_e_test.go:113: stmt 2: the existing binding refuses the drop natively — the member stays present, got []rule.Finding{rule.Finding{RuleID:"ddl.alter.drop_index.exists.require", Level:"blocker", Message:"index \"ix_id\" does not exist on table \"p\"", StatementIndex:2, StatementKind:"ddl", Location:(*rule.Location)(0x1e630359e140), Suggestion:"fix the index name or refresh metadata before auditing this change", Metadata:map[string]interface {}{"action":"drop_index", "exists":false, "name":"ix_id", "table":"p"}, Explanation:(*rule.FindingExplanation)(0x1e63031f00f0)}}
+--- FAIL: TestT11R2ExistingNonStandardBindingSurvivesRestrict (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.553s
+FAIL
+rc=1

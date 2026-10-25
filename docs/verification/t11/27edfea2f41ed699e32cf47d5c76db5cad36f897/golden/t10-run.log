@@ -1,0 +1,3 @@
+command: env T10_MYSQL_PASSWORD=root make ddl-golden TASK=T10 ARTIFACT_DIR=<bundle>/golden/T10
+[ddl-golden] task=T10 head=27edfea2f41e cases=126 passed=126 assertions=3175
+[ddl-golden] PASS

@@ -1,0 +1,3 @@
+gofmt -l ./internal ./pkg ./cmd
+internal/application/audit/batch_state_t07_matrix_test.go
+internal/application/audit/batch_state_t07_test.go

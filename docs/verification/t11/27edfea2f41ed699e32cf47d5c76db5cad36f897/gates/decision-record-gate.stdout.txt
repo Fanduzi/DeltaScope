@@ -1,0 +1,2 @@
+./scripts/check_decision_record.sh main...HEAD
+decision-record-gate: trigger paths hit but no trigger keywords in diff, PASS

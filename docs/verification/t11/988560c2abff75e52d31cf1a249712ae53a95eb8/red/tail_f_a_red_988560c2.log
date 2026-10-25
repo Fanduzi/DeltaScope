@@ -1,0 +1,38 @@
+# T11-R2-tail behavioral red evidence
+command: go test ./internal/application/audit/ -run 'TestT11R2DropConstraintUnknownKind|TestT11R2MySQLRenameCarriesPreStateFact' -v
+baseline_sha: efc004c7c93c92f99d98ab2582a68b7dbca8eb26
+product_sha: 988560c2abff75e52d31cf1a249712ae53a95eb8 (unchanged product under test)
+fixture_version: MySQL 8.0.46 (provider banner), IndexKindUnknown/empty kind cells + RENAME a->id attribution
+rc: 1 (4 FAIL markers: 2 unknown-kind leaves, pre-state projection, rename attribution)
+
+=== RUN   TestT11R2MySQLRenameCarriesPreStateFact
+=== PAUSE TestT11R2MySQLRenameCarriesPreStateFact
+=== RUN   TestT11R2DropConstraintUnknownKindUnvouches
+=== PAUSE TestT11R2DropConstraintUnknownKindUnvouches
+=== RUN   TestT11R2DropConstraintUnknownKindPreStateUnvouched
+=== PAUSE TestT11R2DropConstraintUnknownKindPreStateUnvouched
+=== CONT  TestT11R2MySQLRenameCarriesPreStateFact
+=== CONT  TestT11R2DropConstraintUnknownKindPreStateUnvouched
+=== CONT  TestT11R2DropConstraintUnknownKindUnvouches
+=== RUN   TestT11R2DropConstraintUnknownKindUnvouches/index_kind_unknown
+=== PAUSE TestT11R2DropConstraintUnknownKindUnvouches/index_kind_unknown
+=== RUN   TestT11R2DropConstraintUnknownKindUnvouches/empty_kind
+=== PAUSE TestT11R2DropConstraintUnknownKindUnvouches/empty_kind
+=== CONT  TestT11R2DropConstraintUnknownKindUnvouches/index_kind_unknown
+=== CONT  TestT11R2DropConstraintUnknownKindUnvouches/empty_kind
+=== NAME  TestT11R2DropConstraintUnknownKindPreStateUnvouched
+    batch_state_t11r2_f_test.go:159: the successor pre-state must carry the unvouched index set, got &{Schema: Exists:true Table:0x66a2aef15320 Columns:[{Name:id Type:int Length:0 Charset: Collation: Comment: Unsigned:false NotNull:true AutoIncrement:false HasDefault:false DefaultValue: DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[] Generated:<nil> DefaultExpression:<nil> Visibility: VisibilityExplicit:false DefaultParenthesized:false DefaultLiteral:<nil>} {Name:v Type:int Length:0 Charset: Collation: Comment: Unsigned:false NotNull:false AutoIncrement:false HasDefault:false DefaultValue: DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[] Generated:<nil> DefaultExpression:<nil> Visibility: VisibilityExplicit:false DefaultParenthesized:false DefaultLiteral:<nil>} {Name:u Type:int Length:0 Charset: Collation: Comment: Unsigned:false NotNull:false AutoIncrement:false HasDefault:false DefaultValue: DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[] Generated:<nil> DefaultExpression:<nil> Visibility: VisibilityExplicit:false DefaultParenthesized:false DefaultLiteral:<nil>}] PrimaryKey:<nil> Indexes:[{Name:uk_v Kind:unknown Columns:[v] KeyParts:[] Cardinality:<nil> AccessMethod: IncludedColumns:[] HasPredicate:false HasExpressionKeys:false ExpressionCount:0 PrefixParts:0 DescParts:0 MultiValuedParts:0 Visibility: VisibilityExplicit:false UnmodeledKeyParts:0 DirectionUnknownParts:0 Global:false PrimaryKeyType: UnmodeledOptions:[] NameUnknown:false} {Name:ix_u Kind:secondary Columns:[u] KeyParts:[] Cardinality:<nil> AccessMethod: IncludedColumns:[] HasPredicate:false HasExpressionKeys:false ExpressionCount:0 PrefixParts:0 DescParts:0 MultiValuedParts:0 Visibility: VisibilityExplicit:false UnmodeledKeyParts:0 DirectionUnknownParts:0 Global:false PrimaryKeyType: UnmodeledOptions:[] NameUnknown:false}] Constraints:[] Options:map[] PrimaryKeyIsHandle:false PrimaryKeyHandleUnknown:false PrimaryKeyClustered:false PrimaryKeyClusteredUnknown:false PrimaryKeyUnknown:false IndexesUnknown:false ConstraintsUnknown:false IndexOrderCatalog:false IndexNamesUnknown:false Partitioned:<nil>}
+--- FAIL: TestT11R2DropConstraintUnknownKindPreStateUnvouched (0.00s)
+=== NAME  TestT11R2DropConstraintUnknownKindUnvouches/empty_kind
+    batch_state_t11r2_f_test.go:108: an undecidable member fate owes the index-set gap, got none
+=== NAME  TestT11R2DropConstraintUnknownKindUnvouches/index_kind_unknown
+    batch_state_t11r2_f_test.go:108: an undecidable member fate owes the index-set gap, got none
+--- FAIL: TestT11R2DropConstraintUnknownKindUnvouches (0.00s)
+    --- FAIL: TestT11R2DropConstraintUnknownKindUnvouches/empty_kind (0.01s)
+    --- FAIL: TestT11R2DropConstraintUnknownKindUnvouches/index_kind_unknown (0.01s)
+=== NAME  TestT11R2MySQLRenameCarriesPreStateFact
+    batch_state_t11r2_a_test.go:207: the finding binds the NEW member name while the type fact comes from the renamed column — column=a type=int
+--- FAIL: TestT11R2MySQLRenameCarriesPreStateFact (0.01s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.807s
+FAIL
